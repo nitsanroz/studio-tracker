@@ -1,0 +1,298 @@
+[
+  {
+    "id": "as:1200245707583270",
+    "name": "[EXAMPLE TASK] Redesigned pricing page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245707583270/f",
+    "iteration": "In Progress",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:17",
+    "labels": [],
+    "attributes": {
+      "Priority": "High",
+      "Task Progress": "In Progress"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245707638298",
+    "name": "[EXAMPLE TASK] Two page brief for sales team",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245707638298/f",
+    "iteration": "In Progress",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:19",
+    "labels": [],
+    "attributes": {
+      "Priority": "Low",
+      "Task Progress": "Waiting"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245707704438",
+    "name": "[EXAMPLE TASK] Infographic for eBook",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245707704438/f",
+    "iteration": "New Requests",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:20",
+    "labels": [],
+    "attributes": {
+      "Priority": "Medium",
+      "Task Progress": "Waiting"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245707747548",
+    "name": "[EXAMPLE TASK] Blog post announcing new funding",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245707747548/f",
+    "iteration": "New Requests",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:21",
+    "labels": [],
+    "attributes": {
+      "Priority": "Medium",
+      "Task Progress": "In Progress"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245708108031",
+    "name": "[COPY ME] Create A New Work Request",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245708108031/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:29",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245708162181",
+    "name": "Copy and rename this task",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245708162181/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[COPY ME] Create A New Work Request",
+    "parentId": "as:1200245708108031",
+    "createdAt": "2021-04-26 08:02:30",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245708185392",
+    "name": "Write a description of your request",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245708185392/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[COPY ME] Create A New Work Request",
+    "parentId": "as:1200245708108031",
+    "createdAt": "2021-04-26 08:02:31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245708216686",
+    "name": "Set Custom Fields to reflect task priority",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245708216686/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[COPY ME] Create A New Work Request",
+    "parentId": "as:1200245708108031",
+    "createdAt": "2021-04-26 08:02:31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245708252205",
+    "name": "Move task to New Requests Column",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245708252205/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[COPY ME] Create A New Work Request",
+    "parentId": "as:1200245708108031",
+    "createdAt": "2021-04-26 08:02:32",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245792941594",
+    "name": "[EXAMPLE TASK] Designs for email nurture series",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245792941594/f",
+    "iteration": "Completed",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:14",
+    "labels": [],
+    "attributes": {
+      "Priority": "Medium",
+      "Task Progress": "Done"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245792941600",
+    "name": "[EXAMPLE TASK] Content for new SEO landing pages",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245792941600/f",
+    "iteration": "Completed",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:14",
+    "labels": [],
+    "attributes": {
+      "Priority": "High",
+      "Task Progress": "Done"
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1200245793864229",
+    "name": "[READ ME] Instructions for using this template",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793864229/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "createdAt": "2021-04-26 08:02:24",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793887453",
+    "name": "Learn more about how to manage work requests in Asana",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793887453/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:25",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793904506",
+    "name": "Save time and reduce manual steps with Rules in this template",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793904506/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:25",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793920459",
+    "name": "Designate a teammate responsible for reviewing the project, prioritizing work, and assigning requests",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793920459/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793938371",
+    "name": "Copy the [TEMPLATE TASK] to add new work requests",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793938371/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793955266",
+    "name": "Move requests between columns to designate progress",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793955266/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200245793978446",
+    "name": "Set Custom Fields to reflect task status so teammates know where work stands",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200243332541932/1200245793978446/f",
+    "iteration": "Template Instructions",
+    "projects": [
+      "as:1200243332541932"
+    ],
+    "parentName": "[READ ME] Instructions for using this template",
+    "parentId": "as:1200245793864229",
+    "createdAt": "2021-04-26 08:02:27",
+    "labels": [],
+    "completed": false
+  }
+]

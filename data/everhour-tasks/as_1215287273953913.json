@@ -1,0 +1,206 @@
+[
+  {
+    "id": "as:1215086658138534",
+    "name": "Air Logo",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215086658138534/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-24 12:54:11",
+    "labels": [],
+    "time": {
+      "total": 32400,
+      "users": {
+        "1342403": 19800,
+        "1435452": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215086658138540",
+    "name": "Air \"Coming soon\"",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215086658138540/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-24 12:54:46",
+    "labels": [],
+    "time": {
+      "total": 153000,
+      "users": {
+        "1217417": 32400,
+        "1342403": 109800,
+        "1442885": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215086658138543",
+    "name": "One pager",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215086658138543/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-24 12:55:19",
+    "labels": [],
+    "time": {
+      "total": 198000,
+      "users": {
+        "1217417": 14400,
+        "1342403": 57600,
+        "1407470": 48600,
+        "1435452": 48600,
+        "1442885": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215086658138546",
+    "name": "Deck template ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215086658138546/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-24 12:55:30",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1421038": 5400,
+        "1435452": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215103326332408",
+    "name": "Product Design ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215103326332408/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-24 12:56:00",
+    "labels": [],
+    "time": {
+      "total": 104400,
+      "users": {
+        "1437050": 104400
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215103326332414",
+    "name": "Air intro video",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215103326332414/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-05-25 07:36:10",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1217417": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215273544113120",
+    "name": "Coming soon Dev",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215287273953913/1215273544113120/f",
+    "iteration": "Pre project",
+    "projects": [
+      "as:1215287273953913"
+    ],
+    "createdAt": "2026-06-01 06:49:59",
+    "labels": [],
+    "time": {
+      "total": 18000,
+      "users": {
+        "1217417": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  }
+]

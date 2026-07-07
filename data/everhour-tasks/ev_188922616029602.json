@@ -1,0 +1,35 @@
+[
+  {
+    "id": "ev:188922746025206",
+    "name": "Anecdotes keys_",
+    "type": "task",
+    "status": "open",
+    "projects": [
+      "ev:188922616029602"
+    ],
+    "position": 1,
+    "createdAt": "2026-07-02 18:21:00",
+    "labels": [],
+    "section": 1424708,
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922749200260",
+    "name": "UI Agent video_",
+    "type": "task",
+    "status": "open",
+    "projects": [
+      "ev:188922616029602"
+    ],
+    "position": 2,
+    "createdAt": "2026-07-02 18:21:32",
+    "labels": [],
+    "section": 1424708,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  }
+]

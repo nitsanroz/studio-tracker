@@ -1,0 +1,686 @@
+[
+  {
+    "id": "as:1202505907429556",
+    "name": "First hour estimation ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202505907429549/1202505907429556/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-06-26 10:54:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1202505907429560",
+    "name": "Contact details ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202505907429549/1202505907429560/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-06-26 10:54:23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1202511630462801",
+    "name": "Temporary task - 46.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202511630462801/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-06-27 14:21:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 10:11:54",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202546407588074",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202546407588074/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-07-04 14:22:58",
+    "labels": [],
+    "time": {
+      "total": 55800,
+      "users": {
+        "1213760": 55800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:23",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202546407588076",
+    "name": "General Layouting",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202546407588076/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-07-04 14:24:02",
+    "labels": [],
+    "time": {
+      "total": 176400,
+      "users": {
+        "1213760": 176400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:22",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202552104029367",
+    "name": "HQ Wireframing",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202552104029367/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-07-05 13:07:39",
+    "labels": [],
+    "time": {
+      "total": 338400,
+      "users": {
+        "1213760": 338400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:21",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202589921763815",
+    "name": "UI Concepts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202589921763815/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-07-12 09:54:24",
+    "labels": [],
+    "time": {
+      "total": 392400,
+      "users": {
+        "1213760": 392400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:01",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202732678485020",
+    "name": "Onboarding",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202732678485020/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-08-07 14:31:45",
+    "labels": [],
+    "time": {
+      "total": 134700,
+      "users": {
+        "1213760": 134700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:01"
+  },
+  {
+    "id": "as:1202770513581599",
+    "name": "Prototype",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202770513581599/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-08-09 14:29:06",
+    "labels": [],
+    "time": {
+      "total": 252900,
+      "users": {
+        "1213760": 252900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:20",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202835689502105",
+    "name": "Visuals",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202835689502105/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-08-21 17:00:59",
+    "labels": [],
+    "time": {
+      "total": 39600,
+      "users": {
+        "1213760": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:00"
+  },
+  {
+    "id": "as:1202853839286392",
+    "name": "Gantt",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202505907429549/1202853839286392/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-08-25 12:32:25",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1202884483260724",
+    "name": "Design system",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202884483260724/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-08-29 14:26:08",
+    "labels": [],
+    "time": {
+      "total": 3249000,
+      "users": {
+        "1213760": 1346400,
+        "1214048": 604800,
+        "1219081": 167400,
+        "1219083": 1130400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:18",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202925050009494",
+    "name": "Blog post illustration - 18h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1202925050009494/f",
+    "iteration": "Blog - 18h",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-09-05 14:57:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-21 14:01:45"
+  },
+  {
+    "id": "as:1203244547091281",
+    "name": "Logo loader animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203244547091281/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-10-26 14:39:35",
+    "labels": [],
+    "time": {
+      "total": 31500,
+      "users": {
+        "1213760": 27000,
+        "1219084": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:02"
+  },
+  {
+    "id": "as:1203271542588141",
+    "name": "UI Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203271542588141/f",
+    "iteration": "Total Collabria - 552.75h (29/09/22)",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-10-31 15:29:34",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1213760": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:02"
+  },
+  {
+    "id": "as:1203292523260330",
+    "name": "Onteractive",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203292523260330/f",
+    "iteration": "Not for now",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2022-11-03 10:34:30",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1213760": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:09"
+  },
+  {
+    "id": "as:1203646547217490",
+    "name": "Comment + New comment",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217490/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:39:09",
+    "labels": [],
+    "time": {
+      "total": 162900,
+      "users": {
+        "1219081": 54900,
+        "1219083": 108000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:58"
+  },
+  {
+    "id": "as:1203646547217492",
+    "name": "Add In",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217492/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:39:15",
+    "labels": [],
+    "time": {
+      "total": 504900,
+      "users": {
+        "1219081": 123300,
+        "1219082": 30600,
+        "1219083": 351000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:58"
+  },
+  {
+    "id": "as:1203646547217494",
+    "name": "Space Nav Bar + Create New Space",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217494/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:39:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:58"
+  },
+  {
+    "id": "as:1203646547217496",
+    "name": "Main Header",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217496/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:39:47",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1219083": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:58"
+  },
+  {
+    "id": "as:1203646547217498",
+    "name": "Email Thread Header",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217498/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:39:54",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219081": 2700,
+        "1219083": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:59"
+  },
+  {
+    "id": "as:1203646547217500",
+    "name": "Notifications",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217500/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:59"
+  },
+  {
+    "id": "as:1203646547217502",
+    "name": "Prototype",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217502/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:59"
+  },
+  {
+    "id": "as:1203646547217504",
+    "name": "Pool + Search input",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217504/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:33:59"
+  },
+  {
+    "id": "as:1203646547217506",
+    "name": "RBAC",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217506/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:00"
+  },
+  {
+    "id": "as:1203646547217508",
+    "name": "Attachment + Preview",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217508/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:00"
+  },
+  {
+    "id": "as:1203646547217510",
+    "name": "Email + Draft",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217510/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:00"
+  },
+  {
+    "id": "as:1203646547217512",
+    "name": "Organization Settings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217512/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-19 09:06:50"
+  },
+  {
+    "id": "as:1203646547217514",
+    "name": "Personal Settings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217514/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:40:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-19 09:06:49"
+  },
+  {
+    "id": "as:1203646547217548",
+    "name": "Login Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217548/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:41:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-19 09:06:48"
+  },
+  {
+    "id": "as:1203646547217550",
+    "name": "Space Settings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217550/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:41:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-19 09:06:47"
+  },
+  {
+    "id": "as:1203646547217552",
+    "name": "Onboarding",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217552/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 09:42:08",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219083": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-04-19 09:06:46"
+  },
+  {
+    "id": "as:1203646547217556",
+    "name": "* Meetings *",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202505907429549/1203646547217556/f",
+    "iteration": "Product Tasks",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-04 10:03:50",
+    "labels": [],
+    "time": {
+      "total": 59400,
+      "users": {
+        "1219081": 32400,
+        "1219083": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:06"
+  },
+  {
+    "id": "as:1203668864560970",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202505907429549/1203668864560970/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1202505907429549"
+    ],
+    "createdAt": "2023-01-08 11:40:38",
+    "labels": [],
+    "unbillable": true,
+    "completed": false
+  }
+]

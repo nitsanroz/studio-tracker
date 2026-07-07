@@ -1,0 +1,148 @@
+[
+  {
+    "id": "as:505169746659013",
+    "name": "business card - 3.75 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/505169746659013/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2017-12-17 14:41:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-02 07:07:16",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1120323738219771",
+    "name": "Conference invitation - 3.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/1120323738219771/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-04-29 15:02:43",
+    "dueOn": "2019-05-02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-25 08:41:41",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1121226574521236",
+    "name": "Brochure 'Reign' - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/1121226574521236/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-05-05 14:12:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-02 07:32:24",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1121226574521239",
+    "name": "Brochure update - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/1121226574521239/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-05-05 14:13:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-02 07:07:27",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1123671604435779",
+    "name": "Setup and Workflow WP - 11h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/1123671604435779/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-05-20 07:16:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:42:51",
+    "assignees": [
+      {
+        "accountId": "as:150566600404825",
+        "accountName": "yam sasson"
+      }
+    ]
+  },
+  {
+    "id": "as:1127504040853276",
+    "name": "Diagram - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/455542718969443/1127504040853276/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-06-18 12:11:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:42:49",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1146241030249282",
+    "name": "Invatation - \"Milipol\"  - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1146241030249282/f",
+    "iteration": "Digital",
+    "projects": [
+      "as:167561988748343",
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-10-23 13:52:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-03 08:59:51"
+  }
+]

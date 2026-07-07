@@ -1,0 +1,384 @@
+[
+  {
+    "id": "as:1211753978725868",
+    "name": "Kickoff meeting",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211753978725868/f",
+    "iteration": "Discover the Collections Landing Page",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-10-27 07:48:34",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 7200,
+      "users": {
+        "1342403": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-24 07:08:39"
+  },
+  {
+    "id": "as:1211753978725870",
+    "name": "Layout Wireframe",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211753978725870/f",
+    "iteration": "Discover the Collections Landing Page",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-10-27 07:48:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 41400,
+      "users": {
+        "1342403": 41400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-24 07:08:39"
+  },
+  {
+    "id": "as:1211753978725872",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211753978725872/f",
+    "iteration": "Discover the Collections Landing Page",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-10-27 07:48:48",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 147600
+    },
+    "time": {
+      "total": 145800,
+      "users": {
+        "1214048": 5400,
+        "1322241": 12600,
+        "1342403": 111600,
+        "1407470": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-24 07:08:39"
+  },
+  {
+    "id": "as:1211753978725874",
+    "name": "Develop",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211753978725874/f",
+    "iteration": "Discover the Collections Landing Page",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-10-27 07:48:50",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 91800,
+      "users": {
+        "1213760": 91800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-24 07:08:39"
+  },
+  {
+    "id": "as:1211753978725876",
+    "name": "Google Listing",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211753978725876/f",
+    "iteration": "Discover the Collections Landing Page",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-10-27 07:49:18",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 18000
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-24 07:08:39"
+  },
+  {
+    "id": "as:1211815159833053",
+    "name": "TEMA Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1211815159833053/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-11-02 13:01:48",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 30600,
+      "users": {
+        "1342403": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211961953707808",
+    "name": "Sales PDF",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1211961953707808/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-11-17 15:29:00",
+    "labels": [],
+    "time": {
+      "total": 71100,
+      "users": {
+        "1213760": 45900,
+        "1342403": 23400,
+        "1407470": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-12-04 07:05:34"
+  },
+  {
+    "id": "as:1212239412486822",
+    "name": "Digital Twin page from PDF",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1212239412486822/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-12-02 09:42:12",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1213760": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-12-11 09:08:17"
+  },
+  {
+    "id": "as:1212239412486824",
+    "name": "AI Tour Guide page from PDF",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1212239412486824/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-12-02 09:42:27",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1213760": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-12-11 09:08:17"
+  },
+  {
+    "id": "as:1212390984067987",
+    "name": "Sales deck",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1212390984067987/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-12-11 09:08:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-12-29 09:11:55"
+  },
+  {
+    "id": "as:1212478774878062",
+    "name": "SEO",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211753411923360/1212478774878062/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-12-17 08:48:22",
+    "labels": [],
+    "time": {
+      "total": 6300,
+      "users": {
+        "1213760": 6300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-12-29 09:11:53"
+  },
+  {
+    "id": "as:1212603049526524",
+    "name": "Email Template",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1212603049526524/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2025-12-29 09:11:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 10800,
+      "users": {
+        "1421038": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1211645730002700",
+        "accountName": "Daniel kramash",
+        "userId": 1421038
+      }
+    ]
+  },
+  {
+    "id": "as:1213770744564983",
+    "name": "Development",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1213770744564983/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2026-03-22 15:23:33",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1437050": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1214736383369263",
+    "name": "AI Guide - AAM",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1214736383369263/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2026-05-12 13:36:11",
+    "dueOn": "2026-05-14",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 16200,
+      "users": {
+        "1437050": 10800,
+        "1439884": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213352178360044",
+        "accountName": "Dmitry Ostrovskiy",
+        "userId": 1437050
+      }
+    ]
+  },
+  {
+    "id": "as:1216233651362228",
+    "name": "AI Guide App",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1216233651362228/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2026-07-02 11:21:16",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1342403": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1216233651362232",
+    "name": "Website Update",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211753411923360/1216233651362232/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1211753411923360"
+    ],
+    "createdAt": "2026-07-02 12:07:50",
+    "labels": [],
+    "completed": false
+  }
+]

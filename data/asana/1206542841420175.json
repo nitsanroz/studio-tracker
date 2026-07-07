@@ -1,0 +1,1996 @@
+[
+  {
+    "gid": "1213550105718184",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2026-04-19T06:05:40.751Z",
+    "created_at": "2026-03-08T07:13:02.780Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "AI Supply Chain Hero",
+    "notes": "https://www.figma.com/design/DzPAz1zQwiDC6OdtfMvpGh/-more-Visual-Asset-Requests?node-id=1130-10933&t=TrgPAsYpkQdmWBAw-1",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1213550105718184"
+  },
+  {
+    "gid": "1206542841420186",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2024-02-07T08:23:26.970Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Checkmarx Keys",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206542841420186"
+  },
+  {
+    "gid": "1206536647339171",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2024-02-08T07:26:34.887Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Meetings",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206536647339171"
+  },
+  {
+    "gid": "1208755124257215",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-24T06:31:23.852Z",
+    "created_at": "2024-11-13T11:38:51.340Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Not for now",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208755124257215"
+  },
+  {
+    "gid": "1209795968492093",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2025-08-11T11:05:13.571Z",
+    "created_at": "2025-03-26T08:11:42.006Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Design Thinking Process Presentation",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209795968492093"
+  },
+  {
+    "gid": "1209974242226449",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-04-20T14:01:34.539Z",
+    "created_at": "2025-04-15T06:03:28.238Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206542841420176",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Design System Update with gradients",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209974242226449"
+  },
+  {
+    "gid": "1213506456076783",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-21T06:00:03.586Z",
+    "created_at": "2026-03-03T07:41:00.685Z",
+    "due_on": "2026-03-19",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "RSA 2026 booth video",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1213506456076786\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1213506456076783"
+  },
+  {
+    "gid": "1211694598997564",
+    "assignee": {
+      "gid": "1208980808187472"
+    },
+    "completed": true,
+    "completed_at": "2025-11-19T08:00:24.559Z",
+    "created_at": "2025-10-20T12:23:10.197Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Dev Assist video for regional events",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1211694598997564"
+  },
+  {
+    "gid": "1210667531477357",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-07-03T10:24:27.150Z",
+    "created_at": "2025-06-29T08:55:33.713Z",
+    "due_on": "2025-07-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Newsletter Logo + Leading Banner Design",
+    "notes": "PROJECT OVERVIEW \nDesign a logo and leading banner for Checkmarx's new monthly newsletter \"The Monthly Check-UP\" focused on AppSec insights and intelligence. The newsletter will be published on LinkedIn as posts, not email distribution.\n DELIVERABLES \n1. Leading Banner\n \n    Dimensions: 1200x630px\n    Usage: LinkedIn post banner\n    Text Content:\n        Main Title: \"The Monthly Check-UP\"\n        Subtitle: \"AppSec Insights and Intelligence\"\n    Style Direction: Attractive design, inspired by previous showroom newsletter banner style\n \n2. Logo/Profile Image\n \n    Dimensions: 300x300px\n    Usage: Profile picture for newsletter\n    Text Content: \"The Monthly Check-UP\"\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210667531477357"
+  },
+  {
+    "gid": "1210667965877796",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-08-03T14:05:34.579Z",
+    "created_at": "2025-06-29T14:29:33.701Z",
+    "due_on": "2025-07-08",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Black Hat Tote Bag Design",
+    "notes": "PROJECT OVERVIEW \nDesign artwork for promotional tote bags for Checkmarx's blackout RSA replication event.\n PRODUCT SPECIFICATIONS \n    Product: Repose 10oz Recycled Cotton Box Tote w/Snap (Item #7901-02)\n    Bag Color: Black with black handles\n    Print Method: Digital Print Transfer\n    Print Location: Centered on BACK of bag\n    Print Area: 8 inches (height) x 8 inches (width) maximum\n    File Requirements: Vector artwork, minimum 300 DPI\n DESIGN ELEMENTS \n    Checkmarx logo\n    Text Content:\n        \"Always Ready For Swag?\"\n        \"It's In the Bag\"\n    Character: Marshmallow character integration or other directions if we think\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210667965877796"
+  },
+  {
+    "gid": "1210682807307999",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2025-07-03T10:24:31.774Z",
+    "created_at": "2025-07-01T11:03:21.885Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Update Marketecture",
+    "notes": "היי\n\nאשמח לעזרתכם בעדכון המרקיטקטורה של הregional marketing.\n\nבתיקיית מרקיטקטורה שלנו פתחתי עמוד חדש תחת השם היצירתי: \nMarketecture AI - New\n\nhttps://www.figma.com/design/BCwHfIsDH3HORgXqfrJX9T/Marketecture?node-id=252-15154&t=qnI619v6DzM3yZvv-1\n\nהרעיון הוא להוסיף את הכיתוב הבא בקוביה האמצעית שמקיפה את הcx one:\nAgentic AI Assist\n\nעל הקוביה הסגולה שהקפתי כאן אדום למטה, לשים את הטקסט (אפשר להרחיב אותה אם צריך)\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210682807308002\n\n\nאשמח אם תוכלו בבקשה לעדכן את זה בשתי המרקיטקטורות ששמתי בפיגמה (גם הכללית וגם זו של המפתחים).",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210682807307999"
+  },
+  {
+    "gid": "1210694894344565",
+    "assignee": {
+      "gid": "1208980808187472"
+    },
+    "completed": true,
+    "completed_at": "2025-08-03T14:05:36.469Z",
+    "created_at": "2025-07-02T10:55:22.585Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Black Hat animation",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210694894344565"
+  },
+  {
+    "gid": "1210236508550830",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-05-19T08:31:33.625Z",
+    "created_at": "2025-05-13T12:20:51.955Z",
+    "due_on": "2025-05-18",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New blog - Shifting AppSec Left",
+    "notes": "אימג׳ 01:\n* אימא׳ מוביל לבלוג עצמו. הבלוג מדבר על היכולת שאנחנו מאפשרים כעת (בניגוד למה שהיה עד לפני זמן מה). במקום לעשות את כל הסריקות יותר מאוחר בתהליך הפיתוח, אנחנו מכניסים את הסריקה ממש בכתיבת הקוד, בide, כך שאחרי יהיו פחות התראות.\nכלומר מקדימים את הסריקות לשלבים מוקדמים יותר, ממש כשהמפתח כותב את הקוד. \n\nאימג׳ 02:\n* דיאגרמה שמסבירה בדיוק את מה שכתבתי למעלה. היא צריכה להיות ברוחב של תמונה בלוג רגילה 1355 פיקסל, גובה מה שצריך, גמיש. \n* מצורפת הדיאגרמה (רק הטבלה עם הטקסט צריכה להיכלל (לא ההסבר מתחתיה).\n* הדיאגרמה צריכה להיות מעוצבת לא כמשהו מדהים פשוט לא כמו הוורד הזה. ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210236508550830"
+  },
+  {
+    "gid": "1210250301794860",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-05-25T13:30:58.340Z",
+    "created_at": "2025-05-14T13:21:28.635Z",
+    "due_on": "2025-05-22",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Plushie",
+    "notes": "צ'קמרקס רוצים להפיק בובת פלאשי של האיש מרשמלו שלהם\nספק שלח להם את ההדמיה הזו\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210250301794865\n\nרעות רוצה לשלב את הריסקים\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210250301794860"
+  },
+  {
+    "gid": "1208484466096463",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-15T11:16:19.865Z",
+    "created_at": "2024-10-06T14:20:01.194Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Youtube Thumbnails",
+    "notes": "Guidelines:\n \n    Size: for each one we will need2 versions:\n    * 1920x1080px\n    * 1668x834px\n    Each one should include:\n    * Checkmarx One (small title on top of the main one)\n    * Title (main one – in big)\n    * Demo CTA\n    * Graphic that represent the topic\n    Style: close to the blog ones (not the “very” invested ones). You are also welcome to use an existing element that were already created. In case you are using something that is connected to the a hero image – this style will also work – no need to prepare from scratch.\n    Deadlines: I added deadlines in the below table. Obviously if you have time to finish them before that would be great (but not a must!!)\n    Working hours: 2-4 hours top for each thumbnail\n    Link to the thumbnails that were already created:\n    https://www.figma.com/design/nBVbF3UY8DlXob35KcCuW0/Static-(banners%2C-covers%2C-thumbnails)?node-id=274-2499&t=J5bCe4iWMLa5f2ms-1\n \nThumbnails:\n \n\nPriority\nGroup name\nSmall title\nMain title\nCTA\nDescription for the visual\nDeadline\nComments\n1\nMallory’s demos\nCheckmarx One\nIntegrating IDE\nDemo\nIn this video Mallory demonstrates how to integrate Checkmarx One into an IDE (see row 4). Mallory specifically integrates with the VS Code IDE, and you can use that logo as appropriate.\n10.10.24\nAll top 3 thumbnails can be based on the same graphic, with the relevant thing that we integrating\nCheckmarx One\nIntegrating CI/CD\nDemo\nIn this video Mallory demonstrates how to integrate a CI/CD tool (see row 3) within Checkmarx One. In this case, Mallory specifically integrates with GitHub. You can use the logo if appropriate.\nCheckmarx One\nIntegrating Repo\nDemo\nIn this video Mallory demonstrates how to integrate Checkmarx One and an SCM / Code Repository. SCM stands for Source Code Management, and is used interchangeably with Code Repository - it is for developers to track and manage changes to source code. In this case we demonstrate using GitHub\nCheckmarx One\nBug Fixes\nDemo\nIn this video, Mallory gives an in-depth review of treating vulnerabilities as bugs via a feedback tool. This includes best pratices recommendations for configuration, and thorough review of the workflow.\n \n2\nSam’s demos\nCheckmarx One\nOnboarding with Webhooks\nDemo\nIn this video Sam uses the native Checkmarx One interface to onboard a new project using webhooks. an HTTP request, triggered by an event in a source system and sent to a destination system, often with a payload of data. In this case, the webhook is the developer's method of easily linking their data to our platform. Once onboarded, the new project will be ready to scan.\n17.10.24\n \nCheckmarx One\nInstall and Configure Plug-in\nDemo\nIn this video Sam, using the VS Code IDE, demonstrates how easy it is for devs to install and configure the Checkmarx One plugin. An IDE, or Integrated Development Environment, is a software application that helps developers write, test, and build software. It's the screen that devs have up that you'll see them coding in. You can use the VS Code logo here.\n \nCheckmarx One\nReviewing SAST Results in-IDE\nDemo\nIn this video, Sam breaks down the results of an in-IDE (see row 4) SAST scan. He shows exactly what developers will see when using the tool, how to read results, and how developers can make the most of Checkmarx's features to quickly remediate vulnerabilities.\n \nCheckmarx One\nIn-IDE PR Requests\nDemo\nIn this video, Sam breaks down using Checkmarx One for pull requests. A pull request is a way for developers to propose merging code changes from one branch (version of the code) into another (version of the code) in a Git repository (place where the final combined code lives). All work is done within the IDE (see row 4), keeping developers within their workflow.\n \n3\nCarolyn’s demos\nCheckmarx One\nNavigating Plug-in\nDemo\nIn this video, Carolyn takes you on a tour of the Checkmarx One plug-in. This includes all the basics for how developers can get the most out of using Checkmarx One.\n24.10.24\n \nCheckmarx One\nOnboarding with CICD Pipeline\nDemo\nIn this video Sam uses the native Checkmarx One interface to onboard a new project using a CICD pipeline tool - this is a tool used to automate the steps involved in the software delivery process, from code creation to deployment. Once onboarded, the new project will be ready to scan.\n \nCheckmarx One\nScanning the IDE\nDemo\nIn this video, Carolyn shows the basics of scanning applications for vulnerabilities from directly within the IDE (see Row 4). Developers can scan their code as needed, and get results delivered directly in the IDE as well.\n \nCheckmarx One\nReviewing IaC Results in-IDE\nDemo\nIn this video, Sam breaks down the results of an in-IDE (see Row 4) IaC scan. He shows exactly what developers will see when using the tool, how to read results, and how developers can make the most of Checkmarx's features to quickly remediate vulnerabilities.\n \nCheckmarx One\nReviewing SCA Results in-IDE\nDemo\nIn this video, Sam breaks down the results of an in-IDE (see row 4) SCA scan. He shows exactly what developers will see when using the tool, how to read results, and how developers can make the most of Checkmarx's features to quickly remediate vulnerabilities.\n \n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208484466096463"
+  },
+  {
+    "gid": "1210957011473535",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-08-19T14:18:42.607Z",
+    "created_at": "2025-08-03T08:56:47.130Z",
+    "due_on": "2025-08-14",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "CX University Certificates",
+    "notes": "Objective: Design 5 certificates for CX University courses.\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210957011473540\n\n\nKey Requirements:\n    Size: Same as previous partner certificates.\n    Content (per certificate):\n        Unique badge for each (5 total) - same design, different text and color for each course:\n            Checkmarx One for Developers\n            Checkmarx SAST Certified Engineer\n            Checkmarx SAST Query Language\n            Checkmarx One for AppSec\n            Checkmarx One for Operations\n        Fixed Text:\n            Title: Certificate of Completion\n            Text Below: For completing successfully the ******, this certificate is presented to ***\n            \"Valid for 2 years\" disclaimer (like partner certificates).\n        Seal with \"Checkmarx University\" text (like previous certificates).\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210957011473538\n\n\n        Name and date will be added via code.\n    Additional Badges: 5 extra badges with different colors for future courses.\n    Design Aesthetic: Not dark. Can have a different background than partner certificates for distinction.\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210957011473535"
+  },
+  {
+    "gid": "1210283168474444",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-05-25T13:30:56.367Z",
+    "created_at": "2025-05-18T12:11:12.858Z",
+    "due_on": "2025-05-22",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Just One Sec - Checkmarx Newsroom",
+    "notes": "נשמח לעזרה בהירו באנר לניוזלטר חדש שנשלח ממערכת גיינסייט ללקוחות שלנו.\nמעין סיכום של מה חדש, מה הולך להיות, אירועים ועוד.\n\nהנחיות:\n1. גודל 600 פיקסל רוחב על 200 גובה (גג 250 אם חייבים)\n2. למרות שהמייל הזה נועד ללקוחות, כן חשבתי שתשחקו קצת עם הטקסט שיהיה עם הבאנר עצמו כך שיהיה עם עניין ולא רציני מידי כמו המפל (אנא תכללו אותו, הוא לא יתווסף ע״י המערכת אלא חלק מההירו)\nJust One Sec - Checkmarx Newsroom\n3. צבעים שלנו כמובן ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210283168474444"
+  },
+  {
+    "gid": "1211091996668585",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2025-10-09T07:49:52.517Z",
+    "created_at": "2025-08-19T14:18:29.154Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New SAST Hero/ Home Page Hero/Home page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1211091996668585"
+  },
+  {
+    "gid": "1210374305744591",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-12T06:59:02.634Z",
+    "created_at": "2025-05-25T13:28:42.699Z",
+    "due_on": "2025-06-01",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SM visuals - SSCS",
+    "notes": "https://checkmarx.com/solutions/software-supply-chain-security/\n\n\nSoftware supply chain page\n    Stay Secure From End-To-End\n    Don’t Let Anyone Break Your Chain\n\nWe need 1 visual to fit both copy, cool visual to implement in the banners (we will create the banner itself)\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210374305744594\n\nהאימג׳ים צריכים להיות בסגנון הזה:\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210374305744591"
+  },
+  {
+    "gid": "1210374305744596",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-12T06:59:04.118Z",
+    "created_at": "2025-05-25T13:30:00.053Z",
+    "due_on": "2025-06-01",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SM visuals - Malicious Package",
+    "notes": "https://checkmarx.com/solutions/software-supply-chain-security/\n\nMalicious Package\n    How To Avoid Poisoned Packages\n    Malicious Packages:  Keep Them Under Wraps\n\nWe need 1 visual to fit both copy, cool visual to implement in the banners (we will create the banner itself)\n\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210374358426919\n\nהאימג׳ים צריכים להיות בסגנון הזה:\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210374305744596"
+  },
+  {
+    "gid": "1210377747218821",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-22T08:54:49.212Z",
+    "created_at": "2025-05-26T08:14:26.612Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "MOMentum",
+    "notes": "הhr שלנו עובדת על יוזמה חדשה שהיא פורום לאמהות בעבודה. \n\nאשמח לעזרתכם ביצירת לוגו חמוד לשם של הפרויקט:  MOMentum \n\nהדגש הוא על האמהות שיחד תומכות זו בזו, ולא על אמא ותינוק. \n\nלא צריך משהו מושקע מידי רק שיהיה חביב וירגישו שמישהו חשב עליהן.\n\nhttps://www.figma.com/design/nBVbF3UY8DlXob35KcCuW0/Static--banners--covers--thumbnails-?m=auto&t=vpK0w6PzjECIm1Ol-6",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210377747218821"
+  },
+  {
+    "gid": "1208283479547154",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-16T08:10:44.804Z",
+    "created_at": "2024-09-11T13:06:17.137Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "1 Trillion lines of code post",
+    "notes": "Checkmarx needs our help creating a social media banner celebrating the fact that they have reached the milestone of 1 trillion lines of code scanned. \n    1080x1080 px\n    text: \"1 Trillion Lines of Code Scanned!\"\n    The idea is an eye catching banner with light animation. not something too heavy\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208283479547154"
+  },
+  {
+    "gid": "1208283479547156",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2024-09-16T08:10:46.434Z",
+    "created_at": "2024-09-11T13:06:26.910Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Linkedin Carousel",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208283479547156"
+  },
+  {
+    "gid": "1208537890399329",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-31T11:49:59.919Z",
+    "created_at": "2024-10-14T13:28:36.004Z",
+    "due_on": "2024-10-31",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New Heros 14.10.24",
+    "notes": "2 skeches here\nhttps://www.figma.com/design/WRFShjW2tALiCl80sOYSUx/Heroes-request-14.10.24?node-id=0-1&node-type=canvas&t=ZimVCmDfoimyJcNz-11\n\nhttps://us06web.zoom.us/rec/share/JG25bJjp0ykUvCUHpzWdHApK7MoVrW9A-miiXdv7tIVvbaVur0rT2kg6RrZ78_sQ.iGpVgpFdDQYJCkzo \nPasscode: kX9!iyYx\n\nfirst hero is similar to https://checkmarx.com/product/container-security/\n2nd hero is similar to https://checkmarx.com/solutions/ai-security/\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208537890399334\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208537890399329"
+  },
+  {
+    "gid": "1208605972364593",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-31T12:52:50.722Z",
+    "created_at": "2024-10-23T07:23:48.811Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Blog Radar Visual",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208605972364593"
+  },
+  {
+    "gid": "1208537890399345",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-31T12:51:25.684Z",
+    "created_at": "2024-10-15T13:27:30.769Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "make a circle in the style of the heroes",
+    "notes": "Hey https://app.asana.com/0/profile/1207442672777973\nReut asked us to make a circle/disk in the style of the heroes\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208537890399345"
+  },
+  {
+    "gid": "1211015168877197",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2025-08-19T14:18:43.856Z",
+    "created_at": "2025-08-10T09:04:36.187Z",
+    "due_on": "2025-08-12",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Future of AppSec Promo Visual",
+    "notes": "נשמח לעזרתכם ביצירת אימג׳ מוביל לקידום הממומן של המסמך “Future of AppSec״.\n\nדגשים:\n* אנחנו נעמיד את הבאנר עצמו, גודל 1080x1080, נזדקק רק לויזואל עצמו\n* הקידום יכלול 2 ויזואלי: הראשון הוא מוקאפ של המסמך עצמו (אותו אנחנו נכין), השני ויזואל חופשי וקריאטיבי יותר (אותו אתם תעצבו)\n* סגנון יותר משוחרר, לא כהה, דומה למה שעשיתם לidc, לקונטיינר. דיברנו גם על הרפרנס הבא שאתם יצרתם ושיכול להיות מתאים לעיצוב - מתבסס על נתונים מתוך המסמך (דיברנו גם על השער המיתולוגי של אותו מסמך משנה שעברה):\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1211015168877200\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1211015168877202\n\n* להלן הטקסטים לבאנר (יהיו 2 גרסאות לטקסט)\nCopy A \nTag: Research Report \nCopy: 2026 Will Redefine AppSec. Are you Ready? \nCTA: Get the Outlook \n \nCopy B \nTag: Research Report \nCopy: The 2026 Future of AppSec Report is Here \nCTA:  Download the Report Now ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1211015168877197"
+  },
+  {
+    "gid": "1208634338091582",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-31T12:51:27.498Z",
+    "created_at": "2024-10-27T15:26:06.352Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SKO 2025",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208634338091582"
+  },
+  {
+    "gid": "1208666151771327",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-07T14:39:03.431Z",
+    "created_at": "2024-10-31T11:38:33.941Z",
+    "due_on": "2024-11-05",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner - Everything You Need to Secure App Development",
+    "notes": "מה הבאנר כולל:\n    טקסט: Everything You Need to Secure App Development\n    תגית: Checklist\n    cta: Download Now\n    לוגו צ׳קמרקס\n \nהנחיות לויזואל:\nהם רוצים לנסות לעשות משהו קצת שונה. הרעיון הוא קצת כמו הטבעת בשר הטבעות - One tool to rule them all גם כאן אנחנו מציעים להם את השקט הזה, הפלטפורמה האחת שעושה סדר.\nמה שהם חשבו עליו זה או כמו הטבעת הזו שנופלת לו על האצבע כמובן באיזה קריאייטיב שקשור אליו, או רעיון שמתמקד יותר בהשוואה (כמו זוג שהולך ברחוב והגבר מסובב מבט לעבר מישהי שעוברת בצד השני של הרחוב לבושה מהמם, רעננה וכו׳ – דוגמה שלהם ). חשבתי אולי לחלק את הבאנר חצי חצי – איך זה כרגע – עמוס מעייף מתסכל, צד שני מאורגן. או לייצג לא בחצי חצי.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208666151771327"
+  },
+  {
+    "gid": "1208666151771321",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-05T08:48:36.416Z",
+    "created_at": "2024-10-31T11:36:28.624Z",
+    "due_on": "2024-11-05",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner - Say Goodbye to AppSec Tool Sprawl",
+    "notes": "1080x1080px\n\nמה הבאנר כולל:\n    טקסט: Say Goodbye to AppSec Tool Sprawl\n    תגית: Checklist\n    cta: Download Now\n    לוגו צ׳קמרקס\nהנחיות לויזואל:\nשילוב של תמונת סטוק של בן אדם (חשוב שיראה כמו appsec – לרוב גבר, לא צעיר ולא מבוגר מידי, לא נראה כמו ״דוגמן״), עם אלמנטים גרפיים.\nבעצם העניין הוא שלappsec יש יותר מידי כלים שהוא עובד איתם ושיוצרים לו קושי בניהול המערכות שמוביל לתסכול גדול.\nחשוב להדגיש את התסכול, ואת ריבוי המערכות מסביב לתמונת הסטוק.\nרפרנסים שהוא שלח אבל הם כמובן סטוקים ולא מתאים. מצרפת אותם שיהיה לכם:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208666151771324\n\n\nעשינו לא מזמן סגנון שמתכתב עם כיוון שהראתם לנו בזמנו שמשלב תמונת סטוק ועוד אלמנטים גרפיים:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208666151771326\n\n\nחשוב כן להמחיש אבל תסכול וריבוי מערכות כך שזה ייצר רגש ולא יראה גנרי מידי.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208666151771321"
+  },
+  {
+    "gid": "1210972291810089",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-08-19T14:18:44.885Z",
+    "created_at": "2025-08-05T10:48:11.359Z",
+    "due_on": "2025-08-07",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "IDC leading image",
+    "notes": "ממש בקרוב יוצא מסמך של IDC\nIDC MarketScape for ASPM  \n\nבמסמך זה אנחנו בעצם מוכרזים בין המובילים בשוק בנושא של aspm\n\nאנחנו יוצאים בקמפיין שיקדם את זה. \n\nהאימג׳ המוביל שמקדם את הנושא הוא הדיאגרמה שלהם (טרם קיבלנו את החדשה) שאסור לשנות אותה:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210972295954675\n\n\nכדי לקדם את ההכרזה הזו נראה להכין גם אימג׳ נוסף שירוץ במקביל ונשמח לעזרה שלכם.\nהם רוצים אימג׳ יחסית אבסטרקטי שמתבסס על העיגולים שרואים בדיאגרמה למעלה כסיפור המרכזי.\nלהלן דוגמה גנרית ממש שהם שיתפו (התחתונה)\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210972295954677\n\n\nלהלן הקופי שילך עם הבאנרים:\nCopy A \nTag: Analyst Report \nCopy:    \nReal Time Visibility  \nSave Time Productivity  \nEvery Time Security \n \nCTA: Read the Report \n \nCopy B \nTag: Analyst Report \nCopy: Who Leads for ASPM in the IDC MarketScape? \nCTA: Find Out Now \n\nהמסר המרכזי:\nAs part of the unified Checkmarx One platform, ASPM is purpose-built to simplify AppSec complexity, reduce total cost of ownership, and break down silos between development and security teams. Unlike standalone tools, our cloud-native platform delivers integrated visibility and contextual risk prioritization across the entire SDLC, enabling organizations to cut through noise, align remediation to business impact, and accelerate secure development at scale. \n\n1. אנחנו נעמיד את האימה׳ עם הטקסטים (יש כל מיני תוצרים).\n2. רצוי לא ללכת על כהה מידי כמו שכבר הבנו מסקוט",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1210972291810089"
+  },
+  {
+    "gid": "1208666159280312",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-03T08:03:22.496Z",
+    "created_at": "2024-10-31T14:22:20.609Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner - DevSecOps and GenAI - LinkedIn live",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208666159280312"
+  },
+  {
+    "gid": "1208681324052321",
+    "assignee": {
+      "gid": "1207503684349891"
+    },
+    "completed": true,
+    "completed_at": "2024-11-14T12:12:40.404Z",
+    "created_at": "2024-11-03T08:01:32.039Z",
+    "due_on": "2024-11-11",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner - Tolly report",
+    "notes": "Brief:\n    Target audience:  AppSec managers. \n    Size: 1080x1080px\n    2 banners in total – each one with a different copy+visual – you don’t really need to prepare the entire banner, the visual is enough. On our SM page you’ll find layout that we are using \n    (I share examples on the “Enterprise” task that I sent today). Third banner Edward.Tiutiunnyk@checkmarx.com will create since it’s only the report cover mockup.\n    Deadline: Monday 11.11 (if possible Sunday 10.11 EOD) \n    Working hours: 5-7 hours for each banner\n \nBanners info:\n\nBANNER 01\n    The banner should include:\n    - Checkmarx logo + Tolly logo next to it (attached). Please see the example below\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052325\n\n    - Title: Want to achieve 100% True Positives?\n    - CTA: Download Report\n    - Tag: Analyst Report\n    \n    Visual guidelines: \n    Focusing on typography, with emphasize on the 100% here. Please make sure to make it engaging and interesting\n \nBANNER 02\n    The banner should include:\n    - Checkmarx logo + Tolly logo next to it (attached). Please see the example below\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052327\n\n    - Title: Accuracy and Speed: Numbers Don't Lie\n    - CTA: Download Report\n    - Tag: Analyst Report\n    \n    Visual guidelines: \n    You have a creative freedom. It needs to be engaging, cool creative to catch people attention\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208681324052321"
+  },
+  {
+    "gid": "1211396397761006",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-09T07:49:53.738Z",
+    "created_at": "2025-09-18T13:36:48.177Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New SAST Hero Animation",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1211396397761006"
+  },
+  {
+    "gid": "1208687149845467",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-12-04T11:00:39.004Z",
+    "created_at": "2024-11-05T09:13:44.414Z",
+    "due_on": "2024-11-14",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "white paper cover for design - \"The Road to DevSecOps\"",
+    "notes": "Brief:\n    A4 standing – we only need the image we will prepare the typography\n    Working hors – 2 day top\n    Deadline: Tuesday EOD 12.11 - If possible, please send us this week the sketch for approval\n \nGuideline for the visual:\n    A road starting in the bottom left, which we can look at as the foreground. It should move to the middle right of the page, and it should look like it is receding into the distance. \n    In the distance, the destination of the road, is a version of our DevSecOps architecture. But oriented vertically (standing facing the front).  \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208687149845471\n\n    Along the road I want three “streams” heading along the road… One should be “Development,” one should be “Operations,” and one should be “Security” \n    This can look similar to our 7 Best Practices to Increase Developer Adoption in AppSec cover page: \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208687149845473\n\nQuick sketch (bad one ):\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208687149845475\n\nTitle – The Road to DevSecOps \nTag - Whitepaper ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208687149845467"
+  },
+  {
+    "gid": "1208681324052312",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-10T11:17:39.588Z",
+    "created_at": "2024-11-03T07:57:46.151Z",
+    "due_on": "2024-11-06",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner - Gartner Report",
+    "notes": "Brief:\n    Target audience:  AppSec managers.\n    Size: 1080x1080px\n    2 banners in total – each one with a different copy+visual – you don’t really need to prepare the entire banner, the visual is enough. On our SM page you’ll find layout that we are using\n    (I share examples on the “Enterprise” task that I sent today)\n    Deadline: will it be possible to complete it for Wednesday?\n    Working hours: First banner – 1-2 hours (it is an existing image you created that needs to have a small update), second banner – 5-6 hours\n \nBanners info:\n\n\nBANNER 01\n\n\n    The banner should include:\n    - Checkmarx logo\n    - Gartner logo (attached) – very important – Gartner logo needs to be smaller than Checkmarx logo and on the bottom right – see example:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052315\n\n     \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052317\n\n\n \n\nBANNER 02\n\n\n    The banner should include:\n    - Checkmarx logo\n    - Gartner logo (attached) – very important – Gartner logo needs to be smaller than Checkmarx logo and on the bottom right – see example:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052319\n\n\n- Title: Embrace a DevSecOps Future\n- CTA: Download Report\n- Tag: Analyst Report\n\n    Visual guidelines:\n    This version is more illustrative and creative - a winding road leading to some hills over which a sunrise is created through a Venn diagram of two overlapping circles, one of which is labeled ‘Security’, the other ‘Development’. It doesn’t necessarily needs to be circles coming together – any shape will work as long as the combination is clear.  \n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208681324052312"
+  },
+  {
+    "gid": "1208537890399289",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-20T09:43:48.086Z",
+    "created_at": "2024-10-14T07:25:52.427Z",
+    "due_on": "2024-10-23",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New Blog 14.10.24 - 3MF Code Injection",
+    "notes": "Size: 1355x678px\n\nAbout the blog: \nThe blog is about a code injection vulnerability found on \"ultimaker cura slicer 3D printing\" via the 3MF format reader, which is commonly used for sharing 3D models. This vulnerability occurs as a property within the 3MF file has not been properly sanitized (meaning there are no code functions to verify the safety of code being input by users), allowing an attacker to inject a code and create a fake 3MF file.\n \nVisual guidelines:\nThe image should be very similar to the reference below – our grid as the floor, the word 3D in 3D () Injection needle (which usually represents code injection).\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208537890399300\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208537890399289"
+  },
+  {
+    "gid": "1208879859190851",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-12-17T12:18:50.951Z",
+    "created_at": "2024-12-02T09:07:15.326Z",
+    "due_on": "2024-12-08",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "update logo with the new tagline: Always Ready To Run",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208879859190851"
+  },
+  {
+    "gid": "1208746298058643",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-11-17T11:02:21.392Z",
+    "created_at": "2024-11-13T07:10:15.592Z",
+    "due_on": "2024-11-13",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Blog - SSCS Launch",
+    "notes": "We have a new blog about SSCS launch.\nWe would appreciate your help in creating the leading image based on the hero you created for SCS\n \nIn this launch we are presenting 2 new capabilities (that you already know since you created their heroes Secrets detection + Repo health).\nBoth of those capabilities are connected to the “source” step on the original SCS hero you created.\n \nBelow is the idea:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208746298058646\n\n\nAdding both and connect them somehow to the “source” step + a light to highlight them.\nsize 1355x677\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208746298058643"
+  },
+  {
+    "gid": "1207479618447114",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-07-15T13:51:15.357Z",
+    "created_at": "2024-06-04T10:46:59.392Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Regional marketing booth design",
+    "notes": "מדובר על אירועים קטנים במדינות שונות בעולם. האירועים יכולים לכלול:\n \n    רק רולאפ ודלפק\n    קיר אחד מעוצב ודלפק (לפעמים גם אין דלפק(\n    כמה קירות, דלפק\n \nכל אירוע אנחנו בעצם מעצבים פרטני על בסיס הטמפלייט שבנינו. עושים התאמות גדלים, לפעמים שינויי טקסטים. לעיתים על הדלפק יהיה רק לוגו, לפעמים המספרים שלנו.\nמעין מיקס אנד מאצ.\n \nנקודות חשובות:\n    העיצובים צריכים להיות בקבצי אילוסטרטור (הרבה פעמים זה מה שהספק מבקש ולכן אנחנו מעדיפים שהבסיס כבר יהיה שם)\n    כל הטקסטים חיים והאלמנטים וקטוריים\n    לא לשים טקסטים או גרפיקות בגובה נמוך מידי כדי שבאירוע אנשים לא יסתירו או שיהיה קשה לקרוא\n    כל הקבצים צריכים להיות בבקשה בcmyk ועם בליד\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207479618447117\n\n\nMarketecure guidelines:\n \nIn the inner circle:\n    Currently there are 3 segments - Unified Dashboard & Reporting, Shared Enterprise Services, and Fusion\n    Replace Unified Dashboard & Reporting with ASPM, and move the segment 22.5 degrees clockwise so it is now at the top\n    Replace Shared Enterprise Services with Cloud and move segment 22.5 degrees so it is now at the right\n    Rotate the Fusion segment by 22.5 degrees clockwise and break into two segments for Code (to left) and Software Supply Chain (at the bottom).\nFor the green pie segments (obviously visual style and color should change to match the new marketecture), align the pie text to the marketexture elements:\n    SAST, API Security, and DAST in Code\n    SCA, SBOM, Malicious packages, and Secrets Detection in Software Supply Chain\n    Container Security and IaC Security, and CNAPP partners under Cloud\n    Note that you may need to adjust the width of the ASPM, Code, Software Supply Chain, and Cloud segments keep all the pie segments the same size.\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207479618447114"
+  },
+  {
+    "gid": "1207480610128686",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2024-11-07T07:06:30.088Z",
+    "created_at": "2024-06-04T11:02:18.113Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Research team blogs Midjourney Prompt",
+    "notes": "נשמח לעזרתכם ביישור קו לבלוגים שמייצרים קבוצת הresearch שלנו – אותה קבוצה שיצרתם להם את הלוגו checkmarx Zero\n \n    הם מייצרים בעצמם את האימג׳ים בmidjourney וכדי שהם לא יהיו עד כדי כך מתוקים מהבלוגים היפים שאתם יצרתם עבורנו, נשמח אם תוכלו לכתוב להם את הPromptהרלוונטי מבחינת הנראות\n    הם קיבלו אישור לשים את הלוגו שלהם בפינה בכל הבלוגים שהם מייצרים. לשם כך, נשמח לpng עם הלוגו שלהם בגודל של הבלוג, כך שהם יוכלו לשים אותו על האימג׳ים שהם מייצרים. כדאי שתהיה גרסה עם לוגו בצבע מלא וגרסה שהכל לבן\n\nhttps://docs.midjourney.com/docs/style-reference\nhttps://docs.midjourney.com/docs/settings-and-presets",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207480610128686"
+  },
+  {
+    "gid": "1208879859190853",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-12-31T11:02:40.535Z",
+    "created_at": "2024-12-02T09:07:49.578Z",
+    "due_on": "2024-12-30",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SWAG: T-shirt",
+    "notes": "T-shirt: Our tagline Always Ready To Run with a visual + logo",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208879859190853"
+  },
+  {
+    "gid": "1209029581953503",
+    "assignee": {
+      "gid": "1208980808187472"
+    },
+    "completed": true,
+    "completed_at": "2025-01-19T12:49:23.379Z",
+    "created_at": "2024-12-22T12:56:39.341Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Marketecture - Add AI",
+    "notes": "נשמח לעדכון למרקיטקטורה.\nהרעיון הוא שמעל הכל יש מעין ״הילה״ עם כיתוב AI.\nיש לנו אירוע ממש בקרוב שבו הדגש הוא על נושא הAI, אך במרקיטקטורה (שחשובה להם) אין התייחסות לכך.\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209033276230731\n\n\n\nבגדול נושא הAIמבחינתנו חולש על כל התחומים – יש לנו כל מיני פתרונות שקשורים. לכן נשמח לראות סקיצה בעיפרון כיצד ניתן לקחת את הקיים ולהוסיף את ״השכבה״ הזו שכביכול חולשת על הכל.\n ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029581953503"
+  },
+  {
+    "gid": "1209029586152278",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:07.763Z",
+    "created_at": "2024-12-23T10:05:36.686Z",
+    "due_on": "2025-01-29",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Corporate deck special graphics",
+    "notes": "מספר סלייד\nמה צריך\nהערות\n1\nתמונת רקע\nתילקח מתוך הוידאו הפותח של עמוד הבית שלנו והיא זו שתפתח את כל המצגות שלנו (התמונה המרכזית שמייצגת הכי טוב את סיפור המפל)\n2\nתמונת רקע\nתילקח גם כאן מהוידאו של עמוד הבית, אך כך הדגש הוא על האתגרים שהחברות האלו חובות אז צריך דגש על הריסקים הרבים\n3\nתמונת רקע\n***תמונה זהה לסלייד 2 – כי כאן מפרטים על אותם אתגרים שהולכים וגדלים\n4\nאימג׳ים מובילים לכל אחת משלושת ה- pillars:\n    Let your devs work\n    End the guesswork\n    Make it work together\n\nהסלייד הזה הוא התשובה והפתרונות שלנו לסלייד הקודם (3) שבו מדברים על האתגרים של הלקוחות שלנו.\n\n3 האימג׳ים האלו למעשה יופיעו בשקף הזה בקטן ואז שוב בגדול יותר בסליידים הבאים שמתמקדים בכל אחד מהם בנפרד (5-7)\n8\nתמונת רקע\nמתוך הוידאו ש עמוד הבית שממש מראה את המפל\n9-10\nפיתוח האימג׳ שכבר יצרתם (אותו סלייד רק הוספתי דברים כדי שנדבר עליהם בפגישה)\nהוספת 2 שכבות שמסבירות את הסיפור והמענה שלנו לכל הsdlc\n\n\n11\nתמונת רקע\nתילקח מתוך הוידאו הפותח של עמוד הבית שלנו והיא זו שתסגור את כל המצגות שלנו (התמונה המרכזית שמייצגת הכי טוב את סיפור המפל – יש מצב תמונה זהה לשקף הפותח הקבוע)\n\n ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029586152278"
+  },
+  {
+    "gid": "1209029586152280",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:32.703Z",
+    "created_at": "2024-12-23T10:05:53.889Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Teams backgrounds",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029586152280"
+  },
+  {
+    "gid": "1209029586152282",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:32.797Z",
+    "created_at": "2024-12-23T10:05:58.394Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Desktop wallpaper",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029586152282"
+  },
+  {
+    "gid": "1209029586152286",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:32.895Z",
+    "created_at": "2024-12-23T10:06:05.207Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Business card",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029586152286"
+  },
+  {
+    "gid": "1209064503389177",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-13T07:09:40.835Z",
+    "created_at": "2024-12-31T15:31:49.728Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Booth Design 2025",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209064503389177"
+  },
+  {
+    "gid": "1209065877531533",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:27.752Z",
+    "created_at": "2025-01-02T07:19:39.814Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Stickers",
+    "notes": "    Stop Guessing - I’m a Dev\n    Always Ready to Run\n    Let Devs Do More Devving\n    Meet Me in My IDE\n    Give Security a Hug\n    F@@k Friction\n    Less Guesswork = More Devwork\n    I like My AppSec Fast\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209065877531533"
+  },
+  {
+    "gid": "1209029581953505",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-07T07:52:32.075Z",
+    "created_at": "2024-12-22T12:57:00.538Z",
+    "due_on": "2024-12-31",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New Messaging - Email Signature",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029581953505"
+  },
+  {
+    "gid": "1209096953372571",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:33.003Z",
+    "created_at": "2025-01-07T12:51:44.697Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "AppSec persona campaign kit",
+    "notes": "הרעיון לאימג׳ מבוסס על הדבר הבא:\nVisual should depict a shield that is keeping up with \"skyrocketing\" risks.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209096953372571"
+  },
+  {
+    "gid": "1209096953372574",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:33.278Z",
+    "created_at": "2025-01-08T08:17:20.236Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Marketecture - Devs",
+    "notes": " \nנשמח לעזרתכם ביצירת אופציה נוספת לregional marketecture.\n \nהפעם הגרסה מותאמת למפתחים.\n \nהרעיון הוא כזה:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209096953372577\n\n\n \n    כל החלק של הscs עובר להיות מאחורה במקום הaspm (שנמחק לחלוטין). כלומר יש לנו מעין ״תמנון״ עם 4 חלקים שווים מבחינת היררכיה.\n    מקדימה יהיה חלק חדש שמדבר למפתחים.\n    הכותרת שלו: DevSecOps Tools & Integrations\n    מתחתיו יהיו 3 קוביות עם הטקסטים הבאים:\n    IDE, SCM, CI/CD\n    Bug Tracking / Alerting\n    AI Assistants\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209096953372574"
+  },
+  {
+    "gid": "1209108981796545",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:30.054Z",
+    "created_at": "2025-01-08T15:35:31.729Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "The Game",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209108981796545"
+  },
+  {
+    "gid": "1209131951412478",
+    "assignee": {
+      "gid": "1208980808187472"
+    },
+    "completed": true,
+    "completed_at": "2025-01-19T12:49:31.975Z",
+    "created_at": "2025-01-13T07:06:08.282Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Ready or Unsteady",
+    "notes": "כחלק מקמפיין הbrand awareness שלנו, אנחנו יוצאים בסדרת סרטונים שמבוססים על שאלות שהמבנה שלהן קבוע (משהו בסגנון של ״בחן את עצמך״).\n \nהשם של הסדרה הוא:\nReady or unsteady\n \nנשמח לעזרתכם ביצירת לוגו חמוד ומזוהה שיוביל את הסדרה הזו במשך מספר חודשים.\nמאוד אהבנו את מה שwiz עשו לסדרת פודקאסטים שמאוחר יותר התרחבו לדברים נוספים:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209131951412481\n\n\n\nמשהו כייפי, מזוהה.\n \nבעצם כל השאלות הן שאלות רלוונטיות, אך התשובות תמיד הזויות מלבד התשובה האחרונה שהיא always.\n\nלהלן דוגמאות\nQuestions:\n \n1.Do your devs know what to fix first? \n    They’re very good at guessing \n    We do it in alphabetical order \n    Whatever ChatGPT tells them \n    Always \n \n2.Can you see all scan results on one screen? \n    After 5 hours of cutting and pasting \n    I might if I had a really big screen \n    Who wants to see everything anyway? \n    Always \n \n3.Do your security and developer teams work well together? \n    They haven’t made eye contact…yet \n    Cats and dogs. That’s all I will say. \n    We can’t even agree on the pizza order \n    Always \n\n4.Can your devs’ auto-remediate? \n    Is that something to do with cars? \n    What is this, a sci-fi movie? \n    That exists? \n    Always \n\n5.Does your AppSec platform fully integrate with your IDE? \n    Kinda... actually nope. \n    We have workarounds. Lots of em’. \n    Not but we really like its font  \n    Always \n \n 6.Are you secure right across your supply chain? \n    Most of it. The really, really important parts. \n    Our supplier signed something in 2018 \n    ‘Leaky’ is probably a better word than secure \n    Always \n\n7.Does security fit in easily with your workflows? \n    Then what would I do all day? \n    It sort of fits, like bad pants. \n    Square peg meets round hole  \n    Always \n \nהרעיון לנראות הוא משהו פשוט (דראפט לא מטופל שהכין אורן עורך הוידאו שלנו רק להמחשת הרעיון):\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209131951412483\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209131951412478"
+  },
+  {
+    "gid": "1209139524094373",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:28.830Z",
+    "created_at": "2025-01-13T15:08:35.078Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Posters - New Messaging",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209139524094373"
+  },
+  {
+    "gid": "1209096953372578",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-19T12:49:20.169Z",
+    "created_at": "2025-01-08T08:18:08.132Z",
+    "due_on": "2025-01-08",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Closing Animation - Update new Tagline",
+    "notes": "\nאשמח לעזרתכם בעדכון האנימציה הסוגרת של הסרטונים שלנו.\n\nהכוונה היא לדבר הבא:\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209096953372582\n\nתוכלו בבקשה לעדכן את הטאגליין החדש?\n\nמיקום בשרת:\n'/Volumes/Xmore/XProjects/Checkmarx/Movies/Animated Logo Tag'",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209096953372578"
+  },
+  {
+    "gid": "1209029581953507",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-01-19T12:49:21.495Z",
+    "created_at": "2024-12-22T12:57:26.351Z",
+    "due_on": "2025-01-02",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "DevSec persona campaign kit",
+    "notes": "נשמח לעזרתכם ביצירת אימג׳ מוביל ל DevSec persona campaign kit\n \nזו פרסונה שטרם טירגטנו בעבר ומתחילים כעת.\nאנחנו צריכים אימג׳ שיופיע על כל מיני פרסומים – חתימה למייל, באנר פותח למייל, הירו בעמוד נחיתה. המטרה שהאימג׳ יהיה זה לכולם.\n \nהמשפט שהאימג׳ צריך לבטא הוא:\nReady for AppSec your Devs can run with?\n(In other words: Finally get ahead of application risk without slowing down production)\nסגנון: יותר בסגנון האימגים שיצרתם לנו למצגת הקורפורייט – כלומר אימג׳ שהוא לא מבוסס פייק\n ui\n בלבד, אלא משהו שיותר מספר סיפור",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209029581953507"
+  },
+  {
+    "gid": "1209150656890906",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:32.190Z",
+    "created_at": "2025-01-16T07:29:48.057Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Partners Icons",
+    "notes": " \nנשמח לעזרתכם ביצירת מעין אייקונים/לוגואים למוצרים שלנו אשר יופי באתרים של פרטנרים.\n \nמצורף בריף שכתב מייקל – מי שאחראי אצלנו במרקטינג על הפרטנרים.\nכמובן לא צריך ללכת על מה שהוא הכין\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209150656890906"
+  },
+  {
+    "gid": "1208879859190855",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-12-31T11:02:39.640Z",
+    "created_at": "2024-12-02T09:08:19.749Z",
+    "due_on": "2024-12-24",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SWAG: Socks",
+    "notes": "Socks: Based on our tagline Always Ready To Run - we thought about creating 3 versions – the difference can be even in the colors only",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1208879859190855"
+  },
+  {
+    "gid": "1209242025161152",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:33.372Z",
+    "created_at": "2025-01-26T15:18:18.559Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Notebooks",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209242025161152"
+  },
+  {
+    "gid": "1207480610128688",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-07-08T06:13:58.349Z",
+    "created_at": "2024-06-04T12:40:00.059Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Partners SM banner templates",
+    "notes": "    ודל 1200x630px\n    יכול להיות בקובץ פיגמה (אין צורך להעביר לai)\n \nדגשים:\n    יש לנו 4 סוגי פרטנרים ב4 תחומים שונים:\n    * Cloud and runtime security\n    * Vulnerability management\n    * SDLC tooling\n    *  Emerging tech\n \n    בטמפלייט נרצה שהמבנה יהיה זהה: תמיד 2 הלוגואים ביחד באמצע עם פלוס ביניהם, מה שישתנה זה תוספת האייקון לפי סוג הפרטנר. כמובן ג הבחנה של מבע לקוביה של האייקון (לא לציין בבקשה את שם הקטגוריה, רק אייקון)\n \n    אתם עשיתם בזמנו את הבאנר הזה:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207480610128691\n\n    לדעתי אפשר משהו ממש דומה והאייקון יהיה בקוביה הירוקה. כל קטגוריה צבע שונה.\n    אם אפשר מעט להקפיץ מעט את הרקע שיהיה קצת יותר ״בוהק״ או משהו בכיוון זה יהיה מעולה.\nראו מטה את האייקונים שעשינו בזמנו (למקרה ויעזור לכם כרפרנס)\n* Cloud and runtime security\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207480610128693\n\n* Vulnerability management\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207480610128697\n\n\n* SDLC tooling\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207480610128699\n\n\n*  Emerging tech\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207480610128703\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207480610128688"
+  },
+  {
+    "gid": "1206801886749317",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:19.760Z",
+    "created_at": "2024-03-11T07:28:34.689Z",
+    "due_on": "2024-04-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "RSA conference t-shirts",
+    "notes": "    החולצות יהיו כולן שחורות – לא ניתן לשינוי\n    הנחיות לדפוס ישלחו עד סוף היום\n \n5 חולצות בסך הכל:\n\n\n\n    (I can’t get no) SASTisfaction\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206801886749320\n\n\n    We Built This City\non Rock Solid Code\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206801886749322\n\n\n    Sweet Child O’Code (To Cloud)\n \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206801886749324\n\n\n\n    Securing the applications driving our world (Checkmarx slogan)\n    In this T-shirt we need to create creative – we don’t have a reference for that.\n    This version will be used to many events as our “generic” T-shirt\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206801886749317"
+  },
+  {
+    "gid": "1206914197463361",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:32.019Z",
+    "created_at": "2024-03-25T07:57:54.448Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Email Signature",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206914197463361"
+  },
+  {
+    "gid": "1206914197463363",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:33.188Z",
+    "created_at": "2024-03-25T07:58:01.317Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Banner",
+    "notes": "    פייסבוק (קאבר + אווטר)\n    לינקדין (קאבר + אווטר) – גם לקאבר של company וגם לקאבר של personal\n    טוויטר (קאבר + אווטר)\n    יוטיוב (קאבר + אווטר)\n \nבכולם המבנה הוא זהה:\n    לוגו שלנו (ללא טאגליין) באווטר\n    הטאגליין כמשפט מוביל בגדול:  Securing the Applications Driving Our World – בקאבר עצמו\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206914197463363"
+  },
+  {
+    "gid": "1206914197463374",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:34.264Z",
+    "created_at": "2024-03-26T10:03:49.554Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "RSA Booth",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206914197463374"
+  },
+  {
+    "gid": "1206939846723680",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:35.361Z",
+    "created_at": "2024-03-28T08:45:25.433Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Logo",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206939846723680"
+  },
+  {
+    "gid": "1206940091889251",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:36.216Z",
+    "created_at": "2024-03-27T11:48:02.520Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Internal communication banner",
+    "notes": "למעשה, לכל מחלקה יש טמפלייט משלה.\nהטמפלייט זה מלבד ההירו שבו מצוין שם החברה.\n \nהעניין המרכזי הוא שיש המון מחלקות ותתי מחלקות, וצריך למצוא פתרון איך לא כולם יראו ממש אותו דבר.\n \nאת הטמפלייט באאוטלוק אנחנו נייצר. מה שאנחנו צריכים ממכם זה:\n    הירו באנרים\n    באנר ״סגיר״\n \nכיום המיילים שלנו נראים ככה:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206977387376100\n\n\n    עבור ההירו, יש לכלול את הלוגו + את המילים Internal Communication + שם המחלקה.\n    להלן רשימת המחלקות:\n    Global Enablement\n    Sales Enablement Newsletter\nDevelopment Management Process\nRelease Notification\nAnalyst Relations\nProduct Management and R&D\nProduct Updates\nOffice Admin\nResearch & Development\nMarketing\nLegal\nLearning & Development\nIT\nHR\nFinance & Operations\nCEO Update\nEmployee Experience\nSales\n \n    עבור הסגיר של המייל אנא השתמשו בטאגליין ללא הלוגו: Securing the Applications Driving Our World\n \nמספר הערות כלליות:\n    הרקע של המייל עצמו חייב להיות לבן\n    כמובן שלא ניתן לייצר לכל מחלקה באנר שונה לחלוטין, אפשר גם לחזור על עיצובים אבל כן נשמח שיהיו כמה אופציות\n    פורמט ai\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206940091889251"
+  },
+  {
+    "gid": "1209325951516941",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:36.035Z",
+    "created_at": "2025-02-05T13:32:59.589Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Event in a Box - Software Supply Chain Security Trends in 2025",
+    "notes": "המטרה היא ליצור אימג׳ אחד מוביל לכל נושא. האימג׳ הזה יופיע:\n    באנרים לסושיאל 1200x630px\n    באנר למייל 600x300px\n    עמוד נחיתה – רקע 1720x600, גרפיקה 390x358\n    פתיח למצגת 1920x1080\n \nבשל כך, חשוב שהאימג׳ לא ייגע בקצוות של הפורמט ויוכל להיות מותאם לכל מקום שנזדקק לו.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209325951516941"
+  },
+  {
+    "gid": "1206939850051826",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:37.365Z",
+    "created_at": "2024-03-28T08:49:38.569Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Word template",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206939850051826"
+  },
+  {
+    "gid": "1206939850051828",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:38.431Z",
+    "created_at": "2024-03-28T08:49:43.633Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "PPT Template",
+    "notes": "    המבנה של הסליידים הנוכחיים הוא בגדול מה שצריך. כמובן שבמידה ויש לכם הצעות נוספות או חלופיות נשמח.\n    חסר סלייד שבו מראים להם דוגמה לטבלה – נשמח אם תוכלו להוסיף\n    כפי שציינתי, הם מאוד אוהבים סליידים עם קופסאות שבתוכן ניתן לשים טקסט שמחולק לנושאים (רצוי גם בהיר וגם כהה)\n    חשוב שהפונט יהיה פונט מערכת. מניסיוני האישי פונט המערכת הכי סביר שמצאתי הוא arial nova עם ריווח בין האותיות. כמובן שניתן אם תרצו לבחור בפונט מערכת עם יותר אופי לכותרות , דיווידרים וכו׳\n    חשוב שהכל יהיה עריך ובמאסטר שיהיה להם קל לתפעול\n\n/Volumes/Xmore/XProjects/Checkmarx/Branding/Office templates/PPT Template/from client",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206939850051828"
+  },
+  {
+    "gid": "1206939850051830",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2024-06-04T09:13:11.578Z",
+    "created_at": "2024-03-28T08:49:47.395Z",
+    "due_on": "2024-05-20",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Teams background",
+    "notes": "הנחיות:\n    3-4 אופציות – ניתן גם רק 2 שתשכפלו ותשנו שם צבעים או אלמנטים\n    צריך לכלול רק לוגו\n    יהיה מעולה שבגרסאות יהיו גם אופציות יותר סולידיות וגם כאלו קצת יותר מעניינות\n \nאתם יכולים לנסות אותם עלי (כדי לבדוק מיקום נכון של הלוגו וכדומה). מצרפת מה שיש כיום.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206939850051830"
+  },
+  {
+    "gid": "1207524757091178",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-07-08T06:14:15.398Z",
+    "created_at": "2024-06-10T09:46:43.059Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Webinars",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207524757091178"
+  },
+  {
+    "gid": "1207480643108537",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-06-10T06:40:21.141Z",
+    "created_at": "2024-06-05T12:12:30.740Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Pride Month Social Media",
+    "notes": "נשמח לעזרתכם בהתאמת כל הprofile pictures שלנו בסושיאל לחודש הגאווה.\n \n    LinkedIn\n    Twitter\n    Facebook\n    Youtube\n    Life at Checkmarx\n    Instagram 320x320px\n \nנראה משהו מעודן יחסית שלא יצא מצועצע מידי עם תמונת הקאבר שיצרתם עבורנו.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207480643108537"
+  },
+  {
+    "gid": "1206948526309111",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:39.446Z",
+    "created_at": "2024-03-28T09:09:41.306Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "RSA Conference video concept",
+    "notes": "\nאופציה 1'- ליצור טריילר למשחק וידאו דמוי מיינקראפט שנקרא DEV SEC TRUST\nבמשחק יש שלוש דמויות - ה-CISO ה-DEVELOPER וה-APPSEC.\nמטרת הDEVELOPER- לבנות, להתקדם מהר, ולעשות וי ירוק על משימות הפיתוח.\nמטרת הAPPSEC- לעקוב אחרי DEVELOPER ולוודא שאין גורמים שמתקיפים אותו ומנסים להרוס את מה שהוא בנה\nוהדמות השלישית- הCISO- חג מסביב לשניהם, חושב RISK ומנסה לאזן ביניהם \n \nאופציה 2- שני שומרים ענקיים בתלת מימד  שמייצגים את צ'קמרקס שומרים על הביתן, כל אחד מצוייד במגן, חרב, מגפי AI עם להבה, כנפיים שמייצגות את CX1, וכל אלמנט כזה מייצג כוח שמסייע לבנות אפליקציות בצורה בטוחה\nבכל פעם שאורח רוצה להיכנס לאולם הוא צריך לומר CX1, ואז השומרים פותחים לו את החרבות המוצלבות ומתירים לו להיכנס.\n \nאופציה 3- הביתן עשוי כולו מראות שמספקות אשליה ויזואלית. עמדה עם עוגיות מזל סיניות נמצאת בכניסה לביתן, כל עוגיה מכילה מסר על צמיחה באמצעות AI ומסרים פילוסופיים על הפלטפורמה. כל אחד שאוכל את העוגיה מסתכל  בראי ורואה את עצמו משתנה \n \nאופציה 4 - טריילר וידאו תלת מימד של שומרי הלגקסיה בסביבה אורבני) שמראה שלוש דמויות בשלושה סרטים קצרים שונים\nכל דמות מקבלת סרט משלה, של 10 שניות, עם סיטואציה מאופינת שהדמות פותרת על פי מה שמטריד אותה ביום יום\n ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206948526309111"
+  },
+  {
+    "gid": "1209325951516943",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:39.392Z",
+    "created_at": "2025-02-05T13:33:25.531Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Event in a Box - Bridging DevSec Divide",
+    "notes": "המטרה היא ליצור אימג׳ אחד מוביל לכל נושא. האימג׳ הזה יופיע:\n    באנרים לסושיאל 1200x630px\n    באנר למייל 600x300px\n    עמוד נחיתה – רקע 1720x600, גרפיקה 390x358\n    פתיח למצגת 1920x1080\n \nבשל כך, חשוב שהאימג׳ לא ייגע בקצוות של הפורמט ויוכל להיות מותאם לכל מקום שנזדקק לו.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209325951516943"
+  },
+  {
+    "gid": "1207597663641641",
+    "assignee": {
+      "gid": "1207503684349891"
+    },
+    "completed": true,
+    "completed_at": "2024-07-08T06:14:16.757Z",
+    "created_at": "2024-06-19T07:11:14.359Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media posts with speakers",
+    "notes": "נשמח לעזרתכם בעיצוב טמפלייט שישמש אותנו לבאנרים לסושיאל שבהם המרכז הוא הבן אדם שמוצג בו.\n \nלהלן דוגמאות:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207598490956474\n\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207598490956476\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207598490956478\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207598490956480\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207598490956482\n\nסוגי הבאנרים:\n    Speaking session באיזה אירוע\n    הזמנה לאירוע שבו יוכלו לפגוש את אותו אדם\n \nדגשים:\n    יכול להיות יותר מאדם אחד אבל לרוב לא יותר משניים\n    חשוב להם לשים את האנשים בפרונט ולא ב״קופסאות״\n    לרוב צריך להיות בדגש על הנראות של הברנד המרכזי כי אלו הזמנות ״רשמיות יותר״. כלומר יותר בגווני הכחול סגול.\n    הרבה פעמים יהיה לוגו נוסף מלבדנו\n    תמיד יכלול שם וטייטל של אותו בן אדם שמוצג\n    יכלול כותרת\n    יכלול תאריך/שעה/מיקום\n    לעיתים יהיה עם cta ולעיתים לא\n    יכול להיות ששווה לשקול אם אנחנו רוצים לשלב שלעיתים האנשים יופיעו בצבע מלא ולעיתים רק שחור לבן (או שלא?)\n    חשוב שזה תמיד יהיה אנחנו אבל שלא כל פעם שיש לנו באנר כזה הכל יראה זהה לחלוטין\n\nמידות:\n1080x1080\n\nנתחיל בזה ואז נראה אם יש צורך להכין מבנה גם ל1200 על 630",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207597663641641"
+  },
+  {
+    "gid": "1206977387376104",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:40.359Z",
+    "created_at": "2024-04-02T10:38:46.735Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Posters&Stickers prep for print",
+    "notes": "    פוסטרים - כל אחת מ4 החולצות תהפוך גם לפוסטר.\n    * נשמח שכל פוסטר יעוצב גם בגודל a3 וגם בגודל a2\n    * נשמח לקבל כקבצי ai\n    * בבקשה תכללו בכל פוסטר גם את הלוגו שלנו (מיועד למשרדים שלנו לכן לא צריך שהוא יהיה ענק)\n    * גם כאן אם יש לכם גם רעיונות נוספים רק של הברנד נשמח מאוד\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206977387376104"
+  },
+  {
+    "gid": "1206982521160745",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:41.487Z",
+    "created_at": "2024-04-04T08:04:31.102Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Brand posters&stickers",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206982521160745"
+  },
+  {
+    "gid": "1206982521160741",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:42.579Z",
+    "created_at": "2024-04-03T12:26:41.408Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Careers open graph",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1206982521160741"
+  },
+  {
+    "gid": "1207020427424712",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:40:37.365Z",
+    "created_at": "2024-04-08T11:09:39.653Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "3D Static Visuals",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207020427424712"
+  },
+  {
+    "gid": "1207045308363971",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-16T07:45:37.624Z",
+    "created_at": "2024-04-10T11:42:52.602Z",
+    "due_on": "2024-04-24",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "4 Blogs thumbnails",
+    "notes": "נשמח לעזרתכם בעיצוב 4 האימג׳ים המובילים לכל אחד מהם (בדיוק הסגנון שקים עובדת עליו כעת).\n** גודל:\n** הבאנר יכלול רק אימג׳ ללא טקסט או לוגו כלל (למטה תראו טקסטים שמטרתם רק לתת לכם מושג על מה מדובר בכל בלוג שעל בסיס זה תוכלו לייצר אימג׳)\n** שני בלוגים צריכים לספר סיפור גרפי ושניים שת״פ שלנו עם חברה נוספת (זה מבנה שחוזר על עצמו הרבה ומה שיצרנו הוא זמני ולא ממש להיט) – יש לכם בכל הסבר על בלוג גם קישור לאימג׳ שיכול להוות רפרנס. חשוב מאוד – לא חובה ללכת על מה שהם שמו. הם רק ניסו לחסוך לנו זמן.\n \n \nלהלן הבריף:\n \n    Blog post #1:\n        Title: Announcing Updates to Checkmarx’ AI Security Portfolio\n        Summary: Checkmarx is announcing new products, updates, and a roadmap to build the AI-powered AppSec platform of the future. AI presents not only challenges to AppSec teams, but great opportunities to empower both developers and AppSec teams. New developer-focused AI tools will help secure code from the first line written, and AppSec-team-focused tools will plug knowledge gaps and allow AppSec teams to become more productive.\n        Suggested image: copy tile and banner images from https://checkmarx.com/blog/checkmarx-and-the-ai-revolution-charting-the-future-of-application-security/\n    Blog post #2:\n        Title: Expanding Checkmarx AI Security with Copilot\n        Summary: Checkmarx is continuing to build products that make using AI code generation tools more secure for developers. We are expanding beyond ChatGPT, and now offer AppSec scanning directly within Copilot – keeping developers in their workflow.\n        Suggested image: copy tile and banner images from https://checkmarx.com/blog/checkmarx-wiz-advancing-appsec-with-code-to-cloud-integration/? (but replace with GitHub Copilot)\n    Blog post #3:\n        Title: Secrets and Code Leakage Protection for AI Security – Checkmarx and Prompt Security\n        Summary: Checkmarx is partnering with Prompt Security to expand our AI Security portfolio. By integrating with Prompt Security, Checkmarx will be able to help customers prevent IP leakage via LLM, preventing users from inputting sensitive data into LLMs, and ensuring proper governance.\n        Suggested image: copy tile and banner images from https://checkmarx.com/blog/checkmarx-wiz-advancing-appsec-with-code-to-cloud-integration/? (but replace with Prompt Security)\n    Blog post #4:\n        Title: AI Security Champion for SAST\n        Summary: Checkmarx has unveiled AI Guided Remediation for fixing application vulnerabilities quickly. This solution uses Generative AI to suggest automatic fixes for identified vulnerabilities in Checkmarx SAST. It offers practical steps and expert advice within the development workflow, empowering designers to understand and confidently handle vulnerabilities while saving time.\n        Suggested image: copy tile and banner images from https://checkmarx.com/blog/introducing-ai-guided-remediation-for-iac-security-kics/\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207045308363971"
+  },
+  {
+    "gid": "1207071362789144",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:43.893Z",
+    "created_at": "2024-04-14T08:05:04.564Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Business Card",
+    "notes": "מצורף הקיים (הוא למעשה שימש ככרטיס ביניים בין הברנד הקודם למה שניצור כעת).\nהתוכן נותר זהה, רק נשמח לעיצוב מעודכן.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207071362789144"
+  },
+  {
+    "gid": "1207130840861032",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:24:44.954Z",
+    "created_at": "2024-04-21T07:16:43.877Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Logo Closing title",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207130840861032"
+  },
+  {
+    "gid": "1207321987969202",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-06-04T09:13:09.108Z",
+    "created_at": "2024-05-15T06:59:44.256Z",
+    "due_on": "2024-06-02",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "4 Blogs May24",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1207333390268435\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207321987969202"
+  },
+  {
+    "gid": "1207431385813425",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-06-04T09:13:06.033Z",
+    "created_at": "2024-05-29T08:54:30.657Z",
+    "due_on": "2024-06-02",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Techstrong Webinar",
+    "notes": " \n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207431385813431\n\nתוצר\nגודל\nטקסט\nהערות\nבאנר לסושיאל\n1200x630px\nLogo: Checkmarx, Techstrong\nEyebrow Text: WEBINAR\nHeadline: Securing Modern Application Development:\nSub-headline: The CISO and the security team perspective\nCTA: WATCH ON-DEMAND\n\nSpeakers\n    Amit Daniel, CMO, Checkmarx\n    Sudharma Thikkavarapu, Global Head of Product Security, Dell Technologies\n    David Sims, Staff Vice President, Security Technology Services, Elevance Health\n    Cindy Blake, CISSP, DevSecOps Market Advisor\n    Mitch Ashley, CTO, Techstrong Group Principal - Techstrong Research\n \n    בחלק העליון של הבאנר נזדקק לשני לוגואים כיוון שמדובר על שת״פ\n    רצוי לשים את הלוגואים מתחת לכל ספיקר ולא לכתוב את החברה בפונט רגיל\n    קובץ jpg 150ppi\n\nאימייל באנר\n600x300px\nבול אותו דבר כמו הסושיאל רק בגודל המפורט\n    קובץ jpg 150ppi\n\nעמוד נחיתה (רק hero image)\nBackground: 1720x600px\nGraphic: 390x358px\nרקע לבד בגודל המפורט\nהספיקרים כאימג׳ בגודל המפורט כולל שם ולוגו החברה בלבד (בלי טייטל)\n    רקע קובץ jpg 150ppi\n    אימג׳ ספיקרים קובץ png 150ppi\n\n\n דבר נוסף שהם ביקשו זה פתיח לוובינר עצמו. כל מה שבבאנר בלי הCTA\n\nמצורף הבאנר שהחברה השותפה עיצבה (כמעט יפה כמו מה שאתם עיצבתם) למקרה ותצטרכו:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207431385813428\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207431385813425"
+  },
+  {
+    "gid": "1209325951516945",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:38.067Z",
+    "created_at": "2025-02-05T13:33:32.810Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Event in a Box - ASPM: What You Need to Manage Your AppSec Posture",
+    "notes": "המטרה היא ליצור אימג׳ אחד מוביל לכל נושא. האימג׳ הזה יופיע:\n    באנרים לסושיאל 1200x630px\n    באנר למייל 600x300px\n    עמוד נחיתה – רקע 1720x600, גרפיקה 390x358\n    פתיח למצגת 1920x1080\n \nבשל כך, חשוב שהאימג׳ לא ייגע בקצוות של הפורמט ויוכל להיות מותאם לכל מקום שנזדקק לו.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209325951516945"
+  },
+  {
+    "gid": "1207643896074278",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-06-30T08:35:15.046Z",
+    "created_at": "2024-06-25T07:54:27.874Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "PR Image for blogs and social",
+    "notes": "Size: 1355x678\n\nNeed blog image for press release. it will be used both on the blog and on social media.\n\nCheckmarx logo\ntitle: \"Press Release\"\nimage: something that portrays press release\n\nwe only have 4-5 hours for it, so make it simple",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1207643896074278"
+  },
+  {
+    "gid": "1209425023950635",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-10T13:46:50.114Z",
+    "created_at": "2025-02-18T15:34:46.456Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "t-shirt edits",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209425023950635"
+  },
+  {
+    "gid": "1209568989017966",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-04-03T13:45:23.578Z",
+    "created_at": "2025-03-04T13:59:48.889Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "AppSec Kit",
+    "notes": "עמוד ייעודי לכל הויזואלי שבו תוכלו לעבוד עליהם:\nhttps://www.figma.com/design/nBVbF3UY8DlXob35KcCuW0/Static-(banners%2C-covers%2C-thumbnails)?node-id=2921-51706&t=LkKWKN7YrW2EWSI0-1\n\nAll visuals 1080x1080 px",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209568989017966"
+  },
+  {
+    "gid": "1209521366749317",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-10T13:46:49.005Z",
+    "created_at": "2025-02-27T07:45:03.787Z",
+    "due_on": "2025-03-02",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "SM image - Gartner: AppSec Guide for SW Engineering Leaders",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209521366749317"
+  },
+  {
+    "gid": "1209507073132005",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:25.117Z",
+    "created_at": "2025-02-26T08:35:54.054Z",
+    "due_on": "2025-02-26",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "blog: CVSS 4.0 Version blog",
+    "notes": "Visual brief:\nThe blog is on the latest version of CVSS, which is used to attribute a secerity score to vulnerabilities in open-source packages and generally indicates the risk level of a certain vulnerability.\nThe cover could show some kind of scale or severity visual, with colors from green to red, and contain elements that usually represent vulnerability and risk; note that we're not talking about a specific vulnerability, we're talking about a new standard to measure that.\n \nSome examples of cover photos from other companies that published similar blogs.\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209507073132009\n\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209507073132011\n\n\nCover photo colors and brand:  Checkmarx )not CX Zero!!)",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209507073132005"
+  },
+  {
+    "gid": "1209666689046752",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-19T08:23:04.583Z",
+    "created_at": "2025-03-13T14:46:56.780Z",
+    "due_on": "2025-03-18",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New SM visual - for the DevSecOps Evolution Report",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209666689046752"
+  },
+  {
+    "gid": "1209429936326520",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-02-27T08:53:11.780Z",
+    "created_at": "2025-02-20T07:47:16.463Z",
+    "due_on": "2025-02-23",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "DevSec kit for SM",
+    "notes": "Visual design request is a creative play on the social aspect of \"relationship status\"\nTitle: DevSec Relationship Status: It's Complicated (But Fixable)\nVisual Direction: Ideas include an image of a relationship status being selected. Also like the idea of a heart made out of IT programing lines\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209429936326523\n\nbanner size: 1080x1080\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209429936326520"
+  },
+  {
+    "gid": "1209693505634338",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-04-03T13:45:25.056Z",
+    "created_at": "2025-03-16T12:12:20.291Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "TEI report - SM visual",
+    "notes": "אשמח לעזרתכם ביצירת הויזואל שיוביל חלק מהבאנרים לקידום הממומן הTEI report.  \nהמסמך הזה לא נכתב ע״י צ׳קמרקס ולכן אנחנו לא יכולים לשנות בו דבר.\n \nהמטרה בויזואל שתייצרו היא שיוכל לעבוד עם שני המשפטים הבאים (כל משפט יופיע על באנר אחר עבור A/B TESTING):\n \nמשפט 01:\nReady to Rock 177% ROI on Your AppSec?\n\nמשפט 02:\nReady for AppSec That Pays for Its Meal?\n \nהעניין הוא שהמשפטים באמת לא מצביעים בהכרח על אותו ויזואל אבל אין ברירה. \nהאם תוכלו לחשוב על אימג׳ שיכול להיות כללי אבל מתאים לשניהם. משהו קליל יותר בכיוון ובטיפול (לא קאברים אלא יותר מדבקות/בלוגים פשוטים).\n \nאנחנו מנסים ממש לבדוק מה יותר עובד עם הקהלים שלנו מבחינת סגנון.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209693505634338"
+  },
+  {
+    "gid": "1209693505634340",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-19T08:23:22.048Z",
+    "created_at": "2025-03-16T12:12:46.893Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Tolly report - SM visual",
+    "notes": "אשמח לעזרתכם ביצירת הויזואל שיוביל חלק מהבאנרים לקידום הממומן של Tolly report.  \nהמסמך הזה לא נכתב ע״י צ׳קמרקס ולכן אנחנו לא יכולים לשנות בו דבר.\n \nהמטרה בויזואל שתייצרו היא שיוכל לעבוד עם שני המשפטים הבאים (כל משפט יופיע על באנר אחר עבור A/B TESTING):\n \nמשפט 01:\nReady for AppSec That Delivers Accuracy?\n\nמשפט 02:\nThe AppSec Solution That Isn’t as Shouty\n \nהעניין הוא שהמשפטים באמת לא מצביעים בהכרח על אותו ויזואל אבל כן חשבנו שמשהו עם איור שקשור ל״מטרה״ יכול לעבוד עם שניהם.\nהאם תוכלו לחשוב על אימג׳ שיכול להיות כללי אבל מתאים לשניהם. משהו קליל יותר בכיוון ובטיפול (לא קאברים אלא יותר מדבקות/בלוגים פשוטים).\n \nאנחנו מנסים ממש לבדוק מה יותר עובד עם הקהלים שלנו מבחינת סגנון.\n ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209693505634340"
+  },
+  {
+    "gid": "1209693505634342",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-23T07:43:52.993Z",
+    "created_at": "2025-03-16T12:13:11.800Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Container security eBook - SM visual",
+    "notes": "אשמח לעזרתכם ביצירת הויזואל שיוביל חלק מהבאנרים לקידום הממומן ה Container security eBook.  \n \nהמטרה בויזואל שתייצרו היא שיוכל לעבוד עם שני המשפטים הבאים (כל משפט יופיע על באנר אחר עבור A/B TESTING):\n \nמשפט 01:\n Find Risk in Every Layer of Your Containers\n\nמשפט 02:\nLift the Lid on Effective Container Security\n \nהעניין הוא שהמשפטים באמת לא מצביעים בהכרח על אותו ויזואל אבל אין ברירה. \nהאם תוכלו לחשוב על אימג׳ שיכול להיות כללי אבל מתאים לשניהם. משהו קליל יותר בכיוון ובטיפול (לא קאברים אלא יותר מדבקות/בלוגים פשוטים).\n \nאנחנו מנסים ממש לבדוק מה יותר עובד עם הקהלים שלנו מבחינת סגנון.\n ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209693505634342"
+  },
+  {
+    "gid": "1209693505634334",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-19T08:22:58.355Z",
+    "created_at": "2025-03-16T12:10:42.708Z",
+    "due_on": "2025-03-19",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Gartner SM banner",
+    "notes": "זוכרים את האימג׳ שיצרתם לריפורט של גרטנר\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1209693505634337\n\nהיי\n \nזוכרים את האימג׳ שיצרתם לריפורט של גרטנר\n \nלקידום הממומן שלו נשמח לעזרתכם ביצירת ויזואל שיכול לעבוד עם שני המשפטים הבאים (כל משפט יופיע על באנר אחר עבור A/B TESTING):\n \nמשפט 01:\nHow Software Engineers Can Adopt a Security Mindset\n\nמשפט 02:\nThe Security Guide Software Engineers Deserve\n \nהעניין הוא שהמשפטים באמת לא מצביעים בהכרח על אותו ויזואל אבל אין ברירה.\nהאם תוכלו לחשוב על אימג׳ שיכול להיות כללי אבל מתאים לשניהם. משהו קליל יותר בכיוון ובטיפול (לא קאברים אלא יותר מדבקות/בלוגים פשוטים).\n \nאנחנו מנסים ממש לבדוק מה יותר עובד עם הקהלים שלנו מבחינת סגנון.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209693505634334"
+  },
+  {
+    "gid": "1209781680708159",
+    "assignee": {
+      "gid": "1208980808187472"
+    },
+    "completed": true,
+    "completed_at": "2025-04-09T12:19:19.055Z",
+    "created_at": "2025-03-25T15:34:55.592Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "DevEx 2.0",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209781680708159"
+  },
+  {
+    "gid": "1209795968492088",
+    "assignee": {
+      "gid": "1200027660374505"
+    },
+    "completed": true,
+    "completed_at": "2025-04-03T13:45:27.174Z",
+    "created_at": "2025-03-26T07:31:08.638Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "CISO survey paid SM",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209795968492088"
+  },
+  {
+    "gid": "1209809305115415",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-04-03T13:45:28.431Z",
+    "created_at": "2025-03-27T11:47:04.927Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1206801886749316",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Game icons",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1206542841420175/task/1209809305115415"
+  }
+]

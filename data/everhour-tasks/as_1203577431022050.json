@@ -1,0 +1,29 @@
+[
+  {
+    "id": "as:1203577431022067",
+    "name": "Schedule kickoff meeting",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203577431022050/1203577431022067/f",
+    "iteration": "To do",
+    "projects": [
+      "as:1203577431022050"
+    ],
+    "createdAt": "2022-12-19 08:37:09",
+    "dueOn": "2022-12-22",
+    "startOn": "2022-12-20",
+    "labels": [],
+    "attributes": {
+      "Priority": "Medium",
+      "Status": "At risk"
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  }
+]

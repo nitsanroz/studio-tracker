@@ -1,0 +1,218 @@
+[
+  {
+    "id": "as:1206202884784960",
+    "name": "Contact details  ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1206202884784953/1206202884784960/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-19 12:45:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1206202884784964",
+    "name": "First hour estimation ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1206202884784953/1206202884784964/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-19 12:45:36",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1206202884784972",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1206202884784953/1206202884784972/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-19 12:46:31",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 385200,
+      "users": {
+        "1214048": 167400,
+        "1219081": 191700,
+        "1219083": 15300,
+        "1310120": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1206202884784977",
+    "name": "Meetings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206202884784977/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-19 12:46:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-12-31 12:41:33"
+  },
+  {
+    "id": "as:1206210324818320",
+    "name": "One pager",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206210324818320/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-20 10:38:54",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1219083": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:08",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206234374793851",
+    "name": "Visual development",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206234374793851/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-24 07:26:42",
+    "labels": [],
+    "time": {
+      "total": 466200,
+      "users": {
+        "1214048": 39600,
+        "1219081": 399600,
+        "1310120": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:07",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206234375726364",
+    "name": "R&D",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206234375726364/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-24 07:25:57",
+    "labels": [],
+    "time": {
+      "total": 135900,
+      "users": {
+        "1214048": 134100,
+        "1219081": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:08",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206234375726368",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206234375726368/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-24 07:26:49",
+    "labels": [],
+    "time": {
+      "total": 435600,
+      "users": {
+        "1214048": 435600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:09",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206234375726370",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1206202884784953/1206234375726370/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1206202884784953"
+    ],
+    "createdAt": "2023-12-24 07:26:50",
+    "labels": [],
+    "time": {
+      "total": 20700,
+      "users": {
+        "1214048": 20700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:09",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  }
+]

@@ -1,0 +1,1957 @@
+[
+  {
+    "id": "as:1209693333096070",
+    "name": "Initial Pitch",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1209693333096070/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-03-16 14:52:29",
+    "labels": [],
+    "rate": 720000,
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 86400,
+      "users": {
+        "1214048": 86400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-12 11:24:11",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1209763404232358",
+    "name": "JustPlay Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1209763404232358/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-03-23 14:57:46",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 300600,
+      "users": {
+        "1213760": 50400,
+        "1214048": 18000,
+        "1322241": 14400,
+        "1328069": 12600,
+        "1370761": 151200,
+        "1421038": 46800,
+        "1442885": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1209809305115410",
+    "name": "Home page Redesign",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1209809305115410/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-03-27 11:46:21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 144000,
+      "users": {
+        "1214048": 32400,
+        "1328069": 38700,
+        "1342403": 53100,
+        "1370761": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-12 11:24:09",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1210224477762896",
+    "name": "Branding Questionnaire + Pitch feedback",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210224477762896/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-12 11:25:24",
+    "labels": [],
+    "unbillable": true,
+    "completed": true,
+    "completedAt": "2025-12-04 07:04:21",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1210233763126626",
+    "name": "Kickoff",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210233763126626/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 13:23:32",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1214048": 7200,
+        "1370761": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:09"
+  },
+  {
+    "id": "as:1210236584413415",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413415/f",
+    "iteration": "Visual Language",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:11",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 86400,
+      "users": {
+        "1214048": 3600,
+        "1370761": 82800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:31",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1210236584413417",
+    "name": "Visual Language Development",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413417/f",
+    "iteration": "Visual Language",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:13",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 172800
+    },
+    "time": {
+      "total": 190800,
+      "users": {
+        "1214048": 68400,
+        "1370761": 122400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:32",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1210236584413421",
+    "name": "Logo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413421/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:24",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 115200
+    },
+    "time": {
+      "total": 146700,
+      "users": {
+        "1214048": 28800,
+        "1370761": 117900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:45"
+  },
+  {
+    "id": "as:1210236584413423",
+    "name": "Homepage",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413423/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:26",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 403200
+    },
+    "time": {
+      "total": 558900,
+      "users": {
+        "1213760": 75600,
+        "1214048": 75600,
+        "1328069": 34200,
+        "1370761": 373500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:14"
+  },
+  {
+    "id": "as:1210236584413425",
+    "name": "Ecosystem",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413425/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:29",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 172800
+    },
+    "time": {
+      "total": 240300,
+      "users": {
+        "1213760": 37800,
+        "1214048": 25200,
+        "1328069": 23400,
+        "1342403": 12600,
+        "1370761": 116100,
+        "1407470": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:15"
+  },
+  {
+    "id": "as:1210236584413427",
+    "name": "Giveback",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413427/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:31",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 172800
+    },
+    "time": {
+      "total": 236700,
+      "users": {
+        "1213760": 16200,
+        "1214048": 16200,
+        "1370761": 170100,
+        "1407470": 34200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413429",
+    "name": "About Us",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413429/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:34",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 50400
+    },
+    "time": {
+      "total": 58500,
+      "users": {
+        "1213760": 9000,
+        "1214048": 8100,
+        "1370761": 41400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413431",
+    "name": "Careers",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413431/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 115200
+    },
+    "time": {
+      "total": 216000,
+      "users": {
+        "1214048": 10800,
+        "1328069": 25200,
+        "1342403": 18000,
+        "1370761": 88200,
+        "1407470": 73800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413433",
+    "name": "Blog",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413433/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:38",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 39600,
+      "users": {
+        "1370761": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413435",
+    "name": "Legal",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413435/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1407470": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413437",
+    "name": "404",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413437/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:41",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 18000,
+      "users": {
+        "1213760": 2700,
+        "1328069": 2700,
+        "1370761": 10800,
+        "1407470": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413439",
+    "name": "Menu & Footer",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413439/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:42",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413441",
+    "name": "Cookies Policy",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413441/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:48",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 1800,
+      "users": {
+        "1407470": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584413443",
+    "name": "Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413443/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:53",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 158400
+    },
+    "time": {
+      "total": 46800,
+      "users": {
+        "1328069": 3600,
+        "1370761": 30600,
+        "1407470": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29",
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1210236584413445",
+    "name": "Prep 4 Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584413445/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:55",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 100800
+    },
+    "time": {
+      "total": 113400,
+      "users": {
+        "1213760": 79200,
+        "1214048": 1800,
+        "1370761": 32400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584414503",
+    "name": "QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414503/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:52:58",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 100800
+    },
+    "time": {
+      "total": 15300,
+      "users": {
+        "1213760": 7200,
+        "1370761": 8100
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29"
+  },
+  {
+    "id": "as:1210236584414505",
+    "name": "Homepage",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414505/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:01",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 60300,
+      "users": {
+        "1214048": 5400,
+        "1328069": 18000,
+        "1370761": 36000,
+        "1407470": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:34"
+  },
+  {
+    "id": "as:1210236584414507",
+    "name": "About Us / Careers",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414507/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "completed": true,
+    "completedAt": "2025-10-16 06:09:48"
+  },
+  {
+    "id": "as:1210236584414509",
+    "name": "Legal",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414509/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:13",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1370761": 1800,
+        "1407470": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:36"
+  },
+  {
+    "id": "as:1210236584414511",
+    "name": "Prep 4 Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414511/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:15",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:38"
+  },
+  {
+    "id": "as:1210236584414513",
+    "name": "QA",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414513/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:18",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210236584414515",
+    "name": "Homepage",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414515/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 39600,
+      "users": {
+        "1214048": 5400,
+        "1328069": 6300,
+        "1370761": 27000,
+        "1407470": 900
+      },
+      "timerTime": 120
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:46"
+  },
+  {
+    "id": "as:1210236584414517",
+    "name": "User Support",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414517/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:25",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "time": {
+      "total": 15300,
+      "users": {
+        "1407470": 15300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:47"
+  },
+  {
+    "id": "as:1210236584414519",
+    "name": "Legal",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414519/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:33",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1370761": 2700,
+        "1407470": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:48"
+  },
+  {
+    "id": "as:1210236584414521",
+    "name": "Prep 4 Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414521/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:34",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 900,
+      "users": {
+        "1370761": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:51"
+  },
+  {
+    "id": "as:1210236584414523",
+    "name": "QA",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414523/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210236584414525",
+    "name": "Logo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414525/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:53:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1328069": 3600,
+        "1370761": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:44"
+  },
+  {
+    "id": "as:1210236584414528",
+    "name": "Brandbook",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414528/f",
+    "iteration": "Visual Language",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:56:25",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 165600
+    },
+    "time": {
+      "total": 128700,
+      "users": {
+        "1214048": 5400,
+        "1370761": 123300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:56"
+  },
+  {
+    "id": "as:1210236584414530",
+    "name": "Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414530/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:56:53",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 11700,
+      "users": {
+        "1407470": 11700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:37"
+  },
+  {
+    "id": "as:1210236584414532",
+    "name": "Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210236584414532/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-13 11:56:57",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1214048": 1800,
+        "1370761": 1800,
+        "1407470": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:49"
+  },
+  {
+    "id": "as:1210288359329260",
+    "name": "Careers Banners",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210288359329260/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-19 10:37:59",
+    "dueOn": "2025-05-22",
+    "labels": [],
+    "time": {
+      "total": 18000,
+      "users": {
+        "1214048": 5400,
+        "1370761": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-27 05:59:23",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1210288359329262",
+    "name": "Career Page Banner",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210288359329262/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "parentName": "Careers Banners",
+    "parentId": "as:1210288359329260",
+    "createdAt": "2025-05-19 10:38:17",
+    "dueOn": "2025-05-22",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210288359329263",
+    "name": "Internal HR Tool Banner",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210288359329263/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "parentName": "Careers Banners",
+    "parentId": "as:1210288359329260",
+    "createdAt": "2025-05-19 10:38:26",
+    "dueOn": "2025-05-22",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210397872601303",
+    "name": "Desktop Wallpaper",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210397872601303/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-28 14:32:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-10-19 12:59:41"
+  },
+  {
+    "id": "as:1210397872601305",
+    "name": "Anniversary Pin",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210397872601305/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-28 14:32:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-10-19 12:59:43"
+  },
+  {
+    "id": "as:1210411983883916",
+    "name": "Swag",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210411983883916/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-05-29 13:03:30",
+    "dueOn": "2025-06-30",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1202732458183440",
+        "accountName": "Nitzan Yogev",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1210483199789299",
+    "name": "Cool design for team event (swag)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210483199789299/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-06 09:04:48",
+    "dueOn": "2025-06-12",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 20700,
+      "users": {
+        "1214048": 4500,
+        "1328069": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-07-24 07:37:10",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1210578758111377",
+    "name": "Hoodie",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1209693333096067/1210578758111377/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-18 06:11:41",
+    "dueOn": "2025-06-19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1210578758111379",
+    "name": "Bottle",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210578758111379/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-18 06:13:24",
+    "dueOn": "2025-06-19",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 18900,
+      "users": {
+        "1213760": 10800,
+        "1214048": 900,
+        "1370761": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-07-24 07:37:10"
+  },
+  {
+    "id": "as:1210611870387761",
+    "name": "Offsite Tees",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210611870387761/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-23 13:56:36",
+    "dueOn": "2025-07-03",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 46800
+    },
+    "time": {
+      "total": 30600,
+      "users": {
+        "1328069": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-07-24 12:50:07"
+  },
+  {
+    "id": "as:1210611870387763",
+    "name": "Stickers",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210611870387763/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-23 13:56:45",
+    "dueOn": "2025-09-01",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "completed": true,
+    "completedAt": "2025-10-19 12:59:44",
+    "assignees": [
+      {
+        "accountId": "as:1206858324797116",
+        "accountName": "Liza Shelkovich",
+        "userId": 1328069
+      }
+    ]
+  },
+  {
+    "id": "as:1210611870387765",
+    "name": "Onboarding Tees\n\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210611870387765/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-06-23 13:57:19",
+    "dueOn": "2025-06-26",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1214048": 900,
+        "1328069": 27900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-07-24 07:37:15"
+  },
+  {
+    "id": "as:1210668080611943",
+    "name": "ger",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210668080611943/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "parentName": "New employee template",
+    "parentId": "as:1210668080611941",
+    "createdAt": "2025-06-29 12:21:01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1210668080611944",
+    "name": "eg",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1210668080611944/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "parentName": "New employee template",
+    "parentId": "as:1210668080611941",
+    "createdAt": "2025-06-29 12:21:03",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1210897887963438",
+    "name": "Storyboards & Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210897887963438/f",
+    "iteration": "Employer Branding video",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-07-27 10:45:50",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 144000,
+      "users": {
+        "1370761": 144000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:07"
+  },
+  {
+    "id": "as:1210897887963440",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210897887963440/f",
+    "iteration": "Employer Branding video",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-07-27 10:46:00",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 201600
+    },
+    "time": {
+      "total": 244800,
+      "users": {
+        "1213760": 244800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:08"
+  },
+  {
+    "id": "as:1210897887963442",
+    "name": "Music & Sound Editing",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1210897887963442/f",
+    "iteration": "Employer Branding video",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-07-27 10:46:03",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "time": {
+      "total": 43200,
+      "users": {
+        "1213760": 36000,
+        "1370761": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:09"
+  },
+  {
+    "id": "as:1211015170440186",
+    "name": "Not For Now",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211015170440186/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-08-10 10:45:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:12"
+  },
+  {
+    "id": "as:1211043930376216",
+    "name": "Offsite Document Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211043930376216/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-08-14 09:18:35",
+    "labels": [],
+    "time": {
+      "total": 9000,
+      "users": {
+        "1370761": 5400,
+        "1407470": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:20",
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1211352288452521",
+    "name": "Logo vector refinment",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211352288452521/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-14 08:20:44",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1342403": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:18"
+  },
+  {
+    "id": "as:1211369247888658",
+    "name": "Extras",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1209693333096067/1211369247888658/f",
+    "iteration": "Employer Branding video",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-16 06:36:00",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1202732458183440",
+        "accountName": "Nitzan Yogev",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1211369882455092",
+    "name": "Giveback Mini Game",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211369882455092/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-16 14:24:05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 88200,
+      "users": {
+        "1213760": 43200,
+        "1370761": 45000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1211383784141789",
+    "name": "Logo Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211383784141789/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-17 11:57:15",
+    "dueOn": "2025-09-18",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 18000
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1370761": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:17",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1211383784141791",
+    "name": "Lower Third",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211383784141791/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-18 06:28:45",
+    "dueOn": "2025-09-21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1370761": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:16",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1211383784141793",
+    "name": "Countdown",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211383784141793/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-09-18 06:28:50",
+    "dueOn": "2025-09-18",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 7200,
+      "users": {
+        "1213760": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 12:39:15"
+  },
+  {
+    "id": "as:1211647516365665",
+    "name": "Letterhead Template",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211647516365665/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-10-15 12:38:39",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1421038": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:01",
+    "assignees": [
+      {
+        "accountId": "as:1211645730002700",
+        "accountName": "Daniel kramash",
+        "userId": 1421038
+      }
+    ]
+  },
+  {
+    "id": "as:1211648952692213",
+    "name": "Slide Deck",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211648952692213/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-10-15 12:35:47",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 25200
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:02",
+    "assignees": [
+      {
+        "accountId": "as:1202732458183440",
+        "accountName": "Nitzan Yogev",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1211650025266091",
+    "name": "Why I Joined JustPlay blog thumbnail",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211650025266091/f",
+    "iteration": "Misc",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-10-15 13:39:01",
+    "labels": [],
+    "time": {
+      "total": 8100,
+      "users": {
+        "1214048": 900,
+        "1421038": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:00",
+    "assignees": [
+      {
+        "accountId": "as:1211645730002700",
+        "accountName": "Daniel kramash",
+        "userId": 1421038
+      }
+    ]
+  },
+  {
+    "id": "as:1211694603078092",
+    "name": "Update c-level photos",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211694603078092/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-10-20 13:38:41",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1421038": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:29",
+    "assignees": [
+      {
+        "accountId": "as:1211645730002700",
+        "accountName": "Daniel kramash",
+        "userId": 1421038
+      }
+    ]
+  },
+  {
+    "id": "as:1211694603078097",
+    "name": "Product Meeting",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211694603078097/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-10-20 14:27:10",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1214048": 4500,
+        "1407470": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 08:00:06"
+  },
+  {
+    "id": "as:1211814911908255",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211814911908255/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-02 07:42:06",
+    "labels": [],
+    "time": {
+      "total": 129600,
+      "users": {
+        "1217417": 129600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:41"
+  },
+  {
+    "id": "as:1211814911908257",
+    "name": "Animation",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1211814911908257/f",
+    "iteration": "Sub-Brands - 4EverGreen",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-02 07:42:10",
+    "labels": [],
+    "time": {
+      "total": 144000,
+      "users": {
+        "1217417": 144000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211820944352230",
+    "name": "LinkedIn and YouTube covers",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211820944352230/f",
+    "iteration": "Brandbook",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-03 15:15:58",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 8100,
+      "users": {
+        "1370761": 8100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:02"
+  },
+  {
+    "id": "as:1211820944352232",
+    "name": "Backgrounds for social assets",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211820944352232/f",
+    "iteration": "Brandbook",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-03 15:16:09",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 38700,
+      "users": {
+        "1370761": 38700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:03"
+  },
+  {
+    "id": "as:1211820949865801",
+    "name": "Office templates",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211820949865801/f",
+    "iteration": "Brandbook",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-03 15:16:20",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 1800,
+      "users": {
+        "1370761": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:04"
+  },
+  {
+    "id": "as:1211820949865803",
+    "name": "Fonts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209693333096067/1211820949865803/f",
+    "iteration": "Brandbook",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2025-11-03 15:16:26",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "completed": true,
+    "completedAt": "2025-11-19 07:59:03"
+  },
+  {
+    "id": "as:1214067340317931",
+    "name": "Color changes - Nanamint",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1214067340317931/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2026-04-15 10:48:52",
+    "labels": [],
+    "time": {
+      "total": 58500,
+      "users": {
+        "1217417": 40500,
+        "1437050": 7200,
+        "1439884": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213352178360044",
+        "accountName": "Dmitry Ostrovskiy",
+        "userId": 1437050
+      }
+    ]
+  },
+  {
+    "id": "as:1214067340317935",
+    "name": "Nanamint Logo",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1214067340317935/f",
+    "iteration": "Sub-Brands - Gimica",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2026-04-15 10:52:01",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1437050": 12600,
+        "1439884": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213352178360044",
+        "accountName": "Dmitry Ostrovskiy",
+        "userId": 1437050
+      }
+    ]
+  },
+  {
+    "id": "as:1214466612493111",
+    "name": "Dev fix",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1214466612493111/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2026-05-03 13:05:16",
+    "labels": [],
+    "time": {
+      "total": 4500,
+      "users": {
+        "1217417": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1214597012788023",
+    "name": "Home page changes ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1214597012788023/f",
+    "iteration": "JustPlay website",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2026-05-07 12:46:02",
+    "dueOn": "2026-05-11",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1437050": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1214728449240518",
+    "name": " Charity Water Icon ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209693333096067/1214728449240518/f",
+    "iteration": "Visual Language",
+    "projects": [
+      "as:1209693333096067"
+    ],
+    "createdAt": "2026-05-12 07:25:24",
+    "labels": [],
+    "completed": false
+  }
+]

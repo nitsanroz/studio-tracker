@@ -1,0 +1,935 @@
+[
+  {
+    "id": "as:1165715687610496",
+    "name": "SMB help clip - 22h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1165715687610496/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-10 09:24:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-03-29 07:28:09",
+    "assignees": [
+      {
+        "accountId": "as:375865110040779",
+        "accountName": "Alon Sivan"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250530",
+    "name": "UX Wireframes (4) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250530/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:29:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:17",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250532",
+    "name": "Visual research (4) - 6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250532/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:29:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:44",
+    "assignees": [
+      {
+        "accountId": "as:1164685340149563",
+        "accountName": "Jey Tsymbaluk"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250538",
+    "name": "Design Concepts (8) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250538/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:33:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:46",
+    "assignees": [
+      {
+        "accountId": "as:1164685340149563",
+        "accountName": "Jey Tsymbaluk"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250540",
+    "name": "Full Design (24) - 19.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250540/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:34:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:45",
+    "assignees": [
+      {
+        "accountId": "as:1164685340149563",
+        "accountName": "Jey Tsymbaluk"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250542",
+    "name": "Mobile Adaptation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250542/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:35:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:48",
+    "assignees": [
+      {
+        "accountId": "as:1164685340149563",
+        "accountName": "Jey Tsymbaluk"
+      }
+    ]
+  },
+  {
+    "id": "as:1168793887250544",
+    "name": "Style Guide & Export for Dev (8)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1168793887250544/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-03-29 07:35:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:47",
+    "assignees": [
+      {
+        "accountId": "as:1164685340149563",
+        "accountName": "Jey Tsymbaluk"
+      }
+    ]
+  },
+  {
+    "id": "as:1171899387485396",
+    "name": "And.co animations (11) - 11.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1171899387485396/f",
+    "iteration": "And.co Web Design (48) - 48h (21/4/2020)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2020-04-19 14:36:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-17 10:51:15",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1200702606567606",
+    "name": "Design update (8-10) - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1200702606567606/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-08-02 06:06:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:27:51",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200789975674980",
+    "name": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1200789975674980/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-08-16 06:11:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:27:54",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200854485171817",
+    "name": "Inbox - Filtered out (1.5) - 5.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171817/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 13:53:51",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171818",
+    "name": "Manage orders (3) - 9.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171818/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:52:53",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171819",
+    "name": "Become a seller (3/6) - 14h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171819/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:53:17",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171820",
+    "name": "Manage requests (1) - 2h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171820/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:53:29",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171821",
+    "name": "No search results (2) - 5.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171821/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:53:47",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171822",
+    "name": "My gigs (1) - 3.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171822/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:54:10",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171825",
+    "name": "Favorite gig (1) - 1.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171825/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:54:58",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171826",
+    "name": "Payment loader (1)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171826/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:55:18",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171827",
+    "name": "Payment order (2) - 0.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171827/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:55:34",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171828",
+    "name": "Congrats (2) - 4.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171828/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:55:55",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171829",
+    "name": "Downtime (2) - 2.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171829/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:56:24",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200854485171830",
+    "name": "Something went wrong (1)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1200854485171830/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-08-25 14:56:54",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201035372953166",
+    "name": "References & 1 General Design Draft (16) - 18h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201035372953166/f",
+    "iteration": "3D ads (88) - 87.25h",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-09-22 09:23:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:28:04",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201035372953171",
+    "name": "Choosing 5 elements for each category (8) - 4.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201035372953171/f",
+    "iteration": "3D ads (88) - 87.25h",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-09-22 09:24:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:28:06",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201035372953173",
+    "name": "3 Animations (64) - 87.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201035372953173/f",
+    "iteration": "3D ads (88) - 87.25h",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-09-22 09:25:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:28:07",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201035372953175",
+    "name": "3 formats (8)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201035372953175/f",
+    "iteration": "3D ads (88) - 87.25h",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-09-22 09:25:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:28:09",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201035372953177",
+    "name": "module purchasing (8)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201035372953177/f",
+    "iteration": "3D ads (88) - 87.25h",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-09-22 09:25:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:28:10",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201096427410920",
+    "name": "High five (2/3) - 2h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410920/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 13:58:36",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201096427410921",
+    "name": "Seller review(3) - 1.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410921/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 14:00:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201096427410922",
+    "name": "Congrats first purchase (1) - 3.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410922/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 14:01:34",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201096427410923",
+    "name": "Manage requests NEW - 1.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410923/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 14:04:53",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201096427410924",
+    "name": "no internet(2/3)  - 4h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410924/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 14:06:11",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201096427410925",
+    "name": "Something went wrong NEW - 3.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201096427410925/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-09-30 14:09:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201124989608099",
+    "name": "Invite a friend - 3.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201124989608099/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-10-05 07:41:22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201124989608100",
+    "name": "My custom offer - 0.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201124989608100/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-10-05 07:42:28",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201124989608101",
+    "name": "No results Magnifier - 3.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201124989608101/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-10-05 07:43:36",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201124989608102",
+    "name": "No search results inbox - 4h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1201124989608102/f",
+    "iteration": "mobile animated illustrations",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Illustration animation (50h+6h+8h+2h+5h) - 71.5h - done",
+    "parentId": "as:1200789975674980",
+    "createdAt": "2021-10-05 07:44:46",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201460694583097",
+    "name": "Animation (48)- 49.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201460694583097/f",
+    "iteration": "Product showreel",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-12-02 17:03:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:27:44",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1201469598674137",
+    "name": "Design (6) - 5.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201469598674137/f",
+    "iteration": "Product showreel",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-12-05 13:19:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:27:46"
+  },
+  {
+    "id": "as:1201469598674139",
+    "name": "sound",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201469598674139/f",
+    "iteration": "Product showreel",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2021-12-05 13:19:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:27:48"
+  },
+  {
+    "id": "as:1201892622138174",
+    "name": "Fiverr - income sync animation (4h) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1201892622138174/f",
+    "iteration": "More Delivers",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-02-28 09:53:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-26 09:26:08",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1202040619980288",
+    "name": "Fiverr - logo maker animations  (25h) - 20h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202040619980288/f",
+    "iteration": "More Delivers",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-03-29 10:40:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:21"
+  },
+  {
+    "id": "as:1202171584111894",
+    "name": "Desktop design (48h) - 35.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202171584111894/f",
+    "iteration": "Certified expert design pages (80h)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-04-24 07:07:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:22",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202171584111897",
+    "name": "Mobile adjustments (16h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202171584111897/f",
+    "iteration": "Certified expert design pages (80h)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-04-24 07:10:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:22",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202171584111901",
+    "name": "Preparing for dev (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202171584111901/f",
+    "iteration": "Certified expert design pages (80h)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-04-24 07:11:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:23",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202171584111903",
+    "name": "QA (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202171584111903/f",
+    "iteration": "Certified expert design pages (80h)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-04-24 07:11:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:23",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202181175201817",
+    "name": "Fiverr - Animated illustrations (12h) - 11.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1202181175201817/f",
+    "iteration": "More Delivers",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2022-04-26 09:24:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:37:22"
+  },
+  {
+    "id": "as:1202181175201823",
+    "name": "משימה עם adar debby",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1202181175201823/f",
+    "iteration": "More Delivers",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "parentName": "Fiverr - logo maker animations  (25h) - 20h",
+    "parentId": "as:1202040619980288",
+    "createdAt": "2022-04-26 09:24:46",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1207750485421638",
+    "name": "Fiverr Neo product video",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1165715687610493/1207750485421638/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2024-07-07 08:36:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 144000,
+      "users": {
+        "1328069": 16200,
+        "1341194": 127800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-07-30 08:11:37",
+    "assignees": [
+      {
+        "accountId": "as:1207442581017170",
+        "accountName": "Avishai Zalach",
+        "userId": 1341194
+      }
+    ]
+  },
+  {
+    "id": "as:1207930111370787",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1165715687610493/1207930111370787/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:1165715687610493"
+    ],
+    "createdAt": "2024-07-30 08:10:29",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 17100,
+      "users": {
+        "1341194": 17100
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

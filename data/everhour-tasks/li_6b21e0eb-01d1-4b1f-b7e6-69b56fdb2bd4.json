@@ -1,0 +1,51 @@
+[
+  {
+    "id": "li:35e86386-d81d-4283-b483-e2c9d1f71976",
+    "name": "Hero",
+    "type": "task",
+    "status": "Backlog",
+    "url": "https://linear.app/studionmore/issue/STU-12/hero",
+    "projects": [
+      "li:6b21e0eb-01d1-4b1f-b7e6-69b56fdb2bd4"
+    ],
+    "number": "STU-12",
+    "createdAt": "2024-07-18 12:15:23",
+    "labels": [
+      "Careers"
+    ],
+    "completed": false
+  },
+  {
+    "id": "li:01a65644-966f-40ad-99a7-e113e632eee3",
+    "name": "hero",
+    "type": "task",
+    "status": "Backlog",
+    "url": "https://linear.app/studionmore/issue/STU-13/hero",
+    "projects": [
+      "li:6b21e0eb-01d1-4b1f-b7e6-69b56fdb2bd4"
+    ],
+    "number": "STU-13",
+    "createdAt": "2024-07-18 12:17:05",
+    "labels": [
+      "Homepage"
+    ],
+    "completed": false
+  },
+  {
+    "id": "li:7e4dceac-653d-4b75-8673-bfabb819a262",
+    "name": "Mobile Hero",
+    "type": "task",
+    "status": "Done",
+    "url": "https://linear.app/studionmore/issue/STU-11/mobile-hero",
+    "projects": [
+      "li:6b21e0eb-01d1-4b1f-b7e6-69b56fdb2bd4"
+    ],
+    "number": "STU-11",
+    "createdAt": "2024-07-18 12:13:24",
+    "labels": [
+      "Careers"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 12:23:18"
+  }
+]

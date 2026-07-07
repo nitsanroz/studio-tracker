@@ -1,0 +1,2050 @@
+[
+  {
+    "gid": "1204086240172749",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2023-03-01T07:17:00.770Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Meetings",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1204086240172749"
+  },
+  {
+    "gid": "1204086240172751",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2023-03-01T07:21:48.480Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Nominal Keys",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1204086240172751"
+  },
+  {
+    "gid": "1208099091302394",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T06:50:55.331Z",
+    "created_at": "2024-08-20T06:31:21.243Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Nominal X [client] Banner",
+    "notes": "https://www.figma.com/design/8M2AncsCA5w9Qeqt2Jqnob/Nominal---Marketing?node-id=554-2&t=knpDclz1UtZU5XgT-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035173\n\nמידות\n400X276\n\nבאנר להודיע על לקוח חדש\nNominal X GSPP לדוגמא\nבדומה למה שעשינו לצ'קמארקס, רק בלי אנימציה.\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035175\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302394"
+  },
+  {
+    "gid": "1207750597745288",
+    "assignee": {
+      "gid": "1207503684349891"
+    },
+    "completed": true,
+    "completed_at": "2024-07-29T08:17:29.702Z",
+    "created_at": "2024-07-09T09:37:54.929Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "New logos for website",
+    "notes": "https://www.figma.com/design/652PsAeu83ILihjiHvNJDi/Nominal---Website?node-id=6125-55139&t=OC8R4fQlJZdr8cJs-11\n\n\nעדיף למצוא לוגו SVG\nלהכיל עליו את הצבע של שאר הלוגואים שתהיה אחידות\nלהכניס לתוך frame בגודל הנכון\nלהתאים את גודל הלוגו בתוך הפריים\nhttps://www.widegroup.eu/en/\nhttp://trilogy.com/ \nhttps://www.continu.com/\nhttps://www.vizionhealth.com/ \nhttps://leanpay.com/\nhttps://southmill.com/ ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1207750597745288"
+  },
+  {
+    "gid": "1208099091302396",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-09-10T10:53:06.368Z",
+    "created_at": "2024-08-20T06:31:50.051Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "CTA banner inside blog post",
+    "notes": "2 סוגים של CTA\n\n    CTA כללי ליצירת קשר\n    CTA להורדת קובץ\n\nדוגמא שגיא אהב\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035148\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302396"
+  },
+  {
+    "gid": "1208099091302398",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T06:50:57.128Z",
+    "created_at": "2024-08-20T06:34:46.771Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "LinkedIn cover banner",
+    "notes": "Personal page: 1584x396\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302398"
+  },
+  {
+    "gid": "1208099091302402",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-16T08:12:13.223Z",
+    "created_at": "2024-08-20T06:44:48.466Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Case Study page",
+    "notes": "עיצוב עמוד חדש לקייס סטאדי לאתר של נומינל\n\nגיא מאוד אהב את העיצוב של https://www.pigment.com/customer-stories/idkids\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099091302409\n\n\nתוכן שאפשר להשתמש בשביל העיצוב\nhttps://www.nominal.so/blog/how-gssp-automates-accounting-to-ensure-maximum-compliance-and-efficiency\n\nאפשר לקחת גם השראות מתוך הPDF שייצרנו להם\nhttps://www.figma.com/design/zQCKRnqAxjtFL6CcC5m2Bv/Nominal---One-pager?node-id=535-18434&t=5hUxfuNPtTQtkf79-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035181\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302402"
+  },
+  {
+    "gid": "1208099093035184",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T07:17:15.086Z",
+    "created_at": "2024-08-22T07:56:00.964Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Case Study Lobby",
+    "notes": "We need to design a lobby to display all the case studies ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099093035184"
+  },
+  {
+    "gid": "1208167891938996",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-16T08:12:11.710Z",
+    "created_at": "2024-08-28T12:28:46.134Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Ebook/Report Download form",
+    "notes": "Examples: \nhttps://www.pigment.com/resources/gartner-xpa-market-guide-2024#download-report\nhttps://www.getcanopy.com/ebook/transforming-client-relationships-with-tech-first-accounting\n\nבריף לקוח\nhttps://www.loom.com/share/4107100083b1492f86ddb4c63c29ad1a\n\nגיא רוצה לעשות עמוד שיהיה במבנה של עמוד https://www.nominal.so/book-a-demo\nרק שיוביל להורדת מסמך\nלהוסיף צ'קמרק להרשמה לניוזלטר לטופס הזה\nמבחינת תוכן, התוכן יתקשר למסמך שמורידים לכן הוא צריך להיות דינאמי.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208167891938996"
+  },
+  {
+    "gid": "1208099091302404",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T06:51:01.295Z",
+    "created_at": "2024-08-20T06:45:10.790Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Main Menu - add Customers",
+    "notes": "להוסיף שדה \nCustomers \nתפריט הראשי\n\nבנוסף, יש להוריד את Developers \nמהתפריט של Resources",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302404"
+  },
+  {
+    "gid": "1207597663641649",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-20T06:31:16.165Z",
+    "created_at": "2024-06-20T06:43:53.399Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "GSSP Case Study",
+    "notes": "https://docs.google.com/document/d/1kkAvnNpUPdRVjgjtmhhoNrDmViIZg7olqYvf3bhKDZE/edit?usp=sharing\nhttps://www.loom.com/share/131801754aa6480db0f0e60327800f35",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1207597663641649"
+  },
+  {
+    "gid": "1208099093035154",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T06:51:02.855Z",
+    "created_at": "2024-08-20T07:18:29.348Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Blog Post - Quote width",
+    "notes": "https://www.figma.com/design/652PsAeu83ILihjiHvNJDi/Nominal---Website?node-id=2579-95508&t=T3S2tsMkYzuX9XQX-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035157\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099093035154"
+  },
+  {
+    "gid": "1208200700223377",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-10T10:52:44.945Z",
+    "created_at": "2024-09-02T06:14:09.198Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Nominal Solution Overview",
+    "notes": "https://www.loom.com/share/f6502914c7ba4e11beeb82e950ec2507\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208200700223380\n\nhttps://docs.google.com/document/d/1CU6JpR8htS0XQTwH6MS1KcbJO2u9s5Gtipn3OhdCqjY/edit?usp=sharing",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208200700223377"
+  },
+  {
+    "gid": "1207919487210274",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-04T08:38:58.521Z",
+    "created_at": "2024-07-29T08:17:30.630Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Nominal Kids 2024",
+    "notes": "Have a pheNominal school year!",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1207919487210274"
+  },
+  {
+    "gid": "1208253636513046",
+    "assignee": {
+      "gid": "119644861961683"
+    },
+    "completed": true,
+    "completed_at": "2024-10-31T12:53:24.360Z",
+    "created_at": "2024-09-08T13:28:22.313Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Booth Design",
+    "notes": "https://www.backdropsource.com/collections/modular-displays-for-exhibitions-booth/products/portable-exhibit-display-10ft-model-2\n\nלהתבסס על עיצוב רולאפים",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208253636513046"
+  },
+  {
+    "gid": "1208099093035161",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-25T06:51:04.305Z",
+    "created_at": "2024-08-21T06:48:18.554Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Haylie Business Card",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035164\n\nשם Haylie Kennedy\nטייטל Business Developer Manager\nמייל haylie@nominal.so\nטלפון 321-465-0747 (קידומת +1)\n\n/Volumes/Xmore/XProjects/Nominal/Branding/Business card/Business_card_nominal_.ai",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099093035161"
+  },
+  {
+    "gid": "1207971850075071",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-08-20T06:31:19.582Z",
+    "created_at": "2024-08-04T06:32:01.231Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "G2 Banner",
+    "notes": "באנר לאתר G2 לנומינל\nhttps://www.g2.com/products/nominal-nominal/reviews\n\nמידות: \n1260x240\n\nתוכן:\nClose your books faster and better with AI automation \nאו\nClose your books faster and better with AI\n\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207971850075074\n\nרוצה לייצר משהו דומה לזה בלי לציין כמה הם גייסו. \n\nTrusted by: \n[4 logos:  GSPP, Trilogy, Vizion Health, South Mill]",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1207971850075071"
+  },
+  {
+    "gid": "1208270799696857",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:13.812Z",
+    "created_at": "2024-09-10T10:51:17.714Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Values Poster",
+    "notes": "נומינל ביקשו פוסטר למשרד שלהם עם הערכים של החברה\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208270799696860\n\n    We Win as a Team – We don’t face challenges alone; we succeed together.\n    Make It Happen – We default to action and drive results.\n    Ideas > Roles – Ideas matter more than titles; everyone’s voice counts.\n    Truth Over Comfort – Honest dialogue always comes first, even when it’s tough.\n    We Build with Purpose – Taking initiative leads to real-world impact.\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208270799696857"
+  },
+  {
+    "gid": "1208317035100218",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2024-10-31T12:53:25.567Z",
+    "created_at": "2024-09-18T06:48:43.366Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "2024 Presentation",
+    "notes": "https://www.loom.com/share/5c71c5a59fed422196e6d692bd23cd26",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208317035100218"
+  },
+  {
+    "gid": "1208634338091587",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-10-31T12:53:16.669Z",
+    "created_at": "2024-10-27T15:28:15.364Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Halloween theme gif",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208634338091587"
+  },
+  {
+    "gid": "1208634338091589",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-18T08:12:05.029Z",
+    "created_at": "2024-10-27T15:28:40.905Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "New emplyee post",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208634338091589"
+  },
+  {
+    "gid": "1208681324052328",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-11-04T14:59:25.229Z",
+    "created_at": "2024-11-03T08:44:52.493Z",
+    "due_on": "2024-11-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1207597663641651",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Holidays Card",
+    "notes": "התבקשנו לייצר גלויה שתלווה את הפיג'מה שיצרנו לנומינל\n\nלהתבסס על השפה של הקופסא\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208681324052332\n\n\nקובץ דפוס מהספק מצורף למשימה\n\nתיקייה שבה יש את כל החומרים\n/Volumes/Xmore/XProjects/Nominal/Branding/Christmas",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208681324052328"
+  },
+  {
+    "gid": "1205844195836580",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2023-11-05T12:35:13.495Z",
+    "created_at": "2023-11-01T14:37:45.334Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205844195836573",
+          "name": "Not for now"
+        }
+      }
+    ],
+    "name": "Hours October 2023 ",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205844195836580"
+  },
+  {
+    "gid": "1210034231165930",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-29T06:42:28.546Z",
+    "created_at": "2025-04-21T10:37:11.555Z",
+    "due_on": "2025-04-24",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1201865624182413",
+          "name": "Others"
+        }
+      }
+    ],
+    "name": "Intuit Deck",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1210034231165930"
+  },
+  {
+    "gid": "1210091091168033",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-29T06:42:29.770Z",
+    "created_at": "2025-04-28T12:08:58.533Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1201865624182413",
+          "name": "Others"
+        }
+      }
+    ],
+    "name": "Workday Deck",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1210091091168033"
+  },
+  {
+    "gid": "1210901652445323",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2025-11-11T14:46:22.921Z",
+    "created_at": "2025-07-29T06:42:21.563Z",
+    "due_on": "2025-08-28",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1201865624182413",
+          "name": "Others"
+        }
+      }
+    ],
+    "name": "New Deck",
+    "notes": "1. Slide 6 - New icons, symmetry \n2. Slides 2,3,4,13 - Light touch ups",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1210901652445323"
+  },
+  {
+    "gid": "1210804803900257",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2026-01-07T14:32:33.033Z",
+    "created_at": "2025-07-15T19:37:50.154Z",
+    "due_on": "2025-08-31",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1201865624182413",
+          "name": "Others"
+        }
+      }
+    ],
+    "name": "New Logo",
+    "notes": "Summary  \nNominal seeks a refreshed logo for use across print and digital channels, aimed at enterprise and midsize brands led by CFOs, Controllers, and Accountants. The design must modernize the current identity without echoing competitor marks.\n\nTask Description  \n• Task Name: New Logo  \n• Format: Digital (print-ready files also required)  \n• Animation: Not required  \n• Purpose: Redesign Nominal’s logo to strengthen brand recognition and appeal to financial decision-makers  \n• Display Locations: All brand touchpoints (website, presentations, stationery, marketing collateral)  \n• Target Audience: CFOs, Controllers, Accountants at enterprise and midsize organizations  \n• Dimensions/Technical Specifications: Standard logo formats; deliver vector files (AI/EPS/PDF) plus high-resolution PNG and JPG in color and monochrome  \n• Budget: (not specified; hours to be confirmed)  \n• Things to Avoid: Any resemblance to competitor logos or color schemes  \n• Notes: NA  \n• Due Date: 2025-08-31  \n• Pre-kickoff Meeting: Not required  \n\nWhen asked about the values and messaging of the logo. here is what Stephanie said\n    Trustworthy -- our customers trust that the data in Nominal is accurate and reliable. \n    Tech-forward, Modern -- Nominal is an AI first software. For our competitors, AI is an afterthought. Also Nominal uses AI Agents to help businesses get more done. \n    Forward Momentum - Our customers want to move quickly and sale their business. Our product allows them to do that without hiring more people.\nwhen asked how she would describe Nominal in 4-5 words: \"ERP agnostic. Easy to implement.\"",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1210804803900257"
+  },
+  {
+    "gid": "1206029578046889",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2023-12-17T11:06:49.590Z",
+    "created_at": "2023-11-26T15:28:34.320Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Mail signature",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206029578046889"
+  },
+  {
+    "gid": "1206034172265705",
+    "assignee": {
+      "gid": "1201675320609741"
+    },
+    "completed": true,
+    "completed_at": "2023-12-17T11:06:52.121Z",
+    "created_at": "2023-11-27T14:30:12.090Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Presentation Template ",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206034172265705"
+  },
+  {
+    "gid": "1206134832123297",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:54.041Z",
+    "created_at": "2023-12-10T07:44:35.546Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Happy Holidays post ",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206134832123297"
+  },
+  {
+    "gid": "1206431463690328",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:54.434Z",
+    "created_at": "2024-01-25T07:56:59.611Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Blog post changes",
+    "notes": "1. יצירת טופס להשארת מייל, בכל פוסט. המטרה היא שלצד כל פוסט, מימין, יופיע מקום ליוזרים להשאיר מייל של sign up for updates, באווירת הדברים שיש https://www.gong.io/resources/labs/data-shows-these-3-seller-mistakes-are-costing-you-time-and-money/ (מצ״ב גם צילום מסך).\n\n2. הוספת כפתור download one pager בפוסטים, ויכולת לשלוט בקובץ שכל אחד מפנה אליו. כיום יש לנו כפתור עם התנהגות כזו בעמוד solutions, אני צריכה את אותו אחד בכל הפוסטים (/ שנוכל לשכפל אותו לכל פוסט עתידי), ושבכל פוסט יפנה ל-one pager אחר. ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206431463690328"
+  },
+  {
+    "gid": "1206458433980113",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:54.736Z",
+    "created_at": "2024-01-30T07:20:16.549Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Baby Onesie ",
+    "notes": "רישום מקדימה\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206458433980116\n\n\nמקדימה הלוגו של נומינל בלי הטקסט\nמאחורה הלוגו עם הטקסט\n\nהם מדפיסים פה\nhttps://www.zazzle.com/create_your_own_baby_creeper-235750596865541702\n\nרפרנס שאפק שלחה לי\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206458433980118\n\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206458433980120\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206458433980113"
+  },
+  {
+    "gid": "1206543127364875",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:55.010Z",
+    "created_at": "2024-02-07T08:31:05.546Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Home page - what we do section",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206543127364875"
+  },
+  {
+    "gid": "1206474126602642",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-02-18T14:09:24.137Z",
+    "created_at": "2024-01-30T11:21:50.683Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Website Home Page clients section",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206474126602642"
+  },
+  {
+    "gid": "1206536647339163",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:55.367Z",
+    "created_at": "2024-02-06T15:10:44.460Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Business Cards for conference (6h)",
+    "notes": "Guy Leibovitz\nFounder & CEO\n917 1620 5657\nguy@nominal.so\n\nLee Greene\nVP of Sales\n561 5019 982\nlee@nominal.so\n\nRicardo Cohen Pellico\nHead of Growth EMEA\n+34 639 554 771\nricardo@nominal.so",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206536647339163"
+  },
+  {
+    "gid": "1206536647339165",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:55.780Z",
+    "created_at": "2024-02-06T15:10:52.026Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Table Map for conference (1h)",
+    "notes": " 6ft over 30 inchs",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206536647339165"
+  },
+  {
+    "gid": "1204609732879558",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T08:44:10.670Z",
+    "created_at": "2023-05-17T06:19:30.534Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Linkedin Banner",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1204609732879558"
+  },
+  {
+    "gid": "1206570538059444",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-03-12T12:51:56.544Z",
+    "created_at": "2024-02-11T14:28:12.929Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Rollups for conference (5h)",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206570538059444"
+  },
+  {
+    "gid": "1206632725433979",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:56.495Z",
+    "created_at": "2024-02-19T13:46:49.798Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Onepager for conference (2h+2)",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725433979"
+  },
+  {
+    "gid": "1208981249658568",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:46.686Z",
+    "created_at": "2024-12-17T07:14:37.592Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Nominal vs The Competition",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208981249658568"
+  },
+  {
+    "gid": "1209029581953514",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:47.108Z",
+    "created_at": "2024-12-22T13:02:43.195Z",
+    "due_on": "2025-01-12",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Series A Deck\n",
+    "notes": "https://www.loom.com/share/c3745a53c5814eb98e56b262372afe65",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1209029581953514"
+  },
+  {
+    "gid": "1206745811881760",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:56.868Z",
+    "created_at": "2024-03-03T14:27:39.063Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social post for conference",
+    "notes": "Join us at the Solar + Wind Finance and Investment Summit!\nMarch 10-13\nPhoenix, AZ\nWe’ll be at booth #92\n\n1080x1080/1920x1080",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206745811881760"
+  },
+  {
+    "gid": "1207043463926790",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:25:57.133Z",
+    "created_at": "2024-04-10T06:54:46.889Z",
+    "due_on": "2024-04-18",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Accountex London 2024 Booth",
+    "notes": "    LinkedIn post based on the last conference post design\nBooth: 575\nMay 15-16, 2024\nLocation: ExCel LONDON\nAccountex London is the World’s largest accounting and finance event\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207043463926793\n\n\n    Booth\nbased on the rollups we did\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207043463926795\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1207043463926797\n\nArtwork Dimensions:\nLeft wall (3m) – 3 inlay panels Width = 946mm x Height = 2340mm\nRight wall (4m) – 4 inlay panels  X Width = 946mm x Height = 2340mm\n \nPlease produce all artwork print ready, and to the sizes shown below plus 10mm bleed to all edges.\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1207043463926790"
+  },
+  {
+    "gid": "1205166490058456",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T08:44:15.833Z",
+    "created_at": "2023-07-30T10:21:41.945Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Nominal Kids",
+    "notes": "אני רוצה לעשות לדור הבא מתנה של נומינל ושיהיה כתוב על הקופסא: I'm a pheNominal kid כמובן עם הלוגו והפונט והצבעים שלנו. \nובפנים כרטיס ברכה שכתוב בו \n!Have a pheNominal year \nלגבי ההנחיות - עוד אין לי גודל של קופסא, אז אפשר פשוט לייצר סטיקרים שיכולים להיות גם עבור שימוש עתידי, נניח 10X15.\nהכרטיס בפנים יכול להיות קצת יותר קטן, נגיד 9X13 אבל לא קריטי.\nההנחיות - להשתמש בשפה העיצובית של נומינל אבל עבור ילדים, אז אפשר שיהיו תמונות יותר חמודות. ולהדגיש את הנומינל במילה פנומינל (אבל רק אם זה נראה טוב).\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205166490058459\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205166490058456"
+  },
+  {
+    "gid": "1205362493205721",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T08:44:20.913Z",
+    "created_at": "2023-08-28T09:07:58.382Z",
+    "due_on": "2023-08-31",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Rosh Hashana card",
+    "notes": "אשמח לעיצוב כרטיס ברכה ממותג לראש השנה אותו נצמד לבקבוק יין עבור עובדי החברה.\nHappy Rosh Hashanah\nNominal",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205362493205721"
+  },
+  {
+    "gid": "1205590512479234",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:03:13.045Z",
+    "created_at": "2023-09-28T12:12:05.292Z",
+    "due_on": "2023-10-12",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Christmas Pajamas (8-12h)",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479241\n\nמשהו בסגנון הזה עם הלוגו של נומינל.\n\nהם צריכים את העיצוב/הארט בפורמט וקטורי.\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479243\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479245\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479247\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479249\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205590512479234"
+  },
+  {
+    "gid": "1205590512479236",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:03:17.129Z",
+    "created_at": "2023-09-28T12:12:13.146Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Christmas Pajamas Box (12-16h)",
+    "notes": "קופסא בגודל\n 10x20x30\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205590512479239\n\n\nבסגנון הזה רק צבעוני ואולי כיתוב של Oh Oh Oh של סנטה קלאוס..",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205590512479236"
+  },
+  {
+    "gid": "1205622094872344",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:03:20.515Z",
+    "created_at": "2023-10-01T08:42:16.558Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "One Pager",
+    "notes": "https://docs.google.com/document/d/1Dv8ZL8JIuuNnDODAXhTJkGiIg-SOhxM9jTys8WProbE/edit",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205622094872344"
+  },
+  {
+    "gid": "1205622094872346",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:03:24.713Z",
+    "created_at": "2023-10-01T08:42:54.516Z",
+    "due_on": "2023-10-09",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Hiring Post",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1205627578158157\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205622094872346"
+  },
+  {
+    "gid": "1205700458374795",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:03:28.786Z",
+    "created_at": "2023-10-11T14:06:10.865Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1204086240172748",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Social Media Kit",
+    "notes": "Nominal would like to get a new social media kit for their Linkedin and Twitter/X pages\nProfile picture\nCover image\n\nin the past we made some https://www.figma.com/file/B3EBhA4H5zVHNjWrXkTOJx/Nominal---banners?type=design&node-id=309-2&mode=design&t=J4BgO828JGyBskVc-11, but now with the new graphic language there is a need for a new one",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205700458374795"
+  },
+  {
+    "gid": "1209033276230726",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:47.427Z",
+    "created_at": "2024-12-24T08:45:15.078Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Make the blog like Wiz",
+    "notes": "https://www.loom.com/share/33b5d3ba3a624fe6b063e84d5d05336e\n\nGuy would like to make the blog post more like wiz",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1209033276230726"
+  },
+  {
+    "gid": "1209055944420085",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:47.552Z",
+    "created_at": "2024-12-30T13:43:50.278Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "AI-Powered Analysis page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1209055944420085"
+  },
+  {
+    "gid": "1209055944420087",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:47.666Z",
+    "created_at": "2024-12-30T13:44:56.382Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "SOC 1 and SOC 2 visual",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1209055944420087"
+  },
+  {
+    "gid": "1209055944420089",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-01-28T13:20:47.782Z",
+    "created_at": "2024-12-30T13:45:04.752Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Solutions icon - Global Enterprise, Manufacturing&Agricultural",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1209055944420089"
+  },
+  {
+    "gid": "1205262954641671",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T08:59:35.448Z",
+    "created_at": "2023-08-13T07:25:24.726Z",
+    "due_on": "2023-09-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Wireframe",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205262954641671"
+  },
+  {
+    "gid": "1205262954641674",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T08:59:52.422Z",
+    "created_at": "2023-08-13T07:25:45.552Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Graphic Language",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205262954641674"
+  },
+  {
+    "gid": "1205394999277914",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:02:28.646Z",
+    "created_at": "2023-08-31T10:53:33.637Z",
+    "due_on": "2023-10-05",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Homepage UI",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205394999277914"
+  },
+  {
+    "gid": "1205549639580610",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-12-17T11:07:40.063Z",
+    "created_at": "2023-09-21T14:52:35.510Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Hero 3D",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205549639580610"
+  },
+  {
+    "gid": "1205745630419213",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:02:43.794Z",
+    "created_at": "2023-10-18T06:31:48.656Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Multy-Entity Consolidation page ",
+    "notes": "https://docs.google.com/document/d/1prXQZp1ib3cj8CN4xKOxHBBl9F5gNuWjdtf_iN_Z2Ds/edit?usp=sharing\n\nhttps://www.loom.com/share/2bc04c06b1a147e685f6edb4d77d55c7?from_recorder=1&focus_title=1",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205745630419213"
+  },
+  {
+    "gid": "1205774975648213",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:01.523Z",
+    "created_at": "2023-10-23T13:46:00.870Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Mega Menu",
+    "notes": "The client would like to have a mega menu on the main nav bar\nwebsite structure\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1205828605150992\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205774975648213"
+  },
+  {
+    "gid": "1205787587413385",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:02:49.029Z",
+    "created_at": "2023-10-23T17:14:09.961Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Solutions page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205787587413385"
+  },
+  {
+    "gid": "1205787587413387",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:02:52.886Z",
+    "created_at": "2023-10-23T17:15:25.509Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Blog Lobby",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205787587413387"
+  },
+  {
+    "gid": "1205828605150997",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2023-11-16T09:02:56.786Z",
+    "created_at": "2023-10-29T09:49:42.259Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Blog Article",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205828605150997"
+  },
+  {
+    "gid": "1205590508688101",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:01.873Z",
+    "created_at": "2023-09-27T09:01:36.918Z",
+    "due_on": "2023-10-05",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Mobile",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205590508688101"
+  },
+  {
+    "gid": "1205590508688103",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:02.273Z",
+    "created_at": "2023-09-27T09:01:45.298Z",
+    "due_on": "2023-10-05",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Prep for dev",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205590508688103"
+  },
+  {
+    "gid": "1205622094872340",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:02.535Z",
+    "created_at": "2023-10-01T08:35:56.587Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "QA",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205622094872340"
+  },
+  {
+    "gid": "1205878727417680",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:02.876Z",
+    "created_at": "2023-11-05T15:28:03.611Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Security page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205878727417680"
+  },
+  {
+    "gid": "1205878727417682",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:03.185Z",
+    "created_at": "2023-11-05T15:28:08.963Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Data lake page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205878727417682"
+  },
+  {
+    "gid": "1205933655464666",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:03.452Z",
+    "created_at": "2023-11-12T07:38:25.270Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "About page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205933655464666"
+  },
+  {
+    "gid": "1206028913973188",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:03.698Z",
+    "created_at": "2023-11-26T15:31:00.241Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Contact us",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206028913973188"
+  },
+  {
+    "gid": "1206028915406864",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:03.951Z",
+    "created_at": "2023-11-26T15:32:11.351Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Footer",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206028915406864"
+  },
+  {
+    "gid": "1206034679547945",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:04.183Z",
+    "created_at": "2023-11-27T15:03:49.253Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Technical pages",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206034679547945"
+  },
+  {
+    "gid": "1206118034540619",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:04.430Z",
+    "created_at": "2023-12-07T14:45:39.753Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "404",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206118034540619"
+  },
+  {
+    "gid": "1206138209364047",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:04.659Z",
+    "created_at": "2023-12-11T07:22:59.806Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Careers page ",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206138209364047"
+  },
+  {
+    "gid": "1206628931085745",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:04.907Z",
+    "created_at": "2024-02-18T13:40:33.167Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Closed Management page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206628931085745"
+  },
+  {
+    "gid": "1206632725433987",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:05.220Z",
+    "created_at": "2024-02-19T15:29:46.917Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Font Change",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725433987"
+  },
+  {
+    "gid": "1206632725435129",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:05.535Z",
+    "created_at": "2024-02-20T15:12:30.570Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "New contact form",
+    "notes": "CONTACT FORM\nSimilar to https://www.wiz.io/demo  - Note - there’s no menu\n[LOGO - leads to home]\n[No header] \nSEE NOMINAL IN ACTION\n[Header] 1\nReady to Excel without Excel? \n\nBook your 30-minute personalized demo to see how AI can transform business logic into automated workflows and learn how Nominal enables:\n\n    Enhanced operational efficiency with adaptive, AI-driven generative workflows.\n    Streamlined financial oversight by consolidating siloed financial systems.\n    Accelerated end-of-period closes through collaboration and automation.\n[FORM like WIZ] \n\nFor information about how Nominal handles your personal data, please see our Privacy Policy [LINK].\n\nRight side:\n\n[Random, used visuals] \nThe Smartest in Finance are Moving Beyond Spreadsheets \n[logos]",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725435129"
+  },
+  {
+    "gid": "1206632725435131",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:05.831Z",
+    "created_at": "2024-02-20T15:12:31.367Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Menu changes",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1206632725435147\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725435131"
+  },
+  {
+    "gid": "1206632725435133",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:06.120Z",
+    "created_at": "2024-02-20T15:12:39.995Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Logos Strip",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1206632725435149\n\nwe need to find a new location for the logos strip",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725435133"
+  },
+  {
+    "gid": "1206632725435135",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:06.347Z",
+    "created_at": "2024-02-20T15:12:54.615Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Announcements Banner",
+    "notes": "A banner on the top of the website for announcements like funding and special events. ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725435135"
+  },
+  {
+    "gid": "1206632725435143",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:06.637Z",
+    "created_at": "2024-02-21T06:44:56.771Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Multi Entity V2",
+    "notes": "Yellow - change\nRed - new fold\nhttps://docs.google.com/document/d/1s3gIsuGL6MyIBBEsCZdNoyM6lgPLmN_Pmm9QdY-_YNo/edit?usp=sharing\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206632725435151\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725435143"
+  },
+  {
+    "gid": "1206687782191360",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:06.917Z",
+    "created_at": "2024-02-26T11:45:47.287Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Going over website options",
+    "notes": "https://ramp.com/\nhttps://trullion.com/\nhttps://meetcampfire.com/",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206687782191360"
+  },
+  {
+    "gid": "1206745811881752",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:07.228Z",
+    "created_at": "2024-03-03T12:59:38.121Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Generative Workflows",
+    "notes": "https://www.figma.com/file/JjhWInDckJ2jEu1K6Do2YN/Nominal---For-Client?type=design&node-id=1763-8739&mode=design&t=b41LHPZJBcjQqSsm-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206745811881757\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206745811881752"
+  },
+  {
+    "gid": "1206745811881754",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:07.526Z",
+    "created_at": "2024-03-03T12:59:46.133Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Solutions V2",
+    "notes": "https://www.figma.com/file/652PsAeu83ILihjiHvNJDi/Nominal---Website?type=design&node-id=5359-12827&mode=design&t=aNGxJGnNlCkb2tx7-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1206745811881759\n\nnew section with new content. missing icons",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206745811881754"
+  },
+  {
+    "gid": "1206765092242654",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:07.810Z",
+    "created_at": "2024-03-06T08:24:42.579Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205262954641670",
+          "name": "Brand - Website"
+        }
+      }
+    ],
+    "name": "Screen.studio videos",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206765092242654"
+  },
+  {
+    "gid": "1208099091302410",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:32.240Z",
+    "created_at": "2024-08-20T06:47:48.557Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Blog Post - margin between content and sidebar",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302410"
+  },
+  {
+    "gid": "1208099091302412",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:32.600Z",
+    "created_at": "2024-08-20T06:48:07.999Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Case Study page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302412"
+  },
+  {
+    "gid": "1208099091302414",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:32.876Z",
+    "created_at": "2024-08-20T06:48:13.102Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Manu changes",
+    "notes": "https://www.figma.com/design/652PsAeu83ILihjiHvNJDi/Nominal---Website?node-id=6528-13269&t=7OFg4Hm1bhLRZsEM-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035177\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302414"
+  },
+  {
+    "gid": "1208099091302416",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:33.168Z",
+    "created_at": "2024-08-20T06:48:16.577Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Blog Post - add CTA",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099091302416"
+  },
+  {
+    "gid": "1208099093035143",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:33.469Z",
+    "created_at": "2024-08-20T06:48:38.971Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Blog Post - fix quotes design",
+    "notes": "https://www.figma.com/design/652PsAeu83ILihjiHvNJDi/Nominal---Website?node-id=6545-26816&t=7OFg4Hm1bhLRZsEM-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035179\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099093035143"
+  },
+  {
+    "gid": "1208099093035150",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2024-09-25T12:08:33.790Z",
+    "created_at": "2024-08-20T06:51:22.573Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Page speed",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1208099093035153\n\n\nhttps://pagespeed.web.dev/analysis/https-nominal-so/hutjm8wn8e?form_factor=mobile",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1208099093035150"
+  },
+  {
+    "gid": "1205828837028969",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-03-17T09:53:19.873Z",
+    "created_at": "2023-10-29T14:01:23.273Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Homepage (20.66h) - 28h",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205828837028969"
+  },
+  {
+    "gid": "1205877861306114",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-03-17T09:53:28.012Z",
+    "created_at": "2023-11-05T07:29:48.733Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Phase 2 (30h) - ",
+    "notes": "הערכת מפתחים 30 שעות לא כולל מגה מניו\nגיא אישר 45 שעות",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1205877861306114"
+  },
+  {
+    "gid": "1206458433921342",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-03-17T09:53:29.420Z",
+    "created_at": "2024-01-28T09:37:13.930Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Blog additions (2h)- 2h",
+    "notes": "טופס הרשמה לניוזלטר\nבאנר onepager בתחתית",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206458433921342"
+  },
+  {
+    "gid": "1206632725433985",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:16.993Z",
+    "created_at": "2024-02-19T14:50:35.581Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Home page what we do section (13h) - 13h",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206632725433985"
+  },
+  {
+    "gid": "1206763439665981",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:17.302Z",
+    "created_at": "2024-03-05T11:05:16.797Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Changes phase 1 (18h) - 18h",
+    "notes": "שעות של המפתחים:\nNavbar (adding links + Product's dropdown right image adjustments) +- 0.5h\nBook a demo +-6h\nTop banner + Navbar adjustment +-2\nLogos strip +-20m\nClose Management 3-4h\nMulti-Entity up to 0.5h",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206763439665981"
+  },
+  {
+    "gid": "1206765092242656",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:17.559Z",
+    "created_at": "2024-03-06T12:08:06.058Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Generative workflow page (5h) - 5h",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206765092242656"
+  },
+  {
+    "gid": "1206784680844181",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:17.783Z",
+    "created_at": "2024-03-07T13:13:56.111Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Solutions Page (5h) - 5h",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206784680844181"
+  },
+  {
+    "gid": "1206823342406218",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:18.044Z",
+    "created_at": "2024-03-13T09:33:04.836Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205828837028968",
+          "name": "Development"
+        }
+      }
+    ],
+    "name": "Homepage UX (15h) - ",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1206823342406218"
+  },
+  {
+    "gid": "1204315213754021",
+    "assignee": {
+      "gid": "366074454182724"
+    },
+    "completed": true,
+    "completed_at": "2024-05-26T07:26:18.279Z",
+    "created_at": "2023-04-02T14:46:49.743Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1205517638430191",
+          "name": "Product"
+        }
+      }
+    ],
+    "name": "Onboarding batch",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1201865624182412/task/1204315213754021"
+  }
+]

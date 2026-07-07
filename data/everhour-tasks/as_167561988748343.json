@@ -1,0 +1,1649 @@
+[
+  {
+    "id": "as:169322345914634",
+    "name": "wireframe - [32] - 37hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/169322345914634/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-08-18 11:32:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:07"
+  },
+  {
+    "id": "as:171611926328582",
+    "name": "branding - 21hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/171611926328582/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-08-24 08:50:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:39"
+  },
+  {
+    "id": "as:174031986154144",
+    "name": "Quadream logo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/174031986154144/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-08-30 13:50:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-26 03:53:03"
+  },
+  {
+    "id": "as:176282408950103",
+    "name": "UI - 73hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/176282408950103/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-09-04 09:34:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:17:55"
+  },
+  {
+    "id": "as:184323128920792",
+    "name": "Presentation case study 1 - 24hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920792/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-09-21 06:24:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:11"
+  },
+  {
+    "id": "as:184323128920797",
+    "name": "log in",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920797/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:24:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:20:30"
+  },
+  {
+    "id": "as:184323128920799",
+    "name": "dashboard",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920799/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:25:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:20:29"
+  },
+  {
+    "id": "as:184323128920801",
+    "name": "case view",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920801/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:25:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:20:17"
+  },
+  {
+    "id": "as:184323128920803",
+    "name": "mission view",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920803/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:25:31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920805",
+    "name": "commit mission - כפתור לחוץ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920805/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:36:02",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920807",
+    "name": "בשטח - dashboard",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920807/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:38:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:35:03"
+  },
+  {
+    "id": "as:184323128920809",
+    "name": "בחירה באקטיב popup begin mission",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920809/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:38:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:35:23"
+  },
+  {
+    "id": "as:184323128920811",
+    "name": "just captured _ one pending _ 3 pending + 1 progress _ 5 progress",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920811/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:39:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:37:03"
+  },
+  {
+    "id": "as:184323128920813",
+    "name": "specific progress - view info device",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920813/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:40:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-22 08:37:05"
+  },
+  {
+    "id": "as:184323128920815",
+    "name": "end mission",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920815/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:41:18",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920817",
+    "name": "view mission (זו שהסתימה)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920817/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:41:24",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920819",
+    "name": "view device info",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920819/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:42:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-25 12:44:47"
+  },
+  {
+    "id": "as:184323128920821",
+    "name": "view media",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920821/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:42:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-25 12:44:44"
+  },
+  {
+    "id": "as:184323128920823",
+    "name": "view messenger",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920823/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 1 - 24hrs",
+    "parentId": "as:184323128920792",
+    "createdAt": "2016-09-21 06:42:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-09-25 12:44:43"
+  },
+  {
+    "id": "as:184323128920825",
+    "name": "presentation - 10hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920825/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-09-21 06:43:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:17"
+  },
+  {
+    "id": "as:184323128920827",
+    "name": "Presentation case study 2 - 2hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920827/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-09-21 06:43:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:14"
+  },
+  {
+    "id": "as:184323128920829",
+    "name": "GEneral counter - 131hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/184323128920829/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-09-25 08:36:58",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-10-20 06:02:25"
+  },
+  {
+    "id": "as:184323128920832",
+    "name": "active",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920832/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 2 - 2hrs",
+    "parentId": "as:184323128920827",
+    "createdAt": "2016-09-21 06:44:13",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920834",
+    "name": "recaptured target apear",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920834/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 2 - 2hrs",
+    "parentId": "as:184323128920827",
+    "createdAt": "2016-09-21 06:44:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:184323128920836",
+    "name": "ACTIVE ONLINE mode - camera/video/voice",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/184323128920836/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Presentation case study 2 - 2hrs",
+    "parentId": "as:184323128920827",
+    "createdAt": "2016-09-21 06:44:55",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:199695764620020",
+    "name": "Branding - hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/199695764620020/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-10-20 06:02:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-19 15:26:58"
+  },
+  {
+    "id": "as:199695764620022",
+    "name": "Ui system - 165hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/199695764620022/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-10-20 06:14:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-12-29 17:11:41"
+  },
+  {
+    "id": "as:211844372900909",
+    "name": "interactions inspirations ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/167561988748343/211844372900909/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "parentName": "Ui system - 165hrs",
+    "parentId": "as:199695764620022",
+    "createdAt": "2016-11-13 11:44:11",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:236272702386662",
+    "name": "UI December - 4hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/236272702386662/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-12-29 17:10:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:24"
+  },
+  {
+    "id": "as:236272702386672",
+    "name": "UI January - 4hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/236272702386672/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2016-12-29 17:11:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:21"
+  },
+  {
+    "id": "as:237540833046384",
+    "name": " - 3 hrs להכין ולשלוח לליעד מסכים",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/237540833046384/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-01-04 08:15:28",
+    "dueOn": "2017-01-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-01-08 08:20:06"
+  },
+  {
+    "id": "as:240053639978698",
+    "name": "שאלה של גיא במייל",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/240053639978698/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-01-09 07:15:31",
+    "dueOn": "2017-01-09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-01-11 07:11:59"
+  },
+  {
+    "id": "as:240053639978702",
+    "name": "qa לליעד",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/240053639978702/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-01-09 07:15:44",
+    "dueOn": "2017-01-09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:16"
+  },
+  {
+    "id": "as:274176784302329",
+    "name": "presentation - 24 hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/274176784302329/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-02-16 08:26:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:14"
+  },
+  {
+    "id": "as:276759584244607",
+    "name": "feb - 29 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/276759584244607/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-02-21 08:49:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:19"
+  },
+  {
+    "id": "as:276794035909162",
+    "name": "סהכ עד 21.2 - 37 שעות",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/276794035909162/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-02-21 13:11:36",
+    "dueOn": "2017-02-27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:11"
+  },
+  {
+    "id": "as:288099289349145",
+    "name": "march - 0hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/288099289349145/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-03-07 13:47:52",
+    "dueOn": "2017-03-07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:51"
+  },
+  {
+    "id": "as:289259309172087",
+    "name": "presentation - 8 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/289259309172087/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-03-08 09:10:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:54"
+  },
+  {
+    "id": "as:303277936629240",
+    "name": " clean pictures- 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/303277936629240/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-03-27 11:05:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:55"
+  },
+  {
+    "id": "as:303277936629247",
+    "name": "icon- hard drive- 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/303277936629247/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-03-27 12:31:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:54"
+  },
+  {
+    "id": "as:305965357828274",
+    "name": "logo-13h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/305965357828274/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-03-29 16:30:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:49"
+  },
+  {
+    "id": "as:323140581247020",
+    "name": "ui - 42.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/323140581247020/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-04-20 07:57:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:01:57"
+  },
+  {
+    "id": "as:336009362737444",
+    "name": "May Hours - 34.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/336009362737444/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-05-07 06:28:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-01 12:01:41"
+  },
+  {
+    "id": "as:339821907378526",
+    "name": "צלם",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/339821907378526/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-05-15 09:06:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-01 12:01:42"
+  },
+  {
+    "id": "as:361738730371340",
+    "name": "mail pdf - 7.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/361738730371340/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-06-11 14:44:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-30 12:20:37"
+  },
+  {
+    "id": "as:364138032953403",
+    "name": "picture - 10 $",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/364138032953403/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-06-14 07:29:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-08-02 05:49:40"
+  },
+  {
+    "id": "as:367041092432508",
+    "name": "תיקונים ותוספות -4",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/367041092432508/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-06-18 17:10:14",
+    "dueOn": "2017-06-19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-30 12:20:38"
+  },
+  {
+    "id": "as:368405937500587",
+    "name": "תיקונים ל-PDF - 3 hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/368405937500587/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-06-20 13:34:07",
+    "dueOn": "2017-06-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-30 12:20:35"
+  },
+  {
+    "id": "as:387522730749833",
+    "name": "contacts & browsing screens -4",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/387522730749833/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-07-18 06:07:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-08-02 05:49:38"
+  },
+  {
+    "id": "as:391102129344020",
+    "name": "presentation 19 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/391102129344020/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-07-23 15:08:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-08-02 05:49:36"
+  },
+  {
+    "id": "as:401109270263223",
+    "name": "מצגת 1HRS",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/401109270263223/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-08-03 15:04:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:17:25"
+  },
+  {
+    "id": "as:401109270263226",
+    "name": "תוספות ותיקונים - 18.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/401109270263226/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-08-10 14:32:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:17:21"
+  },
+  {
+    "id": "as:455542718969442",
+    "name": "meeting - 4hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/455542718969442/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-12-14 16:11:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:17:17"
+  },
+  {
+    "id": "as:503762590001014",
+    "name": "Redesign - hrs - 116.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/503762590001014/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-12-14 16:12:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-02-15 08:31:24"
+  },
+  {
+    "id": "as:507683840057661",
+    "name": "icons- 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/507683840057661/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2017-12-26 15:30:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:17:09"
+  },
+  {
+    "id": "as:520887508496915",
+    "name": "white paper touch-up 21.5 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/520887508496915/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-11 15:11:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-05-09 06:32:03"
+  },
+  {
+    "id": "as:532539907691151",
+    "name": "Icon animations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691151/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:22:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:52"
+  },
+  {
+    "id": "as:532539907691154",
+    "name": "Hover and pressed states for everything",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691154/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:26:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:53"
+  },
+  {
+    "id": "as:532539907691155",
+    "name": "Alert - pop-up and notification states",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691155/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:26:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:54"
+  },
+  {
+    "id": "as:532539907691156",
+    "name": "Fetching pop-ups",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691156/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:27:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:55"
+  },
+  {
+    "id": "as:532539907691157",
+    "name": "End mission pop-up",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691157/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:29:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:55"
+  },
+  {
+    "id": "as:532539907691158",
+    "name": "Shut down device pop-up",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691158/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:30:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:56"
+  },
+  {
+    "id": "as:532539907691159",
+    "name": "New icons",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691159/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:32:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:57"
+  },
+  {
+    "id": "as:532539907691160",
+    "name": "Export all icons including each one different states",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/532539907691160/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-01-23 10:36:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-16 09:21:58"
+  },
+  {
+    "id": "as:555280826001516",
+    "name": "February Hours - 82.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/555280826001516/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-02-11 07:21:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:11"
+  },
+  {
+    "id": "as:580029622670595",
+    "name": "March Hours - 120.5 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/580029622670595/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-03-04 13:23:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:12"
+  },
+  {
+    "id": "as:615141720023398",
+    "name": "April hours - 123hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/615141720023398/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-04-02 06:28:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:13"
+  },
+  {
+    "id": "as:639308587859620",
+    "name": "tasks remaining (18.4.2018): ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/639308587859620/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-04-18 08:59:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-26 12:41:26"
+  },
+  {
+    "id": "as:653606067190320",
+    "name": "Logo - 55h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/653606067190320/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-04-29 14:29:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-03 13:35:19"
+  },
+  {
+    "id": "as:655547987260166",
+    "name": "May hours - 81.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/655547987260166/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-05-01 14:10:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:14"
+  },
+  {
+    "id": "as:697726040943855",
+    "name": "june hours - 59.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/697726040943855/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-06-05 06:32:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:15"
+  },
+  {
+    "id": "as:728822580128019",
+    "name": "july hours -85.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/728822580128019/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-07-01 14:09:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:16"
+  },
+  {
+    "id": "as:777051875263886",
+    "name": "August hours - 18.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/777051875263886/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-08-13 09:11:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:17"
+  },
+  {
+    "id": "as:807140622435030",
+    "name": "September hours - 0.5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/807140622435030/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-09-05 07:56:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:17"
+  },
+  {
+    "id": "as:900431025639778",
+    "name": "December 2018 Hours - 82",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/900431025639778/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2018-12-04 07:46:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-08 14:01:20"
+  },
+  {
+    "id": "as:958232315951421",
+    "name": "January 19 -  115.5 Hours",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/958232315951421/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-01-01 09:00:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:56:57"
+  },
+  {
+    "id": "as:967906367450286",
+    "name": "B.card - 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/967906367450286/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-01-08 14:01:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-21 13:01:38"
+  },
+  {
+    "id": "as:972826308833196",
+    "name": "Feb 19 - 90h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/972826308833196/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-02-03 07:16:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:56:59"
+  },
+  {
+    "id": "as:1112362389281838",
+    "name": "March 19 - 85.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1112362389281838/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-03-04 12:51:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:57:00"
+  },
+  {
+    "id": "as:1114915078441152",
+    "name": "quadream animations  - 31.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1114915078441152/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-03-19 07:02:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-17 11:10:02"
+  },
+  {
+    "id": "as:1116614489929575",
+    "name": "April 19 - 76.15 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1116614489929575/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-04-01 09:54:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:57:01"
+  },
+  {
+    "id": "as:1120850208196682",
+    "name": "May 19 - 97.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1120850208196682/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-05-02 08:21:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:57:02"
+  },
+  {
+    "id": "as:1126017939146514",
+    "name": "June 19 - 24.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1126017939146514/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-06-06 05:07:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-04 08:57:04"
+  },
+  {
+    "id": "as:1129754029280974",
+    "name": "meeting",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1129754029280974/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-07-03 14:34:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-21 13:02:15"
+  },
+  {
+    "id": "as:1130119980933009",
+    "name": "quadream UI July  (Inreach budget) - 56.5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1130119980933009/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-07-07 06:29:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-31 12:19:11"
+  },
+  {
+    "id": "as:1133911104015112",
+    "name": "ui ux Augut 19 - (Inreach Budget)- 33.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1133911104015112/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-08-01 14:37:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-01 10:13:21"
+  },
+  {
+    "id": "as:1135750953858408",
+    "name": "Visual Language - 41.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1135750953858408/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-08-15 06:21:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-03 13:35:25"
+  },
+  {
+    "id": "as:1137979247014773",
+    "name": "UI/UX September 19 (Inreach Budget) - 18.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1137979247014773/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-09-01 10:06:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-10 07:01:05"
+  },
+  {
+    "id": "as:1140039572518984",
+    "name": "Posters - 9.75",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1140039572518984/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-09-16 14:27:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-17 11:09:57"
+  },
+  {
+    "id": "as:1144107717734507",
+    "name": "UI/UX October 19 (Inreach Budget) - 1h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1144107717734507/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-10-10 06:59:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-01 10:13:47"
+  },
+  {
+    "id": "as:1145145622668309",
+    "name": "Pin GIF - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1145145622668309/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-10-16 14:24:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-26 13:24:41"
+  },
+  {
+    "id": "as:1146241030249282",
+    "name": "Invatation - \"Milipol\"  - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1146241030249282/f",
+    "iteration": "Digital",
+    "projects": [
+      "as:167561988748343",
+      "as:455542718969443"
+    ],
+    "createdAt": "2019-10-23 13:52:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-03 08:59:51"
+  },
+  {
+    "id": "as:1147415204614297",
+    "name": "Bell Design 1 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1147415204614297/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-10-31 07:35:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-26 13:24:40"
+  },
+  {
+    "id": "as:1148034694391263",
+    "name": "UI/UX November 19 (Inreach Budget) - 38.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1148034694391263/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-11-05 10:01:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-01 10:13:45"
+  },
+  {
+    "id": "as:1151870046382665",
+    "name": "UI/UX December 19 (Inreach Budget) - 65.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1151870046382665/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-12-01 15:14:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-30 08:14:03"
+  },
+  {
+    "id": "as:1154219920944901",
+    "name": "2 Gifs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1154219920944901/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2019-12-17 14:54:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-01 10:15:21"
+  },
+  {
+    "id": "as:1155421064566593",
+    "name": "UI/UX January 20 (Inreach Budget) - 42.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1155421064566593/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-01-01 18:59:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-30 08:29:47"
+  },
+  {
+    "id": "as:1159551188981962",
+    "name": "UI/UX February 20 (Inreach Budget) - 36.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1159551188981962/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-01-30 08:14:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-31 12:56:55"
+  },
+  {
+    "id": "as:1164288936131043",
+    "name": "UI/UX March 20 (Inreach Budget) - 51.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1164288936131043/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-03-01 07:47:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-31 12:57:04"
+  },
+  {
+    "id": "as:1169410019234337",
+    "name": "UI/UX April 20 (Inreach Budget) - 29.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1169410019234337/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-04-01 15:44:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-31 08:22:31"
+  },
+  {
+    "id": "as:1173662565881939",
+    "name": "UI/UX May 20 (Inreach Budget) - 31.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1173662565881939/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-04-30 13:24:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-31 08:22:30"
+  },
+  {
+    "id": "as:1180442376280129",
+    "name": "Changable Name June - 7.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1180442376280129/f",
+    "iteration": "hours",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-06-15 16:51:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-31 08:22:28"
+  },
+  {
+    "id": "as:1199606444224615",
+    "name": "Festive card (2) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1199606444224615/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2020-12-15 10:35:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-31 08:15:38"
+  },
+  {
+    "id": "as:1200122705506259",
+    "name": "ISS flyer (1) -1 ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1200122705506259/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2021-03-31 13:04:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-01 07:56:32"
+  },
+  {
+    "id": "as:1200676240167458",
+    "name": "Invitation (5.5h) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1200676240167458/f",
+    "iteration": "New Section",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2021-07-28 11:20:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-10-10 14:28:24",
+    "assignees": [
+      {
+        "accountId": "as:1200275224822462",
+        "accountName": "Oksana Michalski"
+      }
+    ]
+  },
+  {
+    "id": "as:1201637168696271",
+    "name": "ISS Dubai invitation (1-3) - ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1201637168696271/f",
+    "iteration": "January 22",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2022-01-10 10:28:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:41:32"
+  },
+  {
+    "id": "as:1201994400907610",
+    "name": "ISS Prague June 2022 - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/167561988748343/1201994400907610/f",
+    "iteration": "January 22",
+    "projects": [
+      "as:167561988748343"
+    ],
+    "createdAt": "2022-03-20 08:07:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:41:34"
+  }
+]

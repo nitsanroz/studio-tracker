@@ -1,0 +1,1861 @@
+[
+  {
+    "id": "as:1186151771710275",
+    "name": "Kick off meeting - 2h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186151771710275/f",
+    "iteration": "Branding (8) - 7.25 (1/9/2020ׁ) - FINAL",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-26 13:49:18",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186656469878388",
+    "name": "Website Wireframes (32-42) - 16.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186656469878388/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-29 14:34:54",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186684091403717",
+    "name": "Logo Update (8) - 5.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186684091403717/f",
+    "iteration": "Branding (8) - 7.25 (1/9/2020ׁ) - FINAL",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-29 14:16:04",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186831276924033",
+    "name": "Homepage Design (Graphic Language) (64) - 64h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186831276924033/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-30 09:48:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186831276924035",
+    "name": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186831276924035/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-30 09:52:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186831276924037",
+    "name": "Mobile Adaptation (38-44 - final 44) - 44h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186831276924037/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-30 09:53:07",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186831276924039",
+    "name": "Styleguide & Dev (30-38 - final 18) - 18h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186831276924039/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-30 09:53:27",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1186831276924041",
+    "name": "3D City + Headers (206 - final 271) - 281.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1186831276924041/f",
+    "iteration": "3D work (110+80+16+64=270) - 412.5 (2/5/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-07-30 09:56:37",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1192463907866187",
+    "name": "Wordpress (100)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1192463907866187/f",
+    "iteration": "Development (100) - 100",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-09-06 11:58:50",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343015",
+    "name": "Testemonials Page (8-10)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343015/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Website Wireframes (32-42) - 16.75h",
+    "parentId": "as:1186656469878388",
+    "createdAt": "2020-10-26 07:45:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343016",
+    "name": "About Page (3-4)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343016/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Website Wireframes (32-42) - 16.75h",
+    "parentId": "as:1186656469878388",
+    "createdAt": "2020-10-26 07:45:55",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343017",
+    "name": "Blog Page (3-4)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343017/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Website Wireframes (32-42) - 16.75h",
+    "parentId": "as:1186656469878388",
+    "createdAt": "2020-10-26 07:45:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:48:01"
+  },
+  {
+    "id": "as:1198913065343018",
+    "name": "Calculator (14-20)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343018/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Website Wireframes (32-42) - 16.75h",
+    "parentId": "as:1186656469878388",
+    "createdAt": "2020-10-26 07:45:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:48:05"
+  },
+  {
+    "id": "as:1198913065343032",
+    "name": "QA (24-32 - final 17.5) - 17.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343032/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-10-26 07:58:57",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343034",
+    "name": "אינטרקציית מפה 2-3 - 1.5",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343034/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343035",
+    "name": "פרטי - 8-10",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343035/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:46"
+  },
+  {
+    "id": "as:1198913065343036",
+    "name": "מסחרי - 6-8",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343036/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:45"
+  },
+  {
+    "id": "as:1198913065343037",
+    "name": "מוניציפלי - 6-8",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343037/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:34",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343038",
+    "name": "ממליצים - 16-20",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343038/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:34",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343039",
+    "name": "מי אנחנו - 10-12",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343039/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:35",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343040",
+    "name": "מרכז למידה - 8-10",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343040/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:37"
+  },
+  {
+    "id": "as:1198913065343041",
+    "name": "עמוד פנימי מרכז למידה (כתבה) - 6-8",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343041/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:35"
+  },
+  {
+    "id": "as:1198913065343042",
+    "name": "גיוס עובדים / משרות - 6-8",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343042/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:36",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343043",
+    "name": "חבר מביא חבר (תלוי במורכבות של הויזואל) - 4-12",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343043/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:31"
+  },
+  {
+    "id": "as:1198913065343044",
+    "name": "PRIVACY & TERMS (לא יודע אם יהיו עוד חוץ מזה) - 3-4",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343044/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:37",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343045",
+    "name": "עמוד 404 (תלוי מאוד ברמת ההשקעה שיירצו) - 4-12",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343045/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:38",
+    "dueOn": "2021-02-01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1198913065343046",
+    "name": "מחשבון (תלוי מאוד ברמת ההשקעה שיירצו) - 8-12",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198913065343046/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-10-26 08:09:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:57:30"
+  },
+  {
+    "id": "as:1198934112977357",
+    "name": "Initial Wireframes (12) - 13.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1198934112977357/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Website Wireframes (32-42) - 16.75h",
+    "parentId": "as:1186656469878388",
+    "createdAt": "2020-10-27 09:46:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-06 08:48:22"
+  },
+  {
+    "id": "as:1199510812413604",
+    "name": "3D calculator (64 - final 67) - 67h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199510812413604/f",
+    "iteration": "3D work (110+80+16+64=270) - 412.5 (2/5/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-03 08:19:06",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199516606369278",
+    "name": "Nitsan - 1h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199516606369278/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Q&A Movies - 128.25h",
+    "parentId": "as:1199618922476782",
+    "createdAt": "2021-01-07 11:57:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199533902686973",
+    "name": "אייקונים לשורת נתונים 4-6 - 15.25",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686973/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:00:06",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199533902686974",
+    "name": "אייקונים לורטיקלים 1-2 - 1.25",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686974/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:00:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 11:13:33"
+  },
+  {
+    "id": "as:1199533902686975",
+    "name": "שבירת מיתוסים 2-3 - 2",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686975/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:00:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 11:13:38"
+  },
+  {
+    "id": "as:1199533902686976",
+    "name": "לייאאוט להדר 2-3 - 2.25",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686976/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:00:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 11:13:46"
+  },
+  {
+    "id": "as:1199533902686977",
+    "name": "אייקונים למחשבון 3-5 - 2",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686977/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:01:08",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199533902686978",
+    "name": "מחשבון חיווי גרפי להצללה/כיוון 3-4 - 4",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686978/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:01:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199533902686979",
+    "name": "גרפים במחשבון 6-8 - 8",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686979/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:01:37",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199533902686980",
+    "name": "מסלולי מימון - 1.75",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199533902686980/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-06 09:02:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 11:15:58"
+  },
+  {
+    "id": "as:1199563665450597",
+    "name": "Graphic package for videos -19.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199563665450597/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-09 15:30:11",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199572076598338",
+    "name": "Animation corrections for 1 video - 2h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199572076598338/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-14 10:28:28",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199593064163220",
+    "name": "HowItWorks (56) - 56h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199593064163220/f",
+    "iteration": "3D work (110+80+16+64=270) - 412.5 (2/5/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-13 13:43:28",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199593064163222",
+    "name": "Beauty renders () - ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199593064163222/f",
+    "iteration": "3D work (110+80+16+64=270) - 412.5 (2/5/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-13 13:45:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199596632361897",
+    "name": "עריכת תמונת בטיחות עמוד הבית",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199596632361897/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-18 13:53:54",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-21 12:26:31"
+  },
+  {
+    "id": "as:1199596632361899",
+    "name": "התאמה למובייל האדר עמוד זמני ממליצים",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199596632361899/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-18 13:54:16",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-24 11:56:29"
+  },
+  {
+    "id": "as:1199596632361901",
+    "name": " עמוד פרטי - תיקון האדר למובייל",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199596632361901/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-18 13:54:32",
+    "dueOn": "2021-01-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:41:03"
+  },
+  {
+    "id": "as:1199596632361903",
+    "name": " אייקונים עמוד עסקי במובייל ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199596632361903/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-18 13:54:51",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:41:21"
+  },
+  {
+    "id": "as:1199596632361909",
+    "name": "תיקוני תמונות מייל חגית משלישי",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199596632361909/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-19 13:17:55",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-21 15:23:24"
+  },
+  {
+    "id": "as:1199597932031317",
+    "name": "גלריית פרויקטים",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199597932031317/f",
+    "iteration": "Development (140) - 100",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-14 10:13:11",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199597932031319",
+    "name": "טופס לידים 0.5-1",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199597932031319/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-14 10:15:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 10:20:36"
+  },
+  {
+    "id": "as:1199597932031323",
+    "name": "1-2 פופאפ - 0.75",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199597932031323/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Full Website Design (105-146- final 200.5) - 200.5h",
+    "parentId": "as:1186831276924035",
+    "createdAt": "2020-12-14 10:16:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199618922476782",
+    "name": "Q&A Movies - 128.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199618922476782/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-16 12:55:30",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199618922476784",
+    "name": "Clients movies",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199618922476784/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-16 12:55:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-22 08:09:09"
+  },
+  {
+    "id": "as:1199618922476788",
+    "name": "Storyboards - 34h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199618922476788/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Q&A Movies - 128.25h",
+    "parentId": "as:1199618922476782",
+    "createdAt": "2020-12-16 12:55:56",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199618922476789",
+    "name": "Design (70)- 50h  ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199618922476789/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Q&A Movies - 128.25h",
+    "parentId": "as:1199618922476782",
+    "createdAt": "2020-12-16 12:56:04",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199621362900172",
+    "name": "תמונה חדשה לעמוד עסקי > הזדמנות לפרגן",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199621362900172/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 11:14:42",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-21 15:23:12"
+  },
+  {
+    "id": "as:1199622596025462",
+    "name": "עמוד פרטי - היופי נמצא בפרטים... - עריכת תמונה ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199622596025462/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 12:19:48",
+    "dueOn": "2021-01-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:41:11"
+  },
+  {
+    "id": "as:1199622596025472",
+    "name": "עמוד פרטי - תיקון צבעוניות פאנלים בהאדר",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199622596025472/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 12:25:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:40:55"
+  },
+  {
+    "id": "as:1199622596025474",
+    "name": "עמוד זמני מוניציפאלי - להקטין מודל- ליצור רפרנס לתאודור",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199622596025474/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 12:26:35",
+    "dueOn": "2021-01-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-21 15:25:38"
+  },
+  {
+    "id": "as:1199622596025476",
+    "name": "ללג 2 - לעצב כפתורים למעבר לוידאו הבא",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199622596025476/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 12:37:52",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199625869216704",
+    "name": "לעבור עם ניצן על צילומי מסך מהמחשב של טל מוולטה",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199625869216704/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-20 09:17:14",
+    "dueOn": "2021-01-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:41:15"
+  },
+  {
+    "id": "as:1199633095710130",
+    "name": "ללג 2 - כפתור חדש למסלולי מימון",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199633095710130/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-21 08:51:59",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199633095710144",
+    "name": "האדר עמוד עסקי - עבודת פוטושופ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199633095710144/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-21 12:23:55",
+    "dueOn": "2021-01-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-25 13:43:13"
+  },
+  {
+    "id": "as:1199633095710148",
+    "name": "כללי - סרגל צד ומספרים",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199633095710148/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-21 12:25:20",
+    "dueOn": "2021-01-21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-21 15:26:51"
+  },
+  {
+    "id": "as:1199656915597362",
+    "name": "להכין נראות כפתור ליצירת קשר לסרטונים",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199656915597362/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-24 08:54:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:39:54"
+  },
+  {
+    "id": "as:1199656915597388",
+    "name": "עמוד מרכז למידה במובייל - להוסיף כפתור שמקפיץ לראש העמוד",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199656915597388/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-24 11:54:58",
+    "dueOn": "2021-01-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:41:06"
+  },
+  {
+    "id": "as:1199660274624725",
+    "name": "Animation - 18h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199660274624725/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Q&A Movies - 128.25h",
+    "parentId": "as:1199618922476782",
+    "createdAt": "2021-01-25 08:44:59",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199661100240586",
+    "name": "להכין רשימה של הצעות לאנימציה לסרטוני Q&A",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199661100240586/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-26 12:16:38",
+    "dueOn": "2021-01-26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-08 13:39:39"
+  },
+  {
+    "id": "as:1199680122918536",
+    "name": "Render Farm - 8h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199680122918536/f",
+    "iteration": "3D work (110+80+16+64=270) - 412.5 (2/5/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-24 13:52:12",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199687943453846",
+    "name": "לג 2 - גלריית פרוייקטים",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199687943453846/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-27 10:54:09",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199694435268520",
+    "name": "Desktop QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199694435268520/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-29 12:39:41",
+    "dueOn": "2020-12-30",
+    "labels": [],
+    "attributes": {
+      "Priority": "High"
+    },
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:23"
+  },
+  {
+    "id": "as:1199694435268522",
+    "name": "Mobile QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199694435268522/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-29 12:39:50",
+    "dueOn": "2021-01-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:25"
+  },
+  {
+    "id": "as:1199694435268524",
+    "name": "Footer",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199694435268524/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-29 12:40:02",
+    "dueOn": "2020-12-31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:26"
+  },
+  {
+    "id": "as:1199694435268526",
+    "name": "Images for gallery",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199694435268526/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-29 12:40:27",
+    "dueOn": "2021-01-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-04 11:00:45"
+  },
+  {
+    "id": "as:1199694435268528",
+    "name": "Design temporary pages",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199694435268528/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-29 12:41:23",
+    "dueOn": "2021-01-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-04 11:00:49"
+  },
+  {
+    "id": "as:1199699705374621",
+    "name": "Calculator directions",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199699705374621/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-30 07:16:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-03 07:50:39"
+  },
+  {
+    "id": "as:1199699705374623",
+    "name": "HIW animation correction",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199699705374623/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-30 07:16:39",
+    "dueOn": "2021-01-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-03 07:50:44"
+  },
+  {
+    "id": "as:1199701547027853",
+    "name": "404 basic page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199701547027853/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-30 12:07:06",
+    "dueOn": "2021-01-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-04 11:00:51"
+  },
+  {
+    "id": "as:1199701547027855",
+    "name": "Business page header",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199701547027855/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-30 12:07:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:32"
+  },
+  {
+    "id": "as:1199705438404457",
+    "name": "Images for video with alpha bg",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199705438404457/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2020-12-31 07:29:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-03 07:51:00"
+  },
+  {
+    "id": "as:1199717065210303",
+    "name": "Videos of models for QA videos",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199717065210303/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-04 11:00:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:35"
+  },
+  {
+    "id": "as:1199717065210305",
+    "name": "map hover check",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199717065210305/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-04 11:01:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-14 10:30:45"
+  },
+  {
+    "id": "as:1199717065210311",
+    "name": "loader ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199717065210311/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-04 13:14:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-12 13:02:37"
+  },
+  {
+    "id": "as:1199729881930109",
+    "name": "Temporary pages - 9.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199729881930109/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-05 15:15:41",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199729881930111",
+    "name": "Image editing - 12.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199729881930111/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-05 15:15:48",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199873033267707",
+    "name": "QA פנימי - מעבר בסוף העבודה על הלג הראשון ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199873033267707/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-01-31 10:17:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-23 14:36:27"
+  },
+  {
+    "id": "as:1199873033267711",
+    "name": "Animation improvement for the rest of the videos (16h) - 16h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199873033267711/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-03 07:16:39",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199894404169594",
+    "name": " מי אנחנו עדכון תמונה",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199894404169594/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-04 11:44:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-23 14:36:24"
+  },
+  {
+    "id": "as:1199905657103250",
+    "name": "לקבל מחגית מספר טלפון כוכבית לסגיר",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199905657103250/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-07 15:07:12",
+    "dueOn": "2021-02-15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-23 14:36:30"
+  },
+  {
+    "id": "as:1199937529476005",
+    "name": "מפתח שנעשה - 18.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199937529476005/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Styleguide & Dev (30-38 - final 18) - 18h",
+    "parentId": "as:1186831276924039",
+    "createdAt": "2021-02-15 10:01:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199937529476006",
+    "name": "מפתח שנעשה - 15.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199937529476006/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Mobile Adaptation (38-44 - final 44) - 44h",
+    "parentId": "as:1186831276924037",
+    "createdAt": "2021-02-15 10:04:04",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199953972774546",
+    "name": "Calculator social share image - 1.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199953972774546/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-18 07:38:22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199953972774548",
+    "name": "Calculator - new button - 3.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199953972774548/f",
+    "iteration": "Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-18 07:39:12",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199966946831743",
+    "name": "תמונות ללינקדאין - של המפה כשכל חלק מסומן בלי החשכה",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199966946831743/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-23 13:19:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-18 13:03:41"
+  },
+  {
+    "id": "as:1199966946831750",
+    "name": "לוגו רוחבי png pdf ai",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1199966946831750/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-23 13:20:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-23 14:36:20"
+  },
+  {
+    "id": "as:1199966946831756",
+    "name": "LinkedIn cover for employees-1.75h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199966946831756/f",
+    "iteration": "Ongoing - 25.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-23 13:27:23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199966946831760",
+    "name": "Volta modular page (16h + 15h dev) - 8+15h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199966946831760/f",
+    "iteration": "Ongoing - 25.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-24 13:32:39",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1199966946831765",
+    "name": "Volta - logo negative version formats",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1199966946831765/f",
+    "iteration": "Ongoing - 25.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-02-24 13:56:04",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682528",
+    "name": "UX (5h) - 7h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682528/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 07:13:18",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682532",
+    "name": "Municipal page (41h) - 34.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682532/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 14:07:01",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682534",
+    "name": "About us page (50h)- 39h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682534/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 14:07:36",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682540",
+    "name": "Careers page (20h)-28h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682540/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 14:09:55",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682544",
+    "name": "Single job page (8h) - 2h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682544/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 14:10:10",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200010089682548",
+    "name": "Testimonials (21h) - 30.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200010089682548/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-03 14:11:04",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200040179921646",
+    "name": "3D & Animations - municipal page (36h) - 19.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200040179921646/f",
+    "iteration": "Leg 2 (181h) - 150.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-10 08:38:28",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200060383582572",
+    "name": "תיקונים לעמודים החדשים - הערות בקישור XD",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1186151771710269/1200060383582572/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-15 07:17:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-18 13:03:43"
+  },
+  {
+    "id": "as:1200079958489170",
+    "name": "האדר מוניציפלי ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200079958489170/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-18 12:57:57",
+    "dueOn": "2021-03-31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200129549907984",
+    "name": "מודל עמדת טעינה",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200129549907984/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-30 12:59:36",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200134949062591",
+    "name": "Registration page (22h) - 8.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200134949062591/f",
+    "iteration": "Referral pages UX+UI (84h) - 35h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-31 06:46:39",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200134949062595",
+    "name": "Registration form (10h)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200134949062595/f",
+    "iteration": "Referral pages UX+UI (84h) - 35h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-31 06:47:16",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200134949062599",
+    "name": "Personal area page (40h-50h) - 33.75 h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200134949062599/f",
+    "iteration": "Referral pages UX+UI (84h) - 35h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-31 06:47:38",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200134949062603",
+    "name": "Header for instructions video page (2h)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200134949062603/f",
+    "iteration": "Referral pages UX+UI (84h) - 35h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-03-31 06:48:09",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200141132470964",
+    "name": "CSL Movies graphic package (8h-12h) - 5.75",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200141132470964/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-01 12:20:16",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200158442492992",
+    "name": " סרטון נוסף תחילת תהליך נוסף תקציב - 4h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200158442492992/f",
+    "iteration": "Movies - 171.75h (2/5/21)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "parentName": "Q&A Movies - 128.25h",
+    "parentId": "as:1199618922476782",
+    "createdAt": "2021-04-08 06:21:48",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297795",
+    "name": "Volta - landing page header text - 1h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297795/f",
+    "iteration": "Ongoing - 25.75h",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 12:28:44",
+    "dueOn": "2021-04-22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297805",
+    "name": "סרט תחילת תהליך תיקונים",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297805/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:03:48",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297807",
+    "name": "סרט סיום תהליך אנימציה",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297807/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:04:10",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297809",
+    "name": "מצב ללא משרות רלוונטיות",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297809/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:04:16",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297811",
+    "name": "עמודי רפרל",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297811/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:04:29",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297813",
+    "name": "האדר עמוד משרות - לקבל תמונות מקובי",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297813/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:04:59",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297815",
+    "name": "עמוד ממליצים",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297815/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:06:59",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200211324297817",
+    "name": "רפרנס צבע לסרטונים לקובי",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200211324297817/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-04-18 13:07:03",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200275588367522",
+    "name": "הועברו 40 שעות מהערכה ראשונית עבור הפיתוח",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1186151771710269/1200275588367522/f",
+    "iteration": "Leg2 & Referral pages dev (92h & 64h & 40h)",
+    "projects": [
+      "as:1186151771710269"
+    ],
+    "createdAt": "2021-05-03 09:00:33",
+    "labels": [],
+    "completed": false
+  }
+]

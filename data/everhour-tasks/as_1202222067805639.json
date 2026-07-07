@@ -1,0 +1,112 @@
+[
+  {
+    "id": "as:1202222067805651",
+    "name": "Storyboard (8h)  - 12.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202222067805639/1202222067805651/f",
+    "iteration": "Empathy Clip -",
+    "projects": [
+      "as:1202222067805639"
+    ],
+    "createdAt": "2022-05-04 06:29:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:47:32",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1202223135614963",
+    "name": "Script - 4000ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202222067805639/1202223135614963/f",
+    "iteration": "Empathy Clip -",
+    "projects": [
+      "as:1202222067805639"
+    ],
+    "createdAt": "2022-05-04 11:09:58",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:36:03",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202223135614965",
+    "name": "Design (24h) - 9.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202222067805639/1202223135614965/f",
+    "iteration": "Empathy Clip -",
+    "projects": [
+      "as:1202222067805639"
+    ],
+    "createdAt": "2022-05-04 11:10:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:36:04",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202223135614967",
+    "name": "Animation (40h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202222067805639/1202223135614967/f",
+    "iteration": "Empathy Clip -",
+    "projects": [
+      "as:1202222067805639"
+    ],
+    "createdAt": "2022-05-04 11:10:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:36:05",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202223135614969",
+    "name": "Sound - 3.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202222067805639/1202223135614969/f",
+    "iteration": "Empathy Clip -",
+    "projects": [
+      "as:1202222067805639"
+    ],
+    "createdAt": "2022-05-04 11:15:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:36:04",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  }
+]

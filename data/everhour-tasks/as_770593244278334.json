@@ -1,0 +1,224 @@
+[
+  {
+    "id": "as:770593244278336",
+    "name": "Branding (75 hours from client + 18 ): ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/770593244278336/f",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-08-07 06:19:43",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:770593244278337",
+    "name": "Meeting - 3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/770593244278337/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-08-07 06:20:38",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:773030315588543",
+    "name": "Study - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/773030315588543/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-08-08 14:53:36",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:773970122101855",
+    "name": "Logo - 51.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/773970122101855/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-08-14 13:35:03",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:824051700510490",
+    "name": "Business card - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/824051700510490/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-10-04 16:10:23",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:840368241185498",
+    "name": "Website (40 hours from client + 40 = 80) - 90.5h:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/770593244278334/840368241185498/f",
+    "iteration": "Website (40 hours from client + 40 = 80) - 90.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-09-27 07:29:02",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:840368241185499",
+    "name": "Presentation - 76.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/840368241185499/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-09-27 07:29:24",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:840368241185500",
+    "name": "Web - 83 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/840368241185500/f",
+    "iteration": "Website (40 hours from client + 40 = 80) - 90.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-09-27 07:29:34",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:885374072326287",
+    "name": "Mail signature - 1.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/885374072326287/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-10-29 08:14:02",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:885374072326288",
+    "name": "נייר מכתבים - 1.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/885374072326288/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-10-29 08:14:18",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:902574948129083",
+    "name": "One Pager - 5.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/902574948129083/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-11-08 09:39:56",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:930485435997751",
+    "name": "Color Palette Doc. - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/930485435997751/f",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-12-03 15:08:40",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:930494183383076",
+    "name": "Branding (75 hours from client + 26 = 101) - 118.5h:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/770593244278334/930494183383076/f",
+    "iteration": "Branding (75 hours from client + 26 = 101) - 118.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-12-03 10:03:54",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:930494183383077",
+    "name": "conversion from Branding (October 18- Nov 8th) - 34.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/930494183383077/f",
+    "iteration": "Website (40 hours from client + 40 = 80) - 90.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2018-12-03 10:04:51",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:940669429334829",
+    "name": "SEO - 2 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/770593244278334/940669429334829/f",
+    "iteration": "Website (40 hours from client + 40 = 80) - 90.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2019-01-10 12:40:44",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:1107909593015869",
+    "name": "New era web",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/770593244278334/1107909593015869/f",
+    "iteration": "Website (40 hours from client + 40 = 80) - 90.5h",
+    "projects": [
+      "as:770593244278334"
+    ],
+    "createdAt": "2019-02-03 07:11:04",
+    "labels": [],
+    "completed": false
+  }
+]

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "as:1209879012176846",
+    "name": "Meetings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209879012176843/1209879012176846/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209879012176843"
+    ],
+    "createdAt": "2025-04-03 12:37:02",
+    "labels": [],
+    "time": {
+      "total": 37800,
+      "users": {
+        "1214048": 18900,
+        "1322241": 5400,
+        "1370761": 13500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-18 10:55:51"
+  },
+  {
+    "id": "as:1209879012176850",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1209879012176843/1209879012176850/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209879012176843"
+    ],
+    "createdAt": "2025-04-03 12:37:09",
+    "labels": [],
+    "time": {
+      "total": 626400,
+      "users": {
+        "1214048": 147600,
+        "1322241": 189900,
+        "1328069": 51300,
+        "1342403": 23400,
+        "1370761": 214200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-18 10:55:49"
+  },
+  {
+    "id": "as:1209879012176852",
+    "name": "Monday Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1209879012176843/1209879012176852/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1209879012176843"
+    ],
+    "createdAt": "2025-04-03 12:37:12",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 72000,
+      "users": {
+        "1214048": 14400,
+        "1322241": 28800,
+        "1370761": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

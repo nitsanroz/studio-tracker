@@ -1,0 +1,1828 @@
+[
+  {
+    "id": "as:1202693904912425",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1202693904912425/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2022-07-31 14:16:55",
+    "labels": [],
+    "time": {
+      "total": 117900,
+      "users": {
+        "1214048": 117900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:53",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202732819088045",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1202732819088045/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2022-08-08 05:38:14",
+    "labels": [],
+    "time": {
+      "total": 405900,
+      "users": {
+        "1214048": 405900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:54",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202925592079200",
+    "name": "Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1202925592079200/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2022-09-08 13:22:21",
+    "labels": [],
+    "time": {
+      "total": 1837800,
+      "users": {
+        "1213760": 4500,
+        "1214048": 1424700,
+        "1219083": 171000,
+        "1219085": 170100,
+        "1219111": 55800,
+        "1256469": 11700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:55",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1203139479516955",
+    "name": "Prototype",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203139479516955/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2022-10-11 14:33:57",
+    "labels": [],
+    "time": {
+      "total": 137700,
+      "users": {
+        "1214048": 137700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:44",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1203458649371083",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203458649371083/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2022-11-29 15:38:03",
+    "labels": [],
+    "time": {
+      "total": 287100,
+      "users": {
+        "1214048": 30600,
+        "1219082": 90000,
+        "1219083": 19800,
+        "1219084": 146700
+      },
+      "timerTime": 120
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:44",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1203668867161469",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202617922925561/1203668867161469/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-01-08 11:40:53",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 304200,
+      "users": {
+        "1219081": 10800,
+        "1219083": 36900,
+        "1219085": 148500,
+        "1219111": 14400,
+        "1256469": 93600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203754677665967",
+    "name": "Navigation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203754677665967/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-01-15 13:17:32",
+    "labels": [],
+    "time": {
+      "total": 947700,
+      "users": {
+        "1214048": 524700,
+        "1219083": 162900,
+        "1219085": 193500,
+        "1256469": 66600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:56",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1203754677665969",
+    "name": "Search",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203754677665969/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-01-15 13:17:36",
+    "labels": [],
+    "time": {
+      "total": 1185300,
+      "users": {
+        "1214048": 310500,
+        "1219083": 798300,
+        "1256469": 76500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:47",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203754677665971",
+    "name": "Email save",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203754677665971/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-01-15 13:17:41",
+    "labels": [],
+    "time": {
+      "total": 838800,
+      "users": {
+        "1214048": 5400,
+        "1219083": 517500,
+        "1256469": 315900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:48",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203754677665973",
+    "name": "Onboarding",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203754677665973/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-01-15 13:17:49",
+    "labels": [],
+    "time": {
+      "total": 221400,
+      "users": {
+        "1214048": 1800,
+        "1219083": 35100,
+        "1256469": 184500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:45",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204280950909452",
+    "name": "Font Search",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204280950909452/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-03-28 12:52:55",
+    "labels": [],
+    "time": {
+      "total": 31500,
+      "users": {
+        "1219111": 31500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:45",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204280950909456",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202617922925561/1204280950909456/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-03-28 14:16:31",
+    "labels": [],
+    "time": {
+      "total": 199800,
+      "users": {
+        "1213760": 3600,
+        "1214048": 99000,
+        "1219083": 95400,
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1204550033581083",
+    "name": "Illustrations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204550033581083/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-05-08 11:08:52",
+    "labels": [],
+    "time": {
+      "total": 370800,
+      "users": {
+        "1214048": 10800,
+        "1219083": 356400,
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:49",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1204557615162981",
+    "name": "QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204557615162981/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-05-10 05:51:32",
+    "labels": [],
+    "time": {
+      "total": 197100,
+      "users": {
+        "1214048": 35100,
+        "1219083": 31500,
+        "1219111": 110700,
+        "1256469": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:51",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1204935071195358",
+    "name": "Onboarding and Gamifications research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204935071195358/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-06-29 11:40:57",
+    "labels": [],
+    "time": {
+      "total": 70200,
+      "users": {
+        "1219083": 60300,
+        "1256469": 9900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:50",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1205069407766006",
+    "name": "search empty state animation (4h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1205069407766006/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-07-19 08:38:32",
+    "dueOn": "2023-08-24",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219084": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:42:15",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205182969683635",
+    "name": "Product marketing modal",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1205182969683635/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-01 13:27:55",
+    "labels": [],
+    "time": {
+      "total": 35100,
+      "users": {
+        "1219084": 27900,
+        "1256469": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:42:26",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205182969683637",
+    "name": "Welcome",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1205182969683637/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-01 13:28:05",
+    "labels": [],
+    "time": {
+      "total": 26100,
+      "users": {
+        "1219084": 26100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:42:20",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262672323003",
+    "name": "Client/Dev revisions",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262672323003/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 08:31:22",
+    "labels": [],
+    "time": {
+      "total": 120600,
+      "users": {
+        "1214048": 83700,
+        "1219083": 36900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:51",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1205262672679618",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262672679618/f",
+    "iteration": "Onboarding",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 08:35:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-11-16 08:43:40",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262672679622",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262672679622/f",
+    "iteration": "Onboarding",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 08:37:00",
+    "labels": [],
+    "time": {
+      "total": 126900,
+      "users": {
+        "1214048": 9000,
+        "1219083": 78300,
+        "1256469": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:35",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262672679624",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262672679624/f",
+    "iteration": "Onboarding",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 08:37:04",
+    "labels": [],
+    "time": {
+      "total": 264600,
+      "users": {
+        "1214048": 36000,
+        "1219083": 215100,
+        "1256469": 13500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:36",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262672679626",
+    "name": "Prep for dev and Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262672679626/f",
+    "iteration": "Onboarding",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 08:37:51",
+    "labels": [],
+    "time": {
+      "total": 43200,
+      "users": {
+        "1214048": 10800,
+        "1219083": 32400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:36",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641682",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641682/f",
+    "iteration": "Email Save",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:12",
+    "labels": [],
+    "time": {
+      "total": 2700,
+      "users": {
+        "1219083": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:43:50",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641684",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641684/f",
+    "iteration": "Email Save",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:17",
+    "labels": [],
+    "time": {
+      "total": 45900,
+      "users": {
+        "1214048": 9000,
+        "1219083": 36900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:36",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641686",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641686/f",
+    "iteration": "Email Save",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:19",
+    "labels": [],
+    "time": {
+      "total": 147600,
+      "users": {
+        "1219081": 14400,
+        "1219083": 46800,
+        "1256469": 86400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:37",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641688",
+    "name": "Prep for dev and Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641688/f",
+    "iteration": "Email Save",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:20",
+    "labels": [],
+    "time": {
+      "total": 214200,
+      "users": {
+        "1214048": 7200,
+        "1219083": 99000,
+        "1256469": 108000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:37",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641692",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641692/f",
+    "iteration": "Navigation",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:37",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641694",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641694/f",
+    "iteration": "Navigation",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:35",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1256469": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:38",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641696",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641696/f",
+    "iteration": "Navigation",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:36",
+    "labels": [],
+    "time": {
+      "total": 28800,
+      "users": {
+        "1219081": 3600,
+        "1219083": 16200,
+        "1256469": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:38",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641698",
+    "name": "Prep for dev and Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641698/f",
+    "iteration": "Navigation",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 09:49:37",
+    "labels": [],
+    "time": {
+      "total": 2700,
+      "users": {
+        "1219083": 900,
+        "1256469": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:38",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641700",
+    "name": "New feature popup - whats new",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641700/f",
+    "iteration": "Illustrations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 11:28:34",
+    "labels": [],
+    "time": {
+      "total": 24300,
+      "users": {
+        "1219083": 24300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:54",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641720",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641720/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 11:40:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:38",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641722",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641722/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 11:40:32",
+    "labels": [],
+    "time": {
+      "total": 54900,
+      "users": {
+        "1219083": 54900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:38",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641724",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641724/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 11:40:33",
+    "labels": [],
+    "time": {
+      "total": 38700,
+      "users": {
+        "1214048": 7200,
+        "1219083": 31500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:39",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641726",
+    "name": "Prep for dev and Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641726/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 11:40:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:39",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205262954641740",
+    "name": "New font implementation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205262954641740/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-13 14:14:24",
+    "labels": [],
+    "time": {
+      "total": 106200,
+      "users": {
+        "1214048": 3600,
+        "1219083": 102600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:46",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1205306947086198",
+    "name": "Design Optimization",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205306947086198/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-20 07:21:57",
+    "labels": [],
+    "time": {
+      "total": 147600,
+      "users": {
+        "1214048": 66600,
+        "1219081": 7200,
+        "1219083": 63000,
+        "1256469": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:52",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1205359089852305",
+    "name": "Skeleton loading ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205359089852305/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-27 14:12:50",
+    "labels": [],
+    "time": {
+      "total": 23400,
+      "users": {
+        "1214048": 1800,
+        "1219084": 10800,
+        "1256469": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:42:32",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205374281903928",
+    "name": "Onboarding Illustration",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205374281903928/f",
+    "iteration": "Illustrations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-29 06:34:38",
+    "labels": [],
+    "time": {
+      "total": 182700,
+      "users": {
+        "1219083": 182700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:32",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205377893502178",
+    "name": "Save email animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205377893502178/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 06:35:09",
+    "labels": [],
+    "time": {
+      "total": 50400,
+      "users": {
+        "1219083": 45000,
+        "1219084": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:32",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205377893502184",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205377893502184/f",
+    "iteration": "Location Drill down V2",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 07:42:25",
+    "labels": [],
+    "time": {
+      "total": 13500,
+      "users": {
+        "1214048": 3600,
+        "1256469": 9900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:43:23",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205377897464050",
+    "name": "UX",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205377897464050/f",
+    "iteration": "Location Drill down V2",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 07:42:28",
+    "labels": [],
+    "time": {
+      "total": 98100,
+      "users": {
+        "1214048": 9000,
+        "1219083": 32400,
+        "1256469": 56700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:43:27",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205377897464052",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205377897464052/f",
+    "iteration": "Location Drill down V2",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 07:42:29",
+    "labels": [],
+    "time": {
+      "total": 228600,
+      "users": {
+        "1214048": 10800,
+        "1219081": 16200,
+        "1219083": 144000,
+        "1256469": 57600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:35",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205377897464054",
+    "name": "Prep for dev and Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205377897464054/f",
+    "iteration": "Location Drill down V2",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 07:42:30",
+    "labels": [],
+    "time": {
+      "total": 59400,
+      "users": {
+        "1219083": 59400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:35",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205384518827354",
+    "name": "Empty states illustrations animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205384518827354/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-08-30 12:15:03",
+    "labels": [],
+    "time": {
+      "total": 61200,
+      "users": {
+        "1219083": 2700,
+        "1219084": 58500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:42:43",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205622347246650",
+    "name": "Feedback",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205622347246650/f",
+    "iteration": "Illustrations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-01 12:49:17",
+    "labels": [],
+    "time": {
+      "total": 43200,
+      "users": {
+        "1219083": 43200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:32",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205622347246652",
+    "name": "Save email illustration",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205622347246652/f",
+    "iteration": "Illustrations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-01 12:49:23",
+    "labels": [],
+    "time": {
+      "total": 16200,
+      "users": {
+        "1219083": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:32",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205640030697688",
+    "name": "Browser not supported animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205640030697688/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-03 14:17:44",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219083": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:33",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205774853865322",
+    "name": "Thank you animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205774853865322/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-22 14:45:15",
+    "labels": [],
+    "time": {
+      "total": 9000,
+      "users": {
+        "1219084": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:33",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205798379907366",
+    "name": "Onboarding Animations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205798379907366/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-24 17:14:50",
+    "labels": [],
+    "time": {
+      "total": 58500,
+      "users": {
+        "1214048": 4500,
+        "1219083": 1800,
+        "1219084": 52200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:33",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205805903504628",
+    "name": "search animation",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1205262954219118/1205805903504628/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-25 14:36:02",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1205828605150993",
+    "name": "User Card",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205828605150993/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-29 07:48:14",
+    "labels": [],
+    "time": {
+      "total": 27000,
+      "users": {
+        "1213760": 14400,
+        "1214048": 1800,
+        "1219083": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:39",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205831810258726",
+    "name": "IceCream Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205831810258726/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-30 07:31:11",
+    "labels": [],
+    "time": {
+      "total": 15300,
+      "users": {
+        "1219084": 15300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:34",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205831810258728",
+    "name": "Sent file animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205831810258728/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-30 07:32:45",
+    "labels": [],
+    "time": {
+      "total": 9900,
+      "users": {
+        "1219084": 9900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:34",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205842281321103",
+    "name": "VQA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205842281321103/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-10-31 13:30:34",
+    "labels": [],
+    "time": {
+      "total": 32400,
+      "users": {
+        "1214048": 18000,
+        "1219111": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:40",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205858825138974",
+    "name": "new flow - states of the \"search all locations\" button",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1205262954219118/1205858825138974/f",
+    "iteration": "Search",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-11-02 07:34:04",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1205859834146702",
+    "name": "Handoff",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205859834146702/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-11-02 14:12:05",
+    "labels": [],
+    "time": {
+      "total": 59400,
+      "users": {
+        "1214048": 37800,
+        "1219083": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-12 11:01:48",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1205878356618982",
+    "name": "All Set animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205878356618982/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-11-08 07:52:46",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1219084": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:34",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205878356618985",
+    "name": "Waving Hand animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205878356618985/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-11-08 07:52:57",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219084": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:34",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205984141590521",
+    "name": "Purchase form",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1205984141590521/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2023-11-19 08:15:03",
+    "labels": [],
+    "time": {
+      "total": 22500,
+      "users": {
+        "1219083": 22500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:18",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1206765092242635",
+    "name": "Onboarding animations dark mode+size",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205262954219118/1206765092242635/f",
+    "iteration": "Animations",
+    "projects": [
+      "as:1205262954219118"
+    ],
+    "createdAt": "2024-03-05 12:08:11",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1213760": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:32:35",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  }
+]

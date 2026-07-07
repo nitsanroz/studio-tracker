@@ -1,0 +1,413 @@
+[
+  {
+    "id": "as:1211839594647036",
+    "name": "Video bumper for Youtube",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1211839594647036/f",
+    "iteration": "Backlog [for future prioritization]",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-11-05 15:55:10",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 0.5
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211839594647072",
+    "name": "Website: Demo Request Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1211839594647072/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-11-05 16:03:14",
+    "labels": [
+      "Liza"
+    ],
+    "completed": true,
+    "completedAt": "2025-12-14 13:44:02"
+  },
+  {
+    "id": "as:1211924815842220",
+    "name": "Voyantis Jersey design via https://icarusfc.com/",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1211924815842220/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-11-13 15:47:06",
+    "dueOn": "2025-12-23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-12-23 09:43:53"
+  },
+  {
+    "id": "as:1211939181443301",
+    "name": "Deep Dive Deck ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1211939181443301/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-11-14 04:37:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2026-01-26 09:15:26"
+  },
+  {
+    "id": "as:1211951334201357",
+    "name": "PDF for print version of whitepaper - which page to pull",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1211951334201357/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-11-14 19:58:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-12-07 07:38:06"
+  },
+  {
+    "id": "as:1212273695698798",
+    "name": "Website: Individual Blog Post ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212273695698798/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-02 21:46:35",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 8
+    },
+    "completed": true,
+    "completedAt": "2025-12-17 10:47:02"
+  },
+  {
+    "id": "as:1212274512538994",
+    "name": "Website: Resources Hub",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212274512538994/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-02 23:17:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-12-14 13:43:26"
+  },
+  {
+    "id": "as:1212289066588006",
+    "name": "High Resolution Logos- PNG & SVG, square and horizontal versions with any logo usage guidelines",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212289066588006/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-04 14:01:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2026-01-26 14:28:39"
+  },
+  {
+    "id": "as:1212430171820873",
+    "name": "Website: All Webinars page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212430171820873/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-15 02:59:02",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 5
+    },
+    "completed": true,
+    "completedAt": "2025-12-24 13:28:09"
+  },
+  {
+    "id": "as:1212430172032327",
+    "name": "Website: 404 Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212430172032327/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-15 03:00:25",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 2
+    },
+    "completed": true,
+    "completedAt": "2025-12-25 11:26:28"
+  },
+  {
+    "id": "as:1212437844883337",
+    "name": "Website: All customer stories page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212437844883337/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-17 22:31:10",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 3
+    },
+    "completed": true,
+    "completedAt": "2026-01-26 14:26:57"
+  },
+  {
+    "id": "as:1212440944475290",
+    "name": "Website: All Articles page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212440944475290/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-15 02:58:27",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 5
+    },
+    "completed": true,
+    "completedAt": "2025-12-17 14:21:02"
+  },
+  {
+    "id": "as:1212440952423608",
+    "name": "Website: All Gated Content page ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212440952423608/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-15 02:59:56",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 5
+    },
+    "completed": true,
+    "completedAt": "2025-12-24 13:28:15"
+  },
+  {
+    "id": "as:1212483335288600",
+    "name": "Design system for blog / webinars / gated content",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212483335288600/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-17 13:49:03",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 5
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212511936446895",
+    "name": "Board deck template ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212511936446895/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-23 17:13:35",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 4
+    },
+    "completed": true,
+    "completedAt": "2025-12-25 10:05:42"
+  },
+  {
+    "id": "as:1212511945575264",
+    "name": "Website: Case Study page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212511945575264/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-23 16:10:22",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 7
+    },
+    "completed": true,
+    "completedAt": "2026-01-26 14:27:15"
+  },
+  {
+    "id": "as:1212512760684837",
+    "name": "Deck Template",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212512760684837/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-23 02:10:04",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 16
+    },
+    "completed": true,
+    "completedAt": "2025-12-30 11:49:34"
+  },
+  {
+    "id": "as:1212579962774120",
+    "name": "Can we make sure we have og:images for each new webpage?",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212579962774120/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2025-12-29 16:39:23",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 0.5
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212683741453165",
+    "name": "Template for Google Docs",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212683741453165/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-06 20:46:41",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 2
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212735707886712",
+    "name": "Fix email signature",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1211839453526602/1212735707886712/f",
+    "iteration": "Complete",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-12 17:40:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2026-01-18 10:18:59"
+  },
+  {
+    "id": "as:1212736950101070",
+    "name": "Website: Webinar pages",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212736950101070/f",
+    "iteration": "In Progress",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-13 13:20:46",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1212871644158218",
+    "name": "Website: Platform page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212871644158218/f",
+    "iteration": "In Progress",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-19 22:54:07",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1212871644742483",
+    "name": "Website: Activation Goal",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212871644742483/f",
+    "iteration": "In Review",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-19 22:54:47",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1212998734472281",
+    "name": "New presentation slide covers ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1212998734472281/f",
+    "iteration": "Prioritized Requests",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-30 20:48:06",
+    "labels": [],
+    "metrics": {
+      "Allocated Hours": 0.5
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213008971866228",
+    "name": "Product Page: Engage",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211839453526602/1213008971866228/f",
+    "iteration": "New Requests [Need Review by DEH]",
+    "projects": [
+      "as:1211839453526602"
+    ],
+    "createdAt": "2026-01-28 02:58:13",
+    "labels": [],
+    "completed": false
+  }
+]

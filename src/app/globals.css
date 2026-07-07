@@ -1,26 +1,216 @@
 @import "tailwindcss";
 
+/* Studio&more brand typography — Saans (design-system font).
+   Weight ranges map CSS weights to the right cut: 380→Regular, 570→Medium (per the Figma tokens). */
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-Light.otf") format("opentype");
+  font-weight: 100 349;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-Regular.otf") format("opentype");
+  font-weight: 350 449;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-Medium.otf") format("opentype");
+  font-weight: 450 599;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-SemiBold.otf") format("opentype");
+  font-weight: 600 679;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-Bold.otf") format("opentype");
+  font-weight: 680 779;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Saans";
+  src: url("/brand/saans/Saans-Heavy.otf") format("opentype");
+  font-weight: 780 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PP Fragment Glare";
+  src: url("/brand/saans/PPFragment-GlareRegularItalic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
+  /* Studio&more brand — from the Design Systems Figma + nmore.co */
+  --brand: #0b43ed;
+  --brand-dark: #1d32c8;
+  --brand-deep: #012698;
+  --brand-soft: #e8edfd;
+  --aqua: #74f3ef;
+
+  --background: #fafafa;
+  --surface: #ffffff;
+  --foreground: #06112f; /* Studio Black */
+  --muted: #5c6478;
+  --faint: #98a0b3;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+
+  --weekend: #f3f4f6;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #d97706;
+
+  /* Sidebar (default: light) */
+  --sb-bg: #ffffff;
+  --sb-fg: #16181d;
+  --sb-muted: #6b7280;
+  --sb-border: #e5e7eb;
+  --sb-active-bg: #e8edfd;
+  --sb-active-fg: #1d32c8;
+  --sb-hover-bg: #fafafa;
+  --sb-logo-bg: #0b43ed;
+  --sb-logo-fg: #ffffff;
+
+  --header-bg: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Option A: "Electric" — bold blue sidebar, brand-forward ─────────── */
+[data-theme="electric"] {
+  --background: #f4f6fe;
+  --sb-bg: #0b43ed;
+  --sb-fg: #ffffff;
+  --sb-muted: #b9c8f9;
+  --sb-border: #2a58ef;
+  --sb-active-bg: #ffffff;
+  --sb-active-fg: #0b43ed;
+  --sb-hover-bg: #2a58ef;
+  --sb-logo-bg: #ffffff;
+  --sb-logo-fg: #0b43ed;
+  --brand-soft: #dde6fd;
+  --weekend: #eceffb;
+}
+
+/* ── Option B: "Gallery" — stark minimal black & white, blue as ink ──── */
+[data-theme="gallery"] {
   --background: #ffffff;
-  --foreground: #171717;
+  --surface: #ffffff;
+  --foreground: #080808;
+  --muted: #5f6360;
+  --border: #ededed;
+  --border-strong: #080808;
+  --weekend: #f7f7f7;
+  --sb-bg: #ffffff;
+  --sb-fg: #080808;
+  --sb-muted: #757575;
+  --sb-border: #080808;
+  --sb-active-bg: #080808;
+  --sb-active-fg: #ffffff;
+  --sb-hover-bg: #f2f2f2;
+  --sb-logo-bg: #0b43ed;
+  --sb-logo-fg: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.9);
+}
+[data-theme="gallery"] h1 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* ── Option C: "Night" — dark studio, electric accents ───────────────── */
+[data-theme="night"] {
+  --background: #080808;
+  --surface: #141519;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #63636b;
+  --border: #26272e;
+  --border-strong: #3f4048;
+  --weekend: #101014;
+  --brand-soft: #14204a;
+  --sb-bg: #0e0f12;
+  --sb-fg: #f4f4f5;
+  --sb-muted: #8b8b94;
+  --sb-border: #26272e;
+  --sb-active-bg: #0b43ed;
+  --sb-active-fg: #ffffff;
+  --sb-hover-bg: #1a1b21;
+  --sb-logo-bg: #0b43ed;
+  --sb-logo-fg: #ffffff;
+  --header-bg: rgba(8, 8, 8, 0.8);
 }
 
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
+  --color-aqua: var(--aqua);
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-weekend: var(--weekend);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: "Saans", var(--font-rubik), system-ui, sans-serif;
+  --font-heading: "Saans", var(--font-rubik), system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Saans", var(--font-rubik), system-ui, sans-serif;
+  font-weight: 380;
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: "Saans", var(--font-rubik), system-ui, sans-serif;
+  font-weight: 570;
+  letter-spacing: -0.003em;
+}
+
+strong,
+b,
+.font-medium,
+.font-semibold,
+.font-bold {
+  font-weight: 570;
+}
+
+/* Brand wordmark: masked element so it inherits any color via background-color */
+.brand-wordmark {
+  display: inline-block;
+  aspect-ratio: 693.24 / 113.296;
+  mask-image: url("/brand/logo-1.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url("/brand/logo-1.svg");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
+/* Hebrew/RTL: any user text container gets natural direction per content */
+.bidi-auto {
+  unicode-bidi: plaintext;
 }

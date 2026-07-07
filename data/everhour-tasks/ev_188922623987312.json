@@ -1,0 +1,19 @@
+[
+  {
+    "id": "ev:188922794204575",
+    "name": "Meetings & phone calls_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Product",
+    "projects": [
+      "ev:188922623987312"
+    ],
+    "position": 1,
+    "createdAt": "2026-07-02 18:29:02",
+    "labels": [],
+    "section": 1424714,
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  }
+]

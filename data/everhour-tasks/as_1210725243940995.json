@@ -1,0 +1,182 @@
+[
+  {
+    "id": "as:1210725243941001",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1210725243940995/1210725243941001/f",
+    "iteration": "Hero Animation",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2025-07-07 06:15:59",
+    "labels": [],
+    "time": {
+      "total": 90000,
+      "users": {
+        "1214048": 25200,
+        "1328069": 64800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-25 13:00:40"
+  },
+  {
+    "id": "as:1210725243941003",
+    "name": "Storyboard",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1210725243940995/1210725243941003/f",
+    "iteration": "Hero Animation",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2025-07-07 06:16:05",
+    "labels": [],
+    "time": {
+      "total": 26100,
+      "users": {
+        "1214048": 5400,
+        "1328069": 20700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-25 13:00:43"
+  },
+  {
+    "id": "as:1210725243941005",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1210725243940995/1210725243941005/f",
+    "iteration": "Hero Animation",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2025-07-07 06:16:10",
+    "labels": [],
+    "time": {
+      "total": 85500,
+      "users": {
+        "1213760": 85500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-11-25 13:00:43"
+  },
+  {
+    "id": "as:1212084762191641",
+    "name": "AI Loader",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1210725243940995/1212084762191641/f",
+    "iteration": "Loaders",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2025-11-25 13:00:51",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-10 10:40:31"
+  },
+  {
+    "id": "as:1212084762191643",
+    "name": "Logo Loader",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1210725243940995/1212084762191643/f",
+    "iteration": "Loaders",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2025-11-25 13:00:54",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1217417": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-10 10:40:32"
+  },
+  {
+    "id": "as:1215896793464565",
+    "name": "Frame Design (Agent Studio)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210725243940995/1215896793464565/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2026-06-21 14:32:02",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1215968326190010",
+    "name": "UI video",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210725243940995/1215968326190010/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2026-06-23 14:27:35",
+    "labels": [],
+    "time": {
+      "total": 104400,
+      "users": {
+        "1217417": 19800,
+        "1342403": 45000,
+        "1437050": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1216214790338794",
+    "name": "Anecdotes keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210725243940995/1216214790338794/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210725243940995"
+    ],
+    "createdAt": "2026-07-01 17:10:59",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "time": {
+      "total": 5400,
+      "users": {
+        "1342403": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

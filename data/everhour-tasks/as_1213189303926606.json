@@ -1,0 +1,363 @@
+[
+  {
+    "id": "as:1213189303926609",
+    "name": "Research",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926609/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:03",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1213189303926611",
+    "name": "Visual Language",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926611/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:08",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 432000
+    },
+    "time": {
+      "total": 380700,
+      "users": {
+        "1342403": 263700,
+        "1407470": 48600,
+        "1421038": 50400,
+        "1435452": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213189303926613",
+    "name": "Homepage",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926613/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:10",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 360000
+    },
+    "time": {
+      "total": 377100,
+      "users": {
+        "1213760": 32400,
+        "1217417": 43200,
+        "1342403": 205200,
+        "1407470": 25200,
+        "1421038": 18000,
+        "1435452": 21600,
+        "1437050": 31500
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213189303926615",
+    "name": "Product Page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926615/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:40",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 288000
+    },
+    "time": {
+      "total": 228600,
+      "users": {
+        "1217417": 43200,
+        "1342403": 19800,
+        "1407470": 100800,
+        "1421038": 10800,
+        "1435452": 50400,
+        "1437050": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213189303926617",
+    "name": "Mobile",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926617/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:42",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 115200
+    },
+    "time": {
+      "total": 63000,
+      "users": {
+        "1217417": 57600,
+        "1342403": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213189303926619",
+    "name": "Prep fer Dev",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926619/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:43",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 115200
+    },
+    "time": {
+      "total": 115200,
+      "users": {
+        "1217417": 19800,
+        "1342403": 46800,
+        "1437050": 48600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213189303926621",
+    "name": "QA",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213189303926621/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-10 07:15:46",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 72000
+    },
+    "time": {
+      "total": 36000,
+      "users": {
+        "1342403": 21600,
+        "1437050": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1213327784236618",
+    "name": "Wireframe",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213327784236618/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "parentName": "Homepage",
+    "parentId": "as:1213189303926613",
+    "createdAt": "2026-02-19 07:22:11",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1407470": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1213355166097515",
+    "name": "Swimm Keys",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1213189303926606/1213355166097515/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-19 11:27:34",
+    "labels": [],
+    "unbillable": true,
+    "completed": false
+  },
+  {
+    "id": "as:1213355166097517",
+    "name": "Swimm Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213355166097517/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-02-19 11:28:16",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 22500,
+      "users": {
+        "1421038": 18000,
+        "1435452": 3600,
+        "1437050": 900
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:1213494120971331",
+    "name": "Logo",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213494120971331/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "parentName": "Visual Language",
+    "parentId": "as:1213189303926611",
+    "createdAt": "2026-03-02 15:22:02",
+    "labels": [],
+    "time": {
+      "total": 54000,
+      "users": {
+        "1342403": 7200,
+        "1421038": 46800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213623049892473",
+    "name": "Fake UI",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213623049892473/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "parentName": "Product Page",
+    "parentId": "as:1213189303926615",
+    "createdAt": "2026-03-12 07:05:56",
+    "labels": [],
+    "time": {
+      "total": 102600,
+      "users": {
+        "1437050": 102600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213734848349283",
+    "name": "Visual animations",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1213734848349283/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-03-19 15:34:57",
+    "labels": [],
+    "time": {
+      "total": 18000,
+      "users": {
+        "1437050": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1214067259270152",
+    "name": "Deck template April ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1213189303926606/1214067259270152/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1213189303926606"
+    ],
+    "createdAt": "2026-04-15 17:01:23",
+    "labels": [],
+    "time": {
+      "total": 50400,
+      "users": {
+        "1437050": 34200,
+        "1439884": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

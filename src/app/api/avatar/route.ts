@@ -1,0 +1,56 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
+
+// Upload the signed-in user's avatar (service role handles storage; caller is session-verified).
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const form = await request.formData();
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: "file is required" }, { status: 400 });
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: "Max 5MB" }, { status: 400 });
+  }
+
+  const admin = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  const path = `${user.id}-${Date.now()}.${ext}`;
+  const { error: upErr } = await admin.storage
+    .from("avatars")
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 400 });
+
+  const { data: pub } = admin.storage.from("avatars").getPublicUrl(path);
+  const { error: pErr } = await admin
+    .from("profiles")
+    .update({ avatar_url: pub.publicUrl })
+    .eq("id", user.id);
+  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
+
+  return NextResponse.json({ avatarUrl: pub.publicUrl });
+}
+
+// Remove avatar → back to initials.
+export async function DELETE() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}

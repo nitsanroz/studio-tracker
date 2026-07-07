@@ -1,0 +1,395 @@
+[
+  {
+    "id": "as:1205622094872348",
+    "name": "Storyboard",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872348/f",
+    "iteration": "Video",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 11:57:42",
+    "dueOn": "2023-10-03",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 25200
+    },
+    "time": {
+      "total": 22500,
+      "users": {
+        "1219084": 22500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:12",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205622094872350",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872350/f",
+    "iteration": "Video",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 11:57:54",
+    "dueOn": "2023-10-08",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 61200
+    },
+    "time": {
+      "total": 88200,
+      "users": {
+        "1219084": 9000,
+        "1219111": 79200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:13",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205622094872352",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872352/f",
+    "iteration": "Video",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 11:57:58",
+    "dueOn": "2023-10-11",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 152100,
+      "users": {
+        "1219084": 152100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:14",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205622094872357",
+    "name": "Voice Over",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872357/f",
+    "iteration": "Music&Sound",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 12:17:52",
+    "dueOn": "2023-10-10",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "completed": true,
+    "completedAt": "2024-03-05 12:33:27"
+  },
+  {
+    "id": "as:1205622094872359",
+    "name": "Music",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872359/f",
+    "iteration": "Music&Sound",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 12:17:59",
+    "dueOn": "2023-10-10",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "completed": true,
+    "completedAt": "2024-03-05 12:33:29"
+  },
+  {
+    "id": "as:1205622094872361",
+    "name": "Sound",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205622094872361/f",
+    "iteration": "Music&Sound",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 12:18:03",
+    "dueOn": "2023-10-12",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "completed": true,
+    "completedAt": "2024-03-05 12:33:30"
+  },
+  {
+    "id": "as:1205622242933021",
+    "name": "Hour estimation ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1205622242933012/1205622242933021/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 11:53:44",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "completed": false
+  },
+  {
+    "id": "as:1205622242933025",
+    "name": "Contact details ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1205622242933012/1205622242933025/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-01 11:53:59",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "completed": false
+  },
+  {
+    "id": "as:1205640030697683",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1205622242933012/1205640030697683/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-10-03 13:20:17",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1205907455014264",
+    "name": "New Ratio",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1205907455014264/f",
+    "iteration": "Video",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2023-11-08 14:20:51",
+    "dueOn": "2023-11-12",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1217417": 10800,
+        "1219084": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:15",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206687782191354",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1206687782191354/f",
+    "iteration": "B-Roll animations (88h)",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2024-02-26 07:38:14",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 198000
+    },
+    "time": {
+      "total": 270900,
+      "users": {
+        "1310120": 247500,
+        "1328069": 23400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:00",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206687782191356",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1206687782191356/f",
+    "iteration": "B-Roll animations (88h)",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2024-02-26 07:39:28",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 118800
+    },
+    "time": {
+      "total": 234000,
+      "users": {
+        "1213760": 234000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:25:01",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206920234377100",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1205622242933012/1206920234377100/f",
+    "iteration": "Contact",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2024-03-25 12:22:30",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "time": {
+      "total": 77400,
+      "users": {
+        "1217417": 21600,
+        "1328069": 35100,
+        "1328472": 20700
+      },
+      "timerTime": 60
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1209212543384557",
+    "name": "B-Roll - convert to GBP",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1209212543384557/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2025-01-23 14:23:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1341194": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 13:22:42",
+    "assignees": [
+      {
+        "accountId": "as:1207442581017170",
+        "accountName": "Avishai Zalach",
+        "userId": 1341194
+      }
+    ]
+  },
+  {
+    "id": "as:1209359371776039",
+    "name": "B-Roll - convert to GBP Non Billable",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1205622242933012/1209359371776039/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1205622242933012"
+    ],
+    "createdAt": "2025-02-09 13:36:13",
+    "labels": [],
+    "time": {
+      "total": 63900,
+      "users": {
+        "1341194": 18900,
+        "1370761": 45000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 13:22:44"
+  }
+]

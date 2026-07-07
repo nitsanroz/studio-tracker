@@ -1,0 +1,268 @@
+[
+  {
+    "id": "as:1203952579734351",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203952579734347/1203952579734351/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-12 15:19:26",
+    "labels": [],
+    "time": {
+      "total": 61200,
+      "users": {
+        "1219079": 25200,
+        "1220746": 36000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203952579734353",
+    "name": "Visual Concept",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1203952579734353/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-12 15:19:35",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 468000
+    },
+    "time": {
+      "total": 474300,
+      "users": {
+        "1219079": 191700,
+        "1219084": 9000,
+        "1219111": 16200,
+        "1220746": 257400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:53"
+  },
+  {
+    "id": "as:1203952579734355",
+    "name": "Onboarding",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1203952579734355/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-12 15:26:14",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219079": 3600,
+        "1219084": 1800,
+        "1220746": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:53"
+  },
+  {
+    "id": "as:1203955454126015",
+    "name": "Contact details  ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203952579734347/1203955454126015/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-13 08:03:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203955454126017",
+    "name": "First hour estimation ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203952579734347/1203955454126017/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-13 08:03:11",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203974288347544",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203952579734347/1203974288347544/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-02-15 13:56:30",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 359100,
+      "users": {
+        "1219079": 83700,
+        "1220746": 275400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1204545616896269",
+    "name": "Homepage",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204545616896269/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-05-07 07:32:32",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 360000
+    },
+    "time": {
+      "total": 379800,
+      "users": {
+        "1219079": 122400,
+        "1219084": 71100,
+        "1219111": 7200,
+        "1220746": 179100
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:54"
+  },
+  {
+    "id": "as:1204545616896271",
+    "name": "Content Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204545616896271/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-05-07 07:32:39",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 90000
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:55"
+  },
+  {
+    "id": "as:1204725076038634",
+    "name": "Photography Art Direction",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204725076038634/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-05-31 12:39:01",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 54000
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:56"
+  },
+  {
+    "id": "as:1204725076038636",
+    "name": "Logo Touchups?",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204725076038636/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-05-31 12:39:56",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 54000
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:56"
+  },
+  {
+    "id": "as:1204778001603696",
+    "name": "Mockups",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204778001603696/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-06-07 14:23:45",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1220746": 8100,
+        "1256469": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:57"
+  },
+  {
+    "id": "as:1204813365231234",
+    "name": "Graphic language development ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203952579734347/1204813365231234/f",
+    "iteration": "Mavens Website",
+    "projects": [
+      "as:1203952579734347"
+    ],
+    "createdAt": "2023-06-13 14:17:44",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1219079": 19800,
+        "1220746": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:20:58"
+  }
+]

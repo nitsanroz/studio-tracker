@@ -1,0 +1,1295 @@
+[
+  {
+    "id": "as:1199905657103262",
+    "name": "Kickoff meeting (2h) - 1.5h - Done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103262/f",
+    "iteration": "Graphic Language, Website Concepts & UX (84h+38h=122h) - 122h - Done",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:45:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:21",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103264",
+    "name": "Layouts (24h) - 12h - Done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103264/f",
+    "iteration": "Graphic Language, Website Concepts & UX (84h+38h=122h) - 122h - Done",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:45:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:32",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103266",
+    "name": "Visual concepts options (8h) - 7.5h - Done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103266/f",
+    "iteration": "Graphic Language, Website Concepts & UX (84h+38h=122h) - 122h - Done",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:45:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:26",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103268",
+    "name": "Homepage design (50h) - 63h - Done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103268/f",
+    "iteration": "Graphic Language, Website Concepts & UX (84h+38h=122h) - 122h - Done",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:45:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:34",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103272",
+    "name": "Rest of the pages design// 7 pages (96>210h) -216.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103272/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:46:19",
+    "dueOn": "2021-08-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:39",
+    "assignees": [
+      {
+        "accountId": "as:1199518519823940",
+        "accountName": "Or Lazar"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103276",
+    "name": "Mobile adjustments (32>35h) - 32h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103276/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 12:46:32",
+    "dueOn": "2021-08-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:40",
+    "assignees": [
+      {
+        "accountId": "as:1199518519823940",
+        "accountName": "Or Lazar"
+      }
+    ]
+  },
+  {
+    "id": "as:1199905657103290",
+    "name": "Dev Studio guidance & QA (23>32h) - 47.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1199905657103290/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-02-08 13:01:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:45",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1200130251665659",
+    "name": "Homepage design addition (30h +8h) - 38h - Done",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1200130251665659/f",
+    "iteration": "Graphic Language, Website Concepts & UX (84h+38h=122h) - 122h - Done",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-03-30 10:21:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:36"
+  },
+  {
+    "id": "as:1200309560894617",
+    "name": "Hero video (40h-50h) - 15.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1200309560894617/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-05-10 11:55:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:44",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200699963256881",
+    "name": "Style guide, behavior file & references (10h) -  12.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1200699963256881/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-08-01 08:06:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:42",
+    "assignees": [
+      {
+        "accountId": "as:1199518519823940",
+        "accountName": "Or Lazar"
+      }
+    ]
+  },
+  {
+    "id": "as:1200964855274561",
+    "name": "Website dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1200964855274561/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-09-13 06:50:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:29"
+  },
+  {
+    "id": "as:1201434832052471",
+    "name": "404 page  - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201434832052471/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-11-29 07:12:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:47",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201447181909807",
+    "name": "Milestones images editing (5h)- 4.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201447181909807/f",
+    "iteration": "Marketing department (5h+2h) - 6.75h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-11-30 15:30:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:09:21",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201575696792925",
+    "name": "Team images (2h) -  2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201575696792925/f",
+    "iteration": "Marketing department (5h+2h) - 6.75h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-12-26 12:18:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:09:26",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201591721793739",
+    "name": "Team section + images changes (6h) - 13.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201591721793739/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-12-28 15:19:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:50",
+    "assignees": [
+      {
+        "accountId": "as:1200275224822462",
+        "accountName": "Oksana Michalski"
+      }
+    ]
+  },
+  {
+    "id": "as:1201605544783992",
+    "name": "Presentation meeting - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201605544783992/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2021-12-28 11:41:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:08:49",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201871673259915",
+    "name": "Accessibility (9h) - 11.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1201871673259915/f",
+    "iteration": "Website Design phase (151h>337h+6h=343h) - 341.5h (30/12/21)",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2022-02-24 07:59:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 11:40:15",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202209567560686",
+    "name": "ESG image editing (2h) - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1202209567560686/f",
+    "iteration": "May 2022",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2022-05-02 07:12:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:13:39",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1203190832852028",
+    "name": "Team section photo editing (1h) - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203190832852028/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2022-10-19 07:19:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:13:48"
+  },
+  {
+    "id": "as:1203372839528808",
+    "name": "Daniel Arison photo editing - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203372839528808/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2022-11-15 15:18:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:13:51"
+  },
+  {
+    "id": "as:1203919089158394",
+    "name": "Fonts Research (13h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158394/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:15:13",
+    "dueOn": "2023-02-21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 46800
+    },
+    "time": {
+      "total": 25200,
+      "users": {
+        "1219081": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:19"
+  },
+  {
+    "id": "as:1203919089158396",
+    "name": "Desktop (33h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158396/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:15:28",
+    "dueOn": "2023-03-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 118800
+    },
+    "time": {
+      "total": 161100,
+      "users": {
+        "1219083": 150300,
+        "1219084": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:18"
+  },
+  {
+    "id": "as:1203919089158400",
+    "name": "Mobile (18h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158400/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:15:48",
+    "dueOn": "2023-03-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 64800
+    },
+    "time": {
+      "total": 106200,
+      "users": {
+        "1219083": 97200,
+        "1219084": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:17"
+  },
+  {
+    "id": "as:1203919089158402",
+    "name": "Visual Elements (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158402/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:15:53",
+    "dueOn": "2023-03-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 18000,
+      "users": {
+        "1219083": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:17"
+  },
+  {
+    "id": "as:1203919089158404",
+    "name": "Icon/Button (3h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158404/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:16:01",
+    "dueOn": "2023-03-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 4500,
+      "users": {
+        "1219083": 1800,
+        "1219084": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:16"
+  },
+  {
+    "id": "as:1203919089158406",
+    "name": "Prep4dev (10h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919089158406/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:16:40",
+    "dueOn": "2023-03-19",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 36000
+    },
+    "time": {
+      "total": 21600,
+      "users": {
+        "1219083": 19800,
+        "1219111": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:15"
+  },
+  {
+    "id": "as:1203919095203098",
+    "name": "QA (20h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1203919095203098/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-02-07 10:16:46",
+    "dueOn": "2023-03-19",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 72000
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1256469": 14400
+      },
+      "timerTime": 0
+    },
+    "color": "#91cef2",
+    "completed": true,
+    "completedAt": "2023-08-09 12:59:20"
+  },
+  {
+    "id": "as:1204961832526726",
+    "name": "Visuals update (3h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1204961832526726/f",
+    "iteration": "March 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-07-06 06:18:20",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 9000,
+      "users": {
+        "1219111": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:40:39",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205878356618991",
+    "name": "Research (20h) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1205878356618991/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-08 11:07:20",
+    "labels": [],
+    "time": {
+      "total": 72000,
+      "users": {
+        "1214048": 70200,
+        "1219081": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:18:39"
+  },
+  {
+    "id": "as:1205878356618993",
+    "name": "Article page – different article types and media types (12h) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1205878356618993/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-08 11:07:24",
+    "labels": [],
+    "time": {
+      "total": 43200,
+      "users": {
+        "1214048": 32400,
+        "1217417": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:29",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1205878356618995",
+    "name": "Lobby page",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1205878356618995/f",
+    "iteration": "EOL Magazine -96h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-08 11:07:28",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1205897598457696",
+    "name": "Meetings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1205897598457696/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-08 15:32:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-11-29 13:50:15"
+  },
+  {
+    "id": "as:1206056577982133",
+    "name": "Insights for article page and content website in general (12h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206056577982133/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-29 13:25:49",
+    "labels": [],
+    "time": {
+      "total": 43200,
+      "users": {
+        "1214048": 43200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:18:39"
+  },
+  {
+    "id": "as:1206056577982135",
+    "name": "Main page concepts (20h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206056577982135/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-29 13:26:03",
+    "labels": [],
+    "time": {
+      "total": 72000,
+      "users": {
+        "1214048": 72000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:18:39"
+  },
+  {
+    "id": "as:1206056577982137",
+    "name": "Site map  (12h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206056577982137/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-29 13:26:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:28",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206056577982139",
+    "name": "Ideas to integrate AI on website and on content suggestions (20h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206056577982139/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-29 13:26:49",
+    "labels": [],
+    "time": {
+      "total": 57600,
+      "users": {
+        "1214048": 57600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:29",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206056577982149",
+    "name": "Not for now ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1199905657103254/1206056577982149/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-11-29 13:42:41",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 6300,
+      "users": {
+        "1341194": 6300
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1206134921113810",
+    "name": "Combining 2 concepts, add new explore page (20h) - ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206134921113810/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-12-12 09:22:19",
+    "labels": [],
+    "time": {
+      "total": 72000,
+      "users": {
+        "1214048": 72000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:29",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1206189575462208",
+    "name": "Arison Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1199905657103254/1206189575462208/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-12-17 14:04:25",
+    "labels": [],
+    "unbillable": true,
+    "rate": 0,
+    "time": {
+      "total": 108000,
+      "users": {
+        "1214048": 19800,
+        "1341194": 55800,
+        "1370761": 32400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1206257581665735",
+    "name": "Meeting with Nitsan",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206257581665735/f",
+    "iteration": "EOL Magazine -116h",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2023-12-31 08:39:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-12-31 12:34:39"
+  },
+  {
+    "id": "as:1206939846723675",
+    "name": "Graphs update",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1206939846723675/f",
+    "iteration": "March 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-03-27 10:38:19",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 3600
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219083": 900,
+        "1310120": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:30",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271109",
+    "name": "Graphic Concepts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271109/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:18:46",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 108000
+    },
+    "time": {
+      "total": 99000,
+      "users": {
+        "1214048": 45900,
+        "1322241": 53100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:30",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271111",
+    "name": "Home page wireframe",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271111/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:19:18",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 54000
+    },
+    "time": {
+      "total": 54000,
+      "users": {
+        "1214048": 54000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:38",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271113",
+    "name": "About page wireframe",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271113/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:19:27",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271117",
+    "name": "Home page design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271117/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:19:44",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 486000
+    },
+    "time": {
+      "total": 490500,
+      "users": {
+        "1214048": 238500,
+        "1310120": 10800,
+        "1322241": 41400,
+        "1328069": 160200,
+        "1342403": 27000,
+        "1370761": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:38",
+    "assignees": [
+      {
+        "accountId": "as:1206858324797116",
+        "accountName": "Liza Shelkovich",
+        "userId": 1328069
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271119",
+    "name": "About page design",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271119/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:19:48",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208119897271121",
+    "name": "meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1199905657103254/1208119897271121/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:20:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208119898205489",
+    "name": "Kick off meeting",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208119898205489/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-08-22 08:20:54",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 3600
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1214048": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:29"
+  },
+  {
+    "id": "as:1208285150703469",
+    "name": "On Boarding",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1208285150703469/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-09-11 14:30:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208368741084751",
+    "name": "Prototyping",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1208368741084751/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "parentName": "Home page design",
+    "parentId": "as:1208119897271117",
+    "createdAt": "2024-09-22 09:51:43",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208368741084752",
+    "name": "Prototyping",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1199905657103254/1208368741084752/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "parentName": "About page design",
+    "parentId": "as:1208119897271119",
+    "createdAt": "2024-09-22 09:52:30",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208537890399284",
+    "name": "Prototyping",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208537890399284/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-10-14 07:16:24",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 104400
+    },
+    "time": {
+      "total": 181800,
+      "users": {
+        "1214048": 9000,
+        "1341194": 172800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:38"
+  },
+  {
+    "id": "as:1208980831762341",
+    "name": "About Us Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1208980831762341/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2024-12-15 13:36:30",
+    "dueOn": "2024-12-29",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 117000,
+      "users": {
+        "1214048": 34200,
+        "1341194": 15300,
+        "1370761": 67500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:51",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1209084489158487",
+    "name": "Recolor and hero adjustment ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1199905657103254/1209084489158487/f",
+    "iteration": "Arison Foundation Website 2024",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2025-01-07 15:56:08",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 79200
+    },
+    "time": {
+      "total": 50400,
+      "users": {
+        "1214048": 50400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-01-28 10:32:39"
+  },
+  {
+    "id": "as:1209973905264100",
+    "name": "Update ESG April 2025",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1199905657103254/1209973905264100/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2025-04-14 06:35:43",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1322241": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1214538846560529",
+    "name": "Duplicate of Update ESG May 2026",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1199905657103254/1214538846560529/f",
+    "iteration": "Others",
+    "projects": [
+      "as:1199905657103254"
+    ],
+    "createdAt": "2026-05-06 08:50:08",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1439884": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

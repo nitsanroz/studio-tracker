@@ -1,0 +1,262 @@
+[
+  {
+    "id": "b3:7620369754",
+    "name": "Home Page Hero",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/card_tables/cards/7620369754",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:05:28",
+    "dueOn": "2024-07-31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:22"
+  },
+  {
+    "id": "b3:7620371041",
+    "name": "Hero",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620371041",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:05:48",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:07"
+  },
+  {
+    "id": "b3:7620371476",
+    "name": "Projects Section",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620371476",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:05:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:40"
+  },
+  {
+    "id": "b3:7620371852",
+    "name": "Studio Section",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620371852",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:06:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:07"
+  },
+  {
+    "id": "b3:7620372200",
+    "name": "Careers Section",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620372200",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:06:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:08"
+  },
+  {
+    "id": "b3:7620372276",
+    "name": "Footer",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620372276",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:06:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:41"
+  },
+  {
+    "id": "b3:7620372389",
+    "name": "Manu",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620372389",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:06:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:09"
+  },
+  {
+    "id": "b3:7620382375",
+    "name": "1",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620382375",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:10:39",
+    "labels": [
+      "Mobile"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:40"
+  },
+  {
+    "id": "b3:7620382409",
+    "name": "2",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620382409",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:10:40",
+    "labels": [
+      "Mobile"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:38"
+  },
+  {
+    "id": "b3:7620382442",
+    "name": "3",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620382442",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:10:41",
+    "labels": [
+      "Mobile"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:39"
+  },
+  {
+    "id": "b3:7620417984",
+    "name": "pgerg",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620417984",
+    "iteration": "Home Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 11:25:07",
+    "labels": [
+      "ihoge"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 11:28:43"
+  },
+  {
+    "id": "b3:7620509824",
+    "name": "Hero",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620509824",
+    "iteration": "Desktop",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 12:00:41",
+    "labels": [
+      "Desktop"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 12:02:53"
+  },
+  {
+    "id": "b3:7620510191",
+    "name": "Hro",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620510191",
+    "iteration": "Careers Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 12:00:49",
+    "labels": [
+      "Mobile"
+    ],
+    "completed": false
+  },
+  {
+    "id": "b3:7620510808",
+    "name": "Vibe",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620510808",
+    "iteration": "Desktop",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 12:01:01",
+    "labels": [
+      "Desktop"
+    ],
+    "completed": true,
+    "completedAt": "2024-07-18 12:02:55"
+  },
+  {
+    "id": "b3:7620511051",
+    "name": "Jobs Listings",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620511051",
+    "iteration": "Careers Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 12:01:07",
+    "labels": [
+      "Desktop"
+    ],
+    "completed": false
+  },
+  {
+    "id": "b3:7620511315",
+    "name": "Application Form",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366656/todos/7620511315",
+    "iteration": "Careers Page",
+    "projects": [
+      "b3:38366656"
+    ],
+    "createdAt": "2024-07-18 12:01:13",
+    "labels": [
+      "Desktop"
+    ],
+    "completed": false
+  }
+]

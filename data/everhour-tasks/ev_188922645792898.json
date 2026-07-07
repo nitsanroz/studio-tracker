@@ -1,0 +1,99 @@
+[
+  {
+    "id": "ev:188922851335687",
+    "name": "Onboarding_",
+    "type": "task",
+    "status": "open",
+    "iteration": "HR",
+    "projects": [
+      "ev:188922645792898"
+    ],
+    "position": 1,
+    "createdAt": "2026-07-02 18:38:33",
+    "labels": [],
+    "section": 1424718,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922852509906",
+    "name": "Collaborating_",
+    "type": "task",
+    "status": "open",
+    "iteration": "HR",
+    "projects": [
+      "ev:188922645792898"
+    ],
+    "position": 2,
+    "createdAt": "2026-07-02 18:38:45",
+    "labels": [],
+    "section": 1424718,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922854639106",
+    "name": "Happy Hour Presentation_",
+    "type": "task",
+    "status": "open",
+    "iteration": "HR",
+    "projects": [
+      "ev:188922645792898"
+    ],
+    "position": 3,
+    "createdAt": "2026-07-02 18:39:06",
+    "labels": [],
+    "section": 1424718,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922882464990",
+    "name": "Voyantis Case Study_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Casestudies",
+    "projects": [
+      "ev:188922645792898"
+    ],
+    "position": 5,
+    "createdAt": "2026-07-02 18:43:44",
+    "labels": [],
+    "section": 1424720,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922883189536",
+    "name": "Whitebox Case Study_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Casestudies",
+    "projects": [
+      "ev:188922645792898"
+    ],
+    "position": 4,
+    "createdAt": "2026-07-02 18:43:51",
+    "labels": [],
+    "section": 1424720,
+    "time": {
+      "total": 21600,
+      "users": {
+        "1450722": 21600
+      },
+      "timerTime": 0
+    },
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  }
+]

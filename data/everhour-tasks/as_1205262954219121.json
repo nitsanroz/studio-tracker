@@ -1,0 +1,313 @@
+[
+  {
+    "id": "as:1203593406126156",
+    "name": "Home Page Visuals",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1203593406126156/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2022-12-22 14:10:25",
+    "labels": [],
+    "time": {
+      "total": 142200,
+      "users": {
+        "1214048": 16200,
+        "1219079": 66600,
+        "1219085": 28800,
+        "1219111": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:21",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1203668867161469",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202617922925561/1203668867161469/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-01-08 11:40:53",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 304200,
+      "users": {
+        "1219081": 10800,
+        "1219083": 36900,
+        "1219085": 148500,
+        "1219111": 14400,
+        "1256469": 93600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1204280950909456",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202617922925561/1204280950909456/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219118",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-03-28 14:16:31",
+    "labels": [],
+    "time": {
+      "total": 199800,
+      "users": {
+        "1213760": 3600,
+        "1214048": 99000,
+        "1219083": 95400,
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1204764666044540",
+    "name": "Microsoft App Store Images",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204764666044540/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-06-06 06:23:36",
+    "labels": [],
+    "time": {
+      "total": 25200,
+      "users": {
+        "1219083": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:21",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204897950959344",
+    "name": "Linkedin Banner",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204897950959344/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-06-26 06:09:11",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1219083": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:20",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204897950959353",
+    "name": "Hackmonie Logo (16h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204897950959353/f",
+    "iteration": "Total Harmon.ie cloud (100h) - 173.75h  (30/09/22)",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-06-27 09:24:56",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 43200,
+      "users": {
+        "1219084": 43200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:18",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204961831340506",
+    "name": "Scoping the website",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204961831340506/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-07-04 13:43:24",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 18000
+    },
+    "time": {
+      "total": 18000,
+      "users": {
+        "1219084": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:22",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204961831340510",
+    "name": "Renewal payment page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204961831340510/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-07-05 06:15:26",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 27900,
+      "users": {
+        "1219081": 6300,
+        "1219083": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:23",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204993711894385",
+    "name": "Renewal Payment page HTML conversion (3h) - 3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204993711894385/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-07-09 12:15:58",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:24",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1204994298023484",
+    "name": "Video refrences Hero",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202617922925561/1204994298023484/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1202617922925561",
+      "as:1205262954219121"
+    ],
+    "createdAt": "2023-07-09 14:32:44",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1219084": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 08:41:25",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  }
+]

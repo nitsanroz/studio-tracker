@@ -1,0 +1,112 @@
+[
+  {
+    "id": "as:1215155433930282",
+    "name": "Draft 3-5 Key results",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215086658138519/1215155433930282/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1215086658138519"
+    ],
+    "createdAt": "2026-05-27 06:36:53",
+    "dueOn": "2026-05-30",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215155433930298",
+    "name": "Review draft goals with your team",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215086658138519/1215155433930298/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1215086658138519"
+    ],
+    "createdAt": "2026-05-27 06:36:54",
+    "dueOn": "2026-06-03",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215155532449509",
+    "name": "Draft Objective",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215086658138519/1215155532449509/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1215086658138519"
+    ],
+    "createdAt": "2026-05-27 06:36:53",
+    "dueOn": "2026-05-30",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215155555838407",
+    "name": "Approve draft goals [Reassign to approver]",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215086658138519/1215155555838407/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1215086658138519"
+    ],
+    "createdAt": "2026-05-27 06:36:54",
+    "dueOn": "2026-06-05",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1215155555845702",
+    "name": "Publish approved goals to Asana Goals",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1215086658138519/1215155555845702/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1215086658138519"
+    ],
+    "createdAt": "2026-05-27 06:36:55",
+    "dueOn": "2026-06-07",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  }
+]

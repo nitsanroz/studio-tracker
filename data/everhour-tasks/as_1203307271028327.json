@@ -1,0 +1,1170 @@
+[
+  {
+    "id": "as:1203307184619958",
+    "name": "Change sync icon.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203307184619958/f",
+    "iteration": "Email + Drafts",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-06 12:52:06",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/lfQ5b2F48XjiMr5tndImXC/Email-%2B-Draft---Sand-Box?node-id=221%3A5155&t=I0EPd3UNCPeeKK4q-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-01 12:13:13"
+  },
+  {
+    "id": "as:1203307184619964",
+    "name": "Add organization level in the whole system and notification icon - not MVP",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203307271028327/1203307184619964/f",
+    "iteration": "Organization settings",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-06 12:57:32",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203307184619974",
+    "name": "Highlight box edge cases",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203307271028327/1203307184619974/f",
+    "iteration": "Add in",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-06 13:00:58",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203313750006638",
+    "name": "Pool search behavior",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203313750006638/f",
+    "iteration": "Pool + Search input",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-07 14:48:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:27",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203335114568364",
+    "name": "Bug - other add on's interfere with the comment button.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203335114568364/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-09 08:32:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:24",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203336502247462",
+    "name": "Updating onboarding flows to new UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203336502247462/f",
+    "iteration": "Flows",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-09 12:23:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:26",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203357629872951",
+    "name": "New indication tag navigation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203357629872951/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-13 10:54:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:37",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203357822029597",
+    "name": "Design a \"Refresh the page\" screen",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203357822029597/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-13 13:25:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:20",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203357885384860",
+    "name": "Update the project covers to larger font and add descriptions to what the pages contain.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203357885384860/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-13 13:29:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-16 07:05:55",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203357919723450",
+    "name": "Mobile - Design a \"Collabria does not support a mobile version at the moment\" screen",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203357919723450/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-13 13:26:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:23",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405574915182",
+    "name": "Pool - Change space settings ellipsis icon to cog-wheel icon.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405574915182/f",
+    "iteration": "Pool + Search input",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 07:47:09",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/QrfSBlLyi2DSL19DSprgPA/Pool--%2B-Search-input---Sand-Box?node-id=342%3A18276&t=gMCfaVWzp2WOeXJT-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-01 12:13:26",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405635154888",
+    "name": "Create new space - add \"assign roles\" to users",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405635154888/f",
+    "iteration": "Nav bar + Create new space",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:52:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:08",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405635800398",
+    "name": "Organization settings - Update side menu",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405635800398/f",
+    "iteration": "Organization settings",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:54:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:07",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405636156692",
+    "name": "Organization settings - update the space members on hover options",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405636156692/f",
+    "iteration": "Organization settings",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:55:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:07",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405637271894",
+    "name": "Collabria main bar - switch organization - design notification - not MVP",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405637271894/f",
+    "iteration": "Collabria main bar",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:58:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:30",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405691030119",
+    "name": "studio - add design link to tasks",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405691030119/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:27:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-04 08:51:44",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405702019677",
+    "name": "Organization settings - add option to add organization photo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405702019677/f",
+    "iteration": "Organization settings",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:56:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:06",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405740834239",
+    "name": "Create new space - add role",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405740834239/f",
+    "iteration": "Nav bar + Create new space",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:20:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:29",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405754494010",
+    "name": "Collabria main bar - switch organization - Add option to add an organization - not MVP",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405754494010/f",
+    "iteration": "Collabria main bar",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 09:58:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-29 08:26:09",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203405784425435",
+    "name": "Error - add edge case - 2 notifications of header type together",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405784425435/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 11:21:55",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/jiyyqGkAeSnkBQo6Xg8B06/Design-system-new?node-id=4511%3A79013&t=1XanVMc45EzcLNXs-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-01 12:14:24",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405785664395",
+    "name": "Illustrations - Make a list of all the images (illustrations) we need in the system including a description + requested size",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405785664395/f",
+    "iteration": "Design system",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 11:25:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:25",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405786631646",
+    "name": "Remove See more/less buttons from emails",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405786631646/f",
+    "iteration": "Email + Drafts",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 11:27:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-27 08:48:14",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405801584667",
+    "name": "standalone - add navigation to comments",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405801584667/f",
+    "iteration": "Comments + New comments",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 11:17:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:28",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405806230567",
+    "name": "mail + draft header loction change ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405806230567/f",
+    "iteration": "Email + Drafts",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 11:30:24",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/lfQ5b2F48XjiMr5tndImXC/Email-%2B-Draft---Sand-Box?node-id=224%3A5619&t=H3qY9CrUQCrANsrv-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-01 12:13:21",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203405996406732",
+    "name": "Pool -  emphasis features of new unread email in Pool",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203405996406732/f",
+    "iteration": "Pool + Search input",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-20 13:56:59",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/QrfSBlLyi2DSL19DSprgPA/Pool--%2B-Search-input---Sand-Box?node-id=341%3A17156&t=kei6lb8Qnb8akoh3-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-01 12:14:06",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203408426172207",
+    "name": "Email notification",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203408426172207/f",
+    "iteration": "Add in",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-21 07:08:39",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/zmGYuxA06ZFpEVbMk02Whd/Notifications---Sand-Box?node-id=2%3A12&t=j32za2lAJmTvGIoB-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-12 13:11:59",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203408513682005",
+    "name": "Access denied page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203408513682005/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-21 07:18:43",
+    "dueOn": "2022-12-01",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/jiyyqGkAeSnkBQo6Xg8B06/Design-system-new?node-id=4511%3A72798&t=1XanVMc45EzcLNXs-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-04 11:03:20",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203431959254289",
+    "name": "New draft - Keep toolbar open always",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203431959254289/f",
+    "iteration": "Email + Drafts",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-24 08:16:44",
+    "labels": [],
+    "attributes": {
+      "Figma Design": "https://www.figma.com/file/lfQ5b2F48XjiMr5tndImXC/Email-%2B-Draft---Sand-Box?node-id=262%3A9115&t=6De17yXDA5i3xfjK-1"
+    },
+    "completed": true,
+    "completedAt": "2022-12-05 08:23:55",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203434077081428",
+    "name": "Add \"welcome to space page\"",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203434077081428/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-24 13:39:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:22",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203443213975972",
+    "name": "Upgrade plan notification",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203443213975972/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-27 10:46:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:24",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203443462106037",
+    "name": "Map the scenarios of the members by rollers with Tali",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203443462106037/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-27 14:27:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-12 10:56:27",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1203464375941395",
+    "name": "Resolve comment user flows",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203464375941395/f",
+    "iteration": "Comments + New comments",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-11-30 10:22:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:06",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203473144660375",
+    "name": "Reconsider the size of the avatars in the comment section",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203473144660375/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-01 13:04:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:21",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203486373920016",
+    "name": "Add back to top button in the thread section",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203486373920016/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 08:29:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:09",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203486374049604",
+    "name": "Icon for \"link copied to clipboard\" message",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203486374049604/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 08:29:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:09",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203486374397691",
+    "name": "Space member window - one user per row problem",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203486374397691/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 08:31:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:05",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203486429468181",
+    "name": "Create user story for reaching 25 emails shared",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203486429468181/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 08:31:58",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:47:08",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203486862487402",
+    "name": "Email - Change the ellipsis icon to reply all icon",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203486862487402/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 13:13:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-14 07:37:18",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203487022644397",
+    "name": "\"Upgrade plan\" flow",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203487022644397/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-04 15:49:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:42",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203489845567201",
+    "name": "Thread failed to load message",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203489845567201/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-05 08:26:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:40",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203489903007798",
+    "name": "Email failed to load message",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203489903007798/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-05 08:26:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:41",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203492405008310",
+    "name": "Add in update, flows and edge cases",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203492405008310/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-05 14:01:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:34",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203500200371113",
+    "name": "New thread - button drill down",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203500200371113/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-06 12:41:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:39",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203533709694101",
+    "name": "Fix prototype flows and update to new UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203533709694101/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-12 13:14:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-27 07:37:12",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203578154601481",
+    "name": "Share thread components, edge cases and flows",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203578154601481/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-19 09:51:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:36",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203610861660693",
+    "name": "Illustrations  (implement + DS) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203610861660693/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-25 10:28:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:33",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203610862603295",
+    "name": "Errors - mapping error types + DS ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203610862603295/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-25 10:31:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:32",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203610905701131",
+    "name": "Updating the prototype UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203610905701131/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-25 10:25:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:35",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203610965638746",
+    "name": "Inviting user to space - error loading list",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203610965638746/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-25 10:37:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-29 08:26:00",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203613069434862",
+    "name": "Redesign avatars + decide how users outside from Collabria will look like (avatar + color) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203613069434862/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-26 11:31:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:31",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203615842969075",
+    "name": "Organize the checklist",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203615842969075/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2022-12-27 07:52:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-29 08:21:38",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203634875946641",
+    "name": "New thread import email - fix",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203634875946641/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2023-01-02 09:10:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:16",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203646702608699",
+    "name": "Find sounds for micro animations ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203307271028327/1203646702608699/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203307271028327"
+    ],
+    "createdAt": "2023-01-04 07:19:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-16 07:46:15",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  }
+]

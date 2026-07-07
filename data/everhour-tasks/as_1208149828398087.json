@@ -1,0 +1,1331 @@
+[
+  {
+    "id": "as:1208144853503431",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1208144853503431/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-08-26 14:37:49",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 40500
+    },
+    "time": {
+      "total": 44100,
+      "users": {
+        "1213760": 3600,
+        "1214048": 40500
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1208144853503437",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208144853503437/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-08-26 14:38:21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 150300
+    },
+    "time": {
+      "total": 150300,
+      "users": {
+        "1214048": 123300,
+        "1310120": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:40"
+  },
+  {
+    "id": "as:1208338972245611",
+    "name": "Item structure layout",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208338972245611/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-09-18 06:11:07",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 122400
+    },
+    "time": {
+      "total": 147600,
+      "users": {
+        "1214048": 147600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:30",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208508463141347",
+    "name": "UI",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208508463141347/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-09 14:29:44",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 95400
+    },
+    "time": {
+      "total": 127800,
+      "users": {
+        "1214048": 102600,
+        "1310120": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:30",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208521574818653",
+    "name": "Guided Process",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208521574818653/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-10 14:11:43",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 67500,
+      "users": {
+        "1213760": 21600,
+        "1214048": 45900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:30",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432875",
+    "name": "FAQ+Glossary+Contacts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432875/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:23:40",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 79200,
+      "users": {
+        "1213760": 70200,
+        "1214048": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432877",
+    "name": "Notification",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432877/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:24:26",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 1800,
+      "users": {
+        "1214048": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432879",
+    "name": "Feedback",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432879/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:24:36",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 5400,
+      "users": {
+        "1214048": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432881",
+    "name": "User Profile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432881/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:24:43",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 41400,
+      "users": {
+        "1214048": 30600,
+        "1322241": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432883",
+    "name": "Note",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432883/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:24:47",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:30",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432885",
+    "name": "Service",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432885/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:25:02",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 14400,
+      "users": {
+        "1214048": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432887",
+    "name": "Upper Menu",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432887/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:25:05",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1214048": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432891",
+    "name": "Icons",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432891/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:25:25",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 180000
+    },
+    "time": {
+      "total": 285300,
+      "users": {
+        "1213760": 62100,
+        "1214048": 79200,
+        "1310120": 34200,
+        "1322241": 92700,
+        "1328069": 5400,
+        "1342403": 1800,
+        "1450722": 9900
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1215769288616159",
+        "accountName": "Leeyam Greenberg",
+        "userId": 1450722
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432895",
+    "name": "Relations Map",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432895/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:25:35",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 7200,
+      "users": {
+        "1214048": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432899",
+    "name": "Medicine",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432899/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:26:30",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 56700,
+      "users": {
+        "1213760": 25200,
+        "1214048": 31500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432901",
+    "name": "Services List",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432901/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:26:36",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432903",
+    "name": "Comparison",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432903/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:26:47",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 46800,
+      "users": {
+        "1213760": 25200,
+        "1214048": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432905",
+    "name": "Home Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432905/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:26:53",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 123300,
+      "users": {
+        "1214048": 123300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432909",
+    "name": "Q&A",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432909/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "parentName": "FAQ+Glossary+Contacts",
+    "parentId": "as:1208534986432875",
+    "createdAt": "2024-10-13 08:27:06",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208534986432910",
+    "name": "Term",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432910/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "parentName": "FAQ+Glossary+Contacts",
+    "parentId": "as:1208534986432875",
+    "createdAt": "2024-10-13 08:27:13",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208534986432911",
+    "name": "Contact",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432911/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "parentName": "FAQ+Glossary+Contacts",
+    "parentId": "as:1208534986432875",
+    "createdAt": "2024-10-13 08:27:30",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1208534986432912",
+    "name": "Work Guidelines",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432912/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:28:18",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 26100,
+      "users": {
+        "1213760": 10800,
+        "1214048": 15300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432914",
+    "name": "Brief",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432914/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:28:44",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 12600,
+      "users": {
+        "1214048": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432916",
+    "name": "Search Results",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432916/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:28:58",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 22500,
+      "users": {
+        "1214048": 22500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208534986432918",
+    "name": "Contact Card",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208534986432918/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:30:25",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 10800,
+      "users": {
+        "1214048": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519161",
+    "name": "Name & Logo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519161/f",
+    "iteration": "Name + Logo",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:34:08",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 115200
+    },
+    "time": {
+      "total": 7200,
+      "users": {
+        "1217417": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:36",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519163",
+    "name": "Design System",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519163/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:34:19",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 281700,
+      "users": {
+        "1213760": 201600,
+        "1214048": 80100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519165",
+    "name": "Prep for Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519165/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:34:23",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 26100,
+      "users": {
+        "1214048": 26100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519167",
+    "name": "Feedback & Meetings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519167/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:34:35",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 54900,
+      "users": {
+        "1214048": 54900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519169",
+    "name": "2 Banners for Homepage",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519169/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:34:43",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 85500,
+      "users": {
+        "1214048": 18900,
+        "1342403": 66600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208535218519171",
+    "name": "Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208535218519171/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-10-13 08:40:01",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 42300,
+      "users": {
+        "1214048": 42300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208733689721706",
+    "name": "Animations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208733689721706/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-11-11 07:32:01",
+    "dueOn": "2024-11-17",
+    "labels": [],
+    "time": {
+      "total": 99000,
+      "users": {
+        "1214048": 7200,
+        "1341194": 90000,
+        "1342403": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:32",
+    "assignees": [
+      {
+        "accountId": "as:1207442581017170",
+        "accountName": "Avishai Zalach",
+        "userId": 1341194
+      }
+    ]
+  },
+  {
+    "id": "as:1208733689721715",
+    "name": "Procedures Community",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208733689721715/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-11-11 13:16:52",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1213760": 10800,
+        "1214048": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1208762953145360",
+    "name": "Prototype of the product",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208762953145360/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-11-14 08:47:38",
+    "labels": [],
+    "time": {
+      "total": 188100,
+      "users": {
+        "1213760": 115200,
+        "1214048": 72900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1208832099684152",
+    "name": "Calculator",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1208832099684152/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-11-26 07:23:45",
+    "labels": [],
+    "time": {
+      "total": 88200,
+      "users": {
+        "1213760": 61200,
+        "1214048": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1208904403373303",
+    "name": "Avatar",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1208149828398087/1208904403373303/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-04 15:44:25",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1209005028985669",
+    "name": "Community dropdown switch + icons",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1209005028985669/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-18 08:20:35",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1214048": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1209005028985671",
+    "name": "Home page banner -כלל ארגוני",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1209005028985671/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-18 08:21:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1209005028985677",
+    "name": "Illustrations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1209005028985677/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-18 08:25:15",
+    "labels": [],
+    "time": {
+      "total": 89100,
+      "users": {
+        "1214048": 19800,
+        "1328069": 900,
+        "1342403": 68400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1209007437364444",
+    "name": "Home page icons (messages, new, popular, briefs, updates) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1209007437364444/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-18 14:32:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1209042737248332",
+    "name": "Table excel + word",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1208149828398087/1209042737248332/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2024-12-24 15:58:57",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1213760": 16200,
+        "1214048": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-03-12 12:50:33"
+  },
+  {
+    "id": "as:1209066397928737",
+    "name": "Maccabi Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1209066397928737/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2025-01-01 14:18:42",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 39600,
+      "users": {
+        "1328069": 11700,
+        "1341194": 13500,
+        "1342403": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1209084445139464",
+    "name": "Visual QA",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1209084445139464/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2025-01-06 12:01:24",
+    "labels": [],
+    "time": {
+      "total": 332100,
+      "users": {
+        "1213760": 189000,
+        "1214048": 143100
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1209416712670044",
+    "name": "Design Change",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1209416712670044/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2025-02-18 15:37:53",
+    "labels": [],
+    "time": {
+      "total": 406800,
+      "users": {
+        "1213760": 161100,
+        "1214048": 245700
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210326050097967",
+    "name": "CRM",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1210326050097967/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2025-05-20 08:54:46",
+    "labels": [],
+    "time": {
+      "total": 22500,
+      "users": {
+        "1213760": 15300,
+        "1214048": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212645590748990",
+    "name": "Digital Icon",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1208149828398087/1212645590748990/f",
+    "iteration": "Product",
+    "projects": [
+      "as:1208149828398087"
+    ],
+    "createdAt": "2026-01-06 07:23:08",
+    "labels": [],
+    "time": {
+      "total": 19800,
+      "users": {
+        "1214048": 4500,
+        "1431051": 10800,
+        "1437050": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1212644471173780",
+        "accountName": "Michal Dekel",
+        "userId": 1431051
+      }
+    ]
+  }
+]

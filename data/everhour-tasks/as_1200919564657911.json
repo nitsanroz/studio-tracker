@@ -1,0 +1,505 @@
+[
+  {
+    "id": "as:1200919564657915",
+    "name": "Preparation & Kickoff meeting (8h) - 10h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657915/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 07:30:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:53",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1200919564657925",
+    "name": "First hour estimation",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657925/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 11:02:29",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200919564657931",
+    "name": "Contact details",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657931/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 11:21:46",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200919564657935",
+    "name": "Logo design (30h) - 15h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657935/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 11:22:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:53",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1200919564657937",
+    "name": "Logo formats (4h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657937/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 11:22:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:54",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1200919564657941",
+    "name": "Hero image (43h) - 39h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1200919564657941/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-05 11:23:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:54",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201061119889871",
+    "name": "New options logo design - 38.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201061119889871/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-09-26 07:56:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:54",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201160944163033",
+    "name": "Business card (temporary) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201160944163033/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-10-11 11:55:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:55",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201191787169040",
+    "name": "Speaker Design - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201191787169040/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-10-14 05:58:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:55",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201257233530822",
+    "name": "FB group cover - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201257233530822/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-10-25 12:04:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:55",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201310484464832",
+    "name": "Logo for T-shirt - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201310484464832/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-11-02 12:19:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:56",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201346656650331",
+    "name": "Anchor Solutions - 16.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201346656650331/f",
+    "iteration": "Website design (164h) - 335.25h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-11-10 13:23:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:57",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201405026156182",
+    "name": "Export assets from website - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201405026156182/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-11-21 11:36:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:56"
+  },
+  {
+    "id": "as:1201420650258109",
+    "name": "Notion + Linkedin Covers - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201420650258109/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-11-24 15:12:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:57",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201435020769405",
+    "name": "Career page - 14.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201435020769405/f",
+    "iteration": "Website design (164h) - 335.25h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-11-30 15:09:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:58"
+  },
+  {
+    "id": "as:1201479108602920",
+    "name": "Hoodie - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201479108602920/f",
+    "iteration": "Branding (160h) - 210h (9/12/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2021-12-07 07:56:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:57",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201855271800794",
+    "name": "Press page design (40h) - 35.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201855271800794/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-02-20 07:55:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:58",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201895889541033",
+    "name": "Brand assets page (6-8h) -10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201895889541033/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-03-01 15:23:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:58",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201895889541035",
+    "name": "Headers for the website (16-24h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1201895889541035/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-03-01 15:23:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:59",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202035019438622",
+    "name": "Pricing page (32h) - 23.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202035019438622/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-03-28 14:30:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:59",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1202148315312292",
+    "name": "Banner above navbar - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202148315312292/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-04-20 08:07:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:34:59",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202207707326773",
+    "name": "Career pages (5800ils)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202207707326773/f",
+    "iteration": "Development -88h (31/1/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-05-01 11:27:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:35:00",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Anna",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202283407271207",
+    "name": "New pricing page (38h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202283407271207/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-05-16 10:56:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:35:00"
+  },
+  {
+    "id": "as:1202323871323501",
+    "name": "Export for drive - 0.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202323871323501/f",
+    "iteration": "New pages for website -70h (01/05/22)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-05-23 14:33:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:35:00"
+  },
+  {
+    "id": "as:1202492861271906",
+    "name": "Duplicating the project - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1202492861271906/f",
+    "iteration": "Development -88h (31/1/21)",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-06-23 09:05:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:35:00"
+  },
+  {
+    "id": "as:1203411297664698",
+    "name": "Exporting Assets at clients request  (1.5h) - 1.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200919564657911/1203411297664698/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:1200919564657911"
+    ],
+    "createdAt": "2022-11-21 14:28:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-05-26 07:35:01"
+  }
+]

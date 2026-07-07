@@ -1,0 +1,264 @@
+[
+  {
+    "id": "as:1201209946829349",
+    "name": "UX - 35.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1201209946829349/f",
+    "iteration": "Website - 158.5h (20/02/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2021-10-17 14:28:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:14",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201388976533840",
+    "name": "UI - 239.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1201388976533840/f",
+    "iteration": "Product - 613.25h (18/05/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2021-11-17 15:22:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:12",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201405336332850",
+    "name": "UI - 100h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1201405336332850/f",
+    "iteration": "Website - 158.5h (20/02/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2021-11-21 15:22:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:13",
+    "assignees": [
+      {
+        "accountId": "as:1134176385237046",
+        "accountName": "Edor Nisim"
+      }
+    ]
+  },
+  {
+    "id": "as:1201563959576681",
+    "name": "Animations - 23h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1201563959576681/f",
+    "iteration": "Website - 158.5h (20/02/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2021-12-27 15:18:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:14"
+  },
+  {
+    "id": "as:1202067425901608",
+    "name": "Investors Deck - 56h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202067425901608/f",
+    "iteration": "Other - 101.25h (04/05/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-04-03 14:22:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:17",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202104570991231",
+    "name": "Demo video - 30h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202104570991231/f",
+    "iteration": "Other - 101.25h (04/05/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-04-12 11:26:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:18",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202197876281584",
+    "name": "One pager - 13.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202197876281584/f",
+    "iteration": "Other - 101.25h (04/05/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-04-28 14:48:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:18"
+  },
+  {
+    "id": "as:1202209567560692",
+    "name": "Landing page desktop (40-50h) - 45.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202209567560692/f",
+    "iteration": "Yoco new website - 67h (26/06/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-05-02 07:32:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:20",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202209567560694",
+    "name": "Right panel button - 1.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202209567560694/f",
+    "iteration": "Other - 101.25h (04/05/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-05-02 07:37:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:19",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202223765833874",
+    "name": "Mobile (7.5h) - 7.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202223765833874/f",
+    "iteration": "Yoco new website - 67h (26/06/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-05-04 11:51:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:20",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1202223765833876",
+    "name": "Preparing for dev (6h) - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202223765833876/f",
+    "iteration": "Yoco new website - 67h (26/06/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-05-04 11:51:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:21",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202223765833878",
+    "name": "Login/ sign in pages (16h) - ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202223765833878/f",
+    "iteration": "Yoco new website - 67h (26/06/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-05-04 11:52:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:22",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202395716744722",
+    "name": "QA (5h) 8.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200228187222714/1202395716744722/f",
+    "iteration": "Yoco new website - 67h (26/06/22)",
+    "projects": [
+      "as:1200228187222714"
+    ],
+    "createdAt": "2022-06-06 12:43:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-13 07:38:22"
+  }
+]

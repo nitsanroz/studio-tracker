@@ -1,0 +1,5699 @@
+[
+  {
+    "id": "as:588841051269955",
+    "name": "Branding - 50hr from client:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/588841051269955/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:02",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:588841051269956",
+    "name": "Logo - 28 hrs.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/588841051269956/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:13",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:588841051269957",
+    "name": "business card - 4.5 hrs.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/588841051269957/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:18",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:588841051269958",
+    "name": "presentation - 38h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/588841051269958/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:29",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:588841051269961",
+    "name": "Digital - 95.5hr from client:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/588841051269961/f",
+    "iteration": "Digital - 95.5hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:38",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:588841051269962",
+    "name": "website - 61.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/588841051269962/f",
+    "iteration": "Digital - 95.5hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-12 12:59:56",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:611716444503344",
+    "name": "icon and illustration- 27h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/611716444503344/f",
+    "iteration": "Digital - 95.5hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-03-28 14:34:58",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:623562862388747",
+    "name": "website wix - 52.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/623562862388747/f",
+    "iteration": "Digital - 95.5hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-08 07:31:24",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:634493842424339",
+    "name": "Driver App (15hrs) - UX - 15h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/634493842424339/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-16 05:46:09",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:634493842424342",
+    "name": "Driver App (30hrs)- UI - 47.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/634493842424342/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-16 05:48:53",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:636911762224152",
+    "name": "Driver App (8 hrs)- Production - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/636911762224152/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-17 06:52:37",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:636911762224153",
+    "name": "Driver App (6 hrs) - Graphic QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/636911762224153/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-17 06:54:38",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:639091605871220",
+    "name": "Driver App - 59 hr from client:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/639091605871220/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-18 08:22:35",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103443",
+    "name": "onboarding (9) - 13h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/644211745103443/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:30:51",
+    "dueOn": "2018-04-22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103444",
+    "name": "dashboard (3) - 10h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/644211745103444/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:30:52",
+    "dueOn": "2018-04-22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103445",
+    "name": "pre-shift (4) - 6.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/644211745103445/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:31:18",
+    "dueOn": "2018-04-23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103446",
+    "name": "shift (6) - 4",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/644211745103446/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:31:50",
+    "dueOn": "2018-04-24",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103447",
+    "name": "report (3) - 3.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/644211745103447/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:30:56",
+    "dueOn": "2018-04-23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:644211745103448",
+    "name": "report illustrations (4) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/644211745103448/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Driver App (30hrs)- UI - 47.5hr",
+    "parentId": "as:634493842424342",
+    "createdAt": "2018-04-22 07:31:06",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:654530763453493",
+    "name": "app illustration-3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/654530763453493/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-04-30 15:24:33",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:661675220376770",
+    "name": "animation for locomotion - 0.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/661675220376770/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-05-06 13:15:47",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:661675220376773",
+    "name": "loader animation- 1 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/661675220376773/f",
+    "iteration": "Driver App - 59 hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-05-06 13:16:57",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:666056957575038",
+    "name": "Sticker - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/666056957575038/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-05-09 14:30:54",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:673495254706849",
+    "name": "Air Freshner - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/673495254706849/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-05-15 14:38:36",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:679945144431902",
+    "name": "Control Center - 88hr from client:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/679945144431902/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-05-21 08:55:26",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:688906042671803",
+    "name": "Icons - 4 hrs.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/688906042671803/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-06-13 14:36:53",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:688906042671804",
+    "name": "Dashboard (88hr from client) - 91",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/688906042671804/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-06-05 06:33:05",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:705238792060760",
+    "name": "Hiring Post - 5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/705238792060760/f",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-06-11 08:07:53",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:730707663556385",
+    "name": "Disaibled Button On Driver App - 0.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/730707663556385/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-07-03 14:24:56",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:747943624635258",
+    "name": "שונות:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/747943624635258/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-07-18 08:32:45",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:747943624635259",
+    "name": "Avis Presentation (16 Hours from client) - 7.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/747943624635259/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-07-18 08:32:55",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:748308992612468",
+    "name": "edit driver - managment - 1.5 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/748308992612468/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-07-18 12:55:06",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:777051875263883",
+    "name": "No data - Gauges - 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/777051875263883/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-08-13 09:06:11",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:787870181968220",
+    "name": "Car avatars - 1",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/787870181968220/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-08-21 07:51:16",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:791667904356132",
+    "name": "Follow up on Re: Vehicle colors",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/791667904356132/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-08-23 11:35:42",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:803556916527049",
+    "name": "Phone call meeting - 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/803556916527049/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-09-02 13:01:41",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:807968860625557",
+    "name": "Autofleet Main dashboard - 12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/807968860625557/f",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-09-05 14:27:49",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:809694529975905",
+    "name": "3 More Business Cards - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/809694529975905/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-10-23 14:49:30",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:838328394784089",
+    "name": "Gauges - 4hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/838328394784089/f",
+    "iteration": "Control Center - 88hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-09-26 10:54:57",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:890127537402115",
+    "name": "CES booth design - 6",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/890127537402115/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-10-31 15:41:26",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:909978491854846",
+    "name": "Report screen - 10hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/909978491854846/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-11-14 07:25:24",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:948116201846899",
+    "name": "B.card for Adam - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/948116201846899/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-12-17 08:05:51",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:955508536833181",
+    "name": "Reports - 26h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/955508536833181/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2018-12-24 16:32:42",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:1103857521764974",
+    "name": "Time sensitive report - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1103857521764974/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2019-01-27 06:09:59",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:1103860786698585",
+    "name": "Booth design - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1103860786698585/f",
+    "iteration": "Branding - 50hr from client",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2019-01-27 07:25:06",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:1107957250590816",
+    "name": "B. card for Zohar - 0.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/1107957250590816/f",
+    "iteration": "שונות",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2019-02-04 09:21:55",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1168194832221735",
+    "name": "Header Illustration & Animation (54)- 59.5 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221735/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:47:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:10",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1168194832221739",
+    "name": "Solution Icons (10) - 10h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221739/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:48:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:12",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1168194832221745",
+    "name": "Our Partners (2) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221745/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:51:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:13",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1168194832221747",
+    "name": "How It Works (16) - 15.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221747/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:51:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:14",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1168194832221749",
+    "name": "Covid 19 Section & Notification (4) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221749/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:51:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:18",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1168194832221751",
+    "name": "Contact Section & Popup (4) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1168194832221751/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-03-25 08:52:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:18",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1170303576912839",
+    "name": "Mobile adaption - 3.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1170303576912839/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-04-07 15:54:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:21",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1170926616845121",
+    "name": "General fixes - 0h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1170926616845121/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-04-12 15:10:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:21",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1170926616845123",
+    "name": "Header forms - 0.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1170926616845123/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-04-12 15:10:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:19",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1170964668144323",
+    "name": "Wix Home page update (12-15) - 16.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1170964668144323/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-04-13 08:39:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:29:00",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1172893192651959",
+    "name": "Driver App - Package Drilldown - 18h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1172893192651959/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-04-26 14:20:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-19 06:55:45",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1173948306716813",
+    "name": "Delivery Facebook Campaign (12) - 11.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1173948306716813/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-05-03 14:11:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-19 06:55:47",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1182288408851185",
+    "name": "3d Vehicles Icons (60+5) - 66.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1182288408851185/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-06-28 14:31:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-07-20 08:12:54",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1191329079290317",
+    "name": "Toolbox Illustrations & Icons - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1191329079290317/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-08-31 14:05:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-09-17 07:38:28",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1193952095187085",
+    "name": "Driver App Stop Point Info Redesign (12-18) - 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1193952095187085/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-09-15 14:22:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-10-20 13:03:29",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1198557975672537",
+    "name": "3D Bicycle & Scooter (24) - 20h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1198557975672537/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-10-20 08:02:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-11-22 13:07:32",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199109966483167",
+    "name": "Tool Tip Design Update - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1199109966483167/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-11-05 09:33:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-11-22 13:07:35",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1199220655289719",
+    "name": "Dashboard New Screens - Leasing (24) - 17h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1199220655289719/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2020-11-18 15:23:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-20 08:08:33",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199660572994063",
+    "name": "Driver App - Ride Details (4-6) - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1199660572994063/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-01-25 07:42:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-27 07:37:32",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1199935657442670",
+    "name": "Vehicle on map icon (3) - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1199935657442670/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-02-14 10:37:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-03-21 13:32:51",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1200037743660591",
+    "name": "Fuel icon for driver's app - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200037743660591/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-03-09 15:30:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-14 14:23:51"
+  },
+  {
+    "id": "as:1200090117423863",
+    "name": "Quote update -0.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200090117423863/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-03-21 13:31:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-14 14:23:54",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200090233212681",
+    "name": "Product Settings Screen (14-18) - 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200090233212681/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-03-21 13:51:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-14 14:23:52",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1200152494412293",
+    "name": "Exporting asset - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200152494412293/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-05 14:24:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-14 14:23:55",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200170339684049",
+    "name": "Indonesian partnership - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200170339684049/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-08 14:27:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-14 14:23:56"
+  },
+  {
+    "id": "as:1200193616834277",
+    "name": "New Page for Website - EV (90) - 58h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200193616834277/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-14 06:19:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-01 08:20:20",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200220354341369",
+    "name": "New Page for Website - VaaS (60) -47.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200220354341369/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-21 14:26:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-01 08:25:56",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200220354341371",
+    "name": "Export & QA (20) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200220354341371/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-21 14:26:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-01 08:26:01",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200243064798195",
+    "name": "Update for Presentation (0.5) - 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200243064798195/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-04-25 09:06:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-05-27 08:20:13",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200306116903724",
+    "name": "Business card - Tal - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200306116903724/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-05-09 08:54:20",
+    "dueOn": "2021-05-10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-01 08:25:47",
+    "assignees": [
+      {
+        "accountId": "as:1198712794161844",
+        "accountName": "Inbal Kim Doron"
+      }
+    ]
+  },
+  {
+    "id": "as:1200370015533355",
+    "name": "New feature for Control Center - 24.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200370015533355/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-05-23 14:28:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-02 05:48:16",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200635140582026",
+    "name": "T-shirt (4h)-4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200635140582026/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-07-21 14:37:52",
+    "dueOn": "2021-07-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-25 13:30:11",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200699947603092",
+    "name": "Passenger Web App (26-32) - 31h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1200699947603092/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-08-02 05:48:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-25 13:29:07",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201147012890758",
+    "name": "Booth Move - 16.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201147012890758/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-10-07 14:29:57",
+    "dueOn": "2021-10-11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-11-12 08:41:17",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201213285125418",
+    "name": "Business card - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201213285125418/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-10-18 11:46:21",
+    "dueOn": "2021-10-18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-11-12 08:41:16",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1201213285125420",
+    "name": "Stickers ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201213285125420/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-10-18 11:47:02",
+    "dueOn": "2021-10-19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-11-01 08:55:35",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201257138742995",
+    "name": "Raising post -6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201257138742995/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-10-24 06:52:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-11-12 08:41:16",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201257680642945",
+    "name": "Ride tracker feature - 16h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201257680642945/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-10-24 14:25:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-11-12 08:41:13"
+  },
+  {
+    "id": "as:1201408633079957",
+    "name": "AutoFleet CES Booth - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201408633079957/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-11-22 11:57:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:49"
+  },
+  {
+    "id": "as:1201437917736152",
+    "name": "Shuttle 3D car (14-16)  - 15 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201437917736152/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-11-29 13:39:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:37",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1201437917736154",
+    "name": "Purchase of model - 1.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201437917736154/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-11-29 13:40:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:35"
+  },
+  {
+    "id": "as:1201502969388239",
+    "name": "Simulator Wizard (26-30) - 23.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201502969388239/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-12-13 08:42:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:33",
+    "assignees": [
+      {
+        "accountId": "as:563283715570100",
+        "accountName": "Avishay Cohen"
+      }
+    ]
+  },
+  {
+    "id": "as:1201536109972714",
+    "name": "New employees post design (6) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201536109972714/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2021-12-19 14:08:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:52",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201652556213895",
+    "name": "New employees post implementation - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201652556213895/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-01-12 16:03:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:04:57"
+  },
+  {
+    "id": "as:1201743553025195",
+    "name": "Conference booth 2022 -0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201743553025195/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-01-31 16:58:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:08",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1201836814727999",
+    "name": "Notebook design (6-10h) - 7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201836814727999/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-16 12:35:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:10",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1201855271800798",
+    "name": "Business cards implementation - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201855271800798/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-20 08:19:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:23",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1201865618482389",
+    "name": "Notebook production - 3,360ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201865618482389/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-23 07:33:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-03-23 13:07:17"
+  },
+  {
+    "id": "as:1201871673259954",
+    "name": "AF Stickers (15h + 2h) - 17h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201871673259954/f",
+    "iteration": "February - 33.5h (17/03/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-24 11:33:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:54",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201871673259957",
+    "name": "Coloring book (54h) - 14h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201871673259957/f",
+    "iteration": "February - 33.5h (17/03/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-24 11:34:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:47",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201871673259959",
+    "name": "Website update - news - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201871673259959/f",
+    "iteration": "February - 33.5h (17/03/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-24 11:34:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:45",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1201871673259961",
+    "name": "Website update - testimonials - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201871673259961/f",
+    "iteration": "February - 33.5h (17/03/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-24 11:34:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:43",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201873162794463",
+    "name": "Advanced search filters (8-16h) - 15.25",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201873162794463/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-23 15:17:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:31",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1201889540395025",
+    "name": "Business cards production - 985ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201889540395025/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-02-27 07:58:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-03-23 13:07:18"
+  },
+  {
+    "id": "as:1201912167204118",
+    "name": "Website form request - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201912167204118/f",
+    "iteration": "March - 2.25h (17\\03\\22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-03 15:43:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:06:02"
+  },
+  {
+    "id": "as:1201929581241507",
+    "name": "Autofleet One Pager (16h)- 7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201929581241507/f",
+    "iteration": "כללי",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-07 15:38:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:05:37"
+  },
+  {
+    "id": "as:1201959283076043",
+    "name": "CTA Top Bar Menu - 3.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201959283076043/f",
+    "iteration": "March - 2.25h (17\\03\\22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-13 15:30:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:07:33"
+  },
+  {
+    "id": "as:1201959373971854",
+    "name": "Business cards production 8/3 - 300ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201959373971854/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-13 12:08:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-03-23 13:07:19",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201991410089270",
+    "name": "Driver app ride history - 23.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1201991410089270/f",
+    "iteration": "March - 2.25h (17\\03\\22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-20 10:33:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:15:36",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202003891847284",
+    "name": "Autofleet wall stickers  - 10h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202003891847284/f",
+    "iteration": "March - 2.25h (17\\03\\22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-22 07:02:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:15:37"
+  },
+  {
+    "id": "as:1202011467799157",
+    "name": "Raas page logo list - 0.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202011467799157/f",
+    "iteration": "March - 2.25h (17\\03\\22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-03-23 13:06:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:15:39",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202095203609189",
+    "name": "Wizard Simulation - Sales Update - 70.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202095203609189/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-07 15:45:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-06-21 14:09:36",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202104514013631",
+    "name": "Employee tag (2h) - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202104514013631/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-10 05:56:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-22 09:14:55",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202104569890586",
+    "name": "Employee card (2h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202104569890586/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-10 06:25:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-10 06:26:32",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202121315672708",
+    "name": "Development website changes - 2.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202121315672708/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-13 10:06:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-24 14:19:25"
+  },
+  {
+    "id": "as:1202138197459952",
+    "name": "Office walls graphics - 3.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202138197459952/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-17 09:02:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-22 09:15:02",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202171694103675",
+    "name": "Move 22 Booth update -1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202171694103675/f",
+    "iteration": "Delivery Landing Site (75-90) - 99h (20/4/2020)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-25 06:42:29",
+    "labels": [
+      "not started"
+    ],
+    "completed": true,
+    "completedAt": "2022-11-20 14:30:42",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202176519249210",
+    "name": "New employees post design - 0h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202176519249210/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-25 14:28:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-03 06:58:41"
+  },
+  {
+    "id": "as:1202181175201815",
+    "name": "SUMC booth (4h-6h) - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202181175201815/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-26 08:14:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-06-21 14:09:38",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202189426770394",
+    "name": "Website Miro - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202189426770394/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-04-27 10:59:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-29 12:08:25"
+  },
+  {
+    "id": "as:1202209567560688",
+    "name": "Company cover image (3-5h) - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202209567560688/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-02 07:18:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-06-21 14:09:39",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202209567560690",
+    "name": "\"We Are Hiring\" post -  (4h) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202209567560690/f",
+    "iteration": "April",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-02 07:18:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-06-21 14:09:40",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202215722517519",
+    "name": "Passenger app - 170.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202215722517519/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-03 06:17:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:30:58",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202299059684686",
+    "name": "Email signature - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202299059684686/f",
+    "iteration": "May",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-18 12:45:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-06-12 08:04:24",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202317962097759",
+    "name": "Taxi meeting - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202317962097759/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-24 13:49:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-05-29 12:08:27",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202317962097763",
+    "name": "Taxi landing page (130h) - 133.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202317962097763/f",
+    "iteration": "May",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-24 13:49:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 06:49:48",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202318199624558",
+    "name": "Scania Sales simulator - 25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202318199624558/f",
+    "iteration": "May",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-22 14:21:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 11:41:07",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202332225355168",
+    "name": "Keep calm GIF (3h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202332225355168/f",
+    "iteration": "May",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-25 07:07:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-06 14:21:09",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1202347185406224",
+    "name": "Sticker Export - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202347185406224/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-05-26 14:35:14",
+    "labels": [],
+    "time": {
+      "total": 900,
+      "users": {
+        "1213760": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:16:53"
+  },
+  {
+    "id": "as:1202395627574651",
+    "name": "Website Miro -  1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202395627574651/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-06 07:34:01",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:16:54"
+  },
+  {
+    "id": "as:1202412991942179",
+    "name": "Taxi one pager (8-12h) - 12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202412991942179/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-08 12:41:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 06:50:00"
+  },
+  {
+    "id": "as:1202412993161062",
+    "name": "Google case study banner - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202412993161062/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-09 10:54:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 11:41:17"
+  },
+  {
+    "id": "as:1202437031671518",
+    "name": "Welcome aboard post+ Business Card - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202437031671518/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-13 14:17:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 11:41:31",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202441912850657",
+    "name": "Taxi Summit Booth - 16.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202441912850657/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-14 09:23:52",
+    "dueOn": "2022-06-16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 06:50:05",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202441912850661",
+    "name": "Entrance sign for event (2h) - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202441912850661/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-15 12:50:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 11:41:42",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202445227002916",
+    "name": "Driver app - fixes - 60h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202445227002916/f",
+    "iteration": "June",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-14 14:27:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 06:50:10",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202449140037607",
+    "name": "Business cards production 15/06 - 300ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202449140037607/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-15 11:27:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-07-05 11:42:05"
+  },
+  {
+    "id": "as:1202451681130697",
+    "name": "Taxi landing page (6000-8000ils) - 7000ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202451681130697/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-15 13:26:50",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2022-11-20 14:33:59"
+  },
+  {
+    "id": "as:1202452441498970",
+    "name": "Autofleet Website Wireframe (30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202452441498970/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-15 14:41:19",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 126900,
+      "users": {
+        "1213760": 126900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:13",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202469432201946",
+    "name": "Solution Ride services design [RAAS] (58h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202469432201946/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-19 14:28:10",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 221400,
+      "users": {
+        "1213760": 221400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:28",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470681880100",
+    "name": "Materials drive backup - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470681880100/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-22 13:00:23",
+    "labels": [],
+    "time": {
+      "total": 4500,
+      "users": {
+        "1213760": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-03-07 07:38:34",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230148",
+    "name": "Homepage design (129h+1h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230148/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:38:49",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 473400,
+      "users": {
+        "1213760": 473400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:24",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230150",
+    "name": "Contact us (12-24h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230150/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:39:17",
+    "labels": [
+      "phase 3"
+    ],
+    "time": {
+      "total": 103500,
+      "users": {
+        "1213760": 103500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:41",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230152",
+    "name": "404 & legal pages (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230152/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:39:33",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 35100,
+      "users": {
+        "1213760": 35100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:33",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230156",
+    "name": "Phase 2 - Solution fleet simulation (20-40h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230156/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:41:03",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 153000,
+      "users": {
+        "1213760": 153000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:34",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230158",
+    "name": "Solution fleet electrification (20-30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230158/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:41:36",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 100800,
+      "users": {
+        "1213760": 100800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:37",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230168",
+    "name": "Solution fleet optimization [VAAS] (27h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230168/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:43:00",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 100800,
+      "users": {
+        "1213760": 100800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:30",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230170",
+    "name": "Vertical micro mobility (30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230170/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:43:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:46",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230172",
+    "name": "Vertical Delivery & logistics (30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230172/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:43:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:47",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230174",
+    "name": "Vertical Rental & car sharing (30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230174/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:44:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:48",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230176",
+    "name": "Phase 2 - Resources lobby (16h+2h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230176/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:44:27",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 78300,
+      "users": {
+        "1213760": 78300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:38",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230178",
+    "name": "changes on the website scope",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230178/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:44:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 12:16:55"
+  },
+  {
+    "id": "as:1202470791230182",
+    "name": "Phase 2 - Resources inner 4pages (16h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230182/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:47:31",
+    "labels": [
+      "Phase 2 ",
+      "Delivered"
+    ],
+    "time": {
+      "total": 86400,
+      "users": {
+        "1213760": 86400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:39",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230184",
+    "name": "Phase 2 - Careers (35h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230184/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:48:04",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 171900,
+      "users": {
+        "1213760": 171900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:40",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230188",
+    "name": "Phase 2 - About page (30h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230188/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:49:28",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 126000,
+      "users": {
+        "1213760": 126000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:35",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230190",
+    "name": "Request a demo (20h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230190/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:49:50",
+    "labels": [
+      "phase 3"
+    ],
+    "time": {
+      "total": 53100,
+      "users": {
+        "1213760": 53100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:43",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230192",
+    "name": "Preparing for dev (30h+2h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230192/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:51:59",
+    "labels": [
+      "General"
+    ],
+    "time": {
+      "total": 157500,
+      "users": {
+        "1213760": 155700,
+        "1219079": 900,
+        "1219111": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:45",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230194",
+    "name": "Mobile (40-60h) - 49.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230194/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:52:12",
+    "labels": [
+      "General"
+    ],
+    "time": {
+      "total": 177300,
+      "users": {
+        "1213760": 177300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:44",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202470791230196",
+    "name": "QA (30-50h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202470791230196/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-21 06:52:25",
+    "labels": [
+      "General"
+    ],
+    "time": {
+      "total": 121500,
+      "users": {
+        "1213760": 119700,
+        "1219079": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:50",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202471534629766",
+    "name": "Taxi landing page - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202471534629766/f",
+    "iteration": "Not for now -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-06-20 07:08:07",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1213760": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-03-28 06:19:59"
+  },
+  {
+    "id": "as:1202551139718061",
+    "name": "Social Case study banner -4.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202551139718061/f",
+    "iteration": "July",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-05 11:18:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 06:50:15",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202552378947978",
+    "name": "Hero scketches",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202552378947978/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Homepage design (129h+1h)",
+    "parentId": "as:1202470791230148",
+    "createdAt": "2022-07-06 07:37:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-30 14:11:47"
+  },
+  {
+    "id": "as:1202552378947979",
+    "name": "Hero Desin",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202552378947979/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Homepage design (129h+1h)",
+    "parentId": "as:1202470791230148",
+    "createdAt": "2022-07-06 07:37:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-30 14:11:49"
+  },
+  {
+    "id": "as:1202552378947980",
+    "name": "Hero animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202552378947980/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Homepage design (129h+1h)",
+    "parentId": "as:1202470791230148",
+    "createdAt": "2022-07-06 07:37:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-30 14:11:50"
+  },
+  {
+    "id": "as:1202552378947981",
+    "name": "Visuals design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202552378947981/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "parentName": "Homepage design (129h+1h)",
+    "parentId": "as:1202470791230148",
+    "createdAt": "2022-07-06 07:37:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-30 14:11:52"
+  },
+  {
+    "id": "as:1202573028776260",
+    "name": "Homepage 3D hero & animation  (12h-18h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202573028776260/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-11 07:13:38",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 75600,
+      "users": {
+        "1213760": 75600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:25",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1202598589770070",
+    "name": "Homepage 3D 4 small visuals (7h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202598589770070/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-13 12:29:03",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 27900,
+      "users": {
+        "1213760": 27900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:27",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1202598589770072",
+    "name": "3D Ride services header (RAAS) (4h-8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202598589770072/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-13 12:29:23",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 27900,
+      "users": {
+        "1213760": 27900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:29",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1202598589770074",
+    "name": "3D fleet optimization header (VAAS) (4h-8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202598589770074/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-13 12:29:42",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 18000,
+      "users": {
+        "1213760": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:32",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1202598589770076",
+    "name": "Creating the visual language (35h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202598589770076/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-13 12:43:22",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 130500,
+      "users": {
+        "1213760": 130500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:22",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202667505010165",
+    "name": "Trying element addition on the HP (1h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202667505010165/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-28 07:22:14",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:51",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202694023028966",
+    "name": "Updating text on forms on the live website - 2.75h - 750ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202694023028966/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-07-31 07:20:11",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2022-11-20 14:33:55",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202697496024740",
+    "name": "Images purchase - 35*2- 70nis  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202697496024740/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-01 09:15:21",
+    "labels": [
+      "General"
+    ],
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:52"
+  },
+  {
+    "id": "as:1202732301574846",
+    "name": "New employee post + business card implementation - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202732301574846/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-07 07:07:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:01",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202732301574848",
+    "name": "Barak business card implementation -",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202732301574848/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-07 07:38:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-08-08 14:24:05",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202732519318157",
+    "name": "Business cards production 07/08 - 330ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202732519318157/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-07 12:04:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-09-29 08:14:12"
+  },
+  {
+    "id": "as:1202781866416706",
+    "name": "Autofleet move 22 booth (6-8h) - 7.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202781866416706/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-11 06:36:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:04",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202798171175439",
+    "name": "Sign for website launch (2h) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202798171175439/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-17 08:24:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:09",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1202798471283614",
+    "name": "Website - phase 1 (16000ils) - 16000ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202798471283614/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-15 09:53:35",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2022-11-20 14:34:02",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202798835104358",
+    "name": "Tshirt (4h) - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202798835104358/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-15 11:35:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:05",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202883541309610",
+    "name": "About page (12h) -  12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202883541309610/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-29 12:47:17",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2023-02-07 09:55:08"
+  },
+  {
+    "id": "as:1202896960249835",
+    "name": "Duplicate of Business cards production  - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202896960249835/f",
+    "iteration": "August",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-31 14:00:48",
+    "dueOn": "2022-08-31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:02",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1202901661315757",
+    "name": "Duplicate of Business cards production 31/08 - 470ils ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202901661315757/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-08-31 19:17:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-10-19 06:29:31"
+  },
+  {
+    "id": "as:1202919761060025",
+    "name": "Wix migration to the new website",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1202919761060025/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-09-05 14:35:02",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 16200,
+      "users": {
+        "1213760": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:54",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1203028482702068",
+    "name": "New employees post design - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203028482702068/f",
+    "iteration": "September",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-09-22 08:58:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:12",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1203065609820121",
+    "name": "Business Cards - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203065609820121/f",
+    "iteration": "September",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-09-28 14:16:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:13",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203065609820125",
+    "name": "Mobilize Booth - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203065609820125/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-09-28 14:29:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:35",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203071170849290",
+    "name": "Business cards production 29/09 - 330ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203071170849290/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-09-29 08:10:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:34:11"
+  },
+  {
+    "id": "as:1203086335294521",
+    "name": "News & Media Page (10-12h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203086335294521/f",
+    "iteration": "Full Website (500-759h) - 659h (30/09/22)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-02 14:10:52",
+    "labels": [
+      "phase 3"
+    ],
+    "time": {
+      "total": 25200,
+      "users": {
+        "1213760": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:53:55"
+  },
+  {
+    "id": "as:1203097397200197",
+    "name": "CEATEC posters - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203097397200197/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-04 10:18:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:37",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203097397200199",
+    "name": "Onepager Update - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203097397200199/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-04 10:18:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:41",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203142872088726",
+    "name": "New employee post - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203142872088726/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-11 13:58:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:43",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203142872088730",
+    "name": "EV Brochure - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203142872088730/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-11 13:59:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:47",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203150897168606",
+    "name": "Email image design - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203150897168606/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-12 14:12:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:31:54",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203171768252398",
+    "name": "Website phase 2 (86.33h) - 86.33h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203171768252398/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-16 08:24:26",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2023-02-07 09:55:11"
+  },
+  {
+    "id": "as:1203171768252400",
+    "name": "Website Taxi + Extras (9h) - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203171768252400/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-16 08:25:46",
+    "labels": [
+      "Developed"
+    ],
+    "completed": true,
+    "completedAt": "2023-02-07 09:55:15"
+  },
+  {
+    "id": "as:1203220019956963",
+    "name": "Email Blog Design (8h-12h) - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203220019956963/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-23 07:27:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-12-01 13:26:49",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203220019956965",
+    "name": "Newsletter Banner (2h) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203220019956965/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-23 07:27:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-11-20 14:32:03",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203227972909632",
+    "name": "Product updates -(30h-40h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203227972909632/f",
+    "iteration": "UX/UI",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-24 14:31:44",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 178200,
+      "users": {
+        "1213760": 178200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:37"
+  },
+  {
+    "id": "as:1203265045914803",
+    "name": "Gifts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203265045914803/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-30 15:26:11",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1213760": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:13",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203271542588135",
+    "name": "Exporting Assets at clients request",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203271542588135/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-10-31 15:28:43",
+    "labels": [],
+    "time": {
+      "total": 35100,
+      "users": {
+        "1213760": 35100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:14"
+  },
+  {
+    "id": "as:1203307791519402",
+    "name": "Newsletter (5-7h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203307791519402/f",
+    "iteration": "October 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-06 16:49:56",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 27000,
+      "users": {
+        "1213760": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:15"
+  },
+  {
+    "id": "as:1203335377184521",
+    "name": "Editing content in resources",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203335377184521/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-09 10:31:52",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1213760": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:17"
+  },
+  {
+    "id": "as:1203338162670679",
+    "name": "Hoodie design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203338162670679/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-09 15:23:33",
+    "labels": [
+      "Delivered"
+    ],
+    "time": {
+      "total": 8100,
+      "users": {
+        "1213760": 8100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:19",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203372722622370",
+    "name": "Assets exporting - 0h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203372722622370/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-15 15:13:10",
+    "labels": [
+      "Delivered"
+    ],
+    "completed": true,
+    "completedAt": "2022-11-20 12:56:48"
+  },
+  {
+    "id": "as:1203434558993517",
+    "name": "Field trip",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203434558993517/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-24 15:00:37",
+    "labels": [],
+    "time": {
+      "total": 23400,
+      "users": {
+        "1213760": 23400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:20",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1203443158526643",
+    "name": "Website Launch Post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203443158526643/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-27 09:29:24",
+    "labels": [],
+    "time": {
+      "total": 39600,
+      "users": {
+        "1213760": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:23",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203443300085825",
+    "name": "Testimonial editing",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203443300085825/f",
+    "iteration": "November 2022",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-28 14:51:16",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1213760": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-01-17 06:59:25",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203443608943198",
+    "name": "Dashboard features",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203443608943198/f",
+    "iteration": "UX/UI",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-27 15:39:08",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 127800,
+      "users": {
+        "1213760": 117000,
+        "1219082": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:38",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1203456972557228",
+    "name": "Website Phase 3 (30h) -",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203456972557228/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-11-29 12:53:04",
+    "labels": [
+      "invoice"
+    ],
+    "completed": true,
+    "completedAt": "2023-03-07 07:36:13"
+  },
+  {
+    "id": "as:1203493026880783",
+    "name": "CES banners (8-11h) - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203493026880783/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-05 15:03:15",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 39600
+    },
+    "time": {
+      "total": 37800,
+      "users": {
+        "1213760": 37800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:51:40",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203499372848808",
+    "name": "Website speed check (1.5h) - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203499372848808/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-06 10:28:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 09:55:45"
+  },
+  {
+    "id": "as:1203506952089938",
+    "name": "Santa Sleigh visual (6-8h) - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203506952089938/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-07 09:15:16",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 37800,
+      "users": {
+        "1213760": 37800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:51:58"
+  },
+  {
+    "id": "as:1203528129873464",
+    "name": "Notebooks - 3500ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203528129873464/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-11 06:48:08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-01-30 09:02:14"
+  },
+  {
+    "id": "as:1203554241051991",
+    "name": "Business Cards - 470ils",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203554241051991/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-14 13:57:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 09:59:53"
+  },
+  {
+    "id": "as:1203554241051995",
+    "name": "Media Kit - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203554241051995/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-14 13:58:01",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1213760": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:03",
+    "assignees": [
+      {
+        "accountId": "as:1201040999318673",
+        "accountName": "Ori Cohen",
+        "userId": 1219079
+      }
+    ]
+  },
+  {
+    "id": "as:1203554241051997",
+    "name": "Business Card Seth - 0h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203554241051997/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-14 13:58:20",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219079": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:13",
+    "assignees": [
+      {
+        "accountId": "as:1203432225207168",
+        "accountName": "Peter Beletsky",
+        "userId": 1219085
+      }
+    ]
+  },
+  {
+    "id": "as:1203577162727938",
+    "name": "---Not Billable---",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203577162727938/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-19 08:01:14",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 900,
+      "users": {
+        "1213760": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:42"
+  },
+  {
+    "id": "as:1203580545262041",
+    "name": "One Pager adjustments",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203580545262041/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-19 15:07:08",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219084": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:22",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203586501509060",
+    "name": "Testimonial Linkedin post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203586501509060/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-20 15:24:34",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219079": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:32",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1203610810613311",
+    "name": "Taxipoint",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203610810613311/f",
+    "iteration": "December  2022 -",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-25 15:22:30",
+    "labels": [],
+    "time": {
+      "total": 61200,
+      "users": {
+        "1219079": 36000,
+        "1219081": 7200,
+        "1219084": 14400,
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-02-07 09:52:38"
+  },
+  {
+    "id": "as:1203615981041388",
+    "name": "Adding tasks - Product updates",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203615981041388/f",
+    "iteration": "UX/UI",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2022-12-27 08:30:20",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 45000,
+      "users": {
+        "1219082": 36000,
+        "1219084": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:39",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1203668864560954",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/1203668864560954/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-01-08 11:38:09",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 169200,
+      "users": {
+        "1219079": 7200,
+        "1219081": 41400,
+        "1219082": 5400,
+        "1219085": 43200,
+        "1219111": 5400,
+        "1220746": 45000,
+        "1256469": 21600
+      },
+      "timerTime": 60
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203754677665982",
+    "name": "Seth Hochhauser LinkedIn post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203754677665982/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-01-16 08:04:19",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 1800
+    },
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219111": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:22",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1203754677665990",
+    "name": "Thank you page cookies banner (2h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203754677665990/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-01-16 11:58:43",
+    "labels": [
+      "DONE"
+    ],
+    "completed": true,
+    "completedAt": "2023-08-09 12:44:53"
+  },
+  {
+    "id": "as:1203867619109680",
+    "name": "Cars Colors",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203867619109680/f",
+    "iteration": "UX/UI",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-01-31 15:13:34",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 16200,
+      "users": {
+        "1219082": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:41",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1203906674020310",
+    "name": "Extras (changes to get a demo layout, form field etc) - (4h)  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203906674020310/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-07 09:57:35",
+    "labels": [
+      "invoice"
+    ],
+    "completed": true,
+    "completedAt": "2023-03-07 07:36:15"
+  },
+  {
+    "id": "as:1203918690401824",
+    "name": "Email Banner (2-3h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203918690401824/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-08 08:31:41",
+    "dueOn": "2023-02-09",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 5400,
+      "users": {
+        "1219084": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:15",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203918690401826",
+    "name": "Pickup Truck 3d Model",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203918690401826/f",
+    "iteration": "UX/UI",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-08 08:32:24",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 54000,
+      "users": {
+        "1219082": 54000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:40",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1203951801481213",
+    "name": "Presentation Template (40h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203951801481213/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-13 07:56:07",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 202500,
+      "users": {
+        "1219081": 195300,
+        "1219083": 1800,
+        "1219084": 3600,
+        "1219111": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:16"
+  },
+  {
+    "id": "as:1203965026961692",
+    "name": "Google Tag Problem (2h) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203965026961692/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-14 13:33:07",
+    "labels": [
+      "approved"
+    ],
+    "completed": true,
+    "completedAt": "2023-08-09 12:44:55"
+  },
+  {
+    "id": "as:1203977451639082",
+    "name": "Autonomy 23 Booth (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203977451639082/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-16 09:19:01",
+    "dueOn": "2023-02-19",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 32400,
+      "users": {
+        "1219085": 28800,
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:17",
+    "assignees": [
+      {
+        "accountId": "as:1203432225207168",
+        "accountName": "Peter Beletsky",
+        "userId": 1219085
+      }
+    ]
+  },
+  {
+    "id": "as:1203977453634101",
+    "name": "Email signature html",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1203977453634101/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-16 15:56:30",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 10800
+    },
+    "time": {
+      "total": 7200,
+      "users": {
+        "1213760": 3600,
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:18"
+  },
+  {
+    "id": "as:1204077201019305",
+    "name": "Branded Socks",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204077201019305/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-28 07:20:58",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 18000
+    },
+    "time": {
+      "total": 21600,
+      "users": {
+        "1219079": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:19"
+  },
+  {
+    "id": "as:1204078853094902",
+    "name": "Thank you page on all forms (1h) - ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204078853094902/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-02-28 13:29:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 12:44:56"
+  },
+  {
+    "id": "as:1204080746671951",
+    "name": "Taxipoint adjustments",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204080746671951/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-01 14:59:36",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 11700,
+      "users": {
+        "1219079": 9000,
+        "1219082": 1800,
+        "1219084": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:20"
+  },
+  {
+    "id": "as:1204118462245642",
+    "name": "Autonomy 23 presentation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204118462245642/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-07 12:04:24",
+    "dueOn": "2023-03-13",
+    "labels": [
+      "DONE"
+    ],
+    "estimate": {
+      "type": "overall",
+      "total": 36000
+    },
+    "time": {
+      "total": 41400,
+      "users": {
+        "1217417": 4500,
+        "1219079": 1800,
+        "1219081": 35100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:23",
+    "assignees": [
+      {
+        "accountId": "as:1202188006181931",
+        "accountName": "Kim Brodsky",
+        "userId": 1219081
+      }
+    ]
+  },
+  {
+    "id": "as:1204159673254237",
+    "name": "Soft UI (26h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204159673254237/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-03-12 13:56:22",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 93600
+    },
+    "time": {
+      "total": 104400,
+      "users": {
+        "1219079": 45000,
+        "1219111": 14400,
+        "1220746": 45000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:45",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1204159673254239",
+    "name": "Storyboard (18h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204159673254239/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-03-12 13:58:32",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 64800
+    },
+    "time": {
+      "total": 45900,
+      "users": {
+        "1219084": 45900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:46",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1204159673254241",
+    "name": "Design & Animation (72-90h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204159673254241/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-03-12 13:58:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 324000
+    },
+    "time": {
+      "total": 442800,
+      "users": {
+        "1219079": 3600,
+        "1219082": 306000,
+        "1219084": 126000,
+        "1219111": 3600,
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:47"
+  },
+  {
+    "id": "as:1204159673254245",
+    "name": "brief",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204159673254245/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-03-12 14:00:30",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:43"
+  },
+  {
+    "id": "as:1204177296730835",
+    "name": "Meetings",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204177296730835/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950",
+      "as:1204209977940917"
+    ],
+    "createdAt": "2023-03-14 15:28:56",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 19800,
+      "users": {
+        "1219082": 7200,
+        "1219084": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:48"
+  },
+  {
+    "id": "as:1204188324057274",
+    "name": "Testimonials video banner",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204188324057274/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-02 14:19:08",
+    "labels": [],
+    "time": {
+      "total": 9900,
+      "users": {
+        "1219084": 2700,
+        "1219111": 4500,
+        "1220746": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:14",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204245654355257",
+    "name": "Case Study template (9h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204245654355257/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-23 09:07:13",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 32400
+    },
+    "time": {
+      "total": 25200,
+      "users": {
+        "1219081": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:27"
+  },
+  {
+    "id": "as:1204245654355265",
+    "name": "People of Autofleet Linkedin post (8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204245654355265/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-23 09:15:46",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219079": 9000,
+        "1219111": 3600,
+        "1220746": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:24"
+  },
+  {
+    "id": "as:1204268503745176",
+    "name": "Presentation assets upload",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/588841051269950/1204268503745176/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-27 07:29:47",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1204280950909460",
+    "name": "Linkedin Ads (15h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204280950909460/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-28 14:31:32",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 54000
+    },
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219081": 5400,
+        "1219084": 9900,
+        "1220746": 11700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:25"
+  },
+  {
+    "id": "as:1204298026417611",
+    "name": "Social Banner",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204298026417611/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-03-30 14:24:58",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:26"
+  },
+  {
+    "id": "as:1204408889695876",
+    "name": "PHTM booth (12-16h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204408889695876/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-17 06:17:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "time": {
+      "total": 57600,
+      "users": {
+        "1219079": 23400,
+        "1219081": 28800,
+        "1220746": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:28"
+  },
+  {
+    "id": "as:1204408889695878",
+    "name": "Cleo&Gali Business cards (600nis) -  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204408889695878/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-17 11:47:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 12:16:58"
+  },
+  {
+    "id": "as:1204408889695880",
+    "name": "Cleo&Gali Business cards",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204408889695880/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-18 06:40:05",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219079": 1800
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:29"
+  },
+  {
+    "id": "as:1204411546168603",
+    "name": "שדמכ)((- ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204411546168603/f",
+    "iteration": "Production",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-17 11:48:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-17 11:48:56"
+  },
+  {
+    "id": "as:1204455042711107",
+    "name": "PHTM ads (2h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204455042711107/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-23 14:09:58",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 7200
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1256469": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:30"
+  },
+  {
+    "id": "as:1204467089905531",
+    "name": "ABG Presentation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204467089905531/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-04-25 06:00:16",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1256469": 21600
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:31"
+  },
+  {
+    "id": "as:1204504255800481",
+    "name": "Assets Collection for client",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204504255800481/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-05-01 14:19:13",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1256469": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:32"
+  },
+  {
+    "id": "as:1204504255800487",
+    "name": "Subtitles",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204504255800487/f",
+    "iteration": "Movie - Solutions Video",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-05-01 14:20:55",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1219084": 1800,
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:49"
+  },
+  {
+    "id": "as:1204609732879556",
+    "name": "RAAS hero render",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204609732879556/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-05-16 08:45:05",
+    "labels": [],
+    "time": {
+      "total": 8100,
+      "users": {
+        "1219082": 3600,
+        "1219084": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:15:33"
+  },
+  {
+    "id": "as:1204816787536723",
+    "name": "Delivery Page fix (0.5h) - (0.5)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204816787536723/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-06-13 14:25:36",
+    "labels": [
+      "DONE"
+    ],
+    "completed": true,
+    "completedAt": "2023-08-09 12:45:55"
+  },
+  {
+    "id": "as:1204952903362291",
+    "name": "Form changes adding phone field (2.5-3h) - (3h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1204952903362291/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-07-03 13:33:25",
+    "labels": [
+      "DONE"
+    ],
+    "completed": true,
+    "completedAt": "2023-11-16 09:18:09"
+  },
+  {
+    "id": "as:1205001662668155",
+    "name": "Meeting",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/1205001662668155/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-07-10 14:46:16",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219084": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1205149684818294",
+    "name": "thank you message on form (0.5h) - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1205149684818294/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-07-27 06:52:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-11-16 09:18:09"
+  },
+  {
+    "id": "as:1205171364446545",
+    "name": "Fixing bugs caused by autofleet (0.5h) - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1205171364446545/f",
+    "iteration": "Development - 2h",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2023-08-01 11:03:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-11-16 09:18:11"
+  },
+  {
+    "id": "as:1208158527775686",
+    "name": "Storyboatd [16+8]",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1208158527775686/f",
+    "iteration": "Autofleet/Elements video",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2024-08-27 12:27:36",
+    "dueOn": "2024-09-01",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 69300,
+      "users": {
+        "1310120": 21600,
+        "1328069": 47700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-09-16 11:35:07",
+    "assignees": [
+      {
+        "accountId": "as:1206858324797116",
+        "accountName": "Liza Shelkovich",
+        "userId": 1328069
+      }
+    ]
+  },
+  {
+    "id": "as:1208158527775688",
+    "name": "Design [24]",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1208158527775688/f",
+    "iteration": "Autofleet/Elements video",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2024-08-27 12:27:39",
+    "dueOn": "2024-09-03",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 85500,
+      "users": {
+        "1328069": 85500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-09-16 11:35:10",
+    "assignees": [
+      {
+        "accountId": "as:1206858324797116",
+        "accountName": "Liza Shelkovich",
+        "userId": 1328069
+      }
+    ]
+  },
+  {
+    "id": "as:1208158527775690",
+    "name": "Animation [56]",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1208158527775690/f",
+    "iteration": "Autofleet/Elements video",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2024-08-27 12:27:42",
+    "dueOn": "2024-09-10",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 201600
+    },
+    "time": {
+      "total": 239400,
+      "users": {
+        "1341194": 239400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-09-16 11:35:09",
+    "assignees": [
+      {
+        "accountId": "as:1207442581017170",
+        "accountName": "Avishai Zalach",
+        "userId": 1341194
+      }
+    ]
+  },
+  {
+    "id": "as:1210218058084217",
+    "name": "Van Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1210218058084217/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2025-05-11 13:39:33",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1213760": 10800,
+        "1370761": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-05-19 08:17:55",
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  },
+  {
+    "id": "as:1210500304836605",
+    "name": "Present Poster",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/588841051269950/1210500304836605/f",
+    "iteration": "Other",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2025-06-09 14:29:41",
+    "labels": [],
+    "time": {
+      "total": 64800,
+      "users": {
+        "1213760": 27900,
+        "1328069": 36900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2025-10-15 13:55:50"
+  },
+  {
+    "id": "as:1211650025266093",
+    "name": "Element video - recolor",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/588841051269950/1211650025266093/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:588841051269950"
+    ],
+    "createdAt": "2025-10-15 13:55:51",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 24300,
+      "users": {
+        "1370761": 24300
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1208980808187472",
+        "accountName": "Itay Chen",
+        "userId": 1370761
+      }
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "as:1202153690907002",
+    "name": "Logo - 35.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1202138051052762/1202153690907002/f",
+    "iteration": "Branding (50h)",
+    "projects": [
+      "as:1202138051052762"
+    ],
+    "createdAt": "2022-04-20 09:22:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:47:36",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  }
+]

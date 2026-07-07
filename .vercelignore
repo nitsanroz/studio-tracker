@@ -1,0 +1,8 @@
+/data
+/scripts
+# NOTE: do not add "supabase" here — Vercel's ignore matching also drops
+# src/lib/supabase/ (client.ts/server.ts), breaking the build. The root
+# supabase/ migrations folder is tiny and harmless to upload.
+.env.local
+.next
+node_modules

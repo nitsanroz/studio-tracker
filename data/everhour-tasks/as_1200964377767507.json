@@ -1,0 +1,137 @@
+[
+  {
+    "id": "as:1200964377767514",
+    "name": "Contact details",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200964377767507/1200964377767514/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2021-09-12 07:02:50",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200964377767516",
+    "name": "First hour estimation",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200964377767507/1200964377767516/f",
+    "iteration": "Administration",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2021-09-12 07:03:14",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1201972205594216",
+    "name": "Before & After Developer Animation - 15.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200964377767507/1201972205594216/f",
+    "iteration": "Deliverables -117h (07/04/22)",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2022-03-16 11:16:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:50",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201972205594218",
+    "name": "Product page on mobile\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200964377767507/1201972205594218/f",
+    "iteration": "Website (60h + 16h +3h +22h= 101h) - 251.25h (07/04/22)",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2022-03-16 11:16:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:48"
+  },
+  {
+    "id": "as:1202030259254252",
+    "name": "UXUi consult - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200964377767507/1202030259254252/f",
+    "iteration": "Deliverables -117h (07/04/22)",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2022-03-27 16:56:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:51",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:1202154458436093",
+    "name": "Additions - 5,800ils ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200964377767507/1202154458436093/f",
+    "iteration": "Development - 26h + 23,000ils (20/1/22)",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2022-04-20 11:24:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:53"
+  },
+  {
+    "id": "as:1203554241052000",
+    "name": " Lottie Animations (24-40h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200964377767507/1203554241052000/f",
+    "iteration": "Website Animation",
+    "projects": [
+      "as:1200964377767507"
+    ],
+    "createdAt": "2022-12-15 07:54:50",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "time": {
+      "total": 144000,
+      "users": {
+        "1219082": 121500,
+        "1219084": 22500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:56",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  }
+]

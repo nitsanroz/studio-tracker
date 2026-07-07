@@ -1,0 +1,57 @@
+[
+  {
+    "id": "as:1211694603078102",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211694603078099/1211694603078102/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1211694603078099"
+    ],
+    "createdAt": "2025-10-21 09:58:36",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1342403": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211694603078104",
+    "name": "Deck",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211694603078099/1211694603078104/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1211694603078099"
+    ],
+    "createdAt": "2025-10-21 09:58:40",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 140400
+    },
+    "time": {
+      "total": 135900,
+      "users": {
+        "1213760": 4500,
+        "1322241": 79200,
+        "1342403": 52200
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1207442668971602",
+        "accountName": "Gabriela Dolinko",
+        "userId": 1322241
+      }
+    ]
+  }
+]

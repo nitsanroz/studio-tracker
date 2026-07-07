@@ -1,0 +1,105 @@
+[
+  {
+    "id": "as:1207822386745820",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1207822386745812/1207822386745820/f",
+    "iteration": "Kinetic Typography Animation",
+    "projects": [
+      "as:1207822386745812"
+    ],
+    "createdAt": "2024-07-16 10:41:02",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 44100,
+      "users": {
+        "1328069": 44100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-08-28 12:42:24",
+    "assignees": [
+      {
+        "accountId": "as:1206858324797116",
+        "accountName": "Liza Shelkovich",
+        "userId": 1328069
+      }
+    ]
+  },
+  {
+    "id": "as:1207822386745822",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1207822386745812/1207822386745822/f",
+    "iteration": "Kinetic Typography Animation",
+    "projects": [
+      "as:1207822386745812"
+    ],
+    "createdAt": "2024-07-16 10:41:04",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 183600
+    },
+    "time": {
+      "total": 193500,
+      "users": {
+        "1341194": 193500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-08-28 12:42:25",
+    "assignees": [
+      {
+        "accountId": "as:1207442581017170",
+        "accountName": "Avishai Zalach",
+        "userId": 1341194
+      }
+    ]
+  },
+  {
+    "id": "as:1207822386745824",
+    "name": "Brief",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1207822386745812/1207822386745824/f",
+    "iteration": "Kinetic Typography Animation",
+    "projects": [
+      "as:1207822386745812"
+    ],
+    "createdAt": "2024-07-16 11:45:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-08-28 12:42:22"
+  },
+  {
+    "id": "as:1207930662486196",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1207822386745812/1207930662486196/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1207822386745812"
+    ],
+    "createdAt": "2024-07-30 08:14:21",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 18900,
+      "users": {
+        "1328069": 18900
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

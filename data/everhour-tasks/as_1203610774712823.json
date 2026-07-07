@@ -1,0 +1,1721 @@
+[
+  {
+    "id": "as:1202676415630752",
+    "name": "Website (41h) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1202676415630752/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-07-27 14:44:06",
+    "labels": [],
+    "time": {
+      "total": 610200,
+      "users": {
+        "1213760": 374400,
+        "1219079": 113400,
+        "1219084": 1800,
+        "1219085": 9000,
+        "1219111": 72000,
+        "1220746": 39600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:37"
+  },
+  {
+    "id": "as:1202904023695031",
+    "name": "Visuals",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1202904023695031/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-09-01 14:48:52",
+    "labels": [],
+    "time": {
+      "total": 32400,
+      "users": {
+        "1213760": 32400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:36"
+  },
+  {
+    "id": "as:1203221104358049",
+    "name": "Homepage Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203221104358049/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-10-23 05:55:41",
+    "labels": [],
+    "time": {
+      "total": 98100,
+      "users": {
+        "1213760": 61200,
+        "1219079": 7200,
+        "1219111": 29700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:37"
+  },
+  {
+    "id": "as:1203314719003258",
+    "name": "Font R&D",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203314719003258/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-07 16:22:09",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 190800,
+      "users": {
+        "1213760": 89100,
+        "1214048": 9000,
+        "1219079": 10800,
+        "1219084": 57600,
+        "1219111": 24300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:51"
+  },
+  {
+    "id": "as:1203357475949607",
+    "name": "Product Page (Total 30h)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203357475949607/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-13 06:51:34",
+    "labels": [],
+    "time": {
+      "total": 6300,
+      "users": {
+        "1213760": 6300
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203357475949615",
+    "name": "Cart (11h)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203357475949615/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-13 06:51:57",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203357475949623",
+    "name": "Products Lobby (15h)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203357475949623/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-13 06:52:17",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203357475949631",
+    "name": "Desktop (17h)",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1203610774712823/1203357475949631/f",
+    "iteration": "Product Page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-13 06:53:07",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203443300085827",
+    "name": "Styleguide",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203443300085827/f",
+    "iteration": "Brand Book",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-29 08:35:33",
+    "labels": [],
+    "time": {
+      "total": 261900,
+      "users": {
+        "1213760": 72000,
+        "1219079": 139500,
+        "1219084": 17100,
+        "1219111": 33300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:21"
+  },
+  {
+    "id": "as:1203443300085829",
+    "name": "Social Assets (6-8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203443300085829/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-29 08:35:47",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 36000,
+      "users": {
+        "1213760": 34200,
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:05",
+    "assignees": [
+      {
+        "accountId": "as:1203432225207168",
+        "accountName": "Peter Beletsky",
+        "userId": 1219085
+      }
+    ]
+  },
+  {
+    "id": "as:1203443773969693",
+    "name": "Exports",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203443773969693/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-27 16:35:59",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 900,
+      "users": {
+        "1213760": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:02"
+  },
+  {
+    "id": "as:1203463627413308",
+    "name": "Prep for Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203463627413308/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-11-30 16:37:49",
+    "labels": [],
+    "time": {
+      "total": 30600,
+      "users": {
+        "1213760": 19800,
+        "1219079": 3600,
+        "1220746": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:35"
+  },
+  {
+    "id": "as:1203474547503504",
+    "name": "Blazepod UGC Video for the website",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203474547503504/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-01 15:44:01",
+    "labels": [],
+    "time": {
+      "total": 9900,
+      "users": {
+        "1213760": 7200,
+        "1219084": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:36"
+  },
+  {
+    "id": "as:1203509705638262",
+    "name": "QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203509705638262/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-07 16:10:42",
+    "labels": [],
+    "time": {
+      "total": 27000,
+      "users": {
+        "1213760": 10800,
+        "1219079": 12600,
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:34"
+  },
+  {
+    "id": "as:1203547267028926",
+    "name": "Intro for academy",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203547267028926/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-13 15:35:33",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1203577825560482",
+    "name": "RIW Landing Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203577825560482/f",
+    "iteration": "RIW Landing Page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-19 09:23:50",
+    "labels": [],
+    "time": {
+      "total": 189900,
+      "users": {
+        "1219079": 63000,
+        "1219085": 17100,
+        "1219111": 28800,
+        "1220746": 81000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:39"
+  },
+  {
+    "id": "as:1203577825560484",
+    "name": "RIW Guide",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203577825560484/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-19 09:23:59",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 63900,
+      "users": {
+        "1219079": 59400,
+        "1219111": 2700,
+        "1220746": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:02"
+  },
+  {
+    "id": "as:1203595828774024",
+    "name": "Academy Slides",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203595828774024/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-21 15:31:31",
+    "labels": [],
+    "time": {
+      "total": 52200,
+      "users": {
+        "1219084": 52200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:01",
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203599708144367",
+    "name": "Academy Slides",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203599708144367/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-22 08:19:17",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1201458452182569",
+        "accountName": "Dor Sagiv",
+        "userId": 1219084
+      }
+    ]
+  },
+  {
+    "id": "as:1203610839024645",
+    "name": "Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203610839024645/f",
+    "iteration": "RIW Landing Page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-25 09:09:15",
+    "labels": [],
+    "time": {
+      "total": 45900,
+      "users": {
+        "1219079": 10800,
+        "1219111": 35100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:40"
+  },
+  {
+    "id": "as:1203610839024647",
+    "name": "Prep4Dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203610839024647/f",
+    "iteration": "RIW Landing Page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-25 09:09:16",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219079": 7200,
+        "1220746": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:42"
+  },
+  {
+    "id": "as:1203610839024649",
+    "name": "QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203610839024649/f",
+    "iteration": "RIW Landing Page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-25 09:09:20",
+    "labels": [],
+    "time": {
+      "total": 9000,
+      "users": {
+        "1220746": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:41"
+  },
+  {
+    "id": "as:1203610839024654",
+    "name": "Plan Comparison",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203610839024654/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-25 09:30:04",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 42300,
+      "users": {
+        "1219079": 24300,
+        "1219085": 7200,
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:01"
+  },
+  {
+    "id": "as:1203613715582591",
+    "name": "Our Crowd Booth",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203613715582591/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-26 15:18:56",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 51300,
+      "users": {
+        "1219084": 21600,
+        "1219111": 3600,
+        "1220746": 26100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:00"
+  },
+  {
+    "id": "as:1203613715582593",
+    "name": "Pricing Table",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203613715582593/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2022-12-26 15:20:22",
+    "labels": [],
+    "time": {
+      "total": 22500,
+      "users": {
+        "1219079": 13500,
+        "1219111": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:34"
+  },
+  {
+    "id": "as:1203646547217569",
+    "name": "Amazon Images",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203646547217569/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-05 14:33:36",
+    "labels": [
+      "hold"
+    ],
+    "time": {
+      "total": 32400,
+      "users": {
+        "1219079": 1800,
+        "1219111": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:59"
+  },
+  {
+    "id": "as:1203649562283160",
+    "name": "Logo subs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203649562283160/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-04 15:25:18",
+    "labels": [],
+    "time": {
+      "total": 70200,
+      "users": {
+        "1219084": 70200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:59"
+  },
+  {
+    "id": "as:1203668864560965",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203668864560965/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-08 11:39:52",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 575100,
+      "users": {
+        "1219079": 18000,
+        "1219081": 1800,
+        "1219084": 4500,
+        "1219085": 38700,
+        "1219111": 360000,
+        "1220746": 152100
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203671521294619",
+    "name": "PDP & PLP - Desktop",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203671521294619/f",
+    "iteration": "PDP & PLP",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-09 07:51:29",
+    "labels": [],
+    "time": {
+      "total": 758700,
+      "users": {
+        "1213760": 11700,
+        "1219079": 179100,
+        "1219111": 369000,
+        "1220746": 198900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:44"
+  },
+  {
+    "id": "as:1203671521294621",
+    "name": "PDP & PLP - Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203671521294621/f",
+    "iteration": "PDP & PLP",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-09 07:51:32",
+    "labels": [],
+    "time": {
+      "total": 134100,
+      "users": {
+        "1219079": 41400,
+        "1219111": 81900,
+        "1220746": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:46"
+  },
+  {
+    "id": "as:1203671521294623",
+    "name": "PDP & PLP - Prep4dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203671521294623/f",
+    "iteration": "PDP & PLP",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-09 07:51:37",
+    "labels": [],
+    "time": {
+      "total": 30600,
+      "users": {
+        "1219111": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:45"
+  },
+  {
+    "id": "as:1203671521294625",
+    "name": "PDP & PLP - QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203671521294625/f",
+    "iteration": "PDP & PLP",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-09 07:51:41",
+    "labels": [],
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219079": 12600,
+        "1219111": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:49"
+  },
+  {
+    "id": "as:1203696763036401",
+    "name": "Mobile Only Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203696763036401/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-12 09:44:37",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 36000,
+      "users": {
+        "1219079": 9000,
+        "1219111": 25200,
+        "1220746": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:23"
+  },
+  {
+    "id": "as:1203754677889896",
+    "name": "New Brand Ads Templates",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203754677889896/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-17 13:09:47",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 64800,
+      "users": {
+        "1219079": 5400,
+        "1219083": 14400,
+        "1219084": 7200,
+        "1219111": 34200,
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:58"
+  },
+  {
+    "id": "as:1203799889392997",
+    "name": "Blog - Desktop",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203799889392997/f",
+    "iteration": "Blog",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-24 15:17:07",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 162900,
+      "users": {
+        "1219079": 3600,
+        "1219085": 12600,
+        "1219111": 146700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:51"
+  },
+  {
+    "id": "as:1203799889392999",
+    "name": "Blog - Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203799889392999/f",
+    "iteration": "Blog",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-24 15:17:18",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 36000,
+      "users": {
+        "1219111": 36000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:53"
+  },
+  {
+    "id": "as:1203799889393001",
+    "name": "Blog - Prep4dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203799889393001/f",
+    "iteration": "Blog",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-24 15:17:22",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:54"
+  },
+  {
+    "id": "as:1203799906415979",
+    "name": "Blog - QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203799906415979/f",
+    "iteration": "Blog",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-24 15:17:29",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219079": 1800,
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:56"
+  },
+  {
+    "id": "as:1203850901401317",
+    "name": "Instagram Highlights Icons",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203850901401317/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-29 15:26:10",
+    "labels": [],
+    "time": {
+      "total": 50400,
+      "users": {
+        "1219079": 3600,
+        "1219111": 46800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:57",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1203850901401320",
+    "name": "Help center assets",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203850901401320/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-30 13:11:59",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219111": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:29"
+  },
+  {
+    "id": "as:1203850901401324",
+    "name": "Meetings",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1203610774712823/1203850901401324/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-01-30 13:33:51",
+    "labels": [],
+    "time": {
+      "total": 56700,
+      "users": {
+        "1213760": 5400,
+        "1219079": 34200,
+        "1219111": 17100
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1203866490282714",
+    "name": "Brochure ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203866490282714/f",
+    "iteration": "Brand Book",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-01 15:13:07",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 62100,
+      "users": {
+        "1219079": 21600,
+        "1219084": 18000,
+        "1219111": 10800,
+        "1220746": 11700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:20"
+  },
+  {
+    "id": "as:1203894048922459",
+    "name": "10% pop-up",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203894048922459/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-05 15:13:54",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219079": 1800,
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:28"
+  },
+  {
+    "id": "as:1203899592130314",
+    "name": "Logo",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203899592130314/f",
+    "iteration": "Brand Book",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-05 15:32:40",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1219084": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:19"
+  },
+  {
+    "id": "as:1203910213257124",
+    "name": "Cookies Banner",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203910213257124/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-06 16:04:37",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219111": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:28"
+  },
+  {
+    "id": "as:1203917296563486",
+    "name": "CEO Onepager",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203917296563486/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-07 15:33:09",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 108000,
+      "users": {
+        "1219079": 14400,
+        "1219083": 7200,
+        "1219084": 86400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:56"
+  },
+  {
+    "id": "as:1203918690401815",
+    "name": "Webinar Presentation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203918690401815/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-07 14:25:49",
+    "dueOn": "2023-02-13",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 102600,
+      "users": {
+        "1219083": 102600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:57"
+  },
+  {
+    "id": "as:1203918690401819",
+    "name": "Uploading Assets",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203918690401819/f",
+    "iteration": "Brand Book",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-07 15:14:01",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219079": 3600,
+        "1219111": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:18"
+  },
+  {
+    "id": "as:1203918690401821",
+    "name": "Search Bar",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203918690401821/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-07 15:14:26",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:27"
+  },
+  {
+    "id": "as:1203918690401838",
+    "name": "Presentation Template (14+4h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203918690401838/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-08 14:44:30",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 64800
+    },
+    "time": {
+      "total": 61200,
+      "users": {
+        "1219081": 31500,
+        "1219083": 7200,
+        "1219084": 16200,
+        "1220746": 6300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:55"
+  },
+  {
+    "id": "as:1203977451639089",
+    "name": "BlazePod / Deloitte",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1203977451639089/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-16 09:21:18",
+    "labels": [
+      "DONE"
+    ],
+    "time": {
+      "total": 22500,
+      "users": {
+        "1219081": 2700,
+        "1219084": 18900,
+        "1220746": 900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:54"
+  },
+  {
+    "id": "as:1204000522264854",
+    "name": "GO campaign ",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1203610774712823/1204000522264854/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-19 16:01:51",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1204020803619255",
+    "name": "Menu&Footer",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204020803619255/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-02-22 15:26:50",
+    "labels": [],
+    "time": {
+      "total": 64800,
+      "users": {
+        "1219079": 10800,
+        "1219111": 54000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:27",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204129559885059",
+    "name": "QUIZ Desktop",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204129559885059/f",
+    "iteration": "PDP & PLP",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-07 15:39:17",
+    "labels": [],
+    "time": {
+      "total": 52200,
+      "users": {
+        "1219079": 23400,
+        "1220746": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:48"
+  },
+  {
+    "id": "as:1204163073752166",
+    "name": "Add to Cart",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204163073752166/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-13 15:27:57",
+    "labels": [],
+    "time": {
+      "total": 61200,
+      "users": {
+        "1219111": 61200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:33",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204163073752168",
+    "name": "Checkout",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204163073752168/f",
+    "iteration": "Home page",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-13 15:28:05",
+    "labels": [],
+    "time": {
+      "total": 48600,
+      "users": {
+        "1219079": 3600,
+        "1219111": 14400,
+        "1220746": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:32",
+    "assignees": [
+      {
+        "accountId": "as:1203610826971589",
+        "accountName": "Ron Porat",
+        "userId": 1220746
+      }
+    ]
+  },
+  {
+    "id": "as:1204163073752178",
+    "name": "Thank you page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204163073752178/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-14 15:24:19",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1219111": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:26",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204188324057273",
+    "name": "Empty cart state",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204188324057273/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-04-02 14:17:58",
+    "labels": [],
+    "time": {
+      "total": 23400,
+      "users": {
+        "1219111": 23400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:22",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204214571876022",
+    "name": "Soccer Vertical Desktop",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204214571876022/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-20 15:29:51",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 198000
+    },
+    "time": {
+      "total": 220500,
+      "users": {
+        "1219079": 25200,
+        "1219084": 7200,
+        "1219111": 188100
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:03"
+  },
+  {
+    "id": "as:1204214571876034",
+    "name": "Soccer Vertical Mobile",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204214571876034/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-22 09:26:52",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 54000
+    },
+    "time": {
+      "total": 27900,
+      "users": {
+        "1219084": 2700,
+        "1219111": 25200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:03"
+  },
+  {
+    "id": "as:1204214571876036",
+    "name": "Soccer Vertical Prep4dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204214571876036/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-22 09:26:59",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 36000
+    },
+    "time": {
+      "total": 9000,
+      "users": {
+        "1219111": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:03"
+  },
+  {
+    "id": "as:1204214571876038",
+    "name": "Soccer Vertical QA",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204214571876038/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-22 09:27:07",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 18000
+    },
+    "time": {
+      "total": 10800,
+      "users": {
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:02"
+  },
+  {
+    "id": "as:1204265447195823",
+    "name": "Easter Hero",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204265447195823/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-03-26 11:29:19",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219079": 10800,
+        "1219111": 12600,
+        "1220746": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:46:54"
+  },
+  {
+    "id": "as:1204504255800493",
+    "name": "Contact Us",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204504255800493/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-05-02 14:27:17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 36000
+    },
+    "time": {
+      "total": 41400,
+      "users": {
+        "1219111": 41400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:25"
+  },
+  {
+    "id": "as:1204504255800495",
+    "name": "Technical Pages",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204504255800495/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-05-02 14:27:23",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "time": {
+      "total": 19800,
+      "users": {
+        "1219111": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:25"
+  },
+  {
+    "id": "as:1204578288259820",
+    "name": "Hero Wireframe (4-6h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204578288259820/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-05-11 10:53:57",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:01"
+  },
+  {
+    "id": "as:1204578293766209",
+    "name": "Personas Wireframe (6-8h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204578293766209/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-05-11 10:54:22",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 16200,
+      "users": {
+        "1219082": 3600,
+        "1219111": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:01"
+  },
+  {
+    "id": "as:1204676421519150",
+    "name": "Paralx",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1203610774712823/1204676421519150/f",
+    "iteration": "Website General",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-05-25 11:04:12",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1204813365231228",
+    "name": "Physio Visuals",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204813365231228/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-06-13 08:40:08",
+    "labels": [],
+    "time": {
+      "total": 14400,
+      "users": {
+        "1219111": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:48:00",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1204813365231230",
+    "name": "Basketball Visuals",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1203610774712823/1204813365231230/f",
+    "iteration": "Soccer Vertical",
+    "projects": [
+      "as:1203610774712823"
+    ],
+    "createdAt": "2023-06-13 08:40:19",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1219111": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 12:47:59",
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  }
+]

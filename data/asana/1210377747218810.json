@@ -1,0 +1,1229 @@
+[
+  {
+    "gid": "1210377747218815",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-05-26T07:06:23.587Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "DualBird Keys",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210377747218815"
+  },
+  {
+    "gid": "1211804825153294",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-10-31T12:59:43.698Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Meetings",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211804825153294"
+  },
+  {
+    "gid": "1211755947262886",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2025-11-03T09:57:20.578Z",
+    "created_at": "2025-10-27T11:32:48.321Z",
+    "due_on": "2025-11-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Nasdaq Times Square Billboard",
+    "notes": "Summary  \nDesign a bold, clean digital billboard for Dualbird’s Nasdaq Times Square launch announcement. The design should maximize contrast so the text pops from afar, featuring 1–4 lines of copy and a large Dualbird logo at the bottom. Several background-color and layout options aligned with Dualbird’s brand are required.  \n\nTask Description  \n• Task Name: Nasdaq Times Square Billboard for Dualbird  \n• Company: Dualbird (Contact: Sabrina Fradkin, sabrina@dualbird.io)  \n• Due Date: 2025-11-03  \n• Format: Digital (non-animated)  \n• Dimensions/Technical Specifications: (see Missing Information)  \n• Budget: (hours; see Missing Information)  \n• Deliverables: Multiple mockups using the provided PowerPoint template, each showing:  \n  – A bold, clean background color with maximum text contrast  \n  – 1–4 lines of placeholder copy:  \n    NASDAQ CONGRATULATES  \n    DUALBIRD  \n    FOR ITS $25M  \n    SERIES A FUNDING  \n  – A large Dualbird logo at the bottom (style example: https://www.pismo.io/pt/blog/nasdaq-congratulates-pismo-at-times-square-for-the-108-million-series-b/)  \n• References & Inspiration: Provided example slide and two Google Search links for Nasdaq Times Square billboard designs  \n• Goal: Signal market validation by showcasing significant funding raise  \n• Display Location: Nasdaq Times Square tower  \n• Target Audience: (see Missing Information)  \n• Things to Avoid: (see Missing Information)  \n• Notes: Use the attached mockup template; focus on text hierarchy and legibility at a distance  \n\nFiles  \n• 2025-Mock-Tower-Template.pptx  \n  https://storage.tally.so/private/2025-Mock-Tower-Template.pptx?id=p0K2rq&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InAwSzJycSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc2MTU2NDc1MH0.ftNm7Ka498FLA-HiMvMceeIy8HvRJ1HCp6gBnyGsdoA&signature=60d27ea37c2316deaee92c5681d14d96e9d1840d249f119bb7fa5ff2095ac737  \n\nMissing Information  \n• Dimensions/Technical Specifications (pixel dimensions, resolution, safe-zones)  \n• Budget (in design hours or dollars)  \n• Target Audience details  \n• Any specific design elements or topics to avoid beyond general style guidance",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211755947262886"
+  },
+  {
+    "gid": "1211314543752817",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2025-10-27T12:13:14.414Z",
+    "created_at": "2025-09-10T11:46:30.343Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Booth Graphics Design Brief – AWS re:Invent 2025 (DualBird)",
+    "notes": "We’re preparing our 10x10 booth graphics for AWS re:Invent, with a hard deadline for submission on September 26th. We want to explore different creative directions for the booth visuals so we can decide how bold or clean we want to go.\n\nYou’ll design for:\n1. Back wall panels (3 sections: left, center, right)\n2. Demo counter front panel\n(see attached)\n\nCreative directions to explore:\n\nOption A – Clean & Sophisticated\n• Minimal, modern, sharp\n• Focus on the DualBird logo + a short headline\n• Use whitespace or solid backgrounds, 1–2 visual elements max\n• Could include subtle visuals\n• Easy to digest in 3 seconds\n\nOption B – Bold & Playful\n• Eye-catching and different\n• Cartoon-style inspiration with pipes, mountains, clouds, etc.\n• Still professional, but stands out visually\n• Integrate DualBird logo and headline in a way that feels part of the illustration\n\nNotes:\n• Consider the 43” monitor and cabinet placement — avoid putting key elements where they’ll be blocked (see templates)\n• Must be readable and memorable from a distance\n• Visuals should support the message: performance + simplicity + instant time-to-value\n• First concepts: ASAP (latest by Sept 18)\n• Final version ready for AWS by Sept 25\n\nWhats The Goal of This Deliverable?\nThe goal is to create visually compelling booth graphics that attract foot traffic at AWS re:Invent 2025 and support our company’s positioning. The booth should stand out, be immediately understandable, and reflect the bold yet accessible personality of DualBird.\n\nWe want attendees to:\n• Instantly get what we do (at least at a high level)\n• Be curious enough to stop and ask questions\n• Remember us after walking away\n\nWhere Would it Be Displayed?\n• 10x10 Turnkey Booth Wall (3-panel back wall with lightbox section on top)\n• Front of the Demo Counter\n• Located in the AWS re:Invent expo hall\n• Surrounded by hundreds of other tech booths — first impression matters\n\nWhats The Target Audience?\n• Technical decision-makers (CIOs, CTOs, VPs of Data/Infrastructure)\n• Enterprise architects, data platform leads, and cloud engineers\n• Investors and AWS ecosystem partners who might not know us yet\n\nMost are senior professionals walking quickly through the expo, scanning for things that are:\n• Visually interesting\n• Relevant to their domain\n• Easy to engage with\n\nThey don’t know us yet, so the graphics need to do heavy lifting up front.\n\nThings to Avoid?\n• No birds (even though our name is DualBird)\n• No cityscapes or skyline visuals\n• Don’t clutter with too much text — no paragraphs or technical details\n• Avoid visuals that are too “abstract” or generic (we’re not just another cloud infra company)\n• Avoid overusing AWS branding elements — we want to stand out, not blend in\n\nContent\nPlaceholder for now:\nBack wall headline: Accelerate Spark and Iceberg with zero code changes\n\nCounter: Dualbirds logo\nMini tagline: Break performance limits in your data pipeline\n\nAny Files You Need to Add?\nhttps://storage.tally.so/private/reInvent25_10x10A_COUNTER-INSTRUCTIONS.png?id=o7l7Z1&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Im83bDdaMSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NzUwNDc3NX0.oryE_ndirtxQcSOpWDkE2rTjYzrlv6sGVTuqgZIbp24&signature=779482272ab84089fb55020d76fe61a573a281468609945db5326d677b6cf07d\nhttps://storage.tally.so/private/reInvent25_10x10A_COUNTER-TEMPLATE.ai?id=PX8XNQ&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlBYOFhOUSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NzUwNDc3NX0.k4tCxH7FweLr_YxuUcXmgOGWOwvEbXVcWc7cTnuZcRs&signature=108e102b66bbcebf4b755b90efce453688ab83b68b0679386e6ada82cf518800\nhttps://storage.tally.so/private/reInvent25_10x10A_WALL-INSTRUCTIONS.png?id=rd2dQM&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InJkMmRRTSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NzUwNDc3NX0.XAb5aEUSfcHg6H-5iuVL3b1SIROKp-cyCxz-d0SF55g&signature=655e76d8e773212e14eeb1e1db8f822a8b401359bbaa5341a805ac8072d75ba5\nhttps://storage.tally.so/private/reInvent25_10x10A_WALL-TEMPLATE.ai?id=NJ8JxG&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ik5KOEp4RyIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NzUwNDc3NX0.SHsMttTXyFSBnzBTSRXpEyKgWwSeSQgmZDVj5mNc4VM&signature=4976a940ebdbdbcdffea6916b16e684ea1cef7b1bdd39ba630806379044a9672",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211314543752817"
+  },
+  {
+    "gid": "1211281556085522",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-27T12:13:15.804Z",
+    "created_at": "2025-09-07T11:19:39.195Z",
+    "due_on": "2025-09-25",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Presentation templates",
+    "notes": "Summery  \nDualbird is seeking a cohesive set of digital presentation templates for both internal and external use. The suite will include board presentations, KPI meeting decks, company all-hands layouts, a forthcoming product/technical deck, and a library of generic slides. Templates should reflect Dualbird’s brand identity and be easily customizable by non-designers.\n\nTask Description  \n• Deliverables  \n  - Board presentation template (highly customizable)  \n  - KPI meeting template (based on existing example)  \n  - Company all-hands templates (references provided)  \n  - Product/technical deck template (to be shared soon)  \n  - Generic master slides for ad-hoc use  \n\n• Notes  \n  – Files have been sent via WeTransfer  \n  – Placeholder (Lorem Ipsum) content is acceptable ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211281556085522"
+  },
+  {
+    "gid": "1211195469831775",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-09-15T06:09:01.680Z",
+    "created_at": "2025-09-01T06:33:50.910Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Board meeting presentation",
+    "notes": "Summary\n• Client: Sabrina, DualBird (sabrina@dualbird.io)  \n• Project: Board meeting presentation  \n• Format: Digital slideshow (non-animated)  \n• Target audience: Investors  \n• Due date: 2025-09-03  \n\nTask Description\n• Objective: Create a polished, professional presentation for DualBird’s upcoming board meeting.  \n• Format & dimensions: Digital slide deck\n• Key content:  \n  – Core presentation content and detailed comments exist within draft slides provided by client.  \n• Notes:  \n  – Slides already include specific comments and requests—please review and implement.  \n  – No kickoff meeting requested prior to work start.  ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211195469831775"
+  },
+  {
+    "gid": "1211101831871045",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2025-09-15T06:09:03.080Z",
+    "created_at": "2025-08-20T12:41:07.431Z",
+    "due_on": "2025-09-07",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Holiday Cards",
+    "notes": "Format\nPrint\n\nTask Description\nI would like to design Rosh Hashana holiday cards for our employees. I’ll put them on the gifts. Would like to have a Cookie Monster character eating honey\n\nWhats The Purpose of This Task?\nStick it on the holiday gifts and send it to our employees abroad by email too\n\nWhere Would it Be Displayed?\nCards\n\nWhats The Target Audience?\nOur team\n\nContent\nThis year we rang in Rosh Hashana with new teammates, a shiny new office, and plenty of growth.\nThank you all for bringing your energy, talent, and good vibes! you’ve made this a truly sweet year.\n\nDimensions/Technical Specifications\nSmall cards\n\nDue Date\n10/09/2025\n\nNotes\nSpeak with Sabrina and Jenny\nText will be changed\n\nDo you need to schedule a meeting to discuss this task before we begin?\nYes",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211101831871045"
+  },
+  {
+    "gid": "1211101729341795",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2025-09-15T06:09:04.104Z",
+    "created_at": "2025-08-20T12:41:00.207Z",
+    "due_on": "2025-08-26",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Letter ",
+    "notes": "Summery\n- Client: Dualbird (Jenny nissan, jenny.nissan@dualbird.io)\n- Task Name: Letter\n- Format: Print\n- Purpose: Write letters\n- Target Audience: Our team\n- Display/Size: A4 paper\n- Due Date: 2025-08-27\n\nTask Description (including dimensions, budget, things to avoid, and notes)\n- Overview: Design an A4 letter paper for Dualbird to be used for writing letters.\n- Content to include:\n  - Address: Ha’Arbaa 21 Tel Aviv\n  - Email: office@dualbird.io\n  - Company logo\n- Layout preferences:\n  - Logo above\n  - Company details under\n- Dimensions: A4 paper (as stated)\n- Format: Print",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211101729341795"
+  },
+  {
+    "gid": "1211015151379250",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-08-11T07:30:00.350Z",
+    "created_at": "2025-08-10T06:32:52.161Z",
+    "due_on": "2025-08-10",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Redesign presentation deck",
+    "notes": "Summary  \nSabrina Fradkin from DualBird needs an existing presentation deck redesigned to align with the company’s brand language and look more professional. The updated deck will be presented at a data event in New York to an audience of data engineers. Not all slides require custom graphics—some may use simple solid‐color backgrounds to emphasize key content.\n\nTask Description  \n• Task Name: Redesign presentation deck  \n• Format: Digital  \n• Animation: None  \n• Purpose & Display: To be presented live at a data event in New York  \n• Target Audience: Data engineers  \n• Source File: DualBird Overview – Ignite Event NYC Aug2025.pptx (link below)  \n• Scope:  \n  – Update slide layouts, typography, colors, and imagery to match DualBird’s brand language  \n  – Introduce custom graphics on key slides; leave others with solid‐color backgrounds for emphasis  \n  – Ensure consistency across all slides (fonts, spacing, alignment)  \n• Dimensions/Technical Specifications: Not specified  \n• Due Date: 2025-08-10  \n• Things to Avoid: No specific restrictions provided  \n• Notes: None  \n\nFiles  \n– DualBird Overview – Ignite Event NYC Aug2025.pptx  \n  https://storage.tally.so/private/DualBird-Overview---Ingite-Event-NYC-Aug2025.pptx?id=6vQRrk&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZ2UVJyayIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NDgwNzU1OX0.Sgwy8ewCcwDLJ-2pXiqFflMJLSIm_VIjbkoa87ux3vA&signature=bad750c6c831ffcfcdcb97a2f9594985a7b74aad30791613c38007f16b77e5af  \n\nMissing Information  \n• Dimensions or slide size specifications  \n• Budget (hours or monetary)  \n• Any brand guidelines or style guide files  \n• Detailed content requirements or copy (if revisions are needed)  \n• Specific things to avoid (if any)",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211015151379250"
+  },
+  {
+    "gid": "1210985421974424",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-08-11T07:29:59.663Z",
+    "created_at": "2025-08-06T10:24:52.063Z",
+    "due_on": "2025-08-06",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Dualbird AWS partnership",
+    "notes": "Summary  \nCreate a “Better Together” partnership document for AWS that clearly communicates the mutual benefits of DualBird’s collaboration with AWS. The deliverable must follow DualBird’s design language, ignore the existing layout, and be easily editable in Canva. It will be shared digitally with the AWS team by 4 pm Israel time on August 6, 2025.\n\nTask Description  \n• Project Name: DualBird AWS partnership – “Better Together” document  \n• Objective: Showcase why DualBird + AWS is a strategic win–win and how each party benefits  \n• Deliverable:  \n  – A single digital document (Canva format preferred) with editable text and minor design elements  \n  – Incorporate the provided high-level paragraphs (see attached PDF)  \n  – At the bottom, include:  \n     • Two graphs from the DualBird website  \n     • An illustration depicting reduction from a cluster of 11 machines to one  \n• Design Guidelines:  \n  – Use DualBird’s design language (colors, typography, iconography)  \n  – Disregard the current layout in the attached PDF  \n• Target Audience: AWS team (internal AWS stakeholders)  \n• Display Format: Shared digitally (e-mail, intranet, or collaboration platform)  \n\nFiles  \n• DualBird AWS Partnership.pdf (high-level paragraphs + current layout to ignore)  \n  https://storage.tally.so/private/DualBird-AWS-Partnership.pdf?id=MYA16Y&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ik1ZQTE2WSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1NDQ2Njc4MH0.Fdt56Qgyq0gvIPTJYgxlUaJgwEniDOPFKwDWReZbIaQ&signature=e0853ccf129e31fc613fae01243abe93e32c67208b3aa95f488b935ce",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210985421974424"
+  },
+  {
+    "gid": "1210689580708564",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-28T12:46:39.469Z",
+    "created_at": "2025-07-01T18:01:11.905Z",
+    "due_on": "2025-07-10",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Terms of Use on our website",
+    "notes": "Name\nSabrina Fradkin\n\nEmail\nsabrina@dualbird.io\n\nCompany\nDualbird\n\nTask Name\nTerms of Use on our website\n\nFormat\nDigital\n\nWould it be animated\nNo\n\nTask Description\nWe need to add a terms of use page on our website.\n\nWhere Would it Be Displayed?\nWebsite\n\nAny Files You Need to Add?\nhttps://storage.tally.so/private/Dual-Bird---Terms-of-Use-30.6.25-4793210.2-1-.docx?id=Zl6qVa&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlpsNnFWYSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1MTM5Mjg2OX0.QloWMtNlPwH3Qx8R_rYqaX72vVrCQoALaN_bPc5Rj2c&signature=316d363abae28b8c705f2405167109a88f8fa235a6e2df9f4cb2834d527bc421\n\nDue Date\n10/07/2025\n\nNotes\nJust a simple terms of use page. Nothing overly designed.\n\nDo you need to schedule a meeting to discuss this task before we begin?\nNo",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210689580708564"
+  },
+  {
+    "gid": "1210492929983404",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-28T12:46:31.870Z",
+    "created_at": "2025-06-08T10:24:14.529Z",
+    "due_on": "2025-06-26",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Redesign Job Application Flow on Careers Page",
+    "notes": "Task Description\nReplace the current email-based application process on our careers page with a professional, embedded form. When candidates click “Apply,” they should be able to submit their information directly on the site instead of being redirected to send an email to office@dualbird.io.\n\nWhats The Purpose of This Task?\nImprove candidate experience, make the process feel more polished and streamlined, and allow us to collect job applications in a structured and trackable format.\n\nWhere Would it Be Displayed?\nOn the “Careers” section of the DualBird website, replacing the existing “Apply” button behavior.\n\nWhats The Target Audience?\nJob applicants and potential hires.\n\nContent\nFirst name\nLast name\nEmail\nPhone\nResume/CV\nLinkedin profile\nWebsite",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210492929983404"
+  },
+  {
+    "gid": "1210470140826671",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-23T06:52:25.961Z",
+    "created_at": "2025-06-05T05:05:57.987Z",
+    "due_on": "2025-06-10",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "One-pager visual design for summit",
+    "notes": "Task Name:One-pager visual design for summit\n\nTask Description:Create the design layout for a one-pager that introduces DualBird’s value proposition to a technical yet business-savvy audience (heads of data, CTOs, engineering managers). This asset will be used in face-to-face conversations at a summit, so clarity, high-impact visuals, and information flow are key.\nWhats The Purpose of This Task?:To visually present DualBird’s core story and benefits at a glance, making it easy for readers to understand what we do, why we’re different, and why they should care. The one-pager should generate interest, spark conversations, and ideally lead to demo signups or follow-up meetings.\n\nWhere Would it Be Displayed?:Distributed at summit events (printed), sent as PDF follow-up after meetings.\n\nWhats The Target Audience?:CTOs, Heads of Data Infrastructure, FinOps leaders, Data Engineers. Senior technical decision-makers who are familiar with Spark, EMR, and cloud data infrastructure.\n\nThings to Avoid?:\t•\tAvoid overly abstract or generic tech visuals.\n\t•\tAvoid small font sizes\nContent:This is a placeholder - we will make some content changes after.\n\nData & AI Infra Engine Built for What's Next\nCloud-Native Data Processing Acceleration\nHardware-grade performance with software-level simplicity—no hardware to deploy.\n10x-100x faster data processing performance with 50%-90% lower costs. No changes required.\n\nAdvanced FPGA technology through AWS F2 instances. Sounds too good to be true? See for yourself.\n\nWhat Your Team Gets Back\nStop fighting infrastructure. Start driving business value.\n\n✓ Reclaim Engineering Time - No more manual tuning or constant optimization\n✓ Predictable Costs - Eliminate budget surprises and cost overruns\n✓ Reliable Performance - No more disk spills, data skews, or pipeline failures\n✓ Zero Maintenance - Always optimized, no configuration headaches\n\nThe Bottom Line: Your data engineers focus on innovation, not infrastructure babysitting.\n\nEffortless Spark & Iceberg Acceleration\nAccelerate your existing deployment with zero engineering effort and zero time-to-value.\n\n✓ Compatible with Apache Spark and Amazon EMR\n✓ Optimized out of the box\n✓ Migration-free\n\nSimple Setup: Change instance type → Install plugin → See results\n\nNumbers That Speak for Themselves\nReal Customer Results\nRetail company: Black Friday analytics in real-time (was 4+ hours)\nFinancial services: 11-node cluster → 1 node, same performance\nSaaS company: 30-day AI training windows (was 7 days max)\nYour Benchmarks\n55%-85% EC2 cost reduction compared to CPU-based Spark\n15x-20x speedup for the same cluster size\n50%+ cost reduction simultaneously with performance gains\n\nThe New Standard in Big Data Processing\nJust like NVIDIA's GPUs triggered the AI revolution, DualBird's FPGA technology brings the same revolution to data processing: hardware-level acceleration with the simplicity and flexibility of software deployed on the cloud.\n\nReady to Transform Your Data Infrastructure?\nWith a few clicks. Zero effort, incredible results.\nwww.dualbird.io \n\n\n\nAny Files You Need to Add?:null\nDimensions/Technical Specifications:-\nDue Date:2025-06-10\nBudget Range:As much as it needs to take\nNotes:\t•\tPlease keep visual consistency with our website (fonts, tone, and vibe)\n\t•\tWe’ll provide final copy shortly—use this content for layout & structure only\n\t•\tPlease add benchmark graph (that you created)",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210470140826671"
+  },
+  {
+    "gid": "1211815159833060",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-11T14:45:59.110Z",
+    "created_at": "2025-11-02T14:58:36.813Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Notebook",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211815159833060"
+  },
+  {
+    "gid": "1210435565461212",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2025-06-08T10:29:30.381Z",
+    "created_at": "2025-06-02T06:52:20.661Z",
+    "due_on": "2025-06-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Benchmark graphs",
+    "notes": "**Design Brief for Benchmark Graphs**\n\n**Client Information:**  \n- Name: Sabrina Fradkin  \n- Email: sabrina@dualbird.io  \n- Company: Dualbird  \n\n**Project Title:**  \nBenchmark Graphs for External and Internal Use\n\n**Project Overview:**  \nDesign two visually engaging, clear, and simplified benchmark comparison graphs for Dualbird. These graphs will illustrate Dualbird’s performance and cost savings relative to Spark, serving both external presentation at conferences and potential inclusion on the company’s website. The existing benchmark graph on the current website (located under the Benchmark section) will serve as the foundation, but the new design should improve upon it—most notably, by transitioning from linear to columnar (bar/column) graphs.\n\n**Objective / Purpose:**  \nCreate two clean, easily interpretable graphs that effectively compare Dualbird’s performance and cost savings against Spark. These visuals will be used by the CEO during conferences from June 1–11, to answer benchmark-related questions. There is also a potential to add these graphs to the company's website and other materials such as investor decks and sales follow-ups.\n\n**Display Context:**  \n- Primary: Conference presentations and 1:1 meetings (June 1–11)  \n- Secondary: Company website (under \"Benchmark\" section, TBA)  \n- Additional: Investor presentations and field sales follow-ups\n\n**Target Audience:**  \n- Technical decision-makers: CTOs, VPs of Engineering, Heads of Data  \n- Business stakeholders: CIOs, cost-conscious buyers, procurement leads  \n- Investors & analysts: seeking product differentiation and market edge  \n- Industry peers: benchmarking at conferences and industry events\n\n**Design Requirements & Constraints:**  \n- The graphs should be simplified following the style of the provided example (attached).  \n- Use data points from rows 209–218 of the attached Excel file for the graph values.  \n- Transition the current linear graph style to columnar (bar/column) format for enhanced clarity.  \n- Maintain consistency in size and technical specifications with the existing website graphs.  \n- Focus on creating clear, simple visuals, avoiding overcomplication—especially since the client emphasizes simplicity for conference settings.\n\n**Files Provided:**  \n- Example graph style (attached)  \n- Excel data file with relevant data points (rows 209–218)  \n- Additional unspecified objects (attachments indicated as [object Object]) for further reference or assets\n\n**Timeline & deliverables:**  \n- Due date: June 3, 2025  \n- Budget: 2 hours allocated (indicating quick turnaround, prioritizing efficiency)  \n- Note: This is a last-minute request driven by feedback to simplify the website graph, with urgent use planned during early June. The client emphasizes simplicity and usability.\n\n**Notes & Additional Information:**  \n- The client is available via phone for questions during the task.  \n- There is a scheduling question, indicating availability for a discussion prior to starting; please confirm as needed.\n\n**Next Steps:**  \n- Review the example style and data files.  \n- Develop two columnar benchmark comparison graphs aligning with the provided style and data.  \n- Ensure the visuals are suitable for both conference presentations and potential website use.  \n- Deliver by June 3, 2025, considering the tight timeline.\n\n**Contact for Clarification:**  \nSabrina Fradkin – sabrina@dualbird.io\n\n---\n\nThis brief summarizes all client requirements for the development of the benchmark comparison graphs, ensuring that creative and technical specifications are clear for a swift and successful execution.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210435565461212"
+  },
+  {
+    "gid": "1210385096776069",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-05-28T07:27:34.414Z",
+    "created_at": "2025-05-27T06:53:21.483Z",
+    "due_on": "2025-05-26",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Design Handoff from Gambit",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210385096776069"
+  },
+  {
+    "gid": "1210385096776071",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-05-28T07:27:32.429Z",
+    "created_at": "2025-05-27T06:53:31.031Z",
+    "due_on": "2025-05-27",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Kickoff meeting",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210385096776071"
+  },
+  {
+    "gid": "1210385509535223",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-28T12:46:26.079Z",
+    "created_at": "2025-05-27T14:12:10.753Z",
+    "due_on": "2025-06-14",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Blog Page",
+    "notes": "Task Description\nWe need to create a blog page on our existing website.\nFor the first article, we'll have a banner on the homepage that will lead to the article. Once we have multiple blog post we will publish the blog page.\n\nWhats The Purpose of This Task?\nWe need a blog to post thought leadership content, for branding purposes and to get traction.\n\nWhere Would it Be Displayed?\nWebsite\n\nWhats The Target Audience?\nPeople in the big data industry\n\nthe most important thing here is that it will look just like the rest of the website, regardless of how much time it takes. No need to put extra effort or make it look any better than the rest of the website.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210385509535223"
+  },
+  {
+    "gid": "1210385509535225",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-25T06:45:18.549Z",
+    "created_at": "2025-05-27T14:12:18.500Z",
+    "due_on": "2025-06-12",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Linkedin Banner",
+    "notes": "Task Description\nNeed 2 professional Linkedin banners for 1. Company linkedin & 2. Employee profiles.\n\nWhats The Purpose of This Task?\nTo have a linkedin banner that aligns with our brand.\n\nWhere Would it Be Displayed?\nLinkedin\n\nWhats The Target Audience?\nIn this case, everyone (our potential customers, investors, potential partners, potential employees).\n\nContent\nNo content, just a logo on the employee banner, and nothing on the company banner.\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1210397279559592\n\nexample of how we'd like to cut the banner.\n\nProfile Page\n    Recommended resolution: 1584 x 396 pixels\nCompany Page\n    Recommended resolution: 1128 x 191 pixels\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210385509535225"
+  },
+  {
+    "gid": "1210397279559595",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-06-25T06:45:21.833Z",
+    "created_at": "2025-05-28T07:26:52.189Z",
+    "due_on": "2025-06-16",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Email Banner",
+    "notes": "Task Description\nWe're getting out of stealth and want to send an \"out of stealth\" announcement.\n\nWhats The Purpose of This Task?\nThe purpose is to inform people that we're out of stealth and get them to our website or schedule a demo.\n\nWhere Would it Be Displayed?\nEmail\n\nWhats The Target Audience?\nWe're going to send this email to:\n1. Our database (people who have signed up for our waiting list)\n2. Outreach to companies within our target audience\n3. Investors and friends.\n\nWe could have the same graphic for all of them\n\nContent\nThe content is not ready yet, but here's an example of what it could look like:\n\nSubject line:\n\nWe’re DualBird. And we’re done playing nice with CPUs.\n\n\nBody:\n\nData infrastructure is hitting a wall, and CPUs are the problem. Teams burn millions just to squeeze out incremental performance gains, settling for data compromises that limit what’s possible.\n\nToday, DualBird steps out of stealth to break that cycle. Our cloud-native data accelerator combines custom hardware power with software-level ease—delivering up to 100x faster data workloads at less than half the cost. Zero code changes, zero compromises.\n\nThink this sounds impossible? We thought so too, until we built it.\n\nWe’re now opening a limited design partner program for teams who want early access and influence over our roadmap. If you’re tired of choosing between cost and performance, we’d love to hear from you.\n\n[Become a Design Partner →] | [Learn More →]\n\n— The DualBird Team\n\nSize: 800px wide, height can be whatever you need it to be",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210397279559595"
+  },
+  {
+    "gid": "1210647540093202",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-28T12:46:27.331Z",
+    "created_at": "2025-06-26T09:39:54.367Z",
+    "due_on": "2025-07-03",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Benchmark Graphs 2.0",
+    "notes": "Task Description\nWe need designed versions of a few graphs comparing DualBird vs. EMR, based on EC2 cost and performance for a 500 GB Iceberg compaction task. Let's use the same design as the previous graphs.\n\nWhere Would it Be Displayed?\nThese visuals will be used for both internal and external presentations, and maybe we will add it to our website (I'll let you know)\n\nContent\n1. Graph: “EC2 hourly cost ≈ F2.12X”\n\nTwo sets of bars:\n• Performance: DualBird = 4.176, EMR = 1\n• Total EC2 cost: DualBird = 0.21, EMR = 1\n• X-axis: [Performance, Total EC2 cost]\n• Y-axis: normalized values (0–5)\n• Color palette:\n\n2. Graph: “Min total EC2 cost with EMR”\n• Performance: DualBird = 2.52, EMR = 1\n• Total EC2 cost: DualBird = 0.26, EMR = 1\n\n3. Graph: “Performance ≈ F2.12x”\n• Performance: DualBird = 1.1, EMR = 1\n• Total EC2 cost: DualBird = 0.2, EMR = 1\n\nAny Files You Need to Add?\nhttps://storage.tally.so/private/thumbnail_image.png?id=5LXDGM&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVMWERHTSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1MDkzMDY1OX0.qL9Hj4y4__S1Zacsv5UFuchclaETDmPLWiQYI5jqK-8&signature=3eadcba03fa49ba5c5a0ecb770ca5fd9caec85bbabe9334b1c3c7d2349481024\nhttps://storage.tally.so/private/thumbnail_image002.png?id=Zl9KZA&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlpsOUtaQSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1MDkzMDY1OX0.DBVp8lkz9WQ4BOw94tc7J7VODfpobDjo6N2IfR0igqY&signature=fb2b2bc7efb8cda841e9475b03ca56e89eb1a81e3bf5f9aa3281047c738d87c7\nhttps://storage.tally.so/private/thumbnail_image003.png?id=PlRekP&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IlBsUmVrUCIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc1MDkzMDY1OX0.4q9SyLiXAHZlKt1p-P-UVCWwbayOOTTW9Cq6KDcZXpc&signature=e58ddff5f7c5389f16d6652de6b465abe1d9969147c00ed5d91b578af66041a0\n\nDimensions/Technical Specifications\nLike the previous graphs",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210647540093202"
+  },
+  {
+    "gid": "1210704649090899",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-07-28T12:46:27.928Z",
+    "created_at": "2025-07-03T07:30:57.316Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Legal Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210704649090899"
+  },
+  {
+    "gid": "1210901652445319",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-09-01T06:51:15.909Z",
+    "created_at": "2025-07-28T12:46:51.158Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Current Design Overview",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1210901652445319"
+  },
+  {
+    "gid": "1211041953555906",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-20T11:57:33.936Z",
+    "created_at": "2025-08-13T06:03:08.192Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Stage 2: Current Design Overview",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211041953555906"
+  },
+  {
+    "gid": "1211352288452525",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-16T07:28:28.872Z",
+    "created_at": "2025-09-14T08:40:19.474Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Business Team kickoff presentation",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211352288452525"
+  },
+  {
+    "gid": "1211098757025586",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-09-01T06:51:14.867Z",
+    "created_at": "2025-08-21T06:19:55.325Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Deck 21.08",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211098757025586"
+  },
+  {
+    "gid": "1211369882455087",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-16T07:28:30.099Z",
+    "created_at": "2025-09-16T08:52:59.397Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Tech Council presentation",
+    "notes": "https://netorgft9709305-my.sharepoint.com/:p:/g/personal/amir_dualbird_io/EVIG_AImAsJGjpAp8w7eJ9UBxohKZPTbFRR6ng-Qz44QIw?e=CvrScH",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211369882455087"
+  },
+  {
+    "gid": "1212002024764101",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-28T08:26:55.434Z",
+    "created_at": "2025-11-20T08:30:59.642Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210377747218811",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "One-Pager corrections",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212002024764101"
+  },
+  {
+    "gid": "1213888648899218",
+    "assignee": {
+      "gid": "1213676397334342"
+    },
+    "completed": true,
+    "completed_at": "2026-07-02T18:34:17.321Z",
+    "created_at": "2026-03-31T19:56:12.739Z",
+    "due_on": "2026-04-13",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Blog + Resources lobby ",
+    "notes": "*Summary*  \nDualBird requires a set of three digital landing pages—Blog Lobby, Resource Lobby, and Media Page—to organize and display a growing volume of content. Each page will feature a clear grid layout with a highlighted “featured” item at the top, and all content must be easily editable and reorderable by the DualBird team (default sorting by date). The design should be simple, straightforward, and integrate seamlessly under the “Resources” section of the site’s navigation bar.\n\n*Task Description*  \n• Project Name: Blog + Resources Lobby & News Page  \n• Client: Morayah Horovitz (morayah@blueseedling.com), DualBird  \n• Due Date: April 13, 2026  \n• Format: Digital (no animation)  \n• Dimensions/Technical Specifications: N/A  \n• Budget: Not specified (in hours unless otherwise noted)  \n\nPage Requirements:  \n1. Blog Lobby  \n – Grid layout for all blog posts  \n – Each post shows featured image, title, short excerpt, author, and publish date  \n – One featured blog at top above the grid  \n – Click-through to full blog articles  \n – Admin interface to reorder posts (default = chronological)  \nreferences for the blog visuals- https://www.wonderful.ai/blog\nhttps://www.baseten.co/blog/\n\n2. Resource Lobby  \n – Grid layout for downloadable resources (guides, PDFs, case studies, tools)  \n – Each resource shows featured image, title, short excerpt, and a “Download” CTA linking to existing landing pages with form, whitepaper, description, etc.  \n – One featured resource at top above the grid  \n – Admin interface to reorder resources (default = chronological)  \n\n3. Media Page  \n – Grid layout for news articles, press releases, etc.  \n – Each item shows title, date, “Read more” CTA, and logo image of the news outlet  \n – Categories filter: Podcast, Announcement, News, Byline  \n\nAdditional Details:  \n• Goal: Provide an easily editable, scalable framework so the DualBird team can upload and manage new blogs, resources, and news without further design assistance.  \n• Location in Site: Under “Resources” in the navigation bar, with tabs/pages for Blog, Guides, and Media  \n• Target Audience: DualBird customers, leads, and investors  \n• Things to Avoid: Overcomplication. Keep the layouts simple, user-friendly, and straightforward.  \n• Notes: Client does not require a kickoff meeting and is available to answer questions as needed.  \n\nMissing Information  \n• Budget Range (hours or monetary budget)  \n• Any specific technical constraints (CMS/platform, responsive breakpoints)  \n• Initial content samples or mock data for layouts  \n• File attachments or style guides (none provided)",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213888648899218"
+  },
+  {
+    "gid": "1211369882455090",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-09-16T13:10:12.229Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Homepage",
+    "notes": "https://docs.google.com/document/d/13NQovJ2JjIiCBFk8esAh4Beox47q5wQfqhG9zDVA2cg/edit?usp=sharing",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211369882455090"
+  },
+  {
+    "gid": "1211597666591398",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-10-09T10:27:43.198Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Case study",
+    "notes": "*Summary*  \nDualbird’s Sabrina Fradkin requests the preparation of a “Case Study” page on the company website. This includes adding a “Case Studies” link to the site’s main navigation, with the page and link ready but not yet published.\n\n*Task Description*  \n• Deliverable  \n  – One digital “Case Study” webpage draft  \n  – New “Case Studies” nav-bar link pointing to the draft page (hidden from public view until publishing)  \n\n• Dimensions/Technical Specifications  \n  – Not provided (please confirm required screen sizes, responsive breakpoints, CMS or framework constraints)  \n\n• Format  \n  – Digital (webpage)  \n\n• Animation  \n  – Static (no animation required)  \n\n• Due Date  \n  – 2025-10-31  \n\n• Budget  \n  – Not provided (hours or monetary range missing)  \n\n• Things to Avoid  \n  – Not specified  \n\n• Notes  \n  – The page should be fully prepared and styled but remain unpublished until further notice.  \n  – Content for the page is attached.  ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211597666591398"
+  },
+  {
+    "gid": "1211749590477371",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-11T14:46:11.106Z",
+    "created_at": "2025-10-26T13:09:54.586Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Resources Lobby Dev",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211749590477371"
+  },
+  {
+    "gid": "1212540821554587",
+    "assignee": {
+      "gid": "1212644471173780"
+    },
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:30.416Z",
+    "created_at": "2025-12-21T07:34:25.068Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Join benchmark for the website",
+    "notes": "I have the join benchmark chart ready to be published on our website.\nCould you please help with the design?\nIt should match the style of the existing chart we already have on the website for \"sort based Iceberg compaction\".\n\nThe chart below is the smoothed out version to be used.\nI've also attached the excel sheet with the original and smoothed out charts, and the raw data in case anyone would find it handy.\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1212540821554591\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212540821554587"
+  },
+  {
+    "gid": "1212540821554594",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:39.786Z",
+    "created_at": "2025-12-21T07:35:31.818Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Add video loop and demos to website",
+    "notes": "Regarding the video loop, we'd like to add it to the bottom of the homepage instead of under the hero.\nIn addition, we'd like to add the demos in the product page and also under resources.",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212540821554594"
+  },
+  {
+    "gid": "1212534301100886",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:34:20.734Z",
+    "created_at": "2025-12-19T17:34:37.691Z",
+    "due_on": "2025-12-25",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Whitepaper",
+    "notes": "Summary  \nSabrina Fradkin at Dualbird is requesting a fully branded, digital whitepaper for the company’s Resources page. The scope includes formatting the attached draft to match Dualbird’s visual identity, applying the company logo, ensuring pagination rules for the first section, and coordinating a gated download form on the website that collects company name and first/last name while blocking public-domain email addresses.\n\nTask Description  \nCreative Brief\nWe want to add a whitepaper to our resources page. Please see attached file.\n\nWe need to add the company logo, and format it in a standard DualBird way that would match our company design and would consistently be used for future whitepapers.\nAfter you're done modifying the first page, we need to make sure the first section is contained within a single page.\nIf you can't make it fit, then you can start a new page after the logo/authors/date page.\n\nFor public access through the website, we want to have a vetting mechanism before we allow it to be downloaded. It should be a form that asks for a company and first/last name, and to not allow public domains like gmail.\n\nFiles  \n• Iceberg sort based compaction benchmark – final.docx  \n  https://storage.tally.so/private/Iceberg-sort-based-compaction-benchmark---final.docx?id=21KqMA&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIxS3FNQSIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc2NjE2NTY2Nn0.nF6QxEhhmGSHVqFx4Q5x7ObYZXxBQ4f42Iz_bHNfoVs&signature=5ed77c18f42ba29a76d6621f3b9e1b8f44a0115521538121dd98c0759d40e990  ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212534301100886"
+  },
+  {
+    "gid": "1212603862956501",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:11:15.527Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Product Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956501"
+  },
+  {
+    "gid": "1212603862956503",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:11:19.120Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Vision Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956503"
+  },
+  {
+    "gid": "1212603862956505",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:13:25.121Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "About Us Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956505"
+  },
+  {
+    "gid": "1212603862956507",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:13:31.030Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Careers Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956507"
+  },
+  {
+    "gid": "1212603862956509",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:13:45.040Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Contact Us Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956509"
+  },
+  {
+    "gid": "1212603862956511",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-29T15:13:51.033Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Book a Demo Page",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212603862956511"
+  },
+  {
+    "gid": "1212816871688463",
+    "assignee": {
+      "gid": "1212644471173780"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-01-15T09:43:07.523Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Styleguide",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212816871688463"
+  },
+  {
+    "gid": "1213063664324421",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:45.164Z",
+    "created_at": "2026-02-01T10:57:34.769Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Privacy Policy",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213063664324421"
+  },
+  {
+    "gid": "1213591680723911",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:51.759Z",
+    "created_at": "2026-03-09T13:12:19.486Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Contact form",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213591680723911"
+  },
+  {
+    "gid": "1213596360659347",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-03-10T14:25:50.832Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Homepage Dev",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213596360659347"
+  },
+  {
+    "gid": "1214028967800111",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-12T14:23:53.883Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Design system",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214028967800111"
+  },
+  {
+    "gid": "1214025760572050",
+    "assignee": {
+      "gid": "1213991315479067"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-13T07:56:30.098Z",
+    "due_on": "2026-04-16",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Thumbnails design",
+    "notes": "Design 6 simple illustrations to be randomly assigned to new blog posts.\n\nhttps://www.figma.com/design/D2G34TZA8Ze29uKROwG0iK?node-id=341-6983#1714417780\n\nRequirements:\n    DualBird brand language (based on site + attached references)\n    Keep visuals clean and not overly complex\n    Use core elements (pipes, balls, clouds, etc.)\nConcept directions:\n    Clouds composition\n    Close-up of ball inside pipe\n    Mountains composition\n    Pipes in different directions with balls\n    +2 additional variations in the same style\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572055\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572057\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572059\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572061\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572063\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1214025760572065\n\n\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214025760572050"
+  },
+  {
+    "gid": "1214025760572068",
+    "assignee": {
+      "gid": "1213352178360044"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-13T08:08:40.285Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Technology Page",
+    "notes": "https://docs.google.com/document/d/13NQovJ2JjIiCBFk8esAh4Beox47q5wQfqhG9zDVA2cg/edit?tab=t.0#heading=h.p0kf6cy7k33\n\n\n\nHERO\n\nA data acceleration engine for the AI era\n\nAI runs on GPUs. Networks run on purpose-built silicon. Storage has ASICs. And data processing - the workload that feeds it all - has been running on general-purpose CPUs. Until now.\n\nDualBird introduces custom, hardware and software co-designed and purpose-built for data processing, and delivers it as a simple Spark plugin on AWS F2 instances. \n\nNo new infrastructure. No code changes. Just a fundamental shift in what's possible.\n\n[See how it works]\n\n\n—-\n\n\n\nTHE PROBLEM\n\nTo keep pace with AI, data processing needs a revolution\n\nYour AI model is only as good as the data foundation it runs on.\n\nAI has GPUs, but right now, most data pipelines rely on hardware that wasn't built for data. \n\nThe only path to the speed and cost efficiency that modern AI workloads demand is hardware-level, domain-specific acceleration.\n\n\n—-\n\n\n\nOUR TECHNOLOGY\n\nThe DualBird Approach: Hardware and Software co-designed \n\nDualBird bridges the engineering divide, bringing hardware and software minds together in order to outperform general-purpose CPU pipelines and shatter the software optimization ceiling.\n\nThe result is what we wanted from the beginning: something powerful enough to fundamentally change the performance and cost trajectory of data processing workloads, and simple enough to deploy that the barrier is deciding to try it, not procuring or integrating it.\n\n\n\n—-\n\n\n\nDEPLOYMENT\n\nBuilt to seamlessly fit into your stack\n\nAccelerate data processing with zero code changes and zero migration effort. DualBird integrates directly into Apache Spark and your existing Spark pipelines.\n\n    No on-premises hardware.\n    No rack space, no procurement conversation, no infrastructure changes.\n    Your team switches to F2 instances the way they'd switch any instance type.\nYour application is untouched. Your pipelines are untouched. Your speed is 10x - 30X.\n\n\n—-\n\n\n\nBENCHMARKS STRIP\n\nNumbers that speak for themselves.\n\n\n\nSounds too good to be true?\n\nOur Results: 100GB Sort-Based Iceberg Compaction\n\n15–20× single task performance improvement vs. high-end C++ columnar engine\n55–85% lower EC2 cost\n~$2/TB stable processing cost across the full operating range\n\n[See for yourself]\n\n\n\n—-\n\n\n\nBENEFITS\n\nWhen hardware and Spark hum together\n\nWhat do structural gains from customized hardware look like?\n\nShuffle\nDualBird spins up F2 instances, each containing NVMe devices capable of storing shuffle data, therefore generating 3–5× less shuffle data and eliminating EBS cost.\n\nParquet Decoding\nDualBird implements Parquet decoding as a native hardware function, running at the throughput the silicon can sustain.\n\nSpark Tuning — Eliminated\nThe majority of Spark performance knobs become obsolete, providing predictable out-of-the-box performance\n\n\nBENEFITS CALL-OUT STRIP\n\n\n\nWhat could you do with 10x your current workload speeds?\nSee where your most hardware-intensive operations would benefit most from a dramatic offload.\nBook a Demo ––>\n\n\n\n\nCLOSING CTA\n\nPurpose-built hardware for data processing\nData processing is the largest compute domain that has no custom hardware acceleration. The same shift that GPUs brought to AI is now available for data infrastructure. \n\nDualBird brings hardware-level acceleration to Spark workloads, without asking you to change a line of code or a single component of your stack.\n\n[Talk to our team to start a POC]\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214025760572068"
+  },
+  {
+    "gid": "1214025760572070",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-13T08:11:40.680Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Demo Page",
+    "notes": "https://docs.google.com/document/d/13NQovJ2JjIiCBFk8esAh4Beox47q5wQfqhG9zDVA2cg/edit?tab=t.0\n\n\n\nHERO\n\nGet a demo of DualBird\n\n\nTransform your data infrastructure performance with a few clicks.\nZero effort, incredible results.\n\nButton: BOOK A DEMO\n\n\n\n—-\n\n\n\nBENEFITS\n\nGPUs brought the AI revolution. DualBird hardware-based acceleration takes big data to the next level.\n\n\n10x-30x end-to-end performance\nImprovement\n\n50%-90% overall cost reduction\n\n\nEliminates manual Spark tuning and per-workload configuration. The majority of Spark performance knobs become obsolete, providing predictable out-of-the-box performance\nNo disk spills during Spark operator execution - shuffle data is handled explicitly and predictably\n3–5× less shuffle data, written to local NVMe. No EBS costs\n\n\nInvariant performance and cost, performance is agnostic to data properties CPU-based systems are sensitive to, such as data skews, high cardinality, etc.\nNo job failures under memory pressure and scale. No OOM exceptions.\n\nFree your team to do meaningful work. Focus on finding insights in your data.See how it works\n\nButton: SCHEDULE A DEMO\n\n\nContact Information\nhttps://www.linkedin.com/company/dualbird\noffice@dualbird.io",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214025760572070"
+  },
+  {
+    "gid": "1214031368046424",
+    "assignee": {
+      "gid": "1213991315479067"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-13T08:12:33.385Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "\n\nAbout / Vision page\n",
+    "notes": "1\n\n\nHERO\n\nAbout\n\nBuilding the new standard in data processing and AI infrastructure\n\n\nDualBird was founded by experts in hardware design and distributed data systems — two disciplines that rarely meet, but needed to join forces to solve this problem:\n\nData processing is the largest compute domain with no purpose-built hardware acceleration. \n\n    AI has GPUs.\n    Network processing has purpose-built silicon.\n    But the ETL pipelines, feature engineering workflows, and Spark jobs that power every serious data organization? They still run on general-purpose CPUs. \nThe result is a widening gap between data volume growth and computational capacity — a gap that software optimization alone cannot close.\n\n\n—-\n\n\n\nVISION\n\nThe hardware gap in data processing. Closed.\n\n\nOur acceleration engine uses custom hardware, FPGAs configured specifically for data processing, running inside standard AWS cloud instances. \n\nNo on-premises hardware. No infrastructure changes. No code changes. Just hardware-level performance, delivered through a Spark plugin.\n\nThe same shift GPUs brought to AI, DualBird brings to data.\n\n\n—-\n\n\n\nINVESTOR STRIP\n\nBacked by world-class investors:\n[INVESTOR LOGOS]\n\n\n—-\n\n\n\n\nLeadership\n\nLed by industry veterans\n\nGilad Tal — Co-Founder & CTO\nAmir Gilad — Co-Founder & CEO\nOhad Gamliel — Co-Founder & Chief Engineer\nEhud Eliaz — Co-Founder & Chief Hardware Architect\nDana Rosenfarb — VP of Product, Data & AI\nSabrina Fradkin — VP of Operations\nEyal Lavee — Chief Software Architect\nDror Brill — Chief Scientist\n\n\n—-\n\n\n\nHIRING STRIP\n\nSounds exciting? We're hiring.\nWe're looking for talented, passionate people to join our journey.\n\n[See open positions →]\n\n\n—-\n\n\n\nCLOSING CTA\n\nTransform your data infrastructure — in minutes\n\nDualBird delivers 10–30× faster Spark performance and up to 90% lower infrastructure costs, without touching your pipelines, rewriting code, or replacing anything in your stack. Install the plugin. Switch to an AWS F2 instance. See results.\n\n[Get started →]",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214031368046424"
+  },
+  {
+    "gid": "1214067340317941",
+    "assignee": {
+      "gid": "1213133403131729"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-15T14:03:14.147Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Product page",
+    "notes": "https://www.figma.com/design/D2G34TZA8Ze29uKROwG0iK/Website-For-Client?node-id=251-6057&t=6EdQeR1HGb2uhi6U-11",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214067340317941"
+  },
+  {
+    "gid": "1214280774238115",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-26T14:30:39.502Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Animations",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214280774238115"
+  },
+  {
+    "gid": "1214972629972681",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-05-20T14:46:28.700Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "QA",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214972629972681"
+  },
+  {
+    "gid": "1215892846444516",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-06-21T06:47:09.932Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211369882455089",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "careers dev",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1215892846444516"
+  },
+  {
+    "gid": "1212828218090648",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:32:47.946Z",
+    "created_at": "2026-01-15T15:06:47.327Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Customer slides",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212828218090648"
+  },
+  {
+    "gid": "1213260142932066",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-07-02T18:32:45.111Z",
+    "created_at": "2026-02-15T07:00:28.831Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Email Signature",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213260142932066"
+  },
+  {
+    "gid": "1213430632817443",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-28T07:51:23.774Z",
+    "created_at": "2026-02-26T07:25:22.758Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1213430632817443"
+  },
+  {
+    "gid": "1212556604637132",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-01-01T07:04:59.481Z",
+    "created_at": "2025-12-22T11:55:57.881Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "New Year card",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212556604637132"
+  },
+  {
+    "gid": "1214329581279813",
+    "assignee": {
+      "gid": "1213352178360044"
+    },
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:04.680Z",
+    "created_at": "2026-04-28T07:36:01.104Z",
+    "due_on": "2026-04-29",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Board Meeting Deck Merch 2026",
+    "notes": "The most important thing is that it's designed in a way that we can keep editing it after:\n    Standard fonts that don’t go crazy when we try to edit them\n    The background shouldn’t be a selectable photo, it should be a background\n    \nThere are just minor tweaks needed. You can take a look and see for yourself what needs improvement, but I would say specifically slides 12-16",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1214329581279813"
+  },
+  {
+    "gid": "1216029635490203",
+    "assignee": {
+      "gid": "1213991315479067"
+    },
+    "completed": true,
+    "completed_at": "2026-07-02T18:33:00.281Z",
+    "created_at": "2026-06-25T10:00:33.901Z",
+    "due_on": null,
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Casestudy pdf template",
+    "notes": "Gilad and I are working on building case-studies for DualBird, and wanted your help in creating a template we can use - we want it to be something that we can put text and graphs inside, and that we can save as a pdf afterwards to send to others.\nIt should look similar in structure to these examples:\nhttps://www.arista.com/assets/data/pdf/CaseStudies/Case-Study-DeNa.pdf\nhttps://cdn.featuredcustomers.com/CustomerCaseStudy.document/NCSA_and_VAST_Data_Customer_Story.pdf\n\nI'm also attaching an example case study we wrote so you can understand the structure we have right now (it changes a bit based on the case study but is roughly the same).  \nLet me know if you have any questions.\n\n",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1216029635490203"
+  },
+  {
+    "gid": "1211766799339303",
+    "assignee": {
+      "gid": "1202732458183440"
+    },
+    "completed": true,
+    "completed_at": "2025-12-04T07:04:10.681Z",
+    "created_at": "2025-10-28T08:53:31.256Z",
+    "due_on": "2025-11-20",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Reinvent Video Loop",
+    "notes": "Summary  \nDualbird requests an animated video loop titled “Reinvent Video Loop” to be displayed on a TV screen in their booth. The loop’s purpose, content and creative direction are detailed in the attached brief and are aimed at engaging data engineers.\n\nTask Description  \n• Task Name: Reinvent Video Loop  \n• Format: Digital (animated)  \n• Display Venue: TV screen on booth  \n• Target Audience: Data engineers  \n• Due Date: 2025-11-20  \n• Budget: Not specified (hours)  \n\nFiles  \n• Video loop at reinvent.docx – https://storage.tally.so/private/Video-loop-at-reinvent.docx?id=DX104Z&accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IkRYMTA0WiIsImZvcm1JZCI6Im1KeGx5eiIsImlhdCI6MTc2MTY0MTU5OH0.rO9W0KvyAqv6kQ9uT40Dn2YqGtsTTWYqhRtKjQHJPms&signature=a1c0e927fe254e073f64c6152963b47996e592e08030b6f02ae6d66fbfd24f5d  ",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1211766799339303"
+  },
+  {
+    "gid": "1212002024764104",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-04T07:04:08.746Z",
+    "created_at": "2025-11-20T13:58:48.570Z",
+    "due_on": "2025-11-25",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "AWS re:invent post",
+    "notes": "we would love to create a post on our company's LinkedIn showing that we're going to re:invent. Here is an example:\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1212002024764117\n\n\nThe text inside would be:\nDualBird is heading to re:Invent\nCome meet us → Booth #161",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212002024764104"
+  },
+  {
+    "gid": "1212056121759874",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-04T07:04:10.245Z",
+    "created_at": "2025-11-23T14:44:09.445Z",
+    "due_on": "2025-11-27",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764119",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "AWS re:invent demo",
+    "notes": "",
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210377747218810/task/1212056121759874"
+  }
+]

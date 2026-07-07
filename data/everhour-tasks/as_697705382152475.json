@@ -1,0 +1,283 @@
+[
+  {
+    "id": "as:697767621750945",
+    "name": "Branding:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/697767621750945/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-06-05 07:13:06",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:697767621750946",
+    "name": "Logo (30 Hours from client) - 31.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/697767621750946/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-06-05 07:13:29",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:697767621750947",
+    "name": "Presentation (50 Hours from client) - 66hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/697767621750947/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-06-05 07:13:58",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:726048387134157",
+    "name": "website - 5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/726048387134157/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-07-26 15:18:22",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:764246122209476",
+    "name": "ppt template (6 hours from client) - 3.75hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/764246122209476/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-01 14:58:53",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:764246122209479",
+    "name": "brand guide (4 hrs from client) - 4.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/764246122209479/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-01 14:59:55",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:768608584106639",
+    "name": "icon - 1 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/768608584106639/f",
+    "iteration": "Digital",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-05 14:49:39",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:768608584106640",
+    "name": "Digital:",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/768608584106640/f",
+    "iteration": "Digital",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-05 14:49:31",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:778802933926640",
+    "name": "business card 3hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/778802933926640/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-14 07:58:54",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:791317245266040",
+    "name": "Signature 0.75hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/791317245266040/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-08-23 06:05:08",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:824051700510593",
+    "name": "Facade inspection - 2.5",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/824051700510593/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-01-28 15:53:39",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:859016410997363",
+    "name": "Door Sticker - 0.75 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/859016410997363/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-10-10 14:42:03",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:859016410997380",
+    "name": "Booth Desig n - 6.75hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/859016410997380/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-10-10 14:42:18",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:867812919980620",
+    "name": "business card - 0.75 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/867812919980620/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-10-16 14:28:44",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:880049897707034",
+    "name": "Extra slide for ppt (booth design) - 0.75hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/880049897707034/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2018-10-24 11:57:16",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:964516918221952",
+    "name": "few slides- 3hrs\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/697705382152475/964516918221952/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-01-07 08:34:14",
+    "labels": [],
+    "completed": true
+  },
+  {
+    "id": "as:998545555411540",
+    "name": "Inspection tool - (76h from client) - 75.5",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/998545555411540/f",
+    "iteration": "Digital",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-01-20 12:46:27",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1108646357564481",
+    "name": "Management pics (ppt) - 1.25h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/1108646357564481/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-02-07 15:27:37",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1109220406385203",
+    "name": " New slides uplift - 16.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/1109220406385203/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-02-12 13:44:46",
+    "dueOn": "2019-02-13",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1110749702842220",
+    "name": "One pager - 0.5h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/697705382152475/1110749702842220/f",
+    "iteration": "Branding",
+    "projects": [
+      "as:697705382152475"
+    ],
+    "createdAt": "2019-02-21 08:14:26",
+    "labels": [],
+    "completed": false
+  }
+]

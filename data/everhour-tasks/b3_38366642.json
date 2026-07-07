@@ -1,0 +1,409 @@
+[
+  {
+    "id": "b3:7620361146",
+    "name": "Kickoffs and Heartbeats",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361146",
+    "iteration": "Episode Ideas",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-06-28 12:24:49",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361150",
+    "name": "The Myth of the Overnight Sensation",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361150",
+    "iteration": "Episode Ideas",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-06-28 14:11:49",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361155",
+    "name": "How to say you’re sorry",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361155",
+    "iteration": "Scheduled",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-06-28 15:05:49",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361168",
+    "name": "Calendar Tetris",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361168",
+    "iteration": "Scheduled",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-06-28 15:21:49",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361202",
+    "name": "Building a new product",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361202",
+    "iteration": "Editing",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-16 09:57:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361217",
+    "name": "ASAP is a poison",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361217",
+    "iteration": "Approved",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-17 09:16:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361251",
+    "name": "Audience Questions",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361251",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-17 10:06:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:01:53"
+  },
+  {
+    "id": "b3:7620361264",
+    "name": "Two-person Teams",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361264",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-17 10:56:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:01:53"
+  },
+  {
+    "id": "b3:7620361270",
+    "name": "Taking a sabbatical as a business owner",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361270",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-17 10:58:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:01:53"
+  },
+  {
+    "id": "b3:7620361283",
+    "name": "Leaving the cloud",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361283",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-17 11:47:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:01:53"
+  },
+  {
+    "id": "b3:7620361295",
+    "name": "Make tiny decisions",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361295",
+    "iteration": "Done",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-06-28 08:43:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:01:54"
+  },
+  {
+    "id": "b3:7620361331",
+    "name": "Advice Expires",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361331",
+    "iteration": "Not now",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-14 11:32:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361340",
+    "name": "The Virtual Watercooler",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/card_tables/cards/7620361340",
+    "iteration": "Not now",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-14 12:21:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361545",
+    "name": "Edit",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361545",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 13:11:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361549",
+    "name": "Title/description/tags/show notes",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361549",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 13:52:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361561",
+    "name": "Upload",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361561",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 14:22:00",
+    "dueOn": "2024-07-21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361566",
+    "name": "Newsletter",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361566",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 14:50:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361571",
+    "name": "Blog post",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361571",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 15:47:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361576",
+    "name": "Record",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361576",
+    "iteration": "Two-Person Teams: Listener Questions",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 16:11:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-15 08:42:00"
+  },
+  {
+    "id": "b3:7620361588",
+    "name": "Signup page",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361588",
+    "iteration": "Newsletter updates",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 17:33:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361596",
+    "name": "Inspiration section",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361596",
+    "iteration": "Newsletter updates",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 18:29:00",
+    "dueOn": "2024-07-17",
+    "startOn": "2024-07-16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-18 11:22:37"
+  },
+  {
+    "id": "b3:7620361601",
+    "name": "Link to REWORK homepage",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361601",
+    "iteration": "Newsletter updates",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 19:19:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620361606",
+    "name": "Unique subject lines",
+    "type": "task",
+    "status": "closed",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620361606",
+    "iteration": "Newsletter updates",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-15 19:54:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2024-07-15 14:02:00"
+  },
+  {
+    "id": "b3:7620413680",
+    "name": "1",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620413680",
+    "iteration": "Shnitz",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-18 11:23:22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620413727",
+    "name": "2",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620413727",
+    "iteration": "Shnitz",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-18 11:23:23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620413754",
+    "name": "3",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620413754",
+    "iteration": "Shnitz",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-18 11:23:23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "b3:7620414831",
+    "name": "123",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620414831",
+    "iteration": "Shnitz",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-18 11:23:51",
+    "labels": [
+      "A"
+    ],
+    "completed": false
+  },
+  {
+    "id": "b3:7620415149",
+    "name": "123",
+    "type": "task",
+    "status": "open",
+    "url": "https://3.basecamp.com/5824892/buckets/38366642/todos/7620415149",
+    "iteration": "Shnitz",
+    "projects": [
+      "b3:38366642"
+    ],
+    "createdAt": "2024-07-18 11:23:58",
+    "labels": [
+      "B"
+    ],
+    "completed": false
+  }
+]

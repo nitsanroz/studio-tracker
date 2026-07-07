@@ -1,0 +1,1372 @@
+[
+  {
+    "id": "as:134001311868199",
+    "name": "סקיצה לאתר",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/134001311868199/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-05-17 09:24:56",
+    "dueOn": "2016-07-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-07-07 15:55:25",
+    "assignees": [
+      {
+        "accountId": "as:150566600404825",
+        "accountName": "yam sasson"
+      }
+    ]
+  },
+  {
+    "id": "as:134001311868202",
+    "name": "עדכון תפריט",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/134001311868202/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-05-17 09:25:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-05-19 10:15:34",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:135156798197460",
+    "name": "דף בבניה",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/135156798197460/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-05-19 10:31:32",
+    "dueOn": "2016-05-31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-06-01 10:20:55",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:135156798197461",
+    "name": "גיף מיתוג",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/135156798197461/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-05-19 10:31:50",
+    "dueOn": "2016-05-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-06-01 10:20:57",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:135156798197462",
+    "name": "פיסבוק",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/135156798197462/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-05-19 10:31:59",
+    "dueOn": "2016-05-22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-05-31 05:46:46",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:140693195391904",
+    "name": "כרטיס ביקור",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/140693195391904/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-06-05 10:29:05",
+    "dueOn": "2016-06-15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-07-12 08:55:38",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:143284955519727",
+    "name": "תפריט באנגלית",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/143284955519727/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-06-12 17:11:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-06-22 11:26:33",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:143284955519729",
+    "name": "שלט חוץ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/143284955519729/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-06-12 17:11:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-12-19 14:30:27"
+  },
+  {
+    "id": "as:148325733571729",
+    "name": "פורמטים ללקוח",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/148325733571729/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-06-26 10:39:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2016-07-03 08:18:23"
+  },
+  {
+    "id": "as:151325408575403",
+    "name": "wix site barbahar",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/151325408575403/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-07-05 08:08:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-24 12:18:06",
+    "assignees": [
+      {
+        "accountId": "as:150566600404825",
+        "accountName": "yam sasson"
+      }
+    ]
+  },
+  {
+    "id": "as:235594610389218",
+    "name": "menu 2017- 3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/235594610389218/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2016-12-26 10:22:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-21 09:42:06"
+  },
+  {
+    "id": "as:237010907991800",
+    "name": "תפריט באנגלית 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/237010907991800/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-01-03 19:44:04",
+    "dueOn": "2017-01-09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:37",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:237010907991805",
+    "name": "עיצוב שובר מתנה - 4.5 ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/237010907991805/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-01-03 19:44:44",
+    "dueOn": "2017-01-26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:39"
+  },
+  {
+    "id": "as:266627813635858",
+    "name": "תפריט קבוצות - 5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/266627813635858/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-02-08 13:22:14",
+    "dueOn": "2017-02-15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:44",
+    "assignees": [
+      {
+        "accountId": "as:145662516681025",
+        "accountName": "hili noy"
+      }
+    ]
+  },
+  {
+    "id": "as:276251835446463",
+    "name": "סהכ פברואר לתשלום - 16",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/276251835446463/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-02-20 14:31:20",
+    "dueOn": "2017-02-27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-02-22 15:04:48",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:276887833929008",
+    "name": "חותמת - 2",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/276887833929008/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-02-21 12:20:54",
+    "dueOn": "2017-02-28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-03-07 09:13:02",
+    "assignees": [
+      {
+        "accountId": "as:236654760579028",
+        "accountName": "avital"
+      }
+    ]
+  },
+  {
+    "id": "as:303306896132115",
+    "name": "תפריט פסח- 3.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/303306896132115/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-03-27 08:10:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-05-01 09:02:24",
+    "assignees": [
+      {
+        "accountId": "as:145662516681025",
+        "accountName": "hili noy"
+      }
+    ]
+  },
+  {
+    "id": "as:360062618641557",
+    "name": "wanted - 6.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/360062618641557/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-06-08 13:11:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-30 12:23:41"
+  },
+  {
+    "id": "as:376488272568285",
+    "name": "אלון - 4 שעות תיקוני תפריט",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/376488272568285/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-06-30 11:45:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-06-30 12:24:42"
+  },
+  {
+    "id": "as:391750318493712",
+    "name": "B&w sign",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/391750318493712/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-09-06 07:19:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-11-19 12:10:17"
+  },
+  {
+    "id": "as:391750318493735",
+    "name": "Newspaper ad",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/391750318493735/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-10-17 15:01:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-11-19 12:10:04"
+  },
+  {
+    "id": "as:415770617540612",
+    "name": "menu - 12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/415770617540612/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-08-27 14:47:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-26 08:21:53",
+    "assignees": [
+      {
+        "accountId": "as:546809213301775",
+        "accountName": "adi"
+      }
+    ]
+  },
+  {
+    "id": "as:454138393605085",
+    "name": "poster- pizza- 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/454138393605085/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-10-16 14:36:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-11-19 12:10:13"
+  },
+  {
+    "id": "as:483109486570898",
+    "name": "לתרגם תפריט באנגלית",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/483109486570898/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2017-11-19 12:14:49",
+    "dueOn": "2017-11-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-11-23 08:40:59",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:486945454096149",
+    "name": "delivery- 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/486945454096149/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-01-10 15:37:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-24 12:18:25",
+    "assignees": [
+      {
+        "accountId": "as:145662516681025",
+        "accountName": "hili noy"
+      }
+    ]
+  },
+  {
+    "id": "as:597849554933670",
+    "name": "English Menu - 7.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/597849554933670/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-03-19 10:41:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 09:12:55",
+    "assignees": [
+      {
+        "accountId": "as:546809213301775",
+        "accountName": "adi"
+      }
+    ]
+  },
+  {
+    "id": "as:606879612327229",
+    "name": "Pesach Menu - 3.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/606879612327229/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-03-25 06:12:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 09:12:53",
+    "assignees": [
+      {
+        "accountId": "as:604474330000347",
+        "accountName": "ruth"
+      }
+    ]
+  },
+  {
+    "id": "as:609362758927785",
+    "name": "shimshiya - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/609362758927785/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-03-27 08:52:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 09:12:56"
+  },
+  {
+    "id": "as:609362758927786",
+    "name": "Summer menu poster- 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/609362758927786/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-06-04 12:08:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 13:57:10",
+    "assignees": [
+      {
+        "accountId": "as:145662516681025",
+        "accountName": "hili noy"
+      }
+    ]
+  },
+  {
+    "id": "as:713115449494065",
+    "name": "Newspaper Ad#2 -2.5hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/713115449494065/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-06-17 11:51:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 13:57:12",
+    "assignees": [
+      {
+        "accountId": "as:546809213301775",
+        "accountName": "adi"
+      }
+    ]
+  },
+  {
+    "id": "as:720833970800152",
+    "name": "Summer menu 24.6 - 5.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/720833970800152/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-06-24 14:50:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-10 13:48:19",
+    "assignees": [
+      {
+        "accountId": "as:546809213301775",
+        "accountName": "adi"
+      }
+    ]
+  },
+  {
+    "id": "as:722787088253150",
+    "name": "menu tabun illustration- 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/722787088253150/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-06-26 05:26:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 13:57:08"
+  },
+  {
+    "id": "as:732391215238404",
+    "name": "English menu 4/7 6.75hrs.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/732391215238404/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-07-04 09:31:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-10 13:48:23",
+    "assignees": [
+      {
+        "accountId": "as:546809213301775",
+        "accountName": "adi"
+      }
+    ]
+  },
+  {
+    "id": "as:921442673255173",
+    "name": "Winter menu - ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/921442673255173/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-11-25 15:33:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-25 15:33:33"
+  },
+  {
+    "id": "as:921442673255174",
+    "name": "Winter menu - 5 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/921442673255174/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-11-25 15:33:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-19 09:09:57",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:921442673255175",
+    "name": "English winter menu - 3.75 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/921442673255175/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-12-02 15:58:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-19 09:09:59",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:955823371619149",
+    "name": " Delivery menu - 7.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/955823371619149/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2018-12-26 15:05:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-29 13:38:33"
+  },
+  {
+    "id": "as:1116569290389589",
+    "name": "Pesach Menu 2019 - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1116569290389589/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-03-31 07:57:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 09:44:23"
+  },
+  {
+    "id": "as:1116569290389590",
+    "name": "Main menu changes - 0.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1116569290389590/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-03-31 07:58:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 09:44:23"
+  },
+  {
+    "id": "as:1116569290389592",
+    "name": "Take away cups - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1116569290389592/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-03-31 07:58:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 09:44:26"
+  },
+  {
+    "id": "as:1120735010121857",
+    "name": "Take away menu update - 1.25h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1120735010121857/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-05-01 14:15:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-15 14:38:31"
+  },
+  {
+    "id": "as:1124796965691262",
+    "name": "Menu update - 11.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1124796965691262/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-05-28 12:24:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-28 13:20:34",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1131200796714381",
+    "name": "Group Menu - 4 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1131200796714381/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-07-15 14:38:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-01 08:59:27"
+  },
+  {
+    "id": "as:1137356279609912",
+    "name": "facebook ad - 4.25 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1137356279609912/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-08-27 15:23:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-01 09:04:00",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1138388399083332",
+    "name": "English menu update - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1138388399083332/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-09-04 14:31:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-19 10:00:23"
+  },
+  {
+    "id": "as:1138963090744617",
+    "name": "Dessert menu - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1138963090744617/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2019-09-09 07:51:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-19 10:00:24"
+  },
+  {
+    "id": "as:1155712075081154",
+    "name": "Cocktail napkin -1.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1155712075081154/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-01-06 15:17:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-14 07:43:56",
+    "assignees": [
+      {
+        "accountId": "as:604474330000347",
+        "accountName": "ruth"
+      }
+    ]
+  },
+  {
+    "id": "as:1156973988126337",
+    "name": "Wanted GIF - 1h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1156973988126337/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-01-14 07:09:58",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-28 13:20:36",
+    "assignees": [
+      {
+        "accountId": "as:604474330000347",
+        "accountName": "ruth"
+      }
+    ]
+  },
+  {
+    "id": "as:1156977634932131",
+    "name": "Print Products - 6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1156977634932131/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-01-14 07:41:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-28 13:20:37"
+  },
+  {
+    "id": "as:1177300444378851",
+    "name": "Digital order screen assets - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1177300444378851/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-05-25 14:27:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-06-29 08:18:51",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1181298769674961",
+    "name": "menu June 2020 - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1181298769674961/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-06-21 14:42:58",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-02 10:28:18",
+    "assignees": [
+      {
+        "accountId": "as:1180246167868206",
+        "accountName": "Noa Livneh"
+      }
+    ]
+  },
+  {
+    "id": "as:1187130829863591",
+    "name": "3 icons - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1187130829863591/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2020-08-02 11:22:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-31 09:48:01",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1199880073951479",
+    "name": "מדבקות למוצרים בצנצנות או קופסאות פלסטיק - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1199880073951479/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2021-02-01 09:47:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-07-01 12:35:14",
+    "assignees": [
+      {
+        "accountId": "as:1198712794161844",
+        "accountName": "Inbal Kim Doron"
+      }
+    ]
+  },
+  {
+    "id": "as:1199880073951481",
+    "name": "מדבקה למרכז/ צד קרטון מארז פיקניק -7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1199880073951481/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2021-02-01 09:48:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-07-01 12:35:13",
+    "assignees": [
+      {
+        "accountId": "as:1198712794161844",
+        "accountName": "Inbal Kim Doron"
+      }
+    ]
+  },
+  {
+    "id": "as:1199880073951483",
+    "name": "שלטים תלויים במסעדה להזמנה אונליין ואיסוף - 1.25H",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1199880073951483/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2021-02-01 09:48:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-07-01 12:35:12",
+    "assignees": [
+      {
+        "accountId": "as:1198712794161844",
+        "accountName": "Inbal Kim Doron"
+      }
+    ]
+  },
+  {
+    "id": "as:1199975626127679",
+    "name": "Gift card - 2.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1199975626127679/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2021-02-23 15:40:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-07-01 12:35:11",
+    "assignees": [
+      {
+        "accountId": "as:1198712794161844",
+        "accountName": "Inbal Kim Doron"
+      }
+    ]
+  },
+  {
+    "id": "as:1200547040235027",
+    "name": "פלייר עם קוד QR - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1200547040235027/f",
+    "iteration": "Picnic box",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2021-07-01 12:35:24",
+    "dueOn": "2021-07-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-07-29 14:22:00",
+    "assignees": [
+      {
+        "accountId": "as:1200275224822462",
+        "accountName": "Oksana Michalski"
+      }
+    ]
+  },
+  {
+    "id": "as:1201837705154518",
+    "name": "Pantone color for a napkin - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1201837705154518/f",
+    "iteration": "New",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2022-02-17 15:57:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:13:38"
+  },
+  {
+    "id": "as:1202340086723344",
+    "name": "Barcode sign - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1202340086723344/f",
+    "iteration": "New",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2022-05-26 06:14:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:03:20"
+  },
+  {
+    "id": "as:1202644998580183",
+    "name": "QR code update - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1202644998580183/f",
+    "iteration": "New",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2022-07-21 13:41:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:03:21",
+    "assignees": [
+      {
+        "accountId": "as:1202468410184996",
+        "accountName": "Julia Tolsteliov",
+        "userId": 1219083
+      }
+    ]
+  },
+  {
+    "id": "as:1203595272982449",
+    "name": "Kiosk Graphics",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/134001311868198/1203595272982449/f",
+    "iteration": "New",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2022-12-21 15:24:17",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1219111": 10800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1203574522969839",
+        "accountName": "Maxim Kurkin",
+        "userId": 1219111
+      }
+    ]
+  },
+  {
+    "id": "as:1205216977998409",
+    "name": "Wanted post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1205216977998409/f",
+    "iteration": "New",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2023-08-06 10:04:52",
+    "dueOn": "2023-08-06",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1256469": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-11-16 09:18:48",
+    "assignees": [
+      {
+        "accountId": "as:1204455081671325",
+        "accountName": "Neta Tal",
+        "userId": 1256469
+      }
+    ]
+  },
+  {
+    "id": "as:1206358889246113",
+    "name": "Transparent cup",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1206358889246113/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2024-01-17 08:03:23",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1310120": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:44"
+  },
+  {
+    "id": "as:1206965591328721",
+    "name": "Wanted post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1206965591328721/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2024-03-31 08:16:00",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1217417": 2700,
+        "1219083": 4500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-26 07:31:45",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1208099093035187",
+    "name": "QR code plaque",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/134001311868198/1208099093035187/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2024-08-22 08:00:05",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1310120": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-08-28 12:42:38"
+  },
+  {
+    "id": "as:1212877815537166",
+    "name": "New Icons",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/134001311868198/1212877815537166/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2026-01-20 15:17:57",
+    "labels": [],
+    "time": {
+      "total": 28800,
+      "users": {
+        "1407470": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1212877815537168",
+    "name": "New Sign - Yad Kennedi",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/134001311868198/1212877815537168/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2026-01-20 15:18:08",
+    "labels": [],
+    "time": {
+      "total": 16200,
+      "users": {
+        "1407470": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1212877815537174",
+    "name": "Wanted post",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/134001311868198/1212877815537174/f",
+    "iteration": "2026",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2026-01-20 15:18:39",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1407470": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212957655832327",
+    "name": "BarBahar Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/134001311868198/1212957655832327/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:134001311868198"
+    ],
+    "createdAt": "2026-01-25 15:07:11",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 12600,
+      "users": {
+        "1407470": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

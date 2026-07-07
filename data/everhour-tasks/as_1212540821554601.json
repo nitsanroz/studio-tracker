@@ -1,0 +1,29 @@
+[
+  {
+    "id": "as:1212540821554607",
+    "name": "Let us be your Santa",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212540821554601/1212540821554607/f",
+    "iteration": "Employer Branding Videos",
+    "projects": [
+      "as:1212540821554601"
+    ],
+    "createdAt": "2025-12-21 09:28:58",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 50400
+    },
+    "time": {
+      "total": 50400,
+      "users": {
+        "1213760": 42300,
+        "1217417": 5400,
+        "1328069": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

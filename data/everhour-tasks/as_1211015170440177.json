@@ -1,0 +1,24 @@
+[
+  {
+    "id": "as:1211015170440180",
+    "name": "Spark by ICoN One-Pager",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1211015170440177/1211015170440180/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1211015170440177"
+    ],
+    "createdAt": "2025-08-10 10:32:26",
+    "dueOn": "2025-08-11",
+    "labels": [],
+    "time": {
+      "total": 18900,
+      "users": {
+        "1213760": 18900
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

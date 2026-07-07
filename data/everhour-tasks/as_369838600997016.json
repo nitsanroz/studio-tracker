@@ -1,0 +1,5379 @@
+[
+  {
+    "id": "as:369838600997017",
+    "name": "מצגת 7",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/369838600997017/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-06-21 12:45:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-07-04 13:23:38"
+  },
+  {
+    "id": "as:376488272568286",
+    "name": "ניוזלטר 9.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/376488272568286/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-06-30 11:46:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-07-04 13:23:37"
+  },
+  {
+    "id": "as:377785614143945",
+    "name": "איור 12",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/377785614143945/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-07-03 14:54:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-08-02 05:49:20"
+  },
+  {
+    "id": "as:383756005275401",
+    "name": "כיוון ללוגו למוצר של מובילאיי-6.5 שעות",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/383756005275401/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-07-12 14:01:11",
+    "dueOn": "2017-07-16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-08-02 05:49:21"
+  },
+  {
+    "id": "as:391750318493718",
+    "name": "Post images 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/391750318493718/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-09-19 14:55:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:34"
+  },
+  {
+    "id": "as:418813594134969",
+    "name": "board presentation to intel - friday-monday 1-3.9 - 28 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/418813594134969/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-09-03 14:47:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-09-13 14:09:39"
+  },
+  {
+    "id": "as:419055764455335",
+    "name": "חיפוש רפרנסים - פתיח וסגיר 2.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/419055764455335/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-08-31 06:18:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-10-15 09:47:28"
+  },
+  {
+    "id": "as:427342166763050",
+    "name": "תעודת מתקין - 5.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/427342166763050/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-09-12 14:12:11",
+    "dueOn": "2017-09-13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-10-15 09:47:30"
+  },
+  {
+    "id": "as:442160668560899",
+    "name": "landing page-13.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/442160668560899/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-01 12:38:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:36"
+  },
+  {
+    "id": "as:442160668560902",
+    "name": "אנימציית פתיח וסגיר -13",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/442160668560902/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-01 06:08:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2017-10-15 09:47:31"
+  },
+  {
+    "id": "as:442431710941892",
+    "name": "ad- 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/442431710941892/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-02 09:32:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:32"
+  },
+  {
+    "id": "as:443996063363980",
+    "name": "work template- 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/443996063363980/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-03 14:11:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:19"
+  },
+  {
+    "id": "as:457847066869053",
+    "name": "Roll Up - 6 HRS",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/457847066869053/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-19 15:14:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:11:10"
+  },
+  {
+    "id": "as:459574136730481",
+    "name": "מצגת מאסטר- 21 שעות",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/459574136730481/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-23 10:21:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:25"
+  },
+  {
+    "id": "as:459674792336020",
+    "name": "Corporate (Diane, Tzahi, Yael):",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/459674792336020/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-10-23 11:27:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-07 11:51:51"
+  },
+  {
+    "id": "as:477270564729223",
+    "name": "sales presentation to 3:4 - 4hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/477270564729223/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-11-13 10:38:40",
+    "dueOn": "2017-11-13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:11:14"
+  },
+  {
+    "id": "as:477272111964094",
+    "name": "bus image for london - 2hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/477272111964094/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-11-13 10:39:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:11:09"
+  },
+  {
+    "id": "as:494273153331350",
+    "name": "RSS video - 30.5h (in house)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/494273153331350/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-12-04 15:53:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:11:39"
+  },
+  {
+    "id": "as:510105021244273",
+    "name": "Studio: 2 hr.",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/510105021244273/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2017-12-25 07:20:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-02-04 10:32:32"
+  },
+  {
+    "id": "as:516231776543740",
+    "name": "Conference presentation - 24h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/516231776543740/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-01-08 15:28:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:03"
+  },
+  {
+    "id": "as:518262558902117",
+    "name": "Bus stickers for Singapore - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/518262558902117/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-01-09 15:33:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-30 09:13:47"
+  },
+  {
+    "id": "as:523480747949959",
+    "name": "TV Back drop Singapore - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/523480747949959/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-01-15 06:56:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-30 09:13:49"
+  },
+  {
+    "id": "as:533971545780561",
+    "name": "Chamber of Commerce presentation- 16h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/533971545780561/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-01-24 14:04:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-01-28 09:12:29"
+  },
+  {
+    "id": "as:539884437341288",
+    "name": "RSS Movie - Hebrew version- 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341288/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-01-30 09:13:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-17 09:55:48"
+  },
+  {
+    "id": "as:539884437341291",
+    "name": "Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341291/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "parentName": "RSS Movie - Hebrew version- 2h",
+    "parentId": "as:539884437341288",
+    "createdAt": "2018-01-30 09:16:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:58:56"
+  },
+  {
+    "id": "as:539884437341292",
+    "name": "Animation",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341292/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "parentName": "RSS Movie - Hebrew version- 2h",
+    "parentId": "as:539884437341288",
+    "createdAt": "2018-01-30 09:16:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:58:57"
+  },
+  {
+    "id": "as:539884437341293",
+    "name": "Sound",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341293/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "parentName": "RSS Movie - Hebrew version- 2h",
+    "parentId": "as:539884437341288",
+    "createdAt": "2018-01-30 09:17:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:58:57"
+  },
+  {
+    "id": "as:539884437341294",
+    "name": "Narration",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341294/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "parentName": "RSS Movie - Hebrew version- 2h",
+    "parentId": "as:539884437341288",
+    "createdAt": "2018-01-30 09:17:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:58:59"
+  },
+  {
+    "id": "as:539884437341295",
+    "name": "Subtitles",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/539884437341295/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "parentName": "RSS Movie - Hebrew version- 2h",
+    "parentId": "as:539884437341288",
+    "createdAt": "2018-01-30 09:17:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:59:00"
+  },
+  {
+    "id": "as:546803602446266",
+    "name": "Shield Distributors polish version - 5.5 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/546803602446266/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-02-04 10:31:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-02-25 13:38:45"
+  },
+  {
+    "id": "as:552455455192381",
+    "name": "Video Presentation - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/552455455192381/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-02-08 07:30:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-13 07:57:59"
+  },
+  {
+    "id": "as:553380838948615",
+    "name": "Video presentation#4 - 14h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/553380838948615/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-09 20:49:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-05-31 13:23:44"
+  },
+  {
+    "id": "as:590928213031687",
+    "name": "Design for employees event - 22.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/590928213031687/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-03-13 07:59:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 14:29:08"
+  },
+  {
+    "id": "as:590928213031688",
+    "name": "Icons- 16h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/590928213031688/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-03-13 09:13:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 14:29:10"
+  },
+  {
+    "id": "as:595065424284662",
+    "name": " Design for portable wall and table 14.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/595065424284662/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-03-15 13:51:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-03-28 14:13:57"
+  },
+  {
+    "id": "as:607124622832949",
+    "name": "Presentation Video #3",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/607124622832949/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-03-26 07:22:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-02 08:58:48"
+  },
+  {
+    "id": "as:623552162855099",
+    "name": "booth art work for Turkey 9 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/623552162855099/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-04-08 06:24:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-04-17 09:55:44"
+  },
+  {
+    "id": "as:644572259774521",
+    "name": "Brochures translation to Swedish - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/644572259774521/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-04-23 09:07:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-14 07:54:00"
+  },
+  {
+    "id": "as:667517390884015",
+    "name": "Roll up translation to Spanish - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/667517390884015/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-10 06:16:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 14:24:47"
+  },
+  {
+    "id": "as:667532358286822",
+    "name": "Brochure translation to Spanish - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/667532358286822/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-10 06:26:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-13 06:40:09"
+  },
+  {
+    "id": "as:667532358286824",
+    "name": "RSS & Shield+ Translation to Japanese & Korean",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/667532358286824/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-10 06:48:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 12:39:12"
+  },
+  {
+    "id": "as:670514404783371",
+    "name": "Brochure translation to Danish - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/670514404783371/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-14 09:23:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 14:24:48"
+  },
+  {
+    "id": "as:677666411928036",
+    "name": "facebook movie 17 may - 6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/677666411928036/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-17 16:04:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-05-31 13:23:45"
+  },
+  {
+    "id": "as:685109802341705",
+    "name": "Info graphic for social media - 8.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/685109802341705/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-24 14:13:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-28 14:29:06"
+  },
+  {
+    "id": "as:688906042671800",
+    "name": "Aftermarket Movie (Shoshana) - 34.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/688906042671800/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-05-29 07:10:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-22 14:13:54"
+  },
+  {
+    "id": "as:695421892259043",
+    "name": "Pop-up booth translation to Spanish 2.25hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/695421892259043/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-03 07:47:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 14:24:51"
+  },
+  {
+    "id": "as:699617725219446",
+    "name": "Spanish pop-up booth",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/699617725219446/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-06 12:06:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-06 12:07:41"
+  },
+  {
+    "id": "as:705042845017077",
+    "name": "Brochure translation to finnish - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/705042845017077/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-10 10:51:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-27 14:24:48"
+  },
+  {
+    "id": "as:707183318898879",
+    "name": "Intercity highway image (Shoshana) 17 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/707183318898879/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-12 14:25:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 13:24:20"
+  },
+  {
+    "id": "as:707183318898881",
+    "name": "Costa rica Mobileye week (Latin America Region PO) - 14.25 hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/707183318898881/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-12 14:30:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-28 13:54:06"
+  },
+  {
+    "id": "as:707183318898882",
+    "name": "RSS clip re-edit (Yael) - 15h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/707183318898882/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-12 14:58:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-28 14:28:59"
+  },
+  {
+    "id": "as:707183318898883",
+    "name": "Small videos blur edits (Tzahi) - 6hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/707183318898883/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-12 15:04:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-06-28 14:29:00"
+  },
+  {
+    "id": "as:720794833455943",
+    "name": "Testimonial Template - 3 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/720794833455943/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-24 12:45:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 13:24:18"
+  },
+  {
+    "id": "as:720991406940116",
+    "name": "Jobs website design (16 hours from client) - 16h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/720991406940116/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-06-25 06:53:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-25 06:58:47"
+  },
+  {
+    "id": "as:729004468344490",
+    "name": "Brochure translation to Greek - 13.25 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/729004468344490/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-02 11:09:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-31 09:11:31"
+  },
+  {
+    "id": "as:735667281688469",
+    "name": "Updated forward collision warning image -1.25hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/735667281688469/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-08 11:01:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 13:24:16"
+  },
+  {
+    "id": "as:735897056789351",
+    "name": "VIdeo text - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/735897056789351/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-09 10:08:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 12:45:14"
+  },
+  {
+    "id": "as:737801285025724",
+    "name": "Hiring post-5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/737801285025724/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-10 08:49:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 12:37:33"
+  },
+  {
+    "id": "as:737801285025726",
+    "name": "Shield+ image making project - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/737801285025726/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-10 08:52:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-07-29 13:24:07"
+  },
+  {
+    "id": "as:741099874136565",
+    "name": "Alert Overview changes 0.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/741099874136565/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-12 07:25:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-08-13 07:59:13"
+  },
+  {
+    "id": "as:752330412070960",
+    "name": "Brochure translation to French - 4.25 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/752330412070960/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-22 11:57:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-22 14:14:54"
+  },
+  {
+    "id": "as:752625381634869",
+    "name": "Shield+ Bus sticker - 1.25 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/752625381634869/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-23 08:02:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-08-13 09:09:00"
+  },
+  {
+    "id": "as:758089963051060",
+    "name": "Invitation to interview template  - 3 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/758089963051060/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-07-26 14:25:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-08-30 12:25:00"
+  },
+  {
+    "id": "as:773030315588533",
+    "name": "autnomous vehicle 3d object - 5h (Eidan)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/773030315588533/f",
+    "iteration": "FPA (Nati,Shalom,Tzvi)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-10-17 08:58:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-29 09:52:12"
+  },
+  {
+    "id": "as:773030315588534",
+    "name": "Digital team alert video (Daniealle) - 2.75hrs ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/773030315588534/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-08-08 14:50:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-08-30 12:24:53"
+  },
+  {
+    "id": "as:785801664192875",
+    "name": "Sheild+ Truck Movie - 5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/785801664192875/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-08-20 08:20:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-13 11:40:18"
+  },
+  {
+    "id": "as:800264392081774",
+    "name": "AV clip - 10.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/800264392081774/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-08-30 07:36:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-04 10:08:36"
+  },
+  {
+    "id": "as:800264392081784",
+    "name": "Camera Video for Digital - 5.25hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/800264392081784/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-08-30 12:25:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-04 10:08:32"
+  },
+  {
+    "id": "as:803556916527052",
+    "name": " influence comity ppt Presentation for Amnon - 2",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/803556916527052/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-09-02 14:39:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-10-22 14:14:07"
+  },
+  {
+    "id": "as:824051700510582",
+    "name": "Amnon video presentation 14.25 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/824051700510582/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-01-17 15:50:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 15:37:14"
+  },
+  {
+    "id": "as:824051700510899",
+    "name": "She codes Sticker - 1.5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/824051700510899/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-08-27 19:14:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-29 09:01:25"
+  },
+  {
+    "id": "as:850641586495228",
+    "name": "Ad for students - 6hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/850641586495228/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-10-04 10:09:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-29 10:04:26"
+  },
+  {
+    "id": "as:850641586495229",
+    "name": "HR images from Sheild+ movie - 52.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/850641586495229/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-10-04 10:09:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-31 14:58:41"
+  },
+  {
+    "id": "as:858802147467653",
+    "name": "Adding logo&details to brochure back page - 4 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/858802147467653/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-10-10 07:26:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-11 09:24:19"
+  },
+  {
+    "id": "as:859016410997360",
+    "name": "Baner Design for students - 1hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/859016410997360/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-10-10 09:28:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-29 09:55:54"
+  },
+  {
+    "id": "as:898060493373562",
+    "name": "8 animated GIFS (20 from client) - 32.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/898060493373562/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-06 14:58:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-31 14:59:21"
+  },
+  {
+    "id": "as:907962531134749",
+    "name": "urgent video clip task (Ayla)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134749/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:39:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-25 08:28:55"
+  },
+  {
+    "id": "as:907962531134750",
+    "name": "Homepage header video (40 from client) - 35.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134750/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:40:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-31 15:00:47"
+  },
+  {
+    "id": "as:907962531134751",
+    "name": "Images from Sheild+ movie",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134751/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:40:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-11-21 07:44:22"
+  },
+  {
+    "id": "as:907962531134752",
+    "name": "Shield+ Movie Japanese version (P) - 15h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134752/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:43:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 08:22:46"
+  },
+  {
+    "id": "as:907962531134753",
+    "name": "Shield+ Movie Korean version (P)  4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134753/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:43:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-22 06:17:24"
+  },
+  {
+    "id": "as:907962531134754",
+    "name": "Shield+ Movie German version - (24h budget) - 13.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134754/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:44:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-07 14:35:17"
+  },
+  {
+    "id": "as:907962531134755",
+    "name": "ME8 Spanish version - (24h budget) - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134755/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:46:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:16:18"
+  },
+  {
+    "id": "as:907962531134762",
+    "name": "Shield+ Movie LATAM version (P) -12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134762/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:51:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 06:10:12"
+  },
+  {
+    "id": "as:907962531134763",
+    "name": "Shield+ Movie Portuguese version (P) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134763/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:52:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-12 10:43:54"
+  },
+  {
+    "id": "as:907962531134766",
+    "name": "Aftermarket Movie Korean version (P) - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134766/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:54:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 06:10:07"
+  },
+  {
+    "id": "as:907962531134769",
+    "name": "Aftermarket Movie Japanese version (P) - 7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134769/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:55:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 08:22:49"
+  },
+  {
+    "id": "as:907962531134770",
+    "name": "ME8 Hebrew version (P) - 15.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134770/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:58:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-30 13:46:05"
+  },
+  {
+    "id": "as:907962531134772",
+    "name": "Shield+ Movie Spanish version (24h budget) - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134772/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 11:59:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-08 11:43:05"
+  },
+  {
+    "id": "as:907962531134773",
+    "name": "Sheild+ Movie French version  (24h budget) - 6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/907962531134773/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 12:00:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 09:53:44"
+  },
+  {
+    "id": "as:908364597627870",
+    "name": "urgent video clip task (Ayla) (32 from client)- 32.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/908364597627870/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-13 13:42:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-30 13:18:02"
+  },
+  {
+    "id": "as:918978473860366",
+    "name": "Example Task",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/918978473860366/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-21 12:59:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-20 10:14:21"
+  },
+  {
+    "id": "as:921410263428763",
+    "name": "Technological Employment Fair Booth - 8 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/921410263428763/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-25 07:25:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-20 10:11:27"
+  },
+  {
+    "id": "as:921410263428769",
+    "name": "ME8 German version -",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/921410263428769/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-25 08:36:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-18 07:50:09"
+  },
+  {
+    "id": "as:921410263428772",
+    "name": "Graphic AV Solutions - 10h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/921410263428772/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-25 08:49:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-16 09:29:09"
+  },
+  {
+    "id": "as:921410263428780",
+    "name": "Aftermarket Movie Portuguese version (P) - 10.5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/921410263428780/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-25 09:16:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-12 10:43:53"
+  },
+  {
+    "id": "as:921410263428781",
+    "name": "Aftermarket Movie LATAM version (P) - 5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/921410263428781/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-25 09:16:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-13 08:38:49"
+  },
+  {
+    "id": "as:925412754824253",
+    "name": "Shield+ Movie British Voice Over 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/925412754824253/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-28 08:33:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 10:55:10"
+  },
+  {
+    "id": "as:925412754824254",
+    "name": "Aftermarket Spanish version - (24h budget) - 14h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/925412754824254/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-11-28 08:33:53",
+    "dueOn": "2019-01-31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-14 15:21:48"
+  },
+  {
+    "id": "as:930239860658147",
+    "name": "Chart Design - 7.25 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/930239860658147/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-02 13:43:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 10:21:35"
+  },
+  {
+    "id": "as:930279449109399",
+    "name": "Technological Employment Fair add - 1 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/930279449109399/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-02 16:37:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-16 09:26:08"
+  },
+  {
+    "id": "as:930494183383072",
+    "name": "Clip for Amnon CES - 9.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/930494183383072/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-03 08:43:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2018-12-31 15:33:18"
+  },
+  {
+    "id": "as:939562741355641",
+    "name": "ME8 clip - Korean version - (P) 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/939562741355641/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-09 13:55:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-22 06:17:20"
+  },
+  {
+    "id": "as:939562741355642",
+    "name": "ME8 clip - Japanese version (P) - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/939562741355642/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-09 13:55:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:13:01"
+  },
+  {
+    "id": "as:939562741355644",
+    "name": "ME8 clip - Portuguese version (P) - 4.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/939562741355644/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-09 13:55:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-02 08:27:45"
+  },
+  {
+    "id": "as:939562741355645",
+    "name": "ME8 clip - LATAM version (P)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/939562741355645/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-09 13:55:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-06 10:54:15"
+  },
+  {
+    "id": "as:945327487044724",
+    "name": "MAI Slides - 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/945327487044724/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-13 07:17:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-20 10:11:21"
+  },
+  {
+    "id": "as:945327487044725",
+    "name": "Friends like me campaign - 54.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/945327487044725/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-13 07:18:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:13:06"
+  },
+  {
+    "id": "as:947918269286139",
+    "name": "Parking clip for CES - 125h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/947918269286139/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-16 09:28:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:08:06"
+  },
+  {
+    "id": "as:949806142105441",
+    "name": "Infographics for CES - 44hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/949806142105441/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-18 07:38:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 15:37:21"
+  },
+  {
+    "id": "as:951554883284087",
+    "name": "CES presentation for Amnon - 57 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/951554883284087/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-19 15:07:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-05 09:29:32"
+  },
+  {
+    "id": "as:955218748905280",
+    "name": "OS clip for CES - 45h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/955218748905280/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-24 08:27:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-11 09:17:26"
+  },
+  {
+    "id": "as:955218748905281",
+    "name": "ME6 Images  - 192.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/955218748905281/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-24 08:28:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-14 11:28:01"
+  },
+  {
+    "id": "as:957967550097075",
+    "name": "AV clips for CES - 10.25 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/957967550097075/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2018-12-31 15:33:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 15:37:44"
+  },
+  {
+    "id": "as:958419898492779",
+    "name": "Trifocal - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/958419898492779/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-01-02 12:16:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 15:37:25"
+  },
+  {
+    "id": "as:964155189095006",
+    "name": "Blurring license plates - 14 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/964155189095006/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-01-06 06:43:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 15:37:27"
+  },
+  {
+    "id": "as:998511242414357",
+    "name": "Sheild+ Sanitation Truck version (P) - 136.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/998511242414357/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-01-20 08:32:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-05 08:07:44"
+  },
+  {
+    "id": "as:1002322605832669",
+    "name": "Summer internship - 8.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1002322605832669/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-01-22 15:00:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-01-30 13:19:57"
+  },
+  {
+    "id": "as:1108990147944431",
+    "name": "Recruiting zipper design - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1108990147944431/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-11 09:17:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-27 13:50:36"
+  },
+  {
+    "id": "as:1108990147944434",
+    "name": "OS clip for UK (?)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1108990147944434/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-11 09:17:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:16:13"
+  },
+  {
+    "id": "as:1109432731487653",
+    "name": "Officers funds Booth design - 3.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1109432731487653/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-13 08:38:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-27 13:50:45"
+  },
+  {
+    "id": "as:1110106128342212",
+    "name": "מארז מד מזוודה - 3.75",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1110106128342212/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-18 09:13:03",
+    "dueOn": "2019-02-21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-02-27 13:50:34"
+  },
+  {
+    "id": "as:1110106128342215",
+    "name": "taasuka2019 Booth design - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1110106128342215/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-18 09:13:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:07:32"
+  },
+  {
+    "id": "as:1110309231117674",
+    "name": "ME8 Opener - 37.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1110309231117674/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-02-19 07:25:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 07:14:23"
+  },
+  {
+    "id": "as:1112624832337951",
+    "name": "Shield+Movie French flag removing - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1112624832337951/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-05 07:03:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 12:14:17"
+  },
+  {
+    "id": "as:1114640871976045",
+    "name": "Image making - 15.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1114640871976045/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-17 01:07:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:30:24"
+  },
+  {
+    "id": "as:1115103098583364",
+    "name": "Mobileye Alerts clips - 12h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115103098583364/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-20 07:33:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:32:32"
+  },
+  {
+    "id": "as:1115408658498802",
+    "name": "Mobileye presentation -4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115408658498802/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-21 16:01:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:19:00"
+  },
+  {
+    "id": "as:1115649351821827",
+    "name": "taasuka 2019 Tshirt Design - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115649351821827/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-24 07:24:25",
+    "dueOn": "2019-03-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:33:45"
+  },
+  {
+    "id": "as:1115649351821829",
+    "name": "מודעה ליום זרקור - 1.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115649351821829/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-24 08:23:06",
+    "dueOn": "2019-03-25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:33:55"
+  },
+  {
+    "id": "as:1115649351821833",
+    "name": "RSS video cuts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115649351821833/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-24 11:41:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-24 12:06:12"
+  },
+  {
+    "id": "as:1115649351821834",
+    "name": "Aftermarket Video cuts - 5.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115649351821834/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-24 11:41:51",
+    "dueOn": "2019-04-04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-04-21 06:11:40"
+  },
+  {
+    "id": "as:1115673511211878",
+    "name": "RSS vs SFF - 9.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115673511211878/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-25 00:00:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:32:39"
+  },
+  {
+    "id": "as:1115723282664110",
+    "name": "Truck blind spot GIF - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1115723282664110/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-03-25 12:40:13",
+    "dueOn": "2019-04-01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-03-31 11:32:27"
+  },
+  {
+    "id": "as:1116813353435518",
+    "name": "REM clip headline removal - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1116813353435518/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-02 09:54:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 10:01:29"
+  },
+  {
+    "id": "as:1117570443563229",
+    "name": "AV tech clip for editing - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1117570443563229/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-08 06:18:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:59:23"
+  },
+  {
+    "id": "as:1117570443563231",
+    "name": "OS Clip #2 (UK) - 17.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1117570443563231/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-08 07:03:20",
+    "dueOn": "2019-05-06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:21:25"
+  },
+  {
+    "id": "as:1118068969050950",
+    "name": "מודעה לסטודנטים - 1.25",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1118068969050950/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-10 14:14:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:59:03"
+  },
+  {
+    "id": "as:1118600480822537",
+    "name": "AV clip edits (Tzahi - April 14) - 2.5h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1118600480822537/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-15 06:14:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:59:21"
+  },
+  {
+    "id": "as:1118601792236953",
+    "name": "Newsletter design - 8.25",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1118601792236953/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-15 15:07:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:59:18"
+  },
+  {
+    "id": "as:1119427020682537",
+    "name": "REM clip - Chinese subtitles - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1119427020682537/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-21 06:08:10",
+    "dueOn": "2019-04-30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:07:16"
+  },
+  {
+    "id": "as:1119427020682538",
+    "name": "CES video translations - Russian German French Spanish (p) - 23h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1119427020682538/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-21 06:08:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:21:27"
+  },
+  {
+    "id": "as:1119427020682539",
+    "name": "CES video translations - Portuguese, Japanese, Korean - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1119427020682539/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-21 06:09:40",
+    "dueOn": "2019-04-25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:58:58"
+  },
+  {
+    "id": "as:1119586557469020",
+    "name": "Blur plates for UK website - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1119586557469020/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-04-23 07:02:45",
+    "dueOn": "2019-04-25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-05 09:59:42"
+  },
+  {
+    "id": "as:1120691802183610",
+    "name": "London GIF - 3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1120691802183610/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-01 14:40:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:21:24"
+  },
+  {
+    "id": "as:1121212699689158",
+    "name": "Short ME8 clip - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1121212699689158/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-05 09:58:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-30 14:07:15"
+  },
+  {
+    "id": "as:1121212699689159",
+    "name": "Shelid+ Movie Chinese version (P) - 8.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1121212699689159/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-05 09:59:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-07-22 08:01:47"
+  },
+  {
+    "id": "as:1121212699689160",
+    "name": "Aftermarket clip - Chinese version (P) - 7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1121212699689160/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-05 10:01:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-24 13:26:51"
+  },
+  {
+    "id": "as:1123914973152135",
+    "name": "AV Clip editing for Amnon - 24.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1123914973152135/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-21 07:24:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:44:34"
+  },
+  {
+    "id": "as:1124287556984554",
+    "name": "Video fro Amnon",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1124287556984554/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-23 11:48:42",
+    "dueOn": "2019-05-24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-05-26 06:27:21"
+  },
+  {
+    "id": "as:1124592718281270",
+    "name": "Shield+ 4 clip (P) - 17.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1124592718281270/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-05-26 06:14:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:53:43"
+  },
+  {
+    "id": "as:1126374489891760",
+    "name": "Managers Training PPT - 32.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1126374489891760/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-10 07:57:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:45:56"
+  },
+  {
+    "id": "as:1127265941702837",
+    "name": "HR icon - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1127265941702837/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-16 14:37:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:45:58"
+  },
+  {
+    "id": "as:1127335233892256",
+    "name": "Surround System on a car - 9.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1127335233892256/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-17 12:52:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:44:36"
+  },
+  {
+    "id": "as:1127504040853275",
+    "name": "HR protocols PPT - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1127504040853275/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-18 11:19:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:46:01"
+  },
+  {
+    "id": "as:1128208346390224",
+    "name": "Mobileye Israel - Super Sale Landing page - 7h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1128208346390224/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-23 07:17:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:44:29"
+  },
+  {
+    "id": "as:1128283675539609",
+    "name": "Mobileye Israel - Poster - 8.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1128283675539609/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-24 09:23:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:44:30"
+  },
+  {
+    "id": "as:1128867277522704",
+    "name": "Shield+ Movie Chinese extra - 4h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1128867277522704/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-06-27 07:23:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-06-30 10:44:16"
+  },
+  {
+    "id": "as:1131405084206609",
+    "name": "Shield+4 FMS Bus - Portuguese 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1131405084206609/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-07-16 14:32:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-21 12:55:51"
+  },
+  {
+    "id": "as:1131821167809636",
+    "name": "ME8 Smart City for Barcelona (P)- 42h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1131821167809636/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-07-18 14:00:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-31 11:22:11"
+  },
+  {
+    "id": "as:1131821167809640",
+    "name": "Geofences UX/UI (40h from client) - 34.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1131821167809640/f",
+    "iteration": "Mobileye IS (Maya,Rotem)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-07-18 14:27:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-29 10:25:05"
+  },
+  {
+    "id": "as:1132221157166297",
+    "name": "Polish video translations (ME8, ME8 Smart cities, Time) 18h from client - 6.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1132221157166297/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-07-22 06:17:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-08-29 10:25:31"
+  },
+  {
+    "id": "as:1133462980410720",
+    "name": "Israel Marketing - Mobileye Benefit Roulette - 19.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1133462980410720/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-07-30 08:28:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1135389851419262",
+    "name": "Israel Marketing - Banners for benefit roulette - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1135389851419262/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-08-13 14:28:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1135389851419263",
+    "name": "Customers club banners - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1135389851419263/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-08-13 14:30:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-12 13:59:57"
+  },
+  {
+    "id": "as:1137017391949396",
+    "name": "She codes Booth design (12-13h from client) - 14.75h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1137017391949396/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-08-26 07:10:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:30"
+  },
+  {
+    "id": "as:1139178959434884",
+    "name": "PPT design for MOT - 29 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434884/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 06:44:26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1139178959434891",
+    "name": "NY Images from Shield+ (40h from client) - 25.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434891/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:45:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-17 10:15:49"
+  },
+  {
+    "id": "as:1139178959434892",
+    "name": "2 images HQ for US Booth (3-4h p/image) - 3.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434892/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:45:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1139178959434893",
+    "name": "Smart City Barcelona installation video (40h from client) - 65.5h - FINAL ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434893/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:46:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:33:18"
+  },
+  {
+    "id": "as:1139178959434896",
+    "name": "Shield+ 4 FMS clip - Korean virsion (P) - 3 hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434896/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:49:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-09-24 12:02:12"
+  },
+  {
+    "id": "as:1139178959434897",
+    "name": "Shield+ 4 FMS clip - Japanese virsion (P) 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434897/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:49:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-09-24 12:02:01"
+  },
+  {
+    "id": "as:1139178959434898",
+    "name": "Shield+ FMS Polish translation - 3.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139178959434898/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-10 08:50:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 11:35:42"
+  },
+  {
+    "id": "as:1139586024022052",
+    "name": "NY HQ Images from Shield+ (15h from client) - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139586024022052/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-12 08:43:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1139930061081897",
+    "name": "Election day design  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139930061081897/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-15 05:27:52",
+    "dueOn": "2019-09-16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-09-19 05:53:48"
+  },
+  {
+    "id": "as:1139930061081903",
+    "name": "Israel Marketing - Election day Design - 5.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1139930061081903/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-15 05:40:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1141301728849996",
+    "name": "Israel Marketing - Rosh Hashana add - 4.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1141301728849996/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-24 12:04:10",
+    "dueOn": "2019-09-26",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1141301728849997",
+    "name": "Ambutrans video subtitles (POR+SP LATAM) - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1141301728849997/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-24 12:24:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:31:39"
+  },
+  {
+    "id": "as:1141301728849998",
+    "name": "Short CES video subtitle changes - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1141301728849998/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-09-24 12:35:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-31 13:30:26"
+  },
+  {
+    "id": "as:1142696815240670",
+    "name": "Amnon's materials for VW meeting - 12h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1142696815240670/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-02 09:05:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-02 10:12:16"
+  },
+  {
+    "id": "as:1142696815240690",
+    "name": "Smart City clip edit for Chinese Ceremony (16h from client) - 23.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1142696815240690/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-02 12:42:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:33:12"
+  },
+  {
+    "id": "as:1142696815240691",
+    "name": "Drives Event Design (40h from client)- 46h - FINAL ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1142696815240691/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-02 12:45:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:01:35"
+  },
+  {
+    "id": "as:1143382744056473",
+    "name": "How it works clip edits - 8.25h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1143382744056473/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-07 10:44:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:35:44"
+  },
+  {
+    "id": "as:1144840591655037",
+    "name": "ME8 connect brochure  (16h from client) - 30.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1144840591655037/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-15 07:08:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:31:31"
+  },
+  {
+    "id": "as:1144847966116349",
+    "name": "Ambutrans video subtitles (SP+GER) - 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1144847966116349/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-15 07:49:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-10-31 13:30:26"
+  },
+  {
+    "id": "as:1145145622668297",
+    "name": "Laptop case Design - 2.75h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145145622668297/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-16 13:52:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:28:29"
+  },
+  {
+    "id": "as:1145145622668299",
+    "name": "7 Stickers Design (6-12h from client) - 10h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145145622668299/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-16 13:52:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:28:41"
+  },
+  {
+    "id": "as:1145145622668307",
+    "name": "JS Bus English subtitles - 8 hrs - FINAL ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145145622668307/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-16 14:21:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:34:29"
+  },
+  {
+    "id": "as:1145292026574079",
+    "name": "3 Illustrated Stickers Design (15-24h from client)- 9.5h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145292026574079/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-17 11:23:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:28:43"
+  },
+  {
+    "id": "as:1145292026574081",
+    "name": "Social media add for the US team - 4.75h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145292026574081/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-17 11:28:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:15:59"
+  },
+  {
+    "id": "as:1145292026574095",
+    "name": "Print ad of the Mobileye 8 Connect - 10h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1145292026574095/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-17 14:48:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:31:32"
+  },
+  {
+    "id": "as:1146745024231029",
+    "name": "Timeline 20 years of Mobileye ( 16 hrs ) 22 hrs - FINAL ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1146745024231029/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-29 07:21:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:04:45"
+  },
+  {
+    "id": "as:1146745024231033",
+    "name": "T-Shirts Design (6-8) - 12.25 hrs - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1146745024231033/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-29 07:22:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:28:54"
+  },
+  {
+    "id": "as:1146745024269027",
+    "name": "REM Presentation (Tal) - 21h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1146745024269027/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-27 16:06:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-11 10:19:52"
+  },
+  {
+    "id": "as:1147103305134978",
+    "name": "IR Presentation (Eraz) - 29.25h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147103305134978/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-29 15:55:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:02:40"
+  },
+  {
+    "id": "as:1147415204614310",
+    "name": "Intro Slide Design",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147415204614310/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-31 09:12:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-06 10:08:13"
+  },
+  {
+    "id": "as:1147459476440443",
+    "name": "Gabi's IR Presentation - 7.5h - FINAL ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147459476440443/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-31 14:40:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:04:12"
+  },
+  {
+    "id": "as:1147459476440445",
+    "name": "Amnon's IR presentation -23.25h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147459476440445/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-10-31 15:23:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:03:39"
+  },
+  {
+    "id": "as:1147776388289897",
+    "name": "B-roll lectures edits (Tali) (40h from client) - 30 Hrs - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147776388289897/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-03 09:43:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 10:01:29"
+  },
+  {
+    "id": "as:1147776388289903",
+    "name": "Images Making (8-19 per Image) - 34.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147776388289903/f",
+    "iteration": "Mobiley US (Vanya)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-03 11:24:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:41:21"
+  },
+  {
+    "id": "as:1147823392408409",
+    "name": "Intro slide design - 4.75h - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1147823392408409/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-04 07:10:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:29"
+  },
+  {
+    "id": "as:1148034694391259",
+    "name": "Rollup + screen Design - 10.25 - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1148034694391259/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-05 07:06:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 12:52:31"
+  },
+  {
+    "id": "as:1148884486629207",
+    "name": "Ambutrans video subtitles (JAP + KOR) - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1148884486629207/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-11 10:31:06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:19"
+  },
+  {
+    "id": "as:1148884486629211",
+    "name": "Landing page - 31 hrs - FINAL",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1148884486629211/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-11 10:32:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:27"
+  },
+  {
+    "id": "as:1148884486629213",
+    "name": "RSS page Design (65.5h from client) - 62h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1148884486629213/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-11 10:32:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-18 07:12:40"
+  },
+  {
+    "id": "as:1149515149442421",
+    "name": "Super Sale Winter Design - 7.75hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1149515149442421/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-14 08:42:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:11"
+  },
+  {
+    "id": "as:1149942798980657",
+    "name": "Super Sale Winter - 5.5 hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1149942798980657/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-18 08:37:21",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:12"
+  },
+  {
+    "id": "as:1149961911816579",
+    "name": "Updated ME8 clip - Shoshana (P) - 206.75h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1149961911816579/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-18 09:51:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:38"
+  },
+  {
+    "id": "as:1150177301056691",
+    "name": "Black Friday ad  -  3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1150177301056691/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-19 14:54:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:13"
+  },
+  {
+    "id": "as:1150177301056693",
+    "name": "Black Friday Animated Banner - 5hrs",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1150177301056693/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-19 14:54:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-12-01 07:35:16"
+  },
+  {
+    "id": "as:1150981756316515",
+    "name": "Black Friday landing page - 6.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1150981756316515/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-24 15:29:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:14"
+  },
+  {
+    "id": "as:1151250683776079",
+    "name": "3D files of ME8 - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1151250683776079/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-26 09:42:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:53"
+  },
+  {
+    "id": "as:1151250683776083",
+    "name": "Black Friday Static Banners - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1151250683776083/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-26 09:43:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 09:59:16"
+  },
+  {
+    "id": "as:1151508874964451",
+    "name": "Barcelona footage - blurring plates - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1151508874964451/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-11-27 14:08:34",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-11-28 12:24:11"
+  },
+  {
+    "id": "as:1152907086318880",
+    "name": "Yarid Giyus Booth Design (10-12 from client) - 14",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1152907086318880/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-08 11:31:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:27"
+  },
+  {
+    "id": "as:1153193682849025",
+    "name": "German subtitles / FMS video 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1153193682849025/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-10 09:14:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-12-24 13:24:39"
+  },
+  {
+    "id": "as:1153193682849049",
+    "name": "Jerusalem ad - 5.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1153193682849049/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-10 13:27:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:03"
+  },
+  {
+    "id": "as:1153380692173541",
+    "name": "Tip Tipa campaign - 3.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1153380692173541/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-11 13:45:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:05"
+  },
+  {
+    "id": "as:1153581938779801",
+    "name": "Taxi Design for kapa ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1153581938779801/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-12 08:29:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2019-12-22 10:25:27"
+  },
+  {
+    "id": "as:1154191944469400",
+    "name": "Hanuka ad - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1154191944469400/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-17 10:04:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:07"
+  },
+  {
+    "id": "as:1154521862215673",
+    "name": "Amnon's CES PPT -104",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1154521862215673/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-19 07:03:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-04 14:01:29"
+  },
+  {
+    "id": "as:1154907157875121",
+    "name": "CES Video Edits - 130.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1154907157875121/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-23 10:30:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:55"
+  },
+  {
+    "id": "as:1155016162411571",
+    "name": "Van Image - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155016162411571/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-24 13:23:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:41"
+  },
+  {
+    "id": "as:1155280666033085",
+    "name": "MOVE Exhibition video - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155280666033085/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2019-12-30 11:34:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:16"
+  },
+  {
+    "id": "as:1155439628930016",
+    "name": "CES Screen saver - 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155439628930016/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-02 13:59:47",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:58"
+  },
+  {
+    "id": "as:1155706515712009",
+    "name": "Pedestrian edit 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155706515712009/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-05 09:49:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:00"
+  },
+  {
+    "id": "as:1155712075081135",
+    "name": "Mobileye Deal campaign (20)  - 21.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155712075081135/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-06 09:58:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:10"
+  },
+  {
+    "id": "as:1155712075081141",
+    "name": "Shield+4 Truck FMS Norwegian - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155712075081141/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-06 14:16:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:18"
+  },
+  {
+    "id": "as:1155712075081145",
+    "name": " Shield+4 Bus FMS Spanish - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155712075081145/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-06 14:17:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:19"
+  },
+  {
+    "id": "as:1155963564614643",
+    "name": "Urgent videos for CES 2020 - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155963564614643/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-07 09:34:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:05"
+  },
+  {
+    "id": "as:1155963564614645",
+    "name": "Print ads copy adaptations - 5.25hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155963564614645/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-07 09:56:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-23 11:55:37"
+  },
+  {
+    "id": "as:1155963564614647",
+    "name": "New ME8 roll ups for 2020 - 37h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1155963564614647/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-07 09:57:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-23 11:55:46"
+  },
+  {
+    "id": "as:1156745534860679",
+    "name": "Mobileye Employees at CES 2020 - 2.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1156745534860679/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-13 07:40:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:40:12"
+  },
+  {
+    "id": "as:1156973988126341",
+    "name": "January CES Newsletter - 4.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1156973988126341/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-14 08:22:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:47"
+  },
+  {
+    "id": "as:1156973988126349",
+    "name": "Shield+ Bus image - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1156973988126349/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-14 13:48:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 10:39:46"
+  },
+  {
+    "id": "as:1157185849068549",
+    "name": "Mobileye Deal Animative banner - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1157185849068549/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-15 09:42:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:21"
+  },
+  {
+    "id": "as:1158844125243075",
+    "name": " Not for sale add (2-4) - 4h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1158844125243075/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-26 06:14:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-02 11:57:23"
+  },
+  {
+    "id": "as:1159118824947037",
+    "name": "Who are you playing on add-1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1159118824947037/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-28 12:22:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-05 09:16:34"
+  },
+  {
+    "id": "as:1159213602244102",
+    "name": "Mobile RSS - 3.5 h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1159213602244102/f",
+    "iteration": "(no section)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-28 16:22:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-01-29 07:18:02"
+  },
+  {
+    "id": "as:1159351998173123",
+    "name": "Data PPT Design - 29.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1159351998173123/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-29 09:34:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:17:11"
+  },
+  {
+    "id": "as:1159351998173137",
+    "name": "ME8 2020 PPT Design - 40h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1159351998173137/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-01-29 15:31:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:17:09"
+  },
+  {
+    "id": "as:1160008866252041",
+    "name": "assets redesign - 1.5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1160008866252041/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-03 07:05:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:22:07"
+  },
+  {
+    "id": "as:1160497806786675",
+    "name": "ME6 Pickup truck image - 19h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1160497806786675/f",
+    "iteration": "Mobiley US (Vanya)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-05 09:16:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:27:33"
+  },
+  {
+    "id": "as:1161762066954981",
+    "name": "New Data Video - 51.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1161762066954981/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-13 13:47:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-03-31 08:37:38"
+  },
+  {
+    "id": "as:1162145051993769",
+    "name": "Purim Deal - 13.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1162145051993769/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-16 05:59:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:22:08"
+  },
+  {
+    "id": "as:1163206913802020",
+    "name": "We are Mobileye (Brochure+Sticker) - 4",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1163206913802020/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-23 10:25:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:22:10"
+  },
+  {
+    "id": "as:1163476948013209",
+    "name": "Shield+Fisheye 3D render - 17h ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1163476948013209/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-25 07:47:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-02-26 12:17:13"
+  },
+  {
+    "id": "as:1163476948013221",
+    "name": "4 Graphics for Testing Document for AEB team - 5.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1163476948013221/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-02-25 13:00:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-03-31 08:52:21"
+  },
+  {
+    "id": "as:1165048082127739",
+    "name": "New ME8 Video - German/Spanish/French Subtitles (12)- 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1165048082127739/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-05 10:02:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:12:37"
+  },
+  {
+    "id": "as:1166840247738801",
+    "name": "Mobileye Deal text changes - 3.75 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1166840247738801/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-17 14:16:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-03-31 08:40:06"
+  },
+  {
+    "id": "as:1167722978011275",
+    "name": "2 Olympics clips - 10h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1167722978011275/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-23 08:00:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-03-31 08:37:52"
+  },
+  {
+    "id": "as:1168394344059379",
+    "name": "מבצע דיל לדיוור- 5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1168394344059379/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-26 09:53:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:12:42"
+  },
+  {
+    "id": "as:1168791803782613",
+    "name": "School bus Image - 19h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1168791803782613/f",
+    "iteration": "Mobiley US (Vanya)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-29 06:57:51",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:12:40"
+  },
+  {
+    "id": "as:1169096238798741",
+    "name": "Supermarket add",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1169096238798741/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-03-31 07:58:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-04-27 09:12:46"
+  },
+  {
+    "id": "as:1172947537879791",
+    "name": "30 Nis Campaign - 19h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1172947537879791/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-04-27 09:12:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-06-29 07:46:16"
+  },
+  {
+    "id": "as:1174646276818101",
+    "name": " Shield+ Turn Assistant Clip - German - (20) 20h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1174646276818101/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-05-07 14:35:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-07-16 07:24:20"
+  },
+  {
+    "id": "as:1176213424530155",
+    "name": "AV clip May 2020 - 56.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1176213424530155/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-05-18 07:20:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-05-31 09:00:31"
+  },
+  {
+    "id": "as:1180537194189010",
+    "name": "מצלמות דרך- 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1180537194189010/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-06-16 14:05:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-07-30 07:57:38"
+  },
+  {
+    "id": "as:1182335768480167",
+    "name": " Whatsupp banners 3h(8-10)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1182335768480167/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-06-29 09:42:06",
+    "dueOn": "2020-07-01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-06 09:07:55"
+  },
+  {
+    "id": "as:1183651536624189",
+    "name": "Safe Summer - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1183651536624189/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-07-08 06:54:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-07-30 07:57:39"
+  },
+  {
+    "id": "as:1186155594486789",
+    "name": "Mobileye deal logo - 0.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1186155594486789/f",
+    "iteration": "Mobileye Israel",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-07-26 13:46:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-07-30 07:57:40"
+  },
+  {
+    "id": "as:1187181940628059",
+    "name": "Employee information presentation (12-16) - 13.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1187181940628059/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-03 07:53:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-31 11:19:39"
+  },
+  {
+    "id": "as:1189444191356905",
+    "name": "Data Video - French, German, Spanish & Italian subtitles (8)- 14h + 2.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1189444191356905/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-18 06:29:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-09-24 11:42:38"
+  },
+  {
+    "id": "as:1189490364006515",
+    "name": "Israel Mapping video - 16.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1189490364006515/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-19 14:30:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-31 11:19:27"
+  },
+  {
+    "id": "as:1190480833611425",
+    "name": "AV short clips - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1190480833611425/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-25 09:51:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-31 11:19:29"
+  },
+  {
+    "id": "as:1190500326037221",
+    "name": "Road Risk Score Icon - Data video - 1.25H",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1190500326037221/f",
+    "iteration": "Aftermarket (Sari, Dotan)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-25 11:20:56",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-08-31 11:19:31"
+  },
+  {
+    "id": "as:1191334370804977",
+    "name": "RSS 5 Rules clip - 136.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1191334370804977/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-08-30 12:30:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-14 13:42:12"
+  },
+  {
+    "id": "as:1192650069581105",
+    "name": "MAN Footage project 1+2 (16h) - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1192650069581105/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-09-08 06:13:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-03-18 10:09:44"
+  },
+  {
+    "id": "as:1195280007345009",
+    "name": "Private car - Sensor suite - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1195280007345009/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-09-23 06:02:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-09-24 12:01:47"
+  },
+  {
+    "id": "as:1196737767952393",
+    "name": "ESRI italy video - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1196737767952393/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-01 06:18:01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-11-09 07:18:28"
+  },
+  {
+    "id": "as:1198503404264553",
+    "name": "Tali - Lane marks scoring clip Hebrew - 67h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1198503404264553/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-18 14:47:05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-10-29 14:31:37"
+  },
+  {
+    "id": "as:1198510529192709",
+    "name": "Data video - Polish Subtitles - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1198510529192709/f",
+    "iteration": "Germany (Avigaelle)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-19 12:18:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-11-09 07:18:29"
+  },
+  {
+    "id": "as:1198887097489343",
+    "name": "Truck and Bus pictures from 3d video",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1198887097489343/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-22 09:20:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-10-26 08:26:12"
+  },
+  {
+    "id": "as:1198962281681916",
+    "name": "Tali - Lane marks scoring clip - English Version ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1198962281681916/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-29 14:31:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-11-24 07:17:11"
+  },
+  {
+    "id": "as:1198962281681918",
+    "name": "RSS 5 Rule 3 - 96h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1198962281681918/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-10-29 14:31:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:11",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1199153277012295",
+    "name": "Tali - Av clip + Data clip sub & headlines removal - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199153277012295/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-10 07:15:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 13:39:36"
+  },
+  {
+    "id": "as:1199162768837949",
+    "name": "RSS 5 Rule 4 - 22.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199162768837949/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-11 09:42:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:20",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1199162768837951",
+    "name": "RSS 5 Rule 5 - 17.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199162768837951/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-11 09:42:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:19",
+    "assignees": [
+      {
+        "accountId": "as:1180246167868206",
+        "accountName": "Noa Livneh"
+      }
+    ]
+  },
+  {
+    "id": "as:1199347681045601",
+    "name": "Tzahi - Munich Short + Long AV clip - 47.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199347681045601/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-24 07:16:43",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 13:39:28"
+  },
+  {
+    "id": "as:1199359195929316",
+    "name": "RSS 5 Rules all together -97.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199359195929316/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-25 07:56:11",
+    "dueOn": "2021-01-06",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:24",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1199359195929317",
+    "name": "Logo animation opt1 - 37.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199359195929317/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-25 08:17:48",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:38",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1199359195929319",
+    "name": "New logo reveal video - 70h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199359195929319/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-25 08:18:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:35",
+    "assignees": [
+      {
+        "accountId": "as:918960634923965",
+        "accountName": "Alex Kozka"
+      }
+    ]
+  },
+  {
+    "id": "as:1199359195929321",
+    "name": "Tali - Munich CES Av Clip -",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199359195929321/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-11-25 08:19:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 13:40:18"
+  },
+  {
+    "id": "as:1199410024807617",
+    "name": "Tzahi AV clip 4 jan 2021 - 1.5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199410024807617/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-06 14:25:29",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:47",
+    "assignees": [
+      {
+        "accountId": "as:119644861961683",
+        "accountName": "Nitsan Rozenberg"
+      }
+    ]
+  },
+  {
+    "id": "as:1199510737768599",
+    "name": "Radar/lidar clip - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199510737768599/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-03 07:05:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-29 09:42:14"
+  },
+  {
+    "id": "as:1199516607727167",
+    "name": "Tzahi AV clip 31 Dec 2020 - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199516607727167/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-07 11:31:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:51"
+  },
+  {
+    "id": "as:1199531016735081",
+    "name": "Intro & Outro replacement - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199531016735081/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-10 07:21:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:54"
+  },
+  {
+    "id": "as:1199608924664439",
+    "name": "Logo animation opt2 - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199608924664439/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-15 13:40:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:43",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1199608924664441",
+    "name": "Tali - Munich CES Av Clip -",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199608924664441/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-15 13:40:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2020-12-15 13:40:14"
+  },
+  {
+    "id": "as:1199619992388697",
+    "name": "RSS 5 Rule 3 part 2 New - 17h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199619992388697/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-16 10:19:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:30",
+    "assignees": [
+      {
+        "accountId": "as:1180246167868206",
+        "accountName": "Noa Livneh"
+      }
+    ]
+  },
+  {
+    "id": "as:1199620733726877",
+    "name": "RSS 5 Rule 4 New - 14.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199620733726877/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-16 11:56:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:28"
+  },
+  {
+    "id": "as:1199687865736186",
+    "name": "RSS- Rule 3- full- corrections",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199687865736186/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-28 07:06:15",
+    "dueOn": "2021-01-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-11 10:24:53"
+  },
+  {
+    "id": "as:1199687865736188",
+    "name": "RSS- Rule 4 Animation ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199687865736188/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-28 07:06:38",
+    "dueOn": "2021-01-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-11 10:24:55"
+  },
+  {
+    "id": "as:1199699705398621",
+    "name": "Rules 2+5 corrections",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199699705398621/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2020-12-30 07:54:50",
+    "dueOn": "2021-01-03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-11 10:24:56"
+  },
+  {
+    "id": "as:1199712464147197",
+    "name": "R/L AV clip - 4.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199712464147197/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-03 08:55:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:42",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1199716678022709",
+    "name": "pp corrections",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199716678022709/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-04 10:55:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-11 10:24:58"
+  },
+  {
+    "id": "as:1199716678022711",
+    "name": "rule 4 correction + stitching together",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199716678022711/f",
+    "iteration": "Task management",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-01-04 10:55:24",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-01-11 10:24:59"
+  },
+  {
+    "id": "as:1199939279449943",
+    "name": "Presentation template (8) - 6.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199939279449943/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-02-15 15:31:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-03-18 10:08:08"
+  },
+  {
+    "id": "as:1199939990688973",
+    "name": "dd",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1199939990688973/f",
+    "iteration": "HR (Noa, Yona)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-02-15 15:32:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-02-15 15:32:38"
+  },
+  {
+    "id": "as:1200029217073994",
+    "name": "Shield 4 Track & Bus - sound editing ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200029217073994/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-03-08 10:23:10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:43:57"
+  },
+  {
+    "id": "as:1200104600745694",
+    "name": "FB Post - pessah - Matan - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200104600745694/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-03-25 12:11:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-04-18 07:08:13"
+  },
+  {
+    "id": "as:1200151526209987",
+    "name": "Tzahi AV clip 6 Apr 2021 - 5hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200151526209987/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-04-06 14:32:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:44:06"
+  },
+  {
+    "id": "as:1200220777138728",
+    "name": "Matan - export videos without graphic layer - 3.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200220777138728/f",
+    "iteration": "Corporate/OEM (Diane, Tzahi, Yael, Tali, Shoshana)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-04-22 06:52:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:44:05"
+  },
+  {
+    "id": "as:1200258334799087",
+    "name": "PPT OEM - 70h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200258334799087/f",
+    "iteration": "Marketing LATAM/APAC (Hanna)",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-04-28 12:01:52",
+    "dueOn": "2021-05-06",
+    "startOn": "2021-05-02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-01 06:03:11",
+    "assignees": [
+      {
+        "accountId": "as:1200275224822462",
+        "accountName": "Oksana Michalski"
+      }
+    ]
+  },
+  {
+    "id": "as:1200283390534619",
+    "name": "Shield + bus - Image from video - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200283390534619/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-04 07:31:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:47:34",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200306116903716",
+    "name": "EyeQ image making -6.5h\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200306116903716/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-09 08:43:16",
+    "dueOn": "2021-05-10",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:47:38",
+    "assignees": [
+      {
+        "accountId": "as:1200275224822462",
+        "accountName": "Oksana Michalski"
+      }
+    ]
+  },
+  {
+    "id": "as:1200317124477877",
+    "name": "Tzachi av clip 11/5- 5.25hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200317124477877/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-11 14:32:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-06-06 06:47:42",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200371409795219",
+    "name": "Update Shield video (13h-3d & 2h-ae)-14.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200371409795219/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-25 11:59:01",
+    "dueOn": "2021-06-02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-05 11:59:40",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200392133411568",
+    "name": "Chinese Translation FMS - 6.5 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200392133411568/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-27 14:38:09",
+    "dueOn": "2021-06-01",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-05 11:59:56",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200400956059636",
+    "name": "Tzahi AV clip 30 May 2021 - 7.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200400956059636/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-05-30 08:50:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-05 11:59:54",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200515549534893",
+    "name": "Shield+ Connect PPT (1-3h per slide, ~70h total) - 66.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200515549534893/f",
+    "iteration": "June2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-06-24 10:35:14",
+    "dueOn": "2021-07-08",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-08-05 11:59:50",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1200557272625629",
+    "name": "Map video without titles (0.5h) - 0.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200557272625629/f",
+    "iteration": "July2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-07-05 07:41:31",
+    "dueOn": "2021-07-05",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-10-11 08:51:10",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200618851147342",
+    "name": "AV clip 20.7.21 (~40-50h) - 53.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200618851147342/f",
+    "iteration": "July2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-07-18 08:08:49",
+    "dueOn": "2021-07-20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-10-11 08:51:11",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200800082294452",
+    "name": "RSS new rule #5 - 69.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200800082294452/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-08-17 08:39:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:39",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1200921236312815",
+    "name": "Deck Charts conversion - 4h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1200921236312815/f",
+    "iteration": "August2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-09-05 16:16:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:17"
+  },
+  {
+    "id": "as:1201209798040378",
+    "name": "New Intro - 27.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201209798040378/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-10-17 09:18:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:41",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201209798040380",
+    "name": "New outro - 28.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201209798040380/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-10-17 09:18:46",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:42",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1201234488496628",
+    "name": "HR Stickers for students (3-4h) - 4",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201234488496628/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-10-21 11:18:33",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:44",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1201311174613247",
+    "name": "Narration RSS (17h+8.5h) - 27.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201311174613247/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-11-03 08:35:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:48",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201485324337372",
+    "name": "Rss rule 4 (16h-30h) - 31.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201485324337372/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2021-12-08 15:31:12",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:46"
+  },
+  {
+    "id": "as:1201610547079541",
+    "name": "Blurring Plates - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201610547079541/f",
+    "iteration": "January 2022",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-03 06:34:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:53"
+  },
+  {
+    "id": "as:1201619383042986",
+    "name": "Stitching rules together - 11h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201619383042986/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-05 15:23:31",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:47",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201656365081049",
+    "name": "Purchase of video - 2.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201656365081049/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-13 11:58:52",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:49"
+  },
+  {
+    "id": "as:1201656365081056",
+    "name": "RSS sound editing - 6h  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201656365081056/f",
+    "iteration": "October2021",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-13 12:05:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:51"
+  },
+  {
+    "id": "as:1201671036597927",
+    "name": "Mobileye HR - Strategy Intel - (8h) -  7.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201671036597927/f",
+    "iteration": "January 2022",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-17 06:59:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:55"
+  },
+  {
+    "id": "as:1201704173132712",
+    "name": "RSS gif export - 1hr",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201704173132712/f",
+    "iteration": "January 2022",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-01-23 15:28:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:30:58"
+  },
+  {
+    "id": "as:1201999456549929",
+    "name": "Mobileye RSS HD(4-8h) - 8h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1201999456549929/f",
+    "iteration": "March 2022",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-03-21 15:17:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:00"
+  },
+  {
+    "id": "as:1202694384858469",
+    "name": "Mobileye's fisheye Video meeting and kickoff  - 2.5",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202694384858469/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-07-31 14:17:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:32",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202704603271828",
+    "name": "Mini site assets - 3h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202704603271828/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-03 08:00:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:39"
+  },
+  {
+    "id": "as:1202704603271835",
+    "name": "Brief for 3d -7.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202704603271835/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-03 08:01:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:46"
+  },
+  {
+    "id": "as:1202704603271837",
+    "name": "Design -7h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202704603271837/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-03 08:01:27",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:38"
+  },
+  {
+    "id": "as:1202704603271839",
+    "name": "Editing - 25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202704603271839/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-03 08:01:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:47"
+  },
+  {
+    "id": "as:1202704603271841",
+    "name": "Animation - 13.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202704603271841/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-03 08:01:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:37"
+  },
+  {
+    "id": "as:1202781866416709",
+    "name": "3D - Freelance",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202781866416709/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-08-11 11:08:41",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:44",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "Lee Zamir",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1202930130305319",
+    "name": "Contact details  ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/369838600997016/1202930130305319/f",
+    "iteration": "Administration -",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-09-06 12:45:38",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1202931001849296",
+    "name": "Minisite short video - 14.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202931001849296/f",
+    "iteration": "September 2022",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-09-06 14:23:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:42",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1202931351354732",
+    "name": "animating new shot - 27.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1202931351354732/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-09-06 14:21:54",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:36"
+  },
+  {
+    "id": "as:1203473964252728",
+    "name": "Urgent Fixes for video - 9h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1203473964252728/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2022-12-01 14:46:00",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:44",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1203657139821414",
+    "name": "EW3 3D fix",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1203657139821414/f",
+    "iteration": "Mobileye's fisheye Video - 86h",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2023-01-05 15:36:09",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219082": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:34",
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  },
+  {
+    "id": "as:1204598654904046",
+    "name": "ME8 Clean Video",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1204598654904046/f",
+    "iteration": "May 23",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2023-05-15 06:48:21",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219082": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:04:52"
+  },
+  {
+    "id": "as:1206687215899510",
+    "name": "Recolor RSS Animations",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/369838600997016/1206687215899510/f",
+    "iteration": "RSS Animations",
+    "projects": [
+      "as:369838600997016"
+    ],
+    "createdAt": "2024-02-25 14:52:08",
+    "labels": [],
+    "time": {
+      "total": 2700,
+      "users": {
+        "1322241": 2700
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:20:05"
+  }
+]

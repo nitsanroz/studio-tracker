@@ -1,0 +1,204 @@
+[
+  {
+    "id": "as:1210647390373291",
+    "name": "Branding & Visual Language",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373291/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "createdAt": "2025-06-26 09:22:50",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 460800
+    },
+    "time": {
+      "total": 505800,
+      "users": {
+        "1214048": 108900,
+        "1342403": 396900
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210647390373293",
+    "name": "Logo Refinements",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373293/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "createdAt": "2025-06-26 09:22:51",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 25200
+    },
+    "time": {
+      "total": 104400,
+      "users": {
+        "1214048": 1800,
+        "1342403": 102600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210647390373295",
+    "name": "Website Design & Animations",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373295/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "createdAt": "2025-06-26 09:22:55",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 828000
+    },
+    "time": {
+      "total": 939600,
+      "users": {
+        "1213760": 244800,
+        "1214048": 17100,
+        "1328069": 13500,
+        "1342403": 577800,
+        "1370761": 1800,
+        "1407470": 84600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210647390373297",
+    "name": "max hours",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373297/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "parentName": "Branding & Visual Language",
+    "parentId": "as:1210647390373291",
+    "createdAt": "2025-06-26 09:23:32",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 43200
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210647390373298",
+    "name": "max hours",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373298/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "parentName": "Logo Refinements",
+    "parentId": "as:1210647390373293",
+    "createdAt": "2025-06-26 09:24:02",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 3600
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1210647390373300",
+    "name": "max hours",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1210647390373300/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "parentName": "Website Design & Animations",
+    "parentId": "as:1210647390373295",
+    "createdAt": "2025-06-26 09:24:10",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 108000
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211217326196604",
+    "name": "Homepage Mobile",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1211217326196604/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "createdAt": "2025-09-03 06:51:37",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1211217326196608",
+    "name": "Mobile",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1211217326196608/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "parentName": "Website Design & Animations",
+    "parentId": "as:1210647390373295",
+    "createdAt": "2025-09-03 06:52:02",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1213760": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211281344811663",
+    "name": "Perp 4 Dev",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1210647390373286/1211281344811663/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1210647390373286"
+    ],
+    "parentName": "Website Design & Animations",
+    "parentId": "as:1210647390373295",
+    "createdAt": "2025-09-07 08:53:33",
+    "labels": [],
+    "time": {
+      "total": 30600,
+      "users": {
+        "1213760": 30600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

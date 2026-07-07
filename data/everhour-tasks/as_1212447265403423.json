@@ -1,0 +1,1169 @@
+[
+  {
+    "id": "as:1212447265403426",
+    "name": "Visitt Keys",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403426/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:47:58",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 267300,
+      "users": {
+        "1217417": 41400,
+        "1407470": 900,
+        "1421038": 9000,
+        "1431051": 64800,
+        "1435452": 133200,
+        "1437050": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212447265403429",
+    "name": "Research",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403429/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:48:09",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 57600,
+      "users": {
+        "1214048": 34200,
+        "1322241": 23400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:29"
+  },
+  {
+    "id": "as:1212447265403431",
+    "name": "AI Page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403431/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:48:14",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 522000
+    },
+    "time": {
+      "total": 637200,
+      "users": {
+        "1214048": 42300,
+        "1217417": 38700,
+        "1328069": 379800,
+        "1342403": 145800,
+        "1407470": 1800,
+        "1431051": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:46"
+  },
+  {
+    "id": "as:1212447265403433",
+    "name": "Newsroom",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403433/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:48:17",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 86400
+    },
+    "time": {
+      "total": 86400,
+      "users": {
+        "1214048": 900,
+        "1328069": 6300,
+        "1342403": 61200,
+        "1431051": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:37",
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1212447265403435",
+    "name": "About Us",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403435/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:48:21",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 252000
+    },
+    "time": {
+      "total": 291600,
+      "users": {
+        "1213760": 900,
+        "1214048": 83700,
+        "1328069": 9900,
+        "1342403": 173700,
+        "1431051": 23400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:46"
+  },
+  {
+    "id": "as:1212447265403439",
+    "name": "Development",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403439/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:49:12",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 324000
+    },
+    "time": {
+      "total": 304200,
+      "users": {
+        "1213760": 252000,
+        "1217417": 52200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:46"
+  },
+  {
+    "id": "as:1212447265403441",
+    "name": "Extra time from Solutions",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1212447265403423/1212447265403441/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-16 08:50:06",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1212540755064953",
+    "name": "Visual Language",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212540755064953/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2025-12-21 15:12:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 216000
+    },
+    "time": {
+      "total": 168300,
+      "users": {
+        "1214048": 40500,
+        "1328069": 36000,
+        "1342403": 88200,
+        "1431051": 3600
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:46"
+  },
+  {
+    "id": "as:1212750149378954",
+    "name": "Video graphics",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212750149378954/f",
+    "iteration": "Video",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-01-12 14:14:14",
+    "labels": [],
+    "time": {
+      "total": 57600,
+      "users": {
+        "1342403": 36000,
+        "1407470": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-01-26 10:00:40",
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1212921829896211",
+    "name": "Solution pages content upload",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212921829896211/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-01-22 13:05:56",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 28800
+    },
+    "time": {
+      "total": 28800,
+      "users": {
+        "1213760": 28800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:46"
+  },
+  {
+    "id": "as:1212921829896213",
+    "name": "Banners",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1212921829896213/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-01-22 14:57:14",
+    "labels": [],
+    "time": {
+      "total": 18000,
+      "users": {
+        "1342403": 18000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-01 11:39:50",
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1213059790590816",
+    "name": "QA design changes",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213059790590816/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-04 15:34:15",
+    "labels": [],
+    "time": {
+      "total": 34200,
+      "users": {
+        "1342403": 1800,
+        "1407470": 24300,
+        "1435452": 6300,
+        "1437050": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-03-26 15:31:20"
+  },
+  {
+    "id": "as:1213064486493098",
+    "name": "News Roundup",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493098/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:13",
+    "dueOn": "2026-02-03",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 13500,
+      "users": {
+        "1328069": 13500
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-03 13:34:56"
+  },
+  {
+    "id": "as:1213064486493100",
+    "name": "Customers Quotes",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493100/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:18",
+    "dueOn": "2026-02-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:28"
+  },
+  {
+    "id": "as:1213064486493102",
+    "name": "AI Hero",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493102/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:26",
+    "dueOn": "2026-02-05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 3600
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1407470": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-05 07:45:09",
+    "assignees": [
+      {
+        "accountId": "as:1210682630033814",
+        "accountName": "Aki Yamin",
+        "userId": 1407470
+      }
+    ]
+  },
+  {
+    "id": "as:1213064486493104",
+    "name": "Blog Lobby",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493104/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:33",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 39600,
+      "users": {
+        "1213760": 19800,
+        "1407470": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:36"
+  },
+  {
+    "id": "as:1213064486493106",
+    "name": "Blog Post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493106/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:36",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 19800,
+      "users": {
+        "1342403": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:35"
+  },
+  {
+    "id": "as:1213064486493108",
+    "name": "Blogs Thumbnails Template",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493108/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-01 11:35:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:35"
+  },
+  {
+    "id": "as:1213064486493112",
+    "name": "Product Updates",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493112/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "parentName": "Blogs Thumbnails Template",
+    "parentId": "as:1213064486493108",
+    "createdAt": "2026-02-01 11:36:29",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213064486493113",
+    "name": "Press Release",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493113/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "parentName": "Blogs Thumbnails Template",
+    "parentId": "as:1213064486493108",
+    "createdAt": "2026-02-01 11:36:30",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213064486493114",
+    "name": "Partnerships / New Customer Announcements",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493114/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "parentName": "Blogs Thumbnails Template",
+    "parentId": "as:1213064486493108",
+    "createdAt": "2026-02-01 11:36:45",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213064486493115",
+    "name": "Thought Leadership / Education (how to)",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1213064486493115/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "parentName": "Blogs Thumbnails Template",
+    "parentId": "as:1213064486493108",
+    "createdAt": "2026-02-01 11:36:51",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1213085754458054",
+    "name": "Menu&Footer",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213085754458054/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-02-02 15:24:15",
+    "labels": [],
+    "time": {
+      "total": 12600,
+      "users": {
+        "1342403": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-02-23 15:05:34"
+  },
+  {
+    "id": "as:1213487788869884",
+    "name": "Solutions PDF",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213487788869884/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-02 08:08:42",
+    "labels": [],
+    "time": {
+      "total": 46800,
+      "users": {
+        "1435452": 39600,
+        "1437050": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-03-12 13:41:39"
+  },
+  {
+    "id": "as:1213628190250331",
+    "name": "Resources thumbnails templates",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213628190250331/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-12 13:11:31",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 57600
+    },
+    "time": {
+      "total": 80100,
+      "users": {
+        "1342403": 7200,
+        "1435452": 72900
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:55",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1213711563736654",
+    "name": "Yardi Linkedin Post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213711563736654/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-18 14:34:29",
+    "dueOn": "2026-03-19",
+    "labels": [],
+    "time": {
+      "total": 5400,
+      "users": {
+        "1342403": 1800,
+        "1435452": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-03-29 12:58:58",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1213711563736656",
+    "name": "COI series - 4 Linkedin posts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213711563736656/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-18 14:39:14",
+    "dueOn": "2026-03-23",
+    "labels": [],
+    "time": {
+      "total": 35100,
+      "users": {
+        "1342403": 10800,
+        "1435452": 24300
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-03-29 12:59:24",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1213711563736658",
+    "name": "Swiftconnect Linkedin Post",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213711563736658/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-18 14:39:25",
+    "dueOn": "2026-03-19",
+    "labels": [],
+    "time": {
+      "total": 23400,
+      "users": {
+        "1435452": 23400
+      },
+      "timerTime": 60
+    },
+    "completed": true,
+    "completedAt": "2026-03-29 12:59:23",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1213711983764144",
+    "name": "2 Booth",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213711983764144/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-18 14:46:02",
+    "dueOn": "2026-04-12",
+    "labels": [],
+    "time": {
+      "total": 183600,
+      "users": {
+        "1217417": 10800,
+        "1342403": 162000,
+        "1407470": 5400,
+        "1435452": 5400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:49:52",
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1213732041596166",
+    "name": "Blog development",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213732041596166/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-19 12:49:49",
+    "labels": [],
+    "time": {
+      "total": 54000,
+      "users": {
+        "1217417": 54000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-03-26 15:31:54"
+  },
+  {
+    "id": "as:1213752158375235",
+    "name": "brochure",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213752158375235/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-22 11:27:51",
+    "labels": [],
+    "time": {
+      "total": 592200,
+      "users": {
+        "1342403": 131400,
+        "1407470": 5400,
+        "1435452": 405000,
+        "1442885": 50400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:49:50",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1213780363549448",
+    "name": "building look dev",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213780363549448/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-23 08:08:47",
+    "labels": [],
+    "time": {
+      "total": 118800,
+      "users": {
+        "1342403": 82800,
+        "1407470": 36000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:49:49",
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1213816005748413",
+    "name": "Canada\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213816005748413/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-26 10:08:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2026-07-02 18:49:56",
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1213816005748416",
+    "name": "Integrations & Partnership ",
+    "type": "task",
+    "status": "closed",
+    "url": "https://app.asana.com/0/1212447265403423/1213816005748416/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-26 10:09:46",
+    "labels": [],
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213676397334342",
+        "accountName": "Itay Biran",
+        "userId": 1439884
+      }
+    ]
+  },
+  {
+    "id": "as:1213863026243867",
+    "name": "Dev page order ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213863026243867/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-03-30 14:52:53",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1217417": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:52"
+  },
+  {
+    "id": "as:1213876713512913",
+    "name": "Kiosk Branding - Panels 5 & 7",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1213876713512913/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-04-01 10:43:56",
+    "dueOn": "2026-04-10",
+    "labels": [],
+    "time": {
+      "total": 27000,
+      "users": {
+        "1342403": 5400,
+        "1435452": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-04-28 10:01:44"
+  },
+  {
+    "id": "as:1214329581279824",
+    "name": "Blog Post Inline Image Templates\n",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1214329581279824/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-04-28 10:01:46",
+    "dueOn": "2026-05-03",
+    "labels": [],
+    "time": {
+      "total": 16200,
+      "users": {
+        "1342403": 1800,
+        "1435452": 14400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:05",
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1214329581279828",
+    "name": "Video for booth ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1214329581279828/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-04-28 10:02:22",
+    "dueOn": "2026-05-14",
+    "labels": [],
+    "time": {
+      "total": 302400,
+      "users": {
+        "1217417": 136800,
+        "1342403": 21600,
+        "1407470": 3600,
+        "1435452": 140400
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:00"
+  },
+  {
+    "id": "as:1214391129858948",
+    "name": "Notebook",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1214391129858948/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-04-29 09:36:52",
+    "dueOn": "2026-04-29",
+    "labels": [],
+    "time": {
+      "total": 10800,
+      "users": {
+        "1342403": 1800,
+        "1442885": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:04",
+    "assignees": [
+      {
+        "accountId": "as:1213991315479067",
+        "accountName": "Sefi Bolter",
+        "userId": 1442885
+      }
+    ]
+  },
+  {
+    "id": "as:1214538846560530",
+    "name": "Motion & Animation for the video ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1214538846560530/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-05-06 09:20:05",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 144000
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:40"
+  },
+  {
+    "id": "as:1214861808705516",
+    "name": "Website fix - Anchor Links Issue  ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1214861808705516/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-05-17 10:27:34",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1217417": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:47"
+  },
+  {
+    "id": "as:1215353709333561",
+    "name": "Sales Deck",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1215353709333561/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-06-03 07:25:21",
+    "labels": [],
+    "time": {
+      "total": 144000,
+      "users": {
+        "1342403": 1800,
+        "1435452": 142200
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1213133403131729",
+        "accountName": "adaya Rizer",
+        "userId": 1435452
+      }
+    ]
+  },
+  {
+    "id": "as:1215353709333565",
+    "name": "Integrations Page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1215353709333565/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-06-03 08:02:32",
+    "labels": [],
+    "time": {
+      "total": 81000,
+      "users": {
+        "1342403": 64800,
+        "1437050": 16200
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1207503684349891",
+        "accountName": "Nadav Halevi",
+        "userId": 1342403
+      }
+    ]
+  },
+  {
+    "id": "as:1215892846444518",
+    "name": "Dev integration page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1212447265403423/1215892846444518/f",
+    "iteration": "Website",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-06-21 07:18:37",
+    "labels": [],
+    "time": {
+      "total": 54000,
+      "users": {
+        "1217417": 54000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1216036659029028",
+    "name": "Boma LinkdIn posts",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1212447265403423/1216036659029028/f",
+    "iteration": "Marketing",
+    "projects": [
+      "as:1212447265403423"
+    ],
+    "createdAt": "2026-06-25 13:51:39",
+    "labels": [],
+    "time": {
+      "total": 21600,
+      "users": {
+        "1435452": 21600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2026-07-02 18:50:34"
+  }
+]

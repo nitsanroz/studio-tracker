@@ -1,0 +1,1405 @@
+[
+  {
+    "id": "as:1200141132470979",
+    "name": "Logo design (20h) - 24.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470979/f",
+    "iteration": "Logo & Brand touchups (50h+5h) - 54.25h (25/10/21)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:48:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:32"
+  },
+  {
+    "id": "as:1200141132470981",
+    "name": "Logo formats (4h) ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470981/f",
+    "iteration": "Logo & Brand touchups (50h+5h) - 54.25h (25/10/21)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:48:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:33"
+  },
+  {
+    "id": "as:1200141132470985",
+    "name": "Home page design + visual language develop (50h) - 40.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470985/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:49:57",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:19:37",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200141132470987",
+    "name": "Mobile adjustments (65h) - 65.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470987/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:50:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:01",
+    "assignees": [
+      {
+        "accountId": "as:1199610687544513",
+        "accountName": "Rita Osokina"
+      }
+    ]
+  },
+  {
+    "id": "as:1200141132470991",
+    "name": "Global Animation (14h) - 15h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470991/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:50:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:55"
+  },
+  {
+    "id": "as:1200141132470993",
+    "name": "Styleguide (8h) - 23.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470993/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:50:23",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:37"
+  },
+  {
+    "id": "as:1200141132470995",
+    "name": "404 + Legal pages (4h) - 1.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470995/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:50:28",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:03"
+  },
+  {
+    "id": "as:1200141132470997",
+    "name": "About page (20h) - 25.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132470997/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:51:39",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:43"
+  },
+  {
+    "id": "as:1200141132471001",
+    "name": "Services lobby page + Service template page (26h) - 30h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132471001/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:52:14",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:06"
+  },
+  {
+    "id": "as:1200141132471005",
+    "name": "Portfolio page (10h) -8.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132471005/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:52:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:38"
+  },
+  {
+    "id": "as:1200141132471007",
+    "name": "Case Study page (6h) - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132471007/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:53:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:13"
+  },
+  {
+    "id": "as:1200141132471011",
+    "name": "News lobby page (12h) - 8.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200141132471011/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-01 13:54:13",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:53"
+  },
+  {
+    "id": "as:1200149315987795",
+    "name": "הערכת שעות ראשונית ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200149315987795/f",
+    "iteration": "Logistic&more",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-04 13:00:00",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200149315987799",
+    "name": "תוספות שאושרו",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200149315987799/f",
+    "iteration": "Logistic&more",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-04 13:00:15",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200149315987805",
+    "name": "בריף",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200149315987805/f",
+    "iteration": "Logistic&more",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-04 13:01:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200149639840771",
+    "name": "גאנט",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200149639840771/f",
+    "iteration": "Logistic&more",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-04 13:02:46",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200243138579266",
+    "name": "פרטי יצירת קשר",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200243138579266/f",
+    "iteration": "Logistic&more",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-25 07:16:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200258334799130",
+    "name": "Website inspirations (8h) - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200258334799130/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-29 07:04:37",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:19:26",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1200258334799132",
+    "name": "UX & Wireframes (36h) - 51.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200258334799132/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-29 07:05:03",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:19:30"
+  },
+  {
+    "id": "as:1200258334799134",
+    "name": "Visual concepts - References (13h) - 11.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200258334799134/f",
+    "iteration": "Logo & Brand touchups (50h+5h) - 54.25h (25/10/21)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-29 07:05:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:34"
+  },
+  {
+    "id": "as:1200258334799136",
+    "name": "Visual concepts - sketches (13h) - 13h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200258334799136/f",
+    "iteration": "Logo & Brand touchups (50h+5h) - 54.25h (25/10/21)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-04-29 07:05:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:34"
+  },
+  {
+    "id": "as:1200712090902121",
+    "name": "Studio's QA & Final corrections (16h) - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200712090902121/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-04 07:58:36",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:25"
+  },
+  {
+    "id": "as:1200755888368534",
+    "name": "Team Page (10h) - 8.25 h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368534/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:34:11",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:19:41"
+  },
+  {
+    "id": "as:1200755888368536",
+    "name": "Nextage global page (12h) - 12.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368536/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:34:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:48"
+  },
+  {
+    "id": "as:1200755888368538",
+    "name": "Cerca pertners page (6h) - 10.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368538/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:37:22",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:33"
+  },
+  {
+    "id": "as:1200755888368540",
+    "name": "Careers page (24h) - 16h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368540/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:37:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:01"
+  },
+  {
+    "id": "as:1200755888368542",
+    "name": "Inner career page (6h) - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368542/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:38:15",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:17"
+  },
+  {
+    "id": "as:1200755888368544",
+    "name": "Post page (5h) -9.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368544/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:39:42",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:58"
+  },
+  {
+    "id": "as:1200755888368546",
+    "name": "Contact us page (6h) - 11.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200755888368546/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 13:40:04",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:19:45"
+  },
+  {
+    "id": "as:1200756087865333",
+    "name": "Inner team popup (5h) - 5.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200756087865333/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-10 10:11:35",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:21:20"
+  },
+  {
+    "id": "as:1200765644440459",
+    "name": "6 global icons (10h) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200765644440459/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-11 10:49:32",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:52"
+  },
+  {
+    "id": "as:1200765644440461",
+    "name": "6 Services icons (8h-10h) - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200765644440461/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-11 10:51:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:41"
+  },
+  {
+    "id": "as:1200765644440463",
+    "name": "5 casestudy icons (8h) - cancelled",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200765644440463/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-11 11:00:30",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2021-12-21 15:07:46"
+  },
+  {
+    "id": "as:1200765644440465",
+    "name": "Favicon",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200765644440465/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-11 11:10:18",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200765644440466",
+    "name": "Social share image",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200765644440466/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-11 11:10:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264718",
+    "name": "Menu - Light // Dark",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264718/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:17",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264719",
+    "name": "Buttons - Default // Hover // Pressed",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264719/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264720",
+    "name": "Link buttons - Default // Hover // Pressed",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264720/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:19",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264721",
+    "name": "CTA buttons - Default // Hover // Pressed",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264721/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264722",
+    "name": "Pointer - Default // Hover // Pressed",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264722/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264723",
+    "name": "Icons - Social media -  Default // Hover // Pressed",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264723/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:20",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264724",
+    "name": "Iconography ",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264724/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264725",
+    "name": "Typography - Main Heading // Subpage heading // Section header // subsection header // Paragraphs",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264725/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:21",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264726",
+    "name": "Color Palette",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264726/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264727",
+    "name": "Forms states- Success message// filled look// focus look// error message// loading state",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264727/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:22",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200772268264728",
+    "name": "Line & Letter Spacing",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1200772268264728/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "parentName": "Styleguide (8h) - 23.75h",
+    "parentId": "as:1200141132470993",
+    "createdAt": "2021-08-12 07:48:23",
+    "labels": [],
+    "completed": false
+  },
+  {
+    "id": "as:1200860612525753",
+    "name": "Logo touchups (5h) - 5.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1200860612525753/f",
+    "iteration": "Logo & Brand touchups (50h+5h) - 54.25h (25/10/21)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-08-26 08:38:02",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 09:31:35",
+    "assignees": [
+      {
+        "accountId": "as:1199518519823940",
+        "accountName": "Or Lazar"
+      }
+    ]
+  },
+  {
+    "id": "as:1201502882163993",
+    "name": "Brief for website photos (4-5h) - 5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201502882163993/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-12 09:20:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:20:29",
+    "assignees": [
+      {
+        "accountId": "as:908047022747311",
+        "accountName": "Miri Kuntsman"
+      }
+    ]
+  },
+  {
+    "id": "as:1201536163839290",
+    "name": "Email signature + animation (4-6h + 2h) - 9.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839290/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:07:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:44"
+  },
+  {
+    "id": "as:1201536163839294",
+    "name": "HR message design (4-6h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839294/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:09:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:05:52"
+  },
+  {
+    "id": "as:1201536163839296",
+    "name": "One pager (16h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839296/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:09:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:05:54"
+  },
+  {
+    "id": "as:1201536163839298",
+    "name": "Nextage US entity ppt- 2 slides (6h) - 6h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839298/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:10:20",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:34"
+  },
+  {
+    "id": "as:1201536163839300",
+    "name": "Client Onboarding (6h) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839300/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:13:25",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:40",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1201536163839302",
+    "name": "Kickoff presentation - 15 slides (45h)",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201536163839302/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2021-12-20 12:14:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:28"
+  },
+  {
+    "id": "as:1201668988101946",
+    "name": "Knowledge center (18h) - 18h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201668988101946/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-01-17 08:51:55",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:24",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1201704187342569",
+    "name": "Logo CMYK - (1h) - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201704187342569/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-01-23 09:55:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:19"
+  },
+  {
+    "id": "as:1201855271800796",
+    "name": "Linkedin cover (1h) - 1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201855271800796/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-02-20 08:06:50",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2022-04-20 11:18:14",
+    "assignees": [
+      {
+        "accountId": "as:366074454182724",
+        "accountName": "office &more",
+        "userId": 1217417
+      }
+    ]
+  },
+  {
+    "id": "as:1201860555000087",
+    "name": "QA - 32h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201860555000087/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-02-21 15:39:09",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:47:51"
+  },
+  {
+    "id": "as:1201879806378751",
+    "name": "Website animation ",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1201879806378751/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-02-24 15:49:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:03"
+  },
+  {
+    "id": "as:1202066981608834",
+    "name": "Additional hours (11.5h) - 11.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202066981608834/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-04-04 07:57:17",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-02-07 10:47:56"
+  },
+  {
+    "id": "as:1202211830824791",
+    "name": "Website images - 19h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202211830824791/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-05-02 14:30:18",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:05",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202241964492894",
+    "name": "Mail signature - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202241964492894/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-05-08 14:11:40",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:08"
+  },
+  {
+    "id": "as:1202366880661143",
+    "name": "6/2 small changes (10h+4h) - 12.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202366880661143/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-06-02 08:04:07",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:08",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202519336499386",
+    "name": "CFO images (12h) - 8.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202519336499386/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-06-28 14:46:59",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:45",
+    "assignees": [
+      {
+        "accountId": "as:1201675320609741",
+        "accountName": "sofia Haskelsky",
+        "userId": 1214048
+      }
+    ]
+  },
+  {
+    "id": "as:1202573794762155",
+    "name": "Logo editing for global and cerca pages - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202573794762155/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-07-11 08:39:44",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:07"
+  },
+  {
+    "id": "as:1202579731553040",
+    "name": "Testimonials gallery - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202579731553040/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-07-10 16:19:45",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:44"
+  },
+  {
+    "id": "as:1202579731553044",
+    "name": "QA July 2022 - 13.75h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202579731553044/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-07-10 16:20:38",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:44"
+  },
+  {
+    "id": "as:1202617713453361",
+    "name": "After launch QA - (6-7h) - 6.25h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202617713453361/f",
+    "iteration": "More deliverables - 73h (28/07/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-07-17 12:04:04",
+    "labels": [],
+    "time": {
+      "total": 1800,
+      "users": {
+        "1219084": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:43",
+    "assignees": [
+      {
+        "accountId": "as:1200027660374505",
+        "accountName": "Itai Snapier"
+      }
+    ]
+  },
+  {
+    "id": "as:1202666304845567",
+    "name": "Editing additional CFO image for website - 2h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202666304845567/f",
+    "iteration": "September 2022",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-09-22 16:01:53",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:37"
+  },
+  {
+    "id": "as:1202732301574852",
+    "name": "Logo editing for homepage -1h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202732301574852/f",
+    "iteration": "Website design (385h>400h) - 458.75h (14/08/22)",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-08-07 14:28:49",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-08-09 13:06:07"
+  },
+  {
+    "id": "as:1202904557885897",
+    "name": "Section VP FINANCE (2-3h) - 1.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202904557885897/f",
+    "iteration": "August",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-09-01 09:11:16",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:34"
+  },
+  {
+    "id": "as:1202985092216865",
+    "name": "Home Page hero section photo adjustment - 0.5h",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1202985092216865/f",
+    "iteration": "September 2022",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2022-09-15 05:26:19",
+    "labels": [],
+    "completed": true,
+    "completedAt": "2023-04-09 07:53:38"
+  },
+  {
+    "id": "as:1204329081542474",
+    "name": "Egalitarian Employment Award HP Section",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1204329081542474/f",
+    "iteration": "April 2023",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2023-04-04 08:52:38",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 21600
+    },
+    "time": {
+      "total": 19800,
+      "users": {
+        "1219111": 19800
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:05:57"
+  },
+  {
+    "id": "as:1204504255800497",
+    "name": "People & Culture page",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1204504255800497/f",
+    "iteration": "April 2023",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2023-05-02 14:32:23",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 36000
+    },
+    "time": {
+      "total": 27000,
+      "users": {
+        "1219111": 27000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:05:59"
+  },
+  {
+    "id": "as:1204504255800499",
+    "name": "Careers Page Hero",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1204504255800499/f",
+    "iteration": "April 2023",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2023-05-02 14:32:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 14400
+    },
+    "time": {
+      "total": 12600,
+      "users": {
+        "1219111": 12600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2023-08-09 13:05:58"
+  },
+  {
+    "id": "as:1204545882418236",
+    "name": "--- Keys ---",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1204545882418236/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2023-05-07 12:22:05",
+    "labels": [],
+    "unbillable": true,
+    "time": {
+      "total": 3600,
+      "users": {
+        "1219111": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1205956695566639",
+    "name": "Design&Adjustments",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1205956695566639/f",
+    "iteration": "November 2023",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2023-11-15 12:43:30",
+    "labels": [],
+    "time": {
+      "total": 36000,
+      "users": {
+        "1219111": 36000
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:20:14"
+  },
+  {
+    "id": "as:1206714158402637",
+    "name": "Images Color Correction",
+    "type": "task",
+    "status": "completed",
+    "url": "https://app.asana.com/0/1200141132470966/1206714158402637/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2024-02-28 13:54:37",
+    "labels": [],
+    "estimate": {
+      "type": "overall",
+      "total": 3600
+    },
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": true,
+    "completedAt": "2024-05-28 11:20:11"
+  },
+  {
+    "id": "as:1208930378188384",
+    "name": "color logos 9.12.24",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1208930378188384/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2024-12-09 14:07:09",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 3600
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1211079305543561",
+    "name": "color logos 18.8.56",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1211079305543561/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2025-08-18 13:27:29",
+    "labels": [],
+    "time": {
+      "total": 3600,
+      "users": {
+        "1213760": 1800,
+        "1407470": 1800
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212447265403417",
+    "name": "Color CFOs Dec 25",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1212447265403417/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2025-12-15 15:17:44",
+    "labels": [],
+    "time": {
+      "total": 7200,
+      "users": {
+        "1421038": 7200
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  },
+  {
+    "id": "as:1212447265403419",
+    "name": "social proof section in home page",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1200141132470966/1212447265403419/f",
+    "iteration": "Untitled section",
+    "projects": [
+      "as:1200141132470966"
+    ],
+    "createdAt": "2025-12-15 15:18:03",
+    "labels": [],
+    "time": {
+      "total": 9000,
+      "users": {
+        "1214048": 9000
+      },
+      "timerTime": 0
+    },
+    "completed": false
+  }
+]

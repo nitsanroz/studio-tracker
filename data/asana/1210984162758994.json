@@ -1,0 +1,1982 @@
+[
+  {
+    "gid": "1210984162758999",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:29:26.593Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210984162758995",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Voyantis Keys",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162758999",
+    "tags": []
+  },
+  {
+    "gid": "1210984162758997",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-20T11:37:06.502Z",
+    "created_at": "2025-08-06T08:29:23.127Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://calendar.amie.so/shared/notes/a7f089cf-1f29-4a8b-a275-cb2ca7a92364\">https://calendar.amie.so/shared/notes/a7f089cf-1f29-4a8b-a275-cb2ca7a92364</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210984162758995",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Kickoff meeting",
+    "notes": "https://calendar.amie.so/shared/notes/a7f089cf-1f29-4a8b-a275-cb2ca7a92364",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162758997",
+    "tags": []
+  },
+  {
+    "gid": "1211046797106343",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:28.672Z",
+    "created_at": "2025-08-13T14:55:17.308Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1210984162758995",
+          "name": "Untitled section"
+        }
+      }
+    ],
+    "name": "Zoom Meetings ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211046797106343",
+    "tags": []
+  },
+  {
+    "gid": "1213865276233930",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2026-04-14T09:14:16.636Z",
+    "created_at": "2026-03-31T06:53:39.194Z",
+    "due_on": "2026-04-05",
+    "html_notes": "<body>On our Resources hub page (<a href=\"https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-35881&amp;t=ShnGUxm3Z4zDULPd-1\">https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-35881&amp;t=ShnGUxm3Z4zDULPd-1</a>)  we only have one report/guide to link to, so we can to replace the section where we currently have room with three cards with one long banner that promotes our predictive growth playbook that you guys designed. we can just please make a banner version of the cover of the report (<a href=\"https://www.figma.com/design/dpNEw0JB1QXN1Y8GdoyKgF/Voyantis---Marketing-For-Client?node-id=473-2114&amp;t=2MvggWm5b3SgtK5Z-1\">https://www.figma.com/design/dpNEw0JB1QXN1Y8GdoyKgF/Voyantis---Marketing-For-Client?node-id=473-2114&amp;t=2MvggWm5b3SgtK5Z-1</a>)\n\n<img src=\"https://asanausercontent.com/us1/assets/119644874237849/1213865276233942/f2840a2f1befc51df9e294e11883624b?e=1783404830&amp;v=0&amp;t=G5r14t6_Whrgf_irT_K-JpQ2bcwfTHdAB6mAr9SPL6k\" data-asana-gid=\"1213865276233943\" data-asana-type=\"attachment\" data-src-height=\"616\" data-src-width=\"1394\" data-thumbnail-url=\"https://asanausercontent.com/us1/assets/119644874237849/1213865276233942/1213865276233943.WIxxPLaiTQ4p9UzUr43A_height640.png?e=1783404830&amp;v=0&amp;t=nWiYt4AeBgeaF3wFazLX6o1lLOjYFI87WGkCXYsN5IQ\" data-thumbnail-height=\"283\" data-thumbnail-width=\"640\" alt=\"צילום מסך 2026-03-31 ב-10.55.38.png\" style=\"display:block;max-width:100%;margin-left:auto;margin-right:auto\" />\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Banner for report on Resources Hub page ",
+    "notes": "On our Resources hub page (https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-35881&t=ShnGUxm3Z4zDULPd-1)  we only have one report/guide to link to, so we can to replace the section where we currently have room with three cards with one long banner that promotes our predictive growth playbook that you guys designed. we can just please make a banner version of the cover of the report (https://www.figma.com/design/dpNEw0JB1QXN1Y8GdoyKgF/Voyantis---Marketing-For-Client?node-id=473-2114&t=2MvggWm5b3SgtK5Z-1)\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1213865276233943\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213865276233930",
+    "tags": []
+  },
+  {
+    "gid": "1211017082723689",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-20T11:37:13.262Z",
+    "created_at": "2025-08-10T14:32:13.023Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Research",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211017082723689",
+    "tags": []
+  },
+  {
+    "gid": "1211042605518254",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:25.164Z",
+    "created_at": "2025-08-13T14:52:19.346Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Visual Language Development",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211042605518254",
+    "tags": []
+  },
+  {
+    "gid": "1211845858171099",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:23.616Z",
+    "created_at": "2025-11-05T14:15:59.545Z",
+    "due_on": null,
+    "html_notes": "<body><img src=\"https://asanausercontent.com/us1/assets/119644874237849/1211958078522976/ad286efdf66a1d1b010c5a52b8b6cd0f?e=1783404830&amp;v=0&amp;t=NgfgOaHMQ_ESg1NGQmmwrLCMJXyXiu8CblcHiMCHi34\" data-asana-gid=\"1211958078522977\" data-asana-type=\"attachment\" data-src-height=\"1060\" data-src-width=\"1764\" alt=\"image.png\" style=\"display:block;max-width:100%;margin-left:auto;margin-right:auto\" /><a href=\"mailto:daphne.hoppenot@voyantis.ai\" target=\"_blank\" rel=\"noreferrer noopener\">daphne.hoppenot@voyantis.ai</a>\n‪+1 (703) 328‑8886‬\nSenior Product Growth Manager\n<a href=\"https://www.voyantis.ai/\">https://www.voyantis.ai/</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Email signature",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1211958078522977\n\ndaphne.hoppenot@voyantis.ai\n‪+1 (703) 328‑8886‬\nSenior Product Growth Manager\nhttps://www.voyantis.ai/",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845858171099",
+    "tags": []
+  },
+  {
+    "gid": "1211845858171101",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:22.879Z",
+    "created_at": "2025-11-05T14:16:02.353Z",
+    "due_on": null,
+    "html_notes": "<body>Social media assets for YouTube &amp; LinkedIn, including a couple of options for employee cover photos.</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Social media covers",
+    "notes": "Social media assets for YouTube & LinkedIn, including a couple of options for employee cover photos.",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845858171101",
+    "tags": []
+  },
+  {
+    "gid": "1211845858171103",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-19T07:54:51.699Z",
+    "created_at": "2025-11-05T14:16:09.893Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Zoom background",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845858171103",
+    "tags": []
+  },
+  {
+    "gid": "1211962258752467",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:21.077Z",
+    "created_at": "2025-11-17T15:34:24.808Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Logo Pantone",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211962258752467",
+    "tags": []
+  },
+  {
+    "gid": "1212002024764120",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-31T07:00:00.530Z",
+    "created_at": "2025-11-20T15:29:04.789Z",
+    "due_on": "2026-04-06",
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Brand kit",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212002024764120",
+    "tags": []
+  },
+  {
+    "gid": "1213865276233928",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2026-04-14T09:14:19.530Z",
+    "created_at": "2026-03-31T06:52:26.485Z",
+    "due_on": "2026-04-06",
+    "html_notes": "<body>We need a google doc template file set up. it should include:  \n<ul><li>cover page with headline, subheadline, and our logo — i think this design can use our dark purple and stay really plain and clean. </li><li>header for each page </li><li>footer for each page </li><li>formatting for headlines, bullets, normal text, etc. </li></ul></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Google doc template with Voyantis header / footer",
+    "notes": "We need a google doc template file set up. it should include:  \n    cover page with headline, subheadline, and our logo — i think this design can use our dark purple and stay really plain and clean. \n    header for each page \n    footer for each page \n    formatting for headlines, bullets, normal text, etc. \n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213865276233928",
+    "tags": []
+  },
+  {
+    "gid": "1213865276233932",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-14T09:14:21.161Z",
+    "created_at": "2026-03-31T06:55:02.501Z",
+    "due_on": "2026-04-06",
+    "html_notes": "<body>Supported image types include GIF, JPG, and PNG formats, and cannot exceed 1 MB. Image resolution can be a minimum of 400x200, and a 2:1 image ratio is recommended for any higher resolutions.\n\nPlease just repurpose what you create for our LinkedIn banner into an image we can use here </body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Zoom waiting room graphic",
+    "notes": "Supported image types include GIF, JPG, and PNG formats, and cannot exceed 1 MB. Image resolution can be a minimum of 400x200, and a 2:1 image ratio is recommended for any higher resolutions.\n\nPlease just repurpose what you create for our LinkedIn banner into an image we can use here ",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213865276233932",
+    "tags": []
+  },
+  {
+    "gid": "1213865276233934",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-14T09:14:25.995Z",
+    "created_at": "2026-03-31T06:55:27.353Z",
+    "due_on": "2026-04-06",
+    "html_notes": "<body>Lets do two options please. Both should just be our logo in the upper corner. One version should have dark purple background. The other version could use our light purple gradient as the background. </body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Zoom background",
+    "notes": "Lets do two options please. Both should just be our logo in the upper corner. One version should have dark purple background. The other version could use our light purple gradient as the background. ",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213865276233934",
+    "tags": []
+  },
+  {
+    "gid": "1213865276233936",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-03-31T06:57:43.384Z",
+    "due_on": "2026-04-06",
+    "html_notes": "<body>Use our dark purple background, logo and show this text similar to how Hightouch does theres \nHeadline: The AI decisioning platform for marketers\nSubheadline: Predict customer value. Act on it everywhere.\n\nshow logos for: upside, opendoor, lennar, klar, uniswap, moneylion, miro, indrive, current, semrush\n\n<img src=\"https://asanausercontent.com/us1/assets/119644874237849/1213865276233938/93c5570a1043d5356226b7fb30204500?e=1783404830&amp;v=0&amp;t=oZiBUpY3sNdsma1wXJ82rd63_HBy3_Jk-ki2cg5L54U\" data-asana-gid=\"1213865276233939\" data-asana-type=\"attachment\" data-src-height=\"364\" data-src-width=\"1280\" data-thumbnail-url=\"https://asanausercontent.com/us1/assets/119644874237849/1213865276233938/1213865276233939.OSXYVo3T1xgGmLojRuGw_height640.png?e=1783404830&amp;v=0&amp;t=hRxBhdqnpkspeWO_7K0iwKs9Y6gcOV_pBdxWKqlA1Io\" data-thumbnail-height=\"182\" data-thumbnail-width=\"640\" alt=\"image.png\" style=\"display:block;max-width:100%;margin-left:auto;margin-right:auto\" />\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "LinkedIn banner",
+    "notes": "Use our dark purple background, logo and show this text similar to how Hightouch does theres \nHeadline: The AI decisioning platform for marketers\nSubheadline: Predict customer value. Act on it everywhere.\n\nshow logos for: upside, opendoor, lennar, klar, uniswap, moneylion, miro, indrive, current, semrush\n\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1213865276233939\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213865276233936",
+    "tags": []
+  },
+  {
+    "gid": "1213952138860772",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2026-04-14T09:14:27.593Z",
+    "created_at": "2026-04-07T06:23:37.944Z",
+    "due_on": null,
+    "html_notes": "<body> We are launching a newsletter and need some design help to get it over the finish line. \n\nMost importantly, we need the header to feel more branded. I left some notes in there, but ideally we would love for it to lean into the idea of The Signal - both a reference to our product and to the idea of delivering clear information. \n\nPlease only allocate 1 hour to this. If you have extra time, I would love to get your take on how we can make the section headers more engaging and visible.\n\nFigma File <a href=\"https://www.figma.com/design/r4lCrhPWPVpo5imh16fow4/Newsletter-Design--More?node-id=1-151&amp;t=OX6YFAQv8j4VcPSU-1\">https://www.figma.com/design/r4lCrhPWPVpo5imh16fow4/Newsletter-Design--More?node-id=1-151&amp;t=OX6YFAQv8j4VcPSU-1</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Newsletter Header",
+    "notes": " We are launching a newsletter and need some design help to get it over the finish line. \n\nMost importantly, we need the header to feel more branded. I left some notes in there, but ideally we would love for it to lean into the idea of The Signal - both a reference to our product and to the idea of delivering clear information. \n\nPlease only allocate 1 hour to this. If you have extra time, I would love to get your take on how we can make the section headers more engaging and visible.\n\nFigma File https://www.figma.com/design/r4lCrhPWPVpo5imh16fow4/Newsletter-Design--More?node-id=1-151&t=OX6YFAQv8j4VcPSU-1",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213952138860772",
+    "tags": []
+  },
+  {
+    "gid": "1214067340317917",
+    "assignee": {
+      "gid": "1213991315479067"
+    },
+    "completed": true,
+    "completed_at": "2026-04-15T14:32:20.568Z",
+    "created_at": "2026-04-15T07:03:53.533Z",
+    "due_on": "2026-04-15",
+    "html_notes": "<body>Create an Open Graph image for link sharing\n\n<ul><li>Use the same <strong>floral background</strong> as the company’s LinkedIn visuals</li><li>Place the <strong>Voyantis logo centered</strong>, in a larger size</li><li><strong>No additional text</strong></li><li>Dimensions: <strong>1200 × 630 px</strong></li></ul>\n\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211017082723688",
+          "name": "Brand kit"
+        }
+      }
+    ],
+    "name": "Open Graph Image",
+    "notes": "Create an Open Graph image for link sharing\n\n    Use the same floral background as the company’s LinkedIn visuals\n    Place the Voyantis logo centered, in a larger size\n    No additional text\n    Dimensions: 1200 × 630 px\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214067340317917",
+    "tags": []
+  },
+  {
+    "gid": "1214056345420490",
+    "assignee": {
+      "gid": "1213352178360044"
+    },
+    "completed": true,
+    "completed_at": "2026-04-23T07:43:34.822Z",
+    "created_at": "2026-04-14T09:14:28.762Z",
+    "due_on": "2026-04-17",
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "CNN Voyantis",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214056345420490",
+    "tags": []
+  },
+  {
+    "gid": "1212587989791780",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-02-12T09:58:39.339Z",
+    "created_at": "2025-12-25T07:58:34.315Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Deck Template",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212587989791780",
+    "tags": []
+  },
+  {
+    "gid": "1212587989791782",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-01-05T09:52:45.869Z",
+    "created_at": "2025-12-25T07:58:43.896Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Board Deck ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212587989791782",
+    "tags": []
+  },
+  {
+    "gid": "1212645590748987",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-02-12T09:58:47.143Z",
+    "created_at": "2026-01-05T08:11:35.744Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Deep Dive Deck ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212645590748987",
+    "tags": []
+  },
+  {
+    "gid": "1213239343540297",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:36.588Z",
+    "created_at": "2026-02-12T09:58:40.112Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Dev Day Deck",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213239343540297",
+    "tags": []
+  },
+  {
+    "gid": "1213354339061799",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:39.844Z",
+    "created_at": "2026-02-22T07:45:13.352Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/presentation/d/12d4dJof1QOcJwDLv_k__QPXQqEnBTG7BDjFc8vLqTgs/edit?usp=sharing\">https://docs.google.com/presentation/d/12d4dJof1QOcJwDLv_k__QPXQqEnBTG7BDjFc8vLqTgs/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "First Call Deck",
+    "notes": "https://docs.google.com/presentation/d/12d4dJof1QOcJwDLv_k__QPXQqEnBTG7BDjFc8vLqTgs/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213354339061799",
+    "tags": []
+  },
+  {
+    "gid": "1211299837454652",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-20T11:36:21.679Z",
+    "created_at": "2025-09-10T06:26:44.672Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Experian Deck",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211299837454652",
+    "tags": []
+  },
+  {
+    "gid": "1211352693077246",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-10-20T11:36:24.097Z",
+    "created_at": "2025-09-15T06:30:33.848Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "DoorDash Deck",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211352693077246",
+    "tags": []
+  },
+  {
+    "gid": "1211694114406936",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:09.663Z",
+    "created_at": "2025-10-20T11:36:47.421Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/presentation/d/16weXFhB_OEsN_CbdNoBq9DE8dti4ZxKMAiwgZzh8Xpw/edit?usp=sharing\">https://docs.google.com/presentation/d/16weXFhB_OEsN_CbdNoBq9DE8dti4ZxKMAiwgZzh8Xpw/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "Predictive Growth Platform deck",
+    "notes": "https://docs.google.com/presentation/d/16weXFhB_OEsN_CbdNoBq9DE8dti4ZxKMAiwgZzh8Xpw/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211694114406936",
+    "tags": []
+  },
+  {
+    "gid": "1211958078522974",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-19T07:40:40.077Z",
+    "created_at": "2025-11-16T12:08:29.835Z",
+    "due_on": "2025-11-17",
+    "html_notes": "<body><a href=\"https://docs.google.com/presentation/d/1mCLq6sKDDN1RHumxVLUpKBQaiTLZreUxrilBqxP40MA/edit?usp=sharing\">https://docs.google.com/presentation/d/1mCLq6sKDDN1RHumxVLUpKBQaiTLZreUxrilBqxP40MA/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211352693077248",
+          "name": "Presentations"
+        }
+      }
+    ],
+    "name": "MoneyLion",
+    "notes": "https://docs.google.com/presentation/d/1mCLq6sKDDN1RHumxVLUpKBQaiTLZreUxrilBqxP40MA/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211958078522974",
+    "tags": []
+  },
+  {
+    "gid": "1212067098724132",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-05T09:11:03.937Z",
+    "created_at": "2025-11-24T14:36:24.769Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Homepage",
+    "notes": "",
+    "num_subtasks": 6,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212067098724132",
+    "tags": []
+  },
+  {
+    "gid": "1211584581282146",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-11-24T14:41:34.187Z",
+    "created_at": "2025-10-08T06:17:57.034Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Homepage",
+    "notes": "",
+    "num_subtasks": 8,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211584581282146",
+    "tags": []
+  },
+  {
+    "gid": "1211845855184759",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-12-15T15:26:26.126Z",
+    "created_at": "2025-11-05T13:57:24.464Z",
+    "due_on": null,
+    "html_notes": "<body>Content from client:\n<a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-32&amp;t=DVduHlJVD7zPJke0-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-32&amp;t=DVduHlJVD7zPJke0-11</a>\n<object type=\"application/vnd.asana.external_media\" data-asana-type=\"attachment\" data-asana-gid=\"1211845858171084\" data=\"https://www.figma.com/embed?embed_host=asana&amp;url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FetBVzAZDDJDKFTlFWn01Fe%2FVoyantis-Website-Pages%3Fnode-id%3D1-32%26t%3DDVduHlJVD7zPJke0-11\" style=\"display:block\"><a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-32&amp;t=DVduHlJVD7zPJke0-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-32&amp;t=DVduHlJVD7zPJke0-11</a></object>\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Careers page",
+    "notes": "Content from client:\nhttps://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-32&t=DVduHlJVD7zPJke0-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1211845858171084\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845855184759",
+    "tags": []
+  },
+  {
+    "gid": "1211845855184761",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2025-12-03T15:20:48.904Z",
+    "created_at": "2025-11-05T13:57:26.747Z",
+    "due_on": null,
+    "html_notes": "<body>Content from client:\n<a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-103&amp;t=DVduHlJVD7zPJke0-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-103&amp;t=DVduHlJVD7zPJke0-11</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Gated Content page",
+    "notes": "Content from client:\nhttps://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-103&t=DVduHlJVD7zPJke0-11",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845855184761",
+    "tags": []
+  },
+  {
+    "gid": "1211845855184763",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2026-03-17T13:29:55.134Z",
+    "created_at": "2025-11-05T13:57:32.629Z",
+    "due_on": null,
+    "html_notes": "<body>Content from client:\n<a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-82&amp;t=DVduHlJVD7zPJke0-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-82&amp;t=DVduHlJVD7zPJke0-11</a>\n\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Demo request page",
+    "notes": "Content from client:\nhttps://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1-82&t=DVduHlJVD7zPJke0-11\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211845855184763",
+    "tags": []
+  },
+  {
+    "gid": "1212071657568199",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-11-24T14:44:55.924Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Main Menu & Footer",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212071657568199",
+    "tags": []
+  },
+  {
+    "gid": "1212205715926469",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-02T15:29:23.763Z",
+    "created_at": "2025-11-27T09:41:10.425Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Blog Header #1",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212205715926469",
+    "tags": []
+  },
+  {
+    "gid": "1212250718269059",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-15T15:26:30.450Z",
+    "created_at": "2025-12-02T15:28:53.845Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "About Us Page",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212250718269059",
+    "tags": []
+  },
+  {
+    "gid": "1212293301947925",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:30:10.902Z",
+    "created_at": "2025-12-03T15:11:16.417Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Blog Page",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212293301947925",
+    "tags": []
+  },
+  {
+    "gid": "1212208858476620",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:30:13.691Z",
+    "created_at": "2025-12-03T15:19:44.112Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Resources Lobby",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212208858476620",
+    "tags": []
+  },
+  {
+    "gid": "1212447265403421",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.195Z",
+    "created_at": "2025-12-15T15:26:11.881Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "All Article, All Webinars, All Gated Content + Mobile",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212447265403421",
+    "tags": []
+  },
+  {
+    "gid": "1212331658550667",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.239Z",
+    "created_at": "2025-12-07T15:25:55.005Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Logo Appearances ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212331658550667",
+    "tags": []
+  },
+  {
+    "gid": "1212474530721149",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-01-05T08:14:12.738Z",
+    "created_at": "2025-12-17T15:27:16.074Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Zoom Meeting",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212474530721149",
+    "tags": []
+  },
+  {
+    "gid": "1212540836904358",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.280Z",
+    "created_at": "2025-12-21T15:22:59.529Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Resources Visual System",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212540836904358",
+    "tags": []
+  },
+  {
+    "gid": "1212587989791784",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.317Z",
+    "created_at": "2025-12-25T08:01:36.487Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Case Study Individual",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212587989791784",
+    "tags": []
+  },
+  {
+    "gid": "1212587989791788",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.353Z",
+    "created_at": "2025-12-25T08:04:51.555Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "404",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212587989791788",
+    "tags": []
+  },
+  {
+    "gid": "1212587989791792",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.393Z",
+    "created_at": "2025-12-25T14:05:55.066Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Website: All customer stories page",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212587989791792",
+    "tags": []
+  },
+  {
+    "gid": "1212616082324481",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-12-31T08:21:51.730Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Design System",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212616082324481",
+    "tags": []
+  },
+  {
+    "gid": "1212634837901848",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.428Z",
+    "created_at": "2026-01-01T07:16:33.128Z",
+    "due_on": null,
+    "html_notes": "<body>Size of image: 1200x630 pixels\nNot more than 30 minutes per page</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "OpenGraph Images",
+    "notes": "Size of image: 1200x630 pixels\nNot more than 30 minutes per page",
+    "num_subtasks": 5,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212634837901848",
+    "tags": []
+  },
+  {
+    "gid": "1212807247660845",
+    "assignee": {
+      "gid": "1212644471173780"
+    },
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.466Z",
+    "created_at": "2026-01-18T11:40:16.445Z",
+    "due_on": null,
+    "html_notes": "<body> \n\nAll pages for dev\n<a href=\"https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-7519&amp;p=f&amp;t=hKXdTnzIzxtr923Q-11\">https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-7519&amp;p=f&amp;t=hKXdTnzIzxtr923Q-11</a>\n(use this for reference)\n\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Webinar page",
+    "notes": " \n\nAll pages for dev\nhttps://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=1755-7519&p=f&t=hKXdTnzIzxtr923Q-11\n(use this for reference)\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212807247660845",
+    "tags": []
+  },
+  {
+    "gid": "1212921829896204",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.503Z",
+    "created_at": "2026-01-22T07:31:49.420Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=827-422&amp;t=NITZKv7UbknjjkSa-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=827-422&amp;t=NITZKv7UbknjjkSa-11</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Platform Page",
+    "notes": "https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=827-422&t=NITZKv7UbknjjkSa-11",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212921829896204",
+    "tags": []
+  },
+  {
+    "gid": "1212921829896209",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:31.272Z",
+    "created_at": "2026-01-22T07:32:21.920Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Platform Visual",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212921829896209",
+    "tags": []
+  },
+  {
+    "gid": "1212961667157222",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.553Z",
+    "created_at": "2026-01-25T15:25:24.388Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Activation",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212961667157222",
+    "tags": []
+  },
+  {
+    "gid": "1213001623960710",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.590Z",
+    "created_at": "2026-01-28T14:25:26.367Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Product Page - Engine",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213001623960710",
+    "tags": []
+  },
+  {
+    "gid": "1213134532027857",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:27.627Z",
+    "created_at": "2026-02-05T14:07:05.853Z",
+    "due_on": null,
+    "html_notes": "<body>whirframe from client\n<a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1321-3524&amp;t=TgSSp8mPfh0dtq0h-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1321-3524&amp;t=TgSSp8mPfh0dtq0h-11</a>\n<object type=\"application/vnd.asana.external_media\" data-asana-type=\"attachment\" data-asana-gid=\"1213134532027860\" data=\"https://www.figma.com/embed?embed_host=asana&amp;url=https%3A%2F%2Fwww.figma.com%2Fdesign%2FetBVzAZDDJDKFTlFWn01Fe%2FVoyantis-Website-Pages%3Fnode-id%3D1321-3524%26t%3DTgSSp8mPfh0dtq0h-11\" style=\"display:block\"><a href=\"https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1321-3524&amp;t=TgSSp8mPfh0dtq0h-11\">https://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1321-3524&amp;t=TgSSp8mPfh0dtq0h-11</a></object>\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Product Page - Acquire",
+    "notes": "whirframe from client\nhttps://www.figma.com/design/etBVzAZDDJDKFTlFWn01Fe/Voyantis-Website-Pages?node-id=1321-3524&t=TgSSp8mPfh0dtq0h-11\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1213134532027860\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213134532027857",
+    "tags": []
+  },
+  {
+    "gid": "1213700887603245",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-03-17T13:14:00.668Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://www.figma.com/design/PLHnIYwlzqAao6SZvSpba1/Voyantis---Visual-Language-For-Client?node-id=3512-3282&amp;t=wm7LTAY4TO0ulJAL-11\">https://www.figma.com/design/PLHnIYwlzqAao6SZvSpba1/Voyantis---Visual-Language-For-Client?node-id=3512-3282&amp;t=wm7LTAY4TO0ulJAL-11</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "New Homepage",
+    "notes": "https://www.figma.com/design/PLHnIYwlzqAao6SZvSpba1/Voyantis---Visual-Language-For-Client?node-id=3512-3282&t=wm7LTAY4TO0ulJAL-11",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213700887603245",
+    "tags": []
+  },
+  {
+    "gid": "1213947885141408",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-05T09:35:16.157Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "QA ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213947885141408",
+    "tags": []
+  },
+  {
+    "gid": "1213700395747840",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-23T08:17:19.069Z",
+    "created_at": "2026-03-17T13:29:07.880Z",
+    "due_on": null,
+    "html_notes": "<body>תפריט אושר, צריך להכין אייקונים לכל הפריטים בתפריט\n<a href=\"https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=3595-46975&amp;t=NtDjnPuRxYhR46Xb-11\">https://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=3595-46975&amp;t=NtDjnPuRxYhR46Xb-11</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Menu Icons",
+    "notes": "תפריט אושר, צריך להכין אייקונים לכל הפריטים בתפריט\nhttps://www.figma.com/design/qhoctvCdxHLorerIWt5P3Y/Voyantis---Website?node-id=3595-46975&t=NtDjnPuRxYhR46Xb-11",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213700395747840",
+    "tags": []
+  },
+  {
+    "gid": "1213952138860776",
+    "assignee": {
+      "gid": "1213352178360044"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-07T07:01:37.923Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Legal page",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213952138860776",
+    "tags": []
+  },
+  {
+    "gid": "1214217205993613",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-23T07:43:36.877Z",
+    "due_on": "2026-04-27",
+    "html_notes": "<body>[Hannah Foley]: We need to add a section to the new website on the About Us page that highlights the VC funds who have backed us. These are the logos we should showcase (and add intel capital) and the headline we can use for now. The section needs to appear underneath our team's bios, and above the &quot;Careers at Voyantis&quot; section.\n\n─────────────────────────────\nSlack Message: <a href=\"https://voyantis.slack.com/archives/C0APG8ATHB6/p1776890327595909\">https://voyantis.slack.com/archives/C0APG8ATHB6/p1776890327595909</a>\nApproved via ✅ reaction in #design-requests</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Investor Logos section for website",
+    "notes": "[Hannah Foley]: We need to add a section to the new website on the About Us page that highlights the VC funds who have backed us. These are the logos we should showcase (and add intel capital) and the headline we can use for now. The section needs to appear underneath our team's bios, and above the \"Careers at Voyantis\" section.\n\n─────────────────────────────\nSlack Message: https://voyantis.slack.com/archives/C0APG8ATHB6/p1776890327595909\nApproved via ✅ reaction in #design-requests",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214217205993613",
+    "tags": []
+  },
+  {
+    "gid": "1214380174103037",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-29T07:55:08.800Z",
+    "due_on": null,
+    "html_notes": "<body>here is some inspo that we liked. Daphne flagged the Navan example — maybe there's something we can do there with the bigger banner design?\n\n<ul><li>\n</li></ul></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211584581282145",
+          "name": "Website"
+        }
+      }
+    ],
+    "name": "Promo banner for website ",
+    "notes": "here is some inspo that we liked. Daphne flagged the Navan example — maybe there's something we can do there with the bigger banner design?\n\n    \n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214380174103037",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759003",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:20.409Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Whitepaper 1: Generic",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759003",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759005",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:21.549Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Whitepaper 2: Fintech",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759005",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759007",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:21.715Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Blog headers",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759007",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759009",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:21.792Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/presentation/d/1sopJzI_PBR8avSlt98Ksud2egqDnfmeZT7gsB_DEv_U/edit?usp=sharing\">https://docs.google.com/presentation/d/1sopJzI_PBR8avSlt98Ksud2egqDnfmeZT7gsB_DEv_U/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Sales Pitch Deck",
+    "notes": "https://docs.google.com/presentation/d/1sopJzI_PBR8avSlt98Ksud2egqDnfmeZT7gsB_DEv_U/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759009",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759011",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:21.861Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Email Signature",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759011",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759013",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:22.285Z",
+    "due_on": null,
+    "html_notes": "<body><u><a href=\"https://www.linkedin.com/company/voyantis/\">https://www.linkedin.com/company/voyantis/</a></u></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "LinkedIn Profile",
+    "notes": "https://www.linkedin.com/company/voyantis/",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759013",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759015",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:22.415Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Swag",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759015",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759017",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:22.495Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Website Full Redo",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759017",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759019",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:22.578Z",
+    "due_on": null,
+    "html_notes": "<body><u><a href=\"https://www.linkedin.com/feed/update/urn:li:activity:7358184553934385153\">https://www.linkedin.com/feed/update/urn:li:activity:7358184553934385153</a></u></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Canva template: new hire graphic",
+    "notes": "https://www.linkedin.com/feed/update/urn:li:activity:7358184553934385153",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759019",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759021",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.008Z",
+    "due_on": null,
+    "html_notes": "<body><u><a href=\"https://www.linkedin.com/posts/voyantis_the-marketing-funnel-is-evolving-buyers-activity-7353854187442479107-uRCB?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE\">https://www.linkedin.com/posts/voyantis_the-marketing-funnel-is-evolving-buyers-activity-7353854187442479107-uRCB?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE</a></u></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Canva template: webinar graphic",
+    "notes": "https://www.linkedin.com/posts/voyantis_the-marketing-funnel-is-evolving-buyers-activity-7353854187442479107-uRCB?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759021",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759023",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.147Z",
+    "due_on": null,
+    "html_notes": "<body><u><a href=\"https://www.linkedin.com/posts/eithan-attia_affiliatesummit-ase2025-affiliatemarketing-activity-7356386511090524161-NbO0?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE\">https://www.linkedin.com/posts/eithan-attia_affiliatesummit-ase2025-affiliatemarketing-activity-7356386511090524161-NbO0?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE</a></u></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Canva template: attending event graphic",
+    "notes": "https://www.linkedin.com/posts/eithan-attia_affiliatesummit-ase2025-affiliatemarketing-activity-7356386511090524161-NbO0?utm_source=share&utm_medium=member_desktop&rcm=ACoAAAUO2tYBVm13aBqQ_wPpBpLUa8Ao5BbVOFE",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759023",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759025",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.232Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Video bumpers ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759025",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759027",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.315Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Youtube video graphics ",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759027",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759029",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.745Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/presentation/d/1A9YdZPvGGRvgL1Jgz6u7CZ8VduWBhnim/edit?usp=sharing&amp;ouid=107499645154109113923&amp;rtpof=true&amp;sd=true\">https://docs.google.com/presentation/d/1A9YdZPvGGRvgL1Jgz6u7CZ8VduWBhnim/edit?usp=sharing&amp;ouid=107499645154109113923&amp;rtpof=true&amp;sd=true</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Google Slide template",
+    "notes": "https://docs.google.com/presentation/d/1A9YdZPvGGRvgL1Jgz6u7CZ8VduWBhnim/edit?usp=sharing&ouid=107499645154109113923&rtpof=true&sd=true",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759029",
+    "tags": []
+  },
+  {
+    "gid": "1210984162759031",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-08-06T08:31:23.904Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Google doc template",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1210984162759031",
+    "tags": []
+  },
+  {
+    "gid": "1211195553362585",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": true,
+    "completed_at": "2025-10-20T11:37:29.826Z",
+    "created_at": "2025-09-01T06:25:05.167Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Popcorn Bucket",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211195553362585",
+    "tags": []
+  },
+  {
+    "gid": "1211624786601895",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2025-10-13T12:07:54.072Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991559",
+          "name": "Original Scope"
+        }
+      }
+    ],
+    "name": "Offsite shirt",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211624786601895",
+    "tags": []
+  },
+  {
+    "gid": "1213478882328920",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-03-01T07:07:55.634Z",
+    "due_on": null,
+    "html_notes": "<body>We have a new blog coming out all about the build with a partner vs. build in house. This will be an important asset for our sales team.\n\nI think ultimately we want to visualize this choice, the system/flywheel concept, or the gap between having a model and getting performance.\n\nYou've already worked on related concepts for the website and deck, so there may be elements worth pulling from there.\n\nStill working through some final edits but the main meat of the piece is done. Here's the draft:\n<a href=\"https://docs.google.com/document/d/1xTMNV8Iea2xHDwjCM37FNrDkvbmwOtUB7gY8__YDk-4/edit?tab=t.0\">https://docs.google.com/document/d/1xTMNV8Iea2xHDwjCM37FNrDkvbmwOtUB7gY8__YDk-4/edit?tab=t.0</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Build vs. Buy Blog Header",
+    "notes": "We have a new blog coming out all about the build with a partner vs. build in house. This will be an important asset for our sales team.\n\nI think ultimately we want to visualize this choice, the system/flywheel concept, or the gap between having a model and getting performance.\n\nYou've already worked on related concepts for the website and deck, so there may be elements worth pulling from there.\n\nStill working through some final edits but the main meat of the piece is done. Here's the draft:\nhttps://docs.google.com/document/d/1xTMNV8Iea2xHDwjCM37FNrDkvbmwOtUB7gY8__YDk-4/edit?tab=t.0",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213478882328920",
+    "tags": []
+  },
+  {
+    "gid": "1213552967471947",
+    "assignee": {
+      "gid": "1210682630033814"
+    },
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-03-05T07:10:31.314Z",
+    "due_on": null,
+    "html_notes": "<body>Overall Direction\nThe current 3D tablet-style design is not working. The team found it hard to read and felt that the way the layers from our platform graphic are laying down is confusing. \nThe team also felt that it was not clearly enough a circle. \nThe next version should be flat, centered, oriented so we're looking at it head-on and clearly communicate a flywheel effect. \nThe pipe-style connectors between sections should be removed and instead we need to show a living, circular system where each section flows visibly into the next -- not just circular in concept but visually obvious as a loop.\n\nStructure &amp; Flow\nThe flywheel sits at the center and is the hero of the graphic. And we should keep the same ideas that we have right now where data flows in on one side, and outcomes flow out of the Activate layer on the other side. \nThe circular motion between the internal layers should be immediately readable and we need to make sure our customers don't have to work to understand that it's a flywheel.\n\nThe Inputs in the cloud section\nWe want to have three buckets: Data Gold Mine / Business Context / Customer Preferences\n\nSub-items for Version 1 only:\nData Gold Mine: First party, Declarative, Engagement\nBusiness Context: Performance, Growth goals, KPIs\nCustomer Preferences: User mix constraints, Strategic beliefs, Optimization guardrails\n\nTwo Versions Required\nVersion 1 — Text-heavy: Design a version of this graphic where we keep all of the text we currently have on screen, but we really simplify down the graphics -- maybe that's just showing one icon per section.\nVersion 2 — More Visual: Just show the headlines of each step (Predict, Engineer, Activate, etc.) as labels flowing into the flywheel. Don't show any supporting text underneath the inputs in the cloud or underneath each headline. Clean and scannable, it should be designed for audiences who find dense graphics overwhelming.\n\nIm picturing a world where we can show Version 2 on screen during a call, and when we send an email to followup we share version 1 with the prospects so if they share it internally, the graphic is understandable to people who weren't on the call. I was thinking it could even look something like this where we add text to the right hand side to show the flow, but im open to ideas.\n<img src=\"https://asanausercontent.com/us1/assets/119644874237849/1213552967471951/ee2a0e52c2213bd45d95dfa043f1cc9d?e=1783404830&amp;v=0&amp;t=IDMO3oUDYyCDBqFPrHvjVm2RdpHqVg3U9d9Wrv2C6-k\" data-asana-gid=\"1213552967471952\" data-asana-type=\"attachment\" data-src-height=\"1056\" data-src-width=\"2122\" data-thumbnail-url=\"https://asanausercontent.com/us1/assets/119644874237849/1213552967471951/1213552967471952.HDYOPOiqDoNiTq6Bj0U3_height640.png?e=1783404830&amp;v=0&amp;t=VjSDAjjUxCKsdHs86XcRhwPjv1VQzxHC9XCXZGfSVI8\" data-thumbnail-height=\"318\" data-thumbnail-width=\"640\" alt=\"image.png\" style=\"display:block;max-width:100%;margin-left:auto;margin-right:auto\" />\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Marketecture flywheel graphic",
+    "notes": "Overall Direction\nThe current 3D tablet-style design is not working. The team found it hard to read and felt that the way the layers from our platform graphic are laying down is confusing. \nThe team also felt that it was not clearly enough a circle. \nThe next version should be flat, centered, oriented so we're looking at it head-on and clearly communicate a flywheel effect. \nThe pipe-style connectors between sections should be removed and instead we need to show a living, circular system where each section flows visibly into the next -- not just circular in concept but visually obvious as a loop.\n\nStructure & Flow\nThe flywheel sits at the center and is the hero of the graphic. And we should keep the same ideas that we have right now where data flows in on one side, and outcomes flow out of the Activate layer on the other side. \nThe circular motion between the internal layers should be immediately readable and we need to make sure our customers don't have to work to understand that it's a flywheel.\n\nThe Inputs in the cloud section\nWe want to have three buckets: Data Gold Mine / Business Context / Customer Preferences\n\nSub-items for Version 1 only:\nData Gold Mine: First party, Declarative, Engagement\nBusiness Context: Performance, Growth goals, KPIs\nCustomer Preferences: User mix constraints, Strategic beliefs, Optimization guardrails\n\nTwo Versions Required\nVersion 1 — Text-heavy: Design a version of this graphic where we keep all of the text we currently have on screen, but we really simplify down the graphics -- maybe that's just showing one icon per section.\nVersion 2 — More Visual: Just show the headlines of each step (Predict, Engineer, Activate, etc.) as labels flowing into the flywheel. Don't show any supporting text underneath the inputs in the cloud or underneath each headline. Clean and scannable, it should be designed for audiences who find dense graphics overwhelming.\n\nIm picturing a world where we can show Version 2 on screen during a call, and when we send an email to followup we share version 1 with the prospects so if they share it internally, the graphic is understandable to people who weren't on the call. I was thinking it could even look something like this where we add text to the right hand side to show the flow, but im open to ideas.\n\nhttps://app.asana.com/app/asana/-/get_asset?asset_id=1213552967471952\n\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1213552967471947",
+    "tags": []
+  },
+  {
+    "gid": "1214031130507238",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-04-26T11:19:39.166Z",
+    "created_at": "2026-04-13T14:42:38.317Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Moneylion F2F Deck",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214031130507238",
+    "tags": []
+  },
+  {
+    "gid": "1212208858476616",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-14T13:44:50.934Z",
+    "created_at": "2025-12-02T15:26:48.935Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Voyantis & Experian Deck",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212208858476616",
+    "tags": []
+  },
+  {
+    "gid": "1212293301947921",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-14T13:44:49.810Z",
+    "created_at": "2025-12-03T15:09:54.409Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Blog Header #2",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212293301947921",
+    "tags": []
+  },
+  {
+    "gid": "1212306257385693",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-12-14T13:44:49.335Z",
+    "created_at": "2025-12-04T13:16:36.501Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Whitepaper PDF export",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212306257385693",
+    "tags": []
+  },
+  {
+    "gid": "1211645928991563",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:14.784Z",
+    "created_at": "2025-10-15T07:35:32.589Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/document/d/1_1rjUld-qFG_kY8SX_hIxMeW8TKn5y0E-Z4zAQ52mwQ/edit?usp=sharing\">https://docs.google.com/document/d/1_1rjUld-qFG_kY8SX_hIxMeW8TKn5y0E-Z4zAQ52mwQ/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "The Future of Growth Is Predictive - Whitepaper",
+    "notes": "https://docs.google.com/document/d/1_1rjUld-qFG_kY8SX_hIxMeW8TKn5y0E-Z4zAQ52mwQ/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211645928991563",
+    "tags": []
+  },
+  {
+    "gid": "1211815159833063",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-19T07:55:08.244Z",
+    "created_at": "2025-11-03T08:14:39.532Z",
+    "due_on": null,
+    "html_notes": "<body><a href=\"https://docs.google.com/document/d/1PrO-5kfllpDkE2JLH6LxCm2hlFbhoTCTLZIbAL-G9H0/edit?usp=sharing\">https://docs.google.com/document/d/1PrO-5kfllpDkE2JLH6LxCm2hlFbhoTCTLZIbAL-G9H0/edit?usp=sharing</a></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "LinkedIn ad creatives",
+    "notes": "https://docs.google.com/document/d/1PrO-5kfllpDkE2JLH6LxCm2hlFbhoTCTLZIbAL-G9H0/edit?usp=sharing",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211815159833063",
+    "tags": []
+  },
+  {
+    "gid": "1211815159833065",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2025-11-25T11:21:17.205Z",
+    "created_at": "2025-11-03T08:14:45.050Z",
+    "due_on": null,
+    "html_notes": "<body>wanted to share our requests for ad designs and organic social templates that will support the whitepaper amplification. <a href=\"https://docs.google.com/document/d/1USd93dcAyi25vk23VQaGY0FEvA8o0vNGjmp93yVzthk/edit?tab=t.0\">Here is a brief</a> with the request, which encompasses 2 things:\n- <strong>Paid Ads</strong>: We're looking to create a few LinkedIn ads to promote the whitepaper (suggestions &amp; specs from our ad agency included)\n- <strong>Organic Social Templates</strong>: We need a few single image and carousel templates that we can easily customize with text as we'll be publishing a range of content related to the whitepaper (and ongoing). Suggestions are included in the document.</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Whitepaper Assets",
+    "notes": "wanted to share our requests for ad designs and organic social templates that will support the whitepaper amplification. https://docs.google.com/document/d/1USd93dcAyi25vk23VQaGY0FEvA8o0vNGjmp93yVzthk/edit?tab=t.0 with the request, which encompasses 2 things:\n- Paid Ads: We're looking to create a few LinkedIn ads to promote the whitepaper (suggestions & specs from our ad agency included)\n- Organic Social Templates: We need a few single image and carousel templates that we can easily customize with text as we'll be publishing a range of content related to the whitepaper (and ongoing). Suggestions are included in the document.",
+    "num_subtasks": 6,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1211815159833065",
+    "tags": []
+  },
+  {
+    "gid": "1212435320839080",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2026-01-05T08:11:48.365Z",
+    "created_at": "2025-12-14T13:44:33.841Z",
+    "due_on": "2025-12-17",
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1211645928991562",
+          "name": "Marketing"
+        }
+      }
+    ],
+    "name": "Blog Header #3 - Using Your First-Party Data",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212435320839080",
+    "tags": []
+  },
+  {
+    "gid": "1214021720424548",
+    "assignee": null,
+    "completed": false,
+    "completed_at": null,
+    "created_at": "2026-04-12T14:25:12.086Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764108",
+          "name": "Merch"
+        }
+      }
+    ],
+    "name": "stickers",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1214021720424548",
+    "tags": []
+  },
+  {
+    "gid": "1212822593824122",
+    "assignee": null,
+    "completed": true,
+    "completed_at": "2026-03-17T13:31:43.625Z",
+    "created_at": "2026-01-15T15:27:44.873Z",
+    "due_on": null,
+    "html_notes": "<body></body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764108",
+          "name": "Merch"
+        }
+      }
+    ],
+    "name": "stickers",
+    "notes": "",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212822593824122",
+    "tags": []
+  },
+  {
+    "gid": "1212002024764109",
+    "assignee": {
+      "gid": "1206858324797116"
+    },
+    "completed": true,
+    "completed_at": "2026-01-05T08:11:50.121Z",
+    "created_at": "2025-11-20T13:59:43.639Z",
+    "due_on": "2025-11-25",
+    "html_notes": "<body><img src=\"https://asanausercontent.com/us1/assets/119644874237849/1212002024764111/be246bf9fdf97781a3963114c8e66e80?e=1783404830&amp;v=0&amp;t=jh1rWVfInMYjt_6GyDHnvzrasQgKDFy2Y8AxMWMxWPM\" data-asana-gid=\"1212002024764112\" data-asana-type=\"attachment\" data-src-height=\"1024\" data-src-width=\"1024\" data-thumbnail-url=\"https://asanausercontent.com/us1/assets/119644874237849/1212002024764111/1212002024764112.14Z2rmuCyRSDtlz03LM3_height640.png?e=1783404830&amp;v=0&amp;t=vXfjq5a0IDqtkjIwJ00ZF7bKuH8kPaIOXORikaDcx_U\" data-thumbnail-height=\"480\" data-thumbnail-width=\"480\" alt=\"image.png\" style=\"display:block;max-width:100%;margin-left:auto;margin-right:auto\" />Please make sure whatever colors we do, the shirt would look good worn with blue jeans\n\n</body>",
+    "memberships": [
+      {
+        "section": {
+          "gid": "1212002024764108",
+          "name": "Merch"
+        }
+      }
+    ],
+    "name": "Soccer Shirt",
+    "notes": "https://app.asana.com/app/asana/-/get_asset?asset_id=1212002024764112\n\nPlease make sure whatever colors we do, the shirt would look good worn with blue jeans\n\n",
+    "num_subtasks": 0,
+    "permalink_url": "https://app.asana.com/1/119644874237849/project/1210984162758994/task/1212002024764109",
+    "tags": []
+  }
+]

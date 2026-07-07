@@ -1,0 +1,30 @@
+[
+  {
+    "id": "as:1202533256715572",
+    "name": "First stage - Mapping & Strategy - 19h",
+    "type": "task",
+    "status": "open",
+    "url": "https://app.asana.com/0/1202530903111891/1202533256715572/f",
+    "iteration": "Homrun total - 9h (14/07/22)",
+    "projects": [
+      "as:1202530903111891"
+    ],
+    "createdAt": "2022-06-30 14:26:54",
+    "labels": [],
+    "time": {
+      "total": 68400,
+      "users": {
+        "1213760": 68400
+      },
+      "timerTime": 0
+    },
+    "completed": false,
+    "assignees": [
+      {
+        "accountId": "as:1200142760878862",
+        "accountName": "Tomer Romano",
+        "userId": 1219082
+      }
+    ]
+  }
+]

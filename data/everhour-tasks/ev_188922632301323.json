@@ -1,0 +1,373 @@
+[
+  {
+    "id": "ev:188922722213287",
+    "name": "Brandbook_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Marketing",
+    "projects": [
+      "ev:188922632301323"
+    ],
+    "position": 1,
+    "createdAt": "2026-07-02 18:17:02",
+    "labels": [],
+    "section": 1424705,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922730825695",
+    "name": "Police Department Page_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Website",
+    "descriptionJson": [
+      [
+        "p",
+        [
+          [
+            "t",
+            "Summary  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "Create a responsive WordPress landing page for NoTraffic that targets U.S. police departments. This new “Police Department” page must closely follow the look, feel, structure, and messaging flow of the existing “NoTraffic for Police Departments” reference ("
+          ],
+          [
+            "t",
+            "https://lp.notraffic.com/notraffic-for-police",
+            {
+              "l": {
+                "href": "https://lp.notraffic.com/notraffic-for-police"
+              }
+            }
+          ],
+          [
+            "t",
+            "), and will later serve as a template for future landing pages."
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "\n"
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "Task Description  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Deliverables  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – High-fidelity responsive layouts for desktop, tablet, and mobile  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – Design source files (e.g. Figma, Sketch, Adobe XD) and a basic style guide  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – Export-ready assets (icons, images, etc.)  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Platform & Specs  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – WordPress landing page on notraffic.com  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – Must follow the structure and visual direction of: "
+          ],
+          [
+            "t",
+            "https://lp.notraffic.com/notraffic-for-police",
+            {
+              "l": {
+                "href": "https://lp.notraffic.com/notraffic-for-police"
+              }
+            }
+          ],
+          [
+            "t",
+            "  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Content  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – Copy and imagery will mirror the reference page’s content flow  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – Primary goal: inform prospects in police departments and capture leads  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Due Date  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – 2026-07-10  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Budget (in hours)  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – To be determined – please provide an estimate of how many hours this task will require  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Things to Avoid  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – No specific “avoid” items were provided; please flag if any elements from the reference should not be carried over  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Notes  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – After delivery, this design will be converted into a reusable landing-page template  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "  – For questions or clarifications, contact Danna Wermus ("
+          ],
+          [
+            "t",
+            "danna.wermus@notraffic.tech",
+            {
+              "l": {
+                "href": "mailto:danna.wermus@notraffic.tech"
+              }
+            }
+          ],
+          [
+            "t",
+            ")  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "\n"
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "Missing Information  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Budget range (hours) – client requests an estimate but has not specified a budget range  "
+          ]
+        ]
+      ],
+      [
+        "p",
+        [
+          [
+            "t",
+            "• Things to Avoid – no guidance was provided on elements to exclude or de-emphasize"
+          ]
+        ]
+      ]
+    ],
+    "projects": [
+      "ev:188922632301323"
+    ],
+    "position": 2,
+    "createdAt": "2026-07-02 18:18:28",
+    "labels": [],
+    "section": 1424706,
+    "time": {
+      "total": 27000,
+      "users": {
+        "1435452": 27000
+      },
+      "timerTime": 0
+    },
+    "color": "#91cef2",
+    "comments": 1,
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188922742720246",
+    "name": "partner event 2026 logo_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Marketing",
+    "projects": [
+      "ev:188922632301323"
+    ],
+    "position": 3,
+    "createdAt": "2026-07-02 18:20:27",
+    "labels": [],
+    "section": 1424705,
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  },
+  {
+    "id": "ev:188947320292934",
+    "name": "LinkedIn Banner_",
+    "type": "task",
+    "status": "open",
+    "iteration": "Marketing",
+    "projects": [
+      "ev:188922632301323"
+    ],
+    "position": 4,
+    "createdAt": "2026-07-05 14:36:42",
+    "labels": [],
+    "section": 1424705,
+    "time": {
+      "total": 3600,
+      "users": {
+        "1450722": 3600
+      },
+      "timerTime": 0
+    },
+    "color": "#91cef2",
+    "completed": false,
+    "assignees": [],
+    "createdBy": 1217417
+  }
+]
