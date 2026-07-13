@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordInput } from "@/components/password-input";
+import { APP_VERSION } from "@/lib/version";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -60,6 +61,7 @@ export default function LoginPage() {
         <a href="/reset" className="text-sm text-brand hover:underline">
           Forgot password? / First time here?
         </a>
+        <p className="text-center text-xs text-muted">{APP_VERSION}</p>
       </form>
     </div>
   );

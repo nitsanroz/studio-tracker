@@ -1,28 +1,64 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import {
+  CalendarPlus,
   ChevronDown,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
   ChevronLeft,
   Columns3,
+  Minus,
+  Palmtree,
   Plus,
+  Thermometer,
   X,
 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { addDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
-import { Avatar } from "./ui";
-import type { AbsenceType, PlanColumn, PlanEntry } from "@/lib/types";
+import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
+import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
+import type { AbsenceType, DevStatus, PlanColumn, PlanEntry } from "@/lib/types";
 
 const ABSENCE_LABELS: Record<AbsenceType, string> = {
   vacation: "🌴 Vacation",
   sick: "🤒 Sick",
   day_off: "Day off",
-  half_day: "½ Half day",
-  wfh: "🏠 WFH",
 };
+
+/** Full-cell fill styles per absence type. */
+const ABSENCE_FILL: Record<AbsenceType, string> = {
+  sick: "bg-black text-white",
+  vacation: "bg-blue-700 text-white",
+  day_off: "bg-gray-200 text-gray-500",
+};
+
+/** Icon + short label shown inside the full-cell absence fill. */
+const ABSENCE_CELL: Record<AbsenceType, { icon: typeof Thermometer; label: string | null }> = {
+  sick: { icon: Thermometer, label: "Sick" },
+  vacation: { icon: Palmtree, label: "Vacation" },
+  day_off: { icon: Minus, label: null },
+};
+
+/** Display label + functional chip colors per dev-item status. */
+const DEV_STATUS: Record<DevStatus, { label: string; chip: string }> = {
+  pricing: { label: "Pricing", chip: "bg-gray-100 text-gray-800" },
+  in_approval: { label: "In approval", chip: "bg-amber-100 text-amber-800" },
+  wip: { label: "WIP", chip: "bg-blue-100 text-blue-800" },
+  qa: { label: "QA", chip: "bg-purple-100 text-purple-800" },
+  client_qa: { label: "Client QA", chip: "bg-pink-100 text-pink-800" },
+  done: { label: "Done", chip: "bg-green-100 text-green-800" },
+};
+
+const DEV_STATUS_ORDER: DevStatus[] = ["pricing", "in_approval", "wip", "qa", "client_qa", "done"];
 
 interface CellTarget {
   date: string | null;
@@ -30,9 +66,30 @@ interface CellTarget {
   label: string;
 }
 
+interface ChipPayload {
+  type: PlanEntry["type"];
+  taskId: string | null;
+  text: string;
+  clientId: string | null;
+  absenceType: AbsenceType | null;
+}
+
+/** Module-level clipboard: survives re-renders, intentionally not persisted. */
+let planClipboard: ChipPayload | null = null;
+
 // ── chips ────────────────────────────────────────────────────────────────
 
-function EntryChip({ entry, canEdit }: { entry: PlanEntry; canEdit: boolean }) {
+function EntryChip({
+  entry,
+  canEdit,
+  onMenu,
+  onHover,
+}: {
+  entry: PlanEntry;
+  canEdit: boolean;
+  onMenu?: (e: ReactMouseEvent, entry: PlanEntry) => void;
+  onHover?: (entry: PlanEntry | null) => void;
+}) {
   const { tasks, clients, openTask, deletePlanEntry } = useData();
   const task = entry.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
   const client = entry.clientId ? clients.find((c) => c.id === entry.clientId) : null;
@@ -60,11 +117,25 @@ function EntryChip({ entry, canEdit }: { entry: PlanEntry; canEdit: boolean }) {
       }
     : {};
 
+  const wrapperProps = {
+    ...dragProps,
+    onContextMenu: onMenu ? (e: ReactMouseEvent) => onMenu(e, entry) : undefined,
+    onMouseEnter: onHover ? () => onHover(entry) : undefined,
+    onMouseLeave: onHover ? () => onHover(null) : undefined,
+  };
+
+  // Absence: full-cell fill (rendered stretched by PlanCell), not a chip.
   if (entry.type === "absence") {
+    const type = entry.absenceType ?? "day_off";
+    const { icon: AbsenceIcon, label: absenceLabel } = ABSENCE_CELL[type];
     return (
-      <div className="group/chip relative" {...dragProps}>
-        <div className="rounded-md bg-gray-200/70 px-2 py-1 text-xs font-medium text-gray-600">
-          {ABSENCE_LABELS[entry.absenceType ?? "day_off"]}
+      <div className="group/chip relative flex min-h-8 flex-1" {...wrapperProps}>
+        <div
+          className={`flex flex-1 items-center justify-center gap-1 rounded-sm text-xs font-medium ${ABSENCE_FILL[type]}`}
+          title={ABSENCE_LABELS[type]}
+        >
+          <AbsenceIcon size={12} />
+          {absenceLabel}
         </div>
         {remove}
       </div>
@@ -75,15 +146,53 @@ function EntryChip({ entry, canEdit }: { entry: PlanEntry; canEdit: boolean }) {
   const color = client?.color ?? "#6b7280";
   const done = task?.status === "done";
 
+  // Real task: solid client color + inset outline to mark it as linked.
+  if (task) {
+    return (
+      <div className="group/chip relative" {...wrapperProps}>
+        <div
+          onClick={() => openTask(task.id)}
+          className={`cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-white ring-2 ring-inset ring-white/40 hover:brightness-110 ${task.pending ? "opacity-40 grayscale" : ""} ${done ? "opacity-50" : ""}`}
+          style={{ backgroundColor: color }}
+          title={task.pending ? `${label} (pending approval)` : label}
+        >
+          {client && (
+            <div className="truncate text-right text-[9px] font-semibold uppercase tracking-wide text-white/75">
+              {client.name}
+            </div>
+          )}
+          <div className={`bidi-auto truncate text-left ${done ? "line-through" : ""}`}>{label}</div>
+        </div>
+        {remove}
+      </div>
+    );
+  }
+
+  // Free text with a client: lighter shade of the client color, no outline.
+  if (client) {
+    return (
+      <div className="group/chip relative" {...wrapperProps}>
+        <div
+          className="rounded-md px-2 py-1 text-xs font-medium text-white"
+          style={{ backgroundColor: `color-mix(in srgb, ${color} 75%, white)` }}
+          title={`${client.name} — ${label}`}
+        >
+          <div className="truncate text-right text-[9px] font-semibold uppercase tracking-wide text-white/85">
+            {client.name}
+          </div>
+          <div className="bidi-auto truncate text-left">{label}</div>
+        </div>
+        {remove}
+      </div>
+    );
+  }
+
+  // Plain free text: darker grey so it doesn't disappear against the cell.
   return (
-    <div className="group/chip relative" {...dragProps}>
+    <div className="group/chip relative" {...wrapperProps}>
       <div
-        onClick={() => task && openTask(task.id)}
-        className={`bidi-auto truncate rounded-md px-2 py-1 text-left text-xs font-medium text-white ${
-          task ? "cursor-pointer" : ""
-        } ${task?.pending ? "opacity-40 grayscale" : ""} ${done ? "opacity-50 line-through" : ""}`}
-        style={{ backgroundColor: color }}
-        title={task?.pending ? `${label} (pending approval)` : label}
+        className="bidi-auto truncate rounded-md bg-gray-300 px-2 py-1 text-left text-xs font-medium text-gray-700"
+        title={label}
       >
         {label}
       </div>
@@ -95,37 +204,65 @@ function EntryChip({ entry, canEdit }: { entry: PlanEntry; canEdit: boolean }) {
 // ── add-entry modal ──────────────────────────────────────────────────────
 
 function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () => void }) {
-  const { clients, projects, tasks, addPlanEntry } = useData();
-  const [mode, setMode] = useState<"task" | "free_text" | "absence">("task");
+  const { clients, tasks, planEntries, entrySums, addPlanEntry } = useData();
   const [clientId, setClientId] = useState<string>("");
-  const [search, setSearch] = useState("");
-  const [text, setText] = useState("");
 
-  const activeClients = useMemo(
-    () => clients.filter((c) => !c.archived).sort((a, b) => a.name.localeCompare(b.name)),
-    [clients],
-  );
+  const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
 
-  const clientTasks = useMemo(() => {
-    if (!clientId) return [];
-    const projectIds = new Set(
-      projects.filter((p) => p.clientId === clientId && !p.archived).map((p) => p.id),
-    );
-    const q = search.trim().toLowerCase();
-    return tasks
-      .filter(
-        (t) =>
-          projectIds.has(t.projectId) &&
-          t.status !== "done" &&
-          (q === "" || t.title.toLowerCase().includes(q)),
-      )
-      .slice(0, 30);
-  }, [clientId, projects, tasks, search]);
+  // Active clients ordered by how much they appeared in tracked/planned work lately.
+  const recentClients = useMemo(() => {
+    const cutoff = toISODate(addDays(new Date(), -30));
+    const score = new Map<string, number>();
+    for (const e of entrySums) {
+      if (e.date < cutoff) continue;
+      const cid = taskClient.get(e.taskId);
+      if (cid) score.set(cid, (score.get(cid) ?? 0) + 1);
+    }
+    for (const pe of planEntries) {
+      if (!pe.date || pe.date < cutoff || !pe.clientId) continue;
+      score.set(pe.clientId, (score.get(pe.clientId) ?? 0) + 2);
+    }
+    return clients
+      .filter((c) => !c.archived)
+      .sort(
+        (a, b) =>
+          (score.get(b.id) ?? 0) - (score.get(a.id) ?? 0) || a.name.localeCompare(b.name),
+      );
+  }, [clients, entrySums, planEntries, taskClient]);
+
+  const selectedClient = clients.find((c) => c.id === clientId);
+
+  function pickTask(m: TaskMatch) {
+    addPlanEntry({
+      date: target.date,
+      columnId: target.columnId,
+      type: "task",
+      taskId: m.task.id,
+      clientId: m.client?.id ?? m.task.clientId,
+    });
+    onClose();
+  }
+
+  function addFreeText(text: string) {
+    addPlanEntry({
+      date: target.date,
+      columnId: target.columnId,
+      type: "free_text",
+      text,
+      clientId: clientId || null,
+    });
+    onClose();
+  }
+
+  function addAbsence(key: AbsenceType) {
+    addPlanEntry({ date: target.date, columnId: target.columnId, type: "absence", absenceType: key });
+    onClose();
+  }
 
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-heading text-sm">Add to {target.label}</h3>
           <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
@@ -133,133 +270,57 @@ function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () =>
           </button>
         </div>
 
-        <div className="mb-3 flex rounded-lg border border-border bg-background p-0.5">
-          {(
-            [
-              ["task", "Task"],
-              ["free_text", "Free text"],
-              ["absence", "Absence"],
-            ] as const
-          ).map(([key, label]) => (
+        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+          {recentClients.map((c) => (
             <button
-              key={key}
-              onClick={() => setMode(key)}
-              className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
-                mode === key ? "bg-surface shadow-sm" : "text-muted"
+              key={c.id}
+              onClick={() => setClientId(clientId === c.id ? "" : c.id)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                clientId === c.id
+                  ? "border-brand bg-brand-soft text-brand-dark"
+                  : "border-border bg-surface text-muted hover:border-border-strong hover:text-foreground"
               }`}
             >
-              {label}
+              <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+              {c.name}
             </button>
           ))}
         </div>
 
-        {mode !== "absence" && (
-          <select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            className="mb-2 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+        <TaskAutocomplete
+          clientId={clientId || null}
+          allowFreeText
+          autoFocus
+          placeholder={
+            selectedClient
+              ? `Search ${selectedClient.name} tasks, or type free text…`
+              : "Search all tasks, or type free text…"
+          }
+          onPickTask={pickTask}
+          onFreeText={addFreeText}
+        />
+
+        <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-3">
+          <span className="mr-1 text-xs text-faint">Absence:</span>
+          <button
+            onClick={() => addAbsence("sick")}
+            className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white hover:opacity-80"
           >
-            <option value="">
-              {mode === "task" ? "Choose client first…" : "Client (for color) — optional"}
-            </option>
-            {activeClients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {mode === "task" && clientId && (
-          <>
-            <input
-              autoFocus
-              placeholder="Search tasks…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bidi-auto mb-2 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-            />
-            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto">
-              {clientTasks.map((t) => {
-                const project = projects.find((p) => p.id === t.projectId);
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      addPlanEntry({
-                        date: target.date,
-                        columnId: target.columnId,
-                        type: "task",
-                        taskId: t.id,
-                        clientId,
-                      });
-                      onClose();
-                    }}
-                    className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-background"
-                  >
-                    <span className="bidi-auto">{t.title}</span>
-                    <span className="ml-2 text-xs text-faint">{project?.name}</span>
-                  </button>
-                );
-              })}
-              {clientTasks.length === 0 && (
-                <div className="px-2 py-3 text-center text-sm text-faint">No open tasks found.</div>
-              )}
-            </div>
-          </>
-        )}
-
-        {mode === "free_text" && (
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!text.trim()) return;
-              addPlanEntry({
-                date: target.date,
-                columnId: target.columnId,
-                type: "free_text",
-                text: text.trim(),
-                clientId: clientId || null,
-              });
-              onClose();
-            }}
+            🤒 Sick
+          </button>
+          <button
+            onClick={() => addAbsence("vacation")}
+            className="rounded-md bg-blue-700 px-3 py-1.5 text-xs font-medium text-white hover:opacity-80"
           >
-            <input
-              autoFocus
-              required
-              placeholder="e.g. Voyantis launch 🚀"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="bidi-auto flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-            />
-            <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
-              Add
-            </button>
-          </form>
-        )}
-
-        {mode === "absence" && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {(Object.keys(ABSENCE_LABELS) as AbsenceType[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => {
-                  addPlanEntry({
-                    date: target.date,
-                    columnId: target.columnId,
-                    type: "absence",
-                    absenceType: key,
-                  });
-                  onClose();
-                }}
-                className="rounded-lg border border-border px-2 py-2 text-sm hover:border-brand hover:bg-brand-soft"
-              >
-                {ABSENCE_LABELS[key]}
-              </button>
-            ))}
-          </div>
-        )}
+            🌴 Vacation
+          </button>
+          <button
+            onClick={() => addAbsence("day_off")}
+            className="rounded-md bg-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:opacity-80"
+          >
+            – Day off
+          </button>
+        </div>
       </div>
     </>
   );
@@ -360,6 +421,200 @@ function ColumnManager({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── day-state modal ──────────────────────────────────────────────────────
+
+const DAY_STATE_SUGGESTIONS = ["Holiday"];
+
+function DayStateModal({ dateIso, onClose }: { dateIso: string; onClose: () => void }) {
+  const { dayStates, addDayState, deleteDayState } = useData();
+  const [label, setLabel] = useState("");
+  const [until, setUntil] = useState(dateIso);
+
+  const existing = dayStates.find((ds) => ds.dateFrom <= dateIso && dateIso <= ds.dateTo);
+
+  function save() {
+    if (!label.trim()) return;
+    addDayState(dateIso, until >= dateIso ? until : dateIso, label.trim());
+    onClose();
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-xs -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-heading text-sm">Day state — {dateIso}</h3>
+          <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
+            <X size={16} />
+          </button>
+        </div>
+        {existing ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                {existing.label}
+              </span>
+              <span className="text-xs text-faint">
+                {existing.dateFrom}
+                {existing.dateTo !== existing.dateFrom ? ` → ${existing.dateTo}` : ""}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                deleteDayState(existing.id);
+                onClose();
+              }}
+              className="self-start rounded-md border border-border px-3 py-1.5 text-xs font-medium text-danger hover:border-danger"
+            >
+              Delete
+            </button>
+          </div>
+        ) : (
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save();
+            }}
+          >
+            <div className="flex gap-1.5">
+              {DAY_STATE_SUGGESTIONS.map((s) => (
+                <button
+                  type="button"
+                  key={s}
+                  onClick={() => setLabel(s)}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                    label === s
+                      ? "border-brand bg-brand-soft text-brand-dark"
+                      : "border-border bg-surface text-muted hover:border-border-strong hover:text-foreground"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <input
+              autoFocus
+              placeholder="Label (Holiday, Funday…)"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              className="bidi-auto w-full rounded-md border border-border bg-surface px-2.5 py-2 text-sm outline-none focus:border-brand"
+            />
+            <label className="flex items-center gap-2 text-xs text-muted">
+              until
+              <input
+                type="date"
+                value={until}
+                min={dateIso}
+                onChange={(e) => setUntil(e.target.value)}
+                className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+              />
+            </label>
+            <button
+              disabled={!label.trim()}
+              className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+            >
+              Save
+            </button>
+          </form>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── in-development card (admins only) ────────────────────────────────────
+
+function DevCard() {
+  const { devItems, addDevItem, updateDevItem, deleteDevItem } = useData();
+  const [newText, setNewText] = useState("");
+  const [editing, setEditing] = useState<{ id: string; value: string } | null>(null);
+  const [statusMenu, setStatusMenu] = useState<{ x: number; y: number; id: string } | null>(null);
+
+  const ordered = [...devItems].sort((a, b) => a.position - b.position);
+
+  function commitEdit() {
+    if (editing && editing.value.trim()) updateDevItem(editing.id, { text: editing.value.trim() });
+    setEditing(null);
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+        In development
+      </div>
+      <div className="flex flex-col gap-1">
+        {ordered.map((item) => (
+          <div key={item.id} className="group/dev relative flex items-center gap-1.5">
+            {editing?.id === item.id ? (
+              <input
+                autoFocus
+                value={editing.value}
+                onChange={(e) => setEditing({ id: item.id, value: e.target.value })}
+                onBlur={commitEdit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitEdit();
+                  else if (e.key === "Escape") setEditing(null);
+                }}
+                className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs outline-none focus:border-brand"
+              />
+            ) : (
+              <button
+                onClick={() => setEditing({ id: item.id, value: item.text })}
+                className="bidi-auto min-w-0 flex-1 truncate rounded px-0.5 py-0.5 text-left text-xs hover:bg-background"
+                title={item.text}
+              >
+                {item.text}
+              </button>
+            )}
+            <button
+              onClick={(e) => setStatusMenu({ x: e.clientX, y: e.clientY, id: item.id })}
+              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${DEV_STATUS[item.status].chip}`}
+              title="Change status"
+            >
+              {DEV_STATUS[item.status].label}
+            </button>
+            <button
+              onClick={() => deleteDevItem(item.id)}
+              className="absolute -right-1 -top-1 hidden size-4 items-center justify-center rounded-full bg-foreground text-white group-hover/dev:flex"
+              title="Delete"
+            >
+              <X size={10} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <form
+        className={`${ordered.length ? "mt-2 border-t border-border pt-2" : ""}`}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!newText.trim()) return;
+          addDevItem(newText.trim());
+          setNewText("");
+        }}
+      >
+        <input
+          placeholder="+ Add"
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          className="bidi-auto w-full rounded-md border border-border bg-surface px-1.5 py-1 text-xs outline-none focus:border-brand"
+        />
+      </form>
+      {statusMenu && (
+        <ContextMenu
+          x={statusMenu.x}
+          y={statusMenu.y}
+          items={DEV_STATUS_ORDER.map((s) => ({
+            label: DEV_STATUS[s].label,
+            onClick: () => updateDevItem(statusMenu.id, { status: s }),
+          }))}
+          onClose={() => setStatusMenu(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── plan cell ────────────────────────────────────────────────────────────
 
 function PlanCell({
@@ -369,6 +624,10 @@ function PlanCell({
   entries,
   canEdit,
   onAdd,
+  onChipMenu,
+  onCellMenu,
+  onHoverCell,
+  onHoverEntry,
 }: {
   date: string | null;
   columnId: string;
@@ -376,9 +635,16 @@ function PlanCell({
   entries: PlanEntry[];
   canEdit: boolean;
   onAdd: (target: CellTarget) => void;
+  onChipMenu?: (e: ReactMouseEvent, entry: PlanEntry) => void;
+  onCellMenu?: (e: ReactMouseEvent, target: CellTarget) => void;
+  onHoverCell?: (target: CellTarget | null) => void;
+  onHoverEntry?: (entry: PlanEntry | null) => void;
 }) {
   const { movePlanEntry } = useData();
   const [over, setOver] = useState(false);
+
+  const hasAbsence = entries.some((e) => e.type === "absence");
+  const target: CellTarget = { date, columnId, label };
 
   const dropProps = canEdit
     ? {
@@ -402,14 +668,30 @@ function PlanCell({
   return (
     <div
       className={`group/cell relative flex min-h-8 flex-col gap-1 rounded-sm p-0.5 ${over ? "bg-brand-soft outline-2 outline-dashed outline-brand" : ""}`}
+      onContextMenu={canEdit && onCellMenu ? (e) => onCellMenu(e, target) : undefined}
+      onMouseEnter={onHoverCell ? () => onHoverCell(target) : undefined}
+      onMouseLeave={onHoverCell ? () => onHoverCell(null) : undefined}
       {...dropProps}
     >
-      {entries.map((e) => (
-        <EntryChip key={e.id} entry={e} canEdit={canEdit} />
-      ))}
-      {canEdit && (
+      {/* absence covers the WHOLE cell (absolute ignores the cell padding) */}
+      {entries
+        .filter((e) => e.type === "absence")
+        .map((e) => (
+          <div key={e.id} className="absolute inset-0 z-0 flex">
+            <EntryChip entry={e} canEdit={canEdit} onMenu={onChipMenu} onHover={onHoverEntry} />
+          </div>
+        ))}
+      {entries
+        .filter((e) => e.type !== "absence")
+        .map((e) => (
+          <div key={e.id} className="relative z-10">
+            <EntryChip entry={e} canEdit={canEdit} onMenu={onChipMenu} onHover={onHoverEntry} />
+          </div>
+        ))}
+      {hasAbsence && <div className="min-h-8 flex-1" aria-hidden />}
+      {canEdit && !hasAbsence && (
         <button
-          onClick={() => onAdd({ date, columnId, label })}
+          onClick={() => onAdd(target)}
           className="hidden h-5 items-center justify-center rounded-md border border-dashed border-border-strong text-faint hover:border-brand hover:text-brand group-hover/cell:flex"
           title={`Add to ${label}`}
         >
@@ -428,17 +710,84 @@ const MONTH_NAMES = [
 ];
 
 export function WeeklyPlan() {
-  const { planColumns, planEntries, profiles, currentUserId } = useData();
+  const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
+    useData();
   const [rangeStart, setRangeStart] = useState(() => addDays(startOfWeek(new Date()), -14));
   const [rangeEnd, setRangeEnd] = useState(() => addDays(startOfWeek(new Date()), 27));
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addTarget, setAddTarget] = useState<CellTarget | null>(null);
+  const [dayStateTarget, setDayStateTarget] = useState<string | null>(null);
   const [showColumns, setShowColumns] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const hoveredCell = useRef<CellTarget | null>(null);
+  const hoveredEntry = useRef<PlanEntry | null>(null);
   const todayIso = toISODate(new Date());
 
   const me = profiles.find((p) => p.id === currentUserId);
   const canEdit = me?.role === "admin";
+
+  // ── copy / paste ───────────────────────────────────────────────────────
+  const copyEntry = (entry: PlanEntry) => {
+    planClipboard = {
+      type: entry.type,
+      taskId: entry.taskId,
+      text: entry.text,
+      clientId: entry.clientId,
+      absenceType: entry.absenceType,
+    };
+  };
+
+  const pasteInto = (cell: CellTarget) => {
+    if (!planClipboard) return;
+    addPlanEntry({ date: cell.date, columnId: cell.columnId, ...planClipboard });
+  };
+
+  useEffect(() => {
+    if (!canEdit) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+      const el = e.target as HTMLElement;
+      if (el.closest("input, textarea, select, [contenteditable]")) return;
+      if (e.key === "c" && hoveredEntry.current && !window.getSelection()?.toString()) {
+        e.preventDefault();
+        copyEntry(hoveredEntry.current);
+      } else if (e.key === "v" && hoveredCell.current && planClipboard) {
+        e.preventDefault();
+        pasteInto(hoveredCell.current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit, addPlanEntry]);
+
+  const openChipMenu = (e: ReactMouseEvent, entry: PlanEntry) => {
+    if (!canEdit) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: "Copy", hint: "⌘C", onClick: () => copyEntry(entry) },
+        { label: "Delete", danger: true, onClick: () => deletePlanEntry(entry.id) },
+      ],
+    });
+  };
+
+  const openCellMenu = (e: ReactMouseEvent, cell: CellTarget) => {
+    if (!canEdit) return;
+    e.preventDefault();
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: "Paste", hint: "⌘V", disabled: !planClipboard, onClick: () => pasteInto(cell) },
+        { label: "Add…", onClick: () => setAddTarget(cell) },
+      ],
+    });
+  };
 
   const days = useMemo(() => {
     const out: Date[] = [];
@@ -628,7 +977,7 @@ export function WeeklyPlan() {
                               return next;
                             })
                           }
-                          className="flex items-center gap-1 font-heading text-xs text-muted hover:text-foreground"
+                          className="-mx-2 -my-1 flex items-center gap-1 rounded px-2 py-1.5 font-heading text-xs text-muted hover:bg-black/5 hover:text-foreground"
                         >
                           {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                           {row.label}
@@ -641,18 +990,36 @@ export function WeeklyPlan() {
                 const weekend = isWeekend(row.date);
                 const isToday = iso === todayIso;
                 const isPast = iso < todayIso;
+                const dayState = dayStates.find((ds) => ds.dateFrom <= iso && iso <= ds.dateTo);
                 const { name, date } = formatDayLabel(row.date);
                 return (
                   <tr
                     key={iso}
                     id={`plan-day-${iso}`}
-                    className={`${weekend ? "bg-weekend" : ""} ${isToday ? "bg-aqua/10" : ""} ${isPast ? "opacity-55" : ""}`}
+                    className={`${dayState ? "bg-blue-100/60" : weekend ? "bg-weekend" : ""} ${isToday ? "bg-aqua/10 outline outline-2 -outline-offset-2 outline-brand" : ""} ${isPast ? "opacity-55" : ""}`}
                   >
                     <td
-                      className={`sticky left-0 z-10 border-b border-r border-border p-2 align-top text-xs ${weekend ? "bg-weekend text-faint" : "bg-surface"} ${isToday ? "border-l-4 border-l-brand bg-aqua/20 font-bold" : ""}`}
+                      onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
+                      className={`group/date sticky left-0 z-10 border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand bg-aqua/20" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer hover:bg-brand-soft/60" : ""}`}
+                      title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
-                      <div className="font-semibold">{isToday ? "Today" : name}</div>
-                      <div className={isToday ? "text-foreground" : "text-faint"}>{date}</div>
+                      <div className="flex items-start justify-between gap-1">
+                        <div className={isToday ? "text-sm font-bold text-foreground" : "font-semibold"}>
+                          {isToday ? "Today" : name}
+                        </div>
+                        {canEdit && (
+                          <CalendarPlus
+                            size={12}
+                            className="mt-0.5 shrink-0 text-brand opacity-0 transition-opacity group-hover/date:opacity-100"
+                          />
+                        )}
+                      </div>
+                      <div className={isToday ? "font-bold text-foreground" : "text-faint"}>{date}</div>
+                      {dayState && (
+                        <div className="mt-1 inline-block max-w-full truncate rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          {dayState.label}
+                        </div>
+                      )}
                     </td>
                     {gridCols.map((col) => (
                       <td
@@ -666,6 +1033,10 @@ export function WeeklyPlan() {
                           entries={entriesByCell.get(`${iso}::${col.id}`) ?? []}
                           canEdit={canEdit}
                           onAdd={setAddTarget}
+                          onChipMenu={openChipMenu}
+                          onCellMenu={openCellMenu}
+                          onHoverCell={(t) => (hoveredCell.current = t)}
+                          onHoverEntry={(en) => (hoveredEntry.current = en)}
                         />
                       </td>
                     ))}
@@ -686,32 +1057,46 @@ export function WeeklyPlan() {
           </table>
         </div>
 
-        {waitingCol && !waitingCol.hidden && (
-          <div className="w-48 shrink-0 self-start rounded-xl border border-border bg-surface p-3">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
-              {waitingCol.name}
-            </div>
-            <PlanCell
-              date={null}
-              columnId={waitingCol.id}
-              label="Waiting list"
-              entries={entriesByCell.get(`wl::${waitingCol.id}`) ?? []}
-              canEdit={canEdit}
-              onAdd={setAddTarget}
-            />
+        {canEdit && (
+          <div className="flex w-48 shrink-0 flex-col gap-4 self-start">
+            {waitingCol && !waitingCol.hidden && (
+              <div className="rounded-xl border border-border bg-surface p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+                  {waitingCol.name}
+                </div>
+                <PlanCell
+                  date={null}
+                  columnId={waitingCol.id}
+                  label="Waiting list"
+                  entries={entriesByCell.get(`wl::${waitingCol.id}`) ?? []}
+                  canEdit={canEdit}
+                  onAdd={setAddTarget}
+                  onChipMenu={openChipMenu}
+                  onCellMenu={openCellMenu}
+                  onHoverCell={(t) => (hoveredCell.current = t)}
+                  onHoverEntry={(en) => (hoveredEntry.current = en)}
+                />
+              </div>
+            )}
+            <DevCard />
           </div>
         )}
       </div>
 
       {canEdit && (
         <p className="text-xs text-faint">
-          Hover a cell to add a task, note or absence · drag chips between days · click month names
-          to fold them.
+          Hover a cell to add a task, free text or absence · drag chips between days · right-click to
+          copy/paste (or ⌘C/⌘V over a chip/cell) · click a date cell to mark a holiday · click month
+          names to fold them.
         </p>
       )}
 
       {addTarget && <AddEntryModal target={addTarget} onClose={() => setAddTarget(null)} />}
+      {dayStateTarget && (
+        <DayStateModal dateIso={dayStateTarget} onClose={() => setDayStateTarget(null)} />
+      )}
       {showColumns && <ColumnManager onClose={() => setShowColumns(false)} />}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
     </div>
   );
 }

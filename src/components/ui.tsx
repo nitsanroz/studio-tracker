@@ -1,6 +1,99 @@
 "use client";
 
+import type { MouseEvent } from "react";
+import Link from "next/link";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useDataMaybe } from "@/lib/store";
 import type { Client, Profile } from "@/lib/types";
+
+export interface ContextMenuItem {
+  label: string;
+  hint?: string; // e.g. "⌘C"
+  danger?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
+/** Right-click menu at a fixed position; any outside click closes it. */
+export function ContextMenu({
+  x,
+  y,
+  items,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  items: ContextMenuItem[];
+  onClose: () => void;
+}) {
+  // keep the menu inside the viewport
+  const width = 190;
+  const height = items.length * 34 + 10;
+  const left = Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 9999) - width - 8);
+  const top = Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 9999) - height - 8);
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      />
+      <div
+        className="fixed z-50 flex flex-col rounded-lg border border-border bg-surface p-1 shadow-xl"
+        style={{ left, top, minWidth: width }}
+      >
+        {items.map((item) => (
+          <button
+            key={item.label}
+            disabled={item.disabled}
+            onClick={() => {
+              item.onClick();
+              onClose();
+            }}
+            className={`flex items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-left text-sm disabled:opacity-40 ${
+              item.danger ? "text-danger hover:bg-red-50" : "hover:bg-background"
+            }`}
+          >
+            {item.label}
+            {item.hint && <span className="text-xs text-faint">{item.hint}</span>}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Collapse/expand chevron with an enlarged hit area.
+ * Pass `onClick` when the chevron is the toggle itself; omit it when a
+ * clickable parent handles toggling (renders decorative, no double target).
+ */
+export function CollapseChevron({
+  open,
+  onClick,
+  size = 14,
+}: {
+  open: boolean;
+  onClick?: (e: MouseEvent) => void;
+  size?: number;
+}) {
+  const Icon = open ? ChevronDown : ChevronRight;
+  if (!onClick) {
+    return <Icon size={size} className="pointer-events-none shrink-0 text-muted" />;
+  }
+  return (
+    <button
+      onClick={onClick}
+      className="relative -m-1.5 shrink-0 rounded p-1.5 text-muted before:absolute before:-inset-1 hover:bg-black/5 hover:text-foreground"
+      title={open ? "Collapse" : "Expand"}
+    >
+      <Icon size={size} />
+    </button>
+  );
+}
 
 const AVATAR_COLORS = [
   "#0b43ed",
@@ -68,11 +161,18 @@ export function Avatar({ profile, size = 28 }: { profile: Profile | null; size?:
   );
 }
 
-export function ClientChip({ client, size = "md" }: { client: Client; size?: "sm" | "md" }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 font-medium ${size === "sm" ? "text-xs" : "text-sm"}`}
-    >
+export function ClientChip({
+  client,
+  size = "md",
+  link = true,
+}: {
+  client: Client;
+  size?: "sm" | "md";
+  /** set false where the chip sits inside another link/button */
+  link?: boolean;
+}) {
+  const inner = (
+    <>
       <span
         className="rounded-full shrink-0"
         style={{
@@ -82,20 +182,48 @@ export function ClientChip({ client, size = "md" }: { client: Client; size?: "sm
         }}
       />
       {client.name}
-    </span>
+    </>
+  );
+  const cls = `inline-flex items-center gap-1.5 font-medium ${size === "sm" ? "text-xs" : "text-sm"}`;
+  if (!link) return <span className={cls}>{inner}</span>;
+  return (
+    <Link
+      href={`/clients/${client.id}`}
+      onClick={(e) => e.stopPropagation()}
+      className={`${cls} hover:underline`}
+      title={`Open ${client.name}`}
+    >
+      {inner}
+    </Link>
   );
 }
 
+const LEGACY_TAG_STYLES: Record<string, string> = {
+  "in design": "bg-brand-soft text-brand-dark",
+  "waiting for client approval": "bg-amber-100 text-amber-800",
+  "in development": "bg-purple-100 text-purple-800",
+  "done and approved": "bg-emerald-100 text-emerald-800",
+};
+
+const DEFAULT_TAG_COLOR = "#6b7280";
+
 export function TagBadge({ tag }: { tag: string }) {
-  const styles: Record<string, string> = {
-    "in design": "bg-brand-soft text-brand-dark",
-    "waiting for client approval": "bg-amber-100 text-amber-800",
-    "in development": "bg-purple-100 text-purple-800",
-    "done and approved": "bg-emerald-100 text-emerald-800",
-  };
+  const store = useDataMaybe();
+  const color = store?.tags.find((t) => t.name === tag)?.color;
+  // custom DB color → tinted badge; otherwise legacy name-based styles
+  if (color && color !== DEFAULT_TAG_COLOR) {
+    return (
+      <span
+        className="inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+        style={{ backgroundColor: `${color}22`, color }}
+      >
+        {tag}
+      </span>
+    );
+  }
   return (
     <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${styles[tag] ?? "bg-gray-100 text-gray-700"}`}
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${LEGACY_TAG_STYLES[tag] ?? "bg-gray-100 text-gray-700"}`}
     >
       {tag}
     </span>

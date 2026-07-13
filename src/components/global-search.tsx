@@ -4,10 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { useData } from "@/lib/store";
-import { Avatar, ClientChip } from "./ui";
 
 interface Result {
-  kind: "task" | "project" | "client";
+  kind: "task" | "client";
   id: string;
   label: string;
   sub: string;
@@ -17,7 +16,7 @@ interface Result {
 
 export function GlobalSearch() {
   const router = useRouter();
-  const { tasks, projects, clients, profiles, openTask } = useData();
+  const { tasks, clients, profiles, openTask } = useData();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -56,38 +55,29 @@ export function GlobalSearch() {
       }
       if (out.length >= 4) break;
     }
-    for (const p of projects) {
-      if (p.name.toLowerCase().includes(q) && !p.archived) {
-        const c = clients.find((cc) => cc.id === p.clientId);
-        out.push({ kind: "project", id: p.id, label: p.name, sub: `Project · ${c?.name ?? ""}`, clientId: p.clientId });
-        if (out.length >= 8) break;
-      }
-    }
     const matching = tasks
       .filter((t) => t.title.toLowerCase().includes(q))
       .sort((a, b) => Number(a.status === "done") - Number(b.status === "done"))
       .slice(0, 12);
     for (const t of matching) {
-      const p = projects.find((pp) => pp.id === t.projectId);
-      const c = clients.find((cc) => cc.id === p?.clientId);
+      const c = clients.find((cc) => cc.id === t.clientId);
       const assignee = profiles.find((pr) => pr.id === t.assigneeId);
       out.push({
         kind: "task",
         id: t.id,
         label: t.title,
-        sub: `${c?.name ?? ""} › ${p?.name ?? ""}${assignee ? ` · ${assignee.name}` : ""}`,
-        clientId: p?.clientId,
+        sub: `${c?.name ?? ""}${assignee ? ` · ${assignee.name}` : ""}`,
+        clientId: t.clientId,
         done: t.status === "done",
       });
     }
     return out.slice(0, 14);
-  }, [query, tasks, projects, clients, profiles]);
+  }, [query, tasks, clients, profiles]);
 
   function choose(r: Result) {
     setOpen(false);
     setQuery("");
     if (r.kind === "task") openTask(r.id);
-    else if (r.kind === "project") router.push(`/projects/${r.id}`);
     else router.push(`/clients/${r.id}`);
   }
 
@@ -118,7 +108,7 @@ export function GlobalSearch() {
               inputRef.current?.blur();
             }
           }}
-          placeholder="Search tasks, projects, clients…"
+          placeholder="Search tasks, clients…"
           className="bidi-auto h-8 w-full bg-transparent text-sm outline-none placeholder:text-faint"
         />
         <kbd className="hidden shrink-0 rounded border border-border bg-surface px-1.5 text-[10px] text-faint sm:block">

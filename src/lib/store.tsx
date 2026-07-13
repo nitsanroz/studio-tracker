@@ -13,13 +13,17 @@ import {
 import { createClient } from "./supabase/client";
 import {
   fetchAll,
+  mapBillingPeriod,
   mapClient,
   mapComment,
+  mapDayState,
+  mapDevItem,
+  mapEntrySum,
   mapPlanColumn,
   mapPlanEntry,
   mapProfile,
-  mapProject,
   mapSection,
+  mapTag,
   mapTask,
   mapTimeEntry,
   taskPatchToRow,
@@ -28,13 +32,18 @@ import { toISODate } from "./format";
 import type {
   AbsenceType,
   Attachment,
+  BillingPeriod,
   Client,
+  DayState,
+  DevItem,
+  DevStatus,
+  EntrySum,
   PlanColumn,
   PlanEntry,
   PlanEntryType,
   Profile,
-  Project,
   Section,
+  Tag,
   Task,
   TaskComment,
   TimeEntry,
@@ -58,7 +67,6 @@ export interface TaskRequest {
 
 export interface ApproveRequestInput {
   clientId: string;
-  projectId: string;
   sectionId: string | null;
   assigneeId: string | null;
   title: string;
@@ -86,25 +94,34 @@ interface Store {
   loading: boolean;
   profiles: Profile[];
   clients: Client[];
-  projects: Project[];
   sections: Section[];
-  tags: string[];
+  tags: Tag[];
   tasks: Task[];
   comments: TaskComment[];
   attachments: Attachment[];
   timeEntries: TimeEntry[];
+  /** Slim rows for ALL time entries (no description) — for aggregations. */
+  entrySums: EntrySum[];
   currentUserId: string;
   runningTimer: RunningTimer | null;
   openTaskId: string | null;
   planColumns: PlanColumn[];
   planEntries: PlanEntry[];
+  billingPeriods: BillingPeriod[];
+  dayStates: DayState[];
+  devItems: DevItem[];
 
   openTask: (taskId: string | null) => void;
   updateTask: (taskId: string, patch: Partial<Task>) => void;
-  addTask: (projectId: string, sectionId: string | null, title: string) => void;
-  addSection: (projectId: string, name: string) => void;
+  addTask: (clientId: string, sectionId: string | null, title: string) => void;
+  addSection: (clientId: string, name: string) => void;
+  addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
+  updateProfile: (profileId: string, patch: Partial<Profile>) => void;
   updateClient: (clientId: string, patch: Partial<Client>) => void;
+  addTag: (name: string, color: string) => void;
+  updateTag: (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => void;
+  deleteTag: (tagId: string) => void;
   addPlanEntry: (input: NewPlanEntry) => void;
   movePlanEntry: (entryId: string, target: { date: string | null; columnId: string }) => void;
   deletePlanEntry: (entryId: string) => void;
@@ -116,7 +133,17 @@ interface Store {
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
   addTimeEntry: (taskId: string, minutes: number, description: string, date?: string) => void;
+  updateTimeEntry: (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => void;
+  deleteTimeEntry: (entryId: string) => void;
   moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
+  addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position">) => void;
+  updateBillingPeriod: (id: string, patch: Partial<BillingPeriod>) => void;
+  deleteBillingPeriod: (id: string) => void;
+  addDayState: (dateFrom: string, dateTo: string, label: string) => void;
+  deleteDayState: (id: string) => void;
+  addDevItem: (text: string) => void;
+  updateDevItem: (id: string, patch: { text?: string; status?: DevStatus }) => void;
+  deleteDevItem: (id: string) => void;
   taskRequests: TaskRequest[];
   approveRequest: (requestId: string, input: ApproveRequestInput) => Promise<void>;
   rejectRequest: (requestId: string) => void;
@@ -151,14 +178,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [tagRows, setTagRows] = useState<{ id: string; name: string }[]>([]);
+  const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
+  const [dayStates, setDayStates] = useState<DayState[]>([]);
+  const [devItems, setDevItems] = useState<DevItem[]>([]);
+  const [tagRows, setTagRows] = useState<Tag[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [minutesByTask, setMinutesByTask] = useState<Map<string, number>>(new Map());
+  const [entrySums, setEntrySums] = useState<EntrySum[]>([]);
   const [planColumns, setPlanColumns] = useState<PlanColumn[]>([]);
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -169,6 +198,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const tagNameById = useMemo(() => new Map(tagRows.map((t) => [t.id, t.name])), [tagRows]);
   const tagIdByName = useMemo(() => new Map(tagRows.map((t) => [t.name, t.id])), [tagRows]);
+
+  const minutesByTask = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of entrySums) map.set(e.taskId, (map.get(e.taskId) ?? 0) + e.minutes);
+    return map;
+  }, [entrySums]);
 
   // ── initial load ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -181,22 +216,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const tagsP = supabase.from("tags").select("id, name").order("position");
-      const [prof, cli, proj, sec, tagsRes, cols, pe, taskRows, sums, feed, running, requests] =
+      const tagsP = supabase.from("tags").select("*").order("position");
+      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, running, requests, periods, days, dev] =
         await Promise.all([
-          fetchAll<any>(supabase, "profiles", "id, name, role, avatar_url, active"),
+          // "*" keeps boot working whether or not migration 0004 is applied
+          fetchAll<any>(supabase, "profiles", "*"),
           fetchAll<any>(supabase, "clients", "id, name, color, billing_period_note, archived"),
-          fetchAll<any>(supabase, "projects", "id, client_id, name, billable, archived"),
-          fetchAll<any>(supabase, "sections", "id, project_id, name, position"),
+          // legacy layer: only used to derive client_id before migration 0007
+          fetchAll<any>(supabase, "projects", "id, client_id"),
+          // "*" tolerates pre-0007 schema (no client_id column yet)
+          fetchAll<any>(supabase, "sections", "*"),
           tagsP,
           fetchAll<any>(supabase, "plan_columns", "*"),
           fetchAll<any>(supabase, "plan_entries", "*"),
-          fetchAll<any>(
-            supabase,
-            "tasks",
-            "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending",
-          ),
-          fetchAll<any>(supabase, "time_entries", "task_id, minutes", (q) =>
+          (async () => {
+            const cols =
+              "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
+            try {
+              // post-0007 schema
+              return await fetchAll<any>(supabase, "tasks", `client_id, ${cols}`);
+            } catch {
+              return await fetchAll<any>(supabase, "tasks", cols);
+            }
+          })(),
+          fetchAll<any>(supabase, "time_entries", "id, task_id, user_id, date, minutes", (q) =>
             q.not("minutes", "is", null),
           ),
           supabase
@@ -214,26 +257,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .maybeSingle(),
           // Returns [] for designers (RLS: admins only)
           supabase.from("task_requests").select("*").order("created_at", { ascending: false }),
+          // pre-0007 these tables don't exist; RLS hides them from designers
+          fetchAll<any>(supabase, "client_billing_periods", "*").catch(() => []),
+          fetchAll<any>(supabase, "plan_day_states", "*").catch(() => []),
+          fetchAll<any>(supabase, "dev_items", "*").catch(() => []),
         ]);
 
       if (cancelled) return;
 
-      const tagList = (tagsRes.data ?? []) as { id: string; name: string }[];
+      const tagList = ((tagsRes.data ?? []) as any[]).map(mapTag);
       const tagMap = new Map(tagList.map((t) => [t.id, t.name]));
-
-      const sumMap = new Map<string, number>();
-      for (const r of sums) {
-        sumMap.set(r.task_id, (sumMap.get(r.task_id) ?? 0) + (r.minutes ?? 0));
-      }
+      const projectClient = new Map<string, string>(
+        projLegacy.map((p: any) => [p.id, p.client_id]),
+      );
 
       setCurrentUserId(uid);
       setProfiles(prof.map(mapProfile));
       setClients(cli.map(mapClient));
-      setProjects(proj.map(mapProject));
-      setSections(sec.map(mapSection));
+      setSections(sec.map((r) => mapSection(r, projectClient)));
       setTagRows(tagList);
-      setTasks(taskRows.map((r) => mapTask({ ...r, brief: undefined }, tagMap)));
-      setMinutesByTask(sumMap);
+      setTasks(taskRows.map((r: any) => mapTask({ ...r, brief: undefined }, tagMap, projectClient)));
+      setBillingPeriods(periods.map(mapBillingPeriod).sort((a: BillingPeriod, b: BillingPeriod) => a.dateFrom.localeCompare(b.dateFrom)));
+      setDayStates(days.map(mapDayState));
+      setDevItems(dev.map(mapDevItem).sort((a: DevItem, b: DevItem) => a.position - b.position));
+      setEntrySums(sums.map(mapEntrySum));
       setTimeEntries((feed.data ?? []).map(mapTimeEntry));
       setPlanColumns(cols.map(mapPlanColumn));
       setPlanEntries(pe.map(mapPlanEntry));
@@ -327,17 +374,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const addTask = useCallback(
-    (projectId: string, sectionId: string | null, title: string) => {
-      const project = projects.find((p) => p.id === projectId);
+    (clientId: string, sectionId: string | null, title: string) => {
       const position =
-        Math.max(0, ...tasks.filter((t) => t.projectId === projectId).map((t) => t.position)) + 1;
+        Math.max(0, ...tasks.filter((t) => t.clientId === clientId).map((t) => t.position)) + 1;
       supabase
         .from("tasks")
         .insert({
-          project_id: projectId,
+          client_id: clientId,
           section_id: sectionId,
           title,
-          billable: project?.billable ?? true,
+          billable: true,
           position,
         })
         .select()
@@ -350,16 +396,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
         });
     },
-    [supabase, projects, tasks, tagNameById],
+    [supabase, tasks, tagNameById],
   );
 
   const addSection = useCallback(
-    (projectId: string, name: string) => {
+    (clientId: string, name: string) => {
       const position =
-        Math.max(0, ...sections.filter((s) => s.projectId === projectId).map((s) => s.position)) + 1;
+        Math.max(0, ...sections.filter((s) => s.clientId === clientId).map((s) => s.position)) + 1;
       supabase
         .from("sections")
-        .insert({ project_id: projectId, name, position })
+        .insert({ client_id: clientId, name, position })
         .select()
         .single()
         .then(({ data, error }) => {
@@ -373,9 +419,101 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, sections],
   );
 
+  const addClient = useCallback(
+    async (name: string, color: string, billingPeriodNote?: string): Promise<Client | null> => {
+      const { data, error } = await supabase
+        .from("clients")
+        .insert({ name, color, billing_period_note: billingPeriodNote ?? "" })
+        .select()
+        .single();
+      if (error) {
+        console.error("addClient failed", error.message);
+        return null;
+      }
+      const client = mapClient(data);
+      setClients((prev) => [...prev, client]);
+      return client;
+    },
+    [supabase],
+  );
+
   const patchProfileLocal = useCallback((profileId: string, patch: Partial<Profile>) => {
     setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
   }, []);
+
+  const updateProfile = useCallback(
+    (profileId: string, patch: Partial<Profile>) => {
+      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
+      const row: Record<string, unknown> = {};
+      if ("name" in patch) row.name = patch.name;
+      if ("role" in patch) row.role = patch.role;
+      if ("active" in patch) row.active = patch.active;
+      if ("startDate" in patch) row.start_date = patch.startDate;
+      if ("capacityHoursWeek" in patch) row.capacity_hours_week = patch.capacityHoursWeek;
+      supabase
+        .from("profiles")
+        .update(row)
+        .eq("id", profileId)
+        .then(({ error }) => {
+          if (error) console.error("updateProfile failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const addTag = useCallback(
+    (name: string, color: string) => {
+      const position = Math.max(0, ...tagRows.map((_, i) => i + 1)) + 1;
+      supabase
+        .from("tags")
+        .insert({ name, color, position })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("addTag failed", error.message);
+            return;
+          }
+          setTagRows((prev) => [...prev, mapTag(data)]);
+        });
+    },
+    [supabase, tagRows],
+  );
+
+  const updateTag = useCallback(
+    (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => {
+      const oldName = tagRows.find((t) => t.id === tagId)?.name;
+      setTagRows((prev) => prev.map((t) => (t.id === tagId ? { ...t, ...patch } : t)));
+      // tasks carry tag NAMES — keep them in sync on rename
+      if (patch.name && oldName && patch.name !== oldName) {
+        setTasks((prev) => prev.map((t) => (t.tag === oldName ? { ...t, tag: patch.name! } : t)));
+      }
+      supabase
+        .from("tags")
+        .update(patch)
+        .eq("id", tagId)
+        .then(({ error }) => {
+          if (error) console.error("updateTag failed", error.message);
+        });
+    },
+    [supabase, tagRows],
+  );
+
+  const deleteTag = useCallback(
+    (tagId: string) => {
+      const name = tagRows.find((t) => t.id === tagId)?.name;
+      setTagRows((prev) => prev.filter((t) => t.id !== tagId));
+      if (name) setTasks((prev) => prev.map((t) => (t.tag === name ? { ...t, tag: null } : t)));
+      supabase
+        .from("tags")
+        .delete()
+        .eq("id", tagId)
+        .then(({ error }) => {
+          if (error) console.error("deleteTag failed", error.message);
+        });
+    },
+    [supabase, tagRows],
+  );
 
   const updateClient = useCallback(
     (clientId: string, patch: Partial<Client>) => {
@@ -580,11 +718,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const applyEntryLocally = useCallback((entry: TimeEntry) => {
     setTimeEntries((prev) => [entry, ...prev.filter((e) => e.id !== entry.id)]);
-    setMinutesByTask((prev) => {
-      const next = new Map(prev);
-      next.set(entry.taskId, (next.get(entry.taskId) ?? 0) + entry.minutes);
-      return next;
-    });
+    setEntrySums((prev) => [
+      {
+        id: entry.id,
+        taskId: entry.taskId,
+        userId: entry.userId,
+        date: entry.date,
+        minutes: entry.minutes,
+      },
+      ...prev.filter((e) => e.id !== entry.id),
+    ]);
   }, []);
 
   const addTimeEntry = useCallback(
@@ -611,26 +754,198 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, currentUserId, applyEntryLocally],
   );
 
+  const updateTimeEntry = useCallback(
+    (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => {
+      setTimeEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...patch } : e)));
+      if (patch.minutes != null || patch.date != null) {
+        setEntrySums((prev) =>
+          prev.map((e) =>
+            e.id === entryId
+              ? { ...e, ...(patch.minutes != null && { minutes: patch.minutes }), ...(patch.date != null && { date: patch.date }) }
+              : e,
+          ),
+        );
+      }
+      supabase
+        .from("time_entries")
+        .update(patch)
+        .eq("id", entryId)
+        .then(({ error }) => {
+          if (error) console.error("updateTimeEntry failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const deleteTimeEntry = useCallback(
+    (entryId: string) => {
+      setTimeEntries((prev) => prev.filter((e) => e.id !== entryId));
+      setEntrySums((prev) => prev.filter((e) => e.id !== entryId));
+      supabase
+        .from("time_entries")
+        .delete()
+        .eq("id", entryId)
+        .then(({ error }) => {
+          if (error) console.error("deleteTimeEntry failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const addBillingPeriod = useCallback(
+    (input: Omit<BillingPeriod, "id" | "position">) => {
+      const position =
+        Math.max(0, ...billingPeriods.filter((p) => p.clientId === input.clientId).map((p) => p.position)) + 1;
+      supabase
+        .from("client_billing_periods")
+        .insert({
+          client_id: input.clientId,
+          label: input.label,
+          date_from: input.dateFrom,
+          date_to: input.dateTo,
+          hour_cap: input.hourCap,
+          advance_hours: input.advanceHours,
+          position,
+        })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("addBillingPeriod failed", error.message);
+            return;
+          }
+          setBillingPeriods((prev) =>
+            [...prev, mapBillingPeriod(data)].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
+          );
+        });
+    },
+    [supabase, billingPeriods],
+  );
+
+  const updateBillingPeriod = useCallback(
+    (id: string, patch: Partial<BillingPeriod>) => {
+      setBillingPeriods((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+      const row: Record<string, unknown> = {};
+      if ("label" in patch) row.label = patch.label;
+      if ("dateFrom" in patch) row.date_from = patch.dateFrom;
+      if ("dateTo" in patch) row.date_to = patch.dateTo;
+      if ("hourCap" in patch) row.hour_cap = patch.hourCap;
+      if ("advanceHours" in patch) row.advance_hours = patch.advanceHours;
+      supabase
+        .from("client_billing_periods")
+        .update(row)
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("updateBillingPeriod failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const deleteBillingPeriod = useCallback(
+    (id: string) => {
+      setBillingPeriods((prev) => prev.filter((p) => p.id !== id));
+      supabase
+        .from("client_billing_periods")
+        .delete()
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("deleteBillingPeriod failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const addDayState = useCallback(
+    (dateFrom: string, dateTo: string, label: string) => {
+      supabase
+        .from("plan_day_states")
+        .insert({ date_from: dateFrom, date_to: dateTo, label, created_by: currentUserId })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("addDayState failed", error.message);
+            return;
+          }
+          setDayStates((prev) => [...prev, mapDayState(data)]);
+        });
+    },
+    [supabase, currentUserId],
+  );
+
+  const deleteDayState = useCallback(
+    (id: string) => {
+      setDayStates((prev) => prev.filter((d) => d.id !== id));
+      supabase
+        .from("plan_day_states")
+        .delete()
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("deleteDayState failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const addDevItem = useCallback(
+    (text: string) => {
+      const position = Math.max(0, ...devItems.map((d) => d.position)) + 1;
+      supabase
+        .from("dev_items")
+        .insert({ text, position })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("addDevItem failed", error.message);
+            return;
+          }
+          setDevItems((prev) => [...prev, mapDevItem(data)]);
+        });
+    },
+    [supabase, devItems],
+  );
+
+  const updateDevItem = useCallback(
+    (id: string, patch: { text?: string; status?: DevStatus }) => {
+      setDevItems((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+      supabase
+        .from("dev_items")
+        .update(patch)
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("updateDevItem failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
+  const deleteDevItem = useCallback(
+    (id: string) => {
+      setDevItems((prev) => prev.filter((d) => d.id !== id));
+      supabase
+        .from("dev_items")
+        .delete()
+        .eq("id", id)
+        .then(({ error }) => {
+          if (error) console.error("deleteDevItem failed", error.message);
+        });
+    },
+    [supabase],
+  );
+
   const moveTimeEntries = useCallback(
     (entryIds: string[], fromTaskId: string, toTaskId: string) => {
       const idSet = new Set(entryIds);
-      let movedMinutes = 0;
       setTimeEntries((prev) =>
-        prev.map((e) => {
-          if (!idSet.has(e.id)) return e;
-          movedMinutes += e.minutes;
-          return { ...e, taskId: toTaskId, movedFromTaskId: fromTaskId };
-        }),
+        prev.map((e) =>
+          idSet.has(e.id) ? { ...e, taskId: toTaskId, movedFromTaskId: fromTaskId } : e,
+        ),
       );
-      setMinutesByTask((prev) => {
-        const moved = timeEntries
-          .filter((e) => idSet.has(e.id))
-          .reduce((s, e) => s + e.minutes, 0);
-        const next = new Map(prev);
-        next.set(fromTaskId, Math.max(0, (next.get(fromTaskId) ?? 0) - moved));
-        next.set(toTaskId, (next.get(toTaskId) ?? 0) + moved);
-        return next;
-      });
+      setEntrySums((prev) =>
+        prev.map((e) => (idSet.has(e.id) ? { ...e, taskId: toTaskId } : e)),
+      );
       supabase
         .from("time_entries")
         .update({
@@ -644,7 +959,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("moveTimeEntries failed", error.message);
         });
     },
-    [supabase, currentUserId, timeEntries],
+    [supabase, currentUserId],
   );
 
   const approveRequest = useCallback(
@@ -654,7 +969,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const { data: task, error } = await supabase
         .from("tasks")
         .insert({
-          project_id: input.projectId,
+          client_id: input.clientId,
           section_id: input.sectionId,
           title: input.title,
           brief: request.brief,
@@ -763,24 +1078,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loading,
       profiles,
       clients,
-      projects,
       sections,
-      tags: tagRows.map((t) => t.name),
+      tags: tagRows,
       tasks,
       comments,
       attachments,
       timeEntries,
+      entrySums,
       currentUserId,
       runningTimer,
       openTaskId,
       planColumns,
       planEntries,
+      billingPeriods,
+      dayStates,
+      devItems,
       openTask,
       updateTask,
       addTask,
       addSection,
+      addClient,
       patchProfileLocal,
+      updateProfile,
       updateClient,
+      addTag,
+      updateTag,
+      deleteTag,
       addPlanEntry,
       movePlanEntry,
       deletePlanEntry,
@@ -792,7 +1115,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addAttachment,
       removeAttachment,
       addTimeEntry,
+      updateTimeEntry,
+      deleteTimeEntry,
       moveTimeEntries,
+      addBillingPeriod,
+      updateBillingPeriod,
+      deleteBillingPeriod,
+      addDayState,
+      deleteDayState,
+      addDevItem,
+      updateDevItem,
+      deleteDevItem,
       taskRequests,
       approveRequest,
       rejectRequest,
@@ -802,9 +1135,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       taskMinutes,
     }),
     [
-      loading, profiles, clients, projects, sections, tagRows, tasks, comments, attachments, timeEntries,
-      currentUserId, runningTimer, openTaskId, planColumns, planEntries,
-      openTask, updateTask, addTask, addSection, patchProfileLocal, updateClient, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, moveTimeEntries, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes,
+      loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
+      currentUserId, runningTimer, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
+      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes,
     ],
   );
 
@@ -815,4 +1148,9 @@ export function useData(): Store {
   const store = useContext(StoreContext);
   if (!store) throw new Error("useData must be used inside DataProvider");
   return store;
+}
+
+/** Like useData, but returns null outside a DataProvider (for shared UI primitives). */
+export function useDataMaybe(): Store | null {
+  return useContext(StoreContext);
 }

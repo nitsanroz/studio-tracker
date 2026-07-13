@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  BillingPeriod,
   Client,
+  DayState,
+  DevItem,
+  EntrySum,
   PlanColumn,
   PlanEntry,
   Profile,
-  Project,
+  ReportLink,
   Section,
+  Tag,
   Task,
   TaskComment,
   TimeEntry,
@@ -39,6 +44,62 @@ export const mapProfile = (r: any): Profile => ({
   role: r.role,
   avatarUrl: r.avatar_url,
   active: r.active,
+  startDate: r.start_date ?? null,
+  capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),
+});
+
+export const mapTag = (r: any): Tag => ({
+  id: r.id,
+  name: r.name,
+  color: r.color ?? "#6b7280",
+});
+
+export const mapEntrySum = (r: any): EntrySum => ({
+  id: r.id,
+  taskId: r.task_id,
+  userId: r.user_id,
+  date: r.date,
+  minutes: r.minutes ?? 0,
+});
+
+export const mapReportLink = (r: any): ReportLink => ({
+  id: r.id,
+  clientId: r.client_id,
+  token: r.token,
+  preset: r.preset,
+  dateFrom: r.date_from,
+  dateTo: r.date_to,
+  active: r.active,
+  createdAt: r.created_at,
+  snapshot: r.snapshot ?? null,
+  publishedAt: r.published_at ?? null,
+  hiddenColumns: r.hidden_columns ?? [],
+  hiddenTaskIds: r.hidden_task_ids ?? [],
+});
+
+export const mapBillingPeriod = (r: any): BillingPeriod => ({
+  id: r.id,
+  clientId: r.client_id,
+  label: r.label,
+  dateFrom: r.date_from,
+  dateTo: r.date_to,
+  hourCap: r.hour_cap == null ? null : Number(r.hour_cap),
+  advanceHours: r.advance_hours == null ? null : Number(r.advance_hours),
+  position: r.position,
+});
+
+export const mapDayState = (r: any): DayState => ({
+  id: r.id,
+  dateFrom: r.date_from,
+  dateTo: r.date_to,
+  label: r.label,
+});
+
+export const mapDevItem = (r: any): DevItem => ({
+  id: r.id,
+  text: r.text,
+  status: r.status,
+  position: r.position,
 });
 
 export const mapClient = (r: any): Client => ({
@@ -49,24 +110,21 @@ export const mapClient = (r: any): Client => ({
   archived: r.archived,
 });
 
-export const mapProject = (r: any): Project => ({
+// Pre-0007 rows have client_id null; fall back via projectClientById (legacy).
+export const mapSection = (r: any, projectClientById?: Map<string, string>): Section => ({
   id: r.id,
-  clientId: r.client_id,
-  name: r.name,
-  billable: r.billable,
-  archived: r.archived,
-});
-
-export const mapSection = (r: any): Section => ({
-  id: r.id,
-  projectId: r.project_id,
+  clientId: r.client_id ?? projectClientById?.get(r.project_id) ?? "",
   name: r.name,
   position: r.position,
 });
 
-export const mapTask = (r: any, tagNameById: Map<string, string>): Task => ({
+export const mapTask = (
+  r: any,
+  tagNameById: Map<string, string>,
+  projectClientById?: Map<string, string>,
+): Task => ({
   id: r.id,
-  projectId: r.project_id,
+  clientId: r.client_id ?? projectClientById?.get(r.project_id) ?? "",
   sectionId: r.section_id,
   title: r.title,
   brief: r.brief ?? "",

@@ -102,26 +102,22 @@ function MoveEntriesModal({
   minutes: number;
   onDone: () => void;
 }) {
-  const { tasks, projects, clients, moveTimeEntries } = useData();
+  const { tasks, sections, clients, moveTimeEntries } = useData();
   const [search, setSearch] = useState("");
 
-  const project = projects.find((p) => p.id === fromTask.projectId);
-  const clientId = project?.clientId;
+  const clientId = fromTask.clientId;
 
   const candidates = useMemo(() => {
-    const clientProjectIds = new Set(
-      projects.filter((p) => p.clientId === clientId).map((p) => p.id),
-    );
     const q = search.trim().toLowerCase();
     const pool = q
       ? tasks.filter((t) => t.title.toLowerCase().includes(q))
-      : tasks.filter((t) => clientProjectIds.has(t.projectId) && t.status !== "done");
+      : tasks.filter((t) => t.clientId === clientId && t.status !== "done");
     const isKeys = (t: Task) => /keys/i.test(t.title);
     return pool
       .filter((t) => t.id !== fromTask.id)
       .sort((a, b) => Number(isKeys(b)) - Number(isKeys(a)) || a.title.localeCompare(b.title))
       .slice(0, 30);
-  }, [tasks, projects, clientId, search, fromTask.id]);
+  }, [tasks, clientId, search, fromTask.id]);
 
   return (
     <>
@@ -143,8 +139,8 @@ function MoveEntriesModal({
         />
         <div className="flex max-h-60 flex-col gap-0.5 overflow-y-auto">
           {candidates.map((t) => {
-            const p = projects.find((pp) => pp.id === t.projectId);
-            const c = clients.find((cc) => cc.id === p?.clientId);
+            const c = clients.find((cc) => cc.id === t.clientId);
+            const s = sections.find((ss) => ss.id === t.sectionId);
             const keys = /keys/i.test(t.title);
             return (
               <button
@@ -157,7 +153,10 @@ function MoveEntriesModal({
               >
                 <span className="bidi-auto min-w-0 flex-1 truncate font-medium">{t.title}</span>
                 {keys && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">KEYS</span>}
-                <span className="shrink-0 text-xs text-faint">{c?.name} › {p?.name}</span>
+                <span className="shrink-0 text-xs text-faint">
+                  {c?.name}
+                  {s && <> › {s.name}</>}
+                </span>
               </button>
             );
           })}
@@ -176,7 +175,6 @@ export function TaskPanel() {
     openTask,
     tasks,
     sections,
-    projects,
     clients,
     profiles,
     comments,
@@ -201,8 +199,7 @@ export function TaskPanel() {
 
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
 
-  const project = projects.find((p) => p.id === task.projectId);
-  const client = clients.find((c) => c.id === project?.clientId);
+  const client = clients.find((c) => c.id === task.clientId);
   const section = sections.find((s) => s.id === task.sectionId);
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const taskComments = comments.filter((c) => c.taskId === task.id);
@@ -279,13 +276,10 @@ export function TaskPanel() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-muted">Project</span>
+              <span className="w-24 shrink-0 text-muted">Client</span>
               <span className="flex min-w-0 flex-1 items-center gap-2 px-1.5">
                 {client && <ClientChip client={client} size="sm" />}
-                <span className="truncate text-muted">
-                  › {project?.name}
-                  {section && <> › {section.name}</>}
-                </span>
+                {section && <span className="truncate text-muted">› {section.name}</span>}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -297,7 +291,7 @@ export function TaskPanel() {
               >
                 <option value="">—</option>
                 {tags.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t.id} value={t.name}>{t.name}</option>
                 ))}
               </select>
             </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useData } from "@/lib/store";
 
 export function TimerWidget() {
-  const { runningTimer, tasks, projects, clients, stopTimer, completeTimerEntry, openTask } = useData();
+  const { runningTimer, tasks, clients, stopTimer, completeTimerEntry, openTask } = useData();
   const [, tick] = useState(0);
   const [pendingStop, setPendingStop] = useState<{
     entryId: string;
@@ -61,8 +61,7 @@ export function TimerWidget() {
   if (!runningTimer) return null;
 
   const task = tasks.find((t) => t.id === runningTimer.taskId);
-  const project = projects.find((p) => p.id === task?.projectId);
-  const client = clients.find((c) => c.id === project?.clientId);
+  const client = clients.find((c) => c.id === task?.clientId);
   const elapsed = Math.floor((Date.now() - runningTimer.startedAt) / 1000);
   const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const ss = String(elapsed % 60).padStart(2, "0");

@@ -2,36 +2,221 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Search } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatHoursShort } from "@/lib/format";
+import { presetRange } from "@/lib/date-ranges";
+import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
+
+type SortKey = "client" | "open" | "week" | "month" | "total";
+type Sort = { key: SortKey; dir: 1 | -1 } | null;
+
+function SortHeader({
+  label,
+  k,
+  sort,
+  onSort,
+  align = "right",
+  className = "",
+}: {
+  label: string;
+  k: SortKey;
+  sort: Sort;
+  onSort: (k: SortKey) => void;
+  align?: "left" | "right";
+  className?: string;
+}) {
+  const active = sort?.key === k;
+  const Icon = active ? (sort!.dir === 1 ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <button
+      onClick={() => onSort(k)}
+      className={`group/sort inline-flex items-center gap-1 uppercase tracking-wide ${
+        align === "right" ? "justify-end" : "justify-start"
+      } ${active ? "text-brand" : "text-faint hover:text-muted"} ${className}`}
+      title={`Sort by ${label.toLowerCase()}`}
+    >
+      {label}
+      <Icon
+        size={12}
+        className={active ? "" : "opacity-0 transition-opacity group-hover/sort:opacity-100"}
+      />
+    </button>
+  );
+}
+
+function CreateClientModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const { addClient } = useData();
+  const [name, setName] = useState("");
+  const [color, setColor] = useState("#0b43ed");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    const client = await addClient(name.trim(), color, note.trim() || undefined);
+    setBusy(false);
+    if (!client) {
+      setError("Could not create client — try again.");
+      return;
+    }
+    onClose();
+    router.push(`/clients/${client.id}`);
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/30" onClick={onClose} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+        className="fixed left-1/2 top-1/3 z-[70] flex w-full max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-2xl"
+      >
+        <h3 className="font-heading text-sm">New client</h3>
+        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+          Name
+          <input
+            autoFocus
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && onClose()}
+            placeholder="Client name"
+            className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm font-normal text-foreground outline-none focus:border-brand"
+          />
+        </label>
+        <label className="flex items-center gap-2 text-xs font-medium text-muted">
+          Color
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="h-8 w-12 cursor-pointer rounded-md border border-border bg-surface"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+          Billing period note (optional)
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && onClose()}
+            placeholder="e.g. monthly retainer, 20h"
+            className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm font-normal text-foreground outline-none focus:border-brand"
+          />
+        </label>
+        {error && <p className="text-xs text-danger">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:bg-background"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={busy || !name.trim()}
+            className="rounded-lg bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+          >
+            {busy ? "Creating…" : "Create client"}
+          </button>
+        </div>
+      </form>
+    </>
+  );
+}
 
 export default function ClientsPage() {
-  const { clients, projects, tasks, taskMinutes } = useData();
+  const { clients, tasks, entrySums, profiles, currentUserId } = useData();
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>(null);
+  const [creating, setCreating] = useState(false);
+
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+
+  const taskClient = useMemo(
+    () => new Map(tasks.map((t) => [t.id, t.clientId])),
+    [tasks],
+  );
+  const week = useMemo(() => presetRange("This week"), []);
+  const month = useMemo(() => presetRange("This month"), []);
+  const weekMinutes = useMemo(
+    () => minutesByClientInRange(entrySums, week.from, week.to, taskClient),
+    [entrySums, week, taskClient],
+  );
+  const monthMinutes = useMemo(
+    () => minutesByClientInRange(entrySums, month.from, month.to, taskClient),
+    [entrySums, month, taskClient],
+  );
+  const totalMinutes = useMemo(
+    () => minutesByClientInRange(entrySums, "0000-01-01", "9999-12-31", taskClient),
+    [entrySums, taskClient],
+  );
+  const lastActivity = useMemo(
+    () => latestActivityByClient(entrySums, taskClient),
+    [entrySums, taskClient],
+  );
+
+  // click = asc, again = desc, third = back to default (latest activity)
+  const cycleSort = (key: SortKey) =>
+    setSort((prev) =>
+      prev?.key !== key ? { key, dir: 1 } : prev.dir === 1 ? { key, dir: -1 } : null,
+    );
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return clients
+    const list = clients
       .filter((c) => !c.archived && (q === "" || c.name.toLowerCase().includes(q)))
-      .map((client) => {
-        const clientProjects = projects.filter((p) => p.clientId === client.id && !p.archived);
-        const projectIds = new Set(clientProjects.map((p) => p.id));
-        const clientTasks = tasks.filter((t) => projectIds.has(t.projectId));
-        const openTasks = clientTasks.filter((t) => t.status !== "done").length;
-        const minutes = clientTasks.reduce((sum, t) => sum + taskMinutes(t.id), 0);
-        const href =
-          clientProjects.length === 1
-            ? `/projects/${clientProjects[0].id}`
-            : `/clients/${client.id}`;
-        return { client, clientProjects, openTasks, minutes, href };
-      })
-      .sort((a, b) => b.openTasks - a.openTasks || b.minutes - a.minutes);
-  }, [clients, projects, tasks, taskMinutes, query]);
+      .map((client) => ({
+        client,
+        openTasks: tasks.filter((t) => t.clientId === client.id && t.status !== "done").length,
+        week: weekMinutes.get(client.id) ?? 0,
+        month: monthMinutes.get(client.id) ?? 0,
+        total: totalMinutes.get(client.id) ?? 0,
+        last: lastActivity.get(client.id) ?? "",
+      }))
+      // default: latest activity first
+      .sort((a, b) => b.last.localeCompare(a.last) || b.openTasks - a.openTasks);
+    if (sort) {
+      const { key, dir } = sort;
+      list.sort((a, b) => {
+        if (key === "client") return a.client.name.localeCompare(b.client.name) * dir;
+        const map = { open: "openTasks", week: "week", month: "month", total: "total" } as const;
+        return (a[map[key]] - b[map[key]]) * dir;
+      });
+    }
+    return list;
+  }, [clients, tasks, weekMinutes, monthMinutes, totalMinutes, lastActivity, query, sort]);
+
+  const numCell = (minutes: number) => (
+    <span
+      className={`w-16 shrink-0 text-right text-sm font-medium tabular-nums ${minutes ? "" : "text-faint"}`}
+    >
+      {minutes ? formatHoursShort(minutes) : "–"}
+    </span>
+  );
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      <h1 className="text-2xl">Clients</h1>
+    <div className="mx-auto flex w-full max-w-[672px] flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl">Clients</h1>
+        {isAdmin && (
+          <button
+            onClick={() => setCreating(true)}
+            className="flex h-8 items-center gap-1.5 rounded-full bg-brand px-3 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            <Plus size={14} />
+            Create new client
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3">
         <Search size={15} className="shrink-0 text-faint" />
@@ -43,46 +228,52 @@ export default function ClientsPage() {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        {rows.map(({ client, clientProjects, openTasks, minutes, href }) => (
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium">
+          <span className="min-w-0 flex-1">
+            <SortHeader label="Client" k="client" sort={sort} onSort={cycleSort} align="left" />
+          </span>
+          <SortHeader label="Open" k="open" sort={sort} onSort={cycleSort} className="w-12 shrink-0" />
+          <SortHeader label="Week" k="week" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
+          <SortHeader label="Month" k="month" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
+          <SortHeader label="Total" k="total" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
+        </div>
+        {rows.map(({ client, openTasks, week, month, total }) => (
           <Link
             key={client.id}
-            href={href}
-            className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-brand"
+            href={`/clients/${client.id}`}
+            className="flex items-center gap-3 border-b border-border px-3 py-2 transition-colors last:border-b-0 hover:bg-background"
           >
-            <span
-              className="flex size-11 shrink-0 items-center justify-center rounded-lg text-lg font-bold text-white"
-              style={{ backgroundColor: client.color }}
-            >
-              {client.name[0]}
+            <span className="flex min-w-0 flex-1 items-center gap-2.5">
+              <span
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
+                style={{ backgroundColor: client.color }}
+              >
+                {client.name[0]}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{client.name}</span>
+                {client.billingPeriodNote && (
+                  <span className="block truncate text-xs text-faint">{client.billingPeriodNote}</span>
+                )}
+              </span>
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{client.name}</div>
-              <div className="truncate text-xs text-muted">
-                {clientProjects.length} project{clientProjects.length === 1 ? "" : "s"}
-                {client.billingPeriodNote && <> · {client.billingPeriodNote}</>}
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-5 text-right text-xs text-muted">
-              <span>
-                <span className="block text-sm font-semibold text-foreground">{openTasks}</span>
-                open
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-foreground">
-                  {formatHoursShort(minutes)}
-                </span>
-                logged
-              </span>
-            </div>
+            <span
+              className={`w-12 shrink-0 text-right text-sm font-medium tabular-nums ${openTasks ? "" : "text-faint"}`}
+            >
+              {openTasks || "–"}
+            </span>
+            {numCell(week)}
+            {numCell(month)}
+            {numCell(total)}
           </Link>
         ))}
         {rows.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border-strong p-8 text-center text-sm text-faint">
-            No clients match &quot;{query}&quot;.
-          </div>
+          <div className="p-8 text-center text-sm text-faint">No clients match &quot;{query}&quot;.</div>
         )}
       </div>
+
+      {creating && <CreateClientModal onClose={() => setCreating(false)} />}
     </div>
   );
 }

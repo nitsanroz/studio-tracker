@@ -1,162 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, ClientChip } from "@/components/ui";
-import type { Profile, Role } from "@/lib/types";
-
-function TeamRow({ member, isAdmin }: { member: Profile; isAdmin: boolean }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [profile, setProfile] = useState(member);
-  const [status, setStatus] = useState<string | null>(null);
-
-  async function patch(fields: Partial<Pick<Profile, "role" | "active">>) {
-    const prev = profile;
-    setProfile((p) => ({ ...p, ...fields }));
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: fields.role ?? profile.role, active: fields.active ?? profile.active })
-      .eq("id", profile.id);
-    if (error) {
-      setProfile(prev);
-      setStatus(error.message);
-    }
-  }
-
-  async function sendReset() {
-    setStatus("…");
-    // Profiles don't expose emails client-side; ask the server? Emails follow
-    // first@studionmore.com — admins type it in the prompt for now.
-    const email = window.prompt(`Send a password reset/set link.\nEmail for ${profile.name}:`);
-    if (!email) {
-      setStatus(null);
-      return;
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/confirm?next=/reset/update`,
-    });
-    setStatus(error ? error.message : "Reset link sent ✓");
-  }
-
-  return (
-    <div className="flex items-center gap-3 py-1.5 text-sm">
-      <Avatar profile={profile} size={28} />
-      <span className={`min-w-0 flex-1 truncate font-medium ${profile.active ? "" : "text-faint line-through"}`}>
-        {profile.name}
-      </span>
-      {status && <span className="text-xs text-muted">{status}</span>}
-      {isAdmin ? (
-        <>
-          <button
-            onClick={sendReset}
-            className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:border-brand hover:text-brand"
-          >
-            Send password link
-          </button>
-          <select
-            value={profile.role}
-            onChange={(e) => patch({ role: e.target.value as Role })}
-            className="rounded-md border border-border bg-surface px-1.5 py-1 text-xs"
-          >
-            <option value="designer">designer</option>
-            <option value="admin">admin</option>
-          </select>
-          <button
-            onClick={() => patch({ active: !profile.active })}
-            className={`w-24 rounded-full px-2 py-1 text-xs font-medium ${
-              profile.active
-                ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-            }`}
-          >
-            {profile.active ? "active" : "deactivated"}
-          </button>
-        </>
-      ) : (
-        <>
-          <span className="text-xs capitalize text-muted">{profile.role}</span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs ${
-              profile.active ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            {profile.active ? "active" : "deactivated"}
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
-function AddMember() {
-  const [form, setForm] = useState({ email: "", name: "", role: "designer" });
-  const [status, setStatus] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setStatus(null);
-    const res = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const body = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(body.error ?? "Failed");
-      return;
-    }
-    setStatus(
-      `${form.name} added ✓ — they set their password via "Forgot password" on the login page (reload to see them).`,
-    );
-    setForm({ email: "", name: "", role: "designer" });
-  }
-
-  return (
-    <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-2 border-t border-border pt-3">
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-        Name
-        <input
-          required
-          value={form.name}
-          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-40 rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-        Email
-        <input
-          required
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          className="w-56 rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-        Role
-        <select
-          value={form.role}
-          onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-          className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
-        >
-          <option value="designer">designer</option>
-          <option value="admin">admin</option>
-        </select>
-      </label>
-      <button
-        disabled={busy}
-        className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-      >
-        {busy ? "Adding…" : "+ Add member"}
-      </button>
-      {status && <p className="w-full text-xs text-muted">{status}</p>}
-    </form>
-  );
-}
+import { Avatar, TagBadge } from "@/components/ui";
+import type { Tag } from "@/lib/types";
 
 function MyProfile() {
   const { profiles, currentUserId, patchProfileLocal } = useData();
@@ -255,8 +105,19 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
       <div className="flex flex-col divide-y divide-border">
         {list.map((c) => (
           <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm">
-            <span className={`min-w-0 flex-1 ${c.archived ? "opacity-40" : ""}`}>
-              <ClientChip client={c} />
+            {isAdmin ? (
+              <input
+                type="color"
+                value={c.color}
+                onChange={(e) => updateClient(c.id, { color: e.target.value })}
+                className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+                title={`Color for ${c.name}`}
+              />
+            ) : (
+              <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+            )}
+            <span className={`min-w-0 flex-1 truncate font-medium ${c.archived ? "opacity-40" : ""}`}>
+              {c.name}
             </span>
             {c.archived && <span className="text-xs text-faint">archived</span>}
             {isAdmin && (
@@ -276,8 +137,8 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
       </div>
       {isAdmin && (
         <p className="mt-2 text-xs text-faint">
-          Archived clients disappear from the Clients page and pickers; their history stays in
-          reports.
+          The color marks the client&apos;s chips across the app. Archived clients disappear from the
+          Clients page and pickers; their history stays in reports.
         </p>
       )}
     </section>
@@ -393,56 +254,140 @@ function IntakeSettings() {
   );
 }
 
-export default function SettingsPage() {
-  const { profiles, tags, currentUserId } = useData();
-  const me = profiles.find((p) => p.id === currentUserId);
-  const isAdmin = me?.role === "admin";
-  const [showDeactivated, setShowDeactivated] = useState(false);
+function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
+  const { updateTag, deleteTag } = useData();
+  const [name, setName] = useState(tag.name);
 
-  const team = profiles
-    .filter((p) => showDeactivated || p.active)
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  function commitName() {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === tag.name) {
+      setName(tag.name);
+      return;
+    }
+    updateTag(tag.id, { name: trimmed });
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center gap-3 py-1.5">
+        <TagBadge tag={tag.name} />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex items-center gap-3 py-1.5 text-sm">
+      <input
+        type="color"
+        value={tag.color}
+        onChange={(e) => updateTag(tag.id, { color: e.target.value })}
+        className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+        title="Tag color"
+      />
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={commitName}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") setName(tag.name);
+        }}
+        className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 font-medium hover:border-border focus:border-brand focus:outline-none"
+      />
+      <TagBadge tag={tag.name} />
+      <button
+        onClick={() => {
+          if (confirm(`Delete tag "${tag.name}"? Tasks using it will lose the tag.`))
+            deleteTag(tag.id);
+        }}
+        className="shrink-0 rounded p-1.5 text-muted hover:bg-red-50 hover:text-danger"
+        title="Delete tag"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
+function TagsSection({ isAdmin }: { isAdmin: boolean }) {
+  const { tags, addTag } = useData();
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("#0b43ed");
+
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-2 font-heading">Task tags</h2>
+      <div className="flex flex-col divide-y divide-border">
+        {tags.map((t) => (
+          <TagRow key={t.id} tag={t} isAdmin={isAdmin} />
+        ))}
+        {tags.length === 0 && <p className="py-2 text-sm text-faint">No tags yet.</p>}
+      </div>
+      {isAdmin && (
+        <form
+          className="mt-3 flex items-center gap-2 border-t border-border pt-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = newName.trim();
+            if (!trimmed) return;
+            addTag(trimmed, newColor);
+            setNewName("");
+          }}
+        >
+          <input
+            type="color"
+            value={newColor}
+            onChange={(e) => setNewColor(e.target.value)}
+            className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+            title="New tag color"
+          />
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="New tag name…"
+            className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+          />
+          <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
+            Add
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+export default function SettingsPage() {
+  const { profiles, currentUserId } = useData();
+  const me = profiles.find((p) => p.id === currentUserId);
+  const isAdmin = me?.role === "admin";
+
+  return (
+    <div className="flex max-w-5xl flex-col gap-4">
       <h1 className="text-2xl">Settings</h1>
 
-      <MyProfile />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-4">
+          <MyProfile />
 
-      {isAdmin && <IntakeSettings />}
+          {isAdmin && (
+            <Link
+              href="/team"
+              className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-brand"
+            >
+              Users are managed on the Team page
+              <ArrowRight size={15} className="ml-auto text-muted" />
+            </Link>
+          )}
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-heading">Team</h2>
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            <input
-              type="checkbox"
-              checked={showDeactivated}
-              onChange={(e) => setShowDeactivated(e.target.checked)}
-            />
-            Show deactivated
-          </label>
+          {isAdmin && <IntakeSettings />}
         </div>
-        <div className="flex flex-col divide-y divide-border">
-          {team.map((p) => (
-            <TeamRow key={p.id} member={p} isAdmin={isAdmin} />
-          ))}
-        </div>
-        {isAdmin && <AddMember />}
-      </section>
 
-      <ClientsSection isAdmin={isAdmin} />
+        <div className="flex min-w-0 flex-col gap-4">
+          <ClientsSection isAdmin={isAdmin} />
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 font-heading">Task tags</h2>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((t) => (
-            <span key={t} className="rounded-full bg-background px-3 py-1 text-sm">
-              {t}
-            </span>
-          ))}
+          <TagsSection isAdmin={isAdmin} />
         </div>
-      </section>
+      </div>
     </div>
   );
 }

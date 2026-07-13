@@ -6,6 +6,14 @@ export interface Profile {
   role: Role;
   avatarUrl: string | null;
   active: boolean;
+  startDate: string | null;
+  capacityHoursWeek: number | null;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
 }
 
 export interface Client {
@@ -16,17 +24,9 @@ export interface Client {
   archived: boolean;
 }
 
-export interface Project {
-  id: string;
-  clientId: string;
-  name: string;
-  billable: boolean;
-  archived: boolean;
-}
-
 export interface Section {
   id: string;
-  projectId: string;
+  clientId: string;
   name: string;
   position: number;
 }
@@ -35,7 +35,7 @@ export type TaskStatus = "todo" | "in_progress" | "done";
 
 export interface Task {
   id: string;
-  projectId: string;
+  clientId: string;
   sectionId: string | null;
   title: string;
   brief: string;
@@ -79,7 +79,84 @@ export interface TimeEntry {
 }
 
 export type PlanEntryType = "task" | "free_text" | "absence";
-export type AbsenceType = "vacation" | "sick" | "day_off" | "half_day" | "wfh";
+export type AbsenceType = "vacation" | "sick" | "day_off";
+
+/** Slim time-entry row kept in memory for all history (no description). */
+export interface EntrySum {
+  id: string;
+  taskId: string;
+  userId: string;
+  date: string;
+  minutes: number;
+}
+
+export interface ReportLink {
+  id: string;
+  clientId: string;
+  token: string;
+  preset: string | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  active: boolean;
+  createdAt: string;
+  /** frozen report data shown to the client; null = never published */
+  snapshot: ReportSnapshot | null;
+  publishedAt: string | null;
+  hiddenColumns: string[];
+  hiddenTaskIds: string[];
+}
+
+/** Frozen, admin-approved report payload rendered by /report/[token]. */
+export interface ReportSnapshot {
+  clientName: string;
+  clientColor: string;
+  generatedAt: string;
+  periods: { label: string; from: string; to: string; hourCap: number | null; advanceHours: number | null }[];
+  /** week columns like the studio's Excel ("16 Dec - 27 Dec"); only weeks with hours */
+  weeks?: { label: string; from: string; to: string }[];
+  sections: {
+    name: string;
+    tasks: {
+      id: string;
+      title: string;
+      estimateHours: number | null;
+      totalMinutes: number;
+      /** minutes per period, indexed like `periods` */
+      periodMinutes: number[];
+      /** minutes per week column, indexed like `weeks` */
+      weekMinutes?: number[];
+    }[];
+  }[];
+  invoices?: { label: string; note: string }[];
+}
+
+export interface BillingPeriod {
+  id: string;
+  clientId: string;
+  label: string;
+  dateFrom: string;
+  dateTo: string;
+  hourCap: number | null;
+  advanceHours: number | null;
+  position: number;
+}
+
+/** Whole-row day state on the weekly plan (holiday or custom label). */
+export interface DayState {
+  id: string;
+  dateFrom: string;
+  dateTo: string;
+  label: string;
+}
+
+export type DevStatus = "pricing" | "in_approval" | "wip" | "qa" | "client_qa" | "done";
+
+export interface DevItem {
+  id: string;
+  text: string;
+  status: DevStatus;
+  position: number;
+}
 
 export interface PlanColumn {
   id: string;

@@ -1,5 +1,5 @@
-import { WeeklyPlan } from "@/components/weekly-plan";
+import { Dashboard } from "@/components/dashboard";
 
 export default function Home() {
-  return <WeeklyPlan />;
+  return <Dashboard />;
 }

@@ -7,25 +7,32 @@ import {
   CalendarDays,
   ChartPie,
   History,
+  House,
   Inbox,
   LogOut,
   Settings,
   SquareCheckBig,
   Users,
+  UsersRound,
+  Wallet,
 } from "lucide-react";
 import { DataProvider, useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { APP_VERSION } from "@/lib/version";
 import { Avatar } from "./ui";
 import { TimerWidget } from "./timer-widget";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 
 const NAV = [
-  { href: "/", label: "Weekly Plan", Icon: CalendarDays },
+  { href: "/", label: "Home", Icon: House },
+  { href: "/plan", label: "Weekly Plan", Icon: CalendarDays },
   { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig },
   { href: "/clients", label: "Clients", Icon: Users },
   { href: "/feed", label: "Time Feed", Icon: History },
-  { href: "/reports", label: "Reports", Icon: ChartPie },
+  { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true },
+  { href: "/finance", label: "Finance", Icon: Wallet, adminOnly: true },
+  { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];
 
@@ -104,7 +111,8 @@ function Shell({ children }: { children: ReactNode }) {
               )}
             </Link>
           )}
-          {NAV.map(({ href, label, Icon }) => {
+          {NAV.map(({ href, label, Icon, adminOnly }) => {
+            if (adminOnly && !isAdmin) return null;
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
@@ -129,6 +137,7 @@ function Shell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+        <div className="px-4 pb-1.5 text-[10px] text-white/50">{APP_VERSION}</div>
         <div
           className="flex items-center gap-2.5 border-t px-4 py-3"
           style={{ borderColor: "var(--sb-border)" }}

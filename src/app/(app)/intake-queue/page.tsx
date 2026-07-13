@@ -3,13 +3,11 @@
 import { useMemo, useState } from "react";
 import { useData, type TaskRequest } from "@/lib/store";
 import { formatDate } from "@/lib/format";
-import { ClientChip } from "@/components/ui";
 
 function ReviewCard({ request }: { request: TaskRequest }) {
-  const { clients, projects, sections, profiles, approveRequest, rejectRequest, openTask } =
+  const { clients, sections, profiles, approveRequest, rejectRequest, openTask } =
     useData();
   const [clientId, setClientId] = useState(request.clientId ?? request.suggestedClientId ?? "");
-  const [projectId, setProjectId] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [title, setTitle] = useState(request.title);
@@ -19,13 +17,10 @@ function ReviewCard({ request }: { request: TaskRequest }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clientProjects = useMemo(
-    () => projects.filter((p) => p.clientId === clientId && !p.archived),
-    [projects, clientId],
+  const clientSections = useMemo(
+    () => sections.filter((s) => s.clientId === clientId),
+    [sections, clientId],
   );
-  const effectiveProjectId =
-    projectId || (clientProjects.length === 1 ? clientProjects[0].id : "");
-  const projectSections = sections.filter((s) => s.projectId === effectiveProjectId);
   const suggested = clients.find((c) => c.id === request.suggestedClientId);
 
   if (request.status === "approved") {
@@ -91,7 +86,6 @@ function ReviewCard({ request }: { request: TaskRequest }) {
           value={clientId}
           onChange={(e) => {
             setClientId(e.target.value);
-            setProjectId("");
             setSectionId("");
           }}
           className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
@@ -107,26 +101,13 @@ function ReviewCard({ request }: { request: TaskRequest }) {
             ))}
         </select>
         <select
-          value={effectiveProjectId}
-          onChange={(e) => setProjectId(e.target.value)}
+          value={sectionId}
+          onChange={(e) => setSectionId(e.target.value)}
           disabled={!clientId}
           className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm disabled:opacity-40"
         >
-          <option value="">Project…</option>
-          {clientProjects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={sectionId}
-          onChange={(e) => setSectionId(e.target.value)}
-          disabled={!effectiveProjectId}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm disabled:opacity-40"
-        >
           <option value="">Section (optional)</option>
-          {projectSections.map((s) => (
+          {clientSections.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -174,14 +155,13 @@ function ReviewCard({ request }: { request: TaskRequest }) {
           Reject
         </button>
         <button
-          disabled={busy || !clientId || !effectiveProjectId || !title.trim()}
+          disabled={busy || !clientId || !title.trim()}
           onClick={async () => {
             setBusy(true);
             setError(null);
             try {
               await approveRequest(request.id, {
                 clientId,
-                projectId: effectiveProjectId,
                 sectionId: sectionId || null,
                 assigneeId: assigneeId || null,
                 title: title.trim(),
