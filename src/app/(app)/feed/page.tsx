@@ -85,6 +85,95 @@ function EntryEditRow({ entry }: { entry: TimeEntry }) {
   );
 }
 
+/** A designer's entries on one day (timesheet cell) — editable per line. */
+function UserDayDetails({
+  userId,
+  date,
+  onClose,
+}: {
+  userId: string;
+  date: string;
+  onClose: () => void;
+}) {
+  const { tasks, clients, profiles, timeEntries } = useData();
+  const supabase = useMemo(() => createClient(), []);
+  const [loaded, setLoaded] = useState<TimeEntry[]>([]);
+  const [ready, setReady] = useState(false);
+  const profile = profiles.find((p) => p.id === userId) ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("time_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", date)
+      .not("minutes", "is", null)
+      .order("created_at")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.error("user day load failed", error.message);
+        setLoaded((data ?? []).map(mapTimeEntry));
+        setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, userId, date]);
+
+  const entries = useMemo(() => {
+    const byId = new Map(loaded.map((e) => [e.id, e]));
+    for (const e of timeEntries) {
+      if (e.userId === userId && e.date === date && e.minutes > 0) byId.set(e.id, e);
+    }
+    return [...byId.values()];
+  }, [loaded, timeEntries, userId, date]);
+  const total = entries.reduce((s, e) => s + e.minutes, 0);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+        <div className="mb-1 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar profile={profile} size={26} />
+            <div className="min-w-0">
+              <h3 className="truncate font-heading text-sm">{profile?.name ?? "Member"}</h3>
+              <div className="text-xs text-muted">
+                {formatFeedDate(date)} · <span className="font-semibold tabular-nums">{formatHours(total)}</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="mt-2 flex max-h-80 flex-col overflow-y-auto">
+          {!ready && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
+          {ready && entries.length === 0 && (
+            <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
+          )}
+          {entries.map((e) => {
+            const task = tasks.find((t) => t.id === e.taskId);
+            const client = clients.find((c) => c.id === task?.clientId);
+            return (
+              <div key={e.id} className="border-b border-border/60 py-1 last:border-b-0">
+                <div className="flex items-center gap-1.5 pt-1 text-[11px] text-muted">
+                  {client && (
+                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: client.color }} />
+                  )}
+                  <span className="bidi-auto truncate">{task?.title ?? "(deleted task)"}</span>
+                </div>
+                <EntryEditRow entry={e} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function CellDetails({
   taskId,
   date,
@@ -235,6 +324,7 @@ function FeedPageContent() {
   const [fetched, setFetched] = useState<TimeEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [cellPopup, setCellPopup] = useState<{ taskId: string; date: string } | null>(null);
+  const [userPopup, setUserPopup] = useState<{ userId: string; date: string } | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
 
   // ?mine=1 → preselect "My hours" once the current user is known
@@ -340,42 +430,23 @@ function FeedPageContent() {
     const dayCount = hasFriSat ? 7 : 5;
     const days = Array.from({ length: dayCount }, (_, i) => toISODate(addDays(weekStart, i)));
 
+    // rows = designers (one line per member with hours this week)
     const rowMap = new Map<string, { byDay: Map<string, number>; total: number }>();
     for (const e of inWeek) {
-      const row = rowMap.get(e.taskId) ?? { byDay: new Map(), total: 0 };
+      const row = rowMap.get(e.userId) ?? { byDay: new Map(), total: 0 };
       row.byDay.set(e.date, (row.byDay.get(e.date) ?? 0) + e.minutes);
       row.total += e.minutes;
-      rowMap.set(e.taskId, row);
+      rowMap.set(e.userId, row);
     }
     const rows = [...rowMap.entries()]
-      .map(([taskId, v]) => {
-        const task = taskById.get(taskId);
-        const client = task ? clients.find((c) => c.id === task.clientId) : undefined;
-        return { taskId, task, client, ...v };
-      })
-      .sort(
-        (a, b) =>
-          (a.client?.name ?? "").localeCompare(b.client?.name ?? "") ||
-          (a.task?.title ?? "").localeCompare(b.task?.title ?? ""),
-      );
+      .map(([userId, v]) => ({ userId, profile: profiles.find((p) => p.id === userId) ?? null, ...v }))
+      .sort((a, b) => b.total - a.total);
     const dayTotals = days.map((d) =>
       inWeek.reduce((s, e) => (e.date === d ? s + e.minutes : s), 0),
     );
     const weekTotal = inWeek.reduce((s, e) => s + e.minutes, 0);
     return { days, rows, dayTotals, weekTotal };
-  }, [view, entrySums, weekFrom, weekTo, weekStart, memberFilter, clientFilter, taskClient, taskById, clients]);
-
-  function openCellMenu(e: ReactMouseEvent, taskId: string, date: string) {
-    e.preventDefault();
-    setMenu({
-      x: e.clientX,
-      y: e.clientY,
-      items: [
-        { label: "Comment / details", onClick: () => setCellPopup({ taskId, date }) },
-        { label: "Open task", onClick: () => openTask(taskId) },
-      ],
-    });
-  }
+  }, [view, entrySums, weekFrom, weekTo, weekStart, memberFilter, clientFilter, taskClient, profiles]);
 
   const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${addDays(weekStart, 4).getDate()}/${addDays(weekStart, 4).getMonth() + 1}`;
 
@@ -387,7 +458,7 @@ function FeedPageContent() {
           <p className="text-sm text-muted">
             {view === "feed"
               ? "Recent hours across the studio — newest first. Open a task to move hours between tasks."
-              : "Weekly timesheet — hours per task per day. Right-click a cell for details."}
+              : "Weekly timesheet — hours per designer per day. Click a cell for that day's entries."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -606,7 +677,7 @@ function FeedPageContent() {
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-background text-xs font-medium uppercase tracking-wide text-faint">
-                  <th className="p-2 text-left">Task</th>
+                  <th className="p-2 text-left">Designer</th>
                   {sheet.days.map((d) => {
                     const day = new Date(d);
                     const isToday = d === toISODate(new Date());
@@ -620,38 +691,26 @@ function FeedPageContent() {
                 </tr>
               </thead>
               <tbody>
-                {sheet.rows.map(({ taskId, task, client, byDay, total }) => (
-                  <tr key={taskId} className="border-b border-border last:border-b-0 hover:bg-background/60">
+                {sheet.rows.map(({ userId, profile, byDay, total }) => (
+                  <tr key={userId} className="border-b border-border last:border-b-0 hover:bg-background/60">
                     <td className="max-w-64 p-2">
-                      <button
-                        onClick={() => openTask(taskId)}
-                        className="flex w-full min-w-0 items-center gap-2 text-left hover:text-brand"
-                      >
-                        {client && (
-                          <span
-                            className="size-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: client.color }}
-                            title={client.name}
-                          />
-                        )}
-                        <span className="bidi-auto truncate font-medium">
-                          {task?.title ?? "(deleted task)"}
-                        </span>
-                      </button>
+                      <span className="flex w-full min-w-0 items-center gap-2 text-left">
+                        <Avatar profile={profile} size={22} />
+                        <span className="truncate font-medium">{profile?.name ?? "(unknown)"}</span>
+                      </span>
                     </td>
                     {sheet.days.map((d) => {
                       const minutes = byDay.get(d) ?? 0;
                       return (
                         <td
                           key={d}
-                          onClick={() => minutes > 0 && setCellPopup({ taskId, date: d })}
-                          onContextMenu={(e) => openCellMenu(e, taskId, d)}
+                          onClick={() => minutes > 0 && setUserPopup({ userId, date: d })}
                           className={`p-2 text-right tabular-nums ${
                             minutes > 0
                               ? "cursor-pointer font-medium hover:bg-brand-soft/60"
                               : "text-faint"
                           }`}
-                          title={minutes > 0 ? "Click for details" : undefined}
+                          title={minutes > 0 ? "Click for that day's entries" : undefined}
                         >
                           {minutes > 0 ? formatHoursShort(minutes) : "–"}
                         </td>
@@ -695,6 +754,13 @@ function FeedPageContent() {
           taskId={cellPopup.taskId}
           date={cellPopup.date}
           onClose={() => setCellPopup(null)}
+        />
+      )}
+      {userPopup && (
+        <UserDayDetails
+          userId={userPopup.userId}
+          date={userPopup.date}
+          onClose={() => setUserPopup(null)}
         />
       )}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}

@@ -14,7 +14,6 @@ import {
   SquareCheckBig,
   Users,
   UsersRound,
-  Wallet,
 } from "lucide-react";
 import { DataProvider, useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
@@ -31,7 +30,6 @@ const NAV = [
   { href: "/clients", label: "Clients", Icon: Users },
   { href: "/feed", label: "Time Feed", Icon: History },
   { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true },
-  { href: "/finance", label: "Finance", Icon: Wallet, adminOnly: true },
   { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
   { href: "/settings", label: "Settings", Icon: Settings },
 ];
