@@ -25,6 +25,8 @@ export function ReportTable({
   revealHidden = false,
   onToggleColumn,
   onToggleTask,
+  onOpenTask,
+  onEditEstimate,
 }: {
   snapshot: ReportSnapshot;
   hiddenColumns: string[];
@@ -33,6 +35,10 @@ export function ReportTable({
   revealHidden?: boolean;
   onToggleColumn?: (key: string) => void;
   onToggleTask?: (taskId: string) => void;
+  /** admin preview: click a task name to open its panel */
+  onOpenTask?: (taskId: string) => void;
+  /** admin preview: inline-edit the estimate (null clears it) */
+  onEditEstimate?: (taskId: string, hours: number | null) => void;
 }) {
   const hiddenCols = new Set(hiddenColumns);
   const hiddenTasks = new Set(hiddenTaskIds);
@@ -61,6 +67,22 @@ export function ReportTable({
     visibleTasks.reduce((s, t) => s + minutesAt(t, i), 0),
   );
 
+  // "Period" (green) = hours inside the latest billing period, like the Excel
+  const latestPeriod = [...snapshot.periods].sort((a, b) => a.to.localeCompare(b.to)).at(-1);
+  const periodMinutesFor = (t: (typeof visibleTasks)[number]) => {
+    if (!latestPeriod || !snapshot.weeks?.length) {
+      const i = snapshot.periods.indexOf(latestPeriod!);
+      return i >= 0 ? (t.periodMinutes[i] ?? 0) : 0;
+    }
+    // sum week buckets that overlap the period
+    return snapshot.weeks.reduce(
+      (s, w, i) =>
+        w.to >= latestPeriod.from && w.from <= latestPeriod.to ? s + (t.weekMinutes?.[i] ?? 0) : s,
+      0,
+    );
+  };
+  const periodTotal = visibleTasks.reduce((s, t) => s + periodMinutesFor(t), 0);
+
   const num = "px-2 py-1.5 text-right tabular-nums whitespace-nowrap";
 
   return (
@@ -68,6 +90,7 @@ export function ReportTable({
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border text-xs font-medium uppercase tracking-wide text-faint">
+            <th className="px-2 py-2 text-left">Section</th>
             <th className="px-2 py-2 text-left">Task</th>
             {showCol("estimate") && (
               <th className={`${num} ${colCls("estimate")}`}>
@@ -93,56 +116,96 @@ export function ReportTable({
                 )}
               </th>
             ))}
+            {latestPeriod && (
+              <th
+                className={`${num} bg-green-100 text-green-900`}
+                title={`${latestPeriod.label}: ${latestPeriod.from} → ${latestPeriod.to}`}
+              >
+                Period
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {snapshot.sections.map((sec) => {
             const rows = sec.tasks.filter((t) => showTask(t.id));
             if (rows.length === 0) return null;
-            return [
-              <tr key={`s-${sec.name}`} className="bg-gray-200/70">
-                <td
-                  colSpan={1 + (showCol("estimate") ? 1 : 0) + (showCol("total") ? 1 : 0) + visiblePeriods.length}
-                  className="bidi-auto px-2 py-1.5 text-xs font-bold"
-                >
-                  {sec.name}
+            return rows.map((t, ri) => (
+              <tr
+                key={t.id}
+                className={`border-border/60 ${ri === 0 ? "border-t-2 border-t-border" : "border-t"} ${rowCls(t.id)}`}
+              >
+                <td className="bidi-auto max-w-36 truncate px-2 py-1.5 text-left text-xs font-bold">
+                  {ri === 0 ? sec.name : ""}
                 </td>
-              </tr>,
-              ...rows.map((t) => (
-                <tr key={t.id} className={`border-b border-border/60 last:border-b-0 ${rowCls(t.id)}`}>
-                  <td className="bidi-auto max-w-72 truncate px-2 py-1.5 text-left">
-                    {editable && (
-                      <button
-                        onClick={() => onToggleTask?.(t.id)}
-                        className="mr-1.5 align-middle text-faint hover:text-brand"
-                        title={hiddenTasks.has(t.id) ? "Show row in client view" : "Hide row from client view"}
-                      >
-                        {hiddenTasks.has(t.id) ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </button>
+                <td className="bidi-auto max-w-72 truncate px-2 py-1.5 text-left">
+                  {editable && (
+                    <button
+                      onClick={() => onToggleTask?.(t.id)}
+                      className="mr-1.5 align-middle text-faint hover:text-brand"
+                      title={hiddenTasks.has(t.id) ? "Show row in client view" : "Hide row from client view"}
+                    >
+                      {hiddenTasks.has(t.id) ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                  )}
+                  {onOpenTask ? (
+                    <button
+                      onClick={() => onOpenTask(t.id)}
+                      className="bidi-auto text-left hover:text-brand hover:underline"
+                    >
+                      {t.title}
+                    </button>
+                  ) : (
+                    t.title
+                  )}
+                </td>
+                {showCol("estimate") && (
+                  <td className={`${num} text-muted ${colCls("estimate")}`}>
+                    {editable && onEditEstimate ? (
+                      <input
+                        key={`${t.id}-${t.estimateHours}`}
+                        defaultValue={t.estimateHours ?? ""}
+                        onBlur={(e) => {
+                          const v = e.target.value.trim();
+                          const h = v === "" ? null : Number(v);
+                          if (v !== "" && (Number.isNaN(h!) || h! < 0)) {
+                            e.target.value = t.estimateHours == null ? "" : String(t.estimateHours);
+                            return;
+                          }
+                          if (h !== t.estimateHours) onEditEstimate(t.id, h);
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                        className="w-12 rounded border border-transparent bg-transparent text-right tabular-nums outline-none hover:border-border focus:border-brand"
+                        title="Edit estimate (hours)"
+                      />
+                    ) : t.estimateHours != null ? (
+                      `${t.estimateHours}h`
+                    ) : (
+                      "–"
                     )}
-                    {t.title}
                   </td>
-                  {showCol("estimate") && (
-                    <td className={`${num} text-muted ${colCls("estimate")}`}>
-                      {t.estimateHours != null ? `${t.estimateHours}h` : "–"}
-                    </td>
-                  )}
-                  {showCol("total") && (
-                    <td className={`${num} font-semibold ${colCls("total")}`}>{fmtH(t.totalMinutes)}</td>
-                  )}
-                  {visiblePeriods.map((p) => (
-                    <td key={p.key} className={`${num} text-muted ${colCls(p.key)}`}>
-                      {fmtH(minutesAt(t, p.index))}
-                    </td>
-                  ))}
-                </tr>
-              )),
-            ];
+                )}
+                {showCol("total") && (
+                  <td className={`${num} font-semibold ${colCls("total")}`}>{fmtH(t.totalMinutes)}</td>
+                )}
+                {visiblePeriods.map((p) => (
+                  <td key={p.key} className={`${num} text-muted ${colCls(p.key)}`}>
+                    {fmtH(minutesAt(t, p.index))}
+                  </td>
+                ))}
+                {latestPeriod && (
+                  <td className={`${num} bg-green-50 font-medium text-green-900`}>
+                    {fmtH(periodMinutesFor(t))}
+                  </td>
+                )}
+              </tr>
+            ));
           })}
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-foreground/20 font-semibold">
             <td className="px-2 py-2 text-left text-xs uppercase tracking-wide">Total</td>
+            <td />
             {showCol("estimate") && (
               <td className={num}>{totalEstimate > 0 ? `${Math.round(totalEstimate * 10) / 10}h` : "–"}</td>
             )}
@@ -152,6 +215,9 @@ export function ReportTable({
                 {fmtH(periodTotals[p.index])}
               </td>
             ))}
+            {latestPeriod && (
+              <td className={`${num} bg-green-100 text-green-900`}>{fmtH(periodTotal)}</td>
+            )}
           </tr>
         </tfoot>
       </table>

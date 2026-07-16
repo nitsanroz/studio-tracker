@@ -35,6 +35,17 @@ function scopeRange(scope: Scope): { from: string; to: string } | null {
   }
 }
 
+/** "2y 4m" since a start date. */
+function tenureShort(startIso: string): string {
+  const start = new Date(startIso);
+  const now = new Date();
+  let months = (now.getFullYear() - start.getFullYear()) * 12 + now.getMonth() - start.getMonth();
+  if (now.getDate() < start.getDate()) months -= 1;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return y > 0 ? `${y}y ${m}m` : `${m}m`;
+}
+
 // ── add user modal ──────────────────────────────────────────────────────────
 
 function AddUserModal({ onClose }: { onClose: () => void }) {
@@ -194,7 +205,7 @@ export default function TeamPage() {
     .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
 
   return (
-    <div className="flex max-w-4xl flex-col gap-4">
+    <div className="flex max-w-[1500px] flex-col gap-4">
       <div className="flex items-end justify-between gap-2">
         <div>
           <h1 className="text-2xl">Team</h1>
@@ -247,7 +258,9 @@ export default function TeamPage() {
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium uppercase tracking-wide text-faint">
           <span className="min-w-0 flex-1">Member</span>
+          <span className="w-24 shrink-0">In studio</span>
           <span className="w-20 shrink-0 text-right">{scope}</span>
+          <span className="w-40 shrink-0">Billable / non-bill.</span>
           <span className="w-20 shrink-0 text-right">Billable</span>
           <span className="w-6 shrink-0" />
         </div>
@@ -270,8 +283,18 @@ export default function TeamPage() {
                   </span>
                 </span>
               </span>
+              <span className="w-24 shrink-0 text-xs tabular-nums text-muted">
+                {p.startDate ? tenureShort(p.startDate) : "–"}
+              </span>
               <span className="w-20 shrink-0 text-right text-sm font-medium tabular-nums">
                 {s?.total ? formatHoursShort(s.total) : "–"}
+              </span>
+              <span className="w-40 shrink-0">
+                {s && s.total > 0 ? (
+                  <SplitBar billable={s.billable} nonBillable={s.total - s.billable} maxMinutes={maxUserTotal} />
+                ) : (
+                  <span className="text-xs text-faint">–</span>
+                )}
               </span>
               <span className="w-20 shrink-0 text-right text-sm tabular-nums text-muted">
                 {pct == null ? "–" : `${pct}%`}
@@ -280,39 +303,6 @@ export default function TeamPage() {
             </Link>
           );
         })}
-      </div>
-
-      {/* ── per-user billable vs non-billable ── */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
-          Users · billable vs non-billable · {scope.toLowerCase()}
-        </h2>
-        {byUser.map(({ profile, billable, total }) => {
-          const pctBillable = total > 0 ? Math.round((billable / total) * 100) : 0;
-          const share = teamStats.total > 0 ? Math.round((total / teamStats.total) * 100) : 0;
-          return (
-            <div key={profile.id} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-sm">
-                <Avatar profile={profile} size={22} />
-                <span className="min-w-0 flex-1 truncate font-medium">{profile.name}</span>
-                <span className="shrink-0 text-xs tabular-nums text-muted">
-                  {formatHoursShort(total)} · {pctBillable}% bill. · {share}% of total
-                </span>
-              </div>
-              <SplitBar billable={billable} nonBillable={total - billable} maxMinutes={maxUserTotal} />
-            </div>
-          );
-        })}
-        {byUser.length === 0 && (
-          <p className="py-4 text-center text-sm text-faint">No hours in this range.</p>
-        )}
-        {byUser.length > 0 && (
-          <p className="text-[11px] text-faint">
-            <span className="mr-1 inline-block size-2 rounded-full bg-brand align-middle" /> billable
-            <span className="mx-1 ml-3 inline-block size-2 rounded-full bg-gray-400 align-middle" />{" "}
-            non-billable
-          </p>
-        )}
       </div>
 
       {addOpen && <AddUserModal onClose={() => setAddOpen(false)} />}

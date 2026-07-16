@@ -258,7 +258,7 @@ export default function MemberPage({
   const maxClient = topClients[0]?.minutes ?? 0;
 
   return (
-    <div className="flex max-w-4xl flex-col gap-4">
+    <div className="flex max-w-[1500px] flex-col gap-4">
       <Link
         href="/team"
         className="flex items-center gap-1 text-sm text-muted hover:text-brand"

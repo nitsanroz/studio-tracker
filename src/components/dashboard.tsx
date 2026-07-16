@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Inbox, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { mapTimeEntry } from "@/lib/db";
@@ -19,8 +19,8 @@ import {
   DAY_NAMES,
 } from "@/lib/format";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
-import { TaskListRow } from "./task-list-row";
-import { ClientChip } from "./ui";
+import { TaskTable } from "./task-list-row";
+import { Avatar, ClientChip } from "./ui";
 import { MiniColumnsLabeled, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
 
@@ -156,7 +156,7 @@ function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: strin
 }
 
 function DayLog() {
-  const { addTimeEntry, deleteTimeEntry, timeEntries, currentUserId, profiles } = useData();
+  const { addTimeEntry, deleteTimeEntry, timeEntries, tasks, clients, currentUserId, profiles } = useData();
   const supabase = useMemo(() => createClient(), []);
   const todayIso = toISODate(new Date());
   const [dateIso, setDateIso] = useState(todayIso);
@@ -204,6 +204,19 @@ function DayLog() {
 
   const minutes = parseDuration(duration);
   const canSave = picked && minutes != null && minutes > 0 && description.trim().length > 0;
+
+  // the 5 tasks I logged on most recently — one-click re-log chips
+  const recentTasks = useMemo(() => {
+    const seen: string[] = [];
+    for (const e of timeEntries) {
+      if (e.userId !== currentUserId || seen.includes(e.taskId)) continue;
+      seen.push(e.taskId);
+      if (seen.length >= 5) break;
+    }
+    return seen
+      .map((id) => tasks.find((t) => t.id === id))
+      .filter((t): t is NonNullable<typeof t> => !!t && t.status !== "done");
+  }, [timeEntries, currentUserId, tasks]);
 
   function shiftDay(delta: number) {
     const [y, m, d] = dateIso.split("-").map(Number);
@@ -271,6 +284,25 @@ function DayLog() {
       </div>
 
       <div className="mt-3">
+        {recentTasks.length > 0 && !picked && (
+          <div className="mb-2 flex flex-wrap items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-faint">Recent:</span>
+            {recentTasks.map((t) => {
+              const c = clients.find((x) => x.id === t.clientId);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setPicked({ task: t, client: c })}
+                  className="flex max-w-40 items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] hover:border-brand hover:text-brand"
+                  title={t.title}
+                >
+                  {c && <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />}
+                  <span className="bidi-auto truncate">{t.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             value={duration}
@@ -404,39 +436,62 @@ function MyWeek() {
   );
 }
 
-function MyGraphs({ isAdmin }: { isAdmin: boolean }) {
+interface HomeFilter {
+  range: { from: string; to: string } | null; // null = all time
+  label: string;
+  clientId: string;
+}
+
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function MyGraphs({ isAdmin, filter }: { isAdmin: boolean; filter: HomeFilter }) {
   const { entrySums, tasks, clients, currentUserId } = useData();
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
-  // my hours per day, last 14 days (admins also see a billable split)
-  const perDay = useMemo(() => {
-    const days = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i - 13));
-    const byIso = new Map(days.map((d) => [toISODate(d), { total: 0, billable: 0 }]));
-    for (const e of entrySums) {
-      if (e.userId !== currentUserId) continue;
-      const cur = byIso.get(e.date);
-      if (!cur) continue;
+  const mine = useMemo(
+    () =>
+      entrySums.filter((e) => {
+        if (e.userId !== currentUserId) return false;
+        if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
+        if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
+        return true;
+      }),
+    [entrySums, currentUserId, filter, taskById],
+  );
+
+  // hours per day within the filter (≤31 distinct days) or per month otherwise
+  const perBucket = useMemo(() => {
+    // period-adaptive buckets: month → days, year → months, all-time → months/years
+    const days = new Set(mine.map((e) => e.date));
+    const months = new Set(mine.map((e) => e.date.slice(0, 7)));
+    const byDay = !!filter.range && days.size <= 31;
+    const byMonth = !byDay && months.size <= 24;
+    const map = new Map<string, { total: number; billable: number }>();
+    for (const e of mine) {
+      const key = byDay ? e.date : byMonth ? e.date.slice(0, 7) : e.date.slice(0, 4);
+      const cur = map.get(key) ?? { total: 0, billable: 0 };
       cur.total += e.minutes;
       if (taskById.get(e.taskId)?.billable) cur.billable += e.minutes;
+      map.set(key, cur);
     }
-    return days.map((d) => {
-      const v = byIso.get(toISODate(d))!;
-      return {
-        label: `${d.getDate()}/${d.getMonth() + 1}`,
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, v]) => ({
+        label: byDay
+          ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
+          : byMonth
+            ? MONTH_SHORT[Number(key.slice(5, 7)) - 1]
+            : key,
         minutes: v.total,
         billable: isAdmin ? v.billable : undefined,
-      };
-    });
-  }, [entrySums, currentUserId, taskById, isAdmin]);
+      }));
+  }, [mine, filter.range, taskById, isAdmin]);
 
-  // my hours by client, this month → pie slices (top 6 + Other)
-  const month = useMemo(() => presetRange("This month"), []);
   const pieSlices = useMemo(() => {
     const map = new Map<string, number>();
-    for (const e of entrySums) {
-      if (e.userId !== currentUserId || e.date < month.from || e.date > month.to) continue;
+    for (const e of mine) {
       const clientId = taskById.get(e.taskId)?.clientId;
       if (!clientId) continue;
       map.set(clientId, (map.get(clientId) ?? 0) + e.minutes);
@@ -451,30 +506,322 @@ function MyGraphs({ isAdmin }: { isAdmin: boolean }) {
     const rest = rows.slice(6).reduce((s, r) => s + r.minutes, 0);
     if (rest > 0) slices.push({ label: "Other", minutes: rest, color: "#9ca3af" });
     return slices;
-  }, [entrySums, currentUserId, month, taskById, clientById]);
+  }, [mine, taskById, clientById]);
 
   return (
     <>
       <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 font-heading text-sm">My hours — last 14 days</h2>
-        <MiniColumnsLabeled points={perDay} />
+        <h2 className="mb-3 font-heading text-sm">My hours — {filter.label.toLowerCase()}</h2>
+        <MiniColumnsLabeled points={perBucket} />
       </div>
       <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 font-heading text-sm">My month by client</h2>
+        <h2 className="mb-3 font-heading text-sm">My hours by client — {filter.label.toLowerCase()}</h2>
         {pieSlices.length > 0 ? (
           <PieChart slices={pieSlices} />
         ) : (
-          <p className="text-sm text-faint">No hours logged this month yet.</p>
+          <p className="text-sm text-faint">No hours in this scope.</p>
         )}
       </div>
     </>
   );
 }
 
+// ── days worked + time in position ─────────────────────────────────────────
+
+/** 4h+ = a full day, anything logged under 4h = half a day. */
+function countWorkDays(perDayMinutes: Map<string, number>): number {
+  let days = 0;
+  for (const [, m] of perDayMinutes) {
+    if (m > 240) days += 1;
+    else if (m > 0) days += 0.5;
+  }
+  return days;
+}
+
+/** working-days → "~X years Y months Z days" (22 workdays/month, 12 months/year) */
+function workdayBreakdown(days: number): string {
+  const months = Math.floor(days / 22);
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  const remDays = Math.round((days - months * 22) * 2) / 2;
+  const parts: string[] = [];
+  if (years) parts.push(`${years}y`);
+  if (remMonths) parts.push(`${remMonths}m`);
+  if (remDays) parts.push(`${remDays}d`);
+  return parts.join(" ") || "0d";
+}
+
+/** calendar diff since start date → "Xy Ym Zd" */
+function tenureSince(startIso: string): string {
+  const start = new Date(startIso);
+  const now = new Date();
+  let y = now.getFullYear() - start.getFullYear();
+  let m = now.getMonth() - start.getMonth();
+  let d = now.getDate() - start.getDate();
+  if (d < 0) {
+    m -= 1;
+    d += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  }
+  if (m < 0) {
+    y -= 1;
+    m += 12;
+  }
+  return `${y}y ${m}m ${d}d`;
+}
+
+function WorkSummary({ filter }: { filter: HomeFilter }) {
+  const { entrySums, tasks, profiles, currentUserId } = useData();
+  const me = profiles.find((p) => p.id === currentUserId);
+  const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
+
+  const { hours, days } = useMemo(() => {
+    const perDay = new Map<string, number>();
+    let total = 0;
+    for (const e of entrySums) {
+      if (e.userId !== currentUserId) continue;
+      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
+      if (filter.clientId && taskClient.get(e.taskId) !== filter.clientId) continue;
+      perDay.set(e.date, (perDay.get(e.date) ?? 0) + e.minutes);
+      total += e.minutes;
+    }
+    return { hours: total, days: countWorkDays(perDay) };
+  }, [entrySums, currentUserId, filter, taskClient]);
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-2 font-heading text-sm">Days worked — {filter.label.toLowerCase()}</h2>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <div className="text-xs font-medium text-muted">Hours</div>
+          <div className="mt-0.5"><HoursValue minutes={hours} /></div>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-muted" title="4h+ counts as a day, less counts as half">
+            Days
+          </div>
+          <div className="mt-0.5 text-2xl font-semibold tabular-nums">{days}</div>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-muted">≈ Working time</div>
+          <div className="mt-0.5 text-2xl font-semibold tabular-nums">{workdayBreakdown(days)}</div>
+        </div>
+      </div>
+      {me?.startDate && (
+        <p className="mt-3 border-t border-border pt-2 text-xs text-muted">
+          In position <span className="font-semibold text-foreground tabular-nums">{tenureSince(me.startDate)}</span>
+          <span className="text-faint"> · since {me.startDate}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── studio pulse (admin): this month vs last ───────────────────────────────
+
+function StudioPulse() {
+  const { entrySums, tasks, clients } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const pulse = useMemo(() => {
+    const now = new Date();
+    const curFrom = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+    const prevFrom = toISODate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const prevTo = toISODate(new Date(now.getFullYear(), now.getMonth(), 0));
+    const cur = { total: 0, billable: 0, byClient: new Map<string, number>() };
+    const prev = { total: 0, billable: 0, byClient: new Map<string, number>() };
+    for (const e of entrySums) {
+      const bucket = e.date >= curFrom ? cur : e.date >= prevFrom && e.date <= prevTo ? prev : null;
+      if (!bucket) continue;
+      bucket.total += e.minutes;
+      const task = taskById.get(e.taskId);
+      if (task?.billable) bucket.billable += e.minutes;
+      if (task) bucket.byClient.set(task.clientId, (bucket.byClient.get(task.clientId) ?? 0) + e.minutes);
+    }
+    const top = [...cur.byClient.entries()].sort((a, b) => b[1] - a[1])[0];
+    let mover: { clientId: string; delta: number } | null = null;
+    for (const [cid, m] of cur.byClient) {
+      const delta = m - (prev.byClient.get(cid) ?? 0);
+      if (!mover || Math.abs(delta) > Math.abs(mover.delta)) mover = { clientId: cid, delta };
+    }
+    return { cur, prev, top, mover };
+  }, [entrySums, taskById]);
+
+  const name = (id?: string) => clients.find((c) => c.id === id)?.name ?? "–";
+  const pct = (v: { total: number; billable: number }) =>
+    v.total > 0 ? Math.round((v.billable / v.total) * 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-2 font-heading text-sm">Studio pulse — this month vs last</h2>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        <div>
+          <div className="text-xs font-medium text-muted">Hours</div>
+          <div className="mt-0.5">
+            <HoursValue minutes={pulse.cur.total} />
+            <span className="ml-1.5 text-xs text-faint">vs {formatHoursShort(pulse.prev.total)}</span>
+          </div>
+        </div>
+        <div>
+          <div className="text-xs font-medium text-muted">Billable</div>
+          <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+            {pct(pulse.cur)}%
+            <span className="ml-1.5 text-xs font-normal text-faint">vs {pct(pulse.prev)}%</span>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-muted">Top client</div>
+          <div className="bidi-auto mt-0.5 truncate text-2xl font-semibold">{name(pulse.top?.[0])}</div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-muted">Biggest mover</div>
+          <div className="bidi-auto mt-0.5 truncate text-2xl font-semibold">
+            {pulse.mover ? name(pulse.mover.clientId) : "–"}
+            {pulse.mover && (
+              <span className={`ml-1.5 text-sm font-medium ${pulse.mover.delta >= 0 ? "text-success" : "text-danger"}`}>
+                {pulse.mover.delta >= 0 ? "+" : "−"}{formatHoursShort(Math.abs(pulse.mover.delta))}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── celebrations: birthdays (admin-readable) + work anniversaries ──────────
+
+function Celebrations() {
+  const { profiles } = useData();
+  const supabase = useMemo(() => createClient(), []);
+  const [birthdays, setBirthdays] = useState<{ profile_id: string; birth_date: string }[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("member_hr")
+      .select("profile_id, birth_date")
+      .not("birth_date", "is", null)
+      .then(({ data }) => setBirthdays((data as { profile_id: string; birth_date: string }[]) ?? []));
+  }, [supabase]);
+
+  const upcoming = useMemo(() => {
+    const out: { icon: string; text: string; when: string }[] = [];
+    const now = new Date();
+    const horizon = 30 * 86400000;
+    const nextOccurrence = (iso: string) => {
+      const [, m, d] = iso.split("-").map(Number);
+      let next = new Date(now.getFullYear(), m - 1, d);
+      if (next.getTime() < now.getTime() - 86400000) next = new Date(now.getFullYear() + 1, m - 1, d);
+      return next;
+    };
+    for (const b of birthdays) {
+      const p = profiles.find((x) => x.id === b.profile_id);
+      if (!p?.active) continue;
+      const next = nextOccurrence(b.birth_date);
+      if (next.getTime() - now.getTime() <= horizon) {
+        out.push({
+          icon: "🎂",
+          text: `${p.name.split(" ")[0]}'s birthday`,
+          when: `${next.getDate()}/${next.getMonth() + 1}`,
+        });
+      }
+    }
+    for (const p of profiles) {
+      if (!p.active || !p.startDate) continue;
+      const next = nextOccurrence(p.startDate);
+      const years = next.getFullYear() - Number(p.startDate.slice(0, 4));
+      if (years > 0 && next.getTime() - now.getTime() <= horizon) {
+        out.push({
+          icon: "🎉",
+          text: `${p.name.split(" ")[0]} — ${years} year${years > 1 ? "s" : ""} at the studio`,
+          when: `${next.getDate()}/${next.getMonth() + 1}`,
+        });
+      }
+    }
+    return out.sort((a, b) => a.when.localeCompare(b.when));
+  }, [birthdays, profiles]);
+
+  if (upcoming.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-2 font-heading text-sm">Celebrations — next 30 days</h2>
+      <div className="flex flex-col gap-1.5">
+        {upcoming.map((c, i) => (
+          <div key={i} className="flex items-center gap-2 text-sm">
+            <span>{c.icon}</span>
+            <span className="bidi-auto min-w-0 flex-1 truncate">{c.text}</span>
+            <span className="shrink-0 text-xs tabular-nums text-muted">{c.when}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** My avatar next to the greeting; hover reveals an edit overlay → upload. */
+function MyAvatar() {
+  const { profiles, currentUserId, patchProfileLocal } = useData();
+  const me = profiles.find((p) => p.id === currentUserId) ?? null;
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function upload(file: File) {
+    setBusy(true);
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/avatar", { method: "POST", body });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) {
+      console.error("avatar upload failed", json.error);
+      return;
+    }
+    if (me) patchProfileLocal(me.id, { avatarUrl: json.avatarUrl });
+  }
+
+  return (
+    <button
+      onClick={() => inputRef.current?.click()}
+      className={`group/avatar relative shrink-0 rounded-full ${busy ? "opacity-50" : ""}`}
+      title="Change my avatar"
+    >
+      <Avatar profile={me} size={52} />
+      <span className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/40 text-white group-hover/avatar:flex">
+        <Pencil size={16} />
+      </span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) upload(f);
+          e.target.value = "";
+        }}
+      />
+    </button>
+  );
+}
+
+const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
+
 export function Dashboard() {
-  const { profiles, tasks, entrySums, currentUserId, taskRequests } = useData();
+  const { profiles, tasks, clients, entrySums, currentUserId, taskRequests } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
   const isAdmin = me?.role === "admin";
+
+  // page-wide filters
+  const [rangeKey, setRangeKey] = useState<(typeof HOME_RANGES)[number]>("This month");
+  const [filterClient, setFilterClient] = useState("");
+  const filter: HomeFilter = useMemo(
+    () => ({
+      range: rangeKey === "All time" ? null : presetRange(rangeKey),
+      label: rangeKey,
+      clientId: filterClient,
+    }),
+    [rangeKey, filterClient],
+  );
 
   const todayIso = toISODate(new Date());
   const week = presetRange("This week");
@@ -513,25 +860,33 @@ export function Dashboard() {
   const myTasks = useMemo(
     () =>
       tasks
-        .filter((t) => t.assigneeId === currentUserId && t.status !== "done")
+        .filter(
+          (t) =>
+            t.assigneeId === currentUserId &&
+            t.status !== "done" &&
+            (!filterClient || t.clientId === filterClient),
+        )
         .sort((a, b) => {
           if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
           if (a.dueDate) return -1;
           if (b.dueDate) return 1;
           return a.position - b.position;
         }),
-    [tasks, currentUserId],
+    [tasks, currentUserId, filterClient],
   );
 
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl">
-          {greeting}, {firstName}
-        </h1>
-        <p className="text-sm text-muted">{dateLabel}</p>
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <MyAvatar />
+        <div>
+          <h1 className="text-2xl">
+            {greeting}, {firstName}
+          </h1>
+          <p className="text-sm text-muted">{dateLabel}</p>
+        </div>
       </div>
 
       {isAdmin && pendingIntake > 0 && (
@@ -545,8 +900,40 @@ export function Dashboard() {
         </Link>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <div className="flex flex-col gap-4 lg:col-span-3">
+      {/* page-wide filters */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {HOME_RANGES.map((r) => (
+          <button
+            key={r}
+            onClick={() => setRangeKey(r)}
+            className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
+              rangeKey === r
+                ? "border-brand bg-brand-soft text-brand-dark"
+                : "border-border bg-surface text-muted hover:border-border-strong"
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+        <select
+          value={filterClient}
+          onChange={(e) => setFilterClient(e.target.value)}
+          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+        >
+          <option value="">All clients</option>
+          {clients
+            .filter((c) => !c.archived)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div className={`grid gap-4 ${isAdmin ? "sm:grid-cols-2" : ""}`}>
             <HoursCard
               title="My hours"
@@ -567,6 +954,7 @@ export function Dashboard() {
               />
             )}
           </div>
+          <WorkSummary filter={filter} />
           <div className="rounded-xl border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
@@ -577,15 +965,15 @@ export function Dashboard() {
             {myTasks.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-faint">Nothing assigned to you right now.</p>
             )}
-            {myTasks.slice(0, 8).map((t) => (
-              <TaskListRow key={t.id} task={t} compact />
-            ))}
+            {myTasks.length > 0 && <TaskTable tasks={myTasks.slice(0, 8)} tableKey="home-tasks" />}
           </div>
         </div>
-        <div className="flex flex-col gap-4 lg:col-span-2">
-          <MyGraphs isAdmin={isAdmin} />
+        <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[400px]">
+          {isAdmin && <StudioPulse />}
+          <MyGraphs isAdmin={isAdmin} filter={filter} />
           <DayLog />
           <MyWeek />
+          <Celebrations />
         </div>
       </div>
     </div>

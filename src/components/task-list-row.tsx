@@ -1,20 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ExternalLink, Plus } from "lucide-react";
 import { useData } from "@/lib/store";
-import { formatDate, parseDuration, toISODate } from "@/lib/format";
-import { Avatar, ClientChip } from "./ui";
+import { formatHoursShort, parseDuration, toISODate } from "@/lib/format";
+import { Avatar, ClientChip, TagBadge } from "./ui";
+import { useColWidths, ResizeHandle } from "./resizable";
 import type { Task } from "@/lib/types";
-
-/** Column widths shared with the My Tasks table header. */
-export const TASK_ROW_COLS = {
-  client: "w-28 shrink-0",
-  section: "w-28 shrink-0",
-  loggedBy: "w-24 shrink-0",
-  due: "w-16 shrink-0",
-  addTime: "w-24 shrink-0",
-} as const;
 
 function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const { addTimeEntry } = useData();
@@ -72,14 +64,35 @@ function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => vo
   );
 }
 
-function LoggedByGroup({ taskId }: { taskId: string }) {
-  const { entrySums, profiles } = useData();
-  const userIds = [...new Set(entrySums.filter((e) => e.taskId === taskId).map((e) => e.userId))];
+/** "12/7" — day/month, no year. */
+function formatDueShort(iso: string): string {
+  const [, m, d] = iso.split("-").map(Number);
+  return `${d}/${m}`;
+}
+
+// column order per Nitsan: Tags, Figma, Budget, Hrs done, %done, Hrs by me, %Billable
+const COLS: { key: string; label: string; w: number }[] = [
+  { key: "client", label: "Client", w: 110 },
+  { key: "section", label: "Section", w: 150 },
+  // task column flexes — no fixed width
+  { key: "tags", label: "Tags", w: 90 },
+  { key: "figma", label: "Figma", w: 76 },
+  { key: "budget", label: "Budget", w: 64 },
+  { key: "done", label: "Hrs done", w: 72 },
+  { key: "pctDone", label: "% done", w: 64 },
+  { key: "mine", label: "Hrs by me", w: 78 },
+  { key: "pctBill", label: "%Billable", w: 70 },
+  { key: "loggedBy", label: "Logged by", w: 96 },
+  { key: "due", label: "Due", w: 52 },
+  { key: "add", label: "", w: 96 },
+];
+const DEFAULT_WIDTHS = Object.fromEntries(COLS.map((c) => [c.key, c.w]));
+
+function LoggedByGroup({ userIds, profiles }: { userIds: string[]; profiles: ReturnType<typeof useData>["profiles"] }) {
   const shown = userIds.slice(0, 4);
   const extra = userIds.length - shown.length;
-
   return (
-    <span className={`flex items-center ${TASK_ROW_COLS.loggedBy}`}>
+    <span className="flex items-center">
       {shown.map((id, i) => (
         <span key={id} className={`rounded-full ring-2 ring-surface ${i > 0 ? "-ml-1.5" : ""}`}>
           <Avatar profile={profiles.find((p) => p.id === id) ?? null} size={20} />
@@ -94,66 +107,133 @@ function LoggedByGroup({ taskId }: { taskId: string }) {
   );
 }
 
-/** "12/7" — day/month, no year. */
-function formatDueShort(iso: string): string {
-  const [, m, d] = iso.split("-").map(Number);
-  return `${d}/${m}`;
-}
+/**
+ * Task table with the full column set + drag-resizable columns.
+ * Used by the My Tasks page AND the Home "My tasks" card.
+ */
+export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableKey?: string }) {
+  const { clients, sections, profiles, entrySums, currentUserId, openTask } = useData();
+  const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
+  const [adding, setAdding] = useState<string | null>(null);
 
-/** One task in a flat list (My Tasks full columns, dashboard compact). */
-export function TaskListRow({ task, compact = false }: { task: Task; compact?: boolean }) {
-  const { clients, sections, openTask } = useData();
-  const client = clients.find((c) => c.id === task.clientId);
-  const [adding, setAdding] = useState(false);
+  // hours per task (total / mine) + who logged
+  const stats = useMemo(() => {
+    const ids = new Set(tasks.map((t) => t.id));
+    const total = new Map<string, number>();
+    const mine = new Map<string, number>();
+    const users = new Map<string, string[]>();
+    for (const e of entrySums) {
+      if (!ids.has(e.taskId)) continue;
+      total.set(e.taskId, (total.get(e.taskId) ?? 0) + e.minutes);
+      if (e.userId === currentUserId) mine.set(e.taskId, (mine.get(e.taskId) ?? 0) + e.minutes);
+      const arr = users.get(e.taskId) ?? [];
+      if (!arr.includes(e.userId)) arr.push(e.userId);
+      users.set(e.taskId, arr);
+    }
+    return { total, mine, users };
+  }, [entrySums, tasks, currentUserId]);
 
-  if (compact) {
-    return (
-      <div
-        className="flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
-        onClick={() => openTask(task.id)}
-      >
-        {client && (
-          <span className="w-24 shrink-0">
-            <ClientChip client={client} size="sm" link={false} />
-          </span>
-        )}
-        <span className="bidi-auto min-w-0 flex-1 truncate font-medium">{task.title}</span>
-        <span className="w-14 shrink-0 text-xs text-muted">
-          {task.dueDate ? formatDate(task.dueDate) : ""}
-        </span>
-      </div>
-    );
-  }
-
-  const section = sections.find((s) => s.id === task.sectionId);
-  const overdue =
-    task.dueDate != null && task.status !== "done" && task.dueDate < toISODate(new Date());
+  const cell = (key: string) => ({ width: widths[key], flexShrink: 0 } as const);
+  const todayIso = toISODate(new Date());
 
   return (
-    <div
-      className="flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
-      onClick={() => openTask(task.id)}
-    >
-      <span className={TASK_ROW_COLS.client}>
-        {client && <ClientChip client={client} size="sm" link={false} />}
-      </span>
-      <span className={`bidi-auto truncate text-muted ${TASK_ROW_COLS.section}`}>
-        {section?.name}
-      </span>
-      <span className="bidi-auto min-w-0 flex-1 truncate font-medium">{task.title}</span>
-      <LoggedByGroup taskId={task.id} />
-      <span className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"} ${TASK_ROW_COLS.due}`}>
-        {task.dueDate ? formatDueShort(task.dueDate) : ""}
-      </span>
-      <span className={`relative ${TASK_ROW_COLS.addTime}`} onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => setAdding((v) => !v)}
-          className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted hover:border-brand hover:text-brand"
-        >
-          <Plus size={12} /> Add time
-        </button>
-        {adding && <AddTimePopover taskId={task.id} onClose={() => setAdding(false)} />}
-      </span>
+    <div className="overflow-x-auto">
+      <div className="min-w-fit">
+        {/* header */}
+        <div className="group/thead flex items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-faint">
+          {COLS.slice(0, 2).map((c) => (
+            <span key={c.key} className="relative" style={cell(c.key)}>
+              {c.label}
+              <ResizeHandle onMouseDown={startResize(c.key)} />
+            </span>
+          ))}
+          <span className="min-w-24 flex-1">Task</span>
+          {COLS.slice(2).map((c) => (
+            <span key={c.key} className="relative" style={cell(c.key)}>
+              {c.label}
+              {c.key !== "add" && <ResizeHandle onMouseDown={startResize(c.key)} />}
+            </span>
+          ))}
+        </div>
+
+        {tasks.map((task) => {
+          const client = clients.find((c) => c.id === task.clientId);
+          const section = sections.find((s) => s.id === task.sectionId);
+          const total = stats.total.get(task.id) ?? 0;
+          const my = stats.mine.get(task.id) ?? 0;
+          const budget = task.estimateHours;
+          const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
+          const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
+          return (
+            <div
+              key={task.id}
+              className="flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
+              onClick={() => openTask(task.id)}
+            >
+              <span style={cell("client")}>
+                {client && <ClientChip client={client} size="sm" link={false} />}
+              </span>
+              <span className="bidi-auto truncate text-muted" style={cell("section")}>
+                {section?.name}
+              </span>
+              <span className="bidi-auto min-w-24 flex-1 truncate font-medium">{task.title}</span>
+              <span className="truncate" style={cell("tags")}>
+                {task.tag && <TagBadge tag={task.tag} />}
+              </span>
+              <span style={cell("figma")} onClick={(e) => e.stopPropagation()}>
+                {task.figmaUrl && (
+                  <a
+                    href={task.figmaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                  >
+                    Figma <ExternalLink size={10} />
+                  </a>
+                )}
+              </span>
+              <span className="text-xs tabular-nums text-muted" style={cell("budget")}>
+                {budget != null ? `${budget}h` : "–"}
+              </span>
+              <span className="text-xs font-medium tabular-nums" style={cell("done")}>
+                {total > 0 ? formatHoursShort(total) : "–"}
+              </span>
+              <span
+                className={`text-xs tabular-nums ${pctDone != null && pctDone > 100 ? "font-medium text-danger" : "text-muted"}`}
+                style={cell("pctDone")}
+              >
+                {pctDone != null ? `${pctDone}%` : "–"}
+              </span>
+              <span className="text-xs tabular-nums text-muted" style={cell("mine")}>
+                {my > 0 ? formatHoursShort(my) : "–"}
+              </span>
+              <span className="text-xs tabular-nums text-muted" style={cell("pctBill")}>
+                {total > 0 ? (task.billable ? "100%" : "0%") : "–"}
+              </span>
+              <span style={cell("loggedBy")}>
+                <LoggedByGroup userIds={stats.users.get(task.id) ?? []} profiles={profiles} />
+              </span>
+              <span
+                className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
+                style={cell("due")}
+              >
+                {task.dueDate ? formatDueShort(task.dueDate) : ""}
+              </span>
+              <span className="relative" style={cell("add")} onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setAdding((v) => (v === task.id ? null : task.id))}
+                  className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted hover:border-brand hover:text-brand"
+                >
+                  <Plus size={12} /> Add time
+                </button>
+                {adding === task.id && (
+                  <AddTimePopover taskId={task.id} onClose={() => setAdding(null)} />
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

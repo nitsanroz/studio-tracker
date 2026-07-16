@@ -18,6 +18,7 @@ import {
 } from "@/lib/format";
 import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges";
 import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/components/ui";
+import { useColWidths, ResizeHandle } from "@/components/resizable";
 import type { TimeEntry } from "@/lib/types";
 
 type Period = "Recent" | RangePreset;
@@ -324,6 +325,14 @@ function FeedPageContent() {
   const [fetched, setFetched] = useState<TimeEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [cellPopup, setCellPopup] = useState<{ taskId: string; date: string } | null>(null);
+  const { widths: colWidths, startResize: startColResize } = useColWidths("feed", {
+    user: 48,
+    date: 80,
+    hours: 64,
+    client: 112,
+    section: 112,
+    task: 176,
+  });
   const [userPopup, setUserPopup] = useState<{ userId: string; date: string } | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
 
@@ -451,7 +460,7 @@ function FeedPageContent() {
   const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${addDays(weekStart, 4).getDate()}/${addDays(weekStart, 4).getMonth() + 1}`;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="text-2xl">Time Feed</h1>
@@ -554,25 +563,31 @@ function FeedPageContent() {
           </div>
 
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <div className="flex items-start gap-3 border-b border-border bg-background px-4 py-2">
+            <div className="group/thead flex items-start gap-3 border-b border-border bg-background px-4 py-2">
               {(
                 [
-                  ["User", `${feedStats.users} user${feedStats.users === 1 ? "" : "s"}`, "w-12 shrink-0"],
-                  ["Date", `${feedStats.days} day${feedStats.days === 1 ? "" : "s"}`, "w-20 shrink-0"],
-                  ["Hours", formatHoursShort(feedStats.minutes), "w-16 shrink-0"],
-                  ["Client", `${feedStats.clients} client${feedStats.clients === 1 ? "" : "s"}`, "w-28 shrink-0"],
-                  ["Section", `${feedStats.sections} section${feedStats.sections === 1 ? "" : "s"}`, "w-28 shrink-0"],
-                  ["Task", `${feedStats.tasks} task${feedStats.tasks === 1 ? "" : "s"}`, "w-44 shrink-0"],
-                  ["Description", `${feedStats.withNotes} with notes`, "min-w-0 flex-1"],
+                  ["user", "User", `${feedStats.users} user${feedStats.users === 1 ? "" : "s"}`],
+                  ["date", "Date", `${feedStats.days} day${feedStats.days === 1 ? "" : "s"}`],
+                  ["hours", "Hours", formatHoursShort(feedStats.minutes)],
+                  ["client", "Client", `${feedStats.clients} client${feedStats.clients === 1 ? "" : "s"}`],
+                  ["section", "Section", `${feedStats.sections} section${feedStats.sections === 1 ? "" : "s"}`],
+                  ["task", "Task", `${feedStats.tasks} task${feedStats.tasks === 1 ? "" : "s"}`],
                 ] as const
-              ).map(([title, subtitle, width]) => (
-                <span key={title} className={width}>
+              ).map(([key, title, subtitle]) => (
+                <span key={key} className="relative shrink-0" style={{ width: colWidths[key] }}>
                   <span className="block text-xs font-medium uppercase tracking-wide text-faint">
                     {title}
                   </span>
                   <span className="block text-[10px] text-faint">{subtitle}</span>
+                  <ResizeHandle onMouseDown={startColResize(key)} />
                 </span>
               ))}
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-medium uppercase tracking-wide text-faint">
+                  Description
+                </span>
+                <span className="block text-[10px] text-faint">{feedStats.withNotes} with notes</span>
+              </span>
             </div>
             {feedRows.map((entry) => {
               const user = profiles.find((p) => p.id === entry.userId) ?? null;
@@ -585,22 +600,24 @@ function FeedPageContent() {
                   className="group/row flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
                   onClick={() => task && openTask(task.id)}
                 >
-                  <span className="w-12 shrink-0">
+                  <span className="shrink-0" style={{ width: colWidths.user }}>
                     <Avatar profile={user} size={26} />
                   </span>
-                  <span className="w-20 shrink-0 text-xs text-muted">
+                  <span className="shrink-0 text-xs text-muted" style={{ width: colWidths.date }}>
                     {formatFeedDate(entry.date)}
                   </span>
-                  <span className="w-16 shrink-0 font-semibold tabular-nums">
+                  <span className="shrink-0 font-semibold tabular-nums" style={{ width: colWidths.hours }}>
                     {formatHours(entry.minutes)}
                   </span>
-                  <span className="w-28 shrink-0">
+                  <span className="shrink-0 truncate" style={{ width: colWidths.client }}>
                     {client && <ClientChip client={client} size="sm" link={false} />}
                   </span>
-                  <span className="bidi-auto w-28 shrink-0 truncate text-muted">
+                  <span className="bidi-auto shrink-0 truncate text-muted" style={{ width: colWidths.section }}>
                     {section?.name}
                   </span>
-                  <span className="bidi-auto w-44 shrink-0 truncate font-medium">{task?.title}</span>
+                  <span className="bidi-auto shrink-0 truncate font-medium" style={{ width: colWidths.task }}>
+                    {task?.title}
+                  </span>
                   <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
                     {entry.description || <span className="italic text-faint">no description</span>}
                   </span>

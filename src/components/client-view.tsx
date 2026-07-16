@@ -55,7 +55,7 @@ function ClientStats({ clientId }: { clientId: string }) {
   const maxUser = stats.users[0]?.minutes ?? 0;
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col gap-4 self-start xl:flex">
+    <aside className="hidden w-[300px] shrink-0 flex-col gap-4 self-start xl:flex">
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border bg-surface p-3">
           <div className="text-[11px] font-medium text-muted">Total logged</div>
@@ -385,7 +385,7 @@ export function ClientView({ clientId }: { clientId: string }) {
       </div>
 
       <div className="flex gap-4">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 max-w-[850px] flex-1">
       {view === "list" ? (
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <div className="min-w-[720px]">

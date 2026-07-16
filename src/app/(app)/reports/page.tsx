@@ -393,7 +393,7 @@ function RangeStats({
 const HIDDEN_TABS_KEY = "reports.hiddenTabs";
 
 function PublishWorkspace() {
-  const { clients, sections, tasks, entrySums, billingPeriods, currentUserId } = useData();
+  const { clients, sections, tasks, entrySums, billingPeriods, currentUserId, openTask, updateTask } = useData();
   const supabase = useMemo(() => createClient(), []);
   const [links, setLinks] = useState<Map<string, ReportLink>>(new Map());
   const [selected, setSelected] = useState<string | null>(null);
@@ -647,6 +647,8 @@ function PublishWorkspace() {
                 hiddenColumns={hiddenColumns}
                 hiddenTaskIds={hiddenTaskIds}
                 editable
+                onOpenTask={openTask}
+                onEditEstimate={(taskId, hours) => updateTask(taskId, { estimateHours: hours })}
                 onToggleColumn={(key) =>
                   setHiddenColumns((prev) =>
                     prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],

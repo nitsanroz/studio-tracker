@@ -1024,7 +1024,7 @@ export function WeeklyPlan() {
                     {gridCols.map((col) => (
                       <td
                         key={col.id}
-                        className={`border-b border-r border-border p-1 align-top last:border-r-0 ${col.type === "studio" && !weekend ? "bg-brand-soft/30" : ""}`}
+                        className={`border-b border-r border-border p-1 align-top last:border-r-0 ${col.type === "studio" && !weekend ? "bg-brand-soft/30" : ""} ${col.profileId === currentUserId && !weekend ? "bg-aqua/10" : ""}`}
                       >
                         <PlanCell
                           date={iso}

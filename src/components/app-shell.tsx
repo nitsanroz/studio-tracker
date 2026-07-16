@@ -23,15 +23,16 @@ import { TimerWidget } from "./timer-widget";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 
+// admin-only sections render LAST, below a thin divider
 const NAV = [
   { href: "/", label: "Home", Icon: House },
   { href: "/plan", label: "Weekly Plan", Icon: CalendarDays },
   { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig },
-  { href: "/clients", label: "Clients", Icon: Users },
   { href: "/feed", label: "Time Feed", Icon: History },
+  { href: "/settings", label: "Settings", Icon: Settings },
+  { href: "/clients", label: "Clients", Icon: Users, adminOnly: true },
   { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true },
   { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
-  { href: "/settings", label: "Settings", Icon: Settings },
 ];
 
 function ThemeInit() {
@@ -88,6 +89,37 @@ function Shell({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <nav className="flex flex-1 flex-col gap-0.5 px-2">
+          {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
+                style={
+                  active
+                    ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                    : { color: "var(--sb-muted)" }
+                }
+                onMouseEnter={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = "var(--sb-hover-bg)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) e.currentTarget.style.backgroundColor = "";
+                }}
+              >
+                <Icon size={20} strokeWidth={1.75} />
+                {label}
+              </Link>
+            );
+          })}
+          {isAdmin && (
+            <div
+              className="mx-3 my-2 border-t"
+              style={{ borderColor: "var(--sb-border)" }}
+              aria-hidden
+            />
+          )}
           {isAdmin && (
             <Link
               href="/intake-queue"
@@ -109,8 +141,8 @@ function Shell({ children }: { children: ReactNode }) {
               )}
             </Link>
           )}
-          {NAV.map(({ href, label, Icon, adminOnly }) => {
-            if (adminOnly && !isAdmin) return null;
+          {NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
+            if (!isAdmin) return null;
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link

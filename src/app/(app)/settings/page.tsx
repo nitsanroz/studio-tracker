@@ -106,13 +106,27 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
         {list.map((c) => (
           <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm">
             {isAdmin ? (
-              <input
-                type="color"
-                value={c.color}
-                onChange={(e) => updateClient(c.id, { color: e.target.value })}
-                className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
-                title={`Color for ${c.name}`}
-              />
+              <span className="flex shrink-0 items-center gap-1">
+                <input
+                  type="color"
+                  value={c.color}
+                  onChange={(e) => updateClient(c.id, { color: e.target.value })}
+                  className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+                  title={`Color for ${c.name}`}
+                />
+                <input
+                  key={c.color}
+                  defaultValue={c.color}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (/^#[0-9a-fA-F]{6}$/.test(v) && v !== c.color) updateClient(c.id, { color: v });
+                    else e.target.value = c.color;
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                  className="w-[4.6rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-[11px] text-muted outline-none hover:border-border focus:border-brand"
+                  title="Hex — paste or type, Enter to apply"
+                />
+              </span>
             ) : (
               <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
             )}
@@ -362,7 +376,7 @@ export default function SettingsPage() {
   const isAdmin = me?.role === "admin";
 
   return (
-    <div className="flex max-w-5xl flex-col gap-4">
+    <div className="flex max-w-[1500px] flex-col gap-4">
       <h1 className="text-2xl">Settings</h1>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -380,12 +394,12 @@ export default function SettingsPage() {
           )}
 
           {isAdmin && <IntakeSettings />}
+
+          <TagsSection isAdmin={isAdmin} />
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
           <ClientsSection isAdmin={isAdmin} />
-
-          <TagsSection isAdmin={isAdmin} />
         </div>
       </div>
     </div>

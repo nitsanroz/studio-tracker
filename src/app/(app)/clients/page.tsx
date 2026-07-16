@@ -8,6 +8,7 @@ import { useData } from "@/lib/store";
 import { formatHoursShort } from "@/lib/format";
 import { presetRange } from "@/lib/date-ranges";
 import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
+import { useColWidths, ResizeHandle } from "@/components/resizable";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -195,16 +196,23 @@ export default function ClientsPage() {
     return list;
   }, [clients, tasks, weekMinutes, monthMinutes, totalMinutes, lastActivity, query, sort]);
 
-  const numCell = (minutes: number) => (
+  const { widths, startResize } = useColWidths("clients", { open: 48, week: 64, month: 64, total: 64 });
+
+  const numCell = (minutes: number, width: number) => (
     <span
-      className={`w-16 shrink-0 text-right text-sm font-medium tabular-nums ${minutes ? "" : "text-faint"}`}
+      className={`shrink-0 text-right text-sm font-medium tabular-nums ${minutes ? "" : "text-faint"}`}
+      style={{ width }}
     >
       {minutes ? formatHoursShort(minutes) : "–"}
     </span>
   );
 
+  if (!isAdmin) {
+    return <p className="text-sm text-muted">Clients are for admins only.</p>;
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-[672px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[650px] flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl">Clients</h1>
         {isAdmin && (
@@ -229,14 +237,23 @@ export default function ClientsPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium">
+        <div className="group/thead flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium">
           <span className="min-w-0 flex-1">
             <SortHeader label="Client" k="client" sort={sort} onSort={cycleSort} align="left" />
           </span>
-          <SortHeader label="Open" k="open" sort={sort} onSort={cycleSort} className="w-12 shrink-0" />
-          <SortHeader label="Week" k="week" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
-          <SortHeader label="Month" k="month" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
-          <SortHeader label="Total" k="total" sort={sort} onSort={cycleSort} className="w-16 shrink-0" />
+          {(
+            [
+              ["open", "Open"],
+              ["week", "Week"],
+              ["month", "Month"],
+              ["total", "Total"],
+            ] as const
+          ).map(([k, label]) => (
+            <span key={k} className="relative flex shrink-0 justify-end" style={{ width: widths[k] }}>
+              <SortHeader label={label} k={k} sort={sort} onSort={cycleSort} />
+              <ResizeHandle onMouseDown={startResize(k)} />
+            </span>
+          ))}
         </div>
         {rows.map(({ client, openTasks, week, month, total }) => (
           <Link
@@ -259,13 +276,14 @@ export default function ClientsPage() {
               </span>
             </span>
             <span
-              className={`w-12 shrink-0 text-right text-sm font-medium tabular-nums ${openTasks ? "" : "text-faint"}`}
+              className={`shrink-0 text-right text-sm font-medium tabular-nums ${openTasks ? "" : "text-faint"}`}
+              style={{ width: widths.open }}
             >
               {openTasks || "–"}
             </span>
-            {numCell(week)}
-            {numCell(month)}
-            {numCell(total)}
+            {numCell(week, widths.week)}
+            {numCell(month, widths.month)}
+            {numCell(total, widths.total)}
           </Link>
         ))}
         {rows.length === 0 && (
