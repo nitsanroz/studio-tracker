@@ -344,7 +344,7 @@ function RangeStats({
   }, [enriched]);
 
   return (
-    <div className="grid items-start gap-4 sm:grid-cols-3">
+    <div className="flex flex-col gap-4">
       <div className="rounded-xl border border-border bg-surface p-4 text-center">
         <div className="text-4xl font-bold tabular-nums text-brand">
           {productivity == null ? "–" : `${productivity}%`}
@@ -913,11 +913,10 @@ export default function ReportsPage() {
         </select>
       </div>
 
-      {/* ── stats for the selected period + filters ── */}
-      <RangeStats enriched={enriched} profiles={profiles} />
-
+      {/* ── two columns: client table left, stat panes stacked right ── */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
       {/* ── per-client expandable table with billable split graph ── */}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-faint">
           <span className="flex-1">Client</span>
           <span className="w-40">Billable split</span>
@@ -1012,6 +1011,12 @@ export default function ReportsPage() {
         {byClient.length === 0 && !loading && (
           <div className="px-4 py-6 text-center text-sm text-faint">No hours in this range.</div>
         )}
+      </div>
+
+      {/* ── stats for the selected period + filters ── */}
+      <div className="w-full shrink-0 lg:w-[360px]">
+        <RangeStats enriched={enriched} profiles={profiles} />
+      </div>
       </div>
 
       <PublishWorkspace />

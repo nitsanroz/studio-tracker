@@ -221,7 +221,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await Promise.all([
           // "*" keeps boot working whether or not migration 0004 is applied
           fetchAll<any>(supabase, "profiles", "*"),
-          fetchAll<any>(supabase, "clients", "id, name, color, billing_period_note, archived"),
+          fetchAll<any>(supabase, "clients", "*"),
           // legacy layer: only used to derive client_id before migration 0007
           fetchAll<any>(supabase, "projects", "id, client_id"),
           // "*" tolerates pre-0007 schema (no client_id column yet)
@@ -383,7 +383,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           client_id: clientId,
           section_id: sectionId,
           title,
-          billable: true,
+          billable: clients.find((c) => c.id === clientId)?.billable ?? true,
           position,
         })
         .select()
@@ -396,7 +396,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
         });
     },
-    [supabase, tasks, tagNameById],
+    [supabase, tasks, tagNameById, clients],
   );
 
   const addSection = useCallback(
@@ -523,6 +523,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if ("color" in patch) row.color = patch.color;
       if ("archived" in patch) row.archived = patch.archived;
       if ("billingPeriodNote" in patch) row.billing_period_note = patch.billingPeriodNote;
+      if ("billable" in patch) row.billable = patch.billable;
       supabase
         .from("clients")
         .update(row)
@@ -530,6 +531,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .then(({ error }) => {
           if (error) console.error("updateClient failed", error.message);
         });
+      // Marking a client internal makes all its existing tasks non-billable.
+      // The reverse is NOT mass-applied (keys tasks etc. must stay non-billable).
+      if (patch.billable === false) {
+        setTasks((prev) =>
+          prev.map((t) => (t.clientId === clientId ? { ...t, billable: false } : t)),
+        );
+        supabase
+          .from("tasks")
+          .update({ billable: false })
+          .eq("client_id", clientId)
+          .then(({ error }) => {
+            if (error) console.error("updateClient tasks-billable failed", error.message);
+          });
+      }
     },
     [supabase],
   );
@@ -976,7 +991,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: "todo",
           assignee_id: input.assigneeId,
           due_date: input.dueDate,
-          billable: true,
+          billable: clients.find((c) => c.id === input.clientId)?.billable ?? true,
           estimate_hours: input.estimateHours,
         })
         .select()
@@ -996,7 +1011,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ),
       );
     },
-    [supabase, taskRequests, tagNameById],
+    [supabase, taskRequests, tagNameById, clients],
   );
 
   const rejectRequest = useCallback(

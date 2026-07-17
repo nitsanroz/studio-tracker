@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Maximize2, Plus } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatDate, formatHoursShort } from "@/lib/format";
 import { Avatar, BudgetBar, CollapseChevron, TagBadge } from "./ui";
+import {
+  EditableDateCell,
+  EditableNumberCell,
+  EditableSelectCell,
+  EditableTextCell,
+} from "./editable-cell";
 import { ClientReportButtons } from "./client-report-buttons";
 import { HBar, MiniColumnsLabeled } from "./charts";
 import type { Profile, Section, Task } from "@/lib/types";
@@ -177,7 +183,7 @@ function SortHeader({
 }
 
 function TaskRow({ task }: { task: Task }) {
-  const { profiles, openTask, updateTask, taskMinutes, openTaskId } = useData();
+  const { profiles, tags, openTask, updateTask, taskMinutes, openTaskId } = useData();
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const done = task.status === "done";
   const active = openTaskId === task.id;
@@ -199,30 +205,68 @@ function TaskRow({ task }: { task: Task }) {
       >
         <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
       </button>
-      <span className={`bidi-auto min-w-0 flex-1 truncate font-medium ${done ? "text-faint line-through" : ""}`}>
-        {task.title}
+      <span className={`flex min-w-0 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
+        <EditableTextCell
+          value={task.title}
+          onCommit={(v) => v && updateTask(task.id, { title: v })}
+        />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            openTask(task.id);
+          }}
+          title="Open details"
+          className="invisible ml-1 shrink-0 rounded p-0.5 text-faint hover:bg-background hover:text-brand group-hover:visible"
+        >
+          <Maximize2 size={13} />
+        </button>
         {task.pending && (
-          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+          <span className="ml-2 shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
             pending approval
           </span>
         )}
       </span>
-      <span className="hidden w-40 shrink-0 items-center gap-1.5 text-xs text-muted sm:flex">
-        {assignee ? (
-          <>
-            <Avatar profile={assignee} size={22} />
-            <span className="truncate">{assignee.name}</span>
-          </>
-        ) : (
-          <span className="text-faint">—</span>
-        )}
+      <span className="hidden w-40 shrink-0 text-xs text-muted sm:block">
+        <EditableSelectCell
+          value={task.assigneeId ?? ""}
+          options={profiles.filter((p) => p.active || p.id === task.assigneeId).map((p) => ({ value: p.id, label: p.name }))}
+          onCommit={(v) => updateTask(task.id, { assigneeId: v || null })}
+          emptyLabel="Unassigned"
+          display={
+            assignee ? (
+              <span className="flex items-center gap-1.5">
+                <Avatar profile={assignee} size={22} />
+                <span className="truncate">{assignee.name}</span>
+              </span>
+            ) : (
+              <span className="text-faint">—</span>
+            )
+          }
+        />
       </span>
       <span className="w-16 shrink-0 text-xs text-muted">
-        {task.dueDate ? formatDate(task.dueDate) : ""}
+        <EditableDateCell
+          value={task.dueDate}
+          onCommit={(v) => updateTask(task.id, { dueDate: v })}
+          format={formatDate}
+          placeholder=""
+        />
       </span>
-      <span className="hidden w-36 shrink-0 lg:block">{task.tag ? <TagBadge tag={task.tag} /> : null}</span>
+      <span className="hidden w-36 shrink-0 lg:block">
+        <EditableSelectCell
+          value={task.tag ?? ""}
+          options={tags.map((t) => ({ value: t.name, label: t.name }))}
+          onCommit={(v) => updateTask(task.id, { tag: v || null })}
+          emptyLabel="No tag"
+          display={task.tag ? <TagBadge tag={task.tag} /> : null}
+        />
+      </span>
       <span className="hidden w-28 shrink-0 md:block">
-        <BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />
+        <EditableNumberCell
+          value={task.estimateHours}
+          onCommit={(v) => updateTask(task.id, { estimateHours: v })}
+          display={<BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />}
+        />
       </span>
       <span
         className={`w-4 shrink-0 text-center text-xs ${task.billable ? "text-success" : "text-faint"}`}

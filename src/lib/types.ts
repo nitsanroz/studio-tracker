@@ -22,6 +22,8 @@ export interface Client {
   color: string;
   billingPeriodNote: string;
   archived: boolean;
+  /** false = internal client (Studio…): its tasks are never billable */
+  billable: boolean;
 }
 
 export interface Section {

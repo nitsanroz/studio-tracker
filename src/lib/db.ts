@@ -108,6 +108,7 @@ export const mapClient = (r: any): Client => ({
   color: r.color,
   billingPeriodNote: r.billing_period_note ?? "",
   archived: r.archived,
+  billable: r.billable ?? true, // column exists from migration 0009
 });
 
 // Pre-0007 rows have client_id null; fall back via projectClientById (legacy).

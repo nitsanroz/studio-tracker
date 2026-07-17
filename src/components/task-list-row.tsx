@@ -1,10 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ExternalLink, Plus } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ExternalLink, Maximize2, Pencil, Plus } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatHoursShort, parseDuration, toISODate } from "@/lib/format";
 import { Avatar, ClientChip, TagBadge } from "./ui";
+import {
+  EditableDateCell,
+  EditableNumberCell,
+  EditableSelectCell,
+  EditableTextCell,
+} from "./editable-cell";
 import { useColWidths, ResizeHandle } from "./resizable";
 import type { Task } from "@/lib/types";
 
@@ -64,6 +70,69 @@ function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => vo
   );
 }
 
+/** Figma link cell: link stays clickable; pencil (or empty cell) edits the URL in place. */
+function FigmaCell({ url, onCommit }: { url: string | null; onCommit: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const cancelled = useRef(false);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        defaultValue={url ?? ""}
+        placeholder="Paste link"
+        onFocus={(e) => e.target.select()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") {
+            cancelled.current = true;
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onBlur={(e) => {
+          if (!cancelled.current) {
+            const v = e.target.value.trim();
+            if (v !== (url ?? "")) onCommit(v);
+          }
+          cancelled.current = false;
+          setEditing(false);
+        }}
+        className="w-full min-w-0 rounded-md border border-brand bg-surface px-1.5 py-0.5 text-xs shadow-[0_0_0_2px_var(--color-brand-soft)] outline-none"
+      />
+    );
+  }
+  if (!url) {
+    return (
+      <span
+        onClick={() => setEditing(true)}
+        title="Click to add a Figma link"
+        className="block w-full cursor-text rounded-md px-1.5 py-0.5 text-xs text-faint transition-shadow hover:bg-surface hover:shadow-[inset_0_0_0_1px_var(--color-border-strong)]"
+      >
+        –
+      </span>
+    );
+  }
+  return (
+    <span className="group/figma flex items-center gap-1 px-1.5 py-0.5">
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
+      >
+        Figma <ExternalLink size={10} />
+      </a>
+      <button
+        onClick={() => setEditing(true)}
+        title="Edit link"
+        className="invisible text-faint hover:text-brand group-hover/figma:visible"
+      >
+        <Pencil size={11} />
+      </button>
+    </span>
+  );
+}
+
 /** "12/7" — day/month, no year. */
 function formatDueShort(iso: string): string {
   const [, m, d] = iso.split("-").map(Number);
@@ -112,7 +181,8 @@ function LoggedByGroup({ userIds, profiles }: { userIds: string[]; profiles: Ret
  * Used by the My Tasks page AND the Home "My tasks" card.
  */
 export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableKey?: string }) {
-  const { clients, sections, profiles, entrySums, currentUserId, openTask } = useData();
+  const { clients, sections, profiles, entrySums, currentUserId, openTask, updateTask, tags } =
+    useData();
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
   const [adding, setAdding] = useState<string | null>(null);
 
@@ -167,7 +237,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           return (
             <div
               key={task.id}
-              className="flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
+              className="group flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
               onClick={() => openTask(task.id)}
             >
               <span style={cell("client")}>
@@ -176,24 +246,39 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
               <span className="bidi-auto truncate text-muted" style={cell("section")}>
                 {section?.name}
               </span>
-              <span className="bidi-auto min-w-24 flex-1 truncate font-medium">{task.title}</span>
-              <span className="truncate" style={cell("tags")}>
-                {task.tag && <TagBadge tag={task.tag} />}
+              <span className="flex min-w-24 flex-1 items-center font-medium" onClick={(e) => e.stopPropagation()}>
+                <EditableTextCell
+                  value={task.title}
+                  onCommit={(v) => v && updateTask(task.id, { title: v })}
+                />
+                <button
+                  onClick={() => openTask(task.id)}
+                  title="Open details"
+                  className="invisible ml-1 shrink-0 rounded p-0.5 text-faint hover:bg-surface hover:text-brand group-hover:visible"
+                >
+                  <Maximize2 size={13} />
+                </button>
+              </span>
+              <span style={cell("tags")} onClick={(e) => e.stopPropagation()}>
+                <EditableSelectCell
+                  value={task.tag ?? ""}
+                  options={tags.map((t) => ({ value: t.name, label: t.name }))}
+                  onCommit={(v) => updateTask(task.id, { tag: v || null })}
+                  display={task.tag ? <TagBadge tag={task.tag} /> : null}
+                  emptyLabel="No tag"
+                />
               </span>
               <span style={cell("figma")} onClick={(e) => e.stopPropagation()}>
-                {task.figmaUrl && (
-                  <a
-                    href={task.figmaUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
-                  >
-                    Figma <ExternalLink size={10} />
-                  </a>
-                )}
+                <FigmaCell
+                  url={task.figmaUrl}
+                  onCommit={(v) => updateTask(task.id, { figmaUrl: v || null })}
+                />
               </span>
-              <span className="text-xs tabular-nums text-muted" style={cell("budget")}>
-                {budget != null ? `${budget}h` : "–"}
+              <span className="text-xs text-muted" style={cell("budget")} onClick={(e) => e.stopPropagation()}>
+                <EditableNumberCell
+                  value={budget}
+                  onCommit={(v) => updateTask(task.id, { estimateHours: v })}
+                />
               </span>
               <span className="text-xs font-medium tabular-nums" style={cell("done")}>
                 {total > 0 ? formatHoursShort(total) : "–"}
@@ -216,8 +301,14 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
               <span
                 className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
                 style={cell("due")}
+                onClick={(e) => e.stopPropagation()}
               >
-                {task.dueDate ? formatDueShort(task.dueDate) : ""}
+                <EditableDateCell
+                  value={task.dueDate}
+                  onCommit={(v) => updateTask(task.id, { dueDate: v })}
+                  format={formatDueShort}
+                  placeholder=""
+                />
               </span>
               <span className="relative" style={cell("add")} onClick={(e) => e.stopPropagation()}>
                 <button

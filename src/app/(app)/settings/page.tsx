@@ -135,6 +135,19 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
             </span>
             {c.archived && <span className="text-xs text-faint">archived</span>}
             {isAdmin && (
+              <label
+                className={`flex shrink-0 cursor-pointer items-center gap-1.5 text-xs ${c.billable ? "text-muted" : "text-warning"}`}
+                title="Internal clients (unchecked) are non-billable: new tasks are created non-billable"
+              >
+                <input
+                  type="checkbox"
+                  checked={c.billable}
+                  onChange={(e) => updateClient(c.id, { billable: e.target.checked })}
+                />
+                {c.billable ? "Billable" : "Internal"}
+              </label>
+            )}
+            {isAdmin && (
               <button
                 onClick={() => updateClient(c.id, { archived: !c.archived })}
                 className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
@@ -152,7 +165,9 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
       {isAdmin && (
         <p className="mt-2 text-xs text-faint">
           The color marks the client&apos;s chips across the app. Archived clients disappear from the
-          Clients page and pickers; their history stays in reports.
+          Clients page and pickers; their history stays in reports. Switching a client to
+          &quot;Internal&quot; marks all its tasks (existing and future) non-billable; switching back
+          only affects new tasks.
         </p>
       )}
     </section>

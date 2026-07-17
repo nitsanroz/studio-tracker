@@ -9,6 +9,7 @@ import { formatHoursShort } from "@/lib/format";
 import { presetRange } from "@/lib/date-ranges";
 import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
+import { EditableTextCell } from "@/components/editable-cell";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -135,7 +136,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ClientsPage() {
-  const { clients, tasks, entrySums, profiles, currentUserId } = useData();
+  const { clients, tasks, entrySums, profiles, currentUserId, updateClient } = useData();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>(null);
   const [creating, setCreating] = useState(false);
@@ -268,10 +269,15 @@ export default function ClientsPage() {
               >
                 {client.name[0]}
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{client.name}</span>
+              <span className="min-w-0 flex-1">
+                <EditableTextCell
+                  value={client.name}
+                  onCommit={(v) => v && updateClient(client.id, { name: v })}
+                  className="text-sm font-semibold"
+                  inputClassName="text-sm font-semibold"
+                />
                 {client.billingPeriodNote && (
-                  <span className="block truncate text-xs text-faint">{client.billingPeriodNote}</span>
+                  <span className="block truncate px-1.5 text-xs text-faint">{client.billingPeriodNote}</span>
                 )}
               </span>
             </span>

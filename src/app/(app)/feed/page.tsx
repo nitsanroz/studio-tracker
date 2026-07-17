@@ -18,6 +18,7 @@ import {
 } from "@/lib/format";
 import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges";
 import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/components/ui";
+import { EditableTextCell } from "@/components/editable-cell";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import type { TimeEntry } from "@/lib/types";
 
@@ -307,7 +308,7 @@ function initialFromRangeParam(param: string | null): { period: Period; range: {
 }
 
 function FeedPageContent() {
-  const { timeEntries, entrySums, tasks, sections, clients, profiles, openTask, deleteTimeEntry, currentUserId } =
+  const { timeEntries, entrySums, tasks, sections, clients, profiles, openTask, deleteTimeEntry, updateTimeEntry, currentUserId } =
     useData();
   const supabase = useMemo(() => createClient(), []);
   const searchParams = useSearchParams();
@@ -606,8 +607,20 @@ function FeedPageContent() {
                   <span className="shrink-0 text-xs text-muted" style={{ width: colWidths.date }}>
                     {formatFeedDate(entry.date)}
                   </span>
-                  <span className="shrink-0 font-semibold tabular-nums" style={{ width: colWidths.hours }}>
-                    {formatHours(entry.minutes)}
+                  <span
+                    className="shrink-0 font-semibold tabular-nums"
+                    style={{ width: colWidths.hours }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <EditableTextCell
+                      value={formatHours(entry.minutes)}
+                      bidi={false}
+                      onCommit={(v) => {
+                        const minutes = parseDuration(v);
+                        if (minutes != null && minutes > 0 && minutes !== entry.minutes)
+                          updateTimeEntry(entry.id, { minutes });
+                      }}
+                    />
                   </span>
                   <span className="shrink-0 truncate" style={{ width: colWidths.client }}>
                     {client && <ClientChip client={client} size="sm" link={false} />}
@@ -618,8 +631,12 @@ function FeedPageContent() {
                   <span className="bidi-auto shrink-0 truncate font-medium" style={{ width: colWidths.task }}>
                     {task?.title}
                   </span>
-                  <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
-                    {entry.description || <span className="italic text-faint">no description</span>}
+                  <span className="min-w-0 flex-1 text-muted" onClick={(e) => e.stopPropagation()}>
+                    <EditableTextCell
+                      value={entry.description}
+                      placeholder="no description"
+                      onCommit={(v) => v && updateTimeEntry(entry.id, { description: v })}
+                    />
                   </span>
                   {entry.movedFromTaskId && (
                     <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700">
