@@ -257,11 +257,21 @@ export default function TeamPage() {
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium uppercase tracking-wide text-faint">
-          <span className="min-w-0 flex-1">Member</span>
-          <span className="w-24 shrink-0">In studio</span>
-          <span className="w-20 shrink-0 text-right">{scope}</span>
-          <span className="w-40 shrink-0">Billable / non-bill.</span>
-          <span className="w-20 shrink-0 text-right">Billable</span>
+          <span className="min-w-0 flex-1" title="Open a member for details, graphs and HR fields">
+            Member
+          </span>
+          <span className="w-24 shrink-0" title="Time since the member's start date">
+            In studio
+          </span>
+          <span className="w-20 shrink-0 text-right" title={`Hours logged ${scope.toLowerCase()}`}>
+            {scope}
+          </span>
+          <span className="w-40 shrink-0" title="Billable (blue) vs non-billable (grey) hours in the scope">
+            Billable / non-bill.
+          </span>
+          <span className="w-20 shrink-0 text-right" title="Share of the member's hours on billable tasks">
+            Billable
+          </span>
           <span className="w-6 shrink-0" />
         </div>
         {team.map((p) => {

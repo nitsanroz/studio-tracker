@@ -43,6 +43,8 @@ export function buildReportSnapshot(
   tasks: Task[],
   entrySums: EntrySum[],
   periods: BillingPeriod[],
+  /** admin-edited column ranges; falls back to auto week buckets */
+  customWeeks?: { label: string; from: string; to: string }[] | null,
 ): ReportSnapshot {
   const clientTasks = tasks.filter((t) => t.clientId === client.id && t.billable && !t.pending);
   const taskIds = new Set(clientTasks.map((t) => t.id));
@@ -52,7 +54,7 @@ export function buildReportSnapshot(
   const weekByTask = new Map<string, number[]>();
   const sorted = [...periods].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom));
   const clientEntries = entrySums.filter((e) => taskIds.has(e.taskId));
-  const weeks = buildWeeks(clientEntries);
+  const weeks = customWeeks?.length ? customWeeks : buildWeeks(clientEntries);
 
   for (const e of clientEntries) {
     totalByTask.set(e.taskId, (totalByTask.get(e.taskId) ?? 0) + e.minutes);

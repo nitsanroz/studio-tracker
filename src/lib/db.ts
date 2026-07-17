@@ -75,6 +75,7 @@ export const mapReportLink = (r: any): ReportLink => ({
   publishedAt: r.published_at ?? null,
   hiddenColumns: r.hidden_columns ?? [],
   hiddenTaskIds: r.hidden_task_ids ?? [],
+  customWeeks: r.custom_weeks ?? null,
 });
 
 export const mapBillingPeriod = (r: any): BillingPeriod => ({
@@ -86,6 +87,7 @@ export const mapBillingPeriod = (r: any): BillingPeriod => ({
   hourCap: r.hour_cap == null ? null : Number(r.hour_cap),
   advanceHours: r.advance_hours == null ? null : Number(r.advance_hours),
   position: r.position,
+  paid: r.paid ?? false, // column exists from migration 0010
 });
 
 export const mapDayState = (r: any): DayState => ({
@@ -109,6 +111,7 @@ export const mapClient = (r: any): Client => ({
   billingPeriodNote: r.billing_period_note ?? "",
   archived: r.archived,
   billable: r.billable ?? true, // column exists from migration 0009
+  invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
 });
 
 // Pre-0007 rows have client_id null; fall back via projectClientById (legacy).

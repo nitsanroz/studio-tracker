@@ -150,6 +150,15 @@ function makeComparator(
   }
 }
 
+const SORT_HINTS: Record<SortKey, string> = {
+  title: "Task title — click a cell to rename. Click to sort",
+  assignee: "Who the task is assigned to — click a cell to change. Click to sort",
+  due: "Due date — click a cell to change. Click to sort",
+  tag: "Task tag — click a cell to change. Click to sort",
+  budget: "Hours logged vs the estimate — click a cell to edit the budget. Click to sort",
+  billable: "Billable task? Non-billable hours don't appear on client reports. Click to sort",
+};
+
 function SortHeader({
   label,
   k,
@@ -171,7 +180,7 @@ function SortHeader({
       className={`group/sort flex items-center gap-1 text-left uppercase tracking-wide ${
         active ? "text-brand" : "text-faint hover:text-muted"
       } ${className}`}
-      title={`Sort by ${label.toLowerCase()}`}
+      title={SORT_HINTS[k] ?? `Sort by ${label.toLowerCase()}`}
     >
       {label}
       <Icon

@@ -10,6 +10,7 @@ import {
   House,
   Inbox,
   LogOut,
+  Receipt,
   Settings,
   SquareCheckBig,
   Users,
@@ -32,6 +33,7 @@ const NAV = [
   { href: "/settings", label: "Settings", Icon: Settings },
   { href: "/clients", label: "Clients", Icon: Users, adminOnly: true },
   { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true },
+  { href: "/client-reports", label: "Client Reports", Icon: Receipt, adminOnly: true },
   { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
 ];
 

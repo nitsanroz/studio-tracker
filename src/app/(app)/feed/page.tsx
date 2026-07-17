@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapTimeEntry } from "@/lib/db";
@@ -20,13 +20,24 @@ import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges"
 import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/components/ui";
 import { EditableTextCell } from "@/components/editable-cell";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
+import { TaskAutocomplete, type TaskMatch } from "@/components/task-autocomplete";
 import type { TimeEntry } from "@/lib/types";
 
 type Period = "Recent" | RangePreset;
 
+/** Hover explanations for the feed's column titles. */
+const FEED_COL_HINTS: Record<string, string> = {
+  user: "Who logged the hours",
+  date: "The day the hours were logged for",
+  hours: "Logged duration — click a value to edit it",
+  client: "Client of the task the hours were logged on",
+  section: "Board section the task lives in",
+  task: "The task the hours were logged on",
+};
+
 // ── cell details popup (task + day → entries, editable) ────────────────────
 
-function EntryEditRow({ entry }: { entry: TimeEntry }) {
+function EntryEditRow({ entry, leading }: { entry: TimeEntry; leading?: React.ReactNode }) {
   const { profiles, updateTimeEntry, deleteTimeEntry } = useData();
   const [duration, setDuration] = useState(formatHoursShort(entry.minutes));
   const [description, setDescription] = useState(entry.description);
@@ -46,7 +57,7 @@ function EntryEditRow({ entry }: { entry: TimeEntry }) {
 
   return (
     <div className="group flex items-center gap-2 border-b border-border py-2 last:border-b-0">
-      <Avatar profile={user} size={24} />
+      {leading ?? <Avatar profile={user} size={24} />}
       <input
         value={duration}
         onChange={(e) => setDuration(e.target.value)}
@@ -97,10 +108,14 @@ function UserDayDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, profiles, timeEntries } = useData();
+  const { tasks, clients, profiles, timeEntries, addTimeEntry } = useData();
   const supabase = useMemo(() => createClient(), []);
   const [loaded, setLoaded] = useState<TimeEntry[]>([]);
   const [ready, setReady] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [picked, setPicked] = useState<TaskMatch | null>(null);
+  const [addDuration, setAddDuration] = useState("");
+  const [addDescription, setAddDescription] = useState("");
   const profile = profiles.find((p) => p.id === userId) ?? null;
 
   useEffect(() => {
@@ -132,10 +147,21 @@ function UserDayDetails({
   }, [loaded, timeEntries, userId, date]);
   const total = entries.reduce((s, e) => s + e.minutes, 0);
 
+  const addMinutes = parseDuration(addDuration);
+  const canAdd = picked && addMinutes != null && addMinutes > 0 && addDescription.trim().length > 0;
+
+  function submitAdd() {
+    if (!canAdd || !picked || addMinutes == null) return;
+    addTimeEntry(picked.task.id, addMinutes, addDescription.trim(), date, userId);
+    setPicked(null);
+    setAddDuration("");
+    setAddDescription("");
+  }
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
         <div className="mb-1 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Avatar profile={profile} size={26} />
@@ -150,7 +176,7 @@ function UserDayDetails({
             <X size={16} />
           </button>
         </div>
-        <div className="mt-2 flex max-h-80 flex-col overflow-y-auto">
+        <div className="mt-2 flex max-h-96 flex-col overflow-y-auto">
           {!ready && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
           {ready && entries.length === 0 && (
             <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
@@ -159,17 +185,85 @@ function UserDayDetails({
             const task = tasks.find((t) => t.id === e.taskId);
             const client = clients.find((c) => c.id === task?.clientId);
             return (
-              <div key={e.id} className="border-b border-border/60 py-1 last:border-b-0">
-                <div className="flex items-center gap-1.5 pt-1 text-[11px] text-muted">
-                  {client && (
-                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: client.color }} />
-                  )}
-                  <span className="bidi-auto truncate">{task?.title ?? "(deleted task)"}</span>
-                </div>
-                <EntryEditRow entry={e} />
-              </div>
+              <EntryEditRow
+                key={e.id}
+                entry={e}
+                leading={
+                  <span
+                    className="flex w-48 shrink-0 items-center gap-1.5 text-xs text-muted"
+                    title={task?.title}
+                  >
+                    {client && (
+                      <span
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: client.color }}
+                      />
+                    )}
+                    <span className="bidi-auto truncate">{task?.title ?? "(deleted task)"}</span>
+                  </span>
+                }
+              />
             );
           })}
+        </div>
+
+        <div className="mt-2 border-t border-border pt-2.5">
+          {adding ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  value={addDuration}
+                  onChange={(e) => setAddDuration(e.target.value)}
+                  placeholder="1.5h"
+                  className={`w-16 shrink-0 rounded-md border bg-surface px-1.5 py-1.5 text-sm outline-none focus:border-brand ${
+                    addDuration && addMinutes == null ? "border-danger" : "border-border"
+                  }`}
+                />
+                {picked ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm">
+                    {picked.client && <ClientChip client={picked.client} size="sm" link={false} />}
+                    <span className="bidi-auto min-w-0 flex-1 truncate font-medium">
+                      {picked.task.title}
+                    </span>
+                    <button
+                      onClick={() => setPicked(null)}
+                      className="shrink-0 text-muted hover:text-foreground"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="min-w-0 flex-1">
+                    <TaskAutocomplete placeholder="Search a task…" onPickTask={setPicked} />
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={addDescription}
+                  onChange={(e) => setAddDescription(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitAdd()}
+                  placeholder="What was done? (required)"
+                  className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+                />
+                <button
+                  disabled={!canAdd}
+                  onClick={submitAdd}
+                  className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-muted hover:text-brand"
+              title="Log a new time entry on this day"
+            >
+              <Plus size={13} /> Add hours to this day
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -313,7 +407,11 @@ function FeedPageContent() {
   const supabase = useMemo(() => createClient(), []);
   const searchParams = useSearchParams();
 
-  const [view, setView] = useState<"feed" | "timesheet">("feed");
+  const [view, setView] = useState<"feed" | "timesheet">(
+    // deep links into the feed (?range/?mine) land on the feed view; default is the timesheet
+    () => (searchParams.get("range") || searchParams.get("mine") ? "feed" : "timesheet"),
+  );
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const [clientFilter, setClientFilter] = useState("");
   const [memberFilter, setMemberFilter] = useState("");
   const [period, setPeriod] = useState<Period>(
@@ -440,12 +538,23 @@ function FeedPageContent() {
     const dayCount = hasFriSat ? 7 : 5;
     const days = Array.from({ length: dayCount }, (_, i) => toISODate(addDays(weekStart, i)));
 
-    // rows = designers (one line per member with hours this week)
-    const rowMap = new Map<string, { byDay: Map<string, number>; total: number }>();
+    // rows = designers (one line per member with hours this week) + their tasks
+    const rowMap = new Map<
+      string,
+      {
+        byDay: Map<string, number>;
+        total: number;
+        tasks: Map<string, { byDay: Map<string, number>; total: number }>;
+      }
+    >();
     for (const e of inWeek) {
-      const row = rowMap.get(e.userId) ?? { byDay: new Map(), total: 0 };
+      const row = rowMap.get(e.userId) ?? { byDay: new Map(), total: 0, tasks: new Map() };
       row.byDay.set(e.date, (row.byDay.get(e.date) ?? 0) + e.minutes);
       row.total += e.minutes;
+      const t = row.tasks.get(e.taskId) ?? { byDay: new Map(), total: 0 };
+      t.byDay.set(e.date, (t.byDay.get(e.date) ?? 0) + e.minutes);
+      t.total += e.minutes;
+      row.tasks.set(e.taskId, t);
       rowMap.set(e.userId, row);
     }
     const rows = [...rowMap.entries()]
@@ -460,6 +569,40 @@ function FeedPageContent() {
 
   const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${addDays(weekStart, 4).getDate()}/${addDays(weekStart, 4).getMonth() + 1}`;
 
+  // full entries for the visible week — powers the hour-cell description tooltips
+  const [weekEntries, setWeekEntries] = useState<TimeEntry[]>([]);
+  useEffect(() => {
+    if (view !== "timesheet") return;
+    let cancelled = false;
+    fetchAll<Record<string, unknown>>(supabase, "time_entries", "*", (q) =>
+      q.gte("date", weekFrom).lte("date", weekTo).not("minutes", "is", null),
+    )
+      .then((rows) => {
+        if (!cancelled) setWeekEntries(rows.map(mapTimeEntry));
+      })
+      .catch((e) => console.error("week entries fetch failed", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, view, weekFrom, weekTo]);
+
+  /** "1.5h — description" lines per timesheet cell (user|date and user|task|date). */
+  const cellTooltips = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const e of weekEntries) {
+      if (!e.description.trim()) continue;
+      const line = `${formatHoursShort(e.minutes)} — ${e.description}`;
+      for (const key of [`${e.userId}|${e.date}`, `${e.userId}|${e.taskId}|${e.date}`]) {
+        const arr = map.get(key) ?? [];
+        arr.push(line);
+        map.set(key, arr);
+      }
+    }
+    return map;
+  }, [weekEntries]);
+  const cellTitle = (key: string, fallback: string) =>
+    cellTooltips.get(key)?.join("\n") ?? fallback;
+
   return (
     <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
@@ -468,7 +611,7 @@ function FeedPageContent() {
           <p className="text-sm text-muted">
             {view === "feed"
               ? "Recent hours across the studio — newest first. Open a task to move hours between tasks."
-              : "Weekly timesheet — hours per designer per day. Click a cell for that day's entries."}
+              : "Weekly timesheet — hours per member per day. Click a row for its tasks, a cell for that day's entries."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -575,7 +718,12 @@ function FeedPageContent() {
                   ["task", "Task", `${feedStats.tasks} task${feedStats.tasks === 1 ? "" : "s"}`],
                 ] as const
               ).map(([key, title, subtitle]) => (
-                <span key={key} className="relative shrink-0" style={{ width: colWidths[key] }}>
+                <span
+                  key={key}
+                  className="relative shrink-0"
+                  style={{ width: colWidths[key] }}
+                  title={FEED_COL_HINTS[key]}
+                >
                   <span className="block text-xs font-medium uppercase tracking-wide text-faint">
                     {title}
                   </span>
@@ -583,7 +731,7 @@ function FeedPageContent() {
                   <ResizeHandle onMouseDown={startColResize(key)} />
                 </span>
               ))}
-              <span className="min-w-0 flex-1">
+              <span className="min-w-0 flex-1" title="What was done — click a value to edit it">
                 <span className="block text-xs font-medium uppercase tracking-wide text-faint">
                   Description
                 </span>
@@ -611,6 +759,7 @@ function FeedPageContent() {
                     className="shrink-0 font-semibold tabular-nums"
                     style={{ width: colWidths.hours }}
                     onClick={(e) => e.stopPropagation()}
+                    title={entry.description || undefined}
                   >
                     <EditableTextCell
                       value={formatHours(entry.minutes)}
@@ -711,50 +860,146 @@ function FeedPageContent() {
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-background text-xs font-medium uppercase tracking-wide text-faint">
-                  <th className="p-2 text-left">Designer</th>
+                  <th
+                    className="p-2 text-left"
+                    title="One row per member with hours this week — click a row to unfold its tasks"
+                  >
+                    Designer
+                  </th>
                   {sheet.days.map((d) => {
                     const day = new Date(d);
                     const isToday = d === toISODate(new Date());
                     return (
-                      <th key={d} className={`w-20 p-2 text-right ${isToday ? "text-brand" : ""}`}>
+                      <th
+                        key={d}
+                        className={`w-20 p-2 text-right ${isToday ? "text-brand" : ""}`}
+                        title={`Hours logged for ${formatFeedDate(d)}${isToday ? " (today)" : ""}`}
+                      >
                         {DAY_NAMES[day.getDay()].slice(0, 3)} {day.getDate()}
                       </th>
                     );
                   })}
-                  <th className="w-20 p-2 text-right">Total</th>
+                  <th className="w-20 p-2 text-right" title="Each member's total for this week">
+                    Total
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {sheet.rows.map(({ userId, profile, byDay, total }) => (
-                  <tr key={userId} className="border-b border-border last:border-b-0 hover:bg-background/60">
-                    <td className="max-w-64 p-2">
-                      <span className="flex w-full min-w-0 items-center gap-2 text-left">
-                        <Avatar profile={profile} size={22} />
-                        <span className="truncate font-medium">{profile?.name ?? "(unknown)"}</span>
-                      </span>
-                    </td>
-                    {sheet.days.map((d) => {
-                      const minutes = byDay.get(d) ?? 0;
-                      return (
-                        <td
-                          key={d}
-                          onClick={() => minutes > 0 && setUserPopup({ userId, date: d })}
-                          className={`p-2 text-right tabular-nums ${
-                            minutes > 0
-                              ? "cursor-pointer font-medium hover:bg-brand-soft/60"
-                              : "text-faint"
-                          }`}
-                          title={minutes > 0 ? "Click for that day's entries" : undefined}
-                        >
-                          {minutes > 0 ? formatHoursShort(minutes) : "–"}
+                {sheet.rows.map(({ userId, profile, byDay, total, tasks: userTasks }) => {
+                  const isOpen = expandedUsers.has(userId);
+                  return (
+                    <Fragment key={userId}>
+                      <tr
+                        onClick={() =>
+                          setExpandedUsers((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(userId)) next.delete(userId);
+                            else next.add(userId);
+                            return next;
+                          })
+                        }
+                        className="cursor-pointer border-b border-border last:border-b-0 hover:bg-background/60"
+                        title={isOpen ? "Fold this member's tasks" : "Show this member's tasks"}
+                      >
+                        <td className="max-w-64 p-2">
+                          <span className="flex w-full min-w-0 items-center gap-2 text-left">
+                            <ChevronDown
+                              size={13}
+                              className={`shrink-0 text-faint transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                            />
+                            <Avatar profile={profile} size={22} />
+                            <span className="truncate font-medium">{profile?.name ?? "(unknown)"}</span>
+                          </span>
                         </td>
-                      );
-                    })}
-                    <td className="p-2 text-right font-semibold tabular-nums">
-                      {formatHoursShort(total)}
-                    </td>
-                  </tr>
-                ))}
+                        {sheet.days.map((d) => {
+                          const minutes = byDay.get(d) ?? 0;
+                          return (
+                            <td
+                              key={d}
+                              onClick={(e) => {
+                                if (minutes <= 0) return;
+                                e.stopPropagation();
+                                setUserPopup({ userId, date: d });
+                              }}
+                              className={`p-2 text-right tabular-nums ${
+                                minutes > 0
+                                  ? "cursor-pointer font-medium hover:bg-brand-soft/60"
+                                  : "text-faint"
+                              }`}
+                              title={
+                                minutes > 0
+                                  ? cellTitle(`${userId}|${d}`, "Click for that day's entries")
+                                  : undefined
+                              }
+                            >
+                              {minutes > 0 ? formatHoursShort(minutes) : "–"}
+                            </td>
+                          );
+                        })}
+                        <td
+                          className="p-2 text-right font-semibold tabular-nums"
+                          title="Member's total this week"
+                        >
+                          {formatHoursShort(total)}
+                        </td>
+                      </tr>
+                      {isOpen &&
+                        [...userTasks.entries()]
+                          .sort((a, b) => b[1].total - a[1].total)
+                          .map(([taskId, t]) => {
+                            const task = taskById.get(taskId);
+                            const client = clients.find((c) => c.id === task?.clientId);
+                            return (
+                              <tr
+                                key={`${userId}-${taskId}`}
+                                className="border-b border-border/60 bg-background/50 text-xs last:border-b-0"
+                              >
+                                <td className="max-w-64 py-1.5 pl-9 pr-2">
+                                  <span className="flex min-w-0 items-center gap-1.5" title={task?.title}>
+                                    {client && (
+                                      <span
+                                        className="size-2 shrink-0 rounded-full"
+                                        style={{ backgroundColor: client.color }}
+                                      />
+                                    )}
+                                    <span className="bidi-auto truncate">
+                                      {task?.title ?? "(deleted task)"}
+                                    </span>
+                                  </span>
+                                </td>
+                                {sheet.days.map((d) => {
+                                  const m = t.byDay.get(d) ?? 0;
+                                  return (
+                                    <td
+                                      key={d}
+                                      onClick={() => m > 0 && setCellPopup({ taskId, date: d })}
+                                      className={`p-2 text-right tabular-nums ${
+                                        m > 0
+                                          ? "cursor-pointer hover:bg-brand-soft/60"
+                                          : "text-faint"
+                                      }`}
+                                      title={
+                                        m > 0
+                                          ? cellTitle(
+                                              `${userId}|${taskId}|${d}`,
+                                              "Click for this task's entries on that day",
+                                            )
+                                          : undefined
+                                      }
+                                    >
+                                      {m > 0 ? formatHoursShort(m) : "–"}
+                                    </td>
+                                  );
+                                })}
+                                <td className="p-2 text-right font-medium tabular-nums">
+                                  {formatHoursShort(t.total)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                    </Fragment>
+                  );
+                })}
                 {sheet.rows.length === 0 && (
                   <tr>
                     <td colSpan={sheet.days.length + 2} className="p-8 text-center text-faint">
@@ -766,7 +1011,9 @@ function FeedPageContent() {
               {sheet.rows.length > 0 && (
                 <tfoot>
                   <tr className="border-t border-border bg-background text-xs font-semibold">
-                    <td className="p-2 text-faint">Day total</td>
+                    <td className="p-2 text-faint" title="All members' hours summed per day">
+                      Day total
+                    </td>
                     {sheet.dayTotals.map((m, i) => (
                       <td key={i} className="p-2 text-right tabular-nums">
                         {m > 0 ? formatHoursShort(m) : "–"}

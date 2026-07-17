@@ -24,6 +24,8 @@ export interface Client {
   archived: boolean;
   /** false = internal client (Studio…): its tasks are never billable */
   billable: boolean;
+  /** free-text invoice day of month shown on Reports ("15th", "1st"…) */
+  invoiceNote: string;
 }
 
 export interface Section {
@@ -106,6 +108,8 @@ export interface ReportLink {
   publishedAt: string | null;
   hiddenColumns: string[];
   hiddenTaskIds: string[];
+  /** admin-edited column date ranges; null = auto week buckets */
+  customWeeks: { label: string; from: string; to: string }[] | null;
 }
 
 /** Frozen, admin-approved report payload rendered by /report/[token]. */
@@ -141,6 +145,8 @@ export interface BillingPeriod {
   hourCap: number | null;
   advanceHours: number | null;
   position: number;
+  /** invoiced & paid — rendered strikethrough on Reports */
+  paid: boolean;
 }
 
 /** Whole-row day state on the weekly plan (holiday or custom label). */

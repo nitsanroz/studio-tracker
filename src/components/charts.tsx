@@ -185,23 +185,41 @@ export function PieChart({
   );
 }
 
-/** Small column chart. Values in minutes. */
+/**
+ * Small column chart. Values in minutes.
+ * Each bar shows its value — inside the bar (white, upper part) when the bar
+ * is tall enough, otherwise just above it.
+ */
 export function MiniColumns({ points }: { points: { label: string; minutes: number }[] }) {
   const max = Math.max(...points.map((p) => p.minutes), 1);
   return (
     <div className="flex items-end gap-1">
-      {points.map((p) => (
-        <div key={p.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-          <div className="flex h-16 w-full items-end">
-            <div
-              className="w-full rounded-t bg-brand/80 hover:bg-brand"
-              style={{ height: `${Math.max(2, (p.minutes / max) * 100)}%` }}
-              title={`${p.label}: ${formatHoursShort(p.minutes)}`}
-            />
+      {points.map((p) => {
+        const pct = Math.max(2, (p.minutes / max) * 100);
+        const inside = pct >= 45;
+        return (
+          <div key={p.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <div className="flex h-20 w-full items-end pt-3.5">
+              <div
+                className="relative w-full rounded-t bg-brand/80 hover:bg-brand"
+                style={{ height: `${pct}%` }}
+                title={`${p.label}: ${formatHoursShort(p.minutes)}`}
+              >
+                {p.minutes > 0 && (
+                  <span
+                    className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium tabular-nums ${
+                      inside ? "top-0.5 text-white" : "-top-3.5 text-muted"
+                    }`}
+                  >
+                    {formatHoursShort(p.minutes)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <span className="truncate text-[9px] text-faint">{p.label}</span>
           </div>
-          <span className="truncate text-[9px] text-faint">{p.label}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

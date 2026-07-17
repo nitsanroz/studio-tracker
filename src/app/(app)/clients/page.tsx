@@ -14,6 +14,14 @@ import { EditableTextCell } from "@/components/editable-cell";
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
 
+const SORT_HINTS: Record<SortKey, string> = {
+  client: "Client name — click a name to rename it. Click to sort",
+  open: "Tasks not yet done. Click to sort",
+  week: "Hours logged this week. Click to sort",
+  month: "Hours logged this month. Click to sort",
+  total: "All hours ever logged. Click to sort",
+};
+
 function SortHeader({
   label,
   k,
@@ -37,7 +45,7 @@ function SortHeader({
       className={`group/sort inline-flex items-center gap-1 uppercase tracking-wide ${
         align === "right" ? "justify-end" : "justify-start"
       } ${active ? "text-brand" : "text-faint hover:text-muted"} ${className}`}
-      title={`Sort by ${label.toLowerCase()}`}
+      title={SORT_HINTS[k] ?? `Sort by ${label.toLowerCase()}`}
     >
       {label}
       <Icon

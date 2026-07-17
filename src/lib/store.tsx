@@ -132,11 +132,11 @@ interface Store {
   addComment: (taskId: string, body: string) => void;
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
-  addTimeEntry: (taskId: string, minutes: number, description: string, date?: string) => void;
+  addTimeEntry: (taskId: string, minutes: number, description: string, date?: string, userId?: string) => void;
   updateTimeEntry: (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => void;
   deleteTimeEntry: (entryId: string) => void;
   moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
-  addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position">) => void;
+  addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position" | "paid">) => void;
   updateBillingPeriod: (id: string, patch: Partial<BillingPeriod>) => void;
   deleteBillingPeriod: (id: string) => void;
   addDayState: (dateFrom: string, dateTo: string, label: string) => void;
@@ -152,6 +152,21 @@ interface Store {
   stopTimer: () => { entryId: string; taskId: string; minutes: number } | null;
   completeTimerEntry: (entryId: string, taskId: string, minutes: number, description: string) => void;
   taskMinutes: (taskId: string) => number;
+  /** Undo/redo the last data actions (max 10). Also on cmd/ctrl+Z (+shift). */
+  undo: () => void;
+  redo: () => void;
+}
+
+interface HistoryAction {
+  undo: () => void;
+  redo: () => void;
+}
+
+/** prev values of exactly the patched keys — the inverse patch for undo */
+function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T> {
+  const prev: Partial<T> = {};
+  for (const k of Object.keys(patch) as (keyof T)[]) prev[k] = before[k];
+  return prev;
 }
 
 const mapTaskRequest = (r: any): TaskRequest => ({
@@ -195,6 +210,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [taskRequests, setTaskRequests] = useState<TaskRequest[]>([]);
   const loadedTaskExtras = useRef<Set<string>>(new Set());
+
+  // ── undo / redo history (last 10 data actions) ────────────────────────
+  const historyRef = useRef<{ past: HistoryAction[]; future: HistoryAction[] }>({ past: [], future: [] });
+  const suppressHistory = useRef(false);
+  /** Latest mutation methods, so history actions never call stale closures. */
+  const methodsRef = useRef<Store | null>(null);
+  const record = useCallback((action: HistoryAction) => {
+    if (suppressHistory.current) return;
+    historyRef.current.past.push(action);
+    if (historyRef.current.past.length > 10) historyRef.current.past.shift();
+    historyRef.current.future = [];
+  }, []);
+  const undo = useCallback(() => {
+    const action = historyRef.current.past.pop();
+    if (!action) return;
+    suppressHistory.current = true;
+    try {
+      action.undo();
+    } finally {
+      suppressHistory.current = false;
+    }
+    historyRef.current.future.push(action);
+  }, []);
+  const redo = useCallback(() => {
+    const action = historyRef.current.future.pop();
+    if (!action) return;
+    suppressHistory.current = true;
+    try {
+      action.redo();
+    } finally {
+      suppressHistory.current = false;
+    }
+    historyRef.current.past.push(action);
+  }, []);
+
+  // cmd/ctrl+Z → undo, +shift → redo; text fields keep the browser's native undo
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "z") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable))
+        return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo]);
 
   const tagNameById = useMemo(() => new Map(tagRows.map((t) => [t.id, t.name])), [tagRows]);
   const tagIdByName = useMemo(() => new Map(tagRows.map((t) => [t.name, t.id])), [tagRows]);
@@ -361,6 +425,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ── mutations ─────────────────────────────────────────────────────────
   const updateTask = useCallback(
     (taskId: string, patch: Partial<Task>) => {
+      const before = tasks.find((t) => t.id === taskId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateTask(taskId, prev),
+          redo: () => methodsRef.current?.updateTask(taskId, patch),
+        });
+      }
       setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...patch } : t)));
       supabase
         .from("tasks")
@@ -370,7 +442,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateTask failed", error.message);
         });
     },
-    [supabase, tagIdByName],
+    [supabase, tagIdByName, tasks, record],
   );
 
   const addTask = useCallback(
@@ -443,6 +515,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(
     (profileId: string, patch: Partial<Profile>) => {
+      const before = profiles.find((p) => p.id === profileId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateProfile(profileId, prev),
+          redo: () => methodsRef.current?.updateProfile(profileId, patch),
+        });
+      }
       setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
       const row: Record<string, unknown> = {};
       if ("name" in patch) row.name = patch.name;
@@ -458,7 +538,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateProfile failed", error.message);
         });
     },
-    [supabase],
+    [supabase, profiles, record],
   );
 
   const addTag = useCallback(
@@ -482,6 +562,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateTag = useCallback(
     (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => {
+      const beforeTag = tagRows.find((t) => t.id === tagId);
+      if (beforeTag) {
+        const prev = inversePatch(beforeTag, patch);
+        record({
+          undo: () => methodsRef.current?.updateTag(tagId, prev),
+          redo: () => methodsRef.current?.updateTag(tagId, patch),
+        });
+      }
       const oldName = tagRows.find((t) => t.id === tagId)?.name;
       setTagRows((prev) => prev.map((t) => (t.id === tagId ? { ...t, ...patch } : t)));
       // tasks carry tag NAMES — keep them in sync on rename
@@ -496,7 +584,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateTag failed", error.message);
         });
     },
-    [supabase, tagRows],
+    [supabase, tagRows, record],
   );
 
   const deleteTag = useCallback(
@@ -517,6 +605,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateClient = useCallback(
     (clientId: string, patch: Partial<Client>) => {
+      // billable flips cascade to tasks — too side-effectful to undo cleanly
+      const before = "billable" in patch ? undefined : clients.find((c) => c.id === clientId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateClient(clientId, prev),
+          redo: () => methodsRef.current?.updateClient(clientId, patch),
+        });
+      }
       setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
       const row: Record<string, unknown> = {};
       if ("name" in patch) row.name = patch.name;
@@ -524,6 +621,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if ("archived" in patch) row.archived = patch.archived;
       if ("billingPeriodNote" in patch) row.billing_period_note = patch.billingPeriodNote;
       if ("billable" in patch) row.billable = patch.billable;
+      if ("invoiceNote" in patch) row.invoice_note = patch.invoiceNote;
       supabase
         .from("clients")
         .update(row)
@@ -545,6 +643,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
             if (error) console.error("updateClient tasks-billable failed", error.message);
           });
       }
+    },
+    [supabase, clients, record],
+  );
+
+  /** Re-insert a deleted plan entry with its original id (undo support). */
+  const restorePlanEntry = useCallback(
+    (entry: PlanEntry) => {
+      setPlanEntries((prev) => [...prev.filter((e) => e.id !== entry.id), entry]);
+      supabase
+        .from("plan_entries")
+        .insert({
+          id: entry.id,
+          date: entry.date,
+          column_id: entry.columnId,
+          position: entry.position,
+          type: entry.type,
+          task_id: entry.taskId,
+          text: entry.text,
+          client_id: entry.clientId,
+          absence_type: entry.absenceType,
+        })
+        .then(({ error }) => {
+          if (error) console.error("restorePlanEntry failed", error.message);
+        });
     },
     [supabase],
   );
@@ -577,14 +699,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.error("addPlanEntry failed", error.message);
             return;
           }
-          setPlanEntries((prev) => [...prev, mapPlanEntry(data)]);
+          const entry = mapPlanEntry(data);
+          setPlanEntries((prev) => [...prev, entry]);
+          record({
+            undo: () => methodsRef.current?.deletePlanEntry(entry.id),
+            redo: () => restorePlanEntry(entry),
+          });
         });
     },
-    [supabase, planEntries],
+    [supabase, planEntries, record, restorePlanEntry],
   );
 
   const movePlanEntry = useCallback(
     (entryId: string, target: { date: string | null; columnId: string }) => {
+      const before = planEntries.find((e) => e.id === entryId);
+      if (before) {
+        const prev = { date: before.date, columnId: before.columnId };
+        record({
+          undo: () => methodsRef.current?.movePlanEntry(entryId, prev),
+          redo: () => methodsRef.current?.movePlanEntry(entryId, target),
+        });
+      }
       const position =
         Math.max(
           -1,
@@ -603,11 +738,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("movePlanEntry failed", error.message);
         });
     },
-    [supabase, planEntries],
+    [supabase, planEntries, record],
   );
 
   const deletePlanEntry = useCallback(
     (entryId: string) => {
+      const before = planEntries.find((e) => e.id === entryId);
+      if (before) {
+        record({
+          undo: () => restorePlanEntry(before),
+          redo: () => methodsRef.current?.deletePlanEntry(entryId),
+        });
+      }
       setPlanEntries((prev) => prev.filter((e) => e.id !== entryId));
       supabase
         .from("plan_entries")
@@ -617,7 +759,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("deletePlanEntry failed", error.message);
         });
     },
-    [supabase],
+    [supabase, planEntries, record, restorePlanEntry],
   );
 
   const addPlanColumn = useCallback(
@@ -745,13 +887,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
+  /** Re-insert a deleted time entry with its original id (undo support). */
+  const restoreTimeEntry = useCallback(
+    (entry: TimeEntry) => {
+      applyEntryLocally(entry);
+      supabase
+        .from("time_entries")
+        .insert({
+          id: entry.id,
+          task_id: entry.taskId,
+          user_id: entry.userId,
+          date: entry.date,
+          minutes: entry.minutes,
+          description: entry.description,
+        })
+        .then(({ error }) => {
+          if (error) console.error("restoreTimeEntry failed", error.message);
+        });
+    },
+    [supabase, applyEntryLocally],
+  );
+
   const addTimeEntry = useCallback(
-    (taskId: string, minutes: number, description: string, date?: string) => {
+    (taskId: string, minutes: number, description: string, date?: string, userId?: string) => {
       supabase
         .from("time_entries")
         .insert({
           task_id: taskId,
-          user_id: currentUserId,
+          // admins may log hours for another member (e.g. from the timesheet day popup)
+          user_id: userId ?? currentUserId,
           date: date ?? toISODate(new Date()),
           minutes,
           description,
@@ -763,14 +927,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.error("addTimeEntry failed", error.message);
             return;
           }
-          applyEntryLocally(mapTimeEntry(data));
+          const entry = mapTimeEntry(data);
+          applyEntryLocally(entry);
+          record({
+            undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
+            redo: () => restoreTimeEntry(entry),
+          });
         });
     },
-    [supabase, currentUserId, applyEntryLocally],
+    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry],
   );
 
   const updateTimeEntry = useCallback(
     (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => {
+      // full row if loaded; the slim sums row covers minutes/date-only patches
+      const before =
+        timeEntries.find((e) => e.id === entryId) ??
+        ("description" in patch ? undefined : entrySums.find((e) => e.id === entryId));
+      if (before) {
+        const prev: typeof patch = {};
+        if ("minutes" in patch) prev.minutes = before.minutes;
+        if ("date" in patch) prev.date = before.date;
+        if ("description" in patch) prev.description = (before as TimeEntry).description;
+        record({
+          undo: () => methodsRef.current?.updateTimeEntry(entryId, prev),
+          redo: () => methodsRef.current?.updateTimeEntry(entryId, patch),
+        });
+      }
       setTimeEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...patch } : e)));
       if (patch.minutes != null || patch.date != null) {
         setEntrySums((prev) =>
@@ -789,11 +972,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateTimeEntry failed", error.message);
         });
     },
-    [supabase],
+    [supabase, timeEntries, entrySums, record],
   );
 
   const deleteTimeEntry = useCallback(
     (entryId: string) => {
+      const full = timeEntries.find((e) => e.id === entryId);
+      const slim = entrySums.find((e) => e.id === entryId);
+      const before: TimeEntry | undefined =
+        full ?? (slim ? { ...slim, description: "", movedFromTaskId: null } : undefined);
+      if (before) {
+        record({
+          undo: () => restoreTimeEntry(before),
+          redo: () => methodsRef.current?.deleteTimeEntry(entryId),
+        });
+      }
       setTimeEntries((prev) => prev.filter((e) => e.id !== entryId));
       setEntrySums((prev) => prev.filter((e) => e.id !== entryId));
       supabase
@@ -804,11 +997,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("deleteTimeEntry failed", error.message);
         });
     },
+    [supabase, timeEntries, entrySums, record, restoreTimeEntry],
+  );
+
+  /** Re-insert a deleted billing period with its original id (undo support). */
+  const restoreBillingPeriod = useCallback(
+    (p: BillingPeriod) => {
+      setBillingPeriods((prev) =>
+        [...prev.filter((x) => x.id !== p.id), p].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
+      );
+      supabase
+        .from("client_billing_periods")
+        .insert({
+          id: p.id,
+          client_id: p.clientId,
+          label: p.label,
+          date_from: p.dateFrom,
+          date_to: p.dateTo,
+          hour_cap: p.hourCap,
+          advance_hours: p.advanceHours,
+          position: p.position,
+          // omit `paid: false` so the insert also works before migration 0010
+          ...(p.paid && { paid: true }),
+        })
+        .then(({ error }) => {
+          if (error) console.error("restoreBillingPeriod failed", error.message);
+        });
+    },
     [supabase],
   );
 
   const addBillingPeriod = useCallback(
-    (input: Omit<BillingPeriod, "id" | "position">) => {
+    (input: Omit<BillingPeriod, "id" | "position" | "paid">) => {
       const position =
         Math.max(0, ...billingPeriods.filter((p) => p.clientId === input.clientId).map((p) => p.position)) + 1;
       supabase
@@ -829,16 +1049,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.error("addBillingPeriod failed", error.message);
             return;
           }
+          const period = mapBillingPeriod(data);
           setBillingPeriods((prev) =>
-            [...prev, mapBillingPeriod(data)].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
+            [...prev, period].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
           );
+          record({
+            undo: () => methodsRef.current?.deleteBillingPeriod(period.id),
+            redo: () => restoreBillingPeriod(period),
+          });
         });
     },
-    [supabase, billingPeriods],
+    [supabase, billingPeriods, record, restoreBillingPeriod],
   );
 
   const updateBillingPeriod = useCallback(
     (id: string, patch: Partial<BillingPeriod>) => {
+      const before = billingPeriods.find((p) => p.id === id);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateBillingPeriod(id, prev),
+          redo: () => methodsRef.current?.updateBillingPeriod(id, patch),
+        });
+      }
       setBillingPeriods((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
       const row: Record<string, unknown> = {};
       if ("label" in patch) row.label = patch.label;
@@ -846,6 +1079,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if ("dateTo" in patch) row.date_to = patch.dateTo;
       if ("hourCap" in patch) row.hour_cap = patch.hourCap;
       if ("advanceHours" in patch) row.advance_hours = patch.advanceHours;
+      if ("paid" in patch) row.paid = patch.paid;
       supabase
         .from("client_billing_periods")
         .update(row)
@@ -854,11 +1088,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateBillingPeriod failed", error.message);
         });
     },
-    [supabase],
+    [supabase, billingPeriods, record],
   );
 
   const deleteBillingPeriod = useCallback(
     (id: string) => {
+      const before = billingPeriods.find((p) => p.id === id);
+      if (before) {
+        record({
+          undo: () => restoreBillingPeriod(before),
+          redo: () => methodsRef.current?.deleteBillingPeriod(id),
+        });
+      }
       setBillingPeriods((prev) => prev.filter((p) => p.id !== id));
       supabase
         .from("client_billing_periods")
@@ -868,7 +1109,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("deleteBillingPeriod failed", error.message);
         });
     },
-    [supabase],
+    [supabase, billingPeriods, record, restoreBillingPeriod],
   );
 
   const addDayState = useCallback(
@@ -924,6 +1165,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateDevItem = useCallback(
     (id: string, patch: { text?: string; status?: DevStatus }) => {
+      const before = devItems.find((d) => d.id === id);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateDevItem(id, prev),
+          redo: () => methodsRef.current?.updateDevItem(id, patch),
+        });
+      }
       setDevItems((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
       supabase
         .from("dev_items")
@@ -933,7 +1182,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) console.error("updateDevItem failed", error.message);
         });
     },
-    [supabase],
+    [supabase, devItems, record],
   );
 
   const deleteDevItem = useCallback(
@@ -1148,13 +1397,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       stopTimer,
       completeTimerEntry,
       taskMinutes,
+      undo,
+      redo,
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
       currentUserId, runningTimer, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes,
+      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes, undo, redo,
     ],
   );
+
+  // history actions look methods up here — always the freshest closures
+  useEffect(() => {
+    methodsRef.current = value;
+  }, [value]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

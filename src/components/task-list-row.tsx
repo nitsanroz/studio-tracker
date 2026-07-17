@@ -140,19 +140,19 @@ function formatDueShort(iso: string): string {
 }
 
 // column order per Nitsan: Tags, Figma, Budget, Hrs done, %done, Hrs by me, %Billable
-const COLS: { key: string; label: string; w: number }[] = [
-  { key: "client", label: "Client", w: 110 },
-  { key: "section", label: "Section", w: 150 },
+const COLS: { key: string; label: string; w: number; hint?: string }[] = [
+  { key: "client", label: "Client", w: 110, hint: "Client the task belongs to" },
+  { key: "section", label: "Section", w: 150, hint: "Board section the task lives in" },
   // task column flexes — no fixed width
-  { key: "tags", label: "Tags", w: 90 },
-  { key: "figma", label: "Figma", w: 76 },
-  { key: "budget", label: "Budget", w: 64 },
-  { key: "done", label: "Hrs done", w: 72 },
-  { key: "pctDone", label: "% done", w: 64 },
-  { key: "mine", label: "Hrs by me", w: 78 },
-  { key: "pctBill", label: "%Billable", w: 70 },
-  { key: "loggedBy", label: "Logged by", w: 96 },
-  { key: "due", label: "Due", w: 52 },
+  { key: "tags", label: "Tags", w: 90, hint: "Task tag — click a cell to change it" },
+  { key: "figma", label: "Figma", w: 76, hint: "Linked Figma file" },
+  { key: "budget", label: "Budget", w: 64, hint: "Estimated hours budget — click a cell to edit" },
+  { key: "done", label: "Hrs done", w: 72, hint: "All hours logged on the task" },
+  { key: "pctDone", label: "% done", w: 64, hint: "Hours done as a share of the budget" },
+  { key: "mine", label: "Hrs by me", w: 78, hint: "Hours you logged on the task" },
+  { key: "pctBill", label: "%Billable", w: 70, hint: "Your share of the task's hours" },
+  { key: "loggedBy", label: "Logged by", w: 96, hint: "Who logged hours on the task" },
+  { key: "due", label: "Due", w: 52, hint: "Due date — click a cell to change it" },
   { key: "add", label: "", w: 96 },
 ];
 const DEFAULT_WIDTHS = Object.fromEntries(COLS.map((c) => [c.key, c.w]));
@@ -212,14 +212,16 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
         {/* header */}
         <div className="group/thead flex items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-faint">
           {COLS.slice(0, 2).map((c) => (
-            <span key={c.key} className="relative" style={cell(c.key)}>
+            <span key={c.key} className="relative" style={cell(c.key)} title={c.hint}>
               {c.label}
               <ResizeHandle onMouseDown={startResize(c.key)} />
             </span>
           ))}
-          <span className="min-w-24 flex-1">Task</span>
+          <span className="min-w-24 flex-1" title="Task title — click a cell to rename">
+            Task
+          </span>
           {COLS.slice(2).map((c) => (
-            <span key={c.key} className="relative" style={cell(c.key)}>
+            <span key={c.key} className="relative" style={cell(c.key)} title={c.hint}>
               {c.label}
               {c.key !== "add" && <ResizeHandle onMouseDown={startResize(c.key)} />}
             </span>

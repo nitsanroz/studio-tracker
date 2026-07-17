@@ -6,7 +6,6 @@ import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { mapTimeEntry } from "@/lib/db";
-import { sumInRange } from "@/lib/aggregate";
 import { presetRange } from "@/lib/date-ranges";
 import {
   addDays,
@@ -24,42 +23,100 @@ import { Avatar, ClientChip } from "./ui";
 import { MiniColumnsLabeled, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
 
-/** "2h 36m" with the minutes part visually smaller than the hours part. */
-function HoursValue({ minutes }: { minutes: number }) {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  return (
-    <span className="tabular-nums">
-      <span className="text-2xl font-semibold">{h}h</span>
-      {m > 0 && <span className="ml-0.5 text-sm text-muted">{m}m</span>}
-    </span>
-  );
+/** previous range of the same kind, for the "vs last period" delta */
+function previousRange(rangeKey: (typeof HOME_RANGES)[number]): { from: string; to: string } | null {
+  const now = new Date();
+  switch (rangeKey) {
+    case "This week": {
+      const cur = presetRange("This week");
+      const [y, m, d] = cur.from.split("-").map(Number);
+      const prevStart = addDays(new Date(y, m - 1, d), -7);
+      return { from: toISODate(prevStart), to: toISODate(addDays(prevStart, 6)) };
+    }
+    case "This month":
+      return {
+        from: toISODate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+        to: toISODate(new Date(now.getFullYear(), now.getMonth(), 0)),
+      };
+    case "This year":
+      return {
+        from: toISODate(new Date(now.getFullYear() - 1, 0, 1)),
+        to: toISODate(new Date(now.getFullYear() - 1, 11, 31)),
+      };
+    default:
+      return null; // All time has no "previous period"
+  }
 }
 
-function HoursCard({
-  title,
-  items,
+/** Hours in the selected period (admins: studio-wide, users: their own) + delta vs last period. */
+function PeriodStat({
+  isAdmin,
+  filter,
+  rangeKey,
 }: {
-  title: string;
-  items: { label: string; minutes: number; href: string }[];
+  isAdmin: boolean;
+  filter: HomeFilter;
+  rangeKey: (typeof HOME_RANGES)[number];
 }) {
+  const { entrySums, tasks, currentUserId } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const stats = useMemo(() => {
+    const prevRange = previousRange(rangeKey);
+    let cur = 0;
+    let curBillable = 0;
+    let prev = 0;
+    for (const e of entrySums) {
+      if (!isAdmin && e.userId !== currentUserId) continue;
+      const task = taskById.get(e.taskId);
+      if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      if (!filter.range || (e.date >= filter.range.from && e.date <= filter.range.to)) {
+        cur += e.minutes;
+        if (task?.billable) curBillable += e.minutes;
+      } else if (prevRange && e.date >= prevRange.from && e.date <= prevRange.to) {
+        prev += e.minutes;
+      }
+    }
+    return { cur, curBillable, prev, delta: prevRange && prev > 0 ? (cur - prev) / prev : null };
+  }, [entrySums, taskById, isAdmin, currentUserId, filter, rangeKey]);
+
+  const billablePct = stats.cur > 0 ? Math.round((stats.curBillable / stats.cur) * 100) : null;
+
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-2 font-heading text-sm">{title}</h2>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((it) => (
-          <Link
-            key={it.label}
-            href={it.href}
-            className="group -mx-1 rounded-lg px-1 py-1 hover:bg-background"
+      <h2
+        className="font-heading text-sm"
+        title={
+          isAdmin
+            ? "All hours logged across the studio in the selected period"
+            : "Your logged hours in the selected period"
+        }
+      >
+        {isAdmin ? "Studio hours" : "My hours"} — {filter.label.toLowerCase()}
+      </h2>
+      <div className="mt-1.5 flex items-baseline gap-2.5">
+        <span className="text-4xl font-bold tabular-nums">{formatHoursShort(stats.cur)}</span>
+        {stats.delta != null && (
+          <span
+            className={`text-xs font-semibold tabular-nums ${stats.delta >= 0 ? "text-success" : "text-danger"}`}
+            title={`Last period: ${formatHoursShort(stats.prev)}`}
           >
-            <div className="text-xs font-medium text-muted group-hover:text-brand">{it.label}</div>
-            <div className="mt-0.5">
-              <HoursValue minutes={it.minutes} />
-            </div>
-          </Link>
-        ))}
+            {stats.delta >= 0 ? "+" : ""}
+            {Math.round(stats.delta * 100)}% vs last period
+          </span>
+        )}
       </div>
+      {isAdmin && (
+        <p
+          className="mt-1.5 text-xs text-muted"
+          title="Share of hours logged on billable tasks in the selected period"
+        >
+          Billable{" "}
+          <span className="font-semibold text-foreground tabular-nums">
+            {billablePct == null ? "–" : `${billablePct}%`}
+          </span>
+        </p>
+      )}
     </div>
   );
 }
@@ -446,6 +503,7 @@ const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 
 function MyGraphs({ isAdmin, filter }: { isAdmin: boolean; filter: HomeFilter }) {
   const { entrySums, tasks, clients, currentUserId } = useData();
+  const [tab, setTab] = useState<"time" | "client">("time");
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
@@ -509,46 +567,39 @@ function MyGraphs({ isAdmin, filter }: { isAdmin: boolean; filter: HomeFilter })
   }, [mine, taskById, clientById]);
 
   return (
-    <>
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 font-heading text-sm">My hours — {filter.label.toLowerCase()}</h2>
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="font-heading text-sm" title="Your logged hours in the selected period">
+          My hours — {filter.label.toLowerCase()}
+        </h2>
+        <div className="flex rounded-lg border border-border bg-background p-0.5">
+          {(
+            [
+              ["time", "By time"],
+              ["client", "By client"],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+                tab === k ? "bg-surface text-brand-dark shadow-sm" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {tab === "time" ? (
         <MiniColumnsLabeled points={perBucket} />
-      </div>
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 font-heading text-sm">My hours by client — {filter.label.toLowerCase()}</h2>
-        {pieSlices.length > 0 ? (
-          <PieChart slices={pieSlices} />
-        ) : (
-          <p className="text-sm text-faint">No hours in this scope.</p>
-        )}
-      </div>
-    </>
+      ) : pieSlices.length > 0 ? (
+        <PieChart slices={pieSlices} />
+      ) : (
+        <p className="text-sm text-faint">No hours in this scope.</p>
+      )}
+    </div>
   );
-}
-
-// ── days worked + time in position ─────────────────────────────────────────
-
-/** 4h+ = a full day, anything logged under 4h = half a day. */
-function countWorkDays(perDayMinutes: Map<string, number>): number {
-  let days = 0;
-  for (const [, m] of perDayMinutes) {
-    if (m > 240) days += 1;
-    else if (m > 0) days += 0.5;
-  }
-  return days;
-}
-
-/** working-days → "~X years Y months Z days" (22 workdays/month, 12 months/year) */
-function workdayBreakdown(days: number): string {
-  const months = Math.floor(days / 22);
-  const years = Math.floor(months / 12);
-  const remMonths = months % 12;
-  const remDays = Math.round((days - months * 22) * 2) / 2;
-  const parts: string[] = [];
-  if (years) parts.push(`${years}y`);
-  if (remMonths) parts.push(`${remMonths}m`);
-  if (remDays) parts.push(`${remDays}d`);
-  return parts.join(" ") || "0d";
 }
 
 /** calendar diff since start date → "Xy Ym Zd" */
@@ -567,125 +618,6 @@ function tenureSince(startIso: string): string {
     m += 12;
   }
   return `${y}y ${m}m ${d}d`;
-}
-
-function WorkSummary({ filter }: { filter: HomeFilter }) {
-  const { entrySums, tasks, profiles, currentUserId } = useData();
-  const me = profiles.find((p) => p.id === currentUserId);
-  const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
-
-  const { hours, days } = useMemo(() => {
-    const perDay = new Map<string, number>();
-    let total = 0;
-    for (const e of entrySums) {
-      if (e.userId !== currentUserId) continue;
-      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
-      if (filter.clientId && taskClient.get(e.taskId) !== filter.clientId) continue;
-      perDay.set(e.date, (perDay.get(e.date) ?? 0) + e.minutes);
-      total += e.minutes;
-    }
-    return { hours: total, days: countWorkDays(perDay) };
-  }, [entrySums, currentUserId, filter, taskClient]);
-
-  return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-2 font-heading text-sm">Days worked — {filter.label.toLowerCase()}</h2>
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <div className="text-xs font-medium text-muted">Hours</div>
-          <div className="mt-0.5"><HoursValue minutes={hours} /></div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-muted" title="4h+ counts as a day, less counts as half">
-            Days
-          </div>
-          <div className="mt-0.5 text-2xl font-semibold tabular-nums">{days}</div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-muted">≈ Working time</div>
-          <div className="mt-0.5 text-2xl font-semibold tabular-nums">{workdayBreakdown(days)}</div>
-        </div>
-      </div>
-      {me?.startDate && (
-        <p className="mt-3 border-t border-border pt-2 text-xs text-muted">
-          In position <span className="font-semibold text-foreground tabular-nums">{tenureSince(me.startDate)}</span>
-          <span className="text-faint"> · since {me.startDate}</span>
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── studio pulse (admin): this month vs last ───────────────────────────────
-
-function StudioPulse() {
-  const { entrySums, tasks, clients } = useData();
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-
-  const pulse = useMemo(() => {
-    const now = new Date();
-    const curFrom = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
-    const prevFrom = toISODate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-    const prevTo = toISODate(new Date(now.getFullYear(), now.getMonth(), 0));
-    const cur = { total: 0, billable: 0, byClient: new Map<string, number>() };
-    const prev = { total: 0, billable: 0, byClient: new Map<string, number>() };
-    for (const e of entrySums) {
-      const bucket = e.date >= curFrom ? cur : e.date >= prevFrom && e.date <= prevTo ? prev : null;
-      if (!bucket) continue;
-      bucket.total += e.minutes;
-      const task = taskById.get(e.taskId);
-      if (task?.billable) bucket.billable += e.minutes;
-      if (task) bucket.byClient.set(task.clientId, (bucket.byClient.get(task.clientId) ?? 0) + e.minutes);
-    }
-    const top = [...cur.byClient.entries()].sort((a, b) => b[1] - a[1])[0];
-    let mover: { clientId: string; delta: number } | null = null;
-    for (const [cid, m] of cur.byClient) {
-      const delta = m - (prev.byClient.get(cid) ?? 0);
-      if (!mover || Math.abs(delta) > Math.abs(mover.delta)) mover = { clientId: cid, delta };
-    }
-    return { cur, prev, top, mover };
-  }, [entrySums, taskById]);
-
-  const name = (id?: string) => clients.find((c) => c.id === id)?.name ?? "–";
-  const pct = (v: { total: number; billable: number }) =>
-    v.total > 0 ? Math.round((v.billable / v.total) * 100) : 0;
-
-  return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-2 font-heading text-sm">Studio pulse — this month vs last</h2>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <div>
-          <div className="text-xs font-medium text-muted">Hours</div>
-          <div className="mt-0.5">
-            <HoursValue minutes={pulse.cur.total} />
-            <span className="ml-1.5 text-xs text-faint">vs {formatHoursShort(pulse.prev.total)}</span>
-          </div>
-        </div>
-        <div>
-          <div className="text-xs font-medium text-muted">Billable</div>
-          <div className="mt-0.5 text-2xl font-semibold tabular-nums">
-            {pct(pulse.cur)}%
-            <span className="ml-1.5 text-xs font-normal text-faint">vs {pct(pulse.prev)}%</span>
-          </div>
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-muted">Top client</div>
-          <div className="bidi-auto mt-0.5 truncate text-2xl font-semibold">{name(pulse.top?.[0])}</div>
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-muted">Biggest mover</div>
-          <div className="bidi-auto mt-0.5 truncate text-2xl font-semibold">
-            {pulse.mover ? name(pulse.mover.clientId) : "–"}
-            {pulse.mover && (
-              <span className={`ml-1.5 text-sm font-medium ${pulse.mover.delta >= 0 ? "text-success" : "text-danger"}`}>
-                {pulse.mover.delta >= 0 ? "+" : "−"}{formatHoursShort(Math.abs(pulse.mover.delta))}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── celebrations: birthdays (admin-readable) + work anniversaries ──────────
@@ -807,7 +739,7 @@ function MyAvatar() {
 const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 
 export function Dashboard() {
-  const { profiles, tasks, clients, entrySums, currentUserId, taskRequests } = useData();
+  const { profiles, tasks, clients, currentUserId, taskRequests } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
   const isAdmin = me?.role === "admin";
 
@@ -823,39 +755,9 @@ export function Dashboard() {
     [rangeKey, filterClient],
   );
 
-  const todayIso = toISODate(new Date());
-  const week = presetRange("This week");
-  const month = presetRange("This month");
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const firstName = me?.name.split(" ")[0] ?? "";
   const today = new Date();
   const dateLabel = `${DAY_NAMES[today.getDay()]}, ${today.getDate()}/${today.getMonth() + 1}`;
-
-  const myToday = useMemo(
-    () => sumInRange(entrySums, { from: todayIso, to: todayIso, userId: currentUserId }),
-    [entrySums, todayIso, currentUserId],
-  );
-  const myWeek = useMemo(
-    () => sumInRange(entrySums, { from: week.from, to: week.to, userId: currentUserId }),
-    [entrySums, week.from, week.to, currentUserId],
-  );
-  const myMonth = useMemo(
-    () => sumInRange(entrySums, { from: month.from, to: month.to, userId: currentUserId }),
-    [entrySums, month.from, month.to, currentUserId],
-  );
-  const studioToday = useMemo(
-    () => (isAdmin ? sumInRange(entrySums, { from: todayIso, to: todayIso }) : 0),
-    [entrySums, todayIso, isAdmin],
-  );
-  const studioWeek = useMemo(
-    () => (isAdmin ? sumInRange(entrySums, { from: week.from, to: week.to }) : 0),
-    [entrySums, week.from, week.to, isAdmin],
-  );
-  const studioMonth = useMemo(
-    () => (isAdmin ? sumInRange(entrySums, { from: month.from, to: month.to }) : 0),
-    [entrySums, month.from, month.to, isAdmin],
-  );
 
   const myTasks = useMemo(
     () =>
@@ -882,10 +784,16 @@ export function Dashboard() {
       <div className="flex items-center gap-3">
         <MyAvatar />
         <div>
-          <h1 className="text-2xl">
-            {greeting}, {firstName}
-          </h1>
           <p className="text-sm text-muted">{dateLabel}</p>
+          <h1 className="text-2xl">{firstName}</h1>
+          {me?.startDate && (
+            <p className="text-xs text-muted" title={`In the studio since ${me.startDate}`}>
+              In the studio{" "}
+              <span className="font-semibold text-foreground tabular-nums">
+                {tenureSince(me.startDate)}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -934,27 +842,6 @@ export function Dashboard() {
 
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <div className={`grid gap-4 ${isAdmin ? "sm:grid-cols-2" : ""}`}>
-            <HoursCard
-              title="My hours"
-              items={[
-                { label: "Daily", minutes: myToday, href: "/feed?mine=1&range=today" },
-                { label: "Weekly", minutes: myWeek, href: "/feed?mine=1&range=thisweek" },
-                { label: "Monthly", minutes: myMonth, href: "/feed?mine=1&range=thismonth" },
-              ]}
-            />
-            {isAdmin && (
-              <HoursCard
-                title="Studio hours"
-                items={[
-                  { label: "Daily", minutes: studioToday, href: "/feed?range=today" },
-                  { label: "Weekly", minutes: studioWeek, href: "/feed?range=thisweek" },
-                  { label: "Monthly", minutes: studioMonth, href: "/feed?range=thismonth" },
-                ]}
-              />
-            )}
-          </div>
-          <WorkSummary filter={filter} />
           <div className="rounded-xl border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
@@ -969,7 +856,7 @@ export function Dashboard() {
           </div>
         </div>
         <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[400px]">
-          {isAdmin && <StudioPulse />}
+          <PeriodStat isAdmin={isAdmin} filter={filter} rangeKey={rangeKey} />
           <MyGraphs isAdmin={isAdmin} filter={filter} />
           <DayLog />
           <MyWeek />
