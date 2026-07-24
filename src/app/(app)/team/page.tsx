@@ -2,13 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { presetRange } from "@/lib/date-ranges";
 import { toISODate } from "@/lib/format";
 import { formatHoursShort } from "@/lib/format";
-import { Avatar } from "@/components/ui";
-import { SplitBar } from "@/components/charts";
+import { MemberPhoto } from "@/components/member-photo";
 
 // ── time scope ──────────────────────────────────────────────────────────────
 
@@ -137,9 +136,9 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-3">
-      <div className="text-[11px] font-medium text-muted">{label}</div>
-      <div className="mt-0.5 text-xl font-semibold tabular-nums">{value}</div>
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
     </div>
   );
 }
@@ -186,15 +185,14 @@ export default function TeamPage() {
     };
   }, [statsByUser, activeMembers]);
 
-  const byUser = useMemo(
-    () =>
-      activeMembers
-        .map((p) => ({ profile: p, ...(statsByUser.get(p.id) ?? { total: 0, billable: 0 }) }))
-        .filter((r) => r.total > 0)
-        .sort((a, b) => b.total - a.total),
-    [activeMembers, statsByUser],
-  );
-  const maxUserTotal = byUser[0]?.total ?? 0;
+  const activeTaskByUser = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of tasks) {
+      if (t.status === "done" || !t.assigneeId) continue;
+      m.set(t.assigneeId, (m.get(t.assigneeId) ?? 0) + 1);
+    }
+    return m;
+  }, [tasks]);
 
   if (!isAdmin) {
     return <p className="text-sm text-muted">This page is for admins only.</p>;
@@ -208,7 +206,7 @@ export default function TeamPage() {
     <div className="flex max-w-[1500px] flex-col gap-4">
       <div className="flex items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl">Team</h1>
+          <h1 className="font-serif-accent text-3xl">The team</h1>
           <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
         </div>
         <label className="flex items-center gap-1.5 text-xs text-muted">
@@ -255,61 +253,48 @@ export default function TeamPage() {
         <Stat label="Avg hours / member" value={formatHoursShort(teamStats.avgPerMember)} />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium uppercase tracking-wide text-faint">
-          <span className="min-w-0 flex-1" title="Open a member for details, graphs and HR fields">
-            Member
-          </span>
-          <span className="w-24 shrink-0" title="Time since the member's start date">
-            In studio
-          </span>
-          <span className="w-20 shrink-0 text-right" title={`Hours logged ${scope.toLowerCase()}`}>
-            {scope}
-          </span>
-          <span className="w-40 shrink-0" title="Billable (blue) vs non-billable (grey) hours in the scope">
-            Billable / non-bill.
-          </span>
-          <span className="w-20 shrink-0 text-right" title="Share of the member's hours on billable tasks">
-            Billable
-          </span>
-          <span className="w-6 shrink-0" />
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {team.map((p) => {
           const s = statsByUser.get(p.id);
           const pct = s && s.total > 0 ? Math.round((s.billable / s.total) * 100) : null;
+          const openTasks = activeTaskByUser.get(p.id) ?? 0;
           return (
             <Link
               key={p.id}
               href={`/team/${p.id}`}
-              className={`flex items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 hover:bg-background ${p.active ? "" : "opacity-60"}`}
+              className={`group relative flex flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-card transition-colors hover:border-brand ${p.active ? "" : "opacity-60"}`}
             >
-              <span className="flex min-w-0 flex-1 items-center gap-2.5">
-                <Avatar profile={p} size={32} />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">{p.name}</span>
-                  <span className="block text-xs capitalize text-faint">
-                    {p.role}
-                    {!p.active && " · deactivated"}
-                  </span>
-                </span>
-              </span>
-              <span className="w-24 shrink-0 text-xs tabular-nums text-muted">
-                {p.startDate ? tenureShort(p.startDate) : "–"}
-              </span>
-              <span className="w-20 shrink-0 text-right text-sm font-medium tabular-nums">
-                {s?.total ? formatHoursShort(s.total) : "–"}
-              </span>
-              <span className="w-40 shrink-0">
-                {s && s.total > 0 ? (
-                  <SplitBar billable={s.billable} nonBillable={s.total - s.billable} maxMinutes={maxUserTotal} />
-                ) : (
-                  <span className="text-xs text-faint">–</span>
-                )}
-              </span>
-              <span className="w-20 shrink-0 text-right text-sm tabular-nums text-muted">
-                {pct == null ? "–" : `${pct}%`}
-              </span>
-              <ChevronRight size={15} className="shrink-0 text-faint" />
+              <span
+                className={`absolute right-3 top-3 size-2.5 rounded-full ${p.active ? "bg-success" : "bg-border-strong"}`}
+                title={p.active ? "Active" : "Deactivated"}
+              />
+              <MemberPhoto name={p.name} variant="avatar" size={76} />
+              <div className="mt-3 max-w-full truncate text-sm font-semibold">{p.name}</div>
+              <div className="text-xs capitalize text-muted">
+                {p.role}
+                {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
+              </div>
+              <div className="mt-3 flex w-full items-start justify-center gap-6">
+                <div>
+                  <div className="text-base font-semibold tabular-nums">
+                    {s?.total ? formatHoursShort(s.total) : "–"}
+                  </div>
+                  <div className="text-[10px] text-muted">Hours</div>
+                </div>
+                <div>
+                  <div className="text-base font-semibold tabular-nums">{openTasks}</div>
+                  <div className="text-[10px] text-muted">Tasks</div>
+                </div>
+              </div>
+              <div className="mt-3 w-full">
+                <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
+                  <span>Billable</span>
+                  <span className="font-semibold text-foreground">{pct == null ? "–" : `${pct}%`}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${pct ?? 0}%` }} />
+                </div>
+              </div>
             </Link>
           );
         })}

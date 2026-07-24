@@ -85,6 +85,11 @@
   --sb-logo-fg: #ffffff;
 
   --header-bg: rgba(255, 255, 255, 0.8);
+
+  /* Soft elevation (design refresh) — subtle, brand-tinted */
+  --shadow-card: 0 4px 14px rgba(6, 17, 47, 0.05), 0 1px 3px rgba(6, 17, 47, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(6, 17, 47, 0.08), 0 2px 6px rgba(6, 17, 47, 0.05);
+  --shadow-hero: 0 12px 30px rgba(11, 67, 237, 0.22);
 }
 
 /* ── Option A: "Electric" — bold blue sidebar, brand-forward ─────────── */
@@ -202,6 +207,17 @@ b,
   font-style: italic;
   font-weight: 400;
   letter-spacing: 0;
+}
+
+/* Soft card elevation (design refresh) */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 /* Brand wordmark: masked element so it inherits any color via background-color */

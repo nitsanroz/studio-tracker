@@ -10,11 +10,11 @@ export default function MyTasksPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
-      <h1 className="text-2xl font-bold tracking-tight">My Tasks</h1>
+      <h1 className="font-serif-accent text-3xl">My Tasks</h1>
       {mine.length === 0 && (
         <p className="text-sm text-muted">Nothing assigned to you right now.</p>
       )}
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <TaskTable tasks={mine} tableKey="my-tasks" />
       </div>
     </div>

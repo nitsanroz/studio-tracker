@@ -113,7 +113,7 @@ function PaymentPeriods({ client }: { client: Client }) {
 
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium uppercase tracking-wide text-faint">
           <span className="min-w-0 flex-1" title="Payment period title — click a name to rename it">
             Payment period
@@ -203,7 +203,7 @@ function PaymentPeriods({ client }: { client: Client }) {
       </div>
 
       <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[360px]">
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
           <div className="grid grid-cols-3 gap-2">
             <div title="Hours logged on billable tasks in the current payment period">
               <div className="text-[11px] font-medium text-muted">Current period</div>
@@ -231,7 +231,7 @@ function PaymentPeriods({ client }: { client: Client }) {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
           <h3
             className="mb-2 text-xs font-medium uppercase tracking-wide text-faint"
             title="This client's logged hours per month (last 12 months with activity)"
@@ -502,7 +502,7 @@ function PublishWorkspace() {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl">Client Reports</h1>
+          <h1 className="font-serif-accent text-3xl">Client Reports</h1>
           <p className="text-sm text-muted">
             Per-client hours tables, payment periods, and the shareable report links.
           </p>
@@ -589,7 +589,7 @@ function PublishWorkspace() {
             {moreOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
-                <div className="absolute right-0 top-full z-40 max-h-72 w-56 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl">
+                <div className="absolute right-0 top-full z-40 max-h-72 w-56 overflow-y-auto rounded-2xl border border-border bg-surface shadow-card p-1 shadow-xl">
                   {clients
                     .filter((c) => !c.archived && (hiddenTabs.includes(c.id) || !candidates.some((x) => x.id === c.id)))
                     .sort((a, b) => a.name.localeCompare(b.name))
@@ -625,7 +625,7 @@ function PublishWorkspace() {
 
       {selectedClient && preview ? (
         <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-border bg-surface p-3">
+          <div className="rounded-2xl border border-border bg-surface shadow-card p-3">
             <p className="mb-2 text-[11px] text-faint">
               Preview — eye toggles hide rows/columns from the client&apos;s view, + between column
               titles ends a payment period there, drag a divider to move it, click column dates to
@@ -663,7 +663,7 @@ function PublishWorkspace() {
           <PaymentPeriods client={selectedClient} />
         </div>
       ) : (
-        <p className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-faint">
+        <p className="rounded-2xl border border-border bg-surface shadow-card p-6 text-center text-sm text-faint">
           No clients with recent activity. Use ⋯ to pick one.
         </p>
       )}

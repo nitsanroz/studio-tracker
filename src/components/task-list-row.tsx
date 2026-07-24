@@ -27,7 +27,7 @@ function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => vo
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full z-50 mt-1 flex w-64 flex-col gap-2 rounded-xl border border-border bg-surface p-3 shadow-xl">
+      <div className="absolute right-0 top-full z-50 mt-1 flex w-64 flex-col gap-2 rounded-2xl border border-border bg-surface shadow-card p-3 shadow-xl">
         <div className="flex gap-2">
           <input
             autoFocus

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import {
+  Bell,
   CalendarDays,
   ChartPie,
   History,
@@ -200,20 +201,39 @@ function Shell({ children }: { children: ReactNode }) {
 
       <div className="ml-52 flex min-w-0 flex-1 flex-col">
         <header
-          className="sticky top-0 z-20 flex h-14 items-center justify-end gap-3 border-b border-border px-6 backdrop-blur"
+          className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border px-6 backdrop-blur"
           style={{ backgroundColor: "var(--header-bg)" }}
         >
           <GlobalSearch />
-          {isAdmin && pendingIntake > 0 && !pathname.startsWith("/intake-queue") && (
+          <div className="ml-auto flex items-center gap-2.5">
+            <TimerWidget />
+            {isAdmin && (
+              <Link
+                href="/intake-queue"
+                title={
+                  pendingIntake > 0
+                    ? `${pendingIntake} intake request${pendingIntake > 1 ? "s" : ""} to review`
+                    : "Intake"
+                }
+                className="relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:border-border-strong hover:text-foreground"
+              >
+                <Bell size={17} strokeWidth={1.75} />
+                {pendingIntake > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex min-w-[17px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                    {pendingIntake}
+                  </span>
+                )}
+              </Link>
+            )}
             <Link
-              href="/intake-queue"
-              className="flex shrink-0 items-center gap-2 rounded-full bg-aqua px-3 py-1.5 text-sm font-semibold text-[#06112f] hover:brightness-95"
+              href="/settings"
+              title="Account & settings"
+              className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-surface py-1 pl-1 pr-2.5 transition-colors hover:border-border-strong"
             >
-              <Inbox size={15} strokeWidth={2} />
-              {pendingIntake} to review →
+              <Avatar profile={me} size={26} />
+              <span className="text-sm font-medium">{me?.name.split(" ")[0]}</span>
             </Link>
-          )}
-          <TimerWidget />
+          </div>
         </header>
         <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>

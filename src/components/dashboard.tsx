@@ -17,7 +17,7 @@ import {
   DAY_NAMES,
 } from "@/lib/format";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
-import { TaskTable } from "./task-list-row";
+import { MemberPhoto } from "./member-photo";
 import { Avatar, ClientChip } from "./ui";
 import { HBar, MiniColumnsLabeled, MultiLineChart, PercentRing, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
@@ -147,7 +147,7 @@ function PeriodStat({
   // ── members: unchanged compact stat ──────────────────────────────────────
   if (!isAdmin) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <div className="flex items-center justify-between gap-4">
           <div className="shrink-0" title="Your logged hours in the selected period">
             <div className="font-serif-accent text-2xl leading-tight">My hours</div>
@@ -168,7 +168,7 @@ function PeriodStat({
   // ── admins: heading-style title, big hours, billable ring, this/last bars ─
   const maxBar = Math.max(stats.cur, stats.prev, 1);
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <h2 className="mb-3 font-heading text-sm" title="All hours logged across the studio in the selected period">
         Studio · {filter.label}
       </h2>
@@ -371,7 +371,7 @@ function DayLog() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="font-heading text-sm">Log my hours</h2>
         <div className="flex items-center gap-1">
@@ -516,14 +516,14 @@ function MyWeek() {
   if (!myColumn) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-heading text-sm">My week</h2>
         <Link href="/plan" className="flex items-center gap-1 text-xs text-brand hover:underline">
           Weekly plan <ArrowRight size={12} />
         </Link>
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="grid grid-cols-5 gap-2">
         {days.map((day) => {
           const iso = toISODate(day);
           const entries = planEntries
@@ -533,19 +533,31 @@ function MyWeek() {
           return (
             <div
               key={iso}
-              className={`flex items-start gap-2 rounded-md px-2 py-1.5 ${isToday ? "bg-aqua/15 outline outline-1 outline-brand/40" : ""}`}
+              className={`flex min-h-[132px] flex-col gap-1 rounded-xl border p-2.5 ${
+                isToday ? "border-brand bg-brand text-white" : "border-border bg-background"
+              }`}
             >
-              <span className={`w-9 shrink-0 pt-0.5 text-xs ${isToday ? "font-bold" : "text-faint"}`}>
+              <span
+                className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? "text-white/80" : "text-faint"}`}
+              >
                 {DAY_NAMES[day.getDay()].slice(0, 3)}
               </span>
-              <div className="flex min-w-0 flex-1 flex-wrap gap-1">
-                {entries.length === 0 && <span className="text-xs text-faint">—</span>}
+              <span className="text-base font-bold leading-none">{day.getDate()}</span>
+              <div className="mt-1 flex flex-col gap-1">
+                {entries.length === 0 && (
+                  <span className={`text-[11px] ${isToday ? "text-white/50" : "text-faint"}`}>—</span>
+                )}
                 {entries.map((e) => {
                   if (e.type === "absence") {
                     const label =
                       e.absenceType === "sick" ? "Sick" : e.absenceType === "vacation" ? "Vacation" : "Day off";
                     return (
-                      <span key={e.id} className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600">
+                      <span
+                        key={e.id}
+                        className={`truncate rounded px-1.5 py-0.5 text-[10px] ${
+                          isToday ? "bg-white/20 text-white" : "bg-gray-200 text-gray-600"
+                        }`}
+                      >
                         {label}
                       </span>
                     );
@@ -557,8 +569,13 @@ function MyWeek() {
                     <button
                       key={e.id}
                       onClick={() => task && openTask(task.id)}
-                      className={`bidi-auto max-w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium ${
-                        task ? "cursor-pointer text-white" : "border border-dashed border-border-strong text-muted"
+                      title={label}
+                      className={`bidi-auto block max-w-full truncate rounded px-1.5 py-0.5 text-left text-[10px] font-medium ${
+                        task
+                          ? "cursor-pointer text-white"
+                          : isToday
+                            ? "border border-dashed border-white/50 text-white/90"
+                            : "border border-dashed border-border-strong text-muted"
                       }`}
                       style={task ? { backgroundColor: client?.color ?? "#6b7280" } : undefined}
                     >
@@ -646,7 +663,7 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
   return (
     <>
       {/* by time */}
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <h2 className="mb-3 font-heading text-sm" title="Your logged hours over the selected period">
           Hours over time
         </h2>
@@ -658,7 +675,7 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
       </div>
 
       {/* by client */}
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
         <h2 className="mb-3 font-heading text-sm" title="Your hours split by client">
           Hours by client
         </h2>
@@ -714,7 +731,7 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
   }, [entrySums, filter, taskById, clientById]);
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <h2 className="mb-3 font-heading text-sm" title="Studio hours per client over the selected period">
         Hours by client over time
       </h2>
@@ -800,7 +817,7 @@ function Celebrations() {
   if (upcoming.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <h2 className="mb-2 font-heading text-sm">Celebrations — next 30 days</h2>
       <div className="flex flex-col gap-1.5">
         {upcoming.map((c, i) => (
@@ -861,10 +878,253 @@ function MyAvatar() {
   );
 }
 
+/** figure + unit split so the unit renders smaller, e.g. "353.8" + "h" */
+function splitHours(min: number): readonly [string, string] {
+  const s = formatHoursShort(min);
+  const m = s.match(/^([\d.,]+)(.*)$/);
+  return m ? [m[1], m[2]] : [s, ""];
+}
+
+function StatTile({
+  hi = false,
+  label,
+  figure,
+  unit = "",
+  delta,
+  sub,
+}: {
+  hi?: boolean;
+  label: string;
+  figure: string;
+  unit?: string;
+  delta?: { value: number; unit: string } | null;
+  sub?: string;
+}) {
+  const up = delta ? delta.value >= 0 : true;
+  return (
+    <div
+      className={`rounded-2xl border p-4 shadow-card ${hi ? "border-brand bg-brand text-white" : "border-border bg-surface"}`}
+    >
+      <div className={`text-[11px] uppercase tracking-wide ${hi ? "text-white/80" : "text-muted"}`}>
+        {label}
+      </div>
+      <div className="mt-1.5 font-serif-accent text-[32px] leading-none">
+        {figure}
+        {unit && <span className="text-xl">{unit}</span>}
+      </div>
+      <div className={`mt-2.5 flex items-center gap-1.5 text-[11px] ${hi ? "text-white/85" : "text-muted"}`}>
+        {delta ? (
+          <>
+            <span
+              className={`rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${
+                hi ? "bg-white/20 text-white" : up ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+              }`}
+            >
+              {up ? "▲" : "▼"} {Math.abs(delta.value)}
+              {delta.unit}
+            </span>
+            <span>vs last</span>
+          </>
+        ) : sub ? (
+          <span>{sub}</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Studio-wide KPI tiles for admins: hours, billable, active tasks, avg/designer. */
+function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { from: string; to: string } | null }) {
+  const { entrySums, tasks } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const s = useMemo(() => {
+    let cur = 0,
+      curB = 0,
+      prev = 0,
+      prevB = 0;
+    const designers = new Set<string>();
+    const worked = new Set<string>();
+    for (const e of entrySums) {
+      const task = taskById.get(e.taskId);
+      if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      const inCur = !filter.range || (e.date >= filter.range.from && e.date <= filter.range.to);
+      if (inCur) {
+        cur += e.minutes;
+        if (task?.billable) curB += e.minutes;
+        if (e.minutes > 0) {
+          designers.add(e.userId);
+          worked.add(e.taskId);
+        }
+      } else if (prevRange && e.date >= prevRange.from && e.date <= prevRange.to) {
+        prev += e.minutes;
+        if (task?.billable) prevB += e.minutes;
+      }
+    }
+    return { cur, curB, prev, prevB, designers: designers.size, worked: worked.size };
+  }, [entrySums, taskById, filter, prevRange]);
+
+  const hoursDelta = prevRange && s.prev > 0 ? Math.round(((s.cur - s.prev) / s.prev) * 100) : null;
+  const curPct = s.cur > 0 ? Math.round((s.curB / s.cur) * 100) : 0;
+  const prevPct = s.prev > 0 ? Math.round((s.prevB / s.prev) * 100) : null;
+  const pctDelta = prevPct != null ? curPct - prevPct : null;
+  const perDesigner = s.designers > 0 ? s.cur / s.designers : 0;
+
+  const [hFig, hUnit] = splitHours(s.cur);
+  const [pdFig, pdUnit] = splitHours(perDesigner);
+
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatTile hi label="Studio hours" figure={hFig} unit={hUnit} delta={hoursDelta != null ? { value: hoursDelta, unit: "%" } : null} sub="this period" />
+      <StatTile label="Billable" figure={String(curPct)} unit="%" delta={pctDelta != null ? { value: pctDelta, unit: "pp" } : null} sub="of hours" />
+      <StatTile label="Tasks worked" figure={String(s.worked)} sub="this period" />
+      <StatTile label="Avg / designer" figure={pdFig} unit={pdUnit} sub={`${s.designers} designer${s.designers === 1 ? "" : "s"}`} />
+    </div>
+  );
+}
+
+/** Compact studio roster on the admin home: per-designer hours + billable bar. */
+function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
+  const { entrySums, tasks, profiles } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const rows = useMemo(() => {
+    const per = new Map<string, { min: number; bil: number }>();
+    for (const e of entrySums) {
+      const task = taskById.get(e.taskId);
+      if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
+      const r = per.get(e.userId) ?? { min: 0, bil: 0 };
+      r.min += e.minutes;
+      if (task?.billable) r.bil += e.minutes;
+      per.set(e.userId, r);
+    }
+    return profiles
+      .filter((p) => p.active)
+      .map((p) => {
+        const r = per.get(p.id) ?? { min: 0, bil: 0 };
+        return { p, min: r.min, pct: r.min > 0 ? Math.round((r.bil / r.min) * 100) : 0 };
+      })
+      .filter((x) => x.min > 0)
+      .sort((a, b) => b.min - a.min);
+  }, [entrySums, taskById, profiles, filter]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-heading text-sm">
+          The studio · {rows.length} designer{rows.length === 1 ? "" : "s"}
+        </h2>
+        <Link href="/team" className="flex items-center gap-1 text-xs text-brand hover:underline">
+          View team <ArrowRight size={12} />
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+        {rows.map(({ p, min, pct }) => (
+          <Link
+            key={p.id}
+            href={`/team/${p.id}`}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-background p-3 hover:border-brand"
+          >
+            <Avatar profile={p} size={40} />
+            <span className="max-w-full truncate text-xs font-semibold">{p.name.split(" ")[0]}</span>
+            <span className="text-[10px] tabular-nums text-muted">
+              {formatHoursShort(min)} · {pct}%
+            </span>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+              <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Member welcome: blue hero with the member's cut-out photo + this-week summary, then 3 KPI tiles. */
+function MemberWelcome({ me }: { me: { id: string; name: string } }) {
+  const { entrySums, tasks } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const wk = useMemo(() => {
+    const start = startOfWeek(new Date());
+    const from = toISODate(start);
+    const to = toISODate(addDays(start, 6));
+    let min = 0;
+    let bil = 0;
+    const byDate = new Map<string, number>();
+    for (const e of entrySums) {
+      if (e.userId !== me.id || e.date < from || e.date > to) continue;
+      min += e.minutes;
+      if (taskById.get(e.taskId)?.billable) bil += e.minutes;
+      byDate.set(e.date, (byDate.get(e.date) ?? 0) + e.minutes);
+    }
+    let days = 0;
+    for (const m of byDate.values()) days += m >= 240 ? 1 : m > 0 ? 0.5 : 0;
+    return { min, days, pct: min > 0 ? Math.round((bil / min) * 100) : 0, from, to };
+  }, [entrySums, taskById, me.id]);
+
+  const myActive = useMemo(
+    () => tasks.filter((t) => t.assigneeId === me.id && t.status !== "done"),
+    [tasks, me.id],
+  );
+  const dueThisWeek = myActive.filter(
+    (t) => t.dueDate && t.dueDate >= wk.from && t.dueDate <= wk.to,
+  ).length;
+
+  const [hFig, hUnit] = splitHours(wk.min);
+
+  return (
+    <>
+      <div
+        className="relative overflow-hidden rounded-2xl bg-brand px-7 py-6 text-white"
+        style={{ minHeight: 208, boxShadow: "var(--shadow-hero)" }}
+      >
+        <div className="pointer-events-none absolute -top-12 right-44 size-72 rounded-full bg-white/[0.06]" />
+        <div className="relative z-10 max-w-lg pr-40">
+          <div className="text-[11px] uppercase tracking-[0.09em] text-white/70">This week</div>
+          <h2 className="mt-2 font-heading text-[26px] leading-snug">
+            You’ve logged {formatHoursShort(wk.min)} across {myActive.length} active task
+            {myActive.length === 1 ? "" : "s"}
+            {dueThisWeek > 0 ? ` — ${dueThisWeek} due this week.` : "."}
+          </h2>
+          <div className="mt-5 flex gap-3">
+            <a
+              href="#log"
+              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand hover:brightness-95"
+            >
+              + Log time
+            </a>
+            <Link
+              href="/plan"
+              className="rounded-xl border border-white/50 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
+            >
+              My week
+            </Link>
+          </div>
+        </div>
+        <div
+          className="pointer-events-none absolute bottom-0 right-6 z-10 hidden sm:block"
+          style={{ width: 192, height: 196 }}
+        >
+          <MemberPhoto name={me.name} variant="hero" size={196} />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <StatTile label="Hours this week" figure={hFig} unit={hUnit} sub="logged" />
+        <StatTile label="Billable" figure={String(wk.pct)} unit="%" sub="this week" />
+        <StatTile label="Days in studio" figure={String(wk.days)} sub="this week" />
+      </div>
+    </>
+  );
+}
+
 const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 
 export function Dashboard() {
-  const { profiles, tasks, clients, currentUserId, taskRequests } = useData();
+  const { profiles, tasks, clients, currentUserId, taskRequests, openTask } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
   const isAdmin = me?.role === "admin";
 
@@ -912,18 +1172,37 @@ export function Dashboard() {
 
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
 
-  const myTasksCard = (
-    <div className="rounded-xl border border-border bg-surface">
+  // My tasks demoted to a compact list on the home (the full table lives on /my-tasks)
+  const compactTasksCard = (
+    <div className="rounded-2xl border border-border bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
         <Link href="/my-tasks" className="flex items-center gap-1 text-xs text-brand hover:underline">
           All tasks <ArrowRight size={12} />
         </Link>
       </div>
-      {myTasks.length === 0 && (
+      {myTasks.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-faint">Nothing assigned to you right now.</p>
+      ) : (
+        <div className="divide-y divide-border">
+          {myTasks.slice(0, 4).map((t) => {
+            const c = clients.find((x) => x.id === t.clientId);
+            return (
+              <button
+                key={t.id}
+                onClick={() => openTask(t.id)}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left hover:bg-background"
+              >
+                {c && <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />}
+                <span className="bidi-auto min-w-0 flex-1 truncate text-sm font-medium">{t.title}</span>
+                {t.dueDate && (
+                  <span className="shrink-0 text-xs tabular-nums text-muted">{formatFeedDate(t.dueDate)}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       )}
-      {myTasks.length > 0 && <TaskTable tasks={myTasks.slice(0, 8)} tableKey="home-tasks" />}
     </div>
   );
 
@@ -1038,33 +1317,43 @@ export function Dashboard() {
 
       {isAdmin ? (
         <>
-          {/* analytics — "Studio this month" + the 3 graphs, two columns across the screen */}
+          {/* KPI tiles across the top */}
+          <StatTiles filter={filter} prevRange={prevRange} />
+          {/* analytics — two square charts over a full-width trend */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <PeriodStat isAdmin={isAdmin} filter={filter} prevRange={prevRange} />
             <MyGraphs filter={filter} isAdmin={isAdmin} />
-            <StudioClientTrend filter={filter} />
+            <div className="lg:col-span-2">
+              <StudioClientTrend filter={filter} />
+            </div>
           </div>
-          {/* my tasks last — full width, with celebrations in a ~1/3 pane to its right */}
+          {/* the studio roster */}
+          <StudioTeamStrip filter={filter} />
+          {/* my tasks demoted to a compact list, celebrations beside it */}
           <div className="flex flex-col gap-4 lg:flex-row">
-            <div className="min-w-0 flex-1">{myTasksCard}</div>
+            <div className="min-w-0 flex-1">{compactTasksCard}</div>
             <div className="w-full empty:hidden lg:w-1/3">
               <Celebrations />
             </div>
           </div>
         </>
       ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
-            {myTasksCard}
-            <DayLog />
-          </div>
-          <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[350px]">
+        <>
+          {me && <MemberWelcome me={me} />}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyWeek />
-            <PeriodStat isAdmin={isAdmin} filter={filter} prevRange={prevRange} />
-            <MyGraphs filter={filter} isAdmin={isAdmin} />
-            <Celebrations />
+            {compactTasksCard}
           </div>
-        </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div id="log" className="scroll-mt-20 lg:col-span-2">
+              <DayLog />
+            </div>
+            <PeriodStat isAdmin={false} filter={filter} prevRange={prevRange} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <MyGraphs filter={filter} isAdmin={false} />
+          </div>
+          <Celebrations />
+        </>
       )}
     </div>
   );

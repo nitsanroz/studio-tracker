@@ -610,7 +610,7 @@ function FeedPageContent() {
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl">Time Feed</h1>
+          <h1 className="font-serif-accent text-3xl">Time Feed</h1>
           <p className="text-sm text-muted">
             {view === "feed"
               ? isAdmin
@@ -723,7 +723,7 @@ function FeedPageContent() {
             {loading && <span className="text-xs text-faint">loading…</span>}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
             <div className="group/thead flex items-start gap-3 border-b border-border bg-background px-4 py-2">
               {(
                 [
@@ -873,7 +873,7 @@ function FeedPageContent() {
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-background text-xs font-medium uppercase tracking-wide text-faint">
