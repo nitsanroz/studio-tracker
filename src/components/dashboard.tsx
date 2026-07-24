@@ -1319,21 +1319,16 @@ export function Dashboard() {
         <>
           {/* KPI tiles across the top */}
           <StatTiles filter={filter} prevRange={prevRange} />
-          {/* analytics — two square charts over a full-width trend */}
+          {/* analytics 2×2 — hours over time / by client, then client-trend + my tasks */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={isAdmin} />
-            <div className="lg:col-span-2">
-              <StudioClientTrend filter={filter} />
-            </div>
+            <StudioClientTrend filter={filter} />
+            {compactTasksCard}
           </div>
           {/* the studio roster */}
           <StudioTeamStrip filter={filter} />
-          {/* my tasks demoted to a compact list, celebrations beside it */}
-          <div className="flex flex-col gap-4 lg:flex-row">
-            <div className="min-w-0 flex-1">{compactTasksCard}</div>
-            <div className="w-full empty:hidden lg:w-1/3">
-              <Celebrations />
-            </div>
+          <div className="empty:hidden">
+            <Celebrations />
           </div>
         </>
       ) : (

@@ -392,6 +392,26 @@ export function LineChart({ points }: { points: { label: string; minutes: number
  * hours; hovering dims the other lines. Values in minutes. A color legend renders
  * below. Used for the admin "hours by client over time" overview.
  */
+/** Catmull-Rom → cubic-bezier smoothing for a soft line (reference: Sales Report). */
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return "";
+  if (pts.length < 3) return "M" + pts.map((p) => `${p.x},${p.y}`).join(" L");
+  const t = 0.16;
+  let d = `M${pts[0].x},${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) * t;
+    const c1y = p1.y + (p2.y - p0.y) * t;
+    const c2x = p2.x - (p3.x - p1.x) * t;
+    const c2y = p2.y - (p3.y - p1.y) * t;
+    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
 export function MultiLineChart({
   labels,
   series,
@@ -404,45 +424,86 @@ export function MultiLineChart({
   const max = Math.max(1, ...series.flatMap((s) => s.values));
   const n = labels.length;
   const W = 320;
-  const H = 150;
-  const padX = 18;
-  const padTop = 16;
-  const padBottom = 24;
-  const innerW = W - padX * 2;
+  const H = 172;
+  const padL = 30;
+  const padR = 12;
+  const padTop = 14;
+  const padBottom = 26;
+  const innerW = W - padL - padR;
   const innerH = H - padTop - padBottom;
-  const x = (i: number) => (n === 1 ? W / 2 : padX + (i / (n - 1)) * innerW);
+  const x = (i: number) => (n === 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW);
   const y = (v: number) => padTop + innerH - (v / max) * innerH;
-  const step = Math.max(1, Math.ceil(n / 8)); // thin x labels so they don't overlap
+  const step = Math.max(1, Math.ceil(n / 8));
+  const grid = [0, 1 / 3, 2 / 3, 1];
 
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours by client over time">
-        {series.map((s, si) => {
-          const dim = hover != null && hover.s !== si;
-          const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+        {/* faint gridlines + y labels */}
+        {grid.map((g, gi) => {
+          const gy = padTop + innerH * g;
           return (
-            <g key={si} opacity={dim ? 0.22 : 1}>
-              <polyline
-                points={pts}
-                fill="none"
-                style={{ stroke: s.color }}
-                strokeWidth={hover?.s === si ? 2.5 : 1.75}
-                strokeLinejoin="round"
-                strokeLinecap="round"
+            <g key={`g${gi}`}>
+              <line
+                x1={padL}
+                y1={gy}
+                x2={W - padR}
+                y2={gy}
+                style={{ stroke: "var(--color-border)" }}
+                strokeWidth={0.5}
+                strokeDasharray="2 3"
               />
-              {s.values.map((v, i) => (
-                <circle
-                  key={i}
-                  cx={x(i)}
-                  cy={y(v)}
-                  r={hover?.s === si && hover?.i === i ? 3.5 : 2}
-                  style={{ fill: "var(--color-surface)", stroke: s.color }}
-                  strokeWidth={1.5}
-                />
-              ))}
+              <text x={padL - 6} y={gy + 2.5} textAnchor="end" fontSize={7} style={{ fill: "var(--color-faint)" }}>
+                {formatHoursShort(max * (1 - g))}
+              </text>
             </g>
           );
         })}
+
+        {/* dashed vertical guide at the hovered point */}
+        {hover && (
+          <line
+            x1={x(hover.i)}
+            y1={padTop}
+            x2={x(hover.i)}
+            y2={padTop + innerH}
+            style={{ stroke: "var(--color-brand)" }}
+            strokeWidth={0.75}
+            strokeDasharray="3 3"
+            opacity={0.5}
+          />
+        )}
+
+        {/* smooth thin lines + point dots */}
+        {series.map((s, si) => {
+          const dim = hover != null && hover.s !== si;
+          return (
+            <g key={si} opacity={dim ? 0.2 : 1}>
+              <path
+                d={smoothPath(s.values.map((v, i) => ({ x: x(i), y: y(v) })))}
+                fill="none"
+                style={{ stroke: s.color }}
+                strokeWidth={hover?.s === si ? 2 : 1.4}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {s.values.map((v, i) => {
+                const active = hover?.s === si && hover?.i === i;
+                return (
+                  <circle
+                    key={i}
+                    cx={x(i)}
+                    cy={y(v)}
+                    r={active ? 3.2 : 1.6}
+                    style={{ fill: active ? s.color : "var(--color-surface)", stroke: s.color }}
+                    strokeWidth={1.4}
+                  />
+                );
+              })}
+            </g>
+          );
+        })}
+
         {/* hit targets */}
         {series.map((s, si) =>
           s.values.map((v, i) => (
@@ -450,50 +511,66 @@ export function MultiLineChart({
               key={`h-${si}-${i}`}
               cx={x(i)}
               cy={y(v)}
-              r={7}
+              r={8}
               fill="transparent"
               onMouseEnter={() => setHover({ s: si, i })}
               onMouseLeave={() => setHover(null)}
             />
           )),
         )}
-        {labels.map((l, i) =>
-          i % step === 0 ? (
-            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize={7.5} style={{ fill: "var(--color-faint)" }}>
+
+        {/* x labels — hovered one highlighted brand */}
+        {labels.map((l, i) => {
+          const on = hover?.i === i;
+          return i % step === 0 || on ? (
+            <text
+              key={i}
+              x={x(i)}
+              y={H - 8}
+              textAnchor="middle"
+              fontSize={7.5}
+              fontWeight={on ? 700 : 400}
+              style={{ fill: on ? "var(--color-brand)" : "var(--color-faint)" }}
+            >
               {l}
             </text>
-          ) : null,
-        )}
+          ) : null;
+        })}
+
+        {/* dark tooltip card */}
         {hover &&
           (() => {
             const s = series[hover.s];
             const v = s.values[hover.i];
             const cx = x(hover.i);
-            const cy = y(v);
-            const txt = `${s.label} · ${formatHoursShort(v)}`;
-            const w = txt.length * 4.2 + 10;
+            const val = formatHoursShort(v);
+            const w = Math.max(50, Math.max(s.label.length * 4.2, val.length * 6) + 16);
+            const h = 30;
             const bx = Math.min(W - w - 2, Math.max(2, cx - w / 2));
-            const by = Math.max(2, cy - 20);
+            const by = Math.max(2, y(v) - h - 8);
             return (
               <g pointerEvents="none">
-                <rect x={bx} y={by} width={w} height={15} rx={3} style={{ fill: "var(--color-foreground)" }} />
-                <text x={bx + w / 2} y={by + 10} textAnchor="middle" fontSize={8} fontWeight={600} fill="#fff">
-                  {txt}
+                <rect x={bx} y={by} width={w} height={h} rx={5} style={{ fill: "var(--color-foreground)" }} />
+                <text x={bx + 8} y={by + 12} fontSize={6.5} style={{ fill: "#b9c8f9" }}>
+                  {s.label}
+                </text>
+                <text x={bx + 8} y={by + 23} fontSize={11} fontWeight={700} fill="#fff">
+                  {val}
                 </text>
               </g>
             );
           })()}
       </svg>
-      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {series.map((s, si) => (
           <span
             key={si}
-            onMouseEnter={() => setHover({ s: si, i: 0 })}
+            onMouseEnter={() => setHover({ s: si, i: hover?.i ?? Math.floor(n / 2) })}
             onMouseLeave={() => setHover(null)}
-            className="flex cursor-default items-center gap-1 text-[11px]"
+            className="flex cursor-default items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-0.5 text-[10px]"
           >
-            <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="bidi-auto max-w-28 truncate">{s.label}</span>
+            <span className="size-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: s.color }} />
+            <span className="bidi-auto max-w-24 truncate">{s.label}</span>
           </span>
         ))}
       </div>
