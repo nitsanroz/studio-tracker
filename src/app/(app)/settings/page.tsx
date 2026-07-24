@@ -385,6 +385,70 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+function ChangePassword() {
+  const supabase = useMemo(() => createClient(), []);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const canSave = password.length >= 6 && password === confirm && !busy;
+
+  async function save() {
+    if (!canSave) return;
+    setBusy(true);
+    setMsg(null);
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) {
+      setMsg({ ok: false, text: error.message });
+    } else {
+      setMsg({ ok: true, text: "Password updated." });
+      setPassword("");
+      setConfirm("");
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-3 font-heading">Change password</h2>
+      <div className="flex max-w-sm flex-col gap-2">
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="New password (min 6 characters)"
+          autoComplete="new-password"
+          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+        />
+        <input
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && save()}
+          placeholder="Repeat new password"
+          autoComplete="new-password"
+          className={`rounded-md border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand ${
+            confirm && confirm !== password ? "border-danger" : "border-border"
+          }`}
+        />
+        <div className="flex items-center gap-3">
+          <button
+            disabled={!canSave}
+            onClick={save}
+            className="w-fit rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
+          >
+            {busy ? "Saving…" : "Update password"}
+          </button>
+          {msg && (
+            <span className={`text-xs ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { profiles, currentUserId } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
@@ -410,11 +474,14 @@ export default function SettingsPage() {
 
           {isAdmin && <IntakeSettings />}
 
-          <TagsSection isAdmin={isAdmin} />
+          {isAdmin && <TagsSection isAdmin={isAdmin} />}
+
+          {!isAdmin && <ChangePassword />}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <ClientsSection isAdmin={isAdmin} />
+          {isAdmin && <ClientsSection isAdmin={isAdmin} />}
+          {isAdmin && <ChangePassword />}
         </div>
       </div>
     </div>

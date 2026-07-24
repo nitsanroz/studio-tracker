@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { classifyImage } from "@/lib/uploads";
 
 // Upload the signed-in user's avatar (service role handles storage; caller is session-verified).
 export async function POST(request: NextRequest) {
@@ -18,6 +19,10 @@ export async function POST(request: NextRequest) {
   if (file.size > 5 * 1024 * 1024) {
     return NextResponse.json({ error: "Max 5MB" }, { status: 400 });
   }
+  const cls = classifyImage(file);
+  if (!cls.ok) {
+    return NextResponse.json({ error: "Use a PNG, JPG, GIF or WebP image" }, { status: 400 });
+  }
 
   const admin = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,8 +34,11 @@ export async function POST(request: NextRequest) {
   const path = `${user.id}-${Date.now()}.${ext}`;
   const { error: upErr } = await admin.storage
     .from("avatars")
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 400 });
+    .upload(path, file, { contentType: cls.contentType, upsert: true });
+  if (upErr) {
+    console.error("avatar upload failed", upErr);
+    return NextResponse.json({ error: "Upload failed" }, { status: 400 });
+  }
 
   const { data: pub } = admin.storage.from("avatars").getPublicUrl(path);
   const { error: pErr } = await admin

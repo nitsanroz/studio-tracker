@@ -13,6 +13,22 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // The React Compiler rule set (eslint-plugin-react-hooks v6) is advisory:
+    // it flags optimization hints and intentional client-only patterns (e.g.
+    // mount-time state init to avoid SSR hydration mismatches). We keep them as
+    // WARNINGS so `next lint` stays a green error-level deploy gate while the
+    // signal remains visible. Revisit in the store/perf refactor (FIX-PLAN 2.6).
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/use-memo": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/refs": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

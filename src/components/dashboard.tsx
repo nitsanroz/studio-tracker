@@ -6,7 +6,6 @@ import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { mapTimeEntry } from "@/lib/db";
-import { presetRange } from "@/lib/date-ranges";
 import {
   addDays,
   formatFeedDate,
@@ -20,49 +19,99 @@ import {
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import { TaskTable } from "./task-list-row";
 import { Avatar, ClientChip } from "./ui";
-import { MiniColumnsLabeled, PieChart } from "./charts";
+import { HBar, MiniColumnsLabeled, MultiLineChart, PercentRing, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
 
-/** previous range of the same kind, for the "vs last period" delta */
-function previousRange(rangeKey: (typeof HOME_RANGES)[number]): { from: string; to: string } | null {
+/** Full calendar bounds of a period, `offset` steps from the current one
+ *  (0 = current, −1 = previous, …). null for "All time". */
+function periodBounds(
+  rangeKey: (typeof HOME_RANGES)[number],
+  offset: number,
+): { start: Date; end: Date } | null {
   const now = new Date();
   switch (rangeKey) {
     case "This week": {
-      const cur = presetRange("This week");
-      const [y, m, d] = cur.from.split("-").map(Number);
-      const prevStart = addDays(new Date(y, m - 1, d), -7);
-      return { from: toISODate(prevStart), to: toISODate(addDays(prevStart, 6)) };
+      const start = addDays(startOfWeek(now), offset * 7);
+      return { start, end: addDays(start, 6) };
     }
     case "This month":
       return {
-        from: toISODate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-        to: toISODate(new Date(now.getFullYear(), now.getMonth(), 0)),
+        start: new Date(now.getFullYear(), now.getMonth() + offset, 1),
+        end: new Date(now.getFullYear(), now.getMonth() + offset + 1, 0),
       };
     case "This year":
       return {
-        from: toISODate(new Date(now.getFullYear() - 1, 0, 1)),
-        to: toISODate(new Date(now.getFullYear() - 1, 11, 31)),
+        start: new Date(now.getFullYear() + offset, 0, 1),
+        end: new Date(now.getFullYear() + offset, 11, 31),
       };
     default:
-      return null; // All time has no "previous period"
+      return null; // All time
   }
+}
+
+/** whole calendar days from a → b (both floored to local midnight) */
+function daysBetween(a: Date, b: Date): number {
+  const ms =
+    new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime() -
+    new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+/** Human label for the selected period, e.g. "This month", "Last week", "March", "2025". */
+function rangeLabel(rangeKey: (typeof HOME_RANGES)[number], offset: number): string {
+  if (rangeKey === "All time") return "All time";
+  if (offset === 0) return rangeKey;
+  if (offset === -1) return rangeKey === "This week" ? "Last week" : rangeKey === "This month" ? "Last month" : "Last year";
+  const b = periodBounds(rangeKey, offset)!;
+  if (rangeKey === "This week") {
+    return `${b.start.getDate()}/${b.start.getMonth() + 1}–${b.end.getDate()}/${b.end.getMonth() + 1}`;
+  }
+  if (rangeKey === "This month") {
+    const now = new Date();
+    const m = MONTH_SHORT[b.start.getMonth()];
+    return b.start.getFullYear() === now.getFullYear() ? m : `${m} ${b.start.getFullYear()}`;
+  }
+  return String(b.start.getFullYear());
+}
+
+/**
+ * The comparable previous range for the "vs last period" delta. When the
+ * selected period is still ongoing (partial), the previous range is truncated
+ * to the SAME elapsed portion — e.g. this month up to the 15th compares against
+ * last month up to the 15th, not the whole of last month.
+ */
+function comparablePrevRange(
+  rangeKey: (typeof HOME_RANGES)[number],
+  offset: number,
+): { from: string; to: string } | null {
+  const sel = periodBounds(rangeKey, offset);
+  const prev = periodBounds(rangeKey, offset - 1);
+  if (!sel || !prev) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let prevEnd = prev.end;
+  const ongoing = today >= sel.start && today < sel.end; // period contains today, not yet over
+  if (ongoing) {
+    const candidate = addDays(prev.start, daysBetween(sel.start, today));
+    if (candidate < prevEnd) prevEnd = candidate;
+  }
+  return { from: toISODate(prev.start), to: toISODate(prevEnd) };
 }
 
 /** Hours in the selected period (admins: studio-wide, users: their own) + delta vs last period. */
 function PeriodStat({
   isAdmin,
   filter,
-  rangeKey,
+  prevRange,
 }: {
   isAdmin: boolean;
   filter: HomeFilter;
-  rangeKey: (typeof HOME_RANGES)[number];
+  prevRange: { from: string; to: string } | null;
 }) {
   const { entrySums, tasks, currentUserId } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   const stats = useMemo(() => {
-    const prevRange = previousRange(rangeKey);
     let cur = 0;
     let curBillable = 0;
     let prev = 0;
@@ -78,45 +127,78 @@ function PeriodStat({
       }
     }
     return { cur, curBillable, prev, delta: prevRange && prev > 0 ? (cur - prev) / prev : null };
-  }, [entrySums, taskById, isAdmin, currentUserId, filter, rangeKey]);
+  }, [entrySums, taskById, isAdmin, currentUserId, filter, prevRange]);
 
   const billablePct = stats.cur > 0 ? Math.round((stats.curBillable / stats.cur) * 100) : null;
+  // split "353.8h" into figure + unit so the unit renders smaller (Figma round-trip)
+  const hoursStr = formatHoursShort(stats.cur);
+  const [, hoursFigure, hoursUnit] = hoursStr.match(/^([\d.,]+)(.*)$/) ?? [null, hoursStr, ""];
 
+  const delta = stats.delta != null && (
+    <p
+      className={`mt-1 text-xs font-semibold tabular-nums ${stats.delta >= 0 ? "text-success" : "text-danger"}`}
+      title={`Last period: ${formatHoursShort(stats.prev)}`}
+    >
+      {stats.delta >= 0 ? "+" : ""}
+      {Math.round(stats.delta * 100)}% vs last period
+    </p>
+  );
+
+  // ── members: unchanged compact stat ──────────────────────────────────────
+  if (!isAdmin) {
+    return (
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0" title="Your logged hours in the selected period">
+            <div className="font-serif-accent text-2xl leading-tight">My hours</div>
+            <p className="text-xs text-muted">{filter.label.toLowerCase()}</p>
+          </div>
+          <div className="text-right">
+            <div className="font-serif-accent text-4xl leading-none">
+              {hoursFigure}
+              <span className="text-2xl">{hoursUnit}</span>
+            </div>
+            {delta}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── admins: heading-style title, big hours, billable ring, this/last bars ─
+  const maxBar = Math.max(stats.cur, stats.prev, 1);
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <h2
-        className="font-heading text-sm"
-        title={
-          isAdmin
-            ? "All hours logged across the studio in the selected period"
-            : "Your logged hours in the selected period"
-        }
-      >
-        {isAdmin ? "Studio hours" : "My hours"} — {filter.label.toLowerCase()}
+      <h2 className="mb-3 font-heading text-sm" title="All hours logged across the studio in the selected period">
+        Studio · {filter.label}
       </h2>
-      <div className="mt-1.5 flex items-baseline gap-2.5">
-        <span className="text-4xl font-bold tabular-nums">{formatHoursShort(stats.cur)}</span>
-        {stats.delta != null && (
-          <span
-            className={`text-xs font-semibold tabular-nums ${stats.delta >= 0 ? "text-success" : "text-danger"}`}
-            title={`Last period: ${formatHoursShort(stats.prev)}`}
-          >
-            {stats.delta >= 0 ? "+" : ""}
-            {Math.round(stats.delta * 100)}% vs last period
-          </span>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <div className="font-serif-accent text-4xl leading-none">
+            {hoursFigure}
+            <span className="text-2xl">{hoursUnit}</span>
+          </div>
+          {delta}
+          <p className="mt-1 text-xs text-muted">Hours logged</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-center gap-1" title="Share of hours on billable tasks">
+          <PercentRing pct={billablePct ?? 0} size={116} label="Billable share" />
+          <span className="text-xs text-muted">Billable</span>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-col gap-2.5 border-t border-border pt-4">
+        {/* hours already shown big above → the bar stays purely visual */}
+        <HBar label="This period" minutes={stats.cur} maxMinutes={maxBar} barClass="bg-brand" />
+        {prevRange && (
+          <HBar
+            label={<span className="text-muted">Last period</span>}
+            right={formatHoursShort(stats.prev)}
+            minutes={stats.prev}
+            maxMinutes={maxBar}
+            barClass="bg-brand/30"
+          />
         )}
       </div>
-      {isAdmin && (
-        <p
-          className="mt-1.5 text-xs text-muted"
-          title="Share of hours logged on billable tasks in the selected period"
-        >
-          Billable{" "}
-          <span className="font-semibold text-foreground tabular-nums">
-            {billablePct == null ? "–" : `${billablePct}%`}
-          </span>
-        </p>
-      )}
     </div>
   );
 }
@@ -501,55 +583,50 @@ interface HomeFilter {
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function MyGraphs({ isAdmin, filter }: { isAdmin: boolean; filter: HomeFilter }) {
+/** Period-adaptive time buckets: day (≤31d range), else month (≤24), else year. */
+function bucketize(dates: string[], hasRange: boolean) {
+  const byDay = hasRange && new Set(dates).size <= 31;
+  const byMonth = !byDay && new Set(dates.map((d) => d.slice(0, 7))).size <= 24;
+  const keyFor = (date: string) => (byDay ? date : byMonth ? date.slice(0, 7) : date.slice(0, 4));
+  const labelFor = (key: string) =>
+    byDay
+      ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
+      : byMonth
+        ? MONTH_SHORT[Number(key.slice(5, 7)) - 1]
+        : key;
+  return { keyFor, labelFor };
+}
+
+function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
   const { entrySums, tasks, clients, currentUserId } = useData();
-  const [tab, setTab] = useState<"time" | "client">("time");
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
-  const mine = useMemo(
+  // admins see the whole studio; members see only their own hours
+  const scoped = useMemo(
     () =>
       entrySums.filter((e) => {
-        if (e.userId !== currentUserId) return false;
+        if (!isAdmin && e.userId !== currentUserId) return false;
         if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
         if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
         return true;
       }),
-    [entrySums, currentUserId, filter, taskById],
+    [entrySums, currentUserId, isAdmin, filter, taskById],
   );
 
-  // hours per day within the filter (≤31 distinct days) or per month otherwise
   const perBucket = useMemo(() => {
-    // period-adaptive buckets: month → days, year → months, all-time → months/years
-    const days = new Set(mine.map((e) => e.date));
-    const months = new Set(mine.map((e) => e.date.slice(0, 7)));
-    const byDay = !!filter.range && days.size <= 31;
-    const byMonth = !byDay && months.size <= 24;
-    const map = new Map<string, { total: number; billable: number }>();
-    for (const e of mine) {
-      const key = byDay ? e.date : byMonth ? e.date.slice(0, 7) : e.date.slice(0, 4);
-      const cur = map.get(key) ?? { total: 0, billable: 0 };
-      cur.total += e.minutes;
-      if (taskById.get(e.taskId)?.billable) cur.billable += e.minutes;
-      map.set(key, cur);
-    }
+    const { keyFor, labelFor } = bucketize(scoped.map((e) => e.date), !!filter.range);
+    const map = new Map<string, number>();
+    for (const e of scoped) map.set(keyFor(e.date), (map.get(keyFor(e.date)) ?? 0) + e.minutes);
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, v]) => ({
-        label: byDay
-          ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
-          : byMonth
-            ? MONTH_SHORT[Number(key.slice(5, 7)) - 1]
-            : key,
-        minutes: v.total,
-        billable: isAdmin ? v.billable : undefined,
-      }));
-  }, [mine, filter.range, taskById, isAdmin]);
+      .map(([key, minutes]) => ({ label: labelFor(key), minutes }));
+  }, [scoped, filter.range]);
 
   const pieSlices = useMemo(() => {
     const map = new Map<string, number>();
-    for (const e of mine) {
+    for (const e of scoped) {
       const clientId = taskById.get(e.taskId)?.clientId;
       if (!clientId) continue;
       map.set(clientId, (map.get(clientId) ?? 0) + e.minutes);
@@ -564,37 +641,85 @@ function MyGraphs({ isAdmin, filter }: { isAdmin: boolean; filter: HomeFilter })
     const rest = rows.slice(6).reduce((s, r) => s + r.minutes, 0);
     if (rest > 0) slices.push({ label: "Other", minutes: rest, color: "#9ca3af" });
     return slices;
-  }, [mine, taskById, clientById]);
+  }, [scoped, taskById, clientById]);
+
+  return (
+    <>
+      {/* by time */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <h2 className="mb-3 font-heading text-sm" title="Your logged hours over the selected period">
+          Hours over time
+        </h2>
+        {perBucket.length > 0 ? (
+          <MiniColumnsLabeled points={perBucket} />
+        ) : (
+          <p className="text-sm text-faint">No hours in this scope.</p>
+        )}
+      </div>
+
+      {/* by client */}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <h2 className="mb-3 font-heading text-sm" title="Your hours split by client">
+          Hours by client
+        </h2>
+        {pieSlices.length > 0 ? (
+          <PieChart slices={pieSlices} />
+        ) : (
+          <p className="text-sm text-faint">No hours in this scope.</p>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** Admin overview: studio hours per client over time — one colored line per client. */
+function StudioClientTrend({ filter }: { filter: HomeFilter }) {
+  const { entrySums, tasks, clients } = useData();
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+
+  const { labels, series } = useMemo(() => {
+    const scoped = entrySums.filter((e) => {
+      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
+      if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
+      return true;
+    });
+    const { keyFor, labelFor } = bucketize(scoped.map((e) => e.date), !!filter.range);
+    const keys = [...new Set(scoped.map((e) => keyFor(e.date)))].sort();
+
+    const totalByClient = new Map<string, number>();
+    const byClientBucket = new Map<string, Map<string, number>>();
+    for (const e of scoped) {
+      const cid = taskById.get(e.taskId)?.clientId;
+      if (!cid) continue;
+      totalByClient.set(cid, (totalByClient.get(cid) ?? 0) + e.minutes);
+      let m = byClientBucket.get(cid);
+      if (!m) {
+        m = new Map();
+        byClientBucket.set(cid, m);
+      }
+      const k = keyFor(e.date);
+      m.set(k, (m.get(k) ?? 0) + e.minutes);
+    }
+    const top = [...totalByClient.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([cid]) => cid);
+    const series = top.map((cid) => {
+      const c = clientById.get(cid);
+      const m = byClientBucket.get(cid)!;
+      return { label: c?.name ?? "?", color: c?.color ?? "#9ca3af", values: keys.map((k) => m.get(k) ?? 0) };
+    });
+    return { labels: keys.map(labelFor), series };
+  }, [entrySums, filter, taskById, clientById]);
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-heading text-sm" title="Your logged hours in the selected period">
-          My hours — {filter.label.toLowerCase()}
-        </h2>
-        <div className="flex rounded-lg border border-border bg-background p-0.5">
-          {(
-            [
-              ["time", "By time"],
-              ["client", "By client"],
-            ] as const
-          ).map(([k, label]) => (
-            <button
-              key={k}
-              onClick={() => setTab(k)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-                tab === k ? "bg-surface text-brand-dark shadow-sm" : "text-muted hover:text-foreground"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {tab === "time" ? (
-        <MiniColumnsLabeled points={perBucket} />
-      ) : pieSlices.length > 0 ? (
-        <PieChart slices={pieSlices} />
+      <h2 className="mb-3 font-heading text-sm" title="Studio hours per client over the selected period">
+        Hours by client over time
+      </h2>
+      {series.length > 0 ? (
+        <MultiLineChart labels={labels} series={series} />
       ) : (
         <p className="text-sm text-faint">No hours in this scope.</p>
       )}
@@ -743,21 +868,29 @@ export function Dashboard() {
   const me = profiles.find((p) => p.id === currentUserId);
   const isAdmin = me?.role === "admin";
 
-  // page-wide filters
+  // page-wide filters — rangeKey picks the unit, periodOffset walks it (0 = current)
   const [rangeKey, setRangeKey] = useState<(typeof HOME_RANGES)[number]>("This month");
+  const [periodOffset, setPeriodOffset] = useState(0);
   const [filterClient, setFilterClient] = useState("");
-  const filter: HomeFilter = useMemo(
-    () => ({
-      range: rangeKey === "All time" ? null : presetRange(rangeKey),
-      label: rangeKey,
+  const filter: HomeFilter = useMemo(() => {
+    const b = periodBounds(rangeKey, periodOffset);
+    return {
+      range: b ? { from: toISODate(b.start), to: toISODate(b.end) } : null,
+      label: rangeLabel(rangeKey, periodOffset),
       clientId: filterClient,
-    }),
-    [rangeKey, filterClient],
+    };
+  }, [rangeKey, periodOffset, filterClient]);
+  const prevRange = useMemo(
+    () => comparablePrevRange(rangeKey, periodOffset),
+    [rangeKey, periodOffset],
   );
+  const canNavigate = rangeKey !== "All time";
 
   const firstName = me?.name.split(" ")[0] ?? "";
   const today = new Date();
   const dateLabel = `${DAY_NAMES[today.getDay()]}, ${today.getDate()}/${today.getMonth() + 1}`;
+  const hour = today.getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const myTasks = useMemo(
     () =>
@@ -779,21 +912,116 @@ export function Dashboard() {
 
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
 
+  const myTasksCard = (
+    <div className="rounded-xl border border-border bg-surface">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
+        <Link href="/my-tasks" className="flex items-center gap-1 text-xs text-brand hover:underline">
+          All tasks <ArrowRight size={12} />
+        </Link>
+      </div>
+      {myTasks.length === 0 && (
+        <p className="px-4 py-6 text-center text-sm text-faint">Nothing assigned to you right now.</p>
+      )}
+      {myTasks.length > 0 && <TaskTable tasks={myTasks.slice(0, 8)} tableKey="home-tasks" />}
+    </div>
+  );
+
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <MyAvatar />
-        <div>
-          <p className="text-sm text-muted">{dateLabel}</p>
-          <h1 className="text-2xl">{firstName}</h1>
-          {me?.startDate && (
-            <p className="text-xs text-muted" title={`In the studio since ${me.startDate}`}>
-              In the studio{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {tenureSince(me.startDate)}
-              </span>
+    <div className="flex w-full flex-col gap-4">
+      {/* header row: greeting + display stats + page-wide filters (per Figma round-trip) */}
+      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+        <div className="flex items-center gap-3">
+          <MyAvatar />
+          <div>
+            <p className="text-sm text-muted" title={dateLabel}>
+              {greeting}
             </p>
+            <h1 className="font-serif-accent text-[26px] leading-8">{firstName}</h1>
+          </div>
+        </div>
+        {me?.startDate && (
+          <div title={`In the studio since ${me.startDate}`}>
+            <div className="font-serif-accent text-[30px] leading-9">
+              {tenureSince(me.startDate)
+                .split(" ")
+                .map((part) => (
+                  <span key={part} className="mr-1.5 last:mr-0">
+                    {part.slice(0, -1)}
+                    <span className="text-base">{part.slice(-1)}</span>
+                  </span>
+                ))}
+            </div>
+            <p className="text-xs text-muted">In the studio</p>
+          </div>
+        )}
+        <div>
+          <div className="font-serif-accent text-[30px] leading-9">{myTasks.length}</div>
+          <p className="text-xs text-muted">Tasks assigned</p>
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+          {HOME_RANGES.map((r) => (
+            <button
+              key={r}
+              onClick={() => {
+                setRangeKey(r);
+                setPeriodOffset(0);
+              }}
+              className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
+                rangeKey === r
+                  ? "border-brand bg-brand-soft text-brand-dark"
+                  : "border-border bg-surface text-muted hover:border-border-strong"
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+          {/* step the selected period back/forward */}
+          {canNavigate && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPeriodOffset((o) => o - 1)}
+                title="Previous period"
+                className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <span className="min-w-[72px] text-center text-xs font-medium tabular-nums" title="Selected period">
+                {filter.label}
+              </span>
+              <button
+                onClick={() => setPeriodOffset((o) => Math.min(0, o + 1))}
+                disabled={periodOffset >= 0}
+                title="Next period"
+                className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronRight size={15} />
+              </button>
+              {periodOffset !== 0 && (
+                <button
+                  onClick={() => setPeriodOffset(0)}
+                  className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted hover:border-brand hover:text-brand"
+                >
+                  Now
+                </button>
+              )}
+            </div>
           )}
+          <select
+            value={filterClient}
+            onChange={(e) => setFilterClient(e.target.value)}
+            className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          >
+            <option value="">All clients</option>
+            {clients
+              .filter((c) => !c.archived)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
         </div>
       </div>
 
@@ -808,61 +1036,36 @@ export function Dashboard() {
         </Link>
       )}
 
-      {/* page-wide filters */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {HOME_RANGES.map((r) => (
-          <button
-            key={r}
-            onClick={() => setRangeKey(r)}
-            className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
-              rangeKey === r
-                ? "border-brand bg-brand-soft text-brand-dark"
-                : "border-border bg-surface text-muted hover:border-border-strong"
-            }`}
-          >
-            {r}
-          </button>
-        ))}
-        <select
-          value={filterClient}
-          onChange={(e) => setFilterClient(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-        >
-          <option value="">All clients</option>
-          {clients
-            .filter((c) => !c.archived)
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <div className="rounded-xl border border-border bg-surface">
-            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-              <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
-              <Link href="/my-tasks" className="flex items-center gap-1 text-xs text-brand hover:underline">
-                All tasks <ArrowRight size={12} />
-              </Link>
+      {isAdmin ? (
+        <>
+          {/* analytics — "Studio this month" + the 3 graphs, two columns across the screen */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <PeriodStat isAdmin={isAdmin} filter={filter} prevRange={prevRange} />
+            <MyGraphs filter={filter} isAdmin={isAdmin} />
+            <StudioClientTrend filter={filter} />
+          </div>
+          {/* my tasks last — full width, with celebrations in a ~1/3 pane to its right */}
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="min-w-0 flex-1">{myTasksCard}</div>
+            <div className="w-full empty:hidden lg:w-1/3">
+              <Celebrations />
             </div>
-            {myTasks.length === 0 && (
-              <p className="px-4 py-6 text-center text-sm text-faint">Nothing assigned to you right now.</p>
-            )}
-            {myTasks.length > 0 && <TaskTable tasks={myTasks.slice(0, 8)} tableKey="home-tasks" />}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            {myTasksCard}
+            <DayLog />
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[350px]">
+            <MyWeek />
+            <PeriodStat isAdmin={isAdmin} filter={filter} prevRange={prevRange} />
+            <MyGraphs filter={filter} isAdmin={isAdmin} />
+            <Celebrations />
           </div>
         </div>
-        <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[400px]">
-          <PeriodStat isAdmin={isAdmin} filter={filter} rangeKey={rangeKey} />
-          <MyGraphs isAdmin={isAdmin} filter={filter} />
-          <DayLog />
-          <MyWeek />
-          <Celebrations />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

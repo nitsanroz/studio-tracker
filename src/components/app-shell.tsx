@@ -56,7 +56,8 @@ function ThemeInit() {
 
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { profiles, currentUserId, loading, taskRequests } = useData();
+  const { profiles, currentUserId, loading, taskRequests, viewingAs, writeError, dismissWriteError } =
+    useData();
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = me?.role === "admin";
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
@@ -82,15 +83,17 @@ function Shell({ children }: { children: ReactNode }) {
           borderColor: "var(--sb-border)",
         }}
       >
-        <div className="px-4 pb-4 pt-6">
-          <Link href="/" aria-label="Studio&more">
-            <span
-              className="brand-wordmark w-36"
-              style={{ backgroundColor: "var(--sb-fg)" }}
-            />
+        <div className="px-4 pb-5 pt-6">
+          <Link
+            href="/"
+            aria-label="Studio&more"
+            className="text-[28px] leading-none"
+            style={{ color: "var(--sb-fg)", fontWeight: 700 }}
+          >
+            &amp;more
           </Link>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 px-2">
+        <nav className="flex flex-1 flex-col gap-2 px-2">
           {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
@@ -169,14 +172,13 @@ function Shell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="px-4 pb-1.5 text-[10px] text-white/50">{APP_VERSION}</div>
         <div
           className="flex items-center gap-2.5 border-t px-4 py-3"
           style={{ borderColor: "var(--sb-border)" }}
         >
           <Avatar profile={me} size={30} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">{me?.name}</div>
+            <div className="font-serif-accent truncate text-[15px]">{me?.name}</div>
             <div className="text-xs capitalize" style={{ color: "var(--sb-muted)" }}>
               {me?.role}
             </div>
@@ -193,6 +195,7 @@ function Shell({ children }: { children: ReactNode }) {
             <LogOut size={17} strokeWidth={1.75} />
           </button>
         </div>
+        <div className="px-4 pb-2 text-right text-[10px] text-white/50">{APP_VERSION}</div>
       </aside>
 
       <div className="ml-52 flex min-w-0 flex-1 flex-col">
@@ -214,6 +217,47 @@ function Shell({ children }: { children: ReactNode }) {
         </header>
         <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
+
+      {viewingAs && (
+        <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-foreground px-4 py-2 text-sm text-white shadow-lg">
+          <span>
+            Viewing as <b>{viewingAs}</b> — preview only
+          </span>
+          <button
+            onClick={() => {
+              localStorage.removeItem("viewAs");
+              const url = new URL(window.location.href);
+              url.searchParams.delete("viewAs");
+              window.location.href = url.toString();
+            }}
+            className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium hover:bg-white/30"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
+      {writeError && (
+        <div
+          role="alert"
+          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-danger px-4 py-3 text-sm text-white shadow-lg"
+        >
+          <span className="flex-1">{writeError}</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold hover:bg-white/30"
+          >
+            Reload
+          </button>
+          <button
+            onClick={dismissWriteError}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium opacity-80 hover:opacity-100"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <TaskPanel />
     </div>

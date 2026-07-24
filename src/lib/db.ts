@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any --
+   Row → app-type mappers below sit at the Supabase boundary: their INPUT is an
+   untyped DB row (no generated types), but every mapper has an explicit RETURN
+   type, so the type safety consumers rely on is intact. Typing each row would
+   add casts on every field for no real safety gain. */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   BillingPeriod,
@@ -15,6 +20,9 @@ import type {
   TaskComment,
   TimeEntry,
 } from "./types";
+
+/** An untyped row as it comes back from Supabase (no generated types). */
+export type DbRow = Record<string, unknown>;
 
 /** Supabase caps selects at 1000 rows — page through everything. */
 export async function fetchAll<T>(

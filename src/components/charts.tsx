@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { formatHoursShort } from "@/lib/format";
 
 /** Horizontal bar with a label row. Values in minutes. */
@@ -80,11 +81,21 @@ export function MiniColumnsLabeled({
                 style={{ height: `${Math.max(2, (p.minutes / max) * 100)}%` }}
                 title={title}
               >
-                {p.minutes > 0 && (
-                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] tabular-nums text-muted">
-                    {formatHoursShort(p.minutes)}
-                  </span>
-                )}
+                {p.minutes > 0 &&
+                  (!split && p.minutes / max >= 0.4 ? (
+                    // tall solid bar: value sits inside the bar top (Figma round-trip)
+                    <span className="absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold tabular-nums text-white">
+                      {formatHoursShort(p.minutes)}
+                    </span>
+                  ) : (
+                    <span
+                      className={`absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] tabular-nums ${
+                        split ? "text-muted" : "font-semibold text-brand-dark"
+                      }`}
+                    >
+                      {formatHoursShort(p.minutes)}
+                    </span>
+                  ))}
                 <div className="flex h-full w-full flex-col justify-end overflow-hidden rounded-t">
                   {split ? (
                     <>
@@ -98,7 +109,7 @@ export function MiniColumnsLabeled({
                       />
                     </>
                   ) : (
-                    <div className="h-full w-full bg-brand/80 hover:bg-brand" />
+                    <div className="h-full w-full rounded-t bg-brand" />
                   )}
                 </div>
               </div>
@@ -112,73 +123,378 @@ export function MiniColumnsLabeled({
 }
 
 /**
- * SVG pie chart with a legend beside it. Values in minutes.
- * Percentage labels render inside slices of at least 8%.
+ * Interactive donut: client legend with percentages on the LEFT, donut on the RIGHT.
+ * Hours are hidden by default — only revealed in the hover tooltip. Hovering a slice
+ * (or its legend row) enlarges the slice and shows a name + hours tooltip. Values in minutes.
  */
 export function PieChart({
   slices,
 }: {
   slices: { label: string; minutes: number; color: string }[];
 }) {
+  const [hover, setHover] = useState<number | null>(null);
   const total = slices.reduce((s, x) => s + x.minutes, 0);
   if (total <= 0) return null;
-  const cx = 50;
-  const cy = 50;
-  const r = 48;
-  let angle = -Math.PI / 2;
-  const parts = slices
+
+  const CX = 21;
+  const CY = 21;
+  const RO = 17.5; // outer radius
+  const RI = 10.5; // inner radius (donut hole)
+  const HOVER_RO = 19.2; // enlarged outer radius on hover
+  const SIZE = 150; // rendered px
+  const scale = SIZE / 42;
+
+  const ang = (p: number) => -Math.PI / 2 + (p / 100) * 2 * Math.PI;
+  const px = (p: number, radius: number) => ({
+    x: (CX + radius * Math.cos(ang(p))) * scale,
+    y: (CY + radius * Math.sin(ang(p))) * scale,
+  });
+  const arc = (p0: number, p1: number, ro: number, ri: number) => {
+    const a0 = ang(p0);
+    const a1 = ang(p1);
+    const large = p1 - p0 > 50 ? 1 : 0;
+    return [
+      `M ${CX + ro * Math.cos(a0)} ${CY + ro * Math.sin(a0)}`,
+      `A ${ro} ${ro} 0 ${large} 1 ${CX + ro * Math.cos(a1)} ${CY + ro * Math.sin(a1)}`,
+      `L ${CX + ri * Math.cos(a1)} ${CY + ri * Math.sin(a1)}`,
+      `A ${ri} ${ri} 0 ${large} 0 ${CX + ri * Math.cos(a0)} ${CY + ri * Math.sin(a0)}`,
+      "Z",
+    ].join(" ");
+  };
+
+  let acc = 0;
+  const segs = slices
     .filter((s) => s.minutes > 0)
     .map((s, i) => {
-      const frac = s.minutes / total;
-      const a0 = angle;
-      const a1 = angle + frac * Math.PI * 2;
-      angle = a1;
-      return { ...s, key: `${s.label}-${i}`, frac, a0, a1, mid: (a0 + a1) / 2 };
+      const pct = (s.minutes / total) * 100;
+      const seg = { ...s, i, pct, start: acc, mid: acc + pct / 2 };
+      acc += pct;
+      return seg;
     });
+  const single = segs.length === 1;
+  // draw the hovered slice last so its enlarged edge sits above neighbours
+  const drawOrder = hover == null ? segs : [...segs.filter((s) => s.i !== hover), segs[hover]];
+  const tip = hover != null && segs[hover] ? px(segs[hover].mid, HOVER_RO) : null;
+
   return (
     <div className="flex items-center gap-4">
-      <svg viewBox="0 0 100 100" className="size-28 shrink-0" role="img" aria-label="Hours by client">
-        {parts.map((p) =>
-          p.frac >= 0.999 ? (
-            <circle key={p.key} cx={cx} cy={cy} r={r} fill={p.color} />
-          ) : (
-            <path
-              key={p.key}
-              d={`M ${cx} ${cy} L ${cx + r * Math.cos(p.a0)} ${cy + r * Math.sin(p.a0)} A ${r} ${r} 0 ${
-                p.frac > 0.5 ? 1 : 0
-              } 1 ${cx + r * Math.cos(p.a1)} ${cy + r * Math.sin(p.a1)} Z`}
-              fill={p.color}
-            >
-              <title>{`${p.label}: ${formatHoursShort(p.minutes)}`}</title>
-            </path>
-          ),
-        )}
-        {parts
-          .filter((p) => p.frac >= 0.08)
-          .map((p) => (
-            <text
-              key={p.key}
-              x={cx + r * 0.62 * Math.cos(p.mid)}
-              y={cy + r * 0.62 * Math.sin(p.mid)}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#fff"
-              fontSize="8.5"
-              fontWeight="600"
-            >
-              {Math.round(p.frac * 100)}%
-            </text>
-          ))}
-      </svg>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        {slices.map((s, i) => (
-          <div key={`${s.label}-${i}`} className="flex items-center justify-between gap-2 text-xs">
+      {/* legend — left */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {segs.map((s) => (
+          <div
+            key={s.i}
+            onMouseEnter={() => setHover(s.i)}
+            onMouseLeave={() => setHover(null)}
+            className={`flex cursor-default items-center justify-between gap-2 rounded px-1 py-0.5 text-xs transition-colors ${
+              hover === s.i ? "bg-background" : ""
+            }`}
+          >
             <span className="flex min-w-0 items-center gap-1.5 font-medium">
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
               <span className="bidi-auto truncate">{s.label}</span>
             </span>
-            <span className="shrink-0 tabular-nums text-muted">{formatHoursShort(s.minutes)}</span>
+            <span className="shrink-0 tabular-nums text-muted">{s.pct.toFixed(1)}%</span>
           </div>
+        ))}
+      </div>
+
+      {/* donut — right */}
+      <div
+        className="relative shrink-0"
+        style={{ width: SIZE, height: SIZE }}
+        onMouseLeave={() => setHover(null)}
+      >
+        <svg viewBox="0 0 42 42" width={SIZE} height={SIZE} role="img" aria-label="Hours by client">
+          {single ? (
+            <circle
+              cx={CX}
+              cy={CY}
+              r={(RO + RI) / 2}
+              fill="none"
+              stroke={segs[0].color}
+              strokeWidth={(hover === segs[0].i ? HOVER_RO : RO) - RI}
+              onMouseEnter={() => setHover(segs[0].i)}
+            />
+          ) : (
+            drawOrder.map((s) => (
+              <path
+                key={s.i}
+                d={arc(s.start, s.start + s.pct, hover === s.i ? HOVER_RO : RO, RI)}
+                fill={s.color}
+                stroke="var(--color-surface)"
+                strokeWidth={0.7}
+                style={{ cursor: "default" }}
+                onMouseEnter={() => setHover(s.i)}
+              />
+            ))
+          )}
+          {segs
+            .filter((s) => s.pct >= 9)
+            .map((s) => {
+              const a = ang(s.mid);
+              return (
+                <text
+                  key={s.i}
+                  x={CX + ((RO + RI) / 2) * Math.cos(a)}
+                  y={CY + ((RO + RI) / 2) * Math.sin(a)}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="#fff"
+                  fontSize="2.8"
+                  fontWeight="600"
+                  style={{ pointerEvents: "none" }}
+                >
+                  {Math.round(s.pct)}%
+                </text>
+              );
+            })}
+        </svg>
+
+        {tip && hover != null && segs[hover] && (
+          <div
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[115%] whitespace-nowrap rounded-lg border border-border bg-surface px-2.5 py-1.5 text-center shadow-lg"
+            style={{ left: tip.x, top: tip.y }}
+          >
+            <div className="bidi-auto text-xs font-medium">{segs[hover].label}</div>
+            <div className="text-sm font-bold tabular-nums text-brand-dark">
+              {formatHoursShort(segs[hover].minutes)}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Single-value progress ring (donut gauge). `pct` 0–100, drawn clockwise from
+ * the top over a faint track, with the rounded percentage in the centre.
+ * Used for the studio billable-share on the admin home.
+ */
+export function PercentRing({
+  pct,
+  size = 88,
+  label,
+}: {
+  pct: number;
+  size?: number;
+  label?: string;
+}) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const R = 15.915; // 2πR ≈ 100 → dash values read directly as percentages
+  return (
+    <svg viewBox="0 0 42 42" width={size} height={size} role="img" aria-label={label ?? `${Math.round(clamped)}%`}>
+      <circle cx="21" cy="21" r={R} fill="none" stroke="var(--color-border)" strokeWidth="3.5" />
+      <circle
+        cx="21"
+        cy="21"
+        r={R}
+        fill="none"
+        stroke="var(--color-brand)"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeDasharray={`${clamped} ${100 - clamped}`}
+        strokeDashoffset="25" // start at 12 o'clock
+      />
+      {/* centre readout — figure in the serif accent, "%" smaller, like the big stats */}
+      <text
+        x="21"
+        y="21"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="font-serif-accent"
+        fill="var(--color-foreground)"
+      >
+        <tspan fontSize="12">{Math.round(clamped)}</tspan>
+        <tspan fontSize="6" fill="var(--color-faint)">%</tspan>
+      </text>
+    </svg>
+  );
+}
+
+/**
+ * Line chart. Values in minutes. A small circle marks each point with its value
+ * label above it; when points are too dense to label cleanly, the value shows on
+ * hover only. Used for "hours per month".
+ */
+export function LineChart({ points }: { points: { label: string; minutes: number }[] }) {
+  const [hover, setHover] = useState<number | null>(null);
+  if (!points.length) return null;
+  const max = Math.max(...points.map((p) => p.minutes), 1);
+  const W = 280;
+  const H = 104;
+  const padX = 16;
+  const padTop = 20;
+  const padBottom = 18;
+  const innerW = W - padX * 2;
+  const innerH = H - padTop - padBottom;
+  const n = points.length;
+  const x = (i: number) => (n === 1 ? W / 2 : padX + (i / (n - 1)) * innerW);
+  const y = (m: number) => padTop + innerH - (m / max) * innerH;
+  const alwaysLabel = n <= 6; // enough room to show every value; else hover-only
+
+  const linePts = points.map((p, i) => `${x(i)},${y(p.minutes)}`).join(" ");
+  const brand = "var(--color-brand)";
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours per month">
+      <polyline
+        points={linePts}
+        fill="none"
+        style={{ stroke: brand }}
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {points.map((p, i) => (
+        <g key={`${p.label}-${i}`}>
+          <circle
+            cx={x(i)}
+            cy={y(p.minutes)}
+            r={hover === i ? 4 : 3}
+            style={{ fill: "var(--color-surface)", stroke: brand }}
+            strokeWidth={2}
+          />
+          {(alwaysLabel || hover === i) && (
+            <text
+              x={x(i)}
+              y={y(p.minutes) - 7}
+              textAnchor="middle"
+              fontSize={9}
+              fontWeight={600}
+              style={{ fill: "var(--color-foreground)" }}
+            >
+              {formatHoursShort(p.minutes)}
+            </text>
+          )}
+          <text x={x(i)} y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: "var(--color-faint)" }}>
+            {p.label}
+          </text>
+          {/* invisible hover target spanning the column */}
+          <rect
+            x={x(i) - innerW / (2 * Math.max(1, n - 1)) || 0}
+            y={0}
+            width={n === 1 ? W : innerW / Math.max(1, n - 1)}
+            height={H}
+            fill="transparent"
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * Multi-series line chart — one colored line per series (e.g. per client) over
+ * shared x-axis buckets. Hovering a point shows a tooltip with the series name +
+ * hours; hovering dims the other lines. Values in minutes. A color legend renders
+ * below. Used for the admin "hours by client over time" overview.
+ */
+export function MultiLineChart({
+  labels,
+  series,
+}: {
+  labels: string[];
+  series: { label: string; color: string; values: number[] }[];
+}) {
+  const [hover, setHover] = useState<{ s: number; i: number } | null>(null);
+  if (!series.length || !labels.length) return null;
+  const max = Math.max(1, ...series.flatMap((s) => s.values));
+  const n = labels.length;
+  const W = 320;
+  const H = 150;
+  const padX = 18;
+  const padTop = 16;
+  const padBottom = 24;
+  const innerW = W - padX * 2;
+  const innerH = H - padTop - padBottom;
+  const x = (i: number) => (n === 1 ? W / 2 : padX + (i / (n - 1)) * innerW);
+  const y = (v: number) => padTop + innerH - (v / max) * innerH;
+  const step = Math.max(1, Math.ceil(n / 8)); // thin x labels so they don't overlap
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours by client over time">
+        {series.map((s, si) => {
+          const dim = hover != null && hover.s !== si;
+          const pts = s.values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+          return (
+            <g key={si} opacity={dim ? 0.22 : 1}>
+              <polyline
+                points={pts}
+                fill="none"
+                style={{ stroke: s.color }}
+                strokeWidth={hover?.s === si ? 2.5 : 1.75}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {s.values.map((v, i) => (
+                <circle
+                  key={i}
+                  cx={x(i)}
+                  cy={y(v)}
+                  r={hover?.s === si && hover?.i === i ? 3.5 : 2}
+                  style={{ fill: "var(--color-surface)", stroke: s.color }}
+                  strokeWidth={1.5}
+                />
+              ))}
+            </g>
+          );
+        })}
+        {/* hit targets */}
+        {series.map((s, si) =>
+          s.values.map((v, i) => (
+            <circle
+              key={`h-${si}-${i}`}
+              cx={x(i)}
+              cy={y(v)}
+              r={7}
+              fill="transparent"
+              onMouseEnter={() => setHover({ s: si, i })}
+              onMouseLeave={() => setHover(null)}
+            />
+          )),
+        )}
+        {labels.map((l, i) =>
+          i % step === 0 ? (
+            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" fontSize={7.5} style={{ fill: "var(--color-faint)" }}>
+              {l}
+            </text>
+          ) : null,
+        )}
+        {hover &&
+          (() => {
+            const s = series[hover.s];
+            const v = s.values[hover.i];
+            const cx = x(hover.i);
+            const cy = y(v);
+            const txt = `${s.label} · ${formatHoursShort(v)}`;
+            const w = txt.length * 4.2 + 10;
+            const bx = Math.min(W - w - 2, Math.max(2, cx - w / 2));
+            const by = Math.max(2, cy - 20);
+            return (
+              <g pointerEvents="none">
+                <rect x={bx} y={by} width={w} height={15} rx={3} style={{ fill: "var(--color-foreground)" }} />
+                <text x={bx + w / 2} y={by + 10} textAnchor="middle" fontSize={8} fontWeight={600} fill="#fff">
+                  {txt}
+                </text>
+              </g>
+            );
+          })()}
+      </svg>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+        {series.map((s, si) => (
+          <span
+            key={si}
+            onMouseEnter={() => setHover({ s: si, i: 0 })}
+            onMouseLeave={() => setHover(null)}
+            className="flex cursor-default items-center gap-1 text-[11px]"
+          >
+            <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="bidi-auto max-w-28 truncate">{s.label}</span>
+          </span>
         ))}
       </div>
     </div>

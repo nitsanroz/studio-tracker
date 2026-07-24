@@ -89,7 +89,7 @@
 
 /* ── Option A: "Electric" — bold blue sidebar, brand-forward ─────────── */
 [data-theme="electric"] {
-  --background: #f4f6fe;
+  --background: #f0f1fa;
   --sb-bg: #0b43ed;
   --sb-fg: #ffffff;
   --sb-muted: #b9c8f9;
@@ -194,6 +194,14 @@ b,
 .font-semibold,
 .font-bold {
   font-weight: 570;
+}
+
+/* Serif display accent — PP Fragment Glare (names + big stat figures, per Figma round-trip) */
+.font-serif-accent {
+  font-family: "PP Fragment Glare", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 /* Brand wordmark: masked element so it inherits any color via background-color */

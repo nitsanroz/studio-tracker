@@ -12,14 +12,15 @@ import {
   EditableTextCell,
 } from "./editable-cell";
 import { ClientReportButtons } from "./client-report-buttons";
-import { HBar, MiniColumnsLabeled } from "./charts";
+import { HBar, LineChart } from "./charts";
 import type { Profile, Section, Task } from "@/lib/types";
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** Right-hand client stats: totals, hours per month, hours per user. */
 function ClientStats({ clientId }: { clientId: string }) {
-  const { tasks, profiles, entrySums } = useData();
+  const { tasks, profiles, entrySums, currentUserId } = useData();
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
 
   const stats = useMemo(() => {
     const clientTaskIds = new Set(tasks.filter((t) => t.clientId === clientId).map((t) => t.id));
@@ -73,18 +74,20 @@ function ClientStats({ clientId }: { clientId: string }) {
           <div className="text-[11px] font-medium text-muted">Open tasks</div>
           <div className="mt-0.5 text-xl font-semibold tabular-nums">{stats.open}</div>
         </div>
-        <div className="col-span-2 rounded-xl border border-border bg-surface p-3">
-          <div className="text-[11px] font-medium text-muted">Billable share</div>
-          <div className="mt-0.5 text-xl font-semibold tabular-nums">
-            {stats.total > 0 ? `${Math.round((stats.billable / stats.total) * 100)}%` : "–"}
+        {isAdmin && (
+          <div className="col-span-2 rounded-xl border border-border bg-surface p-3">
+            <div className="text-[11px] font-medium text-muted">Billable share</div>
+            <div className="mt-0.5 text-xl font-semibold tabular-nums">
+              {stats.total > 0 ? `${Math.round((stats.billable / stats.total) * 100)}%` : "–"}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {stats.months.length > 0 && (
         <div className="rounded-xl border border-border bg-surface p-3">
           <div className="mb-2 text-[11px] font-medium text-muted">Hours per month</div>
-          <MiniColumnsLabeled points={stats.months} />
+          <LineChart points={stats.months} />
         </div>
       )}
 
@@ -192,7 +195,8 @@ function SortHeader({
 }
 
 function TaskRow({ task }: { task: Task }) {
-  const { profiles, tags, openTask, updateTask, taskMinutes, openTaskId } = useData();
+  const { profiles, tags, openTask, updateTask, taskMinutes, openTaskId, currentUserId } = useData();
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const done = task.status === "done";
   const active = openTaskId === task.id;
@@ -204,21 +208,31 @@ function TaskRow({ task }: { task: Task }) {
       } ${task.pending ? "opacity-50" : ""}`}
       onClick={() => openTask(task.id)}
     >
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          updateTask(task.id, { status: done ? "todo" : "done" });
-        }}
-        className={`shrink-0 transition-colors ${done ? "text-success" : "text-border-strong hover:text-success"}`}
-        title={done ? "Reopen" : "Mark complete"}
-      >
-        <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
-      </button>
+      {isAdmin ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            updateTask(task.id, { status: done ? "todo" : "done" });
+          }}
+          className={`shrink-0 transition-colors ${done ? "text-success" : "text-border-strong hover:text-success"}`}
+          title={done ? "Reopen" : "Mark complete"}
+        >
+          <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
+        </button>
+      ) : (
+        <span className={`shrink-0 ${done ? "text-success" : "text-border-strong"}`} title={done ? "Completed" : "In progress"}>
+          <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
+        </span>
+      )}
       <span className={`flex min-w-0 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
-        <EditableTextCell
-          value={task.title}
-          onCommit={(v) => v && updateTask(task.id, { title: v })}
-        />
+        {isAdmin ? (
+          <EditableTextCell
+            value={task.title}
+            onCommit={(v) => v && updateTask(task.id, { title: v })}
+          />
+        ) : (
+          <span className="bidi-auto truncate px-1.5 py-0.5">{task.title}</span>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -254,12 +268,16 @@ function TaskRow({ task }: { task: Task }) {
         />
       </span>
       <span className="w-16 shrink-0 text-xs text-muted">
-        <EditableDateCell
-          value={task.dueDate}
-          onCommit={(v) => updateTask(task.id, { dueDate: v })}
-          format={formatDate}
-          placeholder=""
-        />
+        {isAdmin ? (
+          <EditableDateCell
+            value={task.dueDate}
+            onCommit={(v) => updateTask(task.id, { dueDate: v })}
+            format={formatDate}
+            placeholder=""
+          />
+        ) : (
+          <span className="px-1.5 py-0.5">{task.dueDate ? formatDate(task.dueDate) : ""}</span>
+        )}
       </span>
       <span className="hidden w-36 shrink-0 lg:block">
         <EditableSelectCell
@@ -271,18 +289,24 @@ function TaskRow({ task }: { task: Task }) {
         />
       </span>
       <span className="hidden w-28 shrink-0 md:block">
-        <EditableNumberCell
-          value={task.estimateHours}
-          onCommit={(v) => updateTask(task.id, { estimateHours: v })}
-          display={<BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />}
-        />
+        {isAdmin ? (
+          <EditableNumberCell
+            value={task.estimateHours}
+            onCommit={(v) => updateTask(task.id, { estimateHours: v })}
+            display={<BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />}
+          />
+        ) : (
+          <BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />
+        )}
       </span>
-      <span
-        className={`w-4 shrink-0 text-center text-xs ${task.billable ? "text-success" : "text-faint"}`}
-        title={task.billable ? "Billable" : "Non-billable"}
-      >
-        {task.billable ? "$" : "–"}
-      </span>
+      {isAdmin && (
+        <span
+          className={`w-4 shrink-0 text-center text-xs ${task.billable ? "text-success" : "text-faint"}`}
+          title={task.billable ? "Billable" : "Non-billable"}
+        >
+          {task.billable ? "$" : "–"}
+        </span>
+      )}
     </div>
   );
 }
@@ -370,7 +394,8 @@ function SectionGroup({
 }
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskMinutes, addSection } = useData();
+  const { clients, sections, tasks, profiles, taskMinutes, addSection, currentUserId } = useData();
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [showDone, setShowDone] = useState(false);
   const [view, setView] = useState<"list" | "board">("list");
   const [addingSection, setAddingSection] = useState(false);
@@ -459,9 +484,11 @@ export function ClientView({ clientId }: { clientId: string }) {
               <span className="hidden w-28 shrink-0 md:block">
                 <SortHeader label="Budget" k="budget" sort={sort} onSort={cycleSort} />
               </span>
-              <span className="w-4 shrink-0">
-                <SortHeader label="$" k="billable" sort={sort} onSort={cycleSort} />
-              </span>
+              {isAdmin && (
+                <span className="w-4 shrink-0">
+                  <SortHeader label="$" k="billable" sort={sort} onSort={cycleSort} />
+                </span>
+              )}
             </div>
             {noSection.length > 0 && (
               <SectionGroup section={null} tasks={noSection} clientId={clientId} />

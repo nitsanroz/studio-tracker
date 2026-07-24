@@ -19,6 +19,7 @@ import {
   Minus,
   Palmtree,
   Plus,
+  RefreshCw,
   Thermometer,
   X,
 } from "lucide-react";
@@ -727,6 +728,33 @@ export function WeeklyPlan() {
   const me = profiles.find((p) => p.id === currentUserId);
   const canEdit = me?.role === "admin";
 
+  // ── one-way sync from the Google Sheet (bridge until the plan is edited here) ──
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  async function syncFromSheet() {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/plan-sync", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setSyncMsg({ ok: false, text: json.error ?? "Sync failed" });
+        setSyncing(false);
+        return;
+      }
+      setSyncMsg({
+        ok: true,
+        text: `Synced ${json.inserted} entries across ${json.daysCovered} days. Refreshing…`,
+      });
+      // reload so the store re-fetches the refreshed plan
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      setSyncMsg({ ok: false, text: (e as Error).message });
+      setSyncing(false);
+    }
+  }
+
   // ── copy / paste ───────────────────────────────────────────────────────
   const copyEntry = (entry: PlanEntry) => {
     planClipboard = {
@@ -918,8 +946,26 @@ export function WeeklyPlan() {
               <Columns3 size={15} /> Columns
             </button>
           )}
+          {canEdit && (
+            <button
+              onClick={syncFromSheet}
+              disabled={syncing}
+              title="Pull the latest weekly plan from the Google Sheet (overwrites plan text for the synced days)"
+              className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-muted hover:text-foreground disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "Syncing…" : "Sync from sheet"}
+            </button>
+          )}
         </div>
       </div>
+      {canEdit && syncMsg && (
+        <div
+          className={`rounded-md px-3 py-2 text-sm ${syncMsg.ok ? "bg-emerald-50 text-success" : "bg-red-50 text-danger"}`}
+        >
+          {syncMsg.text}
+        </div>
+      )}
 
       <div className="flex gap-4">
         <div

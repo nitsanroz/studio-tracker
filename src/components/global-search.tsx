@@ -83,7 +83,7 @@ export function GlobalSearch() {
 
   return (
     <div ref={boxRef} className="relative mr-auto w-full max-w-md">
-      <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3">
+      <div className="flex items-center gap-2 rounded-lg bg-foreground/5 px-3">
         <Search size={15} className="shrink-0 text-faint" />
         <input
           ref={inputRef}

@@ -7,6 +7,11 @@ import {
   type IntakeAnswers,
   type IntakeFile,
 } from "@/lib/brief";
+import { classifyUpload } from "@/lib/uploads";
+
+// Anti-flood: max submissions accepted per intake link within the window.
+const RATE_LIMIT_WINDOW_MIN = 10;
+const RATE_LIMIT_MAX = 8;
 
 // Public endpoint for the client intake form. Token-gated; all DB access via
 // the service key on the server (nothing is exposed to anonymous clients).
@@ -19,14 +24,21 @@ function admin() {
   );
 }
 
-async function resolveLink(token: string) {
+type IntakeLink = {
+  id: string;
+  client_id: string | null;
+  active: boolean;
+  clients: { name: string | null } | null;
+};
+
+async function resolveLink(token: string): Promise<IntakeLink | null> {
   const sb = admin();
   const { data } = await sb
     .from("intake_links")
     .select("id, client_id, active, clients(name)")
     .eq("token", token)
     .maybeSingle();
-  return data && data.active ? data : null;
+  return data && data.active ? (data as unknown as IntakeLink) : null;
 }
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
@@ -34,7 +46,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   const link = await resolveLink(token);
   if (!link) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
   return NextResponse.json({
-    clientName: (link as any).clients?.name ?? null,
+    clientName: link.clients?.name ?? null,
   });
 }
 
@@ -62,6 +74,22 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   if (!link) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
 
   const sb = admin();
+
+  // Rate limit: cap accepted submissions per link per window (serverless-safe,
+  // counted in the DB rather than in memory).
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MIN * 60_000).toISOString();
+  const { count: recent } = await sb
+    .from("task_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("intake_link_id", link.id)
+    .gte("created_at", since);
+  if ((recent ?? 0) >= RATE_LIMIT_MAX) {
+    return NextResponse.json(
+      { error: "Too many submissions — please try again in a few minutes." },
+      { status: 429 },
+    );
+  }
+
   const form = await req.formData();
   const f = (k: string) => String(form.get(k) ?? "").slice(0, 5000);
 
@@ -93,23 +121,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   for (const file of form.getAll("files").slice(0, 5)) {
     if (!(file instanceof File) || file.size === 0) continue;
     if (file.size > 10 * 1024 * 1024) continue;
+    const cls = classifyUpload(file);
+    if (!cls.ok) continue; // reject disallowed / active-content types
     const safe = file.name.replace(/[^\w.\-]+/g, "_");
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
-    const { error } = await sb.storage.from("intake").upload(path, file, { contentType: file.type });
+    const { error } = await sb.storage.from("intake").upload(path, file, { contentType: cls.contentType });
     if (!error) {
       const { data: pub } = sb.storage.from("intake").getPublicUrl(path);
       files.push({ name: file.name, url: pub.publicUrl });
     }
   }
 
-  const clientId = (link as any).client_id ?? null;
+  const clientId = link.client_id ?? null;
   const suggested = clientId ?? (await suggestClient(sb, answers.company, answers.email));
   const brief = assembleTaskBrief(answers, files);
 
   const { data: request, error } = await sb
     .from("task_requests")
     .insert({
-      intake_link_id: (link as any).id,
+      intake_link_id: link.id,
       client_id: clientId,
       suggested_client_id: suggested,
       submitter_name: answers.name,
@@ -123,7 +153,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     })
     .select("id")
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("intake submission failed", error);
+    return NextResponse.json({ error: "Could not submit — please try again." }, { status: 500 });
+  }
 
   // Email notification (best-effort; queue works even if mail fails)
   try {

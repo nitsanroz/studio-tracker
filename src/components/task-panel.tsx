@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Pencil, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatDate, formatHours } from "@/lib/format";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
@@ -193,6 +194,7 @@ export function TaskPanel() {
   const [timeDraft, setTimeDraft] = useState({ hours: "", description: "" });
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showMove, setShowMove] = useState(false);
+  const [editingFigma, setEditingFigma] = useState(false);
 
   const task = tasks.find((t) => t.id === openTaskId);
   if (!task) return null;
@@ -219,20 +221,33 @@ export function TaskPanel() {
         {/* Toolbar */}
         <div className="sticky top-0 z-10 border-b border-border bg-surface px-6 py-3">
           <div className="flex items-center justify-between gap-3">
-            <button
-              onClick={() =>
-                updateTask(task.id, {
-                  status: task.status === "done" ? "todo" : "done",
-                })
-              }
-              className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-medium ${
-                task.status === "done"
-                  ? "border-success bg-emerald-50 text-success"
-                  : "border-border-strong text-muted hover:border-success hover:text-success"
-              }`}
-            >
-              ✓ {task.status === "done" ? "Completed" : "Mark complete"}
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() =>
+                  updateTask(task.id, {
+                    status: task.status === "done" ? "todo" : "done",
+                  })
+                }
+                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+                  task.status === "done"
+                    ? "border-success bg-emerald-50 text-success"
+                    : "border-border-strong text-muted hover:border-success hover:text-success"
+                }`}
+              >
+                ✓ {task.status === "done" ? "Completed" : "Mark complete"}
+              </button>
+            ) : (
+              <span
+                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+                  task.status === "done"
+                    ? "border-success bg-emerald-50 text-success"
+                    : "border-border text-muted"
+                }`}
+                title="Only admins can complete tasks"
+              >
+                {task.status === "done" ? "✓ Completed" : "In progress"}
+              </span>
+            )}
             <button
               onClick={() => openTask(null)}
               className="rounded-md px-2 py-1 text-muted hover:bg-background"
@@ -268,12 +283,18 @@ export function TaskPanel() {
             </div>
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-muted">Due date</span>
-              <input
-                type="date"
-                className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
-                value={task.dueDate ?? ""}
-                onChange={(e) => updateTask(task.id, { dueDate: e.target.value || null })}
-              />
+              {isAdmin ? (
+                <input
+                  type="date"
+                  className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
+                  value={task.dueDate ?? ""}
+                  onChange={(e) => updateTask(task.id, { dueDate: e.target.value || null })}
+                />
+              ) : (
+                <span className="px-1.5 py-1 tabular-nums">
+                  {task.dueDate ? formatDate(task.dueDate) : "—"}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-muted">Client</span>
@@ -297,32 +318,48 @@ export function TaskPanel() {
             </div>
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-muted">Billable</span>
-              <button
-                onClick={() => updateTask(task.id, { billable: !task.billable })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  task.billable
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                {task.billable ? "Billable" : "Non-billable"}
-              </button>
+              {isAdmin ? (
+                <button
+                  onClick={() => updateTask(task.id, { billable: !task.billable })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    task.billable
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {task.billable ? "Billable" : "Non-billable"}
+                </button>
+              ) : (
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    task.billable
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {task.billable ? "Billable" : "Non-billable"}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-muted">Budget</span>
-              <input
-                type="number"
-                min={0}
-                step={0.5}
-                className="w-20 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
-                value={task.estimateHours ?? ""}
-                placeholder="—"
-                onChange={(e) =>
-                  updateTask(task.id, {
-                    estimateHours: e.target.value === "" ? null : Number(e.target.value),
-                  })
-                }
-              />
+              {isAdmin ? (
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  className="w-20 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
+                  value={task.estimateHours ?? ""}
+                  placeholder="—"
+                  onChange={(e) =>
+                    updateTask(task.id, {
+                      estimateHours: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                />
+              ) : (
+                <span className="w-20 px-1.5 py-1 tabular-nums">{task.estimateHours ?? "—"}</span>
+              )}
               <span className="text-xs text-muted">hours</span>
               <span className="min-w-0 flex-1">
                 {task.estimateHours != null ? (
@@ -337,21 +374,48 @@ export function TaskPanel() {
           {/* Figma link */}
           <div>
             <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">Figma</div>
-            {task.figmaUrl ? (
-              <a
-                href={task.figmaUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-              >
-                ◇ Open in Figma
-              </a>
+            {task.figmaUrl && !editingFigma ? (
+              <span className="group/figma flex items-center gap-2">
+                <a
+                  href={task.figmaUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+                >
+                  ◇ Open in Figma
+                </a>
+                <button
+                  onClick={() => setEditingFigma(true)}
+                  title="Edit link"
+                  className="invisible rounded p-0.5 text-faint hover:text-brand group-hover/figma:visible"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  onClick={() => updateTask(task.id, { figmaUrl: null })}
+                  title="Remove link"
+                  className="invisible rounded p-0.5 text-faint hover:text-danger group-hover/figma:visible"
+                >
+                  <X size={14} />
+                </button>
+              </span>
             ) : (
               <input
+                autoFocus={editingFigma}
+                defaultValue={task.figmaUrl ?? ""}
                 placeholder="Paste Figma link…"
                 className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") {
+                    (e.target as HTMLInputElement).value = task.figmaUrl ?? "";
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
                 onBlur={(e) => {
-                  if (e.target.value.trim()) updateTask(task.id, { figmaUrl: e.target.value.trim() });
+                  const v = e.target.value.trim();
+                  if (v !== (task.figmaUrl ?? "")) updateTask(task.id, { figmaUrl: v || null });
+                  setEditingFigma(false);
                 }}
               />
             )}

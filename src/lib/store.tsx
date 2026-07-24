@@ -27,6 +27,7 @@ import {
   mapTask,
   mapTimeEntry,
   taskPatchToRow,
+  type DbRow,
 } from "./db";
 import { toISODate } from "./format";
 import type {
@@ -103,6 +104,8 @@ interface Store {
   /** Slim rows for ALL time entries (no description) — for aggregations. */
   entrySums: EntrySum[];
   currentUserId: string;
+  /** Name of the member an admin is previewing as (?viewAs=…), null when off. */
+  viewingAs: string | null;
   runningTimer: RunningTimer | null;
   openTaskId: string | null;
   planColumns: PlanColumn[];
@@ -155,6 +158,9 @@ interface Store {
   /** Undo/redo the last data actions (max 10). Also on cmd/ctrl+Z (+shift). */
   undo: () => void;
   redo: () => void;
+  /** Set when a background write to Supabase fails; the UI surfaces a banner. */
+  writeError: string | null;
+  dismissWriteError: () => void;
 }
 
 interface HistoryAction {
@@ -169,6 +175,7 @@ function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T
   return prev;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB-boundary row mapper (return type is explicit)
 const mapTaskRequest = (r: any): TaskRequest => ({
   id: r.id,
   clientId: r.client_id,
@@ -206,10 +213,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [planColumns, setPlanColumns] = useState<PlanColumn[]>([]);
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  // ── admin "view as" preview: ?viewAs=<name|id> renders the UI as that member ──
+  const [viewAsKey, setViewAsKey] = useState<string | null>(null);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get("viewAs");
+    if (fromUrl === "off") {
+      localStorage.removeItem("viewAs");
+      setViewAsKey(null);
+      return;
+    }
+    if (fromUrl) localStorage.setItem("viewAs", fromUrl);
+    setViewAsKey(fromUrl ?? localStorage.getItem("viewAs"));
+  }, []);
+  const viewAsProfile = useMemo(() => {
+    if (!viewAsKey) return null;
+    // only real admins may preview, and never as themselves
+    if (profiles.find((p) => p.id === currentUserId)?.role !== "admin") return null;
+    const key = viewAsKey.toLowerCase();
+    const target = profiles.find(
+      (p) => p.id === viewAsKey || p.name.toLowerCase().startsWith(key),
+    );
+    return target && target.id !== currentUserId ? target : null;
+  }, [viewAsKey, currentUserId, profiles]);
   const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [taskRequests, setTaskRequests] = useState<TaskRequest[]>([]);
   const loadedTaskExtras = useRef<Set<string>>(new Set());
+
+  // ── write-failure surfacing ─────────────────────────────────────────────
+  // Optimistic writes used to fail silently (state diverged from the DB until a
+  // reload). Every mutation now routes its error through noteWriteError, which
+  // logs and raises a user-visible banner (rendered in app-shell) offering a
+  // reload to resync with the server.
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const dismissWriteError = useCallback(() => setWriteError(null), []);
+  const noteWriteError = useCallback((label: string, error: { message: string }) => {
+    console.error(`${label} failed`, error.message);
+    setWriteError("Some changes couldn't be saved. Reload to get the latest from the server.");
+  }, []);
 
   // ── undo / redo history (last 10 data actions) ────────────────────────
   const historyRef = useRef<{ past: HistoryAction[]; future: HistoryAction[] }>({ past: [], future: [] });
@@ -284,26 +326,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, running, requests, periods, days, dev] =
         await Promise.all([
           // "*" keeps boot working whether or not migration 0004 is applied
-          fetchAll<any>(supabase, "profiles", "*"),
-          fetchAll<any>(supabase, "clients", "*"),
+          fetchAll<DbRow>(supabase, "profiles", "*"),
+          fetchAll<DbRow>(supabase, "clients", "*"),
           // legacy layer: only used to derive client_id before migration 0007
-          fetchAll<any>(supabase, "projects", "id, client_id"),
+          fetchAll<DbRow>(supabase, "projects", "id, client_id"),
           // "*" tolerates pre-0007 schema (no client_id column yet)
-          fetchAll<any>(supabase, "sections", "*"),
+          fetchAll<DbRow>(supabase, "sections", "*"),
           tagsP,
-          fetchAll<any>(supabase, "plan_columns", "*"),
-          fetchAll<any>(supabase, "plan_entries", "*"),
+          fetchAll<DbRow>(supabase, "plan_columns", "*"),
+          fetchAll<DbRow>(supabase, "plan_entries", "*"),
           (async () => {
             const cols =
               "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
             try {
               // post-0007 schema
-              return await fetchAll<any>(supabase, "tasks", `client_id, ${cols}`);
+              return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${cols}`);
             } catch {
-              return await fetchAll<any>(supabase, "tasks", cols);
+              return await fetchAll<DbRow>(supabase, "tasks", cols);
             }
           })(),
-          fetchAll<any>(supabase, "time_entries", "id, task_id, user_id, date, minutes", (q) =>
+          fetchAll<DbRow>(supabase, "time_entries", "id, task_id, user_id, date, minutes", (q) =>
             q.not("minutes", "is", null),
           ),
           supabase
@@ -322,17 +364,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Returns [] for designers (RLS: admins only)
           supabase.from("task_requests").select("*").order("created_at", { ascending: false }),
           // pre-0007 these tables don't exist; RLS hides them from designers
-          fetchAll<any>(supabase, "client_billing_periods", "*").catch(() => []),
-          fetchAll<any>(supabase, "plan_day_states", "*").catch(() => []),
-          fetchAll<any>(supabase, "dev_items", "*").catch(() => []),
+          fetchAll<DbRow>(supabase, "client_billing_periods", "*").catch(() => []),
+          fetchAll<DbRow>(supabase, "plan_day_states", "*").catch(() => []),
+          fetchAll<DbRow>(supabase, "dev_items", "*").catch(() => []),
         ]);
 
       if (cancelled) return;
 
-      const tagList = ((tagsRes.data ?? []) as any[]).map(mapTag);
+      const tagList = ((tagsRes.data ?? []) as DbRow[]).map(mapTag);
       const tagMap = new Map(tagList.map((t) => [t.id, t.name]));
       const projectClient = new Map<string, string>(
-        projLegacy.map((p: any) => [p.id, p.client_id]),
+        projLegacy.map((p) => [p.id as string, p.client_id as string]),
       );
 
       setCurrentUserId(uid);
@@ -340,7 +382,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setClients(cli.map(mapClient));
       setSections(sec.map((r) => mapSection(r, projectClient)));
       setTagRows(tagList);
-      setTasks(taskRows.map((r: any) => mapTask({ ...r, brief: undefined }, tagMap, projectClient)));
+      setTasks(taskRows.map((r) => mapTask({ ...r, brief: undefined }, tagMap, projectClient)));
       setBillingPeriods(periods.map(mapBillingPeriod).sort((a: BillingPeriod, b: BillingPeriod) => a.dateFrom.localeCompare(b.dateFrom)));
       setDayStates(days.map(mapDayState));
       setDevItems(dev.map(mapDevItem).sort((a: DevItem, b: DevItem) => a.position - b.position));
@@ -355,7 +397,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           startedAt: new Date(running.data.started_at).getTime(),
         });
       }
-      setTaskRequests(((requests.data as any[]) ?? []).map(mapTaskRequest));
+      setTaskRequests(((requests.data ?? []) as DbRow[]).map(mapTaskRequest));
       setLoading(false);
     })().catch((e) => {
       console.error("store load failed", e);
@@ -387,15 +429,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (atts.data) {
           setAttachments((prev) => {
             const seen = new Set(prev.map((a) => a.id));
-            const mapped = atts.data
-              .filter((a: any) => !seen.has(a.id))
-              .map((a: any) => ({
-                id: a.id,
-                taskId: a.task_id,
-                fileName: a.file_name,
-                filePath: a.file_path,
-                sizeBytes: a.size_bytes,
-                uploadedBy: a.uploaded_by,
+            const mapped = (atts.data as DbRow[])
+              .filter((a) => !seen.has(a.id as string))
+              .map((a) => ({
+                id: a.id as string,
+                taskId: a.task_id as string,
+                fileName: a.file_name as string,
+                filePath: a.file_path as string,
+                sizeBytes: a.size_bytes as number,
+                uploadedBy: a.uploaded_by as string,
               }));
             return [...prev, ...mapped];
           });
@@ -408,13 +450,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (cm.data) {
           setComments((prev) => {
             const seen = new Set(prev.map((c) => c.id));
-            return [...prev, ...cm.data.filter((c: any) => !seen.has(c.id)).map(mapComment)];
+            return [...prev, ...(cm.data as DbRow[]).filter((c) => !seen.has(c.id as string)).map(mapComment)];
           });
         }
         if (entries.data) {
           setTimeEntries((prev) => {
             const seen = new Set(prev.map((e) => e.id));
-            return [...prev, ...entries.data.filter((e: any) => !seen.has(e.id)).map(mapTimeEntry)];
+            return [...prev, ...(entries.data as DbRow[]).filter((e) => !seen.has(e.id as string)).map(mapTimeEntry)];
           });
         }
       })().catch((e) => console.error("task detail load failed", e));
@@ -439,7 +481,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(taskPatchToRow(patch, tagIdByName))
         .eq("id", taskId)
         .then(({ error }) => {
-          if (error) console.error("updateTask failed", error.message);
+          if (error) noteWriteError("updateTask", error);
         });
     },
     [supabase, tagIdByName, tasks, record],
@@ -462,7 +504,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addTask failed", error.message);
+            noteWriteError("addTask", error);
             return;
           }
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
@@ -482,7 +524,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addSection failed", error.message);
+            noteWriteError("addSection", error);
             return;
           }
           setSections((prev) => [...prev, mapSection(data)]);
@@ -499,7 +541,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
       if (error) {
-        console.error("addClient failed", error.message);
+        noteWriteError("addClient", error);
         return null;
       }
       const client = mapClient(data);
@@ -535,7 +577,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(row)
         .eq("id", profileId)
         .then(({ error }) => {
-          if (error) console.error("updateProfile failed", error.message);
+          if (error) noteWriteError("updateProfile", error);
         });
     },
     [supabase, profiles, record],
@@ -551,7 +593,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addTag failed", error.message);
+            noteWriteError("addTag", error);
             return;
           }
           setTagRows((prev) => [...prev, mapTag(data)]);
@@ -581,7 +623,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(patch)
         .eq("id", tagId)
         .then(({ error }) => {
-          if (error) console.error("updateTag failed", error.message);
+          if (error) noteWriteError("updateTag", error);
         });
     },
     [supabase, tagRows, record],
@@ -597,7 +639,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", tagId)
         .then(({ error }) => {
-          if (error) console.error("deleteTag failed", error.message);
+          if (error) noteWriteError("deleteTag", error);
         });
     },
     [supabase, tagRows],
@@ -627,7 +669,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(row)
         .eq("id", clientId)
         .then(({ error }) => {
-          if (error) console.error("updateClient failed", error.message);
+          if (error) noteWriteError("updateClient", error);
         });
       // Marking a client internal makes all its existing tasks non-billable.
       // The reverse is NOT mass-applied (keys tasks etc. must stay non-billable).
@@ -640,7 +682,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .update({ billable: false })
           .eq("client_id", clientId)
           .then(({ error }) => {
-            if (error) console.error("updateClient tasks-billable failed", error.message);
+            if (error) noteWriteError("updateClient tasks-billable", error);
           });
       }
     },
@@ -665,7 +707,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           absence_type: entry.absenceType,
         })
         .then(({ error }) => {
-          if (error) console.error("restorePlanEntry failed", error.message);
+          if (error) noteWriteError("restorePlanEntry", error);
         });
     },
     [supabase],
@@ -696,7 +738,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addPlanEntry failed", error.message);
+            noteWriteError("addPlanEntry", error);
             return;
           }
           const entry = mapPlanEntry(data);
@@ -735,7 +777,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update({ date: target.date, column_id: target.columnId, position })
         .eq("id", entryId)
         .then(({ error }) => {
-          if (error) console.error("movePlanEntry failed", error.message);
+          if (error) noteWriteError("movePlanEntry", error);
         });
     },
     [supabase, planEntries, record],
@@ -756,7 +798,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", entryId)
         .then(({ error }) => {
-          if (error) console.error("deletePlanEntry failed", error.message);
+          if (error) noteWriteError("deletePlanEntry", error);
         });
     },
     [supabase, planEntries, record, restorePlanEntry],
@@ -773,7 +815,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addPlanColumn failed", error.message);
+            noteWriteError("addPlanColumn", error);
             return;
           }
           setPlanColumns((prev) => [...prev, mapPlanColumn(data)]);
@@ -792,7 +834,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", columnId)
         .then(({ error }) => {
           if (error) {
-            console.error("updatePlanColumn failed", error.message);
+            noteWriteError("updatePlanColumn", error);
             setPlanColumns(prev); // e.g. `hidden` migration not applied yet
           }
         });
@@ -818,8 +860,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
               : c,
         ),
       );
-      supabase.from("plan_columns").update({ position: swapWith.position }).eq("id", a.id).then(() => {});
-      supabase.from("plan_columns").update({ position: a.position }).eq("id", swapWith.id).then(() => {});
+      supabase
+        .from("plan_columns")
+        .update({ position: swapWith.position })
+        .eq("id", a.id)
+        .then(({ error }) => {
+          if (error) noteWriteError("movePlanColumn", error);
+        });
+      supabase
+        .from("plan_columns")
+        .update({ position: a.position })
+        .eq("id", swapWith.id)
+        .then(({ error }) => {
+          if (error) noteWriteError("movePlanColumn", error);
+        });
     },
     [supabase, planColumns],
   );
@@ -833,7 +887,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", columnId)
         .then(({ error }) => {
-          if (error) console.error("deletePlanColumn failed", error.message);
+          if (error) noteWriteError("deletePlanColumn", error);
         });
     },
     [supabase],
@@ -856,7 +910,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addComment failed", error.message);
+            noteWriteError("addComment", error);
             return;
           }
           setComments((prev) => prev.map((c) => (c.id === optimistic.id ? mapComment(data) : c)));
@@ -902,7 +956,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           description: entry.description,
         })
         .then(({ error }) => {
-          if (error) console.error("restoreTimeEntry failed", error.message);
+          if (error) noteWriteError("restoreTimeEntry", error);
         });
     },
     [supabase, applyEntryLocally],
@@ -924,7 +978,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addTimeEntry failed", error.message);
+            noteWriteError("addTimeEntry", error);
             return;
           }
           const entry = mapTimeEntry(data);
@@ -969,7 +1023,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(patch)
         .eq("id", entryId)
         .then(({ error }) => {
-          if (error) console.error("updateTimeEntry failed", error.message);
+          if (error) noteWriteError("updateTimeEntry", error);
         });
     },
     [supabase, timeEntries, entrySums, record],
@@ -994,7 +1048,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", entryId)
         .then(({ error }) => {
-          if (error) console.error("deleteTimeEntry failed", error.message);
+          if (error) noteWriteError("deleteTimeEntry", error);
         });
     },
     [supabase, timeEntries, entrySums, record, restoreTimeEntry],
@@ -1021,7 +1075,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...(p.paid && { paid: true }),
         })
         .then(({ error }) => {
-          if (error) console.error("restoreBillingPeriod failed", error.message);
+          if (error) noteWriteError("restoreBillingPeriod", error);
         });
     },
     [supabase],
@@ -1046,7 +1100,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addBillingPeriod failed", error.message);
+            noteWriteError("addBillingPeriod", error);
             return;
           }
           const period = mapBillingPeriod(data);
@@ -1085,7 +1139,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(row)
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("updateBillingPeriod failed", error.message);
+          if (error) noteWriteError("updateBillingPeriod", error);
         });
     },
     [supabase, billingPeriods, record],
@@ -1106,7 +1160,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("deleteBillingPeriod failed", error.message);
+          if (error) noteWriteError("deleteBillingPeriod", error);
         });
     },
     [supabase, billingPeriods, record, restoreBillingPeriod],
@@ -1121,7 +1175,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addDayState failed", error.message);
+            noteWriteError("addDayState", error);
             return;
           }
           setDayStates((prev) => [...prev, mapDayState(data)]);
@@ -1138,7 +1192,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("deleteDayState failed", error.message);
+          if (error) noteWriteError("deleteDayState", error);
         });
     },
     [supabase],
@@ -1154,7 +1208,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("addDevItem failed", error.message);
+            noteWriteError("addDevItem", error);
             return;
           }
           setDevItems((prev) => [...prev, mapDevItem(data)]);
@@ -1179,7 +1233,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(patch)
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("updateDevItem failed", error.message);
+          if (error) noteWriteError("updateDevItem", error);
         });
     },
     [supabase, devItems, record],
@@ -1193,7 +1247,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .delete()
         .eq("id", id)
         .then(({ error }) => {
-          if (error) console.error("deleteDevItem failed", error.message);
+          if (error) noteWriteError("deleteDevItem", error);
         });
     },
     [supabase],
@@ -1220,7 +1274,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         })
         .in("id", entryIds)
         .then(({ error }) => {
-          if (error) console.error("moveTimeEntries failed", error.message);
+          if (error) noteWriteError("moveTimeEntries", error);
         });
     },
     [supabase, currentUserId],
@@ -1246,7 +1300,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
       if (error) {
-        console.error("approveRequest failed", error.message);
+        noteWriteError("approveRequest", error);
         throw new Error(error.message);
       }
       await supabase
@@ -1273,7 +1327,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update({ status: "rejected" })
         .eq("id", requestId)
         .then(({ error }) => {
-          if (error) console.error("rejectRequest failed", error.message);
+          if (error) noteWriteError("rejectRequest", error);
         });
     },
     [supabase],
@@ -1296,7 +1350,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("startTimer failed", error.message);
+            noteWriteError("startTimer", error);
             return;
           }
           setRunningTimer({ entryId: data.id, taskId, startedAt });
@@ -1323,7 +1377,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .single()
         .then(({ data, error }) => {
           if (error) {
-            console.error("completeTimerEntry failed", error.message);
+            noteWriteError("completeTimerEntry", error);
             return;
           }
           applyEntryLocally(mapTimeEntry(data));
@@ -1349,7 +1403,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       attachments,
       timeEntries,
       entrySums,
-      currentUserId,
+      currentUserId: viewAsProfile ? viewAsProfile.id : currentUserId,
+      viewingAs: viewAsProfile ? viewAsProfile.name : null,
       runningTimer,
       openTaskId,
       planColumns,
@@ -1399,11 +1454,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       taskMinutes,
       undo,
       redo,
+      writeError,
+      dismissWriteError,
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
-      currentUserId, runningTimer, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes, undo, redo,
+      currentUserId, viewAsProfile, runningTimer, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
+      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );
 

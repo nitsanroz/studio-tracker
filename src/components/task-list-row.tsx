@@ -1,16 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { ExternalLink, Maximize2, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatHoursShort, parseDuration, toISODate } from "@/lib/format";
 import { Avatar, ClientChip, TagBadge } from "./ui";
-import {
-  EditableDateCell,
-  EditableNumberCell,
-  EditableSelectCell,
-  EditableTextCell,
-} from "./editable-cell";
+import { EditableDateCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { useColWidths, ResizeHandle } from "./resizable";
 import type { Task } from "@/lib/types";
 
@@ -129,6 +124,13 @@ function FigmaCell({ url, onCommit }: { url: string | null; onCommit: (v: string
       >
         <Pencil size={11} />
       </button>
+      <button
+        onClick={() => onCommit("")}
+        title="Remove link"
+        className="invisible text-faint hover:text-danger group-hover/figma:visible"
+      >
+        <X size={12} />
+      </button>
     </span>
   );
 }
@@ -139,21 +141,18 @@ function formatDueShort(iso: string): string {
   return `${d}/${m}`;
 }
 
-// column order per Nitsan: Tags, Figma, Budget, Hrs done, %done, Hrs by me, %Billable
+// column order per Nitsan: Due (right after Task), Tags, Figma, Hrs/budget, %done, by me, Logged by
 const COLS: { key: string; label: string; w: number; hint?: string }[] = [
-  { key: "client", label: "Client", w: 110, hint: "Client the task belongs to" },
-  { key: "section", label: "Section", w: 150, hint: "Board section the task lives in" },
-  // task column flexes — no fixed width
-  { key: "tags", label: "Tags", w: 90, hint: "Task tag — click a cell to change it" },
-  { key: "figma", label: "Figma", w: 76, hint: "Linked Figma file" },
-  { key: "budget", label: "Budget", w: 64, hint: "Estimated hours budget — click a cell to edit" },
-  { key: "done", label: "Hrs done", w: 72, hint: "All hours logged on the task" },
-  { key: "pctDone", label: "% done", w: 64, hint: "Hours done as a share of the budget" },
-  { key: "mine", label: "Hrs by me", w: 78, hint: "Hours you logged on the task" },
-  { key: "pctBill", label: "%Billable", w: 70, hint: "Your share of the task's hours" },
-  { key: "loggedBy", label: "Logged by", w: 96, hint: "Who logged hours on the task" },
-  { key: "due", label: "Due", w: 52, hint: "Due date — click a cell to change it" },
-  { key: "add", label: "", w: 96 },
+  { key: "client", label: "Client", w: 96, hint: "Client the task belongs to" },
+  { key: "section", label: "Section", w: 120, hint: "Board section the task lives in" },
+  // task column flexes — no fixed width; Due renders immediately after it
+  { key: "due", label: "Due", w: 50, hint: "Due date — click a cell to change it" },
+  { key: "tags", label: "Tags", w: 84, hint: "Task tag — click a cell to change it" },
+  { key: "figma", label: "Figma", w: 58, hint: "Linked Figma file" },
+  { key: "hrsBudget", label: "Hrs/budget", w: 108, hint: "Hours done / budget (% done)" },
+  { key: "mine", label: "by me", w: 58, hint: "Hours you logged on the task" },
+  { key: "loggedBy", label: "Logged by", w: 84, hint: "Who logged hours on the task" },
+  { key: "add", label: "", w: 90 },
 ];
 const DEFAULT_WIDTHS = Object.fromEntries(COLS.map((c) => [c.key, c.w]));
 
@@ -185,6 +184,8 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
     useData();
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
   const [adding, setAdding] = useState<string | null>(null);
+  // members may edit tags + figma link only; name/budget/due are admin-only
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
 
   // hours per task (total / mine) + who logged
   const stats = useMemo(() => {
@@ -236,6 +237,13 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           const budget = task.estimateHours;
           const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
           const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
+          // merged "Hrs/budget" cell: "10/20 (50%)" — or just hours done when no budget ("10")
+          const doneH = total / 60;
+          const doneStr = total > 0 ? (Number.isInteger(doneH) ? `${doneH}` : doneH.toFixed(1)) : "0";
+          const hrsBudget =
+            budget != null
+              ? `${doneStr}/${budget}${pctDone != null ? ` (${pctDone}%)` : ""}`
+              : doneStr;
           return (
             <div
               key={task.id}
@@ -243,16 +251,23 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
               onClick={() => openTask(task.id)}
             >
               <span style={cell("client")}>
-                {client && <ClientChip client={client} size="sm" link={false} />}
+                {client && <ClientChip client={client} size="sm" />}
               </span>
               <span className="bidi-auto truncate text-muted" style={cell("section")}>
                 {section?.name}
               </span>
-              <span className="flex min-w-24 flex-1 items-center font-medium" onClick={(e) => e.stopPropagation()}>
-                <EditableTextCell
-                  value={task.title}
-                  onCommit={(v) => v && updateTask(task.id, { title: v })}
-                />
+              <span
+                className="flex min-w-24 flex-1 items-center font-medium"
+                onClick={(e) => isAdmin && e.stopPropagation()}
+              >
+                {isAdmin ? (
+                  <EditableTextCell
+                    value={task.title}
+                    onCommit={(v) => v && updateTask(task.id, { title: v })}
+                  />
+                ) : (
+                  <span className="bidi-auto truncate px-1.5 py-0.5">{task.title}</span>
+                )}
                 <button
                   onClick={() => openTask(task.id)}
                   title="Open details"
@@ -260,6 +275,24 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
                 >
                   <Maximize2 size={13} />
                 </button>
+              </span>
+              <span
+                className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
+                style={cell("due")}
+                onClick={(e) => isAdmin && e.stopPropagation()}
+              >
+                {isAdmin ? (
+                  <EditableDateCell
+                    value={task.dueDate}
+                    onCommit={(v) => updateTask(task.id, { dueDate: v })}
+                    format={formatDueShort}
+                    placeholder=""
+                  />
+                ) : (
+                  <span className="px-1.5 py-0.5 tabular-nums">
+                    {task.dueDate ? formatDueShort(task.dueDate) : ""}
+                  </span>
+                )}
               </span>
               <span style={cell("tags")} onClick={(e) => e.stopPropagation()}>
                 <EditableSelectCell
@@ -276,41 +309,18 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
                   onCommit={(v) => updateTask(task.id, { figmaUrl: v || null })}
                 />
               </span>
-              <span className="text-xs text-muted" style={cell("budget")} onClick={(e) => e.stopPropagation()}>
-                <EditableNumberCell
-                  value={budget}
-                  onCommit={(v) => updateTask(task.id, { estimateHours: v })}
-                />
-              </span>
-              <span className="text-xs font-medium tabular-nums" style={cell("done")}>
-                {total > 0 ? formatHoursShort(total) : "–"}
-              </span>
               <span
                 className={`text-xs tabular-nums ${pctDone != null && pctDone > 100 ? "font-medium text-danger" : "text-muted"}`}
-                style={cell("pctDone")}
+                style={cell("hrsBudget")}
+                title="Hours done / budget (% done)"
               >
-                {pctDone != null ? `${pctDone}%` : "–"}
+                {hrsBudget}
               </span>
               <span className="text-xs tabular-nums text-muted" style={cell("mine")}>
                 {my > 0 ? formatHoursShort(my) : "–"}
               </span>
-              <span className="text-xs tabular-nums text-muted" style={cell("pctBill")}>
-                {total > 0 ? (task.billable ? "100%" : "0%") : "–"}
-              </span>
               <span style={cell("loggedBy")}>
                 <LoggedByGroup userIds={stats.users.get(task.id) ?? []} profiles={profiles} />
-              </span>
-              <span
-                className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
-                style={cell("due")}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <EditableDateCell
-                  value={task.dueDate}
-                  onCommit={(v) => updateTask(task.id, { dueDate: v })}
-                  format={formatDueShort}
-                  placeholder=""
-                />
               </span>
               <span className="relative" style={cell("add")} onClick={(e) => e.stopPropagation()}>
                 <button

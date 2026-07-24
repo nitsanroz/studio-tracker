@@ -112,7 +112,7 @@ function UserDayDetails({
   const supabase = useMemo(() => createClient(), []);
   const [loaded, setLoaded] = useState<TimeEntry[]>([]);
   const [ready, setReady] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(true); // open the add form immediately
   const [picked, setPicked] = useState<TaskMatch | null>(null);
   const [addDuration, setAddDuration] = useState("");
   const [addDescription, setAddDescription] = useState("");
@@ -446,6 +446,9 @@ function FeedPageContent() {
   }, [mineParam, mineApplied, currentUserId]);
 
   const myHours = memberFilter === currentUserId && memberFilter !== "";
+  // members only ever see their own hours; admins see everyone (filterable)
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const effectiveMemberFilter = isAdmin ? memberFilter : currentUserId;
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const sectionById = useMemo(() => new Map(sections.map((s) => [s.id, s])), [sections]);
@@ -482,12 +485,12 @@ function FeedPageContent() {
     const source = fetched ?? timeEntries;
     return source
       .filter((e) => {
-        if (memberFilter && e.userId !== memberFilter) return false;
+        if (effectiveMemberFilter && e.userId !== effectiveMemberFilter) return false;
         if (clientFilter && taskClient.get(e.taskId) !== clientFilter) return false;
         return true;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [fetched, timeEntries, memberFilter, clientFilter, taskClient]);
+  }, [fetched, timeEntries, effectiveMemberFilter, clientFilter, taskClient]);
 
   // per-column aggregates over the visible (filtered) feed rows
   const feedStats = useMemo(() => {
@@ -527,7 +530,7 @@ function FeedPageContent() {
     if (view !== "timesheet") return null;
     const inWeek = entrySums.filter((e) => {
       if (e.date < weekFrom || e.date > weekTo) return false;
-      if (memberFilter && e.userId !== memberFilter) return false;
+      if (effectiveMemberFilter && e.userId !== effectiveMemberFilter) return false;
       if (clientFilter && taskClient.get(e.taskId) !== clientFilter) return false;
       return true;
     });
@@ -565,7 +568,7 @@ function FeedPageContent() {
     );
     const weekTotal = inWeek.reduce((s, e) => s + e.minutes, 0);
     return { days, rows, dayTotals, weekTotal };
-  }, [view, entrySums, weekFrom, weekTo, weekStart, memberFilter, clientFilter, taskClient, profiles]);
+  }, [view, entrySums, weekFrom, weekTo, weekStart, effectiveMemberFilter, clientFilter, taskClient, profiles]);
 
   const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${addDays(weekStart, 4).getDate()}/${addDays(weekStart, 4).getMonth() + 1}`;
 
@@ -604,17 +607,27 @@ function FeedPageContent() {
     cellTooltips.get(key)?.join("\n") ?? fallback;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 className="text-2xl">Time Feed</h1>
           <p className="text-sm text-muted">
             {view === "feed"
-              ? "Recent hours across the studio — newest first. Open a task to move hours between tasks."
-              : "Weekly timesheet — hours per member per day. Click a row for its tasks, a cell for that day's entries."}
+              ? isAdmin
+                ? "Recent hours across the studio — newest first. Open a task to move hours between tasks."
+                : "Your recent hours — newest first."
+              : isAdmin
+                ? "Weekly timesheet — hours per member per day. Click a row for its tasks, a cell for that day's entries."
+                : "Your weekly timesheet — click a cell for that day's entries."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setUserPopup({ userId: currentUserId, date: toISODate(new Date()) })}
+            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            <Plus size={15} /> Add new hours
+          </button>
           <div className="flex rounded-lg border border-border bg-surface p-0.5">
             {(["feed", "timesheet"] as const).map((v) => (
               <button
@@ -628,16 +641,18 @@ function FeedPageContent() {
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setMemberFilter(myHours ? "" : currentUserId)}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
-              myHours
-                ? "border-brand bg-brand-soft text-brand-dark"
-                : "border-border bg-surface text-muted hover:text-foreground"
-            }`}
-          >
-            My hours
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setMemberFilter(myHours ? "" : currentUserId)}
+              className={`rounded-md border px-3 py-1.5 text-sm font-medium ${
+                myHours
+                  ? "border-brand bg-brand-soft text-brand-dark"
+                  : "border-border bg-surface text-muted hover:text-foreground"
+              }`}
+            >
+              My hours
+            </button>
+          )}
           <select
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
@@ -653,20 +668,22 @@ function FeedPageContent() {
                 </option>
               ))}
           </select>
-          <select
-            value={memberFilter}
-            onChange={(e) => setMemberFilter(e.target.value)}
-            className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-          >
-            <option value="">All users</option>
-            {profiles
-              .filter((p) => p.active)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-          </select>
+          {isAdmin && (
+            <select
+              value={memberFilter}
+              onChange={(e) => setMemberFilter(e.target.value)}
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+            >
+              <option value="">All users</option>
+              {profiles
+                .filter((p) => p.active)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          )}
         </div>
       </div>
 
@@ -886,27 +903,35 @@ function FeedPageContent() {
               </thead>
               <tbody>
                 {sheet.rows.map(({ userId, profile, byDay, total, tasks: userTasks }) => {
-                  const isOpen = expandedUsers.has(userId);
+                  // members only see their own row — leave it expanded, no fold control
+                  const isOpen = isAdmin ? expandedUsers.has(userId) : true;
                   return (
                     <Fragment key={userId}>
                       <tr
-                        onClick={() =>
-                          setExpandedUsers((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(userId)) next.delete(userId);
-                            else next.add(userId);
-                            return next;
-                          })
+                        onClick={
+                          isAdmin
+                            ? () =>
+                                setExpandedUsers((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(userId)) next.delete(userId);
+                                  else next.add(userId);
+                                  return next;
+                                })
+                            : undefined
                         }
-                        className="cursor-pointer border-b border-border last:border-b-0 hover:bg-background/60"
-                        title={isOpen ? "Fold this member's tasks" : "Show this member's tasks"}
+                        className={`border-b border-border last:border-b-0 ${
+                          isAdmin ? "cursor-pointer hover:bg-background/60" : ""
+                        }`}
+                        title={isAdmin ? (isOpen ? "Fold this member's tasks" : "Show this member's tasks") : undefined}
                       >
                         <td className="max-w-64 p-2">
                           <span className="flex w-full min-w-0 items-center gap-2 text-left">
-                            <ChevronDown
-                              size={13}
-                              className={`shrink-0 text-faint transition-transform ${isOpen ? "" : "-rotate-90"}`}
-                            />
+                            {isAdmin && (
+                              <ChevronDown
+                                size={13}
+                                className={`shrink-0 text-faint transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                              />
+                            )}
                             <Avatar profile={profile} size={22} />
                             <span className="truncate font-medium">{profile?.name ?? "(unknown)"}</span>
                           </span>
@@ -917,19 +942,16 @@ function FeedPageContent() {
                             <td
                               key={d}
                               onClick={(e) => {
-                                if (minutes <= 0) return;
                                 e.stopPropagation();
                                 setUserPopup({ userId, date: d });
                               }}
-                              className={`p-2 text-right tabular-nums ${
-                                minutes > 0
-                                  ? "cursor-pointer font-medium hover:bg-brand-soft/60"
-                                  : "text-faint"
+                              className={`cursor-pointer p-2 text-right tabular-nums hover:bg-brand-soft/60 ${
+                                minutes > 0 ? "font-medium" : "text-faint"
                               }`}
                               title={
                                 minutes > 0
                                   ? cellTitle(`${userId}|${d}`, "Click for that day's entries")
-                                  : undefined
+                                  : "Click to add hours on this day"
                               }
                             >
                               {minutes > 0 ? formatHoursShort(minutes) : "–"}

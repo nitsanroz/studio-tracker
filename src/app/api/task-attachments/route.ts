@@ -29,12 +29,20 @@ export async function POST(request: NextRequest) {
   }
 
   const sb = admin();
+
+  // Guard: the target task must exist (blocks attaching to arbitrary/guessed ids).
+  const { data: task } = await sb.from("tasks").select("id").eq("id", taskId).maybeSingle();
+  if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+
   const safe = file.name.replace(/[^\w.\-]+/g, "_");
   const path = `${taskId}/${Date.now()}-${safe}`;
   const { error: upErr } = await sb.storage
     .from("task-files")
     .upload(path, file, { contentType: file.type });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 400 });
+  if (upErr) {
+    console.error("attachment upload failed", upErr);
+    return NextResponse.json({ error: "Upload failed" }, { status: 400 });
+  }
 
   const { data: pub } = sb.storage.from("task-files").getPublicUrl(path);
   const { data: row, error } = await sb
@@ -48,7 +56,10 @@ export async function POST(request: NextRequest) {
     })
     .select()
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    console.error("attachment insert failed", error);
+    return NextResponse.json({ error: "Could not save attachment" }, { status: 400 });
+  }
 
   return NextResponse.json({
     id: row.id,
@@ -71,14 +82,30 @@ export async function DELETE(request: NextRequest) {
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const sb = admin();
-  const { data: row } = await sb.from("attachments").select("file_path").eq("id", id).maybeSingle();
-  if (row?.file_path) {
+  const { data: row } = await sb
+    .from("attachments")
+    .select("file_path, uploaded_by")
+    .eq("id", id)
+    .maybeSingle();
+  if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Ownership: only the uploader or an admin may delete an attachment.
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = me?.role === "admin";
+  if (!isAdmin && row.uploaded_by !== user.id) {
+    return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  }
+
+  if (row.file_path) {
     // public URL → storage path after "/task-files/"
     const marker = "/task-files/";
     const idx = row.file_path.indexOf(marker);
     if (idx >= 0) await sb.storage.from("task-files").remove([row.file_path.slice(idx + marker.length)]);
   }
   const { error } = await sb.from("attachments").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    console.error("attachment delete failed", error);
+    return NextResponse.json({ error: "Delete failed" }, { status: 400 });
+  }
   return NextResponse.json({ ok: true });
 }
