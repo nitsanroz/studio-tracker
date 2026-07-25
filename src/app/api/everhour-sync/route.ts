@@ -33,10 +33,11 @@ async function doSync(lookbackDays: number) {
   const to = isoDaysAgo(0);
   try {
     const summary = await runEverhourSync(admin, apiKey, from, to);
-    if (summary.skippedNoMatch > 0) {
-      // not an error — but say what was missed so it can't silently rot
+    if (summary.openIssues > 0) {
+      // Entries that couldn't be imported are queued in `sync_issues` and
+      // surfaced to admins in-app — this log line is just a breadcrumb.
       console.warn(
-        `everhour-sync: ${summary.skippedNoMatch} entries skipped (unmapped task/user)`,
+        `everhour-sync: ${summary.openIssues} entries awaiting an admin decision (/sync-issues)`,
         summary.unmatchedTasks,
       );
     }

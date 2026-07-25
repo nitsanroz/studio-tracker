@@ -21,11 +21,11 @@ export function EverhourSyncButton({ days = 14 }: { days?: number }) {
       if (!res.ok) {
         setMsg({ ok: false, text: j.error ?? "Sync failed" });
       } else if (j.inserted > 0) {
-        const missed = j.skippedNoMatch > 0 ? ` · ${j.skippedNoMatch} skipped (unknown task)` : "";
+        const missed = j.openIssues > 0 ? ` · ${j.openIssues} need review` : "";
         setMsg({ ok: true, text: `${j.inserted} new ${j.inserted === 1 ? "entry" : "entries"}${missed}` });
         setTimeout(() => window.location.reload(), 900);
       } else {
-        const missed = j.skippedNoMatch > 0 ? ` — ${j.skippedNoMatch} skipped (unknown task)` : "";
+        const missed = j.openIssues > 0 ? ` — ${j.openIssues} need review` : "";
         setMsg({ ok: true, text: `Already up to date${missed}` });
       }
     } catch (e) {

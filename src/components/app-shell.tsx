@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import {
-  Bell,
+  AlertTriangle,
   CalendarDays,
   ChartPie,
   History,
@@ -21,7 +21,7 @@ import { DataProvider, useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { APP_VERSION } from "@/lib/version";
 import { Avatar } from "./ui";
-import { TimerWidget } from "./timer-widget";
+import { NotificationsBell } from "./notifications-bell";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 
@@ -57,8 +57,16 @@ function ThemeInit() {
 
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { profiles, currentUserId, loading, taskRequests, viewingAs, writeError, dismissWriteError } =
-    useData();
+  const {
+    profiles,
+    currentUserId,
+    loading,
+    taskRequests,
+    openSyncIssues,
+    viewingAs,
+    writeError,
+    dismissWriteError,
+  } = useData();
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = me?.role === "admin";
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
@@ -147,6 +155,25 @@ function Shell({ children }: { children: ReactNode }) {
               )}
             </Link>
           )}
+          {isAdmin && (
+            <Link
+              href="/sync-issues"
+              className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
+              style={
+                pathname.startsWith("/sync-issues")
+                  ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                  : { color: "var(--sb-muted)" }
+              }
+            >
+              <AlertTriangle size={20} strokeWidth={1.75} />
+              Sync issues
+              {openSyncIssues > 0 && (
+                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
+                  {openSyncIssues}
+                </span>
+              )}
+            </Link>
+          )}
           {NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
             if (!isAdmin) return null;
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -206,24 +233,11 @@ function Shell({ children }: { children: ReactNode }) {
         >
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2.5">
-            <TimerWidget />
             {isAdmin && (
-              <Link
-                href="/intake-queue"
-                title={
-                  pendingIntake > 0
-                    ? `${pendingIntake} intake request${pendingIntake > 1 ? "s" : ""} to review`
-                    : "Intake"
-                }
-                className="relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:border-border-strong hover:text-foreground"
-              >
-                <Bell size={17} strokeWidth={1.75} />
-                {pendingIntake > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 flex min-w-[17px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
-                    {pendingIntake}
-                  </span>
-                )}
-              </Link>
+              <NotificationsBell
+                pendingIntake={pendingIntake}
+                openSyncIssues={openSyncIssues}
+              />
             )}
             <Link
               href="/settings"

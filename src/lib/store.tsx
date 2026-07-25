@@ -85,12 +85,6 @@ export interface NewPlanEntry {
   absenceType?: AbsenceType | null;
 }
 
-interface RunningTimer {
-  entryId: string;
-  taskId: string;
-  startedAt: number; // epoch ms
-}
-
 interface Store {
   loading: boolean;
   profiles: Profile[];
@@ -106,7 +100,8 @@ interface Store {
   currentUserId: string;
   /** Name of the member an admin is previewing as (?viewAs=…), null when off. */
   viewingAs: string | null;
-  runningTimer: RunningTimer | null;
+  /** Everhour entries that couldn't be imported and need an admin to resolve. */
+  openSyncIssues: number;
   openTaskId: string | null;
   planColumns: PlanColumn[];
   planEntries: PlanEntry[];
@@ -150,10 +145,6 @@ interface Store {
   taskRequests: TaskRequest[];
   approveRequest: (requestId: string, input: ApproveRequestInput) => Promise<void>;
   rejectRequest: (requestId: string) => void;
-  startTimer: (taskId: string) => void;
-  /** Stops ticking and returns the pending entry; caller must completeTimerEntry with a description. */
-  stopTimer: () => { entryId: string; taskId: string; minutes: number } | null;
-  completeTimerEntry: (entryId: string, taskId: string, minutes: number, description: string) => void;
   taskMinutes: (taskId: string) => number;
   /** Undo/redo the last data actions (max 10). Also on cmd/ctrl+Z (+shift). */
   undo: () => void;
@@ -236,7 +227,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     );
     return target && target.id !== currentUserId ? target : null;
   }, [viewAsKey, currentUserId, profiles]);
-  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null);
+  const [openSyncIssues, setOpenSyncIssues] = useState(0);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [taskRequests, setTaskRequests] = useState<TaskRequest[]>([]);
   const loadedTaskExtras = useRef<Set<string>>(new Set());
@@ -323,7 +314,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       const tagsP = supabase.from("tags").select("*").order("position");
-      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, running, requests, periods, days, dev] =
+      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, openIssues, requests, periods, days, dev] =
         await Promise.all([
           // "*" keeps boot working whether or not migration 0004 is applied
           fetchAll<DbRow>(supabase, "profiles", "*"),
@@ -355,12 +346,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .order("date", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(400),
-          supabase
-            .from("time_entries")
-            .select("id, task_id, started_at")
-            .eq("user_id", uid)
-            .is("minutes", null)
-            .maybeSingle(),
+          // Open Everhour sync gaps, for the header notification bell.
+          // Admin-only via RLS (0 for designers); 0 too if 0014 isn't applied yet.
+          (async () => {
+            const { count, error } = await supabase
+              .from("sync_issues")
+              .select("id", { count: "exact", head: true })
+              .eq("status", "open");
+            return error ? 0 : (count ?? 0);
+          })(),
           // Returns [] for designers (RLS: admins only)
           supabase.from("task_requests").select("*").order("created_at", { ascending: false }),
           // pre-0007 these tables don't exist; RLS hides them from designers
@@ -390,13 +384,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTimeEntries((feed.data ?? []).map(mapTimeEntry));
       setPlanColumns(cols.map(mapPlanColumn));
       setPlanEntries(pe.map(mapPlanEntry));
-      if (running.data) {
-        setRunningTimer({
-          entryId: running.data.id,
-          taskId: running.data.task_id,
-          startedAt: new Date(running.data.started_at).getTime(),
-        });
-      }
+      setOpenSyncIssues(openIssues);
       setTaskRequests(((requests.data ?? []) as DbRow[]).map(mapTaskRequest));
       setLoading(false);
     })().catch((e) => {
@@ -1333,59 +1321,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase],
   );
 
-  const startTimer = useCallback(
-    (taskId: string) => {
-      const startedAt = Date.now();
-      supabase
-        .from("time_entries")
-        .insert({
-          task_id: taskId,
-          user_id: currentUserId,
-          date: toISODate(new Date()),
-          minutes: null,
-          description: "",
-          started_at: new Date(startedAt).toISOString(),
-        })
-        .select("id")
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("startTimer", error);
-            return;
-          }
-          setRunningTimer({ entryId: data.id, taskId, startedAt });
-        });
-    },
-    [supabase, currentUserId],
-  );
-
-  const stopTimer = useCallback(() => {
-    if (!runningTimer) return null;
-    const minutes = Math.max(1, Math.round((Date.now() - runningTimer.startedAt) / 60000));
-    const result = { entryId: runningTimer.entryId, taskId: runningTimer.taskId, minutes };
-    setRunningTimer(null);
-    return result;
-  }, [runningTimer]);
-
-  const completeTimerEntry = useCallback(
-    (entryId: string, taskId: string, minutes: number, description: string) => {
-      supabase
-        .from("time_entries")
-        .update({ minutes, description, date: toISODate(new Date()) })
-        .eq("id", entryId)
-        .select()
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("completeTimerEntry", error);
-            return;
-          }
-          applyEntryLocally(mapTimeEntry(data));
-        });
-    },
-    [supabase, applyEntryLocally],
-  );
-
   const taskMinutes = useCallback(
     (taskId: string) => minutesByTask.get(taskId) ?? 0,
     [minutesByTask],
@@ -1405,7 +1340,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       entrySums,
       currentUserId: viewAsProfile ? viewAsProfile.id : currentUserId,
       viewingAs: viewAsProfile ? viewAsProfile.name : null,
-      runningTimer,
+      openSyncIssues,
       openTaskId,
       planColumns,
       planEntries,
@@ -1448,9 +1383,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       taskRequests,
       approveRequest,
       rejectRequest,
-      startTimer,
-      stopTimer,
-      completeTimerEntry,
       taskMinutes,
       undo,
       redo,
@@ -1459,8 +1391,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
-      currentUserId, viewAsProfile, runningTimer, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, startTimer, stopTimer, completeTimerEntry, taskMinutes, undo, redo, writeError, dismissWriteError,
+      currentUserId, viewAsProfile, openSyncIssues, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
+      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );
 

@@ -184,8 +184,6 @@ export function TaskPanel() {
     updateTask,
     addComment,
     addTimeEntry,
-    startTimer,
-    runningTimer,
     taskMinutes,
     currentUserId,
   } = useData();
@@ -434,17 +432,8 @@ export function TaskPanel() {
 
           {/* Time */}
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-xs font-medium uppercase tracking-wide text-faint">
-                Time — {formatHours(doneMinutes)} total
-              </div>
-              <button
-                disabled={runningTimer != null}
-                onClick={() => startTimer(task.id)}
-                className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
-              >
-                ▶ Start timer
-              </button>
+            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
+              Time — {formatHours(doneMinutes)} total
             </div>
             <form
               className="mb-2 flex gap-2"

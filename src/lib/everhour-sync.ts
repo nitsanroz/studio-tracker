@@ -5,8 +5,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * scripts/sync-everhour.mjs, so the cron and the script behave identically).
  *
  * Insert-only and idempotent: an entry is written once, keyed by everhour_id.
- * Entries whose task or user isn't mapped in the tracker are skipped and
- * reported, never guessed at.
+ *
+ * Entries whose task or person isn't mapped in the tracker are NEVER dropped
+ * quietly — each one is written to the `sync_issues` queue for an admin to
+ * resolve (see migration 0014). Those hours are real and usually billable, so
+ * silently skipping them could understate a published client report.
  */
 
 export interface EverhourSyncSummary {
@@ -18,6 +21,12 @@ export interface EverhourSyncSummary {
   skippedNoMatch: number;
   /** unmapped Everhour tasks, so the report says what was missed */
   unmatchedTasks: { id: string; name: string; minutes: number }[];
+  /** issues newly added to the queue this run */
+  newIssues: number;
+  /** previously-open issues that imported cleanly this run */
+  closedIssues: number;
+  /** total still awaiting an admin decision */
+  openIssues: number;
 }
 
 interface EverhourEntry {
@@ -29,6 +38,18 @@ interface EverhourEntry {
   task?: { id?: string; name?: string };
   history?: { previousTask?: string }[];
   createdAt?: string;
+}
+
+interface UnmatchedEntry {
+  everhour_id: string;
+  kind: "unmapped_task" | "unmapped_user" | "unmapped_both";
+  entry_date: string;
+  minutes: number;
+  description: string;
+  everhour_task_id: string | null;
+  everhour_task_name: string;
+  everhour_user_id: string;
+  everhour_user_name: string;
 }
 
 /** ISO date `days` before today (UTC-safe enough for a date-only window). */
@@ -47,6 +68,106 @@ async function fetchAll<T>(supabase: SupabaseClient, table: string, columns: str
     if (!data || data.length < 1000) break;
   }
   return out;
+}
+
+/**
+ * Everhour person names, so the queue can say "Shaked Gozlan isn't mapped"
+ * instead of "user 1453915". Best-effort — a failure here must not fail a sync.
+ */
+async function fetchUserNames(apiKey: string): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  try {
+    const res = await fetch("https://api.everhour.com/team/users", {
+      headers: { "X-Api-Key": apiKey, "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return names;
+    const users = (await res.json()) as { id: number | string; name?: string; email?: string }[];
+    for (const u of users) names.set(String(u.id), u.name ?? u.email ?? "");
+  } catch {
+    // leave the map empty; the queue falls back to the raw id
+  }
+  return names;
+}
+
+/**
+ * Write this run's unimportable entries to the queue, and close any open issue
+ * whose entry has since made it in (an admin mapped the task, or the script
+ * imported it). One row per Everhour entry id, so re-running the sync over an
+ * overlapping window never double-counts and never loses an older gap.
+ */
+async function reconcileSyncIssues(
+  supabase: SupabaseClient,
+  unmatched: UnmatchedEntry[],
+  importedIds: Set<string>,
+): Promise<{ newIssues: number; closedIssues: number; openIssues: number }> {
+  const now = new Date().toISOString();
+
+  // ── close what no longer needs attention
+  const { data: openRows } = await supabase
+    .from("sync_issues")
+    .select("everhour_id")
+    .eq("source", "everhour")
+    .eq("status", "open");
+  const nowImported = ((openRows ?? []) as { everhour_id: string }[])
+    .map((r) => r.everhour_id)
+    .filter((id) => importedIds.has(id));
+  if (nowImported.length) {
+    await supabase
+      .from("sync_issues")
+      .update({ status: "imported", resolved_at: now })
+      .in("everhour_id", nowImported);
+  }
+
+  // ── record what still can't be imported
+  let newIssues = 0;
+  if (unmatched.length) {
+    const ids = unmatched.map((u) => u.everhour_id);
+    const { data: existingRows } = await supabase
+      .from("sync_issues")
+      .select("everhour_id, status")
+      .eq("source", "everhour")
+      .in("everhour_id", ids);
+    const existing = new Map(
+      ((existingRows ?? []) as { everhour_id: string; status: string }[]).map((r) => [
+        r.everhour_id,
+        r.status,
+      ]),
+    );
+
+    const fresh = unmatched.filter((u) => !existing.has(u.everhour_id));
+    if (fresh.length) {
+      const { error } = await supabase
+        .from("sync_issues")
+        .insert(fresh.map((u) => ({ ...u, source: "everhour", first_seen_at: now, last_seen_at: now })));
+      if (error) throw new Error(`sync_issues insert failed: ${error.message}`);
+      newIssues = fresh.length;
+    }
+
+    // Still unmatched but already queued: bump last_seen_at. An entry marked
+    // 'imported' that reappears here was never really imported — reopen it.
+    // 'ignored' is a deliberate admin decision and is left alone.
+    const stale = unmatched.filter((u) => existing.has(u.everhour_id));
+    for (const u of stale) {
+      const patch: Record<string, unknown> = { last_seen_at: now };
+      if (existing.get(u.everhour_id) === "imported") {
+        patch.status = "open";
+        patch.resolved_at = null;
+      }
+      await supabase
+        .from("sync_issues")
+        .update(patch)
+        .eq("source", "everhour")
+        .eq("everhour_id", u.everhour_id);
+    }
+  }
+
+  const { count } = await supabase
+    .from("sync_issues")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "open");
+
+  return { newIssues, closedIssues: nowImported.length, openIssues: count ?? 0 };
 }
 
 export async function runEverhourSync(
@@ -69,10 +190,11 @@ export async function runEverhourSync(
     if (page > 20) break; // safety valve
   }
 
-  const [tasks, users, existing] = await Promise.all([
+  const [tasks, users, existing, userNames] = await Promise.all([
     fetchAll<{ id: string; everhour_id: string | null }>(supabase, "tasks", "id, everhour_id"),
     fetchAll<{ id: string; everhour_id: string | number | null }>(supabase, "profiles", "id, everhour_id"),
     fetchAll<{ everhour_id: string | null }>(supabase, "time_entries", "everhour_id"),
+    fetchUserNames(apiKey),
   ]);
 
   const taskMap = new Map(tasks.filter((t) => t.everhour_id).map((t) => [t.everhour_id!, t.id]));
@@ -80,6 +202,7 @@ export async function runEverhourSync(
   const seen = new Set(existing.map((e) => e.everhour_id).filter(Boolean) as string[]);
 
   const rows: Record<string, unknown>[] = [];
+  const unmatchedEntries: UnmatchedEntry[] = [];
   const unmatched = new Map<string, { name: string; minutes: number }>();
   let skippedSeen = 0;
   let skippedNoMatch = 0;
@@ -98,6 +221,18 @@ export async function runEverhourSync(
       const cur = unmatched.get(key) ?? { name: e.task?.name ?? "?", minutes: 0 };
       cur.minutes += Math.round(e.time / 60);
       unmatched.set(key, cur);
+
+      unmatchedEntries.push({
+        everhour_id: ehId,
+        kind: !taskId && !userId ? "unmapped_both" : !taskId ? "unmapped_task" : "unmapped_user",
+        entry_date: e.date,
+        minutes: Math.round(e.time / 60),
+        description: e.comment ?? "",
+        everhour_task_id: e.task?.id ?? null,
+        everhour_task_name: e.task?.name ?? "",
+        everhour_user_id: String(e.user),
+        everhour_user_name: userNames.get(String(e.user)) ?? "",
+      });
       continue;
     }
     const moved = (e.history ?? []).filter((h) => h.previousTask).at(-1);
@@ -120,6 +255,12 @@ export async function runEverhourSync(
     inserted = count ?? rows.length;
   }
 
+  // everything the tracker now holds, so already-queued gaps can be closed
+  const importedIds = new Set(seen);
+  for (const r of rows) importedIds.add(r.everhour_id as string);
+
+  const queue = await reconcileSyncIssues(supabase, unmatchedEntries, importedIds);
+
   return {
     from,
     to,
@@ -130,5 +271,6 @@ export async function runEverhourSync(
     unmatchedTasks: [...unmatched.entries()]
       .map(([id, v]) => ({ id, name: v.name, minutes: v.minutes }))
       .sort((a, b) => b.minutes - a.minutes),
+    ...queue,
   };
 }
