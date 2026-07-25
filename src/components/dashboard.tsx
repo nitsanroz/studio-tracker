@@ -736,7 +736,7 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
         Hours by client over time
       </h2>
       {series.length > 0 ? (
-        <MultiLineChart labels={labels} series={series} />
+        <MultiLineChart labels={labels} series={series} totalLabel={`top clients · ${filter.label.toLowerCase()}`} />
       ) : (
         <p className="text-sm text-faint">No hours in this scope.</p>
       )}

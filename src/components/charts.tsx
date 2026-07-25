@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
 
 /** Horizontal bar with a label row. Values in minutes. */
@@ -415,164 +415,242 @@ function smoothPath(pts: { x: number; y: number }[]): string {
 export function MultiLineChart({
   labels,
   series,
+  totalLabel,
 }: {
   labels: string[];
   series: { label: string; color: string; values: number[] }[];
+  /** caption under the big total, e.g. "this month" */
+  totalLabel?: string;
 }) {
-  const [hover, setHover] = useState<{ s: number; i: number } | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const uid = useId().replace(/:/g, "");
   if (!series.length || !labels.length) return null;
+
   const max = Math.max(1, ...series.flatMap((s) => s.values));
   const n = labels.length;
-  const W = 320;
-  const H = 172;
-  const padL = 30;
-  const padR = 12;
-  const padTop = 14;
+  const W = 340;
+  const H = 190;
+  const padL = 34;
+  const padR = 10;
+  const padTop = 12;
   const padBottom = 26;
   const innerW = W - padL - padR;
   const innerH = H - padTop - padBottom;
   const x = (i: number) => (n === 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW);
   const y = (v: number) => padTop + innerH - (v / max) * innerH;
-  const step = Math.max(1, Math.ceil(n / 8));
-  const grid = [0, 1 / 3, 2 / 3, 1];
+  const step = Math.max(1, Math.ceil(n / 6));
+  const baseline = padTop + innerH;
+
+  // headline: total hours in view + trend of the last bucket vs the one before
+  const total = series.reduce((s, ser) => s + ser.values.reduce((a, b) => a + b, 0), 0);
+  const lastSum = series.reduce((s, ser) => s + (ser.values.at(-1) ?? 0), 0);
+  const prevSum = n > 1 ? series.reduce((s, ser) => s + (ser.values.at(-2) ?? 0), 0) : 0;
+  const trend = prevSum > 0 ? Math.round(((lastSum - prevSum) / prevSum) * 100) : null;
+
+  // tooltip rows: every series with hours at the hovered bucket, biggest first
+  const rows =
+    hover == null
+      ? []
+      : series
+          .map((s) => {
+            const v = s.values[hover] ?? 0;
+            const prev = hover > 0 ? (s.values[hover - 1] ?? 0) : null;
+            const delta = prev && prev > 0 ? Math.round(((v - prev) / prev) * 100) : null;
+            return { label: s.label, color: s.color, v, delta };
+          })
+          .filter((r) => r.v > 0)
+          .sort((a, b) => b.v - a.v)
+          .slice(0, 6);
+
+  const tipLeft = hover == null ? 0 : (x(hover) / W) * 100;
+  const flip = tipLeft > 55; // keep the card inside the pane
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours by client over time">
-        {/* faint gridlines + y labels */}
-        {grid.map((g, gi) => {
-          const gy = padTop + innerH * g;
-          return (
-            <g key={`g${gi}`}>
-              <line
-                x1={padL}
-                y1={gy}
-                x2={W - padR}
-                y2={gy}
-                style={{ stroke: "var(--color-border)" }}
-                strokeWidth={0.5}
-                strokeDasharray="2 3"
-              />
-              <text x={padL - 6} y={gy + 2.5} textAnchor="end" fontSize={7} style={{ fill: "var(--color-faint)" }}>
-                {formatHoursShort(max * (1 - g))}
-              </text>
-            </g>
-          );
-        })}
+      {/* headline + legend */}
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-serif-accent text-[26px] leading-none">{formatHoursShort(total)}</span>
+            {trend != null && (
+              <span
+                title={`Last ${labels.at(-1)} vs ${labels.at(-2)}`}
+                className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  trend >= 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                }`}
+              >
+                {trend >= 0 ? "↗" : "↘"} {trend >= 0 ? "+" : ""}
+                {trend}%
+              </span>
+            )}
+          </div>
+          {totalLabel && <div className="mt-0.5 text-[11px] text-muted">{totalLabel}</div>}
+        </div>
+        <div className="flex max-w-[62%] flex-wrap justify-end gap-x-3 gap-y-1">
+          {series.map((s, si) => (
+            <span key={si} className="flex items-center gap-1.5 text-[10px] text-muted">
+              <span className="h-[2.5px] w-3 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+              <span className="bidi-auto max-w-20 truncate">{s.label}</span>
+            </span>
+          ))}
+        </div>
+      </div>
 
-        {/* dashed vertical guide at the hovered point */}
-        {hover && (
-          <line
-            x1={x(hover.i)}
-            y1={padTop}
-            x2={x(hover.i)}
-            y2={padTop + innerH}
-            style={{ stroke: "var(--color-brand)" }}
-            strokeWidth={0.75}
-            strokeDasharray="3 3"
-            opacity={0.5}
-          />
-        )}
+      <div className="relative">
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours by client over time">
+          <defs>
+            {series.map((s, si) => (
+              <linearGradient key={si} id={`g${uid}-${si}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={s.color} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
 
-        {/* smooth thin lines + point dots */}
-        {series.map((s, si) => {
-          const dim = hover != null && hover.s !== si;
-          return (
-            <g key={si} opacity={dim ? 0.2 : 1}>
-              <path
-                d={smoothPath(s.values.map((v, i) => ({ x: x(i), y: y(v) })))}
-                fill="none"
-                style={{ stroke: s.color }}
-                strokeWidth={hover?.s === si ? 2 : 1.4}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-              {s.values.map((v, i) => {
-                const active = hover?.s === si && hover?.i === i;
-                return (
-                  <circle
-                    key={i}
-                    cx={x(i)}
-                    cy={y(v)}
-                    r={active ? 3.2 : 1.6}
-                    style={{ fill: active ? s.color : "var(--color-surface)", stroke: s.color }}
-                    strokeWidth={1.4}
-                  />
-                );
-              })}
-            </g>
-          );
-        })}
-
-        {/* hit targets */}
-        {series.map((s, si) =>
-          s.values.map((v, i) => (
-            <circle
-              key={`h-${si}-${i}`}
-              cx={x(i)}
-              cy={y(v)}
-              r={8}
-              fill="transparent"
-              onMouseEnter={() => setHover({ s: si, i })}
-              onMouseLeave={() => setHover(null)}
-            />
-          )),
-        )}
-
-        {/* x labels — hovered one highlighted brand */}
-        {labels.map((l, i) => {
-          const on = hover?.i === i;
-          return i % step === 0 || on ? (
-            <text
-              key={i}
-              x={x(i)}
-              y={H - 8}
-              textAnchor="middle"
-              fontSize={7.5}
-              fontWeight={on ? 700 : 400}
-              style={{ fill: on ? "var(--color-brand)" : "var(--color-faint)" }}
-            >
-              {l}
-            </text>
-          ) : null;
-        })}
-
-        {/* dark tooltip card */}
-        {hover &&
-          (() => {
-            const s = series[hover.s];
-            const v = s.values[hover.i];
-            const cx = x(hover.i);
-            const val = formatHoursShort(v);
-            const w = Math.max(50, Math.max(s.label.length * 4.2, val.length * 6) + 16);
-            const h = 30;
-            const bx = Math.min(W - w - 2, Math.max(2, cx - w / 2));
-            const by = Math.max(2, y(v) - h - 8);
+          {/* dashed gridlines + y labels */}
+          {[0, 0.25, 0.5, 0.75, 1].map((g, gi) => {
+            const gy = padTop + innerH * g;
             return (
-              <g pointerEvents="none">
-                <rect x={bx} y={by} width={w} height={h} rx={5} style={{ fill: "var(--color-foreground)" }} />
-                <text x={bx + 8} y={by + 12} fontSize={6.5} style={{ fill: "#b9c8f9" }}>
-                  {s.label}
-                </text>
-                <text x={bx + 8} y={by + 23} fontSize={11} fontWeight={700} fill="#fff">
-                  {val}
+              <g key={gi}>
+                <line
+                  x1={padL}
+                  y1={gy}
+                  x2={W - padR}
+                  y2={gy}
+                  style={{ stroke: "var(--color-border)" }}
+                  strokeWidth={0.6}
+                  strokeDasharray="3 3"
+                />
+                <text x={padL - 6} y={gy + 2.5} textAnchor="end" fontSize={7} style={{ fill: "var(--color-faint)" }}>
+                  {formatHoursShort(max * (1 - g))}
                 </text>
               </g>
             );
-          })()}
-      </svg>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {series.map((s, si) => (
-          <span
-            key={si}
-            onMouseEnter={() => setHover({ s: si, i: hover?.i ?? Math.floor(n / 2) })}
-            onMouseLeave={() => setHover(null)}
-            className="flex cursor-default items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-0.5 text-[10px]"
+          })}
+
+          {/* dashed crosshair */}
+          {hover != null && (
+            <line
+              x1={x(hover)}
+              y1={padTop}
+              x2={x(hover)}
+              y2={baseline}
+              style={{ stroke: "var(--color-border-strong)" }}
+              strokeWidth={0.8}
+              strokeDasharray="3 3"
+            />
+          )}
+
+          {/* area + line per series */}
+          {series.map((s, si) => {
+            const pts = s.values.map((v, i) => ({ x: x(i), y: y(v) }));
+            const line = smoothPath(pts);
+            return (
+              <g key={si}>
+                <path
+                  d={`${line} L${x(n - 1)},${baseline} L${x(0)},${baseline} Z`}
+                  fill={`url(#g${uid}-${si})`}
+                  opacity={hover == null ? 0.75 : 0.35}
+                />
+                <path
+                  d={line}
+                  fill="none"
+                  style={{ stroke: s.color }}
+                  strokeWidth={1.6}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </g>
+            );
+          })}
+
+          {/* dots on the hovered bucket */}
+          {hover != null &&
+            series.map((s, si) => {
+              const v = s.values[hover] ?? 0;
+              if (v <= 0) return null;
+              return (
+                <circle
+                  key={si}
+                  cx={x(hover)}
+                  cy={y(v)}
+                  r={3.2}
+                  style={{ fill: s.color, stroke: "var(--color-surface)" }}
+                  strokeWidth={1.5}
+                />
+              );
+            })}
+
+          {/* full-height hit bands, one per bucket */}
+          {labels.map((_, i) => (
+            <rect
+              key={i}
+              x={i === 0 ? padL : (x(i - 1) + x(i)) / 2}
+              y={padTop}
+              width={
+                n === 1
+                  ? innerW
+                  : (i === n - 1 ? W - padR : (x(i) + x(i + 1)) / 2) - (i === 0 ? padL : (x(i - 1) + x(i)) / 2)
+              }
+              height={innerH}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+            />
+          ))}
+
+          {/* x labels */}
+          {labels.map((l, i) => {
+            const on = hover === i;
+            return i % step === 0 || on ? (
+              <text
+                key={i}
+                x={x(i)}
+                y={H - 8}
+                textAnchor="middle"
+                fontSize={7.5}
+                fontWeight={on ? 700 : 400}
+                style={{ fill: on ? "var(--color-foreground)" : "var(--color-faint)" }}
+              >
+                {l}
+              </text>
+            ) : null;
+          })}
+        </svg>
+
+        {/* tooltip card */}
+        {hover != null && rows.length > 0 && (
+          <div
+            className="pointer-events-none absolute top-2 z-10 min-w-[132px] rounded-xl border border-border bg-surface p-2.5 shadow-card"
+            style={{
+              left: `${tipLeft}%`,
+              transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)",
+            }}
           >
-            <span className="size-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: s.color }} />
-            <span className="bidi-auto max-w-24 truncate">{s.label}</span>
-          </span>
-        ))}
+            <div className="mb-1.5 text-[11px] font-semibold">{labels[hover]}</div>
+            <div className="flex flex-col gap-1.5">
+              {rows.map((r) => (
+                <div key={r.label} className="flex items-center gap-2">
+                  <span className="h-6 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="bidi-auto max-w-24 truncate text-[10px] text-muted">{r.label}</div>
+                    <div className="text-[11px] font-semibold tabular-nums">{formatHoursShort(r.v)}</div>
+                  </div>
+                  {r.delta != null && (
+                    <span
+                      className={`shrink-0 text-[10px] font-semibold tabular-nums ${
+                        r.delta >= 0 ? "text-success" : "text-danger"
+                      }`}
+                    >
+                      {r.delta >= 0 ? "+" : ""}
+                      {r.delta}%
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
