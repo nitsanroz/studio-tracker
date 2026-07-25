@@ -12,6 +12,16 @@ import type { ReportSnapshot } from "@/lib/types";
  * physically cannot see hidden rows/columns. `hiddenColumns` only ever carries
  * the leading estimate/total columns, whose values were already nulled.
  */
+function ReportTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 text-[11px] text-muted">{sub}</div>}
+    </div>
+  );
+}
+
 export function PublicReportView({
   clientName,
   clientColor,
@@ -38,6 +48,12 @@ export function PublicReportView({
     }));
   }, [snapshot]);
 
+  const visiblePeriods = periodSummary.filter((_, i) => !hiddenColumns.includes(columnKey(i)));
+  const delivered = visiblePeriods.reduce((s, p) => s + p.minutes, 0);
+  const current = visiblePeriods.at(-1) ?? null;
+  const remaining =
+    current?.hourCap != null ? Math.max(0, current.hourCap * 60 - current.minutes) : null;
+
   return (
     <main className="mx-auto max-w-6xl p-6 md:p-10">
       <header className="mb-6 flex items-start justify-between gap-4">
@@ -49,7 +65,7 @@ export function PublicReportView({
             {clientName[0]}
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{clientName}</h1>
+            <h1 className="font-serif-accent text-3xl">{clientName}</h1>
             <p className="text-sm text-muted">
               Hours report{lastUpdated && <> · last updated {lastUpdated}</>}
             </p>
@@ -63,13 +79,24 @@ export function PublicReportView({
         />
       </header>
 
+      {visiblePeriods.length > 0 && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <ReportTile label="Delivered to date" value={formatHoursShort(delivered)} />
+          {current && (
+            <ReportTile label={current.label} value={formatHoursShort(current.minutes)} sub="this period" />
+          )}
+          {current?.hourCap != null && <ReportTile label="Period cap" value={`${current.hourCap}h`} />}
+          {remaining != null && <ReportTile label="Remaining" value={formatHoursShort(remaining)} />}
+        </div>
+      )}
+
       <div className="grid items-start gap-4 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-surface p-4 lg:col-span-3">
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card lg:col-span-3">
           <ReportTable snapshot={snapshot} hiddenColumns={hiddenColumns} hiddenTaskIds={[]} />
         </div>
 
         <aside className="flex flex-col gap-3">
-          <div className="rounded-2xl border border-border bg-surface p-4">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
             <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
               Billing periods
             </h2>
