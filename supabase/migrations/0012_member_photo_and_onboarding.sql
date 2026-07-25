@@ -9,7 +9,6 @@ alter table profiles add column if not exists photo_url text;
 -- that runs on first sign-in. Null = never completed.
 alter table member_hr add column if not exists confirmed_at timestamptz;
 
--- member_hr stays ADMIN-ONLY at the RLS level on purpose: it holds salary.
--- Members read/write their own non-salary fields through /api/me/hr, which is
--- session-verified and whitelists columns server-side (salary is never
--- returned to, or writable by, a member).
+-- member_hr stays ADMIN-ONLY at the RLS level on purpose: it holds sensitive
+-- PII (national ID, address). Members read/write their own record through
+-- /api/me/hr, which is session-verified and whitelists columns server-side.

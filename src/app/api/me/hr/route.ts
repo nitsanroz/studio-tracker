@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/server";
  * The signed-in member's own HR details, for the first-sign-in "confirm your
  * details" step and later edits from Settings.
  *
- * member_hr stays admin-only at the RLS level because it holds salary, so this
- * route uses the service key behind a session check and whitelists columns:
- * SALARY IS NEVER READ OUT TO, OR WRITABLE BY, THE MEMBER. Admins editing
+ * member_hr stays admin-only at the RLS level because it holds sensitive PII
+ * (national ID, address), so this route uses the service key behind a session
+ * check and whitelists columns to a member's own record. Admins editing
  * someone else's HR record still go through the admin UI, not this route.
  */
 
@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  // whitelist — anything not in FIELDS (notably salary) is dropped
+  // whitelist — anything not in FIELDS is dropped
   const patch: Record<string, string | null> = {};
   for (const f of FIELDS) {
     if (f in body) {

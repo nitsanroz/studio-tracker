@@ -76,7 +76,6 @@ const HR_FIELDS = [
   ["city", "City"],
   ["zip", "Zip"],
   ["marital_status", "Marital status"],
-  ["salary", "Salary (₪)"],
   ["emergency_contact_name", "Emergency contact"],
   ["emergency_contact_phone", "Contact phone"],
 ] as const;
@@ -105,8 +104,7 @@ function HrFields({ profileId }: { profileId: string }) {
   }, [supabase, profileId]);
 
   async function saveField(key: HrKey, raw: string) {
-    const value =
-      key === "salary" ? (raw === "" ? null : Number(raw)) : raw === "" ? null : raw;
+    const value = raw === "" ? null : raw;
     if ((row?.[key] ?? null) === value) return;
     setRow((r) => ({ ...r, [key]: value }));
     const { error } = await supabase
@@ -140,7 +138,7 @@ function HrFields({ profileId }: { profileId: string }) {
               {savedAt === key && <span className="ml-1 text-success">✓</span>}
             </span>
             <input
-              type={key === "birth_date" ? "date" : key === "salary" ? "number" : "text"}
+              type={key === "birth_date" ? "date" : "text"}
               defaultValue={row[key] == null ? "" : String(row[key])}
               onBlur={(e) => saveField(key, e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 /**
  * The member's own HR details — shown as a welcome step on first sign-in and
  * editable later from Settings. Reads/writes /api/me/hr, which whitelists
- * columns server-side (salary is never exposed here).
+ * columns server-side to the member's own record.
  */
 
 type Details = Record<string, string>;
