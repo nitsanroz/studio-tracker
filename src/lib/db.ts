@@ -51,6 +51,7 @@ export const mapProfile = (r: any): Profile => ({
   name: r.name,
   role: r.role,
   avatarUrl: r.avatar_url,
+  photoUrl: r.photo_url ?? null,
   active: r.active,
   startDate: r.start_date ?? null,
   capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),

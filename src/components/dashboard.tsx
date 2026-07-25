@@ -18,6 +18,7 @@ import {
 } from "@/lib/format";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import { MemberPhoto } from "./member-photo";
+import { ConfirmDetailsBanner } from "./confirm-details-banner";
 import { Avatar, ClientChip } from "./ui";
 import { HBar, MiniColumnsLabeled, MultiLineChart, PercentRing, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
@@ -1044,7 +1045,7 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
 }
 
 /** Member welcome: blue hero with the member's cut-out photo + this-week summary, then 3 KPI tiles. */
-function MemberWelcome({ me }: { me: { id: string; name: string } }) {
+function MemberWelcome({ me }: { me: { id: string; name: string; photoUrl: string | null } }) {
   const { entrySums, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
@@ -1109,7 +1110,7 @@ function MemberWelcome({ me }: { me: { id: string; name: string } }) {
           className="pointer-events-none absolute bottom-0 right-6 z-10 hidden sm:block"
           style={{ width: 192, height: 196 }}
         >
-          <MemberPhoto name={me.name} variant="hero" size={196} />
+          <MemberPhoto name={me.name} src={me.photoUrl} variant="hero" size={196} />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
@@ -1333,6 +1334,7 @@ export function Dashboard() {
         </>
       ) : (
         <>
+          <ConfirmDetailsBanner />
           {me && <MemberWelcome me={me} />}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyWeek />

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { presetRange } from "@/lib/date-ranges";
@@ -48,7 +49,13 @@ function tenureShort(startIso: string): string {
 // ── add user modal ──────────────────────────────────────────────────────────
 
 function AddUserModal({ onClose }: { onClose: () => void }) {
-  const [form, setForm] = useState({ email: "", name: "", role: "designer" });
+  const router = useRouter();
+  const [form, setForm] = useState({
+    email: "",
+    name: "",
+    role: "designer",
+    startDate: toISODate(new Date()),
+  });
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -67,10 +74,9 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
       setStatus(body.error ?? "Failed");
       return;
     }
-    setStatus(
-      `${form.name} added ✓ — they set their password via "Forgot password" on the login page (reload to see them).`,
-    );
-    setForm({ email: "", name: "", role: "designer" });
+    // straight to their member page to add pictures and finish setting them up
+    setStatus(`${form.name} added ✓ — opening their page…`);
+    router.push(`/team/${body.id}`);
   }
 
   return (
@@ -106,6 +112,16 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+          Start date
+          <input
+            required
+            type="date"
+            value={form.startDate}
+            onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
             className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
           />
         </label>
@@ -268,7 +284,7 @@ export default function TeamPage() {
                 className={`absolute right-3 top-3 size-2.5 rounded-full ${p.active ? "bg-success" : "bg-border-strong"}`}
                 title={p.active ? "Active" : "Deactivated"}
               />
-              <MemberPhoto name={p.name} variant="avatar" size={76} />
+              <MemberPhoto name={p.name} src={p.photoUrl} variant="avatar" size={76} />
               <div className="mt-3 max-w-full truncate text-sm font-semibold">{p.name}</div>
               <div className="text-xs capitalize text-muted">
                 {p.role}

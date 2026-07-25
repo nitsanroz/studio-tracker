@@ -5,6 +5,8 @@ export interface Profile {
   name: string;
   role: Role;
   avatarUrl: string | null;
+  /** studio cut-out portrait (head-to-arms, white studio&more tee) */
+  photoUrl: string | null;
   active: boolean;
   startDate: string | null;
   capacityHoursWeek: number | null;

@@ -16,9 +16,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Admins only" }, { status: 403 });
   }
 
-  const { email, name, role } = await request.json();
+  const { email, name, role, startDate } = await request.json();
   if (!email || !name || !["admin", "designer"].includes(role)) {
     return NextResponse.json({ error: "email, name and role are required" }, { status: 400 });
+  }
+  if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+    return NextResponse.json({ error: "startDate must be YYYY-MM-DD" }, { status: 400 });
   }
 
   const admin = createServiceClient(
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
     name,
     role,
     active: true,
+    start_date: startDate || null,
   });
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
 

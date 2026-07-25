@@ -5,78 +5,23 @@ import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, TagBadge } from "@/components/ui";
+import { TagBadge } from "@/components/ui";
+import { MemberPictures } from "@/components/picture-editor";
+import { HrDetailsForm } from "@/components/hr-details-form";
 import type { Tag } from "@/lib/types";
 
 function MyProfile() {
-  const { profiles, currentUserId, patchProfileLocal } = useData();
+  const { profiles, currentUserId } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-
   if (!me) return null;
 
-  async function upload(file: File) {
-    setBusy(true);
-    setStatus(null);
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/avatar", { method: "POST", body });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(json.error ?? "Upload failed");
-      return;
-    }
-    patchProfileLocal(me!.id, { avatarUrl: json.avatarUrl });
-    setStatus("Avatar updated ✓");
-  }
-
-  async function remove() {
-    setBusy(true);
-    const res = await fetch("/api/avatar", { method: "DELETE" });
-    setBusy(false);
-    if (res.ok) {
-      patchProfileLocal(me!.id, { avatarUrl: null });
-      setStatus("Back to initials ✓");
-    }
-  }
-
   return (
-    <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-3 font-heading">My profile</h2>
-      <div className="flex items-center gap-4">
-        <Avatar profile={me} size={56} />
-        <div className="flex flex-col gap-1.5">
-          <div className="text-sm font-medium">{me.name}</div>
-          <div className="flex items-center gap-2">
-            <label className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs font-medium text-muted hover:border-brand hover:text-brand">
-              {busy ? "Uploading…" : "Upload avatar"}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                className="hidden"
-                disabled={busy}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) upload(f);
-                  e.target.value = "";
-                }}
-              />
-            </label>
-            {me.avatarUrl && (
-              <button
-                onClick={remove}
-                disabled={busy}
-                className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-danger hover:text-danger"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-          {status && <div className="text-xs text-muted">{status}</div>}
-        </div>
-      </div>
+    <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 className="mb-1 font-heading">My pictures</h2>
+      <p className="mb-4 text-xs text-muted">
+        Your avatar and your studio portrait. Admins can also set these for you.
+      </p>
+      <MemberPictures profile={me} />
     </section>
   );
 }
@@ -449,6 +394,18 @@ function ChangePassword() {
   );
 }
 
+function MyDetails() {
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 className="mb-1 font-heading">My details</h2>
+      <p className="mb-4 text-xs text-muted">
+        For HR and payroll paperwork. Visible only to you and the studio admins.
+      </p>
+      <HrDetailsForm />
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const { profiles, currentUserId } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
@@ -456,11 +413,12 @@ export default function SettingsPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
-      <h1 className="text-2xl">Settings</h1>
+      <h1 className="font-serif-accent text-3xl">Settings</h1>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">
           <MyProfile />
+          <MyDetails />
 
           {isAdmin && (
             <Link

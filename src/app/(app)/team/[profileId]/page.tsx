@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
 import { formatHoursShort, MONTH_NAMES_SHORT } from "@/lib/format";
 import { Avatar, ClientChip } from "@/components/ui";
+import { MemberPictures } from "@/components/picture-editor";
 import { HBar, MiniColumns } from "@/components/charts";
 import type { Role } from "@/lib/types";
 
@@ -300,6 +301,11 @@ export default function MemberPage({
         />
         <Stat label="Total logged" value={formatHoursShort(totalMinutes)} />
         <Stat label="Clients worked on" value={String(clientCount)} />
+      </div>
+
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">Pictures</h2>
+        <MemberPictures profile={profile} />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
