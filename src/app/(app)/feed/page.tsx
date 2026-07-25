@@ -21,6 +21,7 @@ import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/compone
 import { EditableTextCell } from "@/components/editable-cell";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import { TaskAutocomplete, type TaskMatch } from "@/components/task-autocomplete";
+import { EverhourSyncButton } from "@/components/everhour-sync-button";
 import type { TimeEntry } from "@/lib/types";
 
 type Period = "Recent" | RangePreset;
@@ -622,6 +623,7 @@ function FeedPageContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && <EverhourSyncButton />}
           <button
             onClick={() => setUserPopup({ userId: currentUserId, date: toISODate(new Date()) })}
             className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
