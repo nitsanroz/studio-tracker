@@ -62,6 +62,10 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     id: created.user.id,
-    note: "Account created — the member sets a password via 'Forgot password' on the login page.",
+    // Point at the admin button, not "Forgot password": that self-service path
+    // goes through Supabase's own auth mailer (rate-capped, and dead whenever
+    // SMTP is misconfigured), whereas "Send password link" uses /api/admin/invite
+    // → Resend, and produces a link that opens on any device.
+    note: "Account created — use 'Send password link' on the member's page to let them set a password.",
   });
 }
