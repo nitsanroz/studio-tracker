@@ -28,7 +28,26 @@ export default function ResetRequestPage() {
     });
     setLoading(false);
     if (error) {
-      setError(error.message);
+      // This path goes through Supabase's own auth mailer, which fails in two
+      // ways that both used to reach the member as raw noise — a 429 when the
+      // built-in mailer's ~2/hour cap is hit, and a 500 "Error sending recovery
+      // email" when SMTP is misconfigured. supabase-js surfaces the latter as an
+      // AuthRetryableFetchError whose message is the literal string "{}", which
+      // rendered as a red "{}" on the form. Neither is the member's problem, and
+      // in both cases an admin can send a link directly (see /api/admin/invite,
+      // which uses Resend and doesn't touch this mailer at all).
+      console.error("reset email failed", error.name, error.status, error.message);
+      const rateLimited = error.status === 429 || /rate limit|after \d+ seconds/i.test(error.message);
+      const unhelpful = !error.message || /^[{[\s\]}]*$/.test(error.message);
+      setError(
+        rateLimited
+          ? "Too many requests just now — wait a few minutes and try again, or ask an admin to send you a link directly."
+          : error.status && error.status >= 500
+            ? "We couldn't send the email right now. Ask an admin to send you a link directly."
+            : unhelpful
+              ? "Something went wrong — please try again, or ask an admin to send you a link directly."
+              : error.message,
+      );
       return;
     }
     setSent(true);
