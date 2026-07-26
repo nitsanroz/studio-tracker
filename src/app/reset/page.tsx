@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -8,7 +8,15 @@ export default function ResetRequestPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkFailed, setLinkFailed] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // /auth/confirm bounces here with ?error=link when a link can't be redeemed
+  // (already used, expired, or opened after the token was consumed). Without
+  // this the member lands on a blank form with no idea why.
+  useEffect(() => {
+    setLinkFailed(new URLSearchParams(window.location.search).get("error") === "link");
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +42,12 @@ export default function ResetRequestPage() {
       >
         <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
         <h1 className="text-lg">Reset password</h1>
+        {linkFailed && !sent && (
+          <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">
+            That link couldn&apos;t be used — it may have expired or already been opened. Enter your
+            email below and we&apos;ll send a fresh one.
+          </p>
+        )}
         {sent ? (
           <p className="text-sm text-muted">
             Check your inbox — if <span className="font-medium text-foreground">{email}</span> has

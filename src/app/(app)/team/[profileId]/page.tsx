@@ -241,17 +241,18 @@ export default function MemberPage({
   if (!isAdmin) return <p className="text-sm text-muted">This page is for admins only.</p>;
   if (!profile) return <p className="text-sm text-muted">Member not found.</p>;
 
+  // Goes through /api/admin/invite, not supabase.auth.resetPasswordForEmail():
+  // the browser call mints a PKCE link that only opens in THIS browser, so a link
+  // mailed to a member never worked on their own device. See the route for detail.
   async function sendReset() {
     setResetStatus("…");
-    const email = window.prompt(`Send a password reset/set link.\nEmail for ${profile!.name}:`);
-    if (!email) {
-      setResetStatus(null);
-      return;
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/confirm?next=/reset/update`,
+    const res = await fetch("/api/admin/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileId: profile!.id }),
     });
-    setResetStatus(error ? error.message : "Reset link sent ✓");
+    const body = await res.json().catch(() => ({}));
+    setResetStatus(res.ok ? `Link sent to ${body.email} ✓` : (body.error ?? "Could not send."));
   }
 
   const maxClient = topClients[0]?.minutes ?? 0;
