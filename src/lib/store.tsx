@@ -113,6 +113,11 @@ interface Store {
   updateTask: (taskId: string, patch: Partial<Task>) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
   addSection: (clientId: string, name: string) => void;
+  updateSection: (sectionId: string, patch: Partial<Pick<Section, "name">>) => void;
+  /** No-ops (with a visible write error) if the section still contains tasks. */
+  deleteSection: (sectionId: string) => void;
+  /** Move `movedId` before `beforeId` within its own section; null = to the end. */
+  reorderTask: (movedId: string, beforeId: string | null) => void;
   addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
   updateProfile: (profileId: string, patch: Partial<Profile>) => void;
@@ -519,6 +524,106 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
     },
     [supabase, sections],
+  );
+
+  const updateSection = useCallback(
+    (sectionId: string, patch: Partial<Pick<Section, "name">>) => {
+      const before = sections.find((s) => s.id === sectionId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateSection(sectionId, prev),
+          redo: () => methodsRef.current?.updateSection(sectionId, patch),
+        });
+      }
+      setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, ...patch } : s)));
+      supabase
+        .from("sections")
+        .update(patch)
+        .eq("id", sectionId)
+        .then(({ error }) => {
+          if (error) noteWriteError("updateSection", error);
+        });
+    },
+    [supabase, sections, record],
+  );
+
+  /** Refuses if any task still points at the section — deleting one with tasks in it
+   *  would orphan them (the FK is ON DELETE SET NULL, so they'd silently reappear
+   *  under "No section" with no way to tell where they came from). */
+  const deleteSection = useCallback(
+    (sectionId: string) => {
+      if (tasks.some((t) => t.sectionId === sectionId)) {
+        noteWriteError("deleteSection", { message: "Section still has tasks" });
+        return;
+      }
+      setSections((prev) => prev.filter((s) => s.id !== sectionId));
+      supabase
+        .from("sections")
+        .delete()
+        .eq("id", sectionId)
+        .then(({ error }) => {
+          if (error) noteWriteError("deleteSection", error);
+        });
+    },
+    [supabase, tasks],
+  );
+
+  /**
+   * Reorder tasks inside one section: `movedId` is placed before `beforeId`
+   * (or last when null). Positions are rewritten as a dense 1..n sequence for the
+   * section, which keeps them stable instead of drifting toward collisions the way
+   * midpoint/fractional schemes do after enough moves.
+   */
+  const reorderTask = useCallback(
+    (movedId: string, beforeId: string | null) => {
+      const moved = tasks.find((t) => t.id === movedId);
+      if (!moved) return;
+
+      const siblings = tasks
+        .filter((t) => t.clientId === moved.clientId && t.sectionId === moved.sectionId)
+        .sort((a, b) => a.position - b.position);
+
+      const without = siblings.filter((t) => t.id !== movedId);
+      const at = beforeId ? without.findIndex((t) => t.id === beforeId) : without.length;
+      if (at === -1) return;
+      const ordered = [...without.slice(0, at), moved, ...without.slice(at)];
+
+      const changed = ordered
+        .map((t, i) => ({ id: t.id, position: i + 1, was: t.position }))
+        .filter((r) => r.position !== r.was);
+      if (changed.length === 0) return;
+
+      const prevById = new Map(changed.map((r) => [r.id, r.was]));
+      record({
+        undo: () => {
+          setTasks((prev) =>
+            prev.map((t) => (prevById.has(t.id) ? { ...t, position: prevById.get(t.id)! } : t)),
+          );
+          for (const [id, position] of prevById) {
+            supabase
+              .from("tasks")
+              .update({ position })
+              .eq("id", id)
+              .then(({ error }) => error && noteWriteError("reorderTask undo", error));
+          }
+        },
+        redo: () => methodsRef.current?.reorderTask(movedId, beforeId),
+      });
+
+      const posById = new Map(changed.map((r) => [r.id, r.position]));
+      setTasks((prev) =>
+        prev.map((t) => (posById.has(t.id) ? { ...t, position: posById.get(t.id)! } : t)),
+      );
+      for (const { id, position } of changed) {
+        supabase
+          .from("tasks")
+          .update({ position })
+          .eq("id", id)
+          .then(({ error }) => error && noteWriteError("reorderTask", error));
+      }
+    },
+    [supabase, tasks, record],
   );
 
   const addClient = useCallback(
@@ -1351,6 +1456,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateTask,
       addTask,
       addSection,
+      updateSection,
+      deleteSection,
+      reorderTask,
       addClient,
       patchProfileLocal,
       updateProfile,
@@ -1392,7 +1500,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
       currentUserId, viewAsProfile, openSyncIssues, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, addSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
+      openTask, updateTask, addTask, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );
 

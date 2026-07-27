@@ -11,6 +11,7 @@ import {
   GripVertical,
   Maximize2,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatDate, formatHoursShort } from "@/lib/format";
@@ -133,6 +134,12 @@ const COLS = "flex items-center gap-3 pl-6 pr-4";
  *  readable on drop. */
 const TASK_DRAG_TYPE = "application/x-studio-task-id";
 
+/** The id of the row being dragged, mirrored outside the DataTransfer because
+ *  `getData()` is unreadable during `dragover` — and a row needs to know, while the
+ *  pointer is still moving, whether this drag is a reorder within its own section
+ *  (it handles it) or a move from another section (it lets the group handle it). */
+let draggedTaskId: string | null = null;
+
 type SortKey = "title" | "assignee" | "due" | "tag" | "budget" | "billable";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
 
@@ -211,9 +218,30 @@ function SortHeader({
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
-  const { profiles, tags, openTask, updateTask, taskMinutes, openTaskId, currentUserId } = useData();
+function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boolean }) {
+  const {
+    profiles,
+    tags,
+    tasks: allTasks,
+    openTask,
+    updateTask,
+    reorderTask,
+    taskMinutes,
+    openTaskId,
+    currentUserId,
+  } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const [dropBefore, setDropBefore] = useState(false);
+
+  /** True when the in-flight drag is a sibling of this row, i.e. a reorder.
+   *  Disabled while a column sort is on: position changes wouldn't be visible, so
+   *  the drop would look like it did nothing. Cross-section moves still work. */
+  function isSiblingDrag() {
+    if (!reorderable) return false;
+    if (!draggedTaskId || draggedTaskId === task.id) return false;
+    const d = allTasks.find((t) => t.id === draggedTaskId);
+    return !!d && d.sectionId === task.sectionId && d.clientId === task.clientId;
+  }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const done = task.status === "done";
   const active = openTaskId === task.id;
@@ -222,12 +250,41 @@ function TaskRow({ task }: { task: Task }) {
     <div
       draggable={isAdmin}
       onDragStart={(e) => {
+        draggedTaskId = task.id;
         e.dataTransfer.setData(TASK_DRAG_TYPE, task.id);
         e.dataTransfer.effectAllowed = "move";
       }}
+      onDragEnd={() => {
+        draggedTaskId = null;
+        setDropBefore(false);
+      }}
+      // Reorder only. A drag from another section is left unhandled so it bubbles
+      // to the SectionGroup, which moves it in.
+      onDragOver={(e) => {
+        if (!isAdmin || !e.dataTransfer.types.includes(TASK_DRAG_TYPE) || !isSiblingDrag()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "move";
+        setDropBefore(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+        setDropBefore(false);
+      }}
+      onDrop={(e) => {
+        if (!isAdmin || !isSiblingDrag()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDropBefore(false);
+        const id = e.dataTransfer.getData(TASK_DRAG_TYPE);
+        if (id) reorderTask(id, task.id);
+      }}
+      // inset shadow rather than a border: a real border-top would shift the row 2px
       className={`${COLS} group relative h-10 cursor-pointer border-b border-border text-sm transition-colors ${
         active ? "bg-brand-soft/50" : "hover:bg-background"
-      } ${task.pending ? "opacity-50" : ""}`}
+      } ${task.pending ? "opacity-50" : ""} ${
+        dropBefore ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""
+      }`}
       onClick={() => openTask(task.id)}
     >
       {isAdmin && (
@@ -393,17 +450,29 @@ function SectionGroup({
   section,
   tasks,
   clientId,
+  reorderable,
 }: {
   section: Section | null;
   tasks: Task[];
   clientId: string;
+  reorderable: boolean;
 }) {
-  const { tasks: allTasks, updateTask, profiles, currentUserId } = useData();
+  const {
+    tasks: allTasks,
+    updateTask,
+    updateSection,
+    deleteSection,
+    profiles,
+    currentUserId,
+  } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [open, setOpen] = useState(true);
   const [dragOver, setDragOver] = useState(false);
 
   const sectionId = section?.id ?? null;
+  // Against ALL tasks, not the `tasks` prop: that one is filtered by "Show
+  // completed", so a section holding only done tasks would look safe to delete.
+  const sectionIsEmpty = section != null && !allTasks.some((t) => t.sectionId === section.id);
 
   // The whole group is the drop zone — header, rows and the add-row — so there's a
   // generous target rather than a thin line between sections.
@@ -439,20 +508,56 @@ function SectionGroup({
       {...dropProps}
       className={dragOver ? "rounded-lg ring-2 ring-brand ring-inset" : undefined}
     >
-      <button
-        onClick={() => setOpen((o) => !o)}
+      {/* A div, not a button: the name is inline-editable and there's a delete
+          control, and neither can legally nest inside a button. */}
+      <div
         className={`${COLS} w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background`}
       >
-        <span className="flex w-[17px] shrink-0 items-center justify-center">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          title={open ? "Collapse" : "Expand"}
+          className="flex w-[17px] shrink-0 items-center justify-center"
+        >
           <CollapseChevron open={open} />
-        </span>
-        <span className="bidi-auto">{section?.name ?? "No section"}</span>
-        <span className="text-xs font-normal text-faint">{tasks.length}</span>
-      </button>
+        </button>
+        {isAdmin && section ? (
+          <span className="min-w-0 flex-1">
+            <EditableTextCell
+              value={section.name}
+              onCommit={(v) => v && v !== section.name && updateSection(section.id, { name: v })}
+            />
+          </span>
+        ) : (
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="bidi-auto min-w-0 flex-1 truncate text-left"
+          >
+            {section?.name ?? "No section"}
+          </button>
+        )}
+        <span className="shrink-0 text-xs font-normal text-faint">{tasks.length}</span>
+        {isAdmin && section && (
+          <button
+            onClick={() => {
+              if (!sectionIsEmpty) return;
+              if (confirm(`Delete the section “${section.name}”?`)) deleteSection(section.id);
+            }}
+            disabled={!sectionIsEmpty}
+            title={
+              sectionIsEmpty
+                ? "Delete this section"
+                : "Move or delete its tasks first — only an empty section can be removed"
+            }
+            className="shrink-0 rounded p-0.5 text-faint hover:text-danger disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-faint"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </div>
       {open && (
         <>
           {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} />
+            <TaskRow key={t.id} task={t} reorderable={reorderable} />
           ))}
           <AddTaskRow clientId={clientId} sectionId={section?.id ?? null} />
         </>
@@ -587,7 +692,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                 <SortHeader label="Tag" k="tag" sort={sort} onSort={cycleSort} />
               </span>
               <span className="hidden w-28 shrink-0 md:block">
-                <SortHeader label="Budget" k="budget" sort={sort} onSort={cycleSort} />
+                <SortHeader label="Hrs/budget" k="budget" sort={sort} onSort={cycleSort} />
               </span>
               {isAdmin && (
                 <span className="w-4 shrink-0">
@@ -598,7 +703,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             {/* Normally hidden when empty, but an admin mid-drag needs somewhere to
                 drop a task to take it OUT of a section. */}
             {(noSection.length > 0 || (isAdmin && draggingTask)) && (
-              <SectionGroup section={null} tasks={noSection} clientId={clientId} />
+              <SectionGroup section={null} tasks={noSection} clientId={clientId} reorderable={sort === null} />
             )}
             {clientSections.map((section) => (
               <SectionGroup
@@ -606,6 +711,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                 section={section}
                 tasks={clientTasks.filter((t) => t.sectionId === section.id)}
                 clientId={clientId}
+                reorderable={sort === null}
               />
             ))}
             {addingSection ? (

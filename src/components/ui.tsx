@@ -238,7 +238,16 @@ export function BudgetBar({
   doneMinutes: number;
   estimateHours: number | null;
 }) {
-  if (estimateHours == null) return null;
+  // No budget set: still show the hours logged. This used to render nothing at all,
+  // which meant a task without an estimate showed no hours anywhere on the client
+  // table — the logged time was invisible unless someone opened the task.
+  if (estimateHours == null) {
+    return (
+      <span className={`text-xs whitespace-nowrap ${doneMinutes > 0 ? "text-muted" : "text-faint"}`}>
+        {doneMinutes > 0 ? `${formatHoursDecimal(doneMinutes)}h` : "–"}
+      </span>
+    );
+  }
   const doneH = doneMinutes / 60;
   const pct = Math.min(100, (doneH / estimateHours) * 100);
   const over = doneH > estimateHours;
