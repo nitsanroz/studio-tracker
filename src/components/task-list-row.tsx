@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
 import { useData } from "@/lib/store";
-import { formatHoursShort, parseDuration, toISODate } from "@/lib/format";
+import { formatHoursDecimal, formatHoursShort, parseDuration, toISODate } from "@/lib/format";
 import { Avatar, ClientChip, TagBadge } from "./ui";
 import { EditableDateCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { useColWidths, ResizeHandle } from "./resizable";
@@ -238,8 +238,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
           const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
           // merged "Hrs/budget" cell: "10/20 (50%)" — or just hours done when no budget ("10")
-          const doneH = total / 60;
-          const doneStr = total > 0 ? (Number.isInteger(doneH) ? `${doneH}` : doneH.toFixed(1)) : "0";
+          const doneStr = total > 0 ? formatHoursDecimal(total) : "0";
           const hrsBudget =
             budget != null
               ? `${doneStr}/${budget}${pctDone != null ? ` (${pctDone}%)` : ""}`

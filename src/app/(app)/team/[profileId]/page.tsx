@@ -7,8 +7,9 @@ import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
 import { formatHoursShort, MONTH_NAMES_SHORT } from "@/lib/format";
-import { Avatar, ClientChip } from "@/components/ui";
-import { MemberPictures } from "@/components/picture-editor";
+import { useMemberEmails } from "@/lib/use-member-emails";
+import { ClientChip } from "@/components/ui";
+import { PictureEditBadge } from "@/components/picture-editor";
 import { HBar, MiniColumns } from "@/components/charts";
 import type { Role } from "@/lib/types";
 
@@ -171,6 +172,7 @@ export default function MemberPage({
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
+  const email = useMemberEmails(isAdmin)[profileId];
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
@@ -266,11 +268,18 @@ export default function MemberPage({
         <ArrowLeft size={14} /> Team
       </Link>
 
+      {/* Both pictures live in the header with a pencil badge each — they used to
+          get a whole titled pane below the stats, which was more chrome than two
+          thumbnails deserve. */}
       <div className={`flex flex-wrap items-center gap-3 ${profile.active ? "" : "opacity-70"}`}>
-        <Avatar profile={profile} size={56} />
+        <PictureEditBadge profile={profile} kind="avatar" size={56} />
+        <PictureEditBadge profile={profile} kind="photo" size={56} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-2xl">{profile.name}</h1>
-          <p className="text-sm capitalize text-muted">{profile.role}</p>
+          <p className="text-sm capitalize text-muted">
+            {profile.role}
+            {email ? <span className="normal-case"> · {email}</span> : null}
+          </p>
         </div>
         <select
           value={profile.role}
@@ -300,11 +309,6 @@ export default function MemberPage({
         />
         <Stat label="Total logged" value={formatHoursShort(totalMinutes)} />
         <Stat label="Clients worked on" value={String(clientCount)} />
-      </div>
-
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">Pictures</h2>
-        <MemberPictures profile={profile} />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

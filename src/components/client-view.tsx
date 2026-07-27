@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Maximize2, Plus } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CheckCircle2,
+  Maximize2,
+  Plus,
+} from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatDate, formatHoursShort } from "@/lib/format";
 import { Avatar, BudgetBar, CollapseChevron, TagBadge } from "./ui";
@@ -394,7 +403,8 @@ function SectionGroup({
 }
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskMinutes, addSection, currentUserId } = useData();
+  const { clients, sections, tasks, profiles, taskMinutes, addSection, updateClient, currentUserId } =
+    useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [showDone, setShowDone] = useState(false);
   const [view, setView] = useState<"list" | "board">("list");
@@ -437,9 +447,37 @@ export function ClientView({ clientId }: { clientId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {client.archived && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted shadow-card">
+          <Archive size={14} />
+          <span>
+            <span className="font-medium text-foreground">{client.name}</span> is archived — it stays
+            out of task pickers, reports and search until it&apos;s restored.
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="flex items-center gap-2">
           <ClientReportButtons clientId={client.id} />
+          {isAdmin && (
+            <button
+              onClick={() => updateClient(client.id, { archived: !client.archived })}
+              title={
+                client.archived
+                  ? "Restore this client everywhere"
+                  : "Hide this client from pickers, reports and search — hours are kept"
+              }
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
+                client.archived
+                  ? "border-border bg-surface text-brand hover:border-brand"
+                  : "border-border bg-surface text-muted hover:border-danger hover:text-danger"
+              }`}
+            >
+              {client.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+              {client.archived ? "Restore" : "Archive"}
+            </button>
+          )}
           <label className="flex items-center gap-1.5 text-sm text-muted">
             <input
               type="checkbox"

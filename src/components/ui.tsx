@@ -4,6 +4,7 @@ import type { MouseEvent } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useDataMaybe } from "@/lib/store";
+import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
 
 export interface ContextMenuItem {
@@ -250,7 +251,7 @@ export function BudgetBar({
         />
       </div>
       <span className={`text-xs whitespace-nowrap ${over ? "text-danger font-semibold" : "text-muted"}`}>
-        {doneH % 1 === 0 ? doneH : doneH.toFixed(1)}/{estimateHours}h
+        {formatHoursDecimal(doneMinutes)}/{estimateHours}h
       </span>
     </div>
   );

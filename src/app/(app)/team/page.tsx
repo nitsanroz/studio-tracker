@@ -8,6 +8,7 @@ import { useData } from "@/lib/store";
 import { presetRange } from "@/lib/date-ranges";
 import { toISODate } from "@/lib/format";
 import { formatHoursShort } from "@/lib/format";
+import { useMemberEmails } from "@/lib/use-member-emails";
 import { MemberPhoto } from "@/components/member-photo";
 
 // ── time scope ──────────────────────────────────────────────────────────────
@@ -165,6 +166,7 @@ export default function TeamPage() {
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [scope, setScope] = useState<Scope>("This month");
   const [addOpen, setAddOpen] = useState(false);
+  const memberEmails = useMemberEmails(isAdmin);
 
   const range = useMemo(() => scopeRange(scope), [scope]);
 
@@ -269,46 +271,64 @@ export default function TeamPage() {
         <Stat label="Avg hours / member" value={formatHoursShort(teamStats.avgPerMember)} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Portrait left, everything else stacked left-aligned beside it — wider
+          cards than the old centred column, so three across rather than four. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {team.map((p) => {
           const s = statsByUser.get(p.id);
           const pct = s && s.total > 0 ? Math.round((s.billable / s.total) * 100) : null;
           const openTasks = activeTaskByUser.get(p.id) ?? 0;
+          const email = memberEmails[p.id];
           return (
             <Link
               key={p.id}
               href={`/team/${p.id}`}
-              className={`group relative flex flex-col items-center rounded-2xl border border-border bg-surface p-5 text-center shadow-card transition-colors hover:border-brand ${p.active ? "" : "opacity-60"}`}
+              className={`group relative flex items-stretch gap-4 rounded-2xl border border-border bg-surface p-4 text-left shadow-card transition-colors hover:border-brand ${p.active ? "" : "opacity-60"}`}
             >
               <span
                 className={`absolute right-3 top-3 size-2.5 rounded-full ${p.active ? "bg-success" : "bg-border-strong"}`}
                 title={p.active ? "Active" : "Deactivated"}
               />
-              <MemberPhoto name={p.name} src={p.photoUrl} variant="avatar" size={76} />
-              <div className="mt-3 max-w-full truncate text-sm font-semibold">{p.name}</div>
-              <div className="text-xs capitalize text-muted">
-                {p.role}
-                {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
-              </div>
-              <div className="mt-3 flex w-full items-start justify-center gap-6">
-                <div>
-                  <div className="text-base font-semibold tabular-nums">
-                    {s?.total ? formatHoursShort(s.total) : "–"}
+              <MemberPhoto
+                name={p.name}
+                src={p.photoUrl}
+                variant="avatar"
+                size={124}
+                className="shrink-0 self-start"
+              />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="truncate pr-5 font-semibold">{p.name}</div>
+                <div className="truncate text-xs capitalize text-muted">
+                  {p.role}
+                  {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
+                </div>
+                {email && (
+                  <div className="truncate text-xs text-muted" title={email}>
+                    {email}
                   </div>
-                  <div className="text-[10px] text-muted">Hours</div>
+                )}
+                <div className="mt-2 flex items-start gap-6">
+                  <div>
+                    <div className="text-base font-semibold tabular-nums">
+                      {s?.total ? formatHoursShort(s.total) : "–"}
+                    </div>
+                    <div className="text-[10px] text-muted">Hours</div>
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold tabular-nums">{openTasks}</div>
+                    <div className="text-[10px] text-muted">Tasks</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-base font-semibold tabular-nums">{openTasks}</div>
-                  <div className="text-[10px] text-muted">Tasks</div>
-                </div>
-              </div>
-              <div className="mt-3 w-full">
-                <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
-                  <span>Billable</span>
-                  <span className="font-semibold text-foreground">{pct == null ? "–" : `${pct}%`}</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${pct ?? 0}%` }} />
+                <div className="mt-auto pt-3">
+                  <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
+                    <span>Billable</span>
+                    <span className="font-semibold text-foreground">
+                      {pct == null ? "–" : `${pct}%`}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${pct ?? 0}%` }} />
+                  </div>
                 </div>
               </div>
             </Link>

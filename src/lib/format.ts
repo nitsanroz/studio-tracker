@@ -6,9 +6,19 @@ export function formatHours(minutes: number): string {
   return `${h}h ${m}m`;
 }
 
-export function formatHoursShort(minutes: number): string {
+/**
+ * Decimal hours, up to 2 places, trailing zeros trimmed: 45 → "0.75", 90 → "1.5",
+ * 120 → "2". One decimal place used to be the rule, which rendered a logged 0.75h
+ * as "0.8" — the stored minutes were always exact, but the display lost the entry.
+ */
+export function formatHoursDecimal(minutes: number, digits = 2): string {
   const h = minutes / 60;
-  return `${Number.isInteger(h) ? h : h.toFixed(1)}h`;
+  const s = h.toFixed(digits);
+  return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
+}
+
+export function formatHoursShort(minutes: number): string {
+  return `${formatHoursDecimal(minutes)}h`;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

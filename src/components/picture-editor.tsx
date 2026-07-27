@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { Pencil, Trash2, Upload, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { Avatar } from "./ui";
 import { MemberPhoto } from "./member-photo";
@@ -14,17 +14,8 @@ import type { Profile } from "@/lib/types";
  *
  * Rendered for the member themselves and for admins editing someone else.
  */
-export function PictureEditor({
-  profile,
-  kind,
-  title,
-  hint,
-}: {
-  profile: Profile;
-  kind: "avatar" | "photo";
-  title: string;
-  hint: string;
-}) {
+/** Upload/remove plumbing shared by the titled pane and the compact hero badge. */
+function usePicture(profile: Profile, kind: "avatar" | "photo") {
   const { patchProfileLocal } = useData();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -62,10 +53,41 @@ export function PictureEditor({
     patchProfileLocal(profile.id, kind === "avatar" ? { avatarUrl: null } : { photoUrl: null });
   }
 
+  /** The hidden <input> both views render; keeps the ref and reset in one place. */
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept="image/png,image/jpeg,image/gif,image/webp"
+      className="hidden"
+      onChange={(e) => {
+        const f = e.target.files?.[0];
+        if (f) upload(f);
+        e.target.value = "";
+      }}
+    />
+  );
+
+  return { current, busy, error, remove, fileInput, pick: () => inputRef.current?.click() };
+}
+
+export function PictureEditor({
+  profile,
+  kind,
+  title,
+  hint,
+}: {
+  profile: Profile;
+  kind: "avatar" | "photo";
+  title: string;
+  hint: string;
+}) {
+  const { current, busy, error, remove, fileInput, pick } = usePicture(profile, kind);
+
   return (
     <div className={`flex items-center gap-4 ${busy ? "opacity-60" : ""}`}>
       <button
-        onClick={() => inputRef.current?.click()}
+        onClick={pick}
         title={`Change ${title.toLowerCase()}`}
         className="group/pic relative shrink-0 rounded-full"
       >
@@ -84,7 +106,7 @@ export function PictureEditor({
         <p className="mt-0.5 text-xs text-muted">{hint}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
-            onClick={() => inputRef.current?.click()}
+            onClick={pick}
             disabled={busy}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium hover:border-brand hover:text-brand disabled:opacity-50"
           >
@@ -104,17 +126,67 @@ export function PictureEditor({
         {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/gif,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) upload(f);
-          e.target.value = "";
-        }}
-      />
+      {fileInput}
+    </div>
+  );
+}
+
+/**
+ * The picture on its own with a pencil badge — for heroes and headers, where a
+ * titled pane with copy would take more room than the image it describes.
+ * Click the image (or the badge) to replace; the × clears it.
+ */
+export function PictureEditBadge({
+  profile,
+  kind,
+  size = 56,
+  round = true,
+  className = "",
+}: {
+  profile: Profile;
+  kind: "avatar" | "photo";
+  size?: number;
+  round?: boolean;
+  className?: string;
+}) {
+  const { current, busy, error, remove, fileInput, pick } = usePicture(profile, kind);
+  const label = kind === "avatar" ? "avatar" : "studio portrait";
+
+  return (
+    <div
+      className={`relative shrink-0 ${busy ? "opacity-60" : ""} ${className}`}
+      style={{ width: size }}
+      title={error ?? undefined}
+    >
+      <button
+        onClick={pick}
+        title={`Change ${label}`}
+        aria-label={`Change ${label}`}
+        className={`group/pic relative block ${round ? "rounded-full" : "rounded-xl"}`}
+      >
+        {kind === "avatar" ? (
+          <Avatar profile={profile} size={size} />
+        ) : (
+          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={size} />
+        )}
+        <span
+          className={`absolute inset-0 hidden items-center justify-center bg-black/45 text-white group-hover/pic:flex ${round ? "rounded-full" : "rounded-xl"}`}
+        >
+          <Pencil size={Math.max(12, Math.round(size / 4))} />
+        </span>
+      </button>
+      {current && !busy && (
+        <button
+          onClick={remove}
+          title={`Remove ${label}`}
+          aria-label={`Remove ${label}`}
+          className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-card hover:border-danger hover:text-danger"
+        >
+          <X size={11} />
+        </button>
+      )}
+      {error && <span className="sr-only">{error}</span>}
+      {fileInput}
     </div>
   );
 }
