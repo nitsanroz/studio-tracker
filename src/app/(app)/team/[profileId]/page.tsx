@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft } from "lucide-react";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
@@ -268,6 +268,16 @@ export default function MemberPage({
         <ArrowLeft size={14} /> Team
       </Link>
 
+      {!profile.active && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted shadow-card">
+          <Archive size={14} />
+          <span>
+            <span className="font-medium text-foreground">{profile.name}</span> is archived — hidden
+            from the team list, assignee pickers and the weekly plan. All logged hours are kept.
+          </span>
+        </div>
+      )}
+
       {/* Both pictures live in the header with a pencil badge each — they used to
           get a whole titled pane below the stats, which was more chrome than two
           thumbnails deserve. */}
@@ -289,15 +299,23 @@ export default function MemberPage({
           <option value="designer">designer</option>
           <option value="admin">admin</option>
         </select>
+        {/* Reads as a control, not a status label — it used to be a coloured pill
+            saying "active", which nobody could tell was clickable. */}
         <button
           onClick={() => updateProfile(profile.id, { active: !profile.active })}
-          className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+          title={
             profile.active
-              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-              : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              ? "Archive this member — they keep all their logged hours but drop off the team list, pickers and plan"
+              : "Bring this member back onto the team list and pickers"
+          }
+          className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
+            profile.active
+              ? "border-border bg-surface text-muted hover:border-danger hover:text-danger"
+              : "border-border bg-surface text-brand hover:border-brand"
           }`}
         >
-          {profile.active ? "active" : "deactivated"}
+          {profile.active ? <Archive size={14} /> : <ArchiveRestore size={14} />}
+          {profile.active ? "Archive" : "Restore"}
         </button>
       </div>
 

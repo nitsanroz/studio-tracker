@@ -1,2 +1,2 @@
 /** Bump on every deploy. Shown on the login page and in the sidebar. */
-export const APP_VERSION = "v0.99.17";
+export const APP_VERSION = "v0.99.18";

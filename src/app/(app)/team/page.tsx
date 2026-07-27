@@ -10,6 +10,7 @@ import { toISODate } from "@/lib/format";
 import { formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
 import { MemberPhoto } from "@/components/member-photo";
+import { PercentRing } from "@/components/charts";
 
 // ── time scope ──────────────────────────────────────────────────────────────
 
@@ -233,7 +234,7 @@ export default function TeamPage() {
             checked={showDeactivated}
             onChange={(e) => setShowDeactivated(e.target.checked)}
           />
-          Show deactivated
+          Show archived
         </label>
       </div>
 
@@ -287,7 +288,7 @@ export default function TeamPage() {
             >
               <span
                 className={`absolute right-3 top-3 size-2.5 rounded-full ${p.active ? "bg-success" : "bg-border-strong"}`}
-                title={p.active ? "Active" : "Deactivated"}
+                title={p.active ? "Active" : "Archived"}
               />
               {/* mt-3 leaves room for the head to clear the circle without the
                   card growing or the portrait colliding with the card edge */}
@@ -299,8 +300,8 @@ export default function TeamPage() {
                 bleed={0.16}
                 className="mt-3 shrink-0 self-start"
               />
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="truncate pr-5 font-semibold">{p.name}</div>
+              <div className="flex min-w-0 flex-1 flex-col justify-center">
+                <div className="truncate pr-5 text-xl font-semibold leading-tight">{p.name}</div>
                 <div className="truncate text-xs capitalize text-muted">
                   {p.role}
                   {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
@@ -310,7 +311,9 @@ export default function TeamPage() {
                     {email}
                   </div>
                 )}
-                <div className="mt-2 flex items-start gap-6">
+                {/* Billable sits in the stats row as a ring rather than a full-width
+                    bar under the card — that row was the space the name needed. */}
+                <div className="mt-3 flex items-center gap-5">
                   <div>
                     <div className="text-base font-semibold tabular-nums">
                       {s?.total ? formatHoursShort(s.total) : "–"}
@@ -321,16 +324,13 @@ export default function TeamPage() {
                     <div className="text-base font-semibold tabular-nums">{openTasks}</div>
                     <div className="text-[10px] text-muted">Tasks</div>
                   </div>
-                </div>
-                <div className="mt-auto pt-3">
-                  <div className="mb-1 flex items-center justify-between text-[10px] text-muted">
-                    <span>Billable</span>
-                    <span className="font-semibold text-foreground">
-                      {pct == null ? "–" : `${pct}%`}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
-                    <div className="h-full rounded-full bg-brand" style={{ width: `${pct ?? 0}%` }} />
+                  <div className="flex items-center gap-1.5">
+                    {pct == null ? (
+                      <span className="text-base font-semibold tabular-nums text-muted">–</span>
+                    ) : (
+                      <PercentRing pct={pct} size={38} label={`${pct}% billable`} />
+                    )}
+                    <div className="text-[10px] text-muted">Billable</div>
                   </div>
                 </div>
               </div>

@@ -105,7 +105,10 @@ export function MemberPhoto({
   // oversized image can't do this, since letting the head out would also let
   // the shoulders spill past the circle's curve.
   if (bleed > 0 && !failed) {
-    const drawn = (size * (1 + bleed)) / (1 - HEAD_TOP_MARGIN);
+    // Rounded, not fractional: the two layers are laid out independently, so a
+    // fractional height rounds differently in each and leaves a visible step
+    // right at the circle's edge — which reads as the head being sliced off.
+    const drawn = Math.round((size * (1 + bleed)) / (1 - HEAD_TOP_MARGIN));
     const img: CSSProperties = {
       position: "absolute",
       left: "50%",
@@ -133,11 +136,17 @@ export function MemberPhoto({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={url} alt="" style={img} onError={() => setFailed(true)} />
         </div>
+        {/* The head layer runs PAST the circle's top edge by `overlap`. Stopping it
+            exactly at the edge leaves the crown pinched: a couple of px below the
+            top the circle is only ~20px wide while the head is ~32px, so the
+            border-radius shaves the sides of the crown and it reads as a flat cut.
+            Below `overlap` the circle is wider than the head, so the clip is free
+            to hand over to the circular crop. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={url}
           alt={name ?? "Team member"}
-          style={{ ...img, clipPath: `inset(0 0 ${size}px 0)` }}
+          style={{ ...img, clipPath: `inset(0 0 ${size - Math.round(size * 0.14)}px 0)` }}
         />
       </div>
     );
