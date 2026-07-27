@@ -505,11 +505,18 @@ function SectionGroup({
   tasks,
   clientId,
   reorderable,
+  open,
+  onToggle,
+  onOpen,
 }: {
   section: Section | null;
   tasks: Task[];
   clientId: string;
   reorderable: boolean;
+  /** Lifted to ClientView so the header chevron can collapse/expand every section. */
+  open: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
 }) {
   const {
     tasks: allTasks,
@@ -520,7 +527,6 @@ function SectionGroup({
     currentUserId,
   } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
-  const [open, setOpen] = useState(true);
   const [dragOver, setDragOver] = useState(false);
 
   const sectionId = section?.id ?? null;
@@ -555,7 +561,7 @@ function SectionGroup({
           // No-op when it's already here: saves a pointless write and a junk undo step.
           if (!dragged || dragged.sectionId === sectionId) return;
           updateTask(id, { sectionId });
-          setOpen(true);
+          onOpen(); // reveal the task that just landed here
         },
       }
     : {};
@@ -568,10 +574,12 @@ function SectionGroup({
       {/* A div, not a button: the name is inline-editable and there's a delete
           control, and neither can legally nest inside a button. */}
       <div
-        className={`${COLS} w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background`}
+        className={`${COLS} w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
+          sectionIsEmpty ? "opacity-50" : ""
+        }`}
       >
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={onToggle}
           title={open ? "Collapse" : "Expand"}
           className={`flex w-[17px] shrink-0 items-center justify-center ${LEAD_TIGHT}`}
         >
@@ -586,7 +594,7 @@ function SectionGroup({
           </span>
         ) : (
           <button
-            onClick={() => setOpen((o) => !o)}
+            onClick={onToggle}
             className="bidi-auto min-w-0 flex-1 truncate text-left"
           >
             {section?.name ?? "No section"}
@@ -629,6 +637,9 @@ export function ClientView({ clientId }: { clientId: string }) {
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [showDone, setShowDone] = useState(false);
   const [draggingTask, setDraggingTask] = useState(false);
+  // Collapsed-by-exception: sections are open unless their key is in here, so new
+  // sections appear expanded. "" stands for the null "No section" group.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"list" | "board">("list");
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
@@ -661,6 +672,20 @@ export function ClientView({ clientId }: { clientId: string }) {
   if (!client) return <div className="text-muted">Client not found.</div>;
 
   const noSection = clientTasks.filter((t) => t.sectionId === null);
+
+  // Keys of the groups actually on screen, so "expand/collapse all" only reasons
+  // about what's visible (the empty "No section" group appears only mid-drag).
+  const showNoSection = noSection.length > 0 || (isAdmin && draggingTask);
+  const groupKeys = [...(showNoSection ? [""] : []), ...clientSections.map((s) => s.id)];
+  const allCollapsed = groupKeys.length > 0 && groupKeys.every((k) => collapsed.has(k));
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   const statuses: { key: Task["status"]; label: string }[] = [
     { key: "todo", label: "To do" },
     { key: "in_progress", label: "In progress" },
@@ -741,7 +766,14 @@ export function ClientView({ clientId }: { clientId: string }) {
         >
           <div className="min-w-[720px]">
             <div className={`${COLS} h-8 border-b border-border bg-background text-xs font-medium`}>
-              <span className={`w-[17px] shrink-0 ${LEAD_TIGHT}`} />
+              <button
+                onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groupKeys))}
+                title={allCollapsed ? "Expand all sections" : "Collapse all sections"}
+                aria-label={allCollapsed ? "Expand all sections" : "Collapse all sections"}
+                className={`flex w-[17px] shrink-0 items-center justify-center text-muted hover:text-brand ${LEAD_TIGHT}`}
+              >
+                <CollapseChevron open={!allCollapsed} />
+              </button>
               <span className="min-w-0 flex-1">
                 <SortHeader label="Name" k="title" sort={sort} onSort={cycleSort} />
               </span>
@@ -765,8 +797,16 @@ export function ClientView({ clientId }: { clientId: string }) {
             </div>
             {/* Normally hidden when empty, but an admin mid-drag needs somewhere to
                 drop a task to take it OUT of a section. */}
-            {(noSection.length > 0 || (isAdmin && draggingTask)) && (
-              <SectionGroup section={null} tasks={noSection} clientId={clientId} reorderable={sort === null} />
+            {showNoSection && (
+              <SectionGroup
+                section={null}
+                tasks={noSection}
+                clientId={clientId}
+                reorderable={sort === null}
+                open={!collapsed.has("")}
+                onToggle={() => toggleGroup("")}
+                onOpen={() => setCollapsed((p) => { const n = new Set(p); n.delete(""); return n; })}
+              />
             )}
             {clientSections.map((section) => (
               <SectionGroup
@@ -775,6 +815,15 @@ export function ClientView({ clientId }: { clientId: string }) {
                 tasks={clientTasks.filter((t) => t.sectionId === section.id)}
                 clientId={clientId}
                 reorderable={sort === null}
+                open={!collapsed.has(section.id)}
+                onToggle={() => toggleGroup(section.id)}
+                onOpen={() =>
+                  setCollapsed((p) => {
+                    const n = new Set(p);
+                    n.delete(section.id);
+                    return n;
+                  })
+                }
               />
             ))}
             {addingSection ? (
