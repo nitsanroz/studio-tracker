@@ -7,7 +7,7 @@ import { Plus, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { presetRange } from "@/lib/date-ranges";
 import { toISODate } from "@/lib/format";
-import { formatHoursShort } from "@/lib/format";
+import { formatHoursAvg, formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
 import { MemberPhoto } from "@/components/member-photo";
 import { PercentRing } from "@/components/charts";
@@ -269,7 +269,7 @@ export default function TeamPage() {
           value={teamStats.billablePct == null ? "–" : `${teamStats.billablePct}%`}
         />
         <Stat label="Active members" value={String(teamStats.activeCount)} />
-        <Stat label="Avg hours / member" value={formatHoursShort(teamStats.avgPerMember)} />
+        <Stat label="Avg hours / member" value={formatHoursAvg(teamStats.avgPerMember)} />
       </div>
 
       {/* Portrait left, everything else stacked left-aligned beside it — wider

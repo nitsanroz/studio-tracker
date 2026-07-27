@@ -21,6 +21,15 @@ export function formatHoursShort(minutes: number): string {
   return `${formatHoursDecimal(minutes)}h`;
 }
 
+/**
+ * Hours for *derived* figures — averages and the like — at one decimal.
+ * Logged time is shown to 2 places because an entry of 0.75h must read back as
+ * 0.75, but an average of 70.63h is spurious precision, not information.
+ */
+export function formatHoursAvg(minutes: number): string {
+  return `${formatHoursDecimal(minutes, 1)}h`;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function toISODate(d: Date): string {

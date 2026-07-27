@@ -10,6 +10,7 @@ import {
   addDays,
   formatFeedDate,
   formatHours,
+  formatHoursAvg,
   formatHoursShort,
   parseDuration,
   startOfWeek,
@@ -880,8 +881,8 @@ function MyAvatar() {
 }
 
 /** figure + unit split so the unit renders smaller, e.g. "353.8" + "h" */
-function splitHours(min: number): readonly [string, string] {
-  const s = formatHoursShort(min);
+function splitHours(min: number, avg = false): readonly [string, string] {
+  const s = avg ? formatHoursAvg(min) : formatHoursShort(min);
   const m = s.match(/^([\d.,]+)(.*)$/);
   return m ? [m[1], m[2]] : [s, ""];
 }
@@ -972,7 +973,7 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
   const perDesigner = s.designers > 0 ? s.cur / s.designers : 0;
 
   const [hFig, hUnit] = splitHours(s.cur);
-  const [pdFig, pdUnit] = splitHours(perDesigner);
+  const [pdFig, pdUnit] = splitHours(perDesigner, true);
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
