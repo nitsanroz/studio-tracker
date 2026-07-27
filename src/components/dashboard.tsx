@@ -661,7 +661,15 @@ function tenureSince(startIso: string): string {
 
 // ── celebrations: birthdays (admin-readable) + work anniversaries ──────────
 
-type ApiOccasion = { kind: "birthday" | "anniversary"; name: string; monthDay: string; years?: number };
+type ApiOccasion = {
+  group: "birthday" | "anniversary" | "holiday" | "custom";
+  title: string;
+  /** recurring things carry "MM-DD"; one-off things carry a full "YYYY-MM-DD" */
+  monthDay?: string;
+  date?: string;
+  icon?: string;
+  years?: number;
+};
 
 /** `inline` drops the card chrome and inverts the colours, for use inside the blue
  *  member hero. Both forms keep the prev/next pagination. */
@@ -688,28 +696,38 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const horizon = 30 * 86400000;
-    const out: { icon: string; text: string; when: string; at: number }[] = [];
+    const out: { icon: string; text: string; when: string; rel: string; at: number }[] = [];
 
     for (const o of raw) {
-      const [m, d] = o.monthDay.split("-").map(Number);
-      if (!m || !d) continue;
-      // Roll to next year once the date has passed, so December dates surface in January.
-      let next = new Date(today.getFullYear(), m - 1, d);
-      if (next.getTime() < today.getTime()) next = new Date(today.getFullYear() + 1, m - 1, d);
+      let next: Date;
+      if (o.monthDay) {
+        const [m, d] = o.monthDay.split("-").map(Number);
+        if (!m || !d) continue;
+        // Roll to next year once the date has passed, so December dates surface in January.
+        next = new Date(today.getFullYear(), m - 1, d);
+        if (next.getTime() < today.getTime()) next = new Date(today.getFullYear() + 1, m - 1, d);
+      } else if (o.date) {
+        const [y, m, d] = o.date.split("-").map(Number);
+        if (!y || !m || !d) continue;
+        next = new Date(y, m - 1, d); // one-off: never rolls
+      } else continue;
+
       const delta = next.getTime() - today.getTime();
-      if (delta > horizon) continue;
+      if (delta < 0 || delta > horizon) continue;
 
       // Anniversary count is recomputed against the occurrence year — the API's
       // `years` is relative to the current year, which is wrong for a date that
       // has rolled into next year.
       const years = o.years != null ? o.years + (next.getFullYear() - today.getFullYear()) : null;
+      const inDays = Math.round(delta / 86400000);
       out.push({
-        icon: o.kind === "birthday" ? "🎂" : "🎉",
+        icon: o.icon ?? "📅",
         text:
-          o.kind === "birthday"
-            ? `${o.name}'s birthday`
-            : `${o.name} — ${years} year${years === 1 ? "" : "s"} at the studio`,
+          o.group === "anniversary"
+            ? `${o.title} — ${years} year${years === 1 ? "" : "s"} at the studio`
+            : o.title,
         when: `${next.getDate()}/${next.getMonth() + 1}`,
+        rel: inDays === 0 ? "today" : inDays === 1 ? "tomorrow" : `in ${inDays} days`,
         at: next.getTime(),
       });
     }
@@ -731,29 +749,47 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
   // when the hero goes full width below the lg breakpoint.
   if (inline) {
     return (
-      <div className="mt-4 mr-[100px] flex max-w-[340px] items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-        <span className="text-base">{cur.icon}</span>
-        <span className="bidi-auto min-w-0 flex-1 truncate text-sm">{cur.text}</span>
-        <span className="shrink-0 text-xs tabular-nums text-white/70">{cur.when}</span>
+      <div className="mt-4 mr-[100px] max-w-[360px] rounded-xl bg-white/10 px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <span className="shrink-0 text-xl leading-none">{cur.icon}</span>
+          <div className="min-w-0 flex-1">
+            <div className="bidi-auto truncate text-sm font-medium leading-tight">{cur.text}</div>
+            <div className="mt-0.5 text-[11px] text-white/70">
+              <span className="tabular-nums">{cur.when}</span> · {cur.rel}
+            </div>
+          </div>
+          {many && (
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
+                aria-label="Previous occasion"
+                className="rounded-md p-1 text-white/80 hover:bg-white/15 hover:text-white"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                onClick={() => setAt((v) => (v + 1) % upcoming.length)}
+                aria-label="Next occasion"
+                className="rounded-md p-1 text-white/80 hover:bg-white/15 hover:text-white"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+        </div>
         {many && (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <span className="mr-1 text-[11px] tabular-nums text-white/60">
-              {idx + 1}/{upcoming.length}
-            </span>
-            <button
-              onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
-              aria-label="Previous"
-              className="rounded p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              onClick={() => setAt((v) => (v + 1) % upcoming.length)}
-              aria-label="Next"
-              className="rounded p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
-            >
-              <ChevronRight size={14} />
-            </button>
+          <div className="mt-2 flex items-center justify-center gap-1.5">
+            {upcoming.map((o, i) => (
+              <button
+                key={o.at}
+                onClick={() => setAt(i)}
+                aria-label={`Occasion ${i + 1} of ${upcoming.length}`}
+                aria-current={i === idx}
+                className={`size-1.5 rounded-full transition-colors ${
+                  i === idx ? "bg-white" : "bg-white/35 hover:bg-white/60"
+                }`}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -789,7 +825,9 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
       <div className="flex flex-1 items-center gap-3">
         <span className="text-2xl">{cur.icon}</span>
         <span className="bidi-auto min-w-0 flex-1 text-sm font-medium">{cur.text}</span>
-        <span className="shrink-0 text-xs tabular-nums text-muted">{cur.when}</span>
+        <span className="shrink-0 text-xs text-muted">
+          <span className="tabular-nums">{cur.when}</span> · {cur.rel}
+        </span>
       </div>
     </div>
   );

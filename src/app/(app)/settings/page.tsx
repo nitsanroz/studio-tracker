@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { TagBadge } from "@/components/ui";
 import { MemberPictures } from "@/components/picture-editor";
 import { HrDetailsForm } from "@/components/hr-details-form";
+import { OccasionsSettings } from "@/components/occasions-settings";
 import type { Tag } from "@/lib/types";
 
 function MyProfile() {
@@ -433,6 +434,8 @@ export default function SettingsPage() {
           {isAdmin && <IntakeSettings />}
 
           {isAdmin && <TagsSection isAdmin={isAdmin} />}
+
+          {isAdmin && <OccasionsSettings />}
 
           {!isAdmin && <ChangePassword />}
         </div>
