@@ -289,12 +289,15 @@ export default function TeamPage() {
                 className={`absolute right-3 top-3 size-2.5 rounded-full ${p.active ? "bg-success" : "bg-border-strong"}`}
                 title={p.active ? "Active" : "Deactivated"}
               />
+              {/* mt-3 leaves room for the head to clear the circle without the
+                  card growing or the portrait colliding with the card edge */}
               <MemberPhoto
                 name={p.name}
                 src={p.photoUrl}
                 variant="avatar"
                 size={124}
-                className="shrink-0 self-start"
+                bleed={0.16}
+                className="mt-3 shrink-0 self-start"
               />
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="truncate pr-5 font-semibold">{p.name}</div>
