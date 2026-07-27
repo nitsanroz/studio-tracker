@@ -766,69 +766,97 @@ function tenureSince(startIso: string): string {
 
 // ── celebrations: birthdays (admin-readable) + work anniversaries ──────────
 
+type ApiOccasion = { kind: "birthday" | "anniversary"; name: string; monthDay: string; years?: number };
+
 function Celebrations() {
-  const { profiles } = useData();
-  const supabase = useMemo(() => createClient(), []);
-  const [birthdays, setBirthdays] = useState<{ profile_id: string; birth_date: string }[]>([]);
+  const [raw, setRaw] = useState<ApiOccasion[]>([]);
+  const [at, setAt] = useState(0);
 
   useEffect(() => {
-    supabase
-      .from("member_hr")
-      .select("profile_id, birth_date")
-      .not("birth_date", "is", null)
-      .then(({ data }) => setBirthdays((data as { profile_id: string; birth_date: string }[]) ?? []));
-  }, [supabase]);
+    let alive = true;
+    fetch("/api/celebrations")
+      .then((r) => (r.ok ? r.json() : { occasions: [] }))
+      .then((d) => {
+        if (alive) setRaw(d.occasions ?? []);
+      })
+      .catch(() => {
+        /* non-fatal: the pane simply doesn't render */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const upcoming = useMemo(() => {
-    const out: { icon: string; text: string; when: string }[] = [];
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const horizon = 30 * 86400000;
-    const nextOccurrence = (iso: string) => {
-      const [, m, d] = iso.split("-").map(Number);
-      let next = new Date(now.getFullYear(), m - 1, d);
-      if (next.getTime() < now.getTime() - 86400000) next = new Date(now.getFullYear() + 1, m - 1, d);
-      return next;
-    };
-    for (const b of birthdays) {
-      const p = profiles.find((x) => x.id === b.profile_id);
-      if (!p?.active) continue;
-      const next = nextOccurrence(b.birth_date);
-      if (next.getTime() - now.getTime() <= horizon) {
-        out.push({
-          icon: "🎂",
-          text: `${p.name.split(" ")[0]}'s birthday`,
-          when: `${next.getDate()}/${next.getMonth() + 1}`,
-        });
-      }
+    const out: { icon: string; text: string; when: string; at: number }[] = [];
+
+    for (const o of raw) {
+      const [m, d] = o.monthDay.split("-").map(Number);
+      if (!m || !d) continue;
+      // Roll to next year once the date has passed, so December dates surface in January.
+      let next = new Date(today.getFullYear(), m - 1, d);
+      if (next.getTime() < today.getTime()) next = new Date(today.getFullYear() + 1, m - 1, d);
+      const delta = next.getTime() - today.getTime();
+      if (delta > horizon) continue;
+
+      // Anniversary count is recomputed against the occurrence year — the API's
+      // `years` is relative to the current year, which is wrong for a date that
+      // has rolled into next year.
+      const years = o.years != null ? o.years + (next.getFullYear() - today.getFullYear()) : null;
+      out.push({
+        icon: o.kind === "birthday" ? "🎂" : "🎉",
+        text:
+          o.kind === "birthday"
+            ? `${o.name}'s birthday`
+            : `${o.name} — ${years} year${years === 1 ? "" : "s"} at the studio`,
+        when: `${next.getDate()}/${next.getMonth() + 1}`,
+        at: next.getTime(),
+      });
     }
-    for (const p of profiles) {
-      if (!p.active || !p.startDate) continue;
-      const next = nextOccurrence(p.startDate);
-      const years = next.getFullYear() - Number(p.startDate.slice(0, 4));
-      if (years > 0 && next.getTime() - now.getTime() <= horizon) {
-        out.push({
-          icon: "🎉",
-          text: `${p.name.split(" ")[0]} — ${years} year${years > 1 ? "s" : ""} at the studio`,
-          when: `${next.getDate()}/${next.getMonth() + 1}`,
-        });
-      }
-    }
-    return out.sort((a, b) => a.when.localeCompare(b.when));
-  }, [birthdays, profiles]);
+    // Sort on the timestamp: the old code compared the formatted "D/M" string, so
+    // "10/8" sorted before "9/8".
+    return out.sort((a, b) => a.at - b.at);
+  }, [raw]);
 
   if (upcoming.length === 0) return null;
 
+  const idx = Math.min(at, upcoming.length - 1);
+  const cur = upcoming[idx];
+  const many = upcoming.length > 1;
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-2 font-heading text-sm">Celebrations — next 30 days</h2>
-      <div className="flex flex-col gap-1.5">
-        {upcoming.map((c, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
-            <span>{c.icon}</span>
-            <span className="bidi-auto min-w-0 flex-1 truncate">{c.text}</span>
-            <span className="shrink-0 text-xs tabular-nums text-muted">{c.when}</span>
+    <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="font-heading text-sm">Coming up — next 30 days</h2>
+        {many && (
+          <div className="flex shrink-0 items-center gap-1">
+            <span className="mr-1 text-xs tabular-nums text-faint">
+              {idx + 1}/{upcoming.length}
+            </span>
+            <button
+              onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
+              aria-label="Previous"
+              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              onClick={() => setAt((v) => (v + 1) % upcoming.length)}
+              aria-label="Next"
+              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-        ))}
+        )}
+      </div>
+      <div className="flex flex-1 items-center gap-3">
+        <span className="text-2xl">{cur.icon}</span>
+        <span className="bidi-auto min-w-0 flex-1 text-sm font-medium">{cur.text}</span>
+        <span className="shrink-0 text-xs tabular-nums text-muted">{cur.when}</span>
       </div>
     </div>
   );
@@ -1046,27 +1074,53 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
 }
 
 /** Member welcome: blue hero with the member's cut-out photo + this-week summary, then 3 KPI tiles. */
-function MemberWelcome({ me }: { me: { id: string; name: string; photoUrl: string | null } }) {
+function MemberWelcome({
+  me,
+  filter,
+}: {
+  me: { id: string; name: string; photoUrl: string | null };
+  filter: HomeFilter;
+}) {
   const { entrySums, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
+  // The hero copy stays week-scoped ("This week" is the point of it); the tiles
+  // beside it follow the page's period/client filter.
   const wk = useMemo(() => {
     const start = startOfWeek(new Date());
     const from = toISODate(start);
     const to = toISODate(addDays(start, 6));
     let min = 0;
-    let bil = 0;
-    const byDate = new Map<string, number>();
     for (const e of entrySums) {
       if (e.userId !== me.id || e.date < from || e.date > to) continue;
       min += e.minutes;
-      if (taskById.get(e.taskId)?.billable) bil += e.minutes;
+    }
+    return { min, from, to };
+  }, [entrySums, me.id]);
+
+  const scoped = useMemo(() => {
+    let min = 0;
+    let bil = 0;
+    const byDate = new Map<string, number>();
+    for (const e of entrySums) {
+      if (e.userId !== me.id) continue;
+      const task = taskById.get(e.taskId);
+      if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
+      min += e.minutes;
+      if (task?.billable) bil += e.minutes;
       byDate.set(e.date, (byDate.get(e.date) ?? 0) + e.minutes);
     }
+    // A day counts as a full day at 4h+, otherwise a half — same rule as before.
     let days = 0;
     for (const m of byDate.values()) days += m >= 240 ? 1 : m > 0 ? 0.5 : 0;
-    return { min, days, pct: min > 0 ? Math.round((bil / min) * 100) : 0, from, to };
-  }, [entrySums, taskById, me.id]);
+    return {
+      min,
+      days,
+      pct: min > 0 ? Math.round((bil / min) * 100) : 0,
+      perDay: byDate.size > 0 ? min / byDate.size : 0,
+    };
+  }, [entrySums, taskById, me.id, filter]);
 
   const myActive = useMemo(
     () => tasks.filter((t) => t.assigneeId === me.id && t.status !== "done"),
@@ -1076,23 +1130,29 @@ function MemberWelcome({ me }: { me: { id: string; name: string; photoUrl: strin
     (t) => t.dueDate && t.dueDate >= wk.from && t.dueDate <= wk.to,
   ).length;
 
-  const [hFig, hUnit] = splitHours(wk.min);
+  const [hFig, hUnit] = splitHours(scoped.min);
+  const [adFig, adUnit] = splitHours(scoped.perDay, true);
 
   return (
-    <>
+    <div className="grid items-stretch gap-4 lg:grid-cols-2">
+      {/* mt-9 is the room the portrait's head needs above the panel. The hero can't
+          clip (the head breaks out of the top), so the decorative disc gets its own
+          clipping layer instead of relying on overflow-hidden here. */}
       <div
-        className="relative overflow-hidden rounded-2xl bg-brand px-7 py-6 text-white"
+        className="relative mt-9 rounded-2xl bg-brand px-6 py-6 text-white"
         style={{ minHeight: 208, boxShadow: "var(--shadow-hero)" }}
       >
-        <div className="pointer-events-none absolute -top-12 right-44 size-72 rounded-full bg-white/[0.06]" />
-        <div className="relative z-10 max-w-lg pr-40">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+          <div className="absolute -top-12 right-24 size-64 rounded-full bg-white/[0.06]" />
+        </div>
+        <div className="relative z-10 pr-32">
           <div className="text-[11px] uppercase tracking-[0.09em] text-white/70">This week</div>
-          <h2 className="mt-2 font-heading text-[26px] leading-snug">
+          <h2 className="mt-2 font-heading text-[22px] leading-snug">
             You’ve logged {formatHoursShort(wk.min)} across {myActive.length} active task
             {myActive.length === 1 ? "" : "s"}
             {dueThisWeek > 0 ? ` — ${dueThisWeek} due this week.` : "."}
           </h2>
-          <div className="mt-5 flex gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <a
               href="#log"
               className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand hover:brightness-95"
@@ -1107,19 +1167,25 @@ function MemberWelcome({ me }: { me: { id: string; name: string; photoUrl: strin
             </Link>
           </div>
         </div>
+        {/* Anchored top AND bottom with a negative top, so the figure is always the
+            panel's height plus 34px and the head clears the top edge. A fixed pixel
+            height doesn't work: `items-stretch` grows this panel to match the tile
+            column beside it, so its height isn't known here. */}
         <div
-          className="pointer-events-none absolute bottom-0 right-6 z-10 hidden sm:block"
-          style={{ width: 192, height: 196 }}
+          className="pointer-events-none absolute z-20 hidden sm:block"
+          style={{ top: -34, bottom: 0, right: 5, width: 176 }}
         >
-          <MemberPhoto name={me.name} src={me.photoUrl} variant="hero" size={196} />
+          <MemberPhoto name={me.name} src={me.photoUrl} variant="hero" fill />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        <StatTile label="Hours this week" figure={hFig} unit={hUnit} sub="logged" />
-        <StatTile label="Billable" figure={String(wk.pct)} unit="%" sub="this week" />
-        <StatTile label="Days in studio" figure={String(wk.days)} sub="this week" />
+
+      <div className="mt-9 grid grid-cols-2 gap-4">
+        <StatTile label="My hours" figure={hFig} unit={hUnit} sub={filter.label.toLowerCase()} />
+        <StatTile label="Billable" figure={String(scoped.pct)} unit="%" sub={filter.label.toLowerCase()} />
+        <StatTile label="Days in studio" figure={String(scoped.days)} sub={filter.label.toLowerCase()} />
+        <StatTile label="Avg / day" figure={adFig} unit={adUnit} sub="days logged" />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1321,6 +1387,11 @@ export function Dashboard() {
         <>
           {/* KPI tiles across the top */}
           <StatTiles filter={filter} prevRange={prevRange} />
+          {/* Up here with the intake banner, not at the foot of the page — an
+              upcoming date is only useful if you see it before the day arrives. */}
+          <div className="empty:hidden">
+            <Celebrations />
+          </div>
           {/* analytics 2×2 — hours over time / by client, then client-trend + my tasks */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={isAdmin} />
@@ -1329,28 +1400,29 @@ export function Dashboard() {
           </div>
           {/* the studio roster */}
           <StudioTeamStrip filter={filter} />
-          <div className="empty:hidden">
-            <Celebrations />
-          </div>
         </>
       ) : (
         <>
           <ConfirmDetailsBanner />
-          {me && <MemberWelcome me={me} />}
+          {me && <MemberWelcome me={me} filter={filter} />}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyWeek />
             {compactTasksCard}
           </div>
+          {/* Celebrations sits beside "Log my hours" rather than at the foot of the
+              page — nobody scrolled that far, so upcoming dates went unseen. */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div id="log" className="scroll-mt-20 lg:col-span-2">
               <DayLog />
             </div>
+            <Celebrations />
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <MyGraphs filter={filter} isAdmin={false} />
+            </div>
             <PeriodStat isAdmin={false} filter={filter} prevRange={prevRange} />
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <MyGraphs filter={filter} isAdmin={false} />
-          </div>
-          <Celebrations />
         </>
       )}
     </div>

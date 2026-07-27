@@ -17,6 +17,14 @@ export const DEFAULT_TEAM_PHOTO = "/brand/team/cutout.png";
  *  so a chosen amount of head clears the top of the avatar circle. */
 const HEAD_TOP_MARGIN = 0.039;
 
+/** Transparent margin to the right of the figure, as a fraction of frame width
+ *  (measured from the alpha channel: silhouette ends at x 1784 of 2048). Needed
+ *  because the image is scaled by HEIGHT, so its width — and therefore the size of
+ *  that empty margin — changes with the panel; anchoring the image's own edge would
+ *  leave a gap that grows and shrinks. Shifting by this fraction anchors the
+ *  *figure's* edge instead. */
+const SILHOUETTE_RIGHT_MARGIN = 0.128;
+
 function initials(name?: string) {
   if (!name) return "";
   return name
@@ -41,6 +49,7 @@ export function MemberPhoto({
   size = 64,
   className = "",
   bleed = 0,
+  fill = false,
 }: {
   name?: string;
   src?: string | null;
@@ -49,6 +58,9 @@ export function MemberPhoto({
   className?: string;
   /** Fraction of `size` by which the head should break out above the circle. 0 = plain circular crop. */
   bleed?: number;
+  /** Hero only: fill the positioned parent instead of using `size`. Lets the caller
+   *  anchor the figure to a panel whose height it doesn't know up front. */
+  fill?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const url = src || DEFAULT_TEAM_PHOTO;
@@ -57,7 +69,11 @@ export function MemberPhoto({
     return (
       <div
         className={className}
-        style={{ position: "relative", width: size, height: size }}
+        style={
+          fill
+            ? { position: "relative", width: "100%", height: "100%" }
+            : { position: "relative", width: size, height: size }
+        }
       >
         {!failed ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -68,8 +84,11 @@ export function MemberPhoto({
             style={{
               position: "absolute",
               bottom: 0,
-              left: "50%",
-              transform: "translateX(-50%)",
+              // fill: pin the FIGURE's right edge to the container's right edge, by
+              // pushing the frame right by its own empty margin. Otherwise centre it.
+              ...(fill
+                ? { right: 0, transform: `translateX(${SILHOUETTE_RIGHT_MARGIN * 100}%)` }
+                : { left: "50%", transform: "translateX(-50%)" }),
               height: "100%",
               width: "auto",
               maxWidth: "none",
