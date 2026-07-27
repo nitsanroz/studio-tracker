@@ -112,6 +112,8 @@ interface Store {
   openTask: (taskId: string | null) => void;
   updateTask: (taskId: string, patch: Partial<Task>) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
+  /** Hard-delete a task. CASCADES to its time entries — confirm with the user first. */
+  deleteTask: (taskId: string) => void;
   addSection: (clientId: string, name: string) => void;
   updateSection: (sectionId: string, patch: Partial<Pick<Section, "name">>) => void;
   /** No-ops (with a visible write error) if the section still contains tasks. */
@@ -524,6 +526,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
     },
     [supabase, sections],
+  );
+
+  /**
+   * Hard-delete a task. `time_entries`, comments and attachments all reference it
+   * with ON DELETE CASCADE, so this destroys its logged hours too — callers must
+   * confirm with the user first and say how much time is going.
+   *
+   * Deliberately NOT added to the undo history: the cascaded rows can't be brought
+   * back, so an "undo" would restore the task and silently lose its hours, which is
+   * worse than no undo at all. Published client reports are unaffected — they ship
+   * frozen snapshots.
+   */
+  const deleteTask = useCallback(
+    (taskId: string) => {
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setTimeEntries((prev) => prev.filter((e) => e.taskId !== taskId));
+      setEntrySums((prev) => prev.filter((e) => e.taskId !== taskId));
+      supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId)
+        .then(({ error }) => {
+          if (error) noteWriteError("deleteTask", error);
+        });
+    },
+    [supabase],
   );
 
   const updateSection = useCallback(
@@ -1455,6 +1483,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       openTask,
       updateTask,
       addTask,
+      deleteTask,
       addSection,
       updateSection,
       deleteSection,
@@ -1500,7 +1529,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
       currentUserId, viewAsProfile, openSyncIssues, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
+      openTask, updateTask, addTask, deleteTask, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );
 

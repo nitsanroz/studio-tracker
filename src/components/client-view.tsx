@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -225,6 +225,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     tasks: allTasks,
     openTask,
     updateTask,
+    deleteTask,
     reorderTask,
     taskMinutes,
     openTaskId,
@@ -232,6 +233,17 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [dropBefore, setDropBefore] = useState(false);
+  // Only a mousedown on the grip may start a drag. With the whole row draggable, any
+  // press-and-move began a drag — fighting click-to-open, making text selection in
+  // the title cell impossible, and letting a short drag be delivered as a click,
+  // which opened the task panel whose full-screen overlay then blocked the next drag
+  // entirely. That is why dragging appeared to "work once, then stop".
+  //
+  // A ref, not state: toggling a `draggable` attribute from a mousedown handler races
+  // with React's batching, so the attribute can still be false when the browser
+  // decides whether this gesture is a drag. The row stays draggable and unwanted
+  // drags are cancelled in onDragStart instead.
+  const armedRef = useRef(false);
 
   /** True when the in-flight drag is a sibling of this row, i.e. a reorder.
    *  Disabled while a column sort is on: position changes wouldn't be visible, so
@@ -250,18 +262,31 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     <div
       draggable={isAdmin}
       onDragStart={(e) => {
+        if (!armedRef.current) {
+          e.preventDefault(); // not started from the grip — don't drag
+          return;
+        }
         draggedTaskId = task.id;
         e.dataTransfer.setData(TASK_DRAG_TYPE, task.id);
+        // text/plain fallback: some browsers refuse to start a drag, or report no
+        // types, when only a custom MIME is set.
+        e.dataTransfer.setData("text/plain", task.id);
         e.dataTransfer.effectAllowed = "move";
       }}
       onDragEnd={() => {
         draggedTaskId = null;
+        armedRef.current = false;
         setDropBefore(false);
       }}
+      onMouseUp={() => {
+        armedRef.current = false;
+      }}
       // Reorder only. A drag from another section is left unhandled so it bubbles
-      // to the SectionGroup, which moves it in.
+      // to the SectionGroup, which moves it in. Acceptance is decided from
+      // draggedTaskId rather than dataTransfer.types — the latter isn't reliably
+      // populated for custom MIME types during dragover.
       onDragOver={(e) => {
-        if (!isAdmin || !e.dataTransfer.types.includes(TASK_DRAG_TYPE) || !isSiblingDrag()) return;
+        if (!isAdmin || !isSiblingDrag()) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = "move";
@@ -276,7 +301,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
         e.preventDefault();
         e.stopPropagation();
         setDropBefore(false);
-        const id = e.dataTransfer.getData(TASK_DRAG_TYPE);
+        const id = e.dataTransfer.getData(TASK_DRAG_TYPE) || draggedTaskId;
         if (id) reorderTask(id, task.id);
       }}
       // inset shadow rather than a border: a real border-top would shift the row 2px
@@ -289,7 +314,11 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     >
       {isAdmin && (
         <span
-          title="Drag to another section"
+          title="Drag to reorder, or onto another section to move it"
+          onMouseDown={() => {
+            armedRef.current = true;
+          }}
+          onClick={(e) => e.stopPropagation()}
           className="absolute left-0.5 top-1/2 -translate-y-1/2 cursor-grab text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
         >
           <GripVertical size={14} />
@@ -330,6 +359,23 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
         >
           <Maximize2 size={13} />
         </button>
+        {isAdmin && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // Spell out the cost: time_entries cascade, so the hours go with it.
+              const mins = taskMinutes(task.id);
+              const warning = mins > 0 ? `\n\nThis also deletes ${formatHoursShort(mins)} of logged time.` : "";
+              if (confirm(`Delete “${task.title}”?${warning}\n\nThis cannot be undone.`)) {
+                deleteTask(task.id);
+              }
+            }}
+            title="Delete this task"
+            className="invisible ml-0.5 shrink-0 rounded p-0.5 text-faint hover:bg-background hover:text-danger group-hover:visible"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
         {task.pending && (
           <span className="ml-2 shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
             pending approval
@@ -366,7 +412,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <span className="px-1.5 py-0.5">{task.dueDate ? formatDate(task.dueDate) : ""}</span>
         )}
       </span>
-      <span className="hidden w-36 shrink-0 lg:block">
+      <span className="hidden w-28 shrink-0 lg:block">
         <EditableSelectCell
           value={task.tag ?? ""}
           options={tags.map((t) => ({ value: t.name, label: t.name }))}
@@ -375,7 +421,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           display={task.tag ? <TagBadge tag={task.tag} /> : null}
         />
       </span>
-      <span className="hidden w-28 shrink-0 md:block">
+      <span className="hidden w-36 shrink-0 md:block">
         {isAdmin ? (
           <EditableNumberCell
             value={task.estimateHours}
@@ -479,7 +525,10 @@ function SectionGroup({
   const dropProps = isAdmin
     ? {
         onDragOver: (e: React.DragEvent) => {
-          if (!e.dataTransfer.types.includes(TASK_DRAG_TYPE)) return;
+          // draggedTaskId, not dataTransfer.types: custom MIME types aren't reliably
+          // listed during dragover across browsers, which silently prevented the
+          // drop target from ever accepting.
+          if (!draggedTaskId) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = "move" as const;
           setDragOver(true);
@@ -492,7 +541,7 @@ function SectionGroup({
         onDrop: (e: React.DragEvent) => {
           e.preventDefault();
           setDragOver(false);
-          const id = e.dataTransfer.getData(TASK_DRAG_TYPE);
+          const id = e.dataTransfer.getData(TASK_DRAG_TYPE) || draggedTaskId;
           if (!id) return;
           const dragged = allTasks.find((t) => t.id === id);
           // No-op when it's already here: saves a pointless write and a junk undo step.
@@ -673,8 +722,14 @@ export function ClientView({ clientId }: { clientId: string }) {
         <div
           className="overflow-x-auto rounded-xl border border-border bg-surface"
           onDragStart={() => setDraggingTask(true)}
-          onDragEnd={() => setDraggingTask(false)}
-          onDrop={() => setDraggingTask(false)}
+          onDragEnd={() => {
+            setDraggingTask(false);
+            draggedTaskId = null; // belt-and-braces: a stale id would make targets accept
+          }}
+          onDrop={() => {
+            setDraggingTask(false);
+            draggedTaskId = null;
+          }}
         >
           <div className="min-w-[720px]">
             <div className={`${COLS} h-8 border-b border-border bg-background text-xs font-medium`}>
@@ -688,10 +743,10 @@ export function ClientView({ clientId }: { clientId: string }) {
               <span className="w-16 shrink-0">
                 <SortHeader label="Due" k="due" sort={sort} onSort={cycleSort} />
               </span>
-              <span className="hidden w-36 shrink-0 lg:block">
+              <span className="hidden w-28 shrink-0 lg:block">
                 <SortHeader label="Tag" k="tag" sort={sort} onSort={cycleSort} />
               </span>
-              <span className="hidden w-28 shrink-0 md:block">
+              <span className="hidden w-36 shrink-0 md:block">
                 <SortHeader label="Hrs/budget" k="budget" sort={sort} onSort={cycleSort} />
               </span>
               {isAdmin && (
