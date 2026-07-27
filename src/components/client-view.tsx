@@ -125,9 +125,13 @@ function ClientStats({ clientId }: { clientId: string }) {
   );
 }
 
-// pl-6 (was pl-3) leaves a gutter for the drag handle, which is absolutely
-// positioned so appearing on hover doesn't shift the row.
-const COLS = "flex items-center gap-3 pl-6 pr-4";
+// pl-9 clears the 28px drag-handle gutter (the handle is absolutely positioned, so
+// appearing on hover never shifts the row). The complete/name pair is then pulled
+// tight with -mr-1.5 on the first cell, keeping the tick beside the task title
+// rather than stranded between the grip and the name.
+const COLS = "flex items-center gap-3 pl-9 pr-4";
+/** Applied to the leading cell (the tick, and the header's spacer) so both stay aligned. */
+const LEAD_TIGHT = "-mr-1.5";
 
 /** Custom MIME so unrelated drop targets (weekly plan, report table) ignore these
  *  drags — and so `dragover` can tell whether to accept, since getData() is only
@@ -312,6 +316,10 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
       }`}
       onClick={() => openTask(task.id)}
     >
+      {/* Full-height gutter, not just the 14px icon: only a mousedown here arms the
+          drag, so a small miss silently cancelled it — which felt like the drag
+          working only sometimes. The icon fades in on hover; the hit area is always
+          present and spans the row's full height. */}
       {isAdmin && (
         <span
           title="Drag to reorder, or onto another section to move it"
@@ -319,7 +327,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
             armedRef.current = true;
           }}
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-0.5 top-1/2 -translate-y-1/2 cursor-grab text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+          className="absolute left-0 top-0 flex h-full w-7 cursor-grab items-center justify-center text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
         >
           <GripVertical size={14} />
         </span>
@@ -330,13 +338,13 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
             e.stopPropagation();
             updateTask(task.id, { status: done ? "todo" : "done" });
           }}
-          className={`shrink-0 transition-colors ${done ? "text-success" : "text-border-strong hover:text-success"}`}
+          className={`${LEAD_TIGHT} shrink-0 transition-colors ${done ? "text-success" : "text-border-strong hover:text-success"}`}
           title={done ? "Reopen" : "Mark complete"}
         >
           <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
         </button>
       ) : (
-        <span className={`shrink-0 ${done ? "text-success" : "text-border-strong"}`} title={done ? "Completed" : "In progress"}>
+        <span className={`${LEAD_TIGHT} shrink-0 ${done ? "text-success" : "text-border-strong"}`} title={done ? "Completed" : "In progress"}>
           <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
         </span>
       )}
@@ -565,7 +573,7 @@ function SectionGroup({
         <button
           onClick={() => setOpen((o) => !o)}
           title={open ? "Collapse" : "Expand"}
-          className="flex w-[17px] shrink-0 items-center justify-center"
+          className={`flex w-[17px] shrink-0 items-center justify-center ${LEAD_TIGHT}`}
         >
           <CollapseChevron open={open} />
         </button>
@@ -733,7 +741,7 @@ export function ClientView({ clientId }: { clientId: string }) {
         >
           <div className="min-w-[720px]">
             <div className={`${COLS} h-8 border-b border-border bg-background text-xs font-medium`}>
-              <span className="w-[17px] shrink-0" />
+              <span className={`w-[17px] shrink-0 ${LEAD_TIGHT}`} />
               <span className="min-w-0 flex-1">
                 <SortHeader label="Name" k="title" sort={sort} onSort={cycleSort} />
               </span>
