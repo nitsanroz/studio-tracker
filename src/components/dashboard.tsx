@@ -662,7 +662,7 @@ function tenureSince(startIso: string): string {
 // ── celebrations: birthdays (admin-readable) + work anniversaries ──────────
 
 type ApiOccasion = {
-  group: "birthday" | "anniversary" | "holiday" | "custom";
+  group: "birthday" | "anniversary" | "holiday" | "studioday" | "custom";
   title: string;
   /** recurring things carry "MM-DD"; one-off things carry a full "YYYY-MM-DD" */
   monthDay?: string;
@@ -750,46 +750,50 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
   if (inline) {
     return (
       <div className="mt-4 mr-[100px] max-w-[360px] rounded-xl bg-white/10 px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-start gap-2.5">
           <span className="shrink-0 text-xl leading-none">{cur.icon}</span>
           <div className="min-w-0 flex-1">
-            <div className="bidi-auto truncate text-sm font-medium leading-tight">{cur.text}</div>
+            {/* Wraps to two lines rather than truncating: the portrait leaves this
+                column narrow, and "Shaked's bir…" is worse than two short lines. */}
+            <div className="bidi-auto line-clamp-2 text-sm font-medium leading-tight">
+              {cur.text}
+            </div>
             <div className="mt-0.5 text-[11px] text-white/70">
               <span className="tabular-nums">{cur.when}</span> · {cur.rel}
             </div>
           </div>
-          {many && (
-            <div className="flex shrink-0 items-center gap-0.5">
-              <button
-                onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
-                aria-label="Previous occasion"
-                className="rounded-md p-1 text-white/80 hover:bg-white/15 hover:text-white"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <button
-                onClick={() => setAt((v) => (v + 1) % upcoming.length)}
-                aria-label="Next occasion"
-                className="rounded-md p-1 text-white/80 hover:bg-white/15 hover:text-white"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          )}
         </div>
+        {/* Controls on their own row — sharing the row above cost the title ~60px
+            of a column that only has ~200px to give. */}
         {many && (
-          <div className="mt-2 flex items-center justify-center gap-1.5">
-            {upcoming.map((o, i) => (
-              <button
-                key={o.at}
-                onClick={() => setAt(i)}
-                aria-label={`Occasion ${i + 1} of ${upcoming.length}`}
-                aria-current={i === idx}
-                className={`size-1.5 rounded-full transition-colors ${
-                  i === idx ? "bg-white" : "bg-white/35 hover:bg-white/60"
-                }`}
-              />
-            ))}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <button
+              onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
+              aria-label="Previous occasion"
+              className="rounded-md p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <div className="flex items-center gap-1.5">
+              {upcoming.map((o, i) => (
+                <button
+                  key={o.at}
+                  onClick={() => setAt(i)}
+                  aria-label={`Occasion ${i + 1} of ${upcoming.length}`}
+                  aria-current={i === idx}
+                  className={`size-1.5 rounded-full transition-colors ${
+                    i === idx ? "bg-white" : "bg-white/35 hover:bg-white/60"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setAt((v) => (v + 1) % upcoming.length)}
+              aria-label="Next occasion"
+              className="rounded-md p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
         )}
       </div>

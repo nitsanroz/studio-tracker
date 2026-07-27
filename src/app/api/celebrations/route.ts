@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { jewishHolidays } from "@/lib/jewish-holidays";
+import { STUDIO_DAYS } from "@/lib/studio-days";
 
 // Everything for the home "Coming up" pane, from four sources:
 //   birthdays      — member_hr.birth_date
@@ -19,13 +20,14 @@ import { jewishHolidays } from "@/lib/jewish-holidays";
 
 export const dynamic = "force-dynamic";
 
-export type OccasionGroup = "birthday" | "anniversary" | "holiday" | "custom";
+export type OccasionGroup = "birthday" | "anniversary" | "holiday" | "studioday" | "custom";
 
 /** Groups shown when the admin hasn't set a preference. */
 const DEFAULT_GROUPS: Record<OccasionGroup, boolean> = {
   birthday: true,
   anniversary: true,
   holiday: true,
+  studioday: true,
   custom: true,
 };
 
@@ -119,6 +121,14 @@ export async function GET() {
     // A little past the 30-day window the UI shows, so it stays correct if that widens.
     for (const h of jewishHolidays(isoDaysFromToday(-1), isoDaysFromToday(60))) {
       occasions.push({ group: "holiday", title: h.title, date: h.date, icon: h.icon });
+    }
+  }
+
+  if (groups.studioday) {
+    // Fixed month/day, so they ride the same recurring path as birthdays — no
+    // calendar conversion, and they never need re-seeding.
+    for (const d of STUDIO_DAYS) {
+      occasions.push({ group: "studioday", title: d.title, monthDay: d.monthDay, icon: d.icon });
     }
   }
 

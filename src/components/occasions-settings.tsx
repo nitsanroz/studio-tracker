@@ -10,12 +10,17 @@ import { Trash2 } from "lucide-react";
  * they can be switched on and off but have nothing to edit here.
  */
 
-type Group = "birthday" | "anniversary" | "holiday" | "custom";
+type Group = "birthday" | "anniversary" | "holiday" | "studioday" | "custom";
 
 const GROUP_LABELS: { key: Group; label: string; hint: string }[] = [
   { key: "birthday", label: "Birthdays", hint: "From each member's date of birth" },
   { key: "anniversary", label: "Work anniversaries", hint: "From each member's start date" },
   { key: "holiday", label: "Jewish holidays", hint: "Calculated from the Hebrew calendar" },
+  {
+    key: "studioday",
+    label: "Studio & fun days",
+    hint: "Design Day, Photography Day, Hummus Day, Coffee Day…",
+  },
   { key: "custom", label: "Custom occasions", hint: "The ones you add below" },
 ];
 
@@ -26,6 +31,7 @@ export function OccasionsSettings() {
     birthday: true,
     anniversary: true,
     holiday: true,
+    studioday: true,
     custom: true,
   });
   const [occasions, setOccasions] = useState<Occasion[]>([]);

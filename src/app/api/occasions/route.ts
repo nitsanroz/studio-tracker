@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const GROUPS = ["birthday", "anniversary", "holiday", "custom"] as const;
+const GROUPS = ["birthday", "anniversary", "holiday", "studioday", "custom"] as const;
 
 async function requireAdmin() {
   const supabase = await createClient();
