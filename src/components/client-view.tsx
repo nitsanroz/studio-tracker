@@ -8,6 +8,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   CheckCircle2,
+  GripVertical,
   Maximize2,
   Plus,
 } from "lucide-react";
@@ -123,7 +124,14 @@ function ClientStats({ clientId }: { clientId: string }) {
   );
 }
 
-const COLS = "flex items-center gap-3 pl-3 pr-4";
+// pl-6 (was pl-3) leaves a gutter for the drag handle, which is absolutely
+// positioned so appearing on hover doesn't shift the row.
+const COLS = "flex items-center gap-3 pl-6 pr-4";
+
+/** Custom MIME so unrelated drop targets (weekly plan, report table) ignore these
+ *  drags — and so `dragover` can tell whether to accept, since getData() is only
+ *  readable on drop. */
+const TASK_DRAG_TYPE = "application/x-studio-task-id";
 
 type SortKey = "title" | "assignee" | "due" | "tag" | "budget" | "billable";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -212,11 +220,24 @@ function TaskRow({ task }: { task: Task }) {
 
   return (
     <div
-      className={`${COLS} group h-10 cursor-pointer border-b border-border text-sm transition-colors ${
+      draggable={isAdmin}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(TASK_DRAG_TYPE, task.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      className={`${COLS} group relative h-10 cursor-pointer border-b border-border text-sm transition-colors ${
         active ? "bg-brand-soft/50" : "hover:bg-background"
       } ${task.pending ? "opacity-50" : ""}`}
       onClick={() => openTask(task.id)}
     >
+      {isAdmin && (
+        <span
+          title="Drag to another section"
+          className="absolute left-0.5 top-1/2 -translate-y-1/2 cursor-grab text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+        >
+          <GripVertical size={14} />
+        </span>
+      )}
       {isAdmin ? (
         <button
           onClick={(e) => {
@@ -377,9 +398,47 @@ function SectionGroup({
   tasks: Task[];
   clientId: string;
 }) {
+  const { tasks: allTasks, updateTask, profiles, currentUserId } = useData();
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [open, setOpen] = useState(true);
+  const [dragOver, setDragOver] = useState(false);
+
+  const sectionId = section?.id ?? null;
+
+  // The whole group is the drop zone — header, rows and the add-row — so there's a
+  // generous target rather than a thin line between sections.
+  const dropProps = isAdmin
+    ? {
+        onDragOver: (e: React.DragEvent) => {
+          if (!e.dataTransfer.types.includes(TASK_DRAG_TYPE)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move" as const;
+          setDragOver(true);
+        },
+        onDragLeave: (e: React.DragEvent) => {
+          // Ignore the leave events fired when crossing between child rows.
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setDragOver(false);
+        },
+        onDrop: (e: React.DragEvent) => {
+          e.preventDefault();
+          setDragOver(false);
+          const id = e.dataTransfer.getData(TASK_DRAG_TYPE);
+          if (!id) return;
+          const dragged = allTasks.find((t) => t.id === id);
+          // No-op when it's already here: saves a pointless write and a junk undo step.
+          if (!dragged || dragged.sectionId === sectionId) return;
+          updateTask(id, { sectionId });
+          setOpen(true);
+        },
+      }
+    : {};
+
   return (
-    <div>
+    <div
+      {...dropProps}
+      className={dragOver ? "rounded-lg ring-2 ring-brand ring-inset" : undefined}
+    >
       <button
         onClick={() => setOpen((o) => !o)}
         className={`${COLS} w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background`}
@@ -407,6 +466,7 @@ export function ClientView({ clientId }: { clientId: string }) {
     useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [showDone, setShowDone] = useState(false);
+  const [draggingTask, setDraggingTask] = useState(false);
   const [view, setView] = useState<"list" | "board">("list");
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
@@ -503,7 +563,14 @@ export function ClientView({ clientId }: { clientId: string }) {
       <div className="flex gap-4">
         <div className="min-w-0 max-w-[850px] flex-1">
       {view === "list" ? (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        // dragstart/dragend bubble, so the whole table can know a drag is running
+        // without threading state through every row.
+        <div
+          className="overflow-x-auto rounded-xl border border-border bg-surface"
+          onDragStart={() => setDraggingTask(true)}
+          onDragEnd={() => setDraggingTask(false)}
+          onDrop={() => setDraggingTask(false)}
+        >
           <div className="min-w-[720px]">
             <div className={`${COLS} h-8 border-b border-border bg-background text-xs font-medium`}>
               <span className="w-[17px] shrink-0" />
@@ -528,7 +595,9 @@ export function ClientView({ clientId }: { clientId: string }) {
                 </span>
               )}
             </div>
-            {noSection.length > 0 && (
+            {/* Normally hidden when empty, but an admin mid-drag needs somewhere to
+                drop a task to take it OUT of a section. */}
+            {(noSection.length > 0 || (isAdmin && draggingTask)) && (
               <SectionGroup section={null} tasks={noSection} clientId={clientId} />
             )}
             {clientSections.map((section) => (

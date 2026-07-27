@@ -201,6 +201,9 @@ export function TaskPanel() {
 
   const client = clients.find((c) => c.id === task.clientId);
   const section = sections.find((s) => s.id === task.sectionId);
+  const clientSections = sections
+    .filter((s) => s.clientId === task.clientId)
+    .sort((a, b) => a.position - b.position);
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const taskComments = comments.filter((c) => c.taskId === task.id);
   const entries = timeEntries
@@ -298,8 +301,31 @@ export function TaskPanel() {
               <span className="w-24 shrink-0 text-muted">Client</span>
               <span className="flex min-w-0 flex-1 items-center gap-2 px-1.5">
                 {client && <ClientChip client={client} size="sm" />}
-                {section && <span className="truncate text-muted">› {section.name}</span>}
               </span>
+            </div>
+            {/* Section is its own row so admins can move the task between the
+                client's sections without dragging. Members see it read-only —
+                migration 0011's trigger makes section_id admin-only in the DB too. */}
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-muted">Section</span>
+              {isAdmin ? (
+                <select
+                  className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
+                  value={task.sectionId ?? ""}
+                  onChange={(e) => updateTask(task.id, { sectionId: e.target.value || null })}
+                >
+                  <option value="">No section</option>
+                  {clientSections.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="bidi-auto min-w-0 flex-1 truncate px-1.5 py-1">
+                  {section?.name ?? "—"}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-muted">Tag</span>
