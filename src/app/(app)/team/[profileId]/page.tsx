@@ -168,7 +168,6 @@ export default function MemberPage({
 }) {
   const { profileId } = use(params);
   const { profiles, tasks, clients, entrySums, currentUserId, updateProfile } = useData();
-  const supabase = useMemo(() => createClient(), []);
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);

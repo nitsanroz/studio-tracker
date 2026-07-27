@@ -21,7 +21,7 @@ import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import { MemberPhoto } from "./member-photo";
 import { ConfirmDetailsBanner } from "./confirm-details-banner";
 import { Avatar, ClientChip } from "./ui";
-import { HBar, MiniColumnsLabeled, MultiLineChart, PercentRing, PieChart } from "./charts";
+import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
 
 /** Full calendar bounds of a period, `offset` steps from the current one
@@ -98,111 +98,6 @@ function comparablePrevRange(
     if (candidate < prevEnd) prevEnd = candidate;
   }
   return { from: toISODate(prev.start), to: toISODate(prevEnd) };
-}
-
-/** Hours in the selected period (admins: studio-wide, users: their own) + delta vs last period. */
-function PeriodStat({
-  isAdmin,
-  filter,
-  prevRange,
-}: {
-  isAdmin: boolean;
-  filter: HomeFilter;
-  prevRange: { from: string; to: string } | null;
-}) {
-  const { entrySums, tasks, currentUserId } = useData();
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-
-  const stats = useMemo(() => {
-    let cur = 0;
-    let curBillable = 0;
-    let prev = 0;
-    for (const e of entrySums) {
-      if (!isAdmin && e.userId !== currentUserId) continue;
-      const task = taskById.get(e.taskId);
-      if (filter.clientId && task?.clientId !== filter.clientId) continue;
-      if (!filter.range || (e.date >= filter.range.from && e.date <= filter.range.to)) {
-        cur += e.minutes;
-        if (task?.billable) curBillable += e.minutes;
-      } else if (prevRange && e.date >= prevRange.from && e.date <= prevRange.to) {
-        prev += e.minutes;
-      }
-    }
-    return { cur, curBillable, prev, delta: prevRange && prev > 0 ? (cur - prev) / prev : null };
-  }, [entrySums, taskById, isAdmin, currentUserId, filter, prevRange]);
-
-  const billablePct = stats.cur > 0 ? Math.round((stats.curBillable / stats.cur) * 100) : null;
-  // split "353.8h" into figure + unit so the unit renders smaller (Figma round-trip)
-  const hoursStr = formatHoursShort(stats.cur);
-  const [, hoursFigure, hoursUnit] = hoursStr.match(/^([\d.,]+)(.*)$/) ?? [null, hoursStr, ""];
-
-  const delta = stats.delta != null && (
-    <p
-      className={`mt-1 text-xs font-semibold tabular-nums ${stats.delta >= 0 ? "text-success" : "text-danger"}`}
-      title={`Last period: ${formatHoursShort(stats.prev)}`}
-    >
-      {stats.delta >= 0 ? "+" : ""}
-      {Math.round(stats.delta * 100)}% vs last period
-    </p>
-  );
-
-  // ── members: unchanged compact stat ──────────────────────────────────────
-  if (!isAdmin) {
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-        <div className="flex items-center justify-between gap-4">
-          <div className="shrink-0" title="Your logged hours in the selected period">
-            <div className="font-serif-accent text-2xl leading-tight">My hours</div>
-            <p className="text-xs text-muted">{filter.label.toLowerCase()}</p>
-          </div>
-          <div className="text-right">
-            <div className="font-serif-accent text-4xl leading-none">
-              {hoursFigure}
-              <span className="text-2xl">{hoursUnit}</span>
-            </div>
-            {delta}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── admins: heading-style title, big hours, billable ring, this/last bars ─
-  const maxBar = Math.max(stats.cur, stats.prev, 1);
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-3 font-heading text-sm" title="All hours logged across the studio in the selected period">
-        Studio · {filter.label}
-      </h2>
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <div className="font-serif-accent text-4xl leading-none">
-            {hoursFigure}
-            <span className="text-2xl">{hoursUnit}</span>
-          </div>
-          {delta}
-          <p className="mt-1 text-xs text-muted">Hours logged</p>
-        </div>
-        <div className="flex shrink-0 flex-col items-center gap-1" title="Share of hours on billable tasks">
-          <PercentRing pct={billablePct ?? 0} size={116} label="Billable share" />
-          <span className="text-xs text-muted">Billable</span>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-col gap-2.5 border-t border-border pt-4">
-        {/* hours already shown big above → the bar stays purely visual */}
-        <HBar label="This period" minutes={stats.cur} maxMinutes={maxBar} barClass="bg-brand" />
-        {prevRange && (
-          <HBar
-            label={<span className="text-muted">Last period</span>}
-            right={formatHoursShort(stats.prev)}
-            minutes={stats.prev}
-            maxMinutes={maxBar}
-            barClass="bg-brand/30"
-          />
-        )}
-      </div>
-    </div>
-  );
 }
 
 function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
@@ -768,7 +663,9 @@ function tenureSince(startIso: string): string {
 
 type ApiOccasion = { kind: "birthday" | "anniversary"; name: string; monthDay: string; years?: number };
 
-function Celebrations() {
+/** `inline` drops the card chrome and inverts the colours, for use inside the blue
+ *  member hero. Both forms keep the prev/next pagination. */
+function Celebrations({ inline = false }: { inline?: boolean }) {
   const [raw, setRaw] = useState<ApiOccasion[]>([]);
   const [at, setAt] = useState(0);
 
@@ -826,6 +723,42 @@ function Celebrations() {
   const idx = Math.min(at, upcoming.length - 1);
   const cur = upcoming[idx];
   const many = upcoming.length > 1;
+
+  // The mr below stacks on the hero's own pr-32: the portrait needs ~216px of
+  // clearance from the pane's right edge (it's scaled by the pane's HEIGHT, so it
+  // renders wider than its 176px container), and a filled pill would otherwise
+  // slide under it and hide the date and arrows. max-w keeps it from sprawling
+  // when the hero goes full width below the lg breakpoint.
+  if (inline) {
+    return (
+      <div className="mt-4 mr-[100px] flex max-w-[340px] items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
+        <span className="text-base">{cur.icon}</span>
+        <span className="bidi-auto min-w-0 flex-1 truncate text-sm">{cur.text}</span>
+        <span className="shrink-0 text-xs tabular-nums text-white/70">{cur.when}</span>
+        {many && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <span className="mr-1 text-[11px] tabular-nums text-white/60">
+              {idx + 1}/{upcoming.length}
+            </span>
+            <button
+              onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
+              aria-label="Previous"
+              className="rounded p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <button
+              onClick={() => setAt((v) => (v + 1) % upcoming.length)}
+              aria-label="Next"
+              className="rounded p-0.5 text-white/80 hover:bg-white/15 hover:text-white"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
@@ -1077,9 +1010,11 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
 function MemberWelcome({
   me,
   filter,
+  prevRange,
 }: {
   me: { id: string; name: string; photoUrl: string | null };
   filter: HomeFilter;
+  prevRange: { from: string; to: string } | null;
 }) {
   const { entrySums, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
@@ -1101,11 +1036,13 @@ function MemberWelcome({
   const scoped = useMemo(() => {
     let min = 0;
     let bil = 0;
+    let prev = 0;
     const byDate = new Map<string, number>();
     for (const e of entrySums) {
       if (e.userId !== me.id) continue;
       const task = taskById.get(e.taskId);
       if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      if (prevRange && e.date >= prevRange.from && e.date <= prevRange.to) prev += e.minutes;
       if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
       min += e.minutes;
       if (task?.billable) bil += e.minutes;
@@ -1119,8 +1056,10 @@ function MemberWelcome({
       days,
       pct: min > 0 ? Math.round((bil / min) * 100) : 0,
       perDay: byDate.size > 0 ? min / byDate.size : 0,
+      // The delta the removed "My hours" pane used to carry, folded into the tile.
+      delta: prev > 0 ? Math.round(((min - prev) / prev) * 100) : null,
     };
-  }, [entrySums, taskById, me.id, filter]);
+  }, [entrySums, taskById, me.id, filter, prevRange]);
 
   const myActive = useMemo(
     () => tasks.filter((t) => t.assigneeId === me.id && t.status !== "done"),
@@ -1152,6 +1091,7 @@ function MemberWelcome({
             {myActive.length === 1 ? "" : "s"}
             {dueThisWeek > 0 ? ` — ${dueThisWeek} due this week.` : "."}
           </h2>
+          <Celebrations inline />
           <div className="mt-5 flex flex-wrap gap-3">
             <a
               href="#log"
@@ -1159,12 +1099,6 @@ function MemberWelcome({
             >
               + Log time
             </a>
-            <Link
-              href="/plan"
-              className="rounded-xl border border-white/50 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              My week
-            </Link>
           </div>
         </div>
         {/* Anchored top AND bottom with a negative top, so the figure is always the
@@ -1180,7 +1114,13 @@ function MemberWelcome({
       </div>
 
       <div className="mt-9 grid grid-cols-2 gap-4">
-        <StatTile label="My hours" figure={hFig} unit={hUnit} sub={filter.label.toLowerCase()} />
+        <StatTile
+          label="My hours"
+          figure={hFig}
+          unit={hUnit}
+          delta={scoped.delta != null ? { value: scoped.delta, unit: "%" } : null}
+          sub={filter.label.toLowerCase()}
+        />
         <StatTile label="Billable" figure={String(scoped.pct)} unit="%" sub={filter.label.toLowerCase()} />
         <StatTile label="Days in studio" figure={String(scoped.days)} sub={filter.label.toLowerCase()} />
         <StatTile label="Avg / day" figure={adFig} unit={adUnit} sub="days logged" />
@@ -1404,24 +1344,21 @@ export function Dashboard() {
       ) : (
         <>
           <ConfirmDetailsBanner />
-          {me && <MemberWelcome me={me} filter={filter} />}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <MyWeek />
-            {compactTasksCard}
-          </div>
-          {/* Celebrations sits beside "Log my hours" rather than at the foot of the
-              page — nobody scrolled that far, so upcoming dates went unseen. */}
+          {me && <MemberWelcome me={me} filter={filter} prevRange={prevRange} />}
+          <MyWeek />
+          {/* My tasks takes the slot beside "Log my hours" that Celebrations left
+              when it moved into the hero. */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div id="log" className="scroll-mt-20 lg:col-span-2">
               <DayLog />
             </div>
-            <Celebrations />
+            {compactTasksCard}
           </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <MyGraphs filter={filter} isAdmin={false} />
-            </div>
-            <PeriodStat isAdmin={false} filter={filter} prevRange={prevRange} />
+          {/* PeriodStat is gone from the member view — it repeated the "My hours"
+              tile above, whose delta chip now carries the vs-last-period figure.
+              That frees the row so both graphs sit side by side. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <MyGraphs filter={filter} isAdmin={false} />
           </div>
         </>
       )}
