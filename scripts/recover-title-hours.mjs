@@ -49,6 +49,19 @@ const DATA = path.join(import.meta.dirname, "..", "data");
  */
 const NO_UNIT_MAX = 100;
 
+/**
+ * Task ids that tripped NO_UNIT_MAX but which Nitsan confirmed ARE hour figures
+ * (2026-07-28). Recorded as reviewed exceptions rather than by raising the
+ * threshold — the guard is what caught "Storemaven - 404", and loosening it would
+ * let that back in too.
+ *   "אתר -124"              124h on the studio's own website (internal)
+ *   "Amnon's CES PPT -104"  104h on a deck for Mobileye
+ */
+const CONFIRMED_HOURS = new Set([
+  "90f0fe06-cb6a-4b0f-9fce-6af1811b2ef4",
+  "cf765497-90f2-4ef5-b8d2-1494cde45f4d",
+]);
+
 const LEGACY_PROJECTS = new Set([
   "as:1186151771710269", "as:1200243332541932", "as:1200243332541808",
   "as:257680404225328", "as:167561988748343", "as:1203307271028327",
@@ -128,7 +141,8 @@ for (const t of tasks) {
   if (p.actual == null) continue;
 
   // Unit check: /(\d)\s*(h|hr|hrs|hours)/ appearing after the figure.
-  const hasUnit = /\d\s*(?:h\b|hr\b|hrs\b|hours?\b|שעות|שעה)/i.test(t.title);
+  const hasUnit =
+    /\d\s*(?:h\b|hr\b|hrs\b|hours?\b|שעות|שעה)/i.test(t.title) || CONFIRMED_HOURS.has(t.id);
   if (!hasUnit && p.actual > NO_UNIT_MAX) {
     flagged.push({ title: t.title, hours: p.actual, client: clientById.get(t.client_id)?.name ?? "?" });
     continue;

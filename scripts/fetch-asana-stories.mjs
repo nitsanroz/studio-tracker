@@ -119,11 +119,14 @@ const clientById = new Map(clients.map((c) => [c.id, c]));
 const unsorted = clients.find((c) => c.name === "Imported / Unsorted");
 const tracked = new Set(entries.map((e) => e.task_id));
 
+// --all now covers INTERNAL clients too (Studio, OFFF tlv), matching the scope
+// Nitsan chose for the title pass on 2026-07-28: internal work is real studio time
+// even when it was never billed. Tasks that already have ANY time entry are still
+// excluded, so this can never collide with real Everhour data.
 const scope = tasks.filter((t) => {
   if (!t.asana_gid || tracked.has(t.id)) return false;
   if (unsorted && t.client_id === unsorted.id) return true;
-  if (!WIDE) return false;
-  return t.billable && clientById.get(t.client_id)?.billable;
+  return WIDE;
 });
 
 const shapes = fs.existsSync(PARENTS) ? JSON.parse(fs.readFileSync(PARENTS, "utf8")) : {};
