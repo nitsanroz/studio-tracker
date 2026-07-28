@@ -524,6 +524,9 @@ export function TaskPanel() {
               )}
               {entries.map((e) => {
                 const user = profiles.find((p) => p.id === e.userId) ?? null;
+                // Same as the comments below: a recovered entry names its author in
+                // legacy_author_name because that person has no account here.
+                const author = user?.name ?? e.legacyAuthorName ?? "";
                 return (
                   <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
                     {isAdmin && (
@@ -542,7 +545,11 @@ export function TaskPanel() {
                         title="Select for moving"
                       />
                     )}
-                    <Avatar profile={user} size={22} />
+                    {/* The avatar is blank for a recovered entry, so the author's
+                        name is only reachable here. */}
+                    <span className="shrink-0" title={author || undefined}>
+                      <Avatar profile={user} size={22} />
+                    </span>
                     <span className="w-14 shrink-0 text-xs text-muted">{formatDate(e.date)}</span>
                     <span className="w-14 shrink-0 font-medium tabular-nums">{formatHours(e.minutes)}</span>
                     <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
@@ -567,12 +574,16 @@ export function TaskPanel() {
             <div className="mb-2 flex flex-col gap-3">
               {taskComments.map((c) => {
                 const user = profiles.find((p) => p.id === c.userId) ?? null;
+                // An imported pre-Everhour comment usually has no profile — its author
+                // left long before the current roster. Without this fallback the name
+                // rendered EMPTY on 2,175 of the 2,397 imported comments.
+                const author = user?.name ?? c.authorName ?? "";
                 return (
                   <div key={c.id} className="flex gap-2.5">
                     <Avatar profile={user} size={26} />
                     <div className="min-w-0">
                       <div className="text-xs text-muted">
-                        <span className="font-medium text-foreground">{user?.name}</span>{" "}
+                        <span className="font-medium text-foreground">{author}</span>{" "}
                         {new Date(c.createdAt).toLocaleString("en-GB", {
                           day: "numeric",
                           month: "short",
