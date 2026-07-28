@@ -27,15 +27,27 @@ async function fetchAll(table, columns) {
 }
 
 /**
- * Task count after the 2026-07-28 restore. It is 4506 + 7, not the original 4506:
- * `restore-unsorted.mjs` rebuilt from data/everhour-tasks-all.json, which holds 7
- * more Studio tasks than the original 2026 import had loaded — all zero-hour
- * placeholder rows on the "Making a Podcast" / "Studio Website" boards, including
- * literal "1", "2", "3", "123". Restoring them was the safe choice: identifying
- * exactly which 620 rows had existed risked omitting real ones, and these carry no
- * hours. Delete them via bulk-select and drop this to 4506.
+ * 4507, not the original 4506 — one row off, deliberately.
+ *
+ * `restore-unsorted.mjs` rebuilt from data/everhour-tasks-all.json, which carries 7
+ * more Studio tasks than the pre-incident DB held. They were not skipped by the
+ * original import (its loop has no such filter) — they were added to the Basecamp /
+ * Linear boards AFTERWARDS and only ever existed in the refreshed dump.
+ *
+ * 6 were removed once identified with evidence:
+ *   - 5 in a "Shnitz" section that provably did not exist pre-incident (the other
+ *     23 "Making a Podcast" rows match the recorded section counts exactly:
+ *     Episode Ideas 2, Scheduled 2, Editing 1, Approved 1, Done 5, Not now 2,
+ *     Listener Questions 6, Newsletter updates 4). Titled "1", "2", "3", "123".
+ *   - the lowercase "hero", a case-duplicate of "Hero".
+ *
+ * The 7th is NOT identifiable: the "Studio Website" (li:) board held 1 task before
+ * and 3 after, all zero-hour, comment-free and section-less — "Hero", "hero",
+ * "Mobile Hero". Which one was original is unknowable from the dump, so one extra
+ * zero-hour row is left in rather than deleting real content to make a constant
+ * match. This number describes reality; it is not a target to hit.
  */
-const EXPECTED_TASKS = 4513;
+const EXPECTED_TASKS = 4507;
 
 /**
  * Expected task count per client AFTER 0017. The four that already existed carry
@@ -50,7 +62,7 @@ const EXPECTED = {
   Harmonie: 78,
   Anchor: 26,
   Voyantis: 142,
-  Studio: 1073, // 1066 + the 7 zero-hour placeholders described above
+  Studio: 1067, // 1066 + the one unidentifiable zero-hour row described above
   Siteaware: 20,
   "New Era": 16,
   Yoco: 13,
