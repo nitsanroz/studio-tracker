@@ -150,3 +150,16 @@ test("comment hours — prose that only mentions a number is not a log", () => {
   assert.equal(parseCommentHours("48h"), null, "over 24h in one comment is a parse error");
   assert.equal(parseCommentHours(""), null);
 });
+
+test("a bare HTTP status code is a page name, not hours", () => {
+  // Confirmed by Nitsan 2026-07-28. This rule lived in recover-title-hours.mjs at
+  // first, so the reconciler — which shares this parser — re-recovered 404h from it.
+  assert.equal(parseLegacyName("Storemaven - 404").actual, null);
+  assert.ok(parseLegacyName("Storemaven - 404").flags.includes("looks-like-a-page-name"));
+  assert.equal(parseLegacyName("Redirects - 301").actual, null);
+  assert.equal(parseLegacyName("Error handling - 500").actual, null);
+  // …but a code WITH a stated unit is real hours.
+  assert.equal(parseLegacyName("404 page  - 1.25h").actual, 1.25);
+  assert.equal(parseLegacyName("Grip - 404 page - (2h)  -2").actual, 2);
+  assert.equal(parseLegacyName("Landing - 404h").actual, 404);
+});

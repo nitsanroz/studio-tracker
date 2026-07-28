@@ -159,7 +159,10 @@ for (const r of sectionRows) {
   if (!s) continue;
   const patch = {};
   const clean = r.clean_name?.trim();
-  if (clean && clean !== s.name) {
+  // `rename_ok` is set by the reconciler: only the dissolved legacy projects' sections
+  // may be renamed. Everything else is a live board the team still uses — the hours
+  // and budget below are captured either way, but the name is left alone.
+  if (r.rename_ok !== "no" && clean && clean !== s.name) {
     patch.legacy_name = s.name;
     patch.name = clean;
   }

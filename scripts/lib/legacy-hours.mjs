@@ -25,6 +25,20 @@
  */
 const KEY_ROW = /(^|\s|-)(keys?|מפתח)(\s|$|\b)/i;
 
+/**
+ * HTTP status codes get used as PAGE NAMES, so a trailing figure equal to one and
+ * carrying no h/hrs unit is a page, not hours. Nitsan confirmed 2026-07-28 that
+ * "Storemaven - 404" is a 404 page — and it slipped back in once because this rule
+ * originally lived in recover-title-hours.mjs instead of here, so the reconciler
+ * (which shares this parser) re-recovered 404h from it. Rules like this belong in
+ * the parser, where every consumer inherits them.
+ *
+ * Titles that name a code AND state hours are unaffected — they have the unit:
+ * "404 page - 1.25h", "Grip - 404 page - (2h) -2".
+ */
+const PAGE_NAME_CODES = new Set([301, 302, 400, 401, 403, 404, 410, 418, 500, 502, 503, 504]);
+const HAS_HOUR_UNIT = /\d\s*(?:h\b|hr\b|hrs\b|hours?\b|שעות|שעה)/i;
+
 /** "(27/1/2021)", "(9/12/21)", "(1/9/2020ׁ)" — a date, never a budget. */
 const DATE_PAREN = /\(\s*\d{1,2}[/.]\d{1,2}[/.]\d{2,4}[^)]{0,3}\)/g;
 /** Trailing "- FINAL", "- final" — a status marker that hid the actual behind it. */
@@ -193,6 +207,12 @@ export function parseLegacyName(raw) {
 
   if (budget != null && actual != null && (actual > budget * 3 || budget > actual * 3)) {
     flags.push("budget-vs-actual-far");
+  }
+
+  // A bare status code is a page name, not an hour count.
+  if (actual != null && PAGE_NAME_CODES.has(actual) && !HAS_HOUR_UNIT.test(String(raw ?? ""))) {
+    flags.push("looks-like-a-page-name");
+    actual = null;
   }
 
   // A reduction note carries no deliverable hours. The figure stays visible in

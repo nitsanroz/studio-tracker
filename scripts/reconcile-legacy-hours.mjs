@@ -107,6 +107,19 @@ const inScope = tasks.filter((t) => {
   return !!t.asana_gid;
 });
 
+/**
+ * A task whose comment thread starts only AFTER the Everhour cutover is out of scope
+ * in --all mode. By then the studio was logging time in Everhour, so a figure in a
+ * comment is far more likely an estimate than a record of work — the one task this
+ * excludes is literally titled "First hour estimation". Pre-cutover the comments WERE
+ * the time log, which is the whole basis of this recovery; afterwards they are not.
+ */
+const firstCommentAfterCutover = (gid) => {
+  const list = gid && commentsByGid.get(gid);
+  if (!list || !list.length) return false;
+  return list.map((c) => c.date).sort()[0] > CUTOVER_MAX;
+};
+
 // ── Asana comments, if fetch-asana-stories.mjs has run ────────────────────
 let storyFiles = [];
 try {
@@ -171,7 +184,12 @@ const entryPlan = [];
 let withComments = 0;
 let zeroedParents = 0;
 
+let postCutoverSkipped = 0;
 for (const t of inScope) {
+  if (WIDE && !legacyProjectIds.has(t.project_id) && firstCommentAfterCutover(t.asana_gid)) {
+    postCutoverSkipped++;
+    continue;
+  }
   const p = parseLegacyName(t.title);
   const comments = (t.asana_gid && commentsByGid.get(t.asana_gid)) || [];
   const withHours = comments.filter((c) => c.hours != null);
@@ -286,6 +304,12 @@ for (const s of sections) {
     client: clientById.get(s.client_id)?.name ?? "",
     original_name: s.name,
     clean_name: p.clean,
+    // Renaming is confined to the dissolved legacy projects. Outside them the
+    // sections belong to LIVE boards (Blazepod, Autofleet, Checkmarx, Baseline…)
+    // that the team still works in, and restyling those was never asked for. Their
+    // hour/budget figures are still captured into the columns — that is additive and
+    // invisible — but the names are left exactly as the team wrote them.
+    rename_ok: legacySectionIds.has(s.id) ? "yes" : "no",
     budget: p.budgetMax ?? "",
     budget_low: p.budget !== p.budgetMax ? (p.budget ?? "") : "",
     actual: p.actual ?? "",
@@ -323,6 +347,9 @@ if (Object.keys(shapes).length === 0) {
   console.log(`  roll-up parents zeroed ${zeroedParents} (their subtasks carry the hours)`);
 }
 console.log(`  key/מפתח reduction notes not counted ${n((r) => r.flag.includes("key-reduction"))}`);
+if (postCutoverSkipped) {
+  console.log(`  skipped, comments start after the Everhour cutover ${postCutoverSkipped}`);
+}
 const total = sum("actual");
 const attrib = sum("attributable_hours");
 const rem = sum("legacy_remainder");

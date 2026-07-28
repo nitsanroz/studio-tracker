@@ -102,7 +102,7 @@ const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project
 const sections = await fetchAll("sections", "id, name, client_id, closed_on");
 let entries;
 try {
-  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy, date_estimated");
+  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy, date_estimated, asana_story_gid");
 } catch {
   entries = (await fetchAll("time_entries", "id, task_id, user_id, minutes, date")).map((e) => ({ ...e, legacy: false, date_estimated: false }));
 }
@@ -281,13 +281,20 @@ try {
   // Compare against the NON-estimated entries only: legacy-entries.json is the
   // comment-derived plan, and spread-legacy-remainder.mjs adds estimated-date rows
   // on top of it that were never in that file.
+  // The right question is "has the plan been fully applied", NOT "does the DB equal
+  // the plan". legacy-entries.json is a snapshot of what still NEEDS applying, so
+  // after a successful run it correctly goes to zero while the DB keeps everything
+  // from every earlier pass — comparing the two totals made a completed import look
+  // like a failure.
+  const presentGids = new Set(entries.map((e) => e.asana_story_gid).filter(Boolean));
+  const missing = plan.filter((e) => !presentGids.has(e.storyGid));
   const fromComments = legacyEntries
     .filter((e) => !e.date_estimated)
     .reduce((a, e) => a + (e.minutes ?? 0), 0) / 60;
   if (legacyEntries.length > 0) {
     ok(
-      Math.abs(planned - fromComments) < 0.02,
-      `comment-derived entries match the reconciler's plan (${planned.toFixed(2)}h planned, ${fromComments.toFixed(2)}h present)`,
+      missing.length === 0,
+      `the reconciler's plan is fully applied (${plan.length} planned, ${missing.length} missing; ${fromComments.toFixed(2)}h comment-derived in total)`,
     );
   } else {
     console.log(`    plan holds ${plan.length} entries / ${planned.toFixed(2)}h — not imported yet`);
