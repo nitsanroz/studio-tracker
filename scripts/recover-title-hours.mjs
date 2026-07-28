@@ -62,6 +62,18 @@ const CONFIRMED_HOURS = new Set([
   "cf765497-90f2-4ef5-b8d2-1494cde45f4d",
 ]);
 
+/**
+ * HTTP status codes get used as PAGE NAMES in task titles, so a figure equal to one
+ * and carrying no h/hrs unit is a page, not hours — whatever its magnitude. Nitsan
+ * confirmed 2026-07-28 that "Storemaven - 404" is a 404 page, not 404 hours, which
+ * is exactly what NO_UNIT_MAX had caught. This makes the rule explicit rather than
+ * leaving it to a size threshold that a smaller code like 301 would slip under.
+ *
+ * Tasks that legitimately name a code AND state hours are unaffected, because they
+ * have the unit: "404 page - 1.25h", "Grip - 404 page - (2h) -2".
+ */
+const PAGE_NAME_CODES = new Set([301, 302, 400, 401, 403, 404, 410, 418, 500, 502, 503, 504]);
+
 const LEGACY_PROJECTS = new Set([
   "as:1186151771710269", "as:1200243332541932", "as:1200243332541808",
   "as:257680404225328", "as:167561988748343", "as:1203307271028327",
@@ -143,8 +155,13 @@ for (const t of tasks) {
   // Unit check: /(\d)\s*(h|hr|hrs|hours)/ appearing after the figure.
   const hasUnit =
     /\d\s*(?:h\b|hr\b|hrs\b|hours?\b|שעות|שעה)/i.test(t.title) || CONFIRMED_HOURS.has(t.id);
-  if (!hasUnit && p.actual > NO_UNIT_MAX) {
-    flagged.push({ title: t.title, hours: p.actual, client: clientById.get(t.client_id)?.name ?? "?" });
+  if (!hasUnit && (p.actual > NO_UNIT_MAX || PAGE_NAME_CODES.has(p.actual))) {
+    flagged.push({
+      title: t.title,
+      hours: p.actual,
+      client: clientById.get(t.client_id)?.name ?? "?",
+      why: PAGE_NAME_CODES.has(p.actual) ? "looks like a page name" : `no unit and over ${NO_UNIT_MAX}h`,
+    });
     continue;
   }
 
@@ -208,7 +225,7 @@ console.log(`budgets to set    ${budgetUpdates} (needs the SQL editor — estima
 console.log(`\nSKIPPED — big figure with no h/hrs unit, likely part of the name:`);
 flagged
   .sort((a, b) => b.hours - a.hours)
-  .forEach((f) => console.log(`  ${String(f.hours + "h").padStart(8)}  ${f.client.padEnd(18)} ${JSON.stringify(f.title.slice(0, 50))}`));
+  .forEach((f) => console.log(`  ${String(f.hours + "h").padStart(8)}  ${f.client.padEnd(18)} ${JSON.stringify(f.title.slice(0, 44))}  — ${f.why}`));
 
 const byYear = new Map();
 for (const r of rows) byYear.set(r.date.slice(0, 4), (byYear.get(r.date.slice(0, 4)) ?? 0) + r.minutes);

@@ -96,11 +96,15 @@ const hasTracked = new Set(entries.map((e) => e.task_id));
 // Never touch a task that already has real tracked time: on the 51 studio-wide
 // tasks where both exist, the tracked hours are either the same figure re-logged
 // at the 2022-12-04 cutover or a later, more complete total. Tracked always wins.
+// --all covers INTERNAL clients too (Studio, OFFF tlv), matching the scope Nitsan
+// chose on 2026-07-28. `hasTracked` already excludes anything with an existing entry
+// — including the title-recovered ones — so a re-run naturally narrows to the tasks
+// whose hours are still missing, i.e. the ones whose titles carried no figure.
 const inScope = tasks.filter((t) => {
   if (hasTracked.has(t.id)) return false;
   if (legacyProjectIds.has(t.project_id)) return true;
   if (!WIDE) return false;
-  return t.asana_gid && t.billable && clientById.get(t.client_id)?.billable;
+  return !!t.asana_gid;
 });
 
 // ── Asana comments, if fetch-asana-stories.mjs has run ────────────────────
