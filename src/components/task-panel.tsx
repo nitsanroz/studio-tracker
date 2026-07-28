@@ -550,7 +550,19 @@ export function TaskPanel() {
                     <span className="shrink-0" title={author || undefined}>
                       <Avatar profile={user} size={22} />
                     </span>
-                    <span className="w-14 shrink-0 text-xs text-muted">{formatDate(e.date)}</span>
+                    <span
+                      className={`w-14 shrink-0 text-xs ${e.dateEstimated ? "text-faint italic" : "text-muted"}`}
+                      // The hours are the studio's own recorded figure; only the day
+                      // is inferred. Showing it plainly would present a guess as a fact.
+                      title={
+                        e.dateEstimated
+                          ? "Date estimated from this task's activity window — the hours are from the task's own recorded total"
+                          : undefined
+                      }
+                    >
+                      {formatDate(e.date)}
+                      {e.dateEstimated ? "*" : ""}
+                    </span>
                     <span className="w-14 shrink-0 font-medium tabular-nums">{formatHours(e.minutes)}</span>
                     <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
                       {e.description || <span className="text-faint italic">no description</span>}

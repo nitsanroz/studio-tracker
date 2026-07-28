@@ -120,6 +120,11 @@ export interface TimeEntry {
    * 2021 backfill must not invent working days for someone today.
    */
   legacy?: boolean;
+  /**
+   * The HOURS are real (recorded on the task itself) but the DATE was inferred
+   * from the task comment activity window — migration 0019. Always also legacy.
+   */
+  dateEstimated?: boolean;
 }
 
 export type PlanEntryType = "task" | "free_text" | "absence";
@@ -135,6 +140,8 @@ export interface EntrySum {
   minutes: number;
   /** see TimeEntry.legacy — include in client/task totals, exclude from personal stats */
   legacy?: boolean;
+  /** see TimeEntry.dateEstimated — real hours, inferred date */
+  dateEstimated?: boolean;
 }
 
 /**

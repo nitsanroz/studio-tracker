@@ -389,16 +389,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
           })(),
           (async () => {
             const cols = "id, task_id, user_id, date, minutes";
-            try {
-              // 0016: `legacy` marks a backfilled pre-Everhour entry
-              return await fetchAll<DbRow>(supabase, "time_entries", `${cols}, legacy`, (q) =>
-                q.not("minutes", "is", null),
-              );
-            } catch {
-              return await fetchAll<DbRow>(supabase, "time_entries", cols, (q) =>
-                q.not("minutes", "is", null),
-              );
+            const notNull = "minutes";
+            // Degrade ONE column at a time. Collapsing straight to `cols` on any
+            // failure would drop `legacy` as well, and without that flag the
+            // ~4,000h of 2016–2022 backfill reads as ordinary logged time — it
+            // would land in days-worked, tenure, "my hours" and the feed timesheet,
+            // which is precisely what the flag exists to prevent.
+            for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
+              try {
+                return await fetchAll<DbRow>(supabase, "time_entries", `${cols}${extra}`, (q) =>
+                  q.not(notNull, "is", null),
+                );
+              } catch {
+                /* try the next-smaller column set */
+              }
             }
+            throw new Error("time_entries: could not load with any known column set");
           })(),
           supabase
             .from("time_entries")

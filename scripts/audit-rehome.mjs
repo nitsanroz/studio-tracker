@@ -47,33 +47,42 @@ async function fetchAll(table, columns) {
  * zero-hour row is left in rather than deleting real content to make a constant
  * match. This number describes reality; it is not a target to hit.
  */
-const EXPECTED_TASKS = 4507;
+const EXPECTED_TASKS = 4475;
 
 /**
- * Expected task count per client AFTER 0017. The four that already existed carry
- * their own pre-existing tasks, so these are baseline + inbound, measured on
- * 2026-07-28: Collabria 34+53, Harmonie 45+33, Voyantis 117+25, Studio 1037+29.
+ * The re-home mapping, keyed on projects.everhour_id → client name. Same table as
+ * scripts/build-rehome-sql.mjs and restore-unsorted.mjs.
+ *
+ * Asserted via project_id rather than by comparing each client's task TOTAL: a total
+ * is not an invariant, since unrelated tasks are added and deleted in normal use.
+ * project_id is never modified by any of this, so "did it land in the right client"
+ * stays answerable forever.
  */
-const EXPECTED = {
-  Volta: 154,
-  "Cognigo (d.day labs)": 118,
-  Quadream: 107,
-  Collabria: 87,
-  Harmonie: 78,
-  Anchor: 26,
-  Voyantis: 142,
-  Studio: 1067, // 1066 + the one unidentifiable zero-hour row described above
-  Siteaware: 20,
-  "New Era": 16,
-  Yoco: 13,
-  "One Zero": 7,
-  "In-reach": 6,
-  Empathy: 5,
-  CSL: 4,
-  PDQ: 2,
-  PlayStudios: 1,
-  Mesh: 1,
-};
+const LEGACY_PROJECT_CLIENT = [
+  ["as:1186151771710269", "Volta"],
+  ["as:1200243332541932", "Volta"],
+  ["as:1200243332541808", "Volta"],
+  ["as:257680404225328", "Cognigo (d.day labs)"],
+  ["as:167561988748343", "Quadream"],
+  ["as:1203307271028327", "Collabria"],
+  ["as:1202617922925561", "Harmonie"],
+  ["as:1200919564657911", "Anchor"],
+  ["as:1211839453526602", "Voyantis"],
+  ["b3:38366642", "Studio"],
+  ["no:40f3f673-5d02-4ecd-8d25-afafee9895b0", "Studio"],
+  ["li:6b21e0eb-01d1-4b1f-b7e6-69b56fdb2bd4", "Studio"],
+  ["as:1203577431022050", "Studio"],
+  ["as:697705382152475", "Siteaware"],
+  ["as:770593244278334", "New Era"],
+  ["as:1200228187222714", "Yoco"],
+  ["as:1201715599799021", "One Zero"],
+  ["as:455542718969443", "In-reach"],
+  ["as:1202222067805639", "Empathy"],
+  ["as:1200243332541873", "CSL"],
+  ["as:1201110470169466", "PDQ"],
+  ["as:1155362291910928", "PlayStudios"],
+  ["as:1202138051052762", "Mesh"],
+];
 
 /** Everhour id of the legacy "Harmon.ie cloud" project — the only re-homed
  *  project carrying real tracked time (2103h across 33 tasks). tasks.project_id
@@ -87,15 +96,15 @@ const ok = (cond, msg, detail = "") => {
 };
 
 const clients = await fetchAll("clients", "id, name, archived, billable");
-const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project_id, legacy_hours, legacy_title, billable").catch(
+const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project_id, legacy_hours, legacy_title, activity_from, activity_to, billable").catch(
   () => fetchAll("tasks", "id, title, client_id, section_id, project_id, billable"),
 );
-const sections = await fetchAll("sections", "id, name, client_id");
+const sections = await fetchAll("sections", "id, name, client_id, closed_on");
 let entries;
 try {
-  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy");
+  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy, date_estimated");
 } catch {
-  entries = (await fetchAll("time_entries", "id, task_id, user_id, minutes, date")).map((e) => ({ ...e, legacy: false }));
+  entries = (await fetchAll("time_entries", "id, task_id, user_id, minutes, date")).map((e) => ({ ...e, legacy: false, date_estimated: false }));
 }
 
 const byId = new Map(clients.map((c) => [c.id, c]));
@@ -114,7 +123,11 @@ if (unsorted) {
 }
 
 console.log("\n── nothing lost ────────────────────────────────────────────");
-ok(tasks.length === EXPECTED_TASKS, `task count ${tasks.length}`, `(expected ${EXPECTED_TASKS})`);
+// A MINIMUM, not an equality. The re-home is verified, and tasks may legitimately
+// be deleted afterwards (32 zero-hour Voyantis rows were tidied up with bulk-select
+// on 2026-07-28). What must never happen is a SILENT drop, so this fails only if the
+// count falls below the recorded baseline — normal tidying is not an error.
+ok(tasks.length >= EXPECTED_TASKS, `task count ${tasks.length}`, `(baseline >= ${EXPECTED_TASKS})`);
 ok(
   !tasks.some((t) => !t.client_id),
   "every task has a client",
@@ -125,14 +138,34 @@ const stranded = tasks.filter((t) => t.section_id && sectionClient.get(t.section
 ok(stranded.length === 0, "no task sits in another client's section", `${stranded.length} stranded`);
 
 console.log("\n── landed where expected ───────────────────────────────────");
-for (const [name, want] of Object.entries(EXPECTED)) {
-  const got = countFor(name);
-  if (got == null) {
-    ok(false, `${name}`, "client does not exist");
+// Keyed on project_id → client, NOT on each client's task TOTAL. A total is not an
+// invariant: unrelated tasks get added and deleted (32 zero-hour Voyantis rows were
+// tidied up on 2026-07-28), which made the old equality fail on ordinary use. What
+// must hold forever is that every surviving task from a legacy project sits under the
+// client it was re-homed to — project_id is never modified, so this stays true.
+const projectsForMap = await fetchAll("projects", "id, name, everhour_id");
+const clientForLegacyProject = new Map(LEGACY_PROJECT_CLIENT);
+let wrongClient = 0;
+for (const [everhourId, clientName] of LEGACY_PROJECT_CLIENT) {
+  const p = projectsForMap.find((x) => x.everhour_id === everhourId);
+  if (!p) {
+    ok(false, `legacy project ${everhourId}`, "project row missing");
     continue;
   }
-  ok(got === want, `${name}: ${got} tasks`, `(expected ${want})`);
+  const want = clients.find((c) => c.name === clientName);
+  const mine = tasks.filter((t) => t.project_id === p.id);
+  const astray = mine.filter((t) => t.client_id !== want?.id);
+  wrongClient += astray.length;
+  if (astray.length) {
+    ok(false, `${p.name} → ${clientName}`, `${astray.length} of ${mine.length} under the wrong client`);
+  }
 }
+ok(wrongClient === 0, "every re-homed task sits under its mapped client", `${wrongClient} astray`);
+// Counts are reported, not asserted — they move with normal editing.
+const counts = [...new Set(LEGACY_PROJECT_CLIENT.map(([, n]) => n))]
+  .map((n) => `${n} ${countFor(n) ?? "—"}`)
+  .join(" · ");
+console.log(`    client totals now: ${counts}`);
 
 console.log("\n── Harmon.ie hours survived untouched ──────────────────────");
 const projects = await fetchAll("projects", "id, everhour_id");
@@ -141,13 +174,19 @@ if (harmProject) {
   // Identified by project_id, not by client: it is stable across the move, and
   // the target client has 45 tasks of its own that must not be counted here.
   const ids = new Set(tasks.filter((t) => t.project_id === harmProject.id).map((t) => t.id));
-  const mins = entries.filter((e) => ids.has(e.task_id)).reduce((a, e) => a + (e.minutes ?? 0), 0);
+  // Only the genuinely TRACKED hours must be preserved exactly. 7 of these 33 tasks
+  // never had tracked time of their own and legitimately received recovered hours on
+  // top — one of them an estimated-date entry — so a flat "no backfilled entries
+  // here" and a 2103h grand total are both stale expectations.
+  const tracked = entries
+    .filter((e) => ids.has(e.task_id) && !e.legacy)
+    .reduce((a, e) => a + (e.minutes ?? 0), 0);
+  const recovered = entries
+    .filter((e) => ids.has(e.task_id) && e.legacy)
+    .reduce((a, e) => a + (e.minutes ?? 0), 0);
   ok(ids.size === 33, `${ids.size} tasks`, "(expected 33)");
-  ok(Math.round(mins / 60) === 2103, `${Math.round(mins / 60)}h tracked`, "(expected 2103h)");
-  ok(
-    !entries.some((e) => ids.has(e.task_id) && e.legacy),
-    "no backfilled entries on them",
-  );
+  ok(Math.round(tracked / 60) === 2103, `${Math.round(tracked / 60)}h TRACKED`, "(expected exactly 2103h)");
+  console.log(`    + ${(recovered / 60).toFixed(2)}h recovered on the 7 with no tracked time`);
   // NOT "no legacy_hours anywhere in this project" — that was too strict. 7 of the
   // 33 Harmon.ie tasks never had tracked time of their own, so recovering their
   // title hours is correct. The real rule is asserted studio-wide below: no task
@@ -180,8 +219,36 @@ ok(doubled.length === 0, "no task has BOTH backfilled and real entries", `${doub
 // figure recovered from its title or comments.
 const mixed = tasks.filter((t) => t.legacy_hours && realByTask.has(t.id));
 ok(mixed.length === 0, "no task mixes legacy_hours with tracked time", `${mixed.length} would double-count`);
-const late = legacyEntries.filter((e) => e.date > "2022-12-31");
-ok(late.length === 0, "no backfilled entry after the 2022 cutover", `${late.length} late`);
+// The cutover rule applies to COMMENT-DERIVED entries only. There, a post-2022
+// date means the comment parser misread something, so it is a hard error. An
+// ESTIMATED date is different: it comes from the task's own activity window, and a
+// handful of recovered tasks were genuinely worked after the cutover without ever
+// being logged in Everhour (Harmonie's "Renewal Payment page HTML conversion" has
+// comments dated July 2023). Capping those at 2022 would make them LESS accurate.
+const late = legacyEntries.filter((e) => !e.date_estimated && e.date > "2022-12-31");
+ok(late.length === 0, "no comment-derived entry after the 2022 cutover", `${late.length} late`);
+
+// The real invariant for an estimated date: it must sit inside the window the
+// evidence actually supports, so a spread can never invent a month out of nothing.
+const taskById2 = new Map(tasks.map((t) => [t.id, t]));
+const sectionClosed = new Map(sections.map((s) => [s.id, s.closed_on]));
+const outsideWindow = legacyEntries.filter((e) => {
+  if (!e.date_estimated) return false;
+  const t = taskById2.get(e.task_id);
+  if (!t) return true;
+  const m = e.date.slice(0, 7);
+  if (t.activity_from && t.activity_to) {
+    return m < t.activity_from.slice(0, 7) || m > t.activity_to.slice(0, 7);
+  }
+  if (t.activity_from) return m !== t.activity_from.slice(0, 7);
+  const closed = sectionClosed.get(t.section_id);
+  return closed ? m !== closed.slice(0, 7) : true;
+});
+ok(
+  outsideWindow.length === 0,
+  "every estimated date sits inside its task's evidenced window",
+  `${outsideWindow.length} outside`,
+);
 const entryHours = legacyEntries.reduce((a, e) => a + (e.minutes ?? 0), 0) / 60;
 const remainder = tasks.reduce((a, t) => a + Number(t.legacy_hours ?? 0), 0);
 console.log(`    ${legacyEntries.length} backfilled entries, ${entryHours.toFixed(2)}h`);
@@ -193,15 +260,22 @@ console.log(`    ${(entryHours + remainder).toFixed(2)}h recovered in total`);
 // positives is what made comment totals run 4× over the studio's own figures.
 const reductions = legacyEntries.filter((e) => (e.minutes ?? 0) < 0);
 console.log(`    ${reductions.length} of them are מפתח reductions (negative)`);
+console.log(`    ${legacyEntries.filter((e) => e.date_estimated).length} have an ESTIMATED date (hours real, day inferred)`);
 
 // Cross-check against the plan the reconciler actually wrote, if it is present.
 try {
   const plan = JSON.parse(fs.readFileSync(new URL("../data/legacy-entries.json", import.meta.url), "utf8"));
   const planned = plan.reduce((a, e) => a + e.minutes, 0) / 60;
+  // Compare against the NON-estimated entries only: legacy-entries.json is the
+  // comment-derived plan, and spread-legacy-remainder.mjs adds estimated-date rows
+  // on top of it that were never in that file.
+  const fromComments = legacyEntries
+    .filter((e) => !e.date_estimated)
+    .reduce((a, e) => a + (e.minutes ?? 0), 0) / 60;
   if (legacyEntries.length > 0) {
     ok(
-      Math.abs(planned - entryHours) < 0.02,
-      `entries match the reconciler's plan (${planned.toFixed(2)}h planned)`,
+      Math.abs(planned - fromComments) < 0.02,
+      `comment-derived entries match the reconciler's plan (${planned.toFixed(2)}h planned, ${fromComments.toFixed(2)}h present)`,
     );
   } else {
     console.log(`    plan holds ${plan.length} entries / ${planned.toFixed(2)}h — not imported yet`);

@@ -71,6 +71,7 @@ export const mapEntrySum = (r: any): EntrySum => ({
   date: r.date,
   minutes: r.minutes ?? 0,
   legacy: r.legacy ?? false, // column exists from migration 0016
+  dateEstimated: r.date_estimated ?? false, // column exists from migration 0019
 });
 
 export const mapReportLink = (r: any): ReportLink => ({
@@ -174,6 +175,7 @@ export const mapTimeEntry = (r: any): TimeEntry => ({
   movedFromTaskId: r.moved_from_task_id,
   legacy: r.legacy ?? false, // column exists from migration 0016
   legacyAuthorName: r.legacy_author_name ?? null, // column exists from migration 0017
+  dateEstimated: r.date_estimated ?? false, // column exists from migration 0019
 });
 
 export const mapComment = (r: any): TaskComment => ({
