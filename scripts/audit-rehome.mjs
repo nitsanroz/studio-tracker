@@ -96,7 +96,7 @@ const ok = (cond, msg, detail = "") => {
 };
 
 const clients = await fetchAll("clients", "id, name, archived, billable");
-const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project_id, legacy_hours, legacy_title, activity_from, activity_to, billable").catch(
+const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project_id, legacy_hours, legacy_title, activity_from, activity_to, created_at, completed_at, due_date, billable").catch(
   () => fetchAll("tasks", "id, title, client_id, section_id, project_id, billable"),
 );
 const sections = await fetchAll("sections", "id, name, client_id, closed_on");
@@ -232,15 +232,27 @@ ok(late.length === 0, "no comment-derived entry after the 2022 cutover", `${late
 // evidence actually supports, so a spread can never invent a month out of nothing.
 const taskById2 = new Map(tasks.map((t) => [t.id, t]));
 const sectionClosed = new Map(sections.map((s) => [s.id, s.closed_on]));
+// An estimated date is legitimate if it falls inside ANY window the evidence
+// supports. There are two independent sources, because the two recovery passes used
+// different ones: the comment-derived pass used activity_from/to, and the wider
+// title pass (recover-title-hours.mjs) used Asana's created_at → completed_at,
+// which is all those tasks had.
+const inWindow = (m, from, to) => {
+  if (!from && !to) return false;
+  const a = (from ?? to).slice(0, 7);
+  const b = (to ?? from).slice(0, 7);
+  const lo = a <= b ? a : b;
+  const hi = a <= b ? b : a;
+  return m >= lo && m <= hi;
+};
 const outsideWindow = legacyEntries.filter((e) => {
   if (!e.date_estimated) return false;
   const t = taskById2.get(e.task_id);
   if (!t) return true;
   const m = e.date.slice(0, 7);
-  if (t.activity_from && t.activity_to) {
-    return m < t.activity_from.slice(0, 7) || m > t.activity_to.slice(0, 7);
-  }
-  if (t.activity_from) return m !== t.activity_from.slice(0, 7);
+  if (inWindow(m, t.activity_from, t.activity_to)) return false;
+  if (inWindow(m, t.created_at, t.completed_at)) return false;
+  if (inWindow(m, t.due_date, t.due_date)) return false;
   const closed = sectionClosed.get(t.section_id);
   return closed ? m !== closed.slice(0, 7) : true;
 });
