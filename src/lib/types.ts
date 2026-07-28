@@ -8,6 +8,12 @@ export interface Profile {
   /** studio cut-out portrait (head-to-arms, white studio&more tee) */
   photoUrl: string | null;
   active: boolean;
+  /**
+   * false = a person kept only for historical attribution (pre-Everhour staff,
+   * migration 0018). No auth.users row exists, so they can never sign in — hide
+   * every account action (invite, password link, email) for them.
+   */
+  hasAccount?: boolean;
   startDate: string | null;
   capacityHoursWeek: number | null;
 }

@@ -53,6 +53,7 @@ export const mapProfile = (r: any): Profile => ({
   avatarUrl: r.avatar_url,
   photoUrl: r.photo_url ?? null,
   active: r.active,
+  hasAccount: r.has_account ?? true, // column exists from migration 0018
   startDate: r.start_date ?? null,
   capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),
 });

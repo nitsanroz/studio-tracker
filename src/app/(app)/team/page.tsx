@@ -162,7 +162,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function TeamPage() {
-  const { profiles, tasks, entrySums, currentUserId } = useData();
+  const { profiles, tasks, entrySumsAll, currentUserId } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [scope, setScope] = useState<Scope>("This month");
@@ -174,15 +174,20 @@ export default function TeamPage() {
   const statsByUser = useMemo(() => {
     const billableTaskIds = new Set(tasks.filter((t) => t.billable).map((t) => t.id));
     const map = new Map<string, { total: number; billable: number }>();
-    for (const e of entrySums) {
+    // entrySumsAll, not entrySums: a member page is a HISTORICAL record, so it
+    // should show the pre-Everhour hours too — that is the whole point of having
+    // former staff here. The home page keeps using the legacy-free list, so
+    // nobody's days-worked or tenure counter can be moved by a 2019 entry.
+    for (const e of entrySumsAll) {
       if (range && (e.date < range.from || e.date > range.to)) continue;
+      if (!e.userId) continue; // recovered row whose author has no profile at all
       const row = map.get(e.userId) ?? { total: 0, billable: 0 };
       row.total += e.minutes;
       if (billableTaskIds.has(e.taskId)) row.billable += e.minutes;
       map.set(e.userId, row);
     }
     return map;
-  }, [entrySums, tasks, range]);
+  }, [entrySumsAll, tasks, range]);
 
   const activeMembers = useMemo(() => profiles.filter((p) => p.active), [profiles]);
 
@@ -298,6 +303,10 @@ export default function TeamPage() {
                 variant="avatar"
                 size={124}
                 bleed={0.16}
+                // Former staff kept only for historical attribution get initials,
+                // never the shared cut-out — that placeholder is a photo of a real
+                // colleague, and showing it as someone else is worse than nothing.
+                fallback={p.hasAccount === false ? "initials" : "cutout"}
                 className="mt-3 shrink-0 self-start"
               />
               <div className="flex min-w-0 flex-1 flex-col justify-center">

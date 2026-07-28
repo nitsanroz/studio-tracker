@@ -94,7 +94,7 @@ export function PictureEditor({
         {kind === "avatar" ? (
           <Avatar profile={profile} size={64} />
         ) : (
-          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={64} />
+          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={64} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
         )}
         <span className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/45 text-white group-hover/pic:flex">
           <Pencil size={16} />
@@ -167,7 +167,7 @@ export function PictureEditBadge({
         {kind === "avatar" ? (
           <Avatar profile={profile} size={size} />
         ) : (
-          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={size} />
+          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={size} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
         )}
         <span
           className={`absolute inset-0 hidden items-center justify-center bg-black/45 text-white group-hover/pic:flex ${round ? "rounded-full" : "rounded-xl"}`}

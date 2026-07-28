@@ -167,7 +167,7 @@ export default function MemberPage({
   params: Promise<{ profileId: string }>;
 }) {
   const { profileId } = use(params);
-  const { profiles, tasks, clients, entrySums, currentUserId, updateProfile } = useData();
+  const { profiles, tasks, clients, entrySumsAll, currentUserId, updateProfile } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
@@ -176,9 +176,10 @@ export default function MemberPage({
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
+  // Includes recovered pre-Everhour entries: this page IS the person's history.
   const mine = useMemo(
-    () => entrySums.filter((e) => e.userId === profileId),
-    [entrySums, profileId],
+    () => entrySumsAll.filter((e) => e.userId === profileId),
+    [entrySumsAll, profileId],
   );
 
   // ── stats ──
@@ -200,18 +201,26 @@ export default function MemberPage({
   );
   const totalMinutes = mine.reduce((s, e) => s + e.minutes, 0);
 
-  // ── hours per month, last 12 months ──
+  // ── hours per month ──
+  // Windowed on this person's last 12 months OF ACTIVITY, not the last 12 calendar
+  // months. Former staff recovered from the pre-Everhour history last logged in
+  // 2019–2022, so a fixed recent window rendered their chart completely empty.
   const perMonth = useMemo(() => {
-    const now = new Date();
+    const latest = mine.reduce((max, e) => (e.date > max ? e.date : max), "");
+    const anchor = latest
+      ? new Date(Number(latest.slice(0, 4)), Number(latest.slice(5, 7)) - 1, 1)
+      : new Date();
     const buckets: { key: string; label: string; minutes: number }[] = [];
     for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       buckets.push({
         key,
+        // Show the year whenever the window isn't the current one — otherwise a
+        // 2019 chart reads as if it were this year.
         label:
-          d.getMonth() === 0
-            ? `${MONTH_NAMES_SHORT[0]} ${String(d.getFullYear()).slice(2)}`
+          d.getMonth() === 0 || d.getFullYear() !== new Date().getFullYear()
+            ? `${MONTH_NAMES_SHORT[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`
             : MONTH_NAMES_SHORT[d.getMonth()],
         minutes: 0,
       });
@@ -387,15 +396,24 @@ export default function MemberPage({
         </div>
         <HrFields profileId={profile.id} />
         <NotesField profileId={profile.id} />
-        <div className="flex items-center gap-2">
-          <button
-            onClick={sendReset}
-            className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:border-brand hover:text-brand"
-          >
-            Send password link
-          </button>
-          {resetStatus && <span className="text-xs text-muted">{resetStatus}</span>}
-        </div>
+        {profile.hasAccount === false ? (
+          // A person kept only for historical attribution (migration 0018). There is
+          // no auth.users row, so every account action would fail — and offering
+          // "Send password link" for someone who left in 2019 is just misleading.
+          <p className="text-xs text-muted">
+            Kept for historical attribution — no account, so this person can&apos;t sign in.
+          </p>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={sendReset}
+              className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+            >
+              Send password link
+            </button>
+            {resetStatus && <span className="text-xs text-muted">{resetStatus}</span>}
+          </div>
+        )}
       </div>
     </div>
   );

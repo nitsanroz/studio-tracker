@@ -50,6 +50,7 @@ export function MemberPhoto({
   className = "",
   bleed = 0,
   fill = false,
+  fallback = "cutout",
 }: {
   name?: string;
   src?: string | null;
@@ -61,9 +62,17 @@ export function MemberPhoto({
   /** Hero only: fill the positioned parent instead of using `size`. Lets the caller
    *  anchor the figure to a panel whose height it doesn't know up front. */
   fill?: boolean;
+  /** "initials" = never fall back to the shared cut-out portrait. */
+  fallback?: "cutout" | "initials";
 }) {
   const [failed, setFailed] = useState(false);
-  const url = src || DEFAULT_TEAM_PHOTO;
+  // `fallback="initials"` opts OUT of the shared studio cut-out. Former staff kept
+  // only for historical attribution have no portrait of their own, and the
+  // placeholder is a photo of an actual colleague — presenting it as someone else
+  // is worse than showing nothing. Everyone else keeps it until theirs is made.
+  const url = src || (fallback === "initials" ? "" : DEFAULT_TEAM_PHOTO);
+  // src="" does not reliably fire onError, so decide up front rather than relying on it.
+  const showImage = !!url && !failed;
 
   if (variant === "hero") {
     return (
@@ -75,7 +84,7 @@ export function MemberPhoto({
             : { position: "relative", width: size, height: size }
         }
       >
-        {!failed ? (
+        {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={url}
@@ -123,7 +132,7 @@ export function MemberPhoto({
   // share a position the join at the circle's edge is seamless — a single
   // oversized image can't do this, since letting the head out would also let
   // the shoulders spill past the circle's curve.
-  if (bleed > 0 && !failed) {
+  if (bleed > 0 && showImage) {
     // Rounded, not fractional: the two layers are laid out independently, so a
     // fractional height rounds differently in each and leaves a visible step
     // right at the circle's edge — which reads as the head being sliced off.
@@ -186,7 +195,7 @@ export function MemberPhoto({
         flex: "none",
       }}
     >
-      {!failed ? (
+      {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={url}
