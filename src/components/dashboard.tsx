@@ -512,21 +512,25 @@ function bucketize(dates: string[], hasRange: boolean) {
 }
 
 function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
-  const { entrySums, tasks, clients, currentUserId } = useData();
+  const { entrySums, entrySumsAll, tasks, clients, currentUserId } = useData();
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
-  // admins see the whole studio; members see only their own hours
+  // Admins see the whole studio, INCLUDING the recovered pre-Everhour history, so
+  // "All time" reaches back to 2016 instead of stopping at the Everhour cutover.
+  // Members see only their own hours and must stay on the legacy-free list — a
+  // backfilled 2019 entry is not time they logged.
+  const source = isAdmin ? entrySumsAll : entrySums;
   const scoped = useMemo(
     () =>
-      entrySums.filter((e) => {
+      source.filter((e) => {
         if (!isAdmin && e.userId !== currentUserId) return false;
         if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
         if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
         return true;
       }),
-    [entrySums, currentUserId, isAdmin, filter, taskById],
+    [source, currentUserId, isAdmin, filter, taskById],
   );
 
   const perBucket = useMemo(() => {
@@ -586,14 +590,16 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
   );
 }
 
-/** Admin overview: studio hours per client over time — one colored line per client. */
+/** Admin overview: studio hours per client over time — one colored line per client.
+ *  Admin-only and per-client, never per-person, so it includes the recovered
+ *  pre-Everhour history (entrySumsAll). */
 function StudioClientTrend({ filter }: { filter: HomeFilter }) {
-  const { entrySums, tasks, clients } = useData();
+  const { entrySumsAll, tasks, clients } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   const { labels, series } = useMemo(() => {
-    const scoped = entrySums.filter((e) => {
+    const scoped = entrySumsAll.filter((e) => {
       if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
       if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
       return true;
@@ -625,7 +631,7 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
       return { label: c?.name ?? "?", color: c?.color ?? "#9ca3af", values: keys.map((k) => m.get(k) ?? 0) };
     });
     return { labels: keys.map(labelFor), series };
-  }, [entrySums, filter, taskById, clientById]);
+  }, [entrySumsAll, filter, taskById, clientById]);
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
@@ -940,24 +946,32 @@ function StatTile({
 
 /** Studio-wide KPI tiles for admins: hours, billable, active tasks, avg/designer. */
 function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { from: string; to: string } | null }) {
-  const { entrySums, tasks } = useData();
+  // entrySumsAll: "Studio hours" and "Billable" are studio-wide history and should
+  // reach back to 2016 on "All time". The per-person figures below deliberately do
+  // NOT — see `curLive`.
+  const { entrySumsAll, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   const s = useMemo(() => {
     let cur = 0,
       curB = 0,
       prev = 0,
-      prevB = 0;
+      prevB = 0,
+      curLive = 0;
     const designers = new Set<string>();
     const worked = new Set<string>();
-    for (const e of entrySums) {
+    for (const e of entrySumsAll) {
       const task = taskById.get(e.taskId);
       if (filter.clientId && task?.clientId !== filter.clientId) continue;
       const inCur = !filter.range || (e.date >= filter.range.from && e.date <= filter.range.to);
       if (inCur) {
         cur += e.minutes;
         if (task?.billable) curB += e.minutes;
-        if (e.minutes > 0) {
+        // "Tasks worked" and "Avg / designer" describe people working now. A 2019
+        // backfill has no place in either — and 1,346 of those entries have no
+        // profile at all, so they would skew the designer count toward nothing.
+        if (e.minutes > 0 && !e.legacy && e.userId) {
+          curLive += e.minutes;
           designers.add(e.userId);
           worked.add(e.taskId);
         }
@@ -966,14 +980,16 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
         if (task?.billable) prevB += e.minutes;
       }
     }
-    return { cur, curB, prev, prevB, designers: designers.size, worked: worked.size };
-  }, [entrySums, taskById, filter, prevRange]);
+    return { cur, curB, prev, prevB, curLive, designers: designers.size, worked: worked.size };
+  }, [entrySumsAll, taskById, filter, prevRange]);
 
   const hoursDelta = prevRange && s.prev > 0 ? Math.round(((s.cur - s.prev) / s.prev) * 100) : null;
   const curPct = s.cur > 0 ? Math.round((s.curB / s.cur) * 100) : 0;
   const prevPct = s.prev > 0 ? Math.round((s.prevB / s.prev) * 100) : null;
   const pctDelta = prevPct != null ? curPct - prevPct : null;
-  const perDesigner = s.designers > 0 ? s.cur / s.designers : 0;
+  // Live hours over live designers. Dividing the history-inclusive total by the
+  // count of people working today would report an average nobody worked.
+  const perDesigner = s.designers > 0 ? s.curLive / s.designers : 0;
 
   const [hFig, hUnit] = splitHours(s.cur);
   const [pdFig, pdUnit] = splitHours(perDesigner, true);

@@ -20,7 +20,11 @@ import { HBar, MiniColumns, SplitBar } from "@/components/charts";
 interface ReportEntry {
   id: string; // "" for rows added locally this session (not editable until reload)
   task_id: string;
-  user_id: string;
+  /** null on recovered pre-Everhour rows whose author has no profile (migration 0017) */
+  user_id: string | null;
+  legacy?: boolean;
+  /** raw Asana author for those rows — they are people who left years ago */
+  legacy_author_name?: string | null;
   date: string;
   minutes: number;
   description: string;
@@ -119,13 +123,18 @@ function TaskHoursModal({
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows.map((e, i) => {
             const user = profiles.find((p) => p.id === e.user_id) ?? null;
+            const authorLabel = user?.name ?? e.legacy_author_name ?? "";
             const editable = !!e.id && (isAdmin || e.user_id === currentUserId);
             return (
               <div
                 key={e.id || `${e.date}-${i}`}
                 className="flex items-center gap-2.5 border-b border-border py-2 text-sm last:border-b-0"
               >
-                <Avatar profile={user} size={24} />
+                {/* A recovered pre-Everhour row has no profile, so the avatar is
+                    blank — the tooltip is the only place its author appears. */}
+                <span className="shrink-0" title={authorLabel || undefined}>
+                  <Avatar profile={user} size={24} />
+                </span>
                 <span className="w-20 shrink-0 text-xs text-muted">{formatFeedDate(e.date)}</span>
                 {editable ? (
                   <EditableMinutes entry={e} onSaved={onUpdate} />
@@ -206,11 +215,22 @@ function RangeStats({
   const productivity = total > 0 ? Math.round((billable / total) * 100) : null;
 
   const byUser = useMemo(() => {
+    // Recovered pre-Everhour rows may name an author who has no profile (they left
+    // long before the current roster). Dropping them — as a `.filter(r => r.profile)`
+    // used to — left their hours in the period total but missing from these bars, so
+    // the breakdown silently failed to add up. They are grouped by their raw name.
     const map = new Map<string, number>();
-    for (const e of enriched) map.set(e.user_id, (map.get(e.user_id) ?? 0) + e.minutes);
+    for (const e of enriched) {
+      const key = e.user_id ?? `name:${e.legacy_author_name || "Unknown"}`;
+      map.set(key, (map.get(key) ?? 0) + e.minutes);
+    }
     return [...map.entries()]
-      .map(([id, minutes]) => ({ profile: profiles.find((p) => p.id === id), minutes }))
-      .filter((r) => r.profile)
+      .map(([id, minutes]) => ({
+        profile: id.startsWith("name:") ? undefined : profiles.find((p) => p.id === id),
+        formerName: id.startsWith("name:") ? id.slice(5) : null,
+        minutes,
+      }))
+      .filter((r) => r.profile || r.formerName)
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 6);
   }, [enriched, profiles]);
@@ -270,14 +290,21 @@ function RangeStats({
         >
           Hours by user
         </h3>
-        {byUser.map(({ profile, minutes }) => (
+        {byUser.map(({ profile, formerName, minutes }) => (
           <HBar
-            key={profile!.id}
+            key={profile?.id ?? `former:${formerName}`}
             label={
-              <span className="flex items-center gap-1.5">
-                <Avatar profile={profile!} size={16} />
-                {profile!.name}
-              </span>
+              profile ? (
+                <span className="flex items-center gap-1.5">
+                  <Avatar profile={profile} size={16} />
+                  {profile.name}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-muted" title="Recovered from the pre-Everhour Asana history; this person has no account here">
+                  <span className="size-4 shrink-0 rounded-full border border-dashed border-border-strong" />
+                  {formerName}
+                </span>
+              )
             }
             right={formatHoursShort(minutes)}
             minutes={minutes}
@@ -325,7 +352,7 @@ export default function ReportsPage() {
     fetchAll<ReportEntry>(
       supabase,
       "time_entries",
-      "id, task_id, user_id, date, minutes, description",
+      "id, task_id, user_id, date, minutes, description, legacy, legacy_author_name",
       (q) => q.gte("date", range.from).lte("date", range.to).not("minutes", "is", null),
     )
       .then((rows) => {
@@ -408,7 +435,7 @@ export default function ReportsPage() {
         .map((e) =>
           [
             e.date,
-            esc(profileById.get(e.user_id)?.name ?? ""),
+            esc(profileById.get(e.user_id ?? "")?.name ?? e.legacy_author_name ?? ""),
             esc(e.client?.name ?? ""),
             esc(e.task?.sectionId ? (sectionById.get(e.task.sectionId)?.name ?? "") : ""),
             esc(e.task?.title ?? ""),
