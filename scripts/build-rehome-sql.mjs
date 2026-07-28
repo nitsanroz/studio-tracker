@@ -201,13 +201,20 @@ if (newClients.length) {
   // unique (only clients.everhour_id is), so an ON CONFLICT on it fails the whole
   // transaction with 42P10 "no unique or exclusion constraint matching". This form
   // needs no constraint and is just as re-runnable.
-  for (const c of newClients) {
+  // Distinct hues, NOT the default grey. Every new client sharing #9ca3af made the
+  // home page's "Hours by client over time" unreadable — Quadream, Cognigo and the
+  // aggregate "Other clients" line were three identical grey lines.
+  const PALETTE = [
+    "#e11d48", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#0ea5e9", "#6366f1",
+    "#a855f7", "#ec4899", "#84cc16", "#06b6d4", "#8b5cf6", "#f43f5e", "#10b981",
+  ];
+  newClients.forEach((c, i) => {
     L.push(
       `insert into clients (id, name, color, archived, billable)\n` +
-        `  select ${q(c.id)}, ${q(c.name)}, '#9ca3af', true, true\n` +
+        `  select ${q(c.id)}, ${q(c.name)}, ${q(PALETTE[i % PALETTE.length])}, true, true\n` +
         `  where not exists (select 1 from clients where name = ${q(c.name)});`,
     );
-  }
+  });
   L.push(``);
 }
 

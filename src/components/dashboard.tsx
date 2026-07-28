@@ -621,15 +621,47 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
       const k = keyFor(e.date);
       m.set(k, (m.get(k) ?? 0) + e.minutes);
     }
-    const top = [...totalByClient.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([cid]) => cid);
+    // Pick the leaders of EACH BUCKET, then top up by overall total — not simply
+    // the top 6 overall. Ranking by the whole range's total let the modern clients
+    // win every slot, and they have no early hours at all: on "All time" the six
+    // chosen lines covered 0% of every year before 2022, so the chart was flat
+    // across 2016–2021 while the studio had really logged 3,068h in that stretch.
+    // The actual leaders then were Quadream, Cognigo, Volta, New Era and Anchor.
+    const MAX_SERIES = 7;
+    const chosen = new Set<string>();
+    for (const k of keys) {
+      const leaders = [...byClientBucket.entries()]
+        .map(([cid, m]) => [cid, m.get(k) ?? 0] as const)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2);
+      for (const [cid] of leaders) chosen.add(cid);
+    }
+    const byTotal = [...totalByClient.entries()].sort((a, b) => b[1] - a[1]).map(([cid]) => cid);
+    // Trim to the biggest overall if per-bucket leaders overflow, then top up.
+    const top = byTotal.filter((cid) => chosen.has(cid)).slice(0, MAX_SERIES);
+    for (const cid of byTotal) {
+      if (top.length >= MAX_SERIES) break;
+      if (!top.includes(cid)) top.push(cid);
+    }
+
     const series = top.map((cid) => {
       const c = clientById.get(cid);
       const m = byClientBucket.get(cid)!;
       return { label: c?.name ?? "?", color: c?.color ?? "#9ca3af", values: keys.map((k) => m.get(k) ?? 0) };
     });
+
+    // Everything not given its own line, so the lines account for the studio's
+    // whole total instead of silently dropping 20–60% of it.
+    const shown = new Set(top);
+    const otherValues = keys.map((k) => {
+      let sum = 0;
+      for (const [cid, m] of byClientBucket) if (!shown.has(cid)) sum += m.get(k) ?? 0;
+      return sum;
+    });
+    if (otherValues.some((v) => v > 0)) {
+      series.push({ label: "Other clients", color: "#9ca3af", values: otherValues });
+    }
     return { labels: keys.map(labelFor), series };
   }, [entrySumsAll, filter, taskById, clientById]);
 
