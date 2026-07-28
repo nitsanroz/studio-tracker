@@ -35,6 +35,14 @@ export interface Section {
   clientId: string;
   name: string;
   position: number;
+  /** budget parsed from the old section name; falls back to the sum of its tasks */
+  estimateHours?: number | null;
+  /** pre-Everhour hours parsed from the old section name (display-only) */
+  legacyHours?: number | null;
+  /** original name before the hour figures were parsed out of it */
+  legacyName?: string | null;
+  /** closing date that trailed the old section name, e.g. "(27/1/2021)" */
+  closedOn?: string | null;
 }
 
 export type TaskStatus = "todo" | "in_progress" | "done";
@@ -55,14 +63,28 @@ export interface Task {
   position: number;
   /** true while a client intake request is approved-pending confirmation */
   pending?: boolean;
+  /**
+   * Pre-Everhour hours we know were worked but could not pin to a person and a
+   * date — the remainder after this task's `legacy` time entries. Display-only:
+   * never aggregate it by month or by user, it has neither.
+   */
+  legacyHours?: number | null;
+  /** original title before the hour figures were parsed out of it */
+  legacyTitle?: string | null;
+  /** first/last Asana comment date, when the hours came from the comment thread */
+  activityFrom?: string | null;
+  activityTo?: string | null;
 }
 
 export interface TaskComment {
   id: string;
   taskId: string;
-  userId: string;
+  /** null for imported Asana comments whose author predates the studio's profiles */
+  userId: string | null;
   body: string;
   createdAt: string;
+  /** raw Asana author name, kept when no profile matched */
+  authorName?: string | null;
 }
 
 export interface Attachment {
@@ -77,11 +99,21 @@ export interface Attachment {
 export interface TimeEntry {
   id: string;
   taskId: string;
-  userId: string;
+  /** null only on recovered pre-Everhour entries whose author has no profile (0017) */
+  userId: string | null;
+  /** raw Asana author name, when userId is null */
+  legacyAuthorName?: string | null;
   date: string;
   minutes: number;
   description: string;
   movedFromTaskId: string | null;
+  /**
+   * Reconstructed from a pre-Everhour Asana comment rather than logged by the
+   * person in this app. Counts toward client and task totals; must be EXCLUDED
+   * from personal stats, the days-worked counter and the feed timesheet — a
+   * 2021 backfill must not invent working days for someone today.
+   */
+  legacy?: boolean;
 }
 
 export type PlanEntryType = "task" | "free_text" | "absence";
@@ -91,9 +123,22 @@ export type AbsenceType = "vacation" | "sick" | "day_off";
 export interface EntrySum {
   id: string;
   taskId: string;
-  userId: string;
+  /** null only on recovered pre-Everhour entries whose author has no profile (0017) */
+  userId: string | null;
   date: string;
   minutes: number;
+  /** see TimeEntry.legacy — include in client/task totals, exclude from personal stats */
+  legacy?: boolean;
+}
+
+/**
+ * An entry logged by a real person in this app — i.e. any non-`legacy` row.
+ * Narrowing to this is what makes `userId` non-null, so every personal or
+ * per-member aggregation can index by it without a guard. The store's
+ * `entrySums` is this type; `entrySumsAll` keeps the nullable form.
+ */
+export interface UserEntrySum extends Omit<EntrySum, "userId"> {
+  userId: string;
 }
 
 export interface ReportLink {

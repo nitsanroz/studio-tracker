@@ -69,6 +69,7 @@ export const mapEntrySum = (r: any): EntrySum => ({
   userId: r.user_id,
   date: r.date,
   minutes: r.minutes ?? 0,
+  legacy: r.legacy ?? false, // column exists from migration 0016
 });
 
 export const mapReportLink = (r: any): ReportLink => ({
@@ -129,6 +130,11 @@ export const mapSection = (r: any, projectClientById?: Map<string, string>): Sec
   clientId: r.client_id ?? projectClientById?.get(r.project_id) ?? "",
   name: r.name,
   position: r.position,
+  // columns exist from migration 0016
+  estimateHours: r.estimate_hours == null ? null : Number(r.estimate_hours),
+  legacyHours: r.legacy_hours == null ? null : Number(r.legacy_hours),
+  legacyName: r.legacy_name ?? null,
+  closedOn: r.closed_on ?? null,
 });
 
 export const mapTask = (
@@ -150,6 +156,11 @@ export const mapTask = (
   estimateHours: r.estimate_hours == null ? null : Number(r.estimate_hours),
   position: r.position,
   pending: r.pending,
+  // columns exist from migration 0016
+  legacyHours: r.legacy_hours == null ? null : Number(r.legacy_hours),
+  legacyTitle: r.legacy_title ?? null,
+  activityFrom: r.activity_from ?? null,
+  activityTo: r.activity_to ?? null,
 });
 
 export const mapTimeEntry = (r: any): TimeEntry => ({
@@ -160,6 +171,8 @@ export const mapTimeEntry = (r: any): TimeEntry => ({
   minutes: r.minutes ?? 0,
   description: r.description ?? "",
   movedFromTaskId: r.moved_from_task_id,
+  legacy: r.legacy ?? false, // column exists from migration 0016
+  legacyAuthorName: r.legacy_author_name ?? null, // column exists from migration 0017
 });
 
 export const mapComment = (r: any): TaskComment => ({
@@ -168,6 +181,7 @@ export const mapComment = (r: any): TaskComment => ({
   userId: r.user_id,
   body: r.body,
   createdAt: r.created_at,
+  authorName: r.author_name ?? null, // column exists from migration 0016
 });
 
 export const mapPlanColumn = (r: any): PlanColumn => ({
@@ -205,6 +219,9 @@ export function taskPatchToRow(
     row.completed_at = patch.status === "done" ? new Date().toISOString() : null;
   }
   if ("tag" in patch) row.tag_id = patch.tag ? (tagIdByName.get(patch.tag) ?? null) : null;
+  // Without this a "move to another client" updated local state, wrote an EMPTY
+  // patch object, and silently reverted on the next reload.
+  if ("clientId" in patch) row.client_id = patch.clientId;
   if ("assigneeId" in patch) row.assignee_id = patch.assigneeId;
   if ("dueDate" in patch) row.due_date = patch.dueDate;
   if ("billable" in patch) row.billable = patch.billable;

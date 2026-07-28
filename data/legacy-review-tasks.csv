@@ -1,0 +1,603 @@
+﻿task_id,client,section,original_title,clean_name,budget,budget_low,existing_estimate,title_hours,comment_hours,comment_count,unattributable_comment_hours,actual,attributable_hours,legacy_remainder,activity_from,activity_to,flag
+cd13eaff-3c29-4b78-91b0-a7275b69caf0,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Website Wireframes (32-42) - 16.75h,Website Wireframes,42,32,,16.75,16.75,13,16.75,,,,2020-07-29,2020-10-29,budget-range rollup-parent-zeroed
+e56d9af1-ee2d-4c59-a43d-e384b4af9503,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Full Website Design (105-146- final 200.5) - 200.5h,Full Website Design,200.5,,,200.5,221.75,54,221.75,,,,2020-10-20,2020-12-28,rollup-parent-zeroed
+d7d446d7-3661-45c7-8abd-e1c4aeaa8b6b,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Mobile Adaptation (38-44 - final 44) - 44h,Mobile Adaptation,44,,,44,51.25,27,51.25,51.25,51.25,0,2020-12-03,2021-01-28,rollup-parent-kept-no-children entries-exceed-title-total
+f34ceb45-3d55-4c64-8c62-83180eff3a9d,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Styleguide & Dev (30-38 - final 18) - 18h,Styleguide & Dev,18,,,18,13.25,20,13.25,18,13.25,4.75,2020-11-04,2021-02-15,rollup-parent-kept-no-children title-vs-comments-differ
+e27c6618-9adc-4456-8a02-0b03d5908e6f,Volta,3D work (110+80+16+64=270) - 412.5 (2/5/2021),3D City + Headers (206 - final 271) - 281.5h,3D City + Headers,271,,,281.5,96,50,112,281.5,96,185.5,2020-08-26,2020-12-21,title-vs-comments-differ
+747e807a-10d5-4199-8266-5dab588ac2d6,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Testemonials Page (8-10),Testemonials Page,10,8,,,,,,,,,,,budget-range
+7c1ff60b-c83d-4da0-af75-268a82e22b3b,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),About Page (3-4),About Page,4,3,,,,,,,,,,,budget-range
+18025e65-16c9-491b-a527-62590c9df8d8,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Blog Page (3-4),Blog Page,4,3,,,,,,,,,,,budget-range
+26a12473-3da6-40af-90de-1a4d0acf88c6,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Calculator (14-20),Calculator,20,14,,,,,,,,,,,budget-range
+c2c0b507-d7c8-4812-9c35-dcd081e2be9f,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),QA (24-32 - final 17.5) - 17.5h,QA,17.5,,,17.5,19,25,19,19,19,0,2020-11-24,2021-05-25,rollup-parent-kept-no-children entries-exceed-title-total
+e9f5d40b-0440-4df4-8069-b4f615aceeec,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),אינטרקציית מפה 2-3 - 1.5,אינטרקציית מפה,3,2,,1.5,,1,,1.5,,1.5,2020-12-15,2020-12-15,budget-range
+9d8534c1-d705-4a63-a735-eb7141225dfb,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),פרטי - 8-10,פרטי,10,8,,,,,,,,,,,budget-range
+d31f08cf-a0b4-4852-aa64-ba28ca8a7acf,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מסחרי - 6-8,מסחרי,8,6,,,,,,,,,,,budget-range
+8711688b-b5bb-4fad-a7b1-e333ad7833ba,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מוניציפלי - 6-8,מוניציפלי,8,6,,,,,,,,,,,budget-range
+f5313ee7-c95e-46ef-a905-310394a1e6cc,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),ממליצים - 16-20,ממליצים,20,16,,,,,,,,,,,budget-range
+947c3bd4-90d2-4a69-8cb3-949009195b51,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מי אנחנו - 10-12,מי אנחנו,12,10,,,,,,,,,,,budget-range
+0148c63c-71dd-45c7-afea-3037972d44b2,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מרכז למידה - 8-10,מרכז למידה,10,8,,,,,,,,,,,budget-range
+663d3f6d-0c2e-4ebd-8d1f-cf03db8dcde7,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),עמוד פנימי מרכז למידה (כתבה) - 6-8,עמוד פנימי מרכז למידה (כתבה),8,6,,,,,,,,,,,budget-range
+7b060c08-3a2f-4342-aa8a-2f154712d6f1,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),גיוס עובדים / משרות - 6-8,גיוס עובדים / משרות,8,6,,,,,,,,,,,budget-range
+90059c75-5141-420c-89ea-b9c11b8f432d,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),חבר מביא חבר (תלוי במורכבות של הויזואל) - 4-12,חבר מביא חבר (תלוי במורכבות של הויזואל),12,4,,,,,,,,,,,budget-range
+85bf7544-5846-4710-8461-937e5d284a82,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),PRIVACY & TERMS (לא יודע אם יהיו עוד חוץ מזה) - 3-4,PRIVACY & TERMS (לא יודע אם יהיו עוד חוץ מזה),4,3,,,,,,,,,,,budget-range
+303c9d52-ae8f-45bd-8276-12249acb56c9,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),עמוד 404 (תלוי מאוד ברמת ההשקעה שיירצו) - 4-12,עמוד 404 (תלוי מאוד ברמת ההשקעה שיירצו),12,4,,,,,,,,,,,budget-range
+563156d1-d0b2-474d-a03c-2504a4c4493c,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מחשבון (תלוי מאוד ברמת ההשקעה שיירצו) - 8-12,מחשבון (תלוי מאוד ברמת ההשקעה שיירצו),12,8,,,,,,,,,,,budget-range
+1069eb23-3cff-470f-bc19-40bf8ce4b844,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),אייקונים לשורת נתונים 4-6 - 15.25,אייקונים לשורת נתונים,6,4,,15.25,,,,15.25,,15.25,,,budget-range budget-vs-actual-far
+e15e9708-77cc-4fb2-82bd-d860911541e6,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),אייקונים לורטיקלים 1-2 - 1.25,אייקונים לורטיקלים,2,1,,1.25,,,,1.25,,1.25,,,budget-range
+e5dfe49b-e1a4-40c9-8e50-63ea9d723db5,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),שבירת מיתוסים 2-3 - 2,שבירת מיתוסים,3,2,,2,,,,2,,2,,,budget-range
+60d2f697-eb52-444d-ac42-793258576336,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),לייאאוט להדר 2-3 - 2.25,לייאאוט להדר,3,2,,2.25,,,,2.25,,2.25,,,budget-range
+76a9c79b-1aa1-406a-b831-eef09b849ea1,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),אייקונים למחשבון 3-5 - 2,אייקונים למחשבון,5,3,,2,,,,2,,2,,,budget-range
+4d543880-cb0b-4072-8c7a-7a665d6cab37,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מחשבון חיווי גרפי להצללה/כיוון 3-4 - 4,מחשבון חיווי גרפי להצללה/כיוון,4,3,,4,,,,4,,4,,,budget-range
+0119fb22-1959-4ada-a2f3-6f7f4391a892,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),גרפים במחשבון 6-8 - 8,גרפים במחשבון,8,6,,8,,,,8,,8,,,budget-range
+5b57b12d-74ef-499f-b320-be831bcb2356,Volta,Movies - 171.75h (2/5/21),Graphic package for videos -19.75h,Graphic package for videos,,,,19.75,2.5,9,2.5,19.75,2.5,17.25,2020-12-09,2021-02-18,title-vs-comments-differ
+9469608a-9455-4b4c-9c2d-668fa570ee0a,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),טופס לידים 0.5-1,טופס לידים,1,0.5,,,,1,,,,,2020-12-14,2020-12-14,budget-range
+94e1fc73-c2a2-4ad1-b5a7-7ae4f6c133eb,Volta,Movies - 171.75h (2/5/21),Q&A Movies - 128.25h,Q&A Movies,,,,128.25,18.25,22,15.75,,,,2020-12-24,2021-05-02,rollup-parent-zeroed title-vs-comments-differ
+360bfd26-ff6c-489a-8efc-dfd7808b3481,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Temporary pages - 9.75h,Temporary pages,,,,9.75,4,10,4,9.75,4,5.75,2021-01-05,2021-03-11,title-vs-comments-differ
+7ef418ec-988d-49f5-bf73-8cdd26932acf,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Image editing - 12.75h,Image editing,,,,12.75,9.75,16,9.75,12.75,9.75,3,2021-01-05,2021-05-30,title-vs-comments-differ
+9acbd891-8f35-44d5-96b9-0159f8f19d52,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מפתח שנעשה - 18.25h,מפתח שנעשה,,,,,,,,,,,,,key-reduction-not-counted
+928ac0d5-3c80-484e-b7bf-239a93651d7c,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מפתח שנעשה - 15.75h,מפתח שנעשה,,,,,,,,,,,,,key-reduction-not-counted
+092490f2-f25b-4e0e-9dee-561a185cc958,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Calculator social share image - 1.5h,Calculator social share image,,,,1.5,0.5,2,0.5,1.5,0.5,1,2021-02-18,2021-02-21,title-vs-comments-differ
+80f86a7e-6071-47e0-9328-2a30986660bd,Volta,Ongoing - 25.75h,Volta modular page (16h + 15h dev) - 8+15h,Volta modular page,31,,,23,8,6,8,23,8,15,2021-02-24,2021-03-04,budget-sum title-vs-comments-differ
+3102332e-3bc8-4078-ae7c-a581a69140d7,Volta,Leg 2 (181h) - 150.75h,Municipal page (41h) - 34.25h,Municipal page,41,,,34.25,43.25,26,25,43.25,43.25,0,2021-03-04,2021-06-07,title-vs-comments-differ entries-exceed-title-total
+e89b8884-f29b-4440-86c1-b7cb3d02986c,Volta,Leg 2 (181h) - 150.75h,About us page (50h)- 39h,About us page,50,,,39,43.75,17,43.75,43.75,43.75,0,2021-03-07,2021-08-26,entries-exceed-title-total
+d0b0917b-9589-4239-aad6-f8ddbd73944b,Volta,Leg 2 (181h) - 150.75h,Careers page (20h)-28h,Careers page,20,,,28,20.25,12,20.25,28,20.25,7.75,2021-03-07,2021-05-20,title-vs-comments-differ
+2a17a5d4-6743-488f-b662-9449fe136fa8,Volta,Leg 2 (181h) - 150.75h,Single job page (8h) - 2h,Single job page,8,,,2,2,1,2,2,2,0,2021-03-10,2021-03-10,budget-vs-actual-far
+9d30e00a-8b5f-447f-b9a9-6d0655deeb59,Volta,Leg 2 (181h) - 150.75h,Testimonials (21h) - 30.5h,Testimonials,21,,,30.5,30.75,14,29.75,30.75,30.75,0,2021-03-04,2021-09-05,entries-exceed-title-total
+afa02835-487f-4473-b10c-ba9c52d670c9,Volta,Leg 2 (181h) - 150.75h,3D & Animations - municipal page (36h) - 19.5h,3D & Animations - municipal page,36,,,19.5,3.5,4,3.5,19.5,3.5,16,2021-03-10,2021-04-25,title-vs-comments-differ
+3f08e545-4bae-4f92-8f08-5303613553f3,Volta,Referral pages UX+UI (84h) - 35h,Registration page (22h) - 8.5h,Registration page,22,,,8.5,20,9,-4.5,20,20,0,2021-04-06,2021-06-06,title-vs-comments-differ entries-exceed-title-total
+14188584-b0f2-4d4c-a6de-19318ea86eb3,Volta,Referral pages UX+UI (84h) - 35h,Personal area page (40h-50h) - 33.75 h,Personal area page,50,,,33.75,47.25,22,9,47.25,47.25,0,2021-04-06,2021-06-17,budget-multi title-vs-comments-differ entries-exceed-title-total
+86c98bb6-4676-467c-8fe3-63316296ae8d,Volta,Movies - 171.75h (2/5/21),CSL Movies graphic package (8h-12h) - 5.75,CSL Movies graphic package,12,,,5.75,5.65,3,,5.75,5.65,0.1,2021-04-05,2021-04-08,budget-multi
+bcbe0412-ac6e-44c2-8fcf-15bedc0a747c,Yoco,Other - 101.25h (04/05/22),One pager - 13.5h,One pager,,,,13.5,7.5,5,6,13.5,7.5,6,2022-04-28,2022-05-09,title-vs-comments-differ
+caa07edd-b1a5-4c05-b224-518a6c6376fa,Yoco,Yoco new website - 67h (26/06/22),Landing page desktop (40-50h) - 45.75h,Landing page desktop,50,40,,45.75,33.75,18,18.25,45.75,33.75,12,2022-05-03,2022-05-25,budget-range title-vs-comments-differ
+8a5f04a9-2822-40aa-83a2-3a8c650e722d,Yoco,Other - 101.25h (04/05/22),Right panel button - 1.75h,Right panel button,,,,1.75,1,2,,1.75,1,0.75,2022-05-03,2022-05-09,title-vs-comments-differ
+7a07c206-f23c-419e-84ca-f7caa03b0403,Anchor,Branding (160h) - 210h (9/12/21),Logo design (30h) - 15h,Logo design,30,,,15,22.5,14,22.5,22.5,22.5,0,2021-09-19,2021-10-10,title-vs-comments-differ entries-exceed-title-total
+29e707f4-cc99-4e90-ae58-d0bb848f1054,Anchor,Branding (160h) - 210h (9/12/21),New options logo design - 38.75h,New options logo design,,,,38.75,19.5,12,19.5,38.75,19.5,19.25,2021-09-26,2021-10-12,title-vs-comments-differ
+2dcc3c7d-cb80-428b-b136-5db0684e1b0a,Anchor,New pages for website -70h (01/05/22),Press page design (40h) - 35.25h,Press page design,40,,,35.25,40.5,15,40.5,40.5,40.5,0,2022-03-02,2022-04-05,entries-exceed-title-total
+3770e0dd-3f14-42e1-a12c-84ab4c0de18b,Anchor,New pages for website -70h (01/05/22),Brand assets page (6-8h) -10.5h,Brand assets page,8,6,,10.5,4,4,3.5,10.5,4,6.5,2022-03-23,2022-03-27,budget-range title-vs-comments-differ
+09b15c05-51c7-4c9a-b0bf-aa028807c14e,Anchor,New pages for website -70h (01/05/22),Headers for the website (16-24h),Headers for the website,24,16,,,,,,,,,,,budget-range
+45659c7e-3ae7-4769-929c-8f712110979e,Anchor,New pages for website -70h (01/05/22),Pricing page (32h) - 23.25h,Pricing page,32,,,23.25,20.25,10,16.25,23.25,20.25,3,2022-03-28,2022-04-28,rollup-parent-kept-no-children
+cc0388e9-93b5-4429-ab63-948cb418a80b,Anchor,November 2022,Exporting Assets at clients request  (1.5h) - 1.5h ,Exporting Assets at clients request,1.5,,,1.5,1,2,1,1.5,1,0.5,2022-11-21,2022-11-27,title-vs-comments-differ
+4be3b4a6-99c5-4221-a0da-939d949acb89,One Zero,Branding  - 406.25 (14/04/22),Kickoff & preparation - 14h,Kickoff & preparation,,,,14,11,5,6,14,11,3,2022-02-01,2022-02-06,title-vs-comments-differ
+38ca0070-dff4-403f-8436-95641d379681,One Zero,Branding  - 406.25 (14/04/22),Hero concepts (30h) - 40h,Hero concepts,30,,,40,10,4,1,40,10,30,2022-03-13,2022-03-15,title-vs-comments-differ
+f737aa54-1ad2-4a2d-92da-f9e079584bb4,One Zero,Website,Homepage Design (150hrs-240hrs),Homepage Design,240,,,,,,,,,,,,budget-multi
+ad0d3499-7fcb-44dc-a8b6-1d9e8b625883,One Zero,Branding  - 406.25 (14/04/22),Approach concepts - 79.25h,Approach concepts,,,,79.25,105.5,23,61,105.5,105.5,0,2022-02-06,2022-02-21,title-vs-comments-differ entries-exceed-title-total
+765c0974-fc80-469e-8315-75cf7ff878f2,One Zero,Branding  - 406.25 (14/04/22),Implementation examples - (87h) - 128h,Implementation examples,87,,,128,153.5,33,71.75,153.5,153.5,0,2022-02-23,2022-03-28,entries-exceed-title-total
+5921f38b-3a27-4e98-b606-c34d642bdfde,One Zero,Branding  - 406.25 (14/04/22),Continue developing the visual language -131.75h,Continue developing the visual language,,,,131.75,136.75,28,74.75,136.75,136.75,0,2022-03-21,2022-05-12,entries-exceed-title-total
+fa9425a1-04f7-4461-860a-8536ee8c6edf,Mesh,Branding (50h),Logo - 35.75h,Logo,,,,35.75,5.75,10,,35.75,5.75,30,2022-04-24,2022-05-23,title-vs-comments-differ
+eba81838-0ba5-459c-a024-765d1347850f,Quadream,New Section,wireframe - [32] - 37hr,wireframe - [32],,,,37,39,14,28,39,39,0,2016-08-18,2016-09-12,entries-exceed-title-total
+b66c4f29-15a4-4c88-a86c-f8f1889a1f82,Quadream,New Section,Presentation case study 1 - 24hrs,Presentation case study 1,,,,24,,2,,24,,24,2016-09-27,2016-09-27,rollup-parent-kept-no-children
+dd0f1e5a-e373-4523-bc0e-2e413ac3a122,Quadream,New Section,presentation - 10hrs,presentation,,,,10,3,2,,10,3,7,2016-09-26,2016-09-27,title-vs-comments-differ
+9f79674b-0489-44f2-a258-9a0c8bbb1e1e,Quadream,New Section,Presentation case study 2 - 2hrs,Presentation case study 2,,,,2,2,1,,2,2,0,2016-09-26,2016-09-26,rollup-parent-kept-no-children
+7f84d829-ac40-460c-87b9-7901ac306a7a,Quadream,New Section,Ui system - 165hrs,Ui system,,,,165,8,20,,165,8,157,2016-10-20,2016-12-29,rollup-parent-kept-no-children title-vs-comments-differ
+03fd48a5-d1f7-48c8-bc8d-3ad81328e5fb,Quadream,New Section,presentation - 24 hrs ,presentation,,,,24,12,4,7,24,12,12,2017-02-16,2017-02-21,title-vs-comments-differ
+ee91f4f2-3327-4e6c-a5bf-45d27c9e27c5,Quadream,New Section,May Hours - 34.5,May Hours,,,,34.5,1,13,,34.5,1,33.5,2017-05-07,2017-05-28,title-vs-comments-differ
+0d5a37cf-ea58-4a24-a372-dbc43f13855d,Quadream,(no section),presentation 19 hr,presentation,,,,19,25,5,25,25,25,0,2017-07-24,2017-07-27,title-vs-comments-differ entries-exceed-title-total
+5595616c-7794-4c92-acda-1d2cec3bfde3,Quadream,hours,white paper touch-up 21.5 hr,white paper touch-up,,,,21.5,1.5,4,1.5,21.5,1.5,20,2018-01-11,2018-01-21,title-vs-comments-differ
+05952a7d-8199-43b6-a51d-025ff09ec7d7,Quadream,hours,February Hours - 82.5h,February Hours,,,,82.5,1,13,,82.5,1,81.5,2018-02-11,2018-02-28,title-vs-comments-differ
+c9bdb75b-a5eb-466b-8878-2cb5a5bdd0df,Quadream,hours,March Hours - 120.5 hr,March Hours,,,,120.5,1,14,,120.5,1,119.5,2018-03-05,2018-03-28,title-vs-comments-differ
+95e6ca2c-0d2b-4650-8716-e25e0fba071f,Quadream,hours,April hours - 123hrs,April hours,,,,123,10,13,8,123,10,113,2018-04-02,2018-04-30,title-vs-comments-differ
+a7af7676-c0fd-40e4-9ab7-88b359d2a95e,Quadream,hours,Logo - 55h,Logo,,,,55,60.5,21,60.5,60.5,60.5,0,2018-04-29,2019-09-16,entries-exceed-title-total
+7b4d6ed4-ff33-470e-b4b3-264119ad84ae,Quadream,hours,june hours - 59.5,june hours,,,,59.5,20,9,20,59.5,20,39.5,2018-06-05,2018-06-28,title-vs-comments-differ
+3d4b1387-5de8-4497-b133-4f55bedcf889,Quadream,hours,july hours -85.5,july hours,,,,85.5,6,12,6,85.5,6,79.5,2018-07-01,2018-07-18,title-vs-comments-differ
+1f1f97e6-8e94-43ec-aad4-2749b722f2b7,Quadream,hours,January 19 -  115.5 Hours,January 19,,,,115.5,89,21,89,115.5,89,26.5,2019-01-07,2019-02-03,title-vs-comments-differ
+da3dcd0e-380a-4bd2-b6d0-9cf561da7930,Quadream,hours,Feb 19 - 90h,Feb 19,,,,90,90.75,19,90.75,90.75,90.75,0,2019-02-04,2019-03-04,entries-exceed-title-total
+d35cb506-b8cc-486c-a407-1ee5e3a23d34,Quadream,hours,quadream animations  - 31.5h,quadream animations,,,,31.5,16.5,21,16.5,31.5,16.5,15,2019-03-19,2019-08-22,title-vs-comments-differ
+2e4bc41f-c881-4a0f-a6b5-94ba4982fb77,Quadream,(no section),quadream UI July  (Inreach budget) - 56.5 h,quadream UI July (Inreach budget),,,,56.5,0.5,12,0.5,56.5,0.5,56,2019-07-07,2019-07-30,title-vs-comments-differ
+811490a2-f82f-4726-95db-8efa06db8bd3,Quadream,hours,ui ux Augut 19 - (Inreach Budget)- 33.5h,ui ux Augut 19 - (Inreach Budget),,,,33.5,3.5,10,3.5,33.5,3.5,30,2019-08-01,2019-08-29,title-vs-comments-differ
+23ee56f6-d744-4026-8bbc-d37cce3a7a1a,Quadream,hours,Visual Language - 41.5h,Visual Language,,,,41.5,59.5,22,59.5,59.5,59.5,0,2019-08-15,2019-09-11,title-vs-comments-differ entries-exceed-title-total
+97b58cf0-ad54-4685-bca7-a4c64ef60933,Quadream,hours,UI/UX September 19 (Inreach Budget) - 18.5h,UI/UX September 19 (Inreach Budget),,,,18.5,13,6,13,18.5,13,5.5,2019-09-19,2019-10-10,title-vs-comments-differ
+dd85b0a6-6b22-475d-987f-a4b49255209b,Quadream,hours,UI/UX October 19 (Inreach Budget) - 1h ,UI/UX October 19 (Inreach Budget),,,,1,0.75,3,0.75,1,0.75,0.25,2019-10-10,2019-10-27,title-vs-comments-differ
+4f3a8d28-ecbf-49bf-a1fa-3217cfc26f5d,Quadream,hours,UI/UX December 19 (Inreach Budget) - 65.25h,UI/UX December 19 (Inreach Budget),,,,65.25,48,28,48,65.25,48,17.25,2019-12-01,2019-12-31,title-vs-comments-differ
+a7870f72-0e45-48d0-b254-c58e19c73ed1,Quadream,hours,UI/UX March 20 (Inreach Budget) - 51.75h,UI/UX March 20 (Inreach Budget),,,,51.75,52.25,15,52.25,52.25,52.25,0,2020-03-01,2020-03-31,entries-exceed-title-total
+cf8915a6-d9ef-4f8d-9567-f2a8c0fc01e1,Quadream,שונות,ISS flyer (1) -1 ,ISS flyer,1,,,1,2,1,2,2,2,0,2021-03-31,2021-03-31,title-vs-comments-differ entries-exceed-title-total
+250b65f9-af3b-4504-b7b6-bbf93afc18f4,Quadream,January 22,ISS Dubai invitation (1-3) - ,ISS Dubai invitation,3,1,,,1,1,,1,1,0,2022-01-12,2022-01-12,budget-range
+9ab763ef-a7fd-498a-b741-14f0f8f9cb6f,Cognigo (d.day labs),,Branding&Ui - march - 113.5 hrs,Branding&Ui - march,,,,113.5,5,18,5,113.5,5,108.5,2017-03-05,2017-03-30,title-vs-comments-differ
+9eb73506-6dc8-4053-8060-2c3e7f25cdf3,Cognigo (d.day labs),,UI August - 109.5,UI August,,,,109.5,5,19,5,109.5,5,104.5,2017-08-01,2017-09-03,title-vs-comments-differ
+26787294-3f0b-455d-8479-f353447ad244,Cognigo (d.day labs),,ui - january - 62.5h,ui - january,,,,62.5,7.5,11,7.5,62.5,7.5,55,2018-01-01,2018-01-29,title-vs-comments-differ
+e88b0b9f-112c-4bdc-9478-866930bdc1fd,Cognigo (d.day labs),to do list,Website- 289.75h - FINAL,Website,,,,289.75,81.75,50,80.25,289.75,81.75,208,2018-03-12,2019-03-12,title-vs-comments-differ
+4cf5becd-dd3f-4b58-bbfd-0020f7bdda02,Cognigo (d.day labs),,Pesach card-4.5h,Pesach card,,,,4.5,2,2,2,4.5,2,2.5,2018-03-21,2018-03-26,title-vs-comments-differ
+47ce3c13-606c-4e1f-8510-2ef70463bd81,Cognigo (d.day labs),,Exhibition Print - 31.75h,Exhibition Print,,,,31.75,9.75,10,9.75,31.75,9.75,22,2018-03-22,2018-07-01,title-vs-comments-differ
+42403263-a595-4c1a-863b-1f0899e32c0e,Cognigo (d.day labs),,Value Poster - 4.5h,Value Poster,,,,4.5,2.5,3,2.5,4.5,2.5,2,2018-05-31,2018-06-06,title-vs-comments-differ
+dd9ab078-e766-418a-918f-afce98338f2e,Cognigo (d.day labs),to do list,BlackHat T-shirt Design - 3h,BlackHat T-shirt Design,,,,3,3.5,6,3.5,3.5,3.5,0,2018-07-04,2018-07-31,entries-exceed-title-total
+df84ef43-3ce3-4b20-842e-fe9a832d2c64,Cognigo (d.day labs),to do list,HLS&CYBER‎ Booth design 4 hrs,HLS&CYBER‎ Booth design,,,,4,2.5,3,2.5,4,2.5,1.5,2018-08-29,2018-10-18,title-vs-comments-differ
+77305e6f-20de-4857-a580-ccd855781990,Cognigo (d.day labs),to do list,DSAR templet 3hrs,DSAR templet,,,,3,2.25,3,2.25,3,2.25,0.75,2018-08-29,2018-09-06,title-vs-comments-differ
+49a38193-d484-4531-a2c8-9145ec3cfc06,Cognigo (d.day labs),to do list,Booth Design for Data Protection World Forum - 6 h,Booth Design for Data Protection World Forum,,,,6,7,6,7,7,7,0,2018-10-16,2018-10-28,entries-exceed-title-total
+a6e414be-cefb-4b20-b7a2-1d0eb00e81ff,Cognigo (d.day labs),(no section),Breach Report - 50.25h,Breach Report,,,,50.25,19.75,16,19.75,50.25,19.75,30.5,2018-10-18,2019-01-17,title-vs-comments-differ
+34a2c731-cd35-4b66-8dad-b037df2c0efb,Cognigo (d.day labs),to do list,Presentation - 40 hrs,Presentation,,,,40,31.5,11,31.5,40,31.5,8.5,2018-10-28,2018-12-02,title-vs-comments-differ
+e1732a9b-7e01-4d87-b9dd-b97a57212926,Cognigo (d.day labs),,RSAC Presentation - 38h,RSAC Presentation,,,,38,42.5,7,42.5,42.5,42.5,0,2018-11-27,2018-12-03,entries-exceed-title-total
+715c2f83-e16f-473e-90b3-c4510ebca6ce,Cognigo (d.day labs),to do list,overview presentation (guy) - 13.5h,overview presentation (guy),,,,13.5,10,6,10,13.5,10,3.5,2019-01-03,2019-01-07,title-vs-comments-differ
+9c30b1eb-b31b-4de7-b09c-41a87cc05a21,Cognigo (d.day labs),to do list,Data Mapping UX+UI - 107.25h,Data Mapping UX+UI,,,,107.25,109.5,35,109.5,109.5,109.5,0,2019-01-10,2019-05-07,entries-exceed-title-total
+5b034469-1193-4a3c-868b-0ac88d84ca49,Cognigo (d.day labs),to do list,GDPR + Cognigo Data sheets - 37 h,GDPR + Cognigo Data sheets,,,,37,17.5,24,17.5,37,17.5,19.5,2019-01-23,2019-03-31,title-vs-comments-differ
+c5f5d9c1-2eaf-4636-84eb-a5f297f30b9c,Cognigo (d.day labs),to do list,Cognigo x NetApp - 62.75h,Cognigo x NetApp,,,,62.75,37.75,11,37.75,62.75,37.75,25,2019-05-06,2019-05-23,title-vs-comments-differ
+f1c1c5aa-fdd5-453f-8a70-9a484d580ac8,Cognigo (d.day labs),to do list,Laser cut model (11 hours from the client)- 12.25h,Laser cut model (11 hours from the client),11,,,12.25,9.75,12,9.75,12.25,9.75,2.5,2019-05-15,2019-06-10,title-vs-comments-differ
+219d7ecd-65f7-4171-92bf-7ced2c93d8da,In-reach,(no section),business card - 3.75 hr,business card,,,,3.75,2.25,5,2.25,3.75,2.25,1.5,2017-12-19,2019-05-20,title-vs-comments-differ
+15e09b80-dccf-4d7f-908d-7d1206d8a5f1,In-reach,(no section),Brochure 'Reign' - 5.5h,Brochure 'Reign',,,,5.5,6,4,6,6,6,0,2019-05-05,2019-05-14,entries-exceed-title-total
+557f69c8-3b20-4871-ad6a-008abbc5d7e2,Siteaware,Branding,Presentation (50 Hours from client) - 66hrs,Presentation,50,,,66,69,26,67.5,69,69,0,2018-06-19,2018-07-31,entries-exceed-title-total
+1fc0b7c1-3c29-451c-a455-63c3c4089932,Siteaware,Branding,business card 3hrs,business card,,,,3,3.75,5,3.75,3.75,3.75,0,2018-08-14,2018-08-22,entries-exceed-title-total
+9c10bfcd-a58f-49fb-93ac-5667643a6ed1,Siteaware,Branding,Extra slide for ppt (booth design) - 0.75hrs,Extra slide for ppt (booth design),,,,0.75,0.25,2,0.25,0.75,0.25,0.5,2018-10-24,2018-10-24,title-vs-comments-differ
+944a144e-72d3-4921-89a2-78cd782472ef,Siteaware,Digital,Inspection tool - (76h from client) - 75.5,Inspection tool,76,,,75.5,97.5,25,97.5,97.5,97.5,0,2019-01-21,2019-02-27,title-vs-comments-differ entries-exceed-title-total
+c302ba4a-f736-4ab2-b117-ce9c508876b2,Siteaware,Branding,Management pics (ppt) - 1.25h,Management pics (ppt),,,,1.25,1.75,3,1.75,1.75,1.75,0,2019-02-07,2019-02-10,title-vs-comments-differ entries-exceed-title-total
+e97329b2-c15d-4dca-b8d8-0acd5f2baa3e,Siteaware,Branding, New slides uplift - 16.5h,New slides uplift,,,,16.5,23.25,7,23.25,23.25,23.25,0,2019-02-13,2019-02-28,title-vs-comments-differ entries-exceed-title-total
+c1722e1a-853a-40d1-9c03-59ea51e23907,Siteaware,Branding,One pager - 0.5h,One pager,,,,0.5,7,6,7,7,7,0,2019-02-24,2019-03-05,title-vs-comments-differ entries-exceed-title-total
+fbf9745b-ea80-4759-bf58-34a2c432cff4,New Era,,Branding (75 hours from client + 18 ): ,Branding :,93,,,,,,,,,,,,budget-sum
+79f39a83-323f-4a83-bc58-3b9b3c06c159,New Era,Website (40 hours from client + 40 = 80) - 90.5h,Web - 83 hrs,Web,,,,83,55.5,34,55.5,83,55.5,27.5,2018-11-07,2019-01-13,title-vs-comments-differ
+769b198b-3faf-46eb-a8b9-2b51d83e784d,New Era,Website (40 hours from client + 40 = 80) - 90.5h,conversion from Branding (October 18- Nov 8th) - 34.5,conversion from Branding (October 18- Nov 8th),8,,,34.5,,,,34.5,,34.5,,,budget-multi budget-vs-actual-far
+be56e392-64a3-47f7-b557-3ace3d874815,PlayStudios,Services for Website,Wordpress (300)  ,Wordpress,300,,,,,,,,,,,,
+c9ccb32b-172f-4910-8f6e-fb44dda266ce,Volta,Branding (8) - 7.25 (1/9/2020ׁ) - FINAL,Kick off meeting - 2h,Kick off meeting,,,,2,2,1,2,2,2,0,2020-07-26,2020-07-26,
+bc60675d-73ba-4692-a738-dce238b972af,Volta,Branding (8) - 7.25 (1/9/2020ׁ) - FINAL,Logo Update (8) - 5.25h,Logo Update,8,,,5.25,5.25,4,5.25,5.25,5.25,0,2020-07-29,2020-08-06,
+e3674358-4a35-41eb-9e89-56bd2076b5d8,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Homepage Design (Graphic Language) (64) - 64h,Homepage Design (Graphic Language),64,,,64,62.5,27,83.5,64,62.5,1.5,2020-08-03,2020-10-20,
+89d7943b-c302-462d-8cb9-447549354fa9,Volta,Development (100) - 100,Wordpress (100),Wordpress,100,,,,,,,,,,,,
+23433df9-445c-46b8-81f4-e47532f7f36b,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Initial Wireframes (12) - 13.25h,Initial Wireframes,12,,,13.25,,,,13.25,,13.25,,,
+037f398c-e624-4d2f-b9da-4791d42d5a75,Volta,3D work (110+80+16+64=270) - 412.5 (2/5/2021),3D calculator (64 - final 67) - 67h,3D calculator,67,,,67,-9,20,-9,67,-9,76,2020-12-03,2021-01-21,
+ed73f908-e6c7-4b34-aabc-7be40f6f7a35,Volta,Movies - 171.75h (2/5/21),Nitsan - 1h,Nitsan,,,,1,,,,1,,1,,,
+c8e137f3-ee80-412a-b432-fd2eb047b266,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),מסלולי מימון - 1.75,מסלולי מימון,,,,1.75,,,,1.75,,1.75,,,
+927c09ca-5f7b-4353-82a8-5462688eab78,Volta,Movies - 171.75h (2/5/21),Animation corrections for 1 video - 2h,Animation corrections for 1 video,,,,2,,1,,2,,2,2021-01-14,2021-01-14,
+123e700d-1dc5-4fe9-a660-6d8d8a5beaec,Volta,3D work (110+80+16+64=270) - 412.5 (2/5/2021),HowItWorks (56) - 56h,HowItWorks,56,,,56,-0.75,18,-0.75,56,-0.75,56.75,2020-12-14,2021-01-13,
+cf3ec928-0a48-492d-87a2-27256bded821,Volta,3D work (110+80+16+64=270) - 412.5 (2/5/2021),Beauty renders () - ,Beauty renders (),,,,,,,,,,,,,
+cc679474-6580-404c-bc6c-ad897a778103,Volta,Task management,עריכת תמונת בטיחות עמוד הבית,עריכת תמונת בטיחות עמוד הבית,,,,,,5,,,,,2021-01-18,2021-01-21,
+da136f7c-4393-4fc0-aacc-29e29bd950b9,Volta,Task management,התאמה למובייל האדר עמוד זמני ממליצים,התאמה למובייל האדר עמוד זמני ממליצים,,,,,,2,,,,,2021-01-21,2021-01-24,
+3d5c11ee-f10a-4d1f-a9a8-7bb20667be72,Volta,Task management, עמוד פרטי - תיקון האדר למובייל,עמוד פרטי - תיקון האדר למובייל,,,,,,5,,,,,2021-01-21,2021-01-25,
+7bddcdf5-a7db-4a27-bc64-5a34bff8b9a1,Volta,Task management, אייקונים עמוד עסקי במובייל ,אייקונים עמוד עסקי במובייל,,,,,,4,,,,,2021-01-18,2021-01-24,
+a67e9fc0-8fb1-4a37-8d6e-c6608c67dd9f,Volta,Task management,תיקוני תמונות מייל חגית משלישי,תיקוני תמונות מייל חגית משלישי,,,,,,5,,,,,2021-01-19,2021-01-21,
+fe2f33b7-bf1f-47f9-a2b9-54c0d240ad6b,Volta,Development (140) - 100,גלריית פרויקטים,גלריית פרויקטים,,,,,,,,,,,,,
+54ee15a7-d882-45e4-b912-21f21f9e3bf5,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),1-2 פופאפ - 0.75,1-2 פופאפ,,,,0.75,,1,,0.75,,0.75,2020-12-14,2020-12-14,
+c2c586c2-decb-4c09-8951-1ac2a83d4d1b,Volta,Movies - 171.75h (2/5/21),Clients movies,Clients movies,,,,,,,,,,,,,
+4b08957f-f023-4aeb-a189-f8c4dadc3c75,Volta,Movies - 171.75h (2/5/21),Storyboards - 34h,Storyboards,,,,34,,,,34,,34,,,
+fce45ad6-b339-485e-a9e8-292c09efa6ed,Volta,Movies - 171.75h (2/5/21),Design (70)- 50h  ,Design,70,,,50,,,,50,,50,,,
+d163103d-39e5-41fd-abd3-705116024b85,Volta,Task management,תמונה חדשה לעמוד עסקי > הזדמנות לפרגן,תמונה חדשה לעמוד עסקי > הזדמנות לפרגן,,,,,,4,,,,,2021-01-20,2021-01-21,
+59227bc0-04d1-4afd-ae55-fcb84127cb3b,Volta,Task management,עמוד פרטי - היופי נמצא בפרטים... - עריכת תמונה ,עמוד פרטי - היופי נמצא בפרטים... - עריכת תמונה,,,,,,7,,,,,2021-01-20,2021-01-25,
+d8819e74-c7d3-4624-ac11-a151a54a1b1f,Volta,Task management,עמוד פרטי - תיקון צבעוניות פאנלים בהאדר,עמוד פרטי - תיקון צבעוניות פאנלים בהאדר,,,,,,7,,,,,2021-01-21,2021-01-25,
+ba4b516f-1669-466e-86e0-1014c4dadfce,Volta,Task management,עמוד זמני מוניציפאלי - להקטין מודל- ליצור רפרנס לתאודור,עמוד זמני מוניציפאלי - להקטין מודל- ליצור רפרנס לתאודור,,,,,,,,,,,,,
+afcf6c2e-7502-44a3-8525-3ff8a39c8ec7,Volta,Task management,ללג 2 - לעצב כפתורים למעבר לוידאו הבא,ללג 2 - לעצב כפתורים למעבר לוידאו הבא,,,,,,,,,,,,,
+54683f48-2821-4336-b48f-cf3f15e2bbe4,Volta,Task management,לעבור עם ניצן על צילומי מסך מהמחשב של טל מוולטה,לעבור עם ניצן על צילומי מסך מהמחשב של טל מוולטה,,,,,,2,,,,,2021-01-21,2021-01-24,
+fd079c2a-d2f1-4a30-8130-447024fc45cd,Volta,Task management,ללג 2 - כפתור חדש למסלולי מימון,ללג 2 - כפתור חדש למסלולי מימון,,,,,,,,,,,,,
+5b197140-44ae-4b5c-8aca-ec75230810cb,Volta,Task management,האדר עמוד עסקי - עבודת פוטושופ,האדר עמוד עסקי - עבודת פוטושופ,,,,,,4,,,,,2021-01-24,2021-01-25,
+25f3dcc1-fa52-4930-b881-4995f8762226,Volta,Task management,כללי - סרגל צד ומספרים,כללי - סרגל צד ומספרים,,,,,,2,,,,,2021-01-21,2021-01-21,
+6976ecb3-3702-4e61-a9f2-df4d132909ad,Volta,Task management,להכין נראות כפתור ליצירת קשר לסרטונים,להכין נראות כפתור ליצירת קשר לסרטונים,,,,,,4,,,,,2021-01-24,2021-01-24,
+1932545a-59da-411f-9da6-f1dd342690df,Volta,Task management,עמוד מרכז למידה במובייל - להוסיף כפתור שמקפיץ לראש העמוד,עמוד מרכז למידה במובייל - להוסיף כפתור שמקפיץ לראש העמוד,,,,,,5,,,,,2021-01-24,2021-01-25,
+8e5fe757-ebbd-4d41-8056-2c76bf02bd0a,Volta,Movies - 171.75h (2/5/21),Animation - 18h,Animation,,,,18,,,,18,,18,,,
+a4cea64f-9134-4c13-baae-ebec7c38093f,Volta,Task management,להכין רשימה של הצעות לאנימציה לסרטוני Q&A,להכין רשימה של הצעות לאנימציה לסרטוני Q&A,,,,,,1,,,,,2021-01-26,2021-01-26,
+ca0f82df-0252-4e74-a0d0-7b561888c644,Volta,3D work (110+80+16+64=270) - 412.5 (2/5/2021),Render Farm - 8h,Render Farm,,,,8,,1,,8,,8,2020-12-24,2020-12-24,
+f71414a5-bd59-41d1-9474-b691412f13b9,Volta,Task management,לג 2 - גלריית פרוייקטים,לג 2 - גלריית פרוייקטים,,,,,,1,,,,,2021-02-08,2021-02-08,
+450d0ed4-0029-40b5-8306-9f97ba015631,Volta,Task management,Desktop QA,Desktop QA,,,,,,,,,,,,,
+f93683c0-43c5-492c-885e-ed1bd3aea0f2,Volta,Task management,Mobile QA,Mobile QA,,,,,,,,,,,,,
+48ee83c1-7180-40e9-8fec-578877040246,Volta,Task management,Footer,Footer,,,,,,,,,,,,,
+30517179-01a6-46be-851a-1ef17d767bb8,Volta,Task management,Images for gallery,Images for gallery,,,,,,2,,,,,2020-12-29,2020-12-29,
+975a5d50-daa8-4b45-9fcf-549002d40528,Volta,Task management,Design temporary pages,Design temporary pages,,,,,,1,,,,,2020-12-29,2020-12-29,
+b917506c-08e9-4dfd-854f-83b5db7fccbf,Volta,Task management,Calculator directions,Calculator directions,,,,,,,,,,,,,
+aba19a1b-db9e-41cc-b587-fed5adf8517a,Volta,Task management,HIW animation correction,HIW animation correction,,,,,,,,,,,,,
+48254b57-3dfd-4c37-93ad-8c306321f638,Volta,Task management,404 basic page,404 basic page,,,,,,,,,,,,,
+f04aaba7-8688-4a6a-a73f-1616bf69d801,Volta,Task management,Business page header,Business page header,,,,,,,,,,,,,
+97599473-f12b-4db8-83e1-c3b352e31c2c,Volta,Task management,Images for video with alpha bg,Images for video with alpha bg,,,,,,,,,,,,,
+e54b414b-a01f-4589-8375-1cc175a4809c,Volta,Task management,Videos of models for QA videos,Videos of models for QA videos,,,,,,,,,,,,,
+1c737468-cc4b-4aec-8463-700e10808f67,Volta,Task management,map hover check,map hover check,,,,,,,,,,,,,
+0207299f-009e-4ef9-aa1c-f3418c3280bf,Volta,Task management,loader ,loader,,,,,-2.25,3,-2.25,,,,2021-01-05,2021-01-07,
+cac95aa7-8f1f-485e-a809-15f0415c2606,Volta,Task management,QA פנימי - מעבר בסוף העבודה על הלג הראשון ,QA פנימי - מעבר בסוף העבודה על הלג הראשון,,,,,,6,,,,,2021-01-31,2021-02-08,
+87b8c3dc-7d2e-4521-8304-b8d334409c44,Volta,Movies - 171.75h (2/5/21),Animation improvement for the rest of the videos (16h) - 16h,Animation improvement for the rest of the videos,16,,,16,14.5,8,25.75,16,14.5,1.5,2021-02-03,2021-02-11,
+588c44c8-84c2-4fea-8d63-49ebab04464b,Volta,Task management, מי אנחנו עדכון תמונה,מי אנחנו עדכון תמונה,,,,,,1,,,,,2021-02-04,2021-02-04,
+1a8abce1-6b58-463e-a073-a5659babc741,Volta,Task management,לקבל מחגית מספר טלפון כוכבית לסגיר,לקבל מחגית מספר טלפון כוכבית לסגיר,,,,,,1,,,,,2021-02-14,2021-02-14,
+77a27723-be33-45a7-9405-930124a7d01f,Volta,Website (232+61/134) (Total 293-366) - 388.5 (27/1/2021),Calculator - new button - 3.75h,Calculator - new button,,,,3.75,3.75,3,3.75,3.75,3.75,0,2021-02-21,2021-02-24,
+b153fd40-6506-40fe-9045-22a8f4e0dbd5,Volta,Task management,תמונות ללינקדאין - של המפה כשכל חלק מסומן בלי החשכה,תמונות ללינקדאין - של המפה כשכל חלק מסומן בלי החשכה,,,,,,,,,,,,,
+f3562d72-114c-4d3f-89c7-d6a22ac95839,Volta,Task management,לוגו רוחבי png pdf ai,לוגו רוחבי png pdf ai,,,,,,,,,,,,,
+4cb493a9-44ba-466c-aeb3-ae58b945d223,Volta,Ongoing - 25.75h,LinkedIn cover for employees-1.75h,LinkedIn cover for employees,,,,1.75,1.75,3,1.75,1.75,1.75,0,2021-02-23,2021-02-28,
+d3a01911-ae8c-4975-a090-74c21063a8dc,Volta,Ongoing - 25.75h,Volta - logo negative version formats,Volta - logo negative version formats,,,,,,1,,,,,2021-02-24,2021-02-24,
+22a70f42-8297-4f83-bed5-f4a25965ef99,Volta,Leg 2 (181h) - 150.75h,UX (5h) - 7h,UX,5,,,7,7,2,7,7,7,0,2021-03-04,2021-03-10,
+b8d005fe-52e7-46c6-9a55-5c2f12eba343,Volta,Task management,תיקונים לעמודים החדשים - הערות בקישור XD,תיקונים לעמודים החדשים - הערות בקישור XD,,,,,,,,,,,,,
+060edb6e-6d3e-4fd1-afbd-fbc25ac73e9c,Volta,Task management,האדר מוניציפלי ,האדר מוניציפלי,,,,,,4,,,,,2021-03-18,2021-03-30,
+8dc63022-4a81-4d82-9013-d25e87a54d28,Volta,Task management,מודל עמדת טעינה,מודל עמדת טעינה,,,,,,3,,,,,2021-03-30,2021-03-30,
+ee2d4840-1263-4c96-b0b9-5f12fdbde9a6,Volta,Referral pages UX+UI (84h) - 35h,Registration form (10h),Registration form,10,,,,17.25,12,16.75,17.25,17.25,0,2021-05-12,2021-07-25,
+ddd5ef40-a75f-4fda-bc69-92a5e2d9de6d,Volta,Referral pages UX+UI (84h) - 35h,Header for instructions video page (2h),Header for instructions video page,2,,,,,,,,,,,,
+b971ed18-61f2-4552-bcb8-9464b9b0e46a,Volta,Movies - 171.75h (2/5/21), סרטון נוסף תחילת תהליך נוסף תקציב - 4h,סרטון נוסף תחילת תהליך נוסף תקציב,,,,4,,,,4,,4,,,
+941e7228-d0e4-45fb-9dec-641067aa034c,Volta,Ongoing - 25.75h,Volta - landing page header text - 1h,Volta - landing page header text,,,,1,1,2,1,1,1,0,2021-04-18,2021-04-22,
+a8e82c82-8fc9-46b8-89fc-fd9eba5a51cf,Volta,Task management,סרט תחילת תהליך תיקונים,סרט תחילת תהליך תיקונים,,,,,,,,,,,,,
+4396787f-0cb8-454e-8882-749c6e8ae16c,Volta,Task management,סרט סיום תהליך אנימציה,סרט סיום תהליך אנימציה,,,,,,,,,,,,,
+4385716e-0d18-436a-ace3-43cb9f4d5b5e,Volta,Task management,מצב ללא משרות רלוונטיות,מצב ללא משרות רלוונטיות,,,,,,,,,,,,,
+578a5a60-bdfa-430b-a54f-ce3e7ec63f18,Volta,Task management,עמודי רפרל,עמודי רפרל,,,,,,,,,,,,,
+f8b1b4c7-61fd-46c5-83ed-56a766979217,Volta,Task management,האדר עמוד משרות - לקבל תמונות מקובי,האדר עמוד משרות - לקבל תמונות מקובי,,,,,,,,,,,,,
+1b11237a-8a9c-48ea-a4ed-ef69bf58f875,Volta,Task management,עמוד ממליצים,עמוד ממליצים,,,,,,,,,,,,,
+b66664d2-d6f2-423b-b761-7e8af16cbb86,Volta,Task management,רפרנס צבע לסרטונים לקובי,רפרנס צבע לסרטונים לקובי,,,,,,,,,,,,,
+32f912b4-0717-4018-90fc-f4b034242af5,Volta,Leg2 & Referral pages dev (92h & 64h & 40h),הועברו 40 שעות מהערכה ראשונית עבור הפיתוח,הועברו 40 שעות מהערכה ראשונית עבור הפיתוח,,,,,,,,,,,,,
+e554eb1e-b3a4-4191-85d1-063fe7c6d098,Yoco,Website - 158.5h (20/02/22),UX - 35.5h,UX,,,,35.5,33.25,15,33.25,35.5,33.25,2.25,2021-10-17,2022-01-12,
+b3f722ac-c676-4a81-b470-d669580ba830,Yoco,Product - 613.25h (18/05/22),UI - 239.5h,UI,,,,239.5,222.25,55,193,239.5,222.25,17.25,2021-11-17,2022-05-17,
+d60b4245-cf1f-493a-bdb8-5866ba3892ff,Yoco,Website - 158.5h (20/02/22),UI - 100h,UI,,,,100,96.5,27,92.5,100,96.5,3.5,2021-11-21,2022-01-30,
+2d7feb33-13d0-4f94-b600-132dd8d8826e,Yoco,Website - 158.5h (20/02/22),Animations - 23h,Animations,,,,23,19.5,7,1,23,19.5,3.5,2021-12-27,2022-02-06,
+380c39c1-2a3d-4d84-ad2b-bedc0f74be7e,Yoco,Other - 101.25h (04/05/22),Investors Deck - 56h,Investors Deck,,,,56,46.75,17,8,56,46.75,9.25,2022-04-03,2022-04-27,
+eee958ee-1e60-40dd-b2cb-185b005d5224,Yoco,Other - 101.25h (04/05/22),Demo video - 30h,Demo video,,,,30,28,10,2.5,30,28,2,2022-04-12,2022-06-20,
+b5e9e3cc-c4ba-40f7-bacb-fe490d1e5c8e,Yoco,Yoco new website - 67h (26/06/22),Mobile (7.5h) - 7.5h,Mobile,7.5,,,7.5,7.5,1,,7.5,7.5,0,2022-05-25,2022-05-25,
+fbd2c646-dbae-4956-bc4c-2d2ead52fbad,Yoco,Yoco new website - 67h (26/06/22),Preparing for dev (6h) - 6h,Preparing for dev,6,,,6,6,2,,6,6,0,2022-05-26,2022-05-26,
+9f52af88-11f6-41e1-b072-5f36bf0fef16,Yoco,Yoco new website - 67h (26/06/22),Login/ sign in pages (16h) - ,Login/ sign in pages,16,,,,,,,,,,,,
+7072b203-c409-4b70-8cf8-172d5fa27d29,Yoco,Yoco new website - 67h (26/06/22),QA (5h) 8.75h,QA,5,,,8.75,7.75,8,,8.75,7.75,1,2022-06-06,2022-06-27,
+9bac3f90-98a4-4fdf-b3d8-9abb17bcc86f,Volta,3D & Animation,3D & Animations - municipal page,3D & Animations - municipal page,,,,,,,,,,,,,
+305f881d-4019-40eb-a0c1-dcc69434b6d5,Volta,Design,Single job page,Single job page,,,,,,,,,,,,,
+c3589875-880c-4f2e-9dd5-56c2add7a41a,Volta,Design,Careers page,Careers page,,,,,,,,,,,,,
+752801e9-7579-444c-85cc-cf4b389efb96,Volta,Design,Testimonial page,Testimonial page,,,,,,,,,,,,,
+0d54ba0a-42a6-4f37-8377-2d9edafd2380,Volta,Design,About us page,About us page,,,,,,,,,,,,,
+9fb33dc3-d997-484c-aae6-145dcc4124d1,Volta,Design,Municipal page,Municipal page,,,,,,,,,,,,,
+d851b39c-1f4d-4705-9595-fc8e355e803b,Volta,UX & Wireframes,UX,UX,,,,,,,,,,,,,
+37ed555b-5f0f-4a25-b55d-9719bd30a48d,Volta,Referral pages,Registration page,Registration page,,,,,,,,,,,,,
+33cad4c4-e7ab-4409-80bd-1f4e76a02ac2,Volta,Referral pages,Registration form ,Registration form,,,,,,,,,,,,,
+2e2ed509-09a2-4bad-a37e-34f42bfc4ba0,Volta,Referral pages,Personal area page,Personal area page,,,,,,,,,,,,,
+c775728b-9035-44c3-b200-986108c2419d,Volta,Referral pages,Header for instructions video page,Header for instructions video page,,,,,,,,,,,,,
+9773ca8f-4402-4f9c-84a5-4791928e2ef4,Volta,Development,Leg2,Leg2,,,,,,,,,,,,,
+b190dda9-9bd0-4169-b817-85e1001cfb9d,Volta,Development,Referral pages,Referral pages,,,,,,,,,,,,,
+019d6b1f-4a1e-44a4-a6ba-471f12a68c35,Volta,Untitled section,Work Requests submission,Work Requests submission,,,,,,,,,,,,,
+97e9dbda-b50e-46c1-bdd8-d91892d049bb,CSL,Untitled section,Graphic package for videos,Graphic package for videos,,,,,,,,,,,,,
+d3e23e0c-f5aa-43d8-8c24-9cf3e20993cb,CSL,Untitled section,Q&A Movies,Q&A Movies,,,,,,,,,,,,,
+760d72e1-53ac-436d-8dcd-b3c728a66a1e,CSL,Untitled section,Animation improvements,Animation improvements,,,,,,,,,,,,,
+401b4a80-528a-4de4-80c9-4baeb6b64a49,CSL,Untitled section,CSL Movies graphic package,CSL Movies graphic package,,,,,,,,,,,,,
+3e3e4873-f3fe-4dc6-bce2-b012560121e0,Volta,In Progress,[EXAMPLE TASK] Redesigned pricing page,[EXAMPLE TASK] Redesigned pricing page,,,,,,,,,,,,,
+3f761ef5-be21-473e-be7e-2ad676266547,Volta,In Progress,[EXAMPLE TASK] Two page brief for sales team,[EXAMPLE TASK] Two page brief for sales team,,,,,,,,,,,,,
+903b0b1d-7047-44b6-a8fe-1f67fd2f298b,Volta,New Requests,[EXAMPLE TASK] Infographic for eBook,[EXAMPLE TASK] Infographic for eBook,,,,,,,,,,,,,
+14e08916-5412-4031-8dc4-8d79e337cd2f,Volta,New Requests,[EXAMPLE TASK] Blog post announcing new funding,[EXAMPLE TASK] Blog post announcing new funding,,,,,,,,,,,,,
+2d2380e6-a0b9-46d9-baa0-3f454bba1189,Volta,Template Instructions,[COPY ME] Create A New Work Request,[COPY ME] Create A New Work Request,,,,,,,,,,,,,
+2e636951-97ae-487a-a9b2-9dbf9b34c62c,Volta,Template Instructions,Copy and rename this task,Copy and rename this task,,,,,,,,,,,,,
+5087aa78-eecb-4392-a64b-0f67a905125c,Volta,Template Instructions,Write a description of your request,Write a description of your request,,,,,,,,,,,,,
+b3c58933-c8ce-46a3-ab62-1fcfdc2ca68c,Volta,Template Instructions,Set Custom Fields to reflect task priority,Set Custom Fields to reflect task priority,,,,,,,,,,,,,
+991453f3-b890-466d-982e-ab7ee971f83b,Volta,Template Instructions,Move task to New Requests Column,Move task to New Requests Column,,,,,,,,,,,,,
+7ca42982-a7b2-4b23-b47a-007328ed6be1,Volta,Completed,[EXAMPLE TASK] Designs for email nurture series,[EXAMPLE TASK] Designs for email nurture series,,,,,,,,,,,,,
+22e3d96d-4189-48c5-9bf3-a37e7e19bfa2,Volta,Completed,[EXAMPLE TASK] Content for new SEO landing pages,[EXAMPLE TASK] Content for new SEO landing pages,,,,,,,,,,,,,
+2dcd4c46-a8ac-4556-87d5-8fa5635257e8,Volta,Template Instructions,[READ ME] Instructions for using this template,[READ ME] Instructions for using this template,,,,,,,,,,,,,
+76290a29-4a4c-4ef2-a296-6bca6c397696,Volta,Template Instructions,Learn more about how to manage work requests in Asana,Learn more about how to manage work requests in Asana,,,,,,,,,,,,,
+be758c27-1208-4eb5-90d7-7078b7d7b011,Volta,Template Instructions,Save time and reduce manual steps with Rules in this template,Save time and reduce manual steps with Rules in this template,,,,,,,,,,,,,
+7826f85d-c1a9-4fa0-807c-8e3118c7883b,Volta,Template Instructions,"Designate a teammate responsible for reviewing the project, prioritizing work, and assigning requests","Designate a teammate responsible for reviewing the project, prioritizing work, and assigning requests",,,,,,,,,,,,,
+b9fa8247-16b8-4bfb-a4de-eea9b4e460d5,Volta,Template Instructions,Copy the [TEMPLATE TASK] to add new work requests,Copy the [TEMPLATE TASK] to add new work requests,,,,,,,,,,,,,
+3eda8c92-a6c6-44ca-a2b3-295b9e7d60aa,Volta,Template Instructions,Move requests between columns to designate progress,Move requests between columns to designate progress,,,,,,,,,,,,,
+8d18f9ef-cb98-4ac0-b2bb-4ab83390428f,Volta,Template Instructions,Set Custom Fields to reflect task status so teammates know where work stands,Set Custom Fields to reflect task status so teammates know where work stands,,,,,,,,,,,,,
+d982b236-38eb-40c2-aca6-5217f91b2065,Anchor,Branding (160h) - 210h (9/12/21),Preparation & Kickoff meeting (8h) - 10h,Preparation & Kickoff meeting,8,,,10,8,4,8,10,8,2,2021-09-05,2021-09-09,
+be9b1115-a9a3-4810-a53c-840cff90cf32,Anchor,Administration,First hour estimation,First hour estimation,,,,,,,,,,,,,
+ed979a54-ca99-49b7-b4c6-0467c308c01c,Anchor,Administration,Contact details,Contact details,,,,,,,,,,,,,
+62bf9eb6-6e82-4b3b-a8eb-1a6255e0d9c1,Anchor,Branding (160h) - 210h (9/12/21),Logo formats (4h),Logo formats,4,,,,,,,,,,,,
+a353e866-b3ee-45c2-8cbf-d17df8705965,Anchor,Branding (160h) - 210h (9/12/21),Hero image (43h) - 39h,Hero image,43,,,39,36.75,15,36.75,39,36.75,2.25,2021-09-22,2021-10-20,
+c6921872-182f-464f-86b1-45a519add414,Anchor,Branding (160h) - 210h (9/12/21),Business card (temporary) - 4h,Business card (temporary),,,,4,4,1,4,4,4,0,2021-10-12,2021-10-12,
+fd8e79de-bc39-4e96-9475-0c17242d6577,Anchor,Branding (160h) - 210h (9/12/21),Speaker Design - 2h,Speaker Design,,,,2,2,1,2,2,2,0,2021-10-14,2021-10-14,
+79ee0aad-7382-4dcf-895a-23f2c0a3b5fd,Anchor,Branding (160h) - 210h (9/12/21),FB group cover - 2h,FB group cover,,,,2,2,1,2,2,2,0,2021-10-25,2021-10-25,
+54891303-1693-4c4f-b963-9e7868a037c6,Anchor,Branding (160h) - 210h (9/12/21),Logo for T-shirt - 0.5h,Logo for T-shirt,,,,0.5,0.5,1,0.5,0.5,0.5,0,2021-11-07,2021-11-07,
+806d1acd-e9ab-4abd-a75e-ba5c45707b7b,Anchor,Website design (164h) - 335.25h (01/05/22),Anchor Solutions - 16.5h,Anchor Solutions,,,,16.5,16.5,9,15.5,16.5,16.5,0,2021-11-28,2022-04-27,
+5442a43c-71df-4849-85ed-743a4c0038e8,Anchor,Branding (160h) - 210h (9/12/21),Export assets from website - 2.25h,Export assets from website,,,,2.25,2.25,2,2.25,2.25,2.25,0,2021-11-21,2021-11-22,
+23a5b790-96d2-48ec-95f7-d5878a1a0faa,Anchor,Branding (160h) - 210h (9/12/21),Notion + Linkedin Covers - 5.5h,Notion + Linkedin Covers,,,,5.5,5.5,4,5.5,5.5,5.5,0,2021-11-24,2021-11-30,
+5865f196-30e7-495d-a9b6-d8275d75233b,Anchor,Website design (164h) - 335.25h (01/05/22),Career page - 14.75h,Career page,,,,14.75,14.75,7,9.75,14.75,14.75,0,2021-11-30,2022-03-30,
+579cecee-ae87-4f18-8938-fb8737af7025,Anchor,Branding (160h) - 210h (9/12/21),Hoodie - 0.5h,Hoodie,,,,0.5,0.5,1,0.5,0.5,0.5,0,2021-12-07,2021-12-07,
+4951aa9f-1267-41ff-9617-baf16c2f6a2d,Anchor,New pages for website -70h (01/05/22),Banner above navbar - 1h,Banner above navbar,,,,1,1,1,1,1,1,0,2022-04-20,2022-04-20,
+c0f7205b-40a0-4e62-a640-07891d7e16e7,Anchor,Development -88h (31/1/21),Career pages (5800ils),Career pages (5800ils),5800,,,,,,,,,,,,
+18bab9a6-515f-407f-90f5-64ec94345e59,Anchor,New pages for website -70h (01/05/22),New pricing page (38h),New pricing page,38,,,,,,,,,,,,
+79e47f6c-5941-49d3-af6f-4239167c5272,Anchor,New pages for website -70h (01/05/22),Export for drive - 0.75h,Export for drive,,,,0.75,0.75,1,,0.75,0.75,0,2022-05-23,2022-05-23,
+5ebe4aae-0883-458b-9074-f89e741232fe,Anchor,Development -88h (31/1/21),Duplicating the project - 2h,Duplicating the project,,,,2,,,,2,,2,,,
+802e8f46-3c55-4475-b2a4-c0049b22da6f,PDQ,Administrative,Hour estimations,Hour estimations,,,,,,,,,,,,,
+b8ceea3e-a89f-4a3d-ac35-1a1ae874f85e,PDQ,Administrative,Contacts,Contacts,,,,,,,,,,,,,
+75848d07-4087-4be7-a786-0167b3b4369a,One Zero,Branding  - 406.25 (14/04/22),"Visual Concepts, references and directions (30h) - 14h","Visual Concepts, references and directions",30,,,14,14,3,6.5,14,14,0,2022-02-23,2022-03-23,
+7bb9a887-4c9f-40bf-9c9f-27d0485d6984,Empathy,Empathy Clip -,Storyboard (8h)  - 12.75h,Storyboard,8,,,12.75,12.75,8,,12.75,12.75,0,2022-05-04,2022-05-16,
+261cfe93-6482-4444-887c-07afa16c47b1,Empathy,Empathy Clip -,Script - 4000ils,Script - 4000ils,,,,,,,,,,,,,
+1adbdf1b-fde7-4e5a-9916-6bbbaebf9a48,Empathy,Empathy Clip -,Design (24h) - 9.75h,Design,24,,,9.75,9.75,4,,9.75,9.75,0,2022-05-17,2022-05-23,
+1fe2d690-fb36-454c-8bf8-fc040bb18538,Empathy,Empathy Clip -,Animation (40h),Animation,40,,,,,,,,,,,,
+d2132269-9b3c-4c21-8f49-773d15920ec1,Empathy,Empathy Clip -,Sound - 3.25h,Sound,,,,3.25,3.25,1,,3.25,3.25,0,2022-05-19,2022-05-19,
+95ea1344-7361-439f-837f-b57a989af2b3,Harmonie,Administration,Contact details  ,Contact details,,,,,,2,,,,,2022-07-20,2022-09-04,
+145e5b75-af55-4c99-a7ea-d6e115f8eb2f,Harmonie,Administration,First hour estimation ,First hour estimation,,,,,,1,,,,,2022-07-20,2022-07-20,
+6ee08429-eb2a-4a31-b535-f7d537b49891,Harmonie,Administration,Gantt,Gantt,,,,,,,,,,,,,
+aae03064-a1ff-4227-987b-dbe3fed69ea0,Harmonie,Website,Renewal Payment page HTML conversion (3h) - 3h,Renewal Payment page HTML conversion,3,,,3,,2,,3,,3,2023-07-09,2023-07-12,
+4a400d70-436b-40cf-9653-ae5ad09cd981,Harmonie,Untitled section,test,test,,,,,,,,,,,,,
+2016351e-00c1-4f89-bb0a-78256ac1f906,Harmonie,Untitled section,keys,keys,,,,,,,,,,,,,
+2f3d09b5-0809-4d48-b5f6-66906e17e2fd,Harmonie,Untitled section,normal,normal,,,,,,,,,,,,,
+5401323e-b545-4e45-a9de-d83cea6bbba1,Collabria,Email + Drafts,Change sync icon.,Change sync icon.,,,,,,,,,,,,,
+f851c985-4705-4d97-b962-d7247a799baf,Collabria,Organization settings,Add organization level in the whole system and notification icon - not MVP,Add organization level in the whole system and notification icon - not MVP,,,,,,,,,,,,,
+147b66b0-a6bf-485d-8a36-2c9caad2b8bb,Collabria,Add in,Highlight box edge cases,Highlight box edge cases,,,,,,,,,,,,,
+2ec13d5d-472f-40ea-b3fc-cfe6fb1bb544,Collabria,Pool + Search input,Pool search behavior,Pool search behavior,,,,,,,,,,,,,
+0488b825-723e-4038-8c3f-284abf299a7e,Collabria,Design system,Bug - other add on's interfere with the comment button.,Bug - other add on's interfere with the comment button.,,,,,,,,,,,,,
+b5040315-421e-489d-a798-8e0176a70955,Collabria,Flows,Updating onboarding flows to new UI,Updating onboarding flows to new UI,,,,,,,,,,,,,
+eb2f91fa-4404-4d1c-a5c5-4a6c335db618,Collabria,Design system,New indication tag navigation,New indication tag navigation,,,,,,,,,,,,,
+7608188f-4490-4207-bb4a-3a3f1df81546,Collabria,Design system,"Design a ""Refresh the page"" screen","Design a ""Refresh the page"" screen",,,,,,,,,,,,,
+4371d3ad-f2f2-48f9-886f-24bdc19550ed,Collabria,Design system,Update the project covers to larger font and add descriptions to what the pages contain.,Update the project covers to larger font and add descriptions to what the pages contain.,,,,,,,,,,,,,
+aed82bdc-7d42-4d3a-aaee-6f8bd0e9ed9c,Collabria,Design system,"Mobile - Design a ""Collabria does not support a mobile version at the moment"" screen","Mobile - Design a ""Collabria does not support a mobile version at the moment"" screen",,,,,,,,,,,,,
+3a030317-ab8b-4244-b4f9-cd0c14c2bdfb,Collabria,Pool + Search input,Pool - Change space settings ellipsis icon to cog-wheel icon.,Pool - Change space settings ellipsis icon to cog-wheel icon.,,,,,,,,,,,,,
+8db3abc9-868e-4ffc-a352-19d559779018,Collabria,Nav bar + Create new space,"Create new space - add ""assign roles"" to users","Create new space - add ""assign roles"" to users",,,,,,,,,,,,,
+83bf9f33-1f36-4080-b60c-dc4511f11630,Collabria,Organization settings,Organization settings - Update side menu,Organization settings - Update side menu,,,,,,,,,,,,,
+e54509c3-49ab-439e-9366-f7ffa770d59d,Collabria,Organization settings,Organization settings - update the space members on hover options,Organization settings - update the space members on hover options,,,,,,,,,,,,,
+5727a8f2-1b07-476d-988b-f323aab0e4cc,Collabria,Collabria main bar,Collabria main bar - switch organization - design notification - not MVP,Collabria main bar - switch organization - design notification - not MVP,,,,,,,,,,,,,
+7690246f-fd05-40ae-a6ce-b698af52e45b,Collabria,Design system,studio - add design link to tasks,studio - add design link to tasks,,,,,,,,,,,,,
+56206fc3-5002-4d75-a5a5-d3d72b5bbdde,Collabria,Organization settings,Organization settings - add option to add organization photo,Organization settings - add option to add organization photo,,,,,,,,,,,,,
+f25ba995-96eb-43f0-852a-cbe776abca73,Collabria,Nav bar + Create new space,Create new space - add role,Create new space - add role,,,,,,,,,,,,,
+89412c7b-07ba-4dea-999a-0c6cc47932fd,Collabria,Collabria main bar,Collabria main bar - switch organization - Add option to add an organization - not MVP,Collabria main bar - switch organization - Add option to add an organization - not MVP,,,,,,,,,,,,,
+86f4dffc-705f-4605-be50-485853a28da2,Collabria,Design system,Error - add edge case - 2 notifications of header type together,Error - add edge case - 2 notifications of header type together,,,,,,,,,,,,,
+f72fe89d-0dbd-4cde-a576-9904355d87a8,Collabria,Design system,Illustrations - Make a list of all the images (illustrations) we need in the system including a description + requested size,Illustrations - Make a list of all the images (illustrations) we need in the system including a description + requested size,,,,,,,,,,,,,
+dacc77d1-c853-47f9-aac5-196652d33024,Collabria,Email + Drafts,Remove See more/less buttons from emails,Remove See more/less buttons from emails,,,,,,,,,,,,,
+b622026e-5fbf-4bb9-aa73-59a39371c11e,Collabria,Comments + New comments,standalone - add navigation to comments,standalone - add navigation to comments,,,,,,,,,,,,,
+123ae0a1-c321-4800-beb4-765dc3f6a45c,Collabria,Email + Drafts,mail + draft header loction change ,mail + draft header loction change,,,,,,,,,,,,,
+6cd993c5-bfaf-4dc2-bf79-c9915f56fcc8,Collabria,Pool + Search input,Pool -  emphasis features of new unread email in Pool,Pool - emphasis features of new unread email in Pool,,,,,,,,,,,,,
+bff5476a-dab2-4e8c-ad53-353baa4794a0,Collabria,Add in,Email notification,Email notification,,,,,,,,,,,,,
+7c36b267-a8f8-4964-9700-2e2f80e6a664,Collabria,Untitled section,Access denied page,Access denied page,,,,,,,,,,,,,
+62499952-77fe-4c65-87b2-a2f1e59ae2a4,Collabria,Email + Drafts,New draft - Keep toolbar open always,New draft - Keep toolbar open always,,,,,,,,,,,,,
+323e8008-bedd-43fc-a47a-b4e48e9d276a,Collabria,Untitled section,"Add ""welcome to space page""","Add ""welcome to space page""",,,,,,,,,,,,,
+843b1c8a-f835-4365-84a2-df1964dff1ec,Collabria,Untitled section,Upgrade plan notification,Upgrade plan notification,,,,,,,,,,,,,
+a4c513f1-b280-4efb-a92d-67fe2291d7be,Collabria,Untitled section,Map the scenarios of the members by rollers with Tali,Map the scenarios of the members by rollers with Tali,,,,,,,,,,,,,
+80b6f927-6379-4143-8268-3168845804f4,Collabria,Comments + New comments,Resolve comment user flows,Resolve comment user flows,,,,,,,,,,,,,
+374aa4ba-7497-46d7-b2de-cbe886955178,Collabria,Untitled section,Reconsider the size of the avatars in the comment section,Reconsider the size of the avatars in the comment section,,,,,,,,,,,,,
+3c15d6fc-ec5c-435b-8147-0f8c42a3f436,Collabria,Untitled section,Add back to top button in the thread section,Add back to top button in the thread section,,,,,,,,,,,,,
+5e2f615e-5ea0-4894-a440-c8dd8873ba31,Collabria,Untitled section,"Icon for ""link copied to clipboard"" message","Icon for ""link copied to clipboard"" message",,,,,,,,,,,,,
+7c549255-a954-44aa-9600-4f427ee7fc62,Collabria,Untitled section,Space member window - one user per row problem,Space member window - one user per row problem,,,,,,,,,,,,,
+169add24-358c-423e-9789-42667241e134,Collabria,Untitled section,Create user story for reaching 25 emails shared,Create user story for reaching 25 emails shared,,,,,,,,,,,,,
+85b8e5e0-eed8-44de-8a96-1b1395dcf18b,Collabria,Untitled section,Email - Change the ellipsis icon to reply all icon,Email - Change the ellipsis icon to reply all icon,,,,,,,,,,,,,
+d4c384d5-60d3-457b-9473-92e72557e408,Collabria,Untitled section,"""Upgrade plan"" flow","""Upgrade plan"" flow",,,,,,,,,,,,,
+b7eb63a4-e60e-4214-b7f3-ffba6f3086d3,Collabria,Untitled section,Thread failed to load message,Thread failed to load message,,,,,,,,,,,,,
+dd272ee0-1de7-4447-ab7d-39f49e9f5eff,Collabria,Untitled section,Email failed to load message,Email failed to load message,,,,,,,,,,,,,
+50495df0-1467-4d33-8472-38ee1b883370,Collabria,Untitled section,"Add in update, flows and edge cases","Add in update, flows and edge cases",,,,,,,,,,,,,
+f21017af-37e8-49c5-8617-3dea8eff5e3f,Collabria,Untitled section,New thread - button drill down,New thread - button drill down,,,,,,,,,,,,,
+7072078d-5a1d-4ce6-92ee-955510c96d79,Collabria,Untitled section,Fix prototype flows and update to new UI,Fix prototype flows and update to new UI,,,,,,,,,,,,,
+45fdb608-0aba-44d1-a621-59d9468d4914,Collabria,Untitled section,"Share thread components, edge cases and flows","Share thread components, edge cases and flows",,,,,,,,,,,,,
+ec19c01c-46bc-46f3-b48d-43a7c0da769f,Collabria,Untitled section,Illustrations  (implement + DS) ,Illustrations (implement + DS),,,,,,,,,,,,,
+3322375d-8db8-4a77-8128-9ce4a5fdd602,Collabria,Untitled section,Errors - mapping error types + DS ,Errors - mapping error types + DS,,,,,,,,,,,,,
+a591cf9a-0c43-4e40-9bbf-768cacadab5a,Collabria,Untitled section,Updating the prototype UI,Updating the prototype UI,,,,,,,,,,,,,
+43356cfa-9360-4505-9988-d08ec6f5f19f,Collabria,Untitled section,Inviting user to space - error loading list,Inviting user to space - error loading list,,,,,,,,,,,,,
+02137b63-cc2d-407b-973f-966ec8ea94cf,Collabria,Untitled section,Redesign avatars + decide how users outside from Collabria will look like (avatar + color) ,Redesign avatars + decide how users outside from Collabria will look like (avatar + color),,,,,,,,,,,,,
+131739f6-e26d-46c7-bd77-35ff479e0e50,Collabria,Untitled section,Organize the checklist,Organize the checklist,,,,,,,,,,,,,
+7610a18b-bfc8-424c-808a-75397d39767f,Collabria,Untitled section,New thread import email - fix,New thread import email - fix,,,,,,,,,,,,,
+2bddecc8-a1c1-4d5c-9604-6e20e66a8bb3,Collabria,Untitled section,Find sounds for micro animations ,Find sounds for micro animations,,,,,,,,,,,,,
+bf62b2b5-a79f-4ef6-ac2c-ba9eb2ac3068,Studio,To do,Schedule kickoff meeting,Schedule kickoff meeting,,,,,,,,,,,,,
+509a24cd-1cc5-4291-8923-fd9776fcdf8d,Voyantis,Backlog [for future prioritization],Video bumper for Youtube,Video bumper for Youtube,,,,,,,,,,,,,
+1613f922-b779-4954-9293-58e3dedda10d,Voyantis,Complete,Website: Demo Request Page,Website: Demo Request Page,,,,,,,,,,,,,
+eea4241d-378d-4f01-9862-c5aac517c59e,Voyantis,Complete,Voyantis Jersey design via https://icarusfc.com/,Voyantis Jersey design via https://icarusfc.com/,,,,,,,,,,,,,
+be8fde21-377c-46bf-ac4a-267a94c61c92,Voyantis,In Review,Deep Dive Deck ,Deep Dive Deck,,,,,,,,,,,,,
+ca7d8a62-23cc-46a3-811a-8ac036de0f4d,Voyantis,Complete,PDF for print version of whitepaper - which page to pull,PDF for print version of whitepaper - which page to pull,,,,,,,,,,,,,
+c8dc72d9-fa3e-422c-85ad-9fbfd8bc8278,Voyantis,Complete,Website: Individual Blog Post ,Website: Individual Blog Post,,,,,,,,,,,,,
+6c4de03f-c776-450d-9513-b28fc3d85b97,Voyantis,Complete,Website: Resources Hub,Website: Resources Hub,,,,,,,,,,,,,
+45c6d3d7-8764-4282-96a8-dfab459b3a54,Voyantis,Complete,"High Resolution Logos- PNG & SVG, square and horizontal versions with any logo usage guidelines","High Resolution Logos- PNG & SVG, square and horizontal versions with any logo usage guidelines",,,,,,,,,,,,,
+1526bcf2-6494-4ad1-94bd-2e38718b0bd6,Voyantis,Complete,Website: All Webinars page,Website: All Webinars page,,,,,,,,,,,,,
+06152379-0e44-49f4-876a-ef6739d01cca,Voyantis,Complete,Website: 404 Page,Website: 404 Page,,,,,,,,,,,,,
+aabc4991-f51f-434d-a0ee-28f51dcbe754,Voyantis,In Review,Website: All customer stories page,Website: All customer stories page,,,,,,,,,,,,,
+51674d88-a7e1-45d1-8e1f-19eb64b392cf,Voyantis,Complete,Website: All Articles page,Website: All Articles page,,,,,,,,,,,,,
+d8cb4874-a1d6-4baa-875a-ca8235bd8f01,Voyantis,Complete,Website: All Gated Content page ,Website: All Gated Content page,,,,,,,,,,,,,
+92f1022a-e424-4da4-9c2e-dfb9dd76e9fa,Voyantis,In Review,Design system for blog / webinars / gated content,Design system for blog / webinars / gated content,,,,,,,,,,,,,
+b0260050-447d-4b61-8847-f2d15e45e555,Voyantis,Complete,Board deck template ,Board deck template,,,,,,,,,,,,,
+430e6d1d-bbe3-477e-aa4a-88701e23ae93,Voyantis,In Review,Website: Case Study page,Website: Case Study page,,,,,,,,,,,,,
+c79e1d1b-714a-44e9-bee4-1cb4bacff554,Voyantis,In Review,Deck Template,Deck Template,,,,,,,,,,,,,
+cd1a5f54-402e-4126-9092-0d13e7f2c252,Voyantis,In Review,Can we make sure we have og:images for each new webpage?,Can we make sure we have og:images for each new webpage?,,,,,,,,,,,,,
+084859a1-d50d-4870-a3eb-a945e5f67c58,Voyantis,In Review,Template for Google Docs,Template for Google Docs,,,,,,,,,,,,,
+f9f1d8b7-ccdf-4098-b484-e5c164d8f86d,Voyantis,Complete,Fix email signature,Fix email signature,,,,,,,,,,,,,
+ac5eab80-ea5d-4b69-a8a5-12505c67dbf6,Voyantis,In Progress,Website: Webinar pages,Website: Webinar pages,,,,,,,,,,,,,
+7d471c08-2e03-429b-9ef5-4695b0f16f67,Voyantis,In Progress,Website: Platform page,Website: Platform page,,,,,,,,,,,,,
+a281420b-6206-4fdd-913f-265cedef60b2,Voyantis,In Review,Website: Activation Goal,Website: Activation Goal,,,,,,,,,,,,,
+229c41d4-b6dc-43e5-af7e-ffe9b57491f9,Voyantis,Prioritized Requests,New presentation slide covers ,New presentation slide covers,,,,,,,,,,,,,
+10c9b2dd-1cb8-408a-8bcf-23559e3f5974,Voyantis,New Requests [Need Review by DEH],Product Page: Engage,Product Page: Engage,,,,,,,,,,,,,
+9fff624f-7c73-4621-84d0-14d4b1cda436,Quadream,New Section,branding - 21hr,branding,,,,21,20,4,8,21,20,1,2016-08-28,2016-09-21,
+320118f1-67ec-4b89-86cd-933cf64a5126,Quadream,New Section,Quadream logo,Quadream logo,,,,,7,3,7,7,7,0,2016-08-30,2016-09-15,
+9100d0d3-7ad5-4dc7-9adf-d50f978f7085,Quadream,New Section,UI - 73hr,UI,,,,73,,12,,73,,73,2016-09-05,2016-10-18,
+2c612c33-d963-4753-a536-ef7f7d69c8dc,Quadream,New Section,log in,log in,,,,,,,,,,,,,
+b70617d5-8cd6-42d4-8ee5-001a8d974d91,Quadream,New Section,dashboard,dashboard,,,,,,,,,,,,,
+23f443f5-7560-4931-96da-fc12b6741faf,Quadream,New Section,case view,case view,,,,,,,,,,,,,
+af35df2e-d753-4300-b9a2-bb3f149e4ec8,Quadream,New Section,mission view,mission view,,,,,,,,,,,,,
+58f6882d-5bf7-4733-84ac-4bc34138a1cd,Quadream,New Section,commit mission - כפתור לחוץ,commit mission - כפתור לחוץ,,,,,,,,,,,,,
+ee50df6e-74b7-4283-846e-7551e02080bd,Quadream,New Section,בשטח - dashboard,בשטח - dashboard,,,,,,,,,,,,,
+f32867a5-9703-4a7d-a119-54b0c5933ff2,Quadream,New Section,בחירה באקטיב popup begin mission,בחירה באקטיב popup begin mission,,,,,,,,,,,,,
+ac7f73f3-c8c8-46c2-b775-91aba72dfa01,Quadream,New Section,just captured _ one pending _ 3 pending + 1 progress _ 5 progress,just captured _ one pending _ 3 pending + 1 progress _ 5 progress,,,,,,,,,,,,,
+8fb21fe0-4b7a-497c-8162-885aebcfe186,Quadream,New Section,specific progress - view info device,specific progress - view info device,,,,,,,,,,,,,
+625d56f2-2fac-4a69-8d55-7d5d6c229958,Quadream,New Section,end mission,end mission,,,,,,1,,,,,2016-09-22,2016-09-22,
+d8a2fa69-dba2-497b-8271-28eb619468fb,Quadream,New Section,view mission (זו שהסתימה),view mission (זו שהסתימה),,,,,,,,,,,,,
+d20329bf-65e6-4122-bac6-8f0d8b0c5919,Quadream,New Section,view device info,view device info,,,,,,,,,,,,,
+2db5d2ff-f2dd-4721-844c-590dee03d4ed,Quadream,New Section,view media,view media,,,,,,,,,,,,,
+3742e87e-fa8f-4e4e-b416-5f8cbd5e4b8e,Quadream,New Section,view messenger,view messenger,,,,,,,,,,,,,
+0dfff8dc-de3d-42a0-8824-3173716b006b,Quadream,New Section,GEneral counter - 131hrs,GEneral counter,,,,131,,,,131,,131,,,
+e685111a-1526-4c8e-971c-68410d9ad9c6,Quadream,New Section,active,active,,,,,,,,,,,,,
+c835b815-705f-4517-8253-1276d58a615d,Quadream,New Section,recaptured target apear,recaptured target apear,,,,,,,,,,,,,
+1a68f2fd-c860-4c56-8006-627825fed99e,Quadream,New Section,ACTIVE ONLINE mode - camera/video/voice,ACTIVE ONLINE mode - camera/video/voice,,,,,,,,,,,,,
+d149a2e3-d33d-408a-ae65-557b4a6ff544,Quadream,New Section,Branding - hrs,Branding - hrs,,,,,,,,,,,,,
+c294c70e-44d7-4cb6-bc4d-6653b8139158,Quadream,New Section,interactions inspirations ,interactions inspirations,,,,,,,,,,,,,
+5384230f-9e8a-4f90-8453-b9622fe129e0,Quadream,New Section,UI December - 4hrs,UI December,,,,4,,2,,4,,4,2016-12-29,2016-12-29,
+26a22243-777b-4f97-9384-f6bd6fc654e7,Quadream,New Section,UI January - 4hrs,UI January,,,,4,,2,,4,,4,2017-01-08,2017-01-31,
+15e49e43-d272-4eed-b51d-2a8f86a0c04c,Quadream,New Section, - 3 hrs להכין ולשלוח לליעד מסכים,- 3 hrs להכין ולשלוח לליעד מסכים,,,,,,2,,,,,2017-01-05,2017-01-08,
+8c737a38-21dd-4ed7-a1cd-12814df5f465,Quadream,New Section,שאלה של גיא במייל,שאלה של גיא במייל,,,,,,,,,,,,,
+01c7799c-b1a1-4109-bb8d-a83cb35ad67e,Quadream,New Section,qa לליעד,qa לליעד,,,,,,,,,,,,,
+ea32505f-b306-4a64-863d-409ae4528e62,Quadream,New Section,feb - 29 hrs,feb,,,,29,,,,29,,29,,,
+02edcecc-e3c0-403d-9021-0e1158092ca2,Quadream,New Section,סהכ עד 21.2 - 37 שעות,סהכ עד 21.2 - 37 שעות,,,,,,2,,,,,2017-02-21,2017-02-21,
+ff4f67b8-6a1a-4c13-b126-ee18becff063,Quadream,New Section,march - 0hrs,march,,,,0,,,,0,,0,,,
+93fbecca-8b0e-4be7-8b58-6236bf85a438,Quadream,New Section,presentation - 8 hrs,presentation,,,,8,,3,,8,,8,2017-03-08,2017-03-12,
+586b9d7d-a3f1-47b8-872b-8cfa3ed47fad,Quadream,New Section, clean pictures- 1.5h,clean pictures,,,,1.5,1.5,1,1.5,1.5,1.5,0,2017-03-27,2017-03-27,
+9891d5b2-5e96-418a-a85d-28ffe84d7423,Quadream,New Section,icon- hard drive- 1h,icon- hard drive,,,,1,1,1,1,1,1,0,2017-03-27,2017-03-27,
+a3c9ca00-e8f4-4fba-bd80-cf26c09529bc,Quadream,New Section,logo-13h,logo,,,,13,13,2,13,13,13,0,2017-03-29,2017-04-03,
+d5616308-b98a-4774-af2e-57091f42ac6f,Quadream,New Section,ui - 42.5,ui,,,,42.5,,8,,42.5,,42.5,2017-04-20,2017-05-01,
+ee36ce06-9206-47f5-9371-e615c7b0865c,Quadream,New Section,צלם,צלם,,,,,,3,,,,,2017-05-23,2017-05-23,
+67b9b229-0949-4e73-85f4-12cb9b21324a,Quadream,(no section),mail pdf - 7.5 hrs,mail pdf,,,,7.5,,2,,7.5,,7.5,2017-06-11,2017-06-12,
+c213a09d-eba9-4f2e-9e36-771d3a2f95b1,Quadream,(no section),picture - 10 $,picture - 10 $,,,,,,1,,,,,2017-06-14,2017-06-14,
+d25b6d05-1944-4b2b-8375-ff1a16a40a64,Quadream,(no section),תיקונים ותוספות -4,תיקונים ותוספות,,,,4,4,1,4,4,4,0,2017-06-19,2017-06-19,
+4ab26231-a7aa-42a5-9d6e-37f6672bac95,Quadream,(no section),תיקונים ל-PDF - 3 hrs ,תיקונים ל-PDF,,,,3,,1,,3,,3,2017-06-22,2017-06-22,
+2dbd52ca-2e02-4b06-818b-055626795d55,Quadream,(no section),contacts & browsing screens -4,contacts & browsing screens,,,,4,,2,,4,,4,2017-07-18,2017-07-23,
+7daed45d-f9d5-4c74-937e-0ed7c58221d6,Quadream,hours,מצגת 1HRS,מצגת,,,,1,1,1,1,1,1,0,2017-08-03,2017-08-03,
+196f638f-6946-4a4b-8868-b35a86b51280,Quadream,hours,תוספות ותיקונים - 18.5,תוספות ותיקונים,,,,18.5,,8,,18.5,,18.5,2017-08-10,2017-11-23,
+e1ac89f0-0687-4b7e-8158-203b94394006,Quadream,hours,meeting - 4hrs,meeting,,,,4,4,1,,4,4,0,2017-12-14,2017-12-14,
+388a10f8-0ae3-449a-9d40-22dfcf1b37ab,Quadream,hours,Redesign - hrs - 116.5,Redesign - hrs,,,,116.5,,24,,116.5,,116.5,2017-12-19,2018-02-15,
+a8d3af01-35c4-4a6c-b953-bbaa8a610809,Quadream,hours,icons- 8h,icons,,,,8,8,2,8,8,8,0,2017-12-26,2017-12-27,
+c42f16b1-b1e6-431b-ae61-c0d1c8417e00,Quadream,(no section),Icon animations,Icon animations,,,,,,,,,,,,,
+7eb4091c-687e-422e-8d1e-50539b6b12c0,Quadream,(no section),Hover and pressed states for everything,Hover and pressed states for everything,,,,,,,,,,,,,
+d0da89ac-ca1e-40e9-9783-971422e6971d,Quadream,(no section),Alert - pop-up and notification states,Alert - pop-up and notification states,,,,,,,,,,,,,
+39bc6157-54e6-4e3d-bc94-487010f5d34d,Quadream,(no section),Fetching pop-ups,Fetching pop-ups,,,,,,,,,,,,,
+0380d999-0959-4105-b287-58d064c6a5e7,Quadream,(no section),End mission pop-up,End mission pop-up,,,,,,,,,,,,,
+eeaeb710-5aec-46cb-81eb-c4b342b3a5d1,Quadream,(no section),Shut down device pop-up,Shut down device pop-up,,,,,,,,,,,,,
+77779cea-d13c-4a18-ae3d-b84cc30b651f,Quadream,(no section),New icons,New icons,,,,,,,,,,,,,
+624b310a-3f8e-4864-bac4-5860bf3c3d9c,Quadream,(no section),Export all icons including each one different states,Export all icons including each one different states,,,,,,,,,,,,,
+cb7ef6ea-bc46-4e94-8d94-438d66399c45,Quadream,hours,tasks remaining (18.4.2018): ,tasks remaining :,,,,,,,,,,,,,
+1ff358fe-6d02-4166-8560-786dc2d20d2d,Quadream,hours,May hours - 81.5,May hours,,,,81.5,,13,,81.5,,81.5,2018-05-01,2018-05-24,
+29c60bc4-6392-493f-8bd5-b077421638c0,Quadream,hours,August hours - 18.5,August hours,,,,18.5,,4,,18.5,,18.5,2018-08-22,2018-08-27,
+144e2667-d10d-4e11-a49f-24ee9a9b6756,Quadream,hours,September hours - 0.5 h,September hours,,,,0.5,0.5,1,0.5,0.5,0.5,0,2018-09-06,2018-09-06,
+5bb82634-c5c7-42f8-bc2d-b6455986c6b9,Quadream,hours,December 2018 Hours - 82,December,,,,82,,13,,82,,82,2018-12-04,2018-12-31,
+90dc63d5-4c31-450a-9340-e574ae337902,Quadream,(no section),B.card - 0.5,B.card,,,,0.5,0.5,1,0.5,0.5,0.5,0,2019-01-08,2019-01-08,
+f9f78697-082f-4cac-ae24-d6e6457ae2ac,Quadream,hours,March 19 - 85.75h,March 19,,,,85.75,79.5,20,79.5,85.75,79.5,6.25,2019-03-04,2019-04-01,
+9ef7af45-950f-421c-b1e5-b1c40e797db2,Quadream,hours,April 19 - 76.15 h,April 19,,,,76.15,69.25,17,69.25,76.15,69.25,6.9,2019-04-02,2019-05-01,
+fb6cf9d9-b13f-449c-ba07-266b22719591,Quadream,hours,May 19 - 97.75h,May 19,,,,97.75,96.25,19,91.75,97.75,96.25,1.5,2019-05-05,2019-06-02,
+3cff1ab0-28ab-472b-bc73-e34ae9dc0dbb,Quadream,hours,June 19 - 24.5h,June 19,,,,24.5,24.25,13,24.25,24.5,24.25,0.25,2019-06-06,2019-06-27,
+1b5bf8ec-ed6f-480f-967b-a734ada7d369,Quadream,(no section),meeting,meeting,,,,,,1,,,,,2019-07-03,2019-07-03,
+d5ece210-9ad3-41b1-9ca7-1abb0f1ad6aa,Quadream,hours,Posters - 9.75,Posters,,,,9.75,9.75,3,9.75,9.75,9.75,0,2019-09-16,2019-09-24,
+7dc9ea46-4995-4967-89e9-b89e5d9f6325,Quadream,hours,Pin GIF - 1.25h,Pin GIF,,,,1.25,1.25,2,1.25,1.25,1.25,0,2019-10-16,2019-10-17,
+8c9da26b-aed5-4404-bfdf-180f513ce675,Quadream,Digital,"Invatation - ""Milipol""  - 1h","Invatation - ""Milipol""",,,,1,1,1,1,1,1,0,2019-10-23,2019-10-23,
+3fbbc2eb-2daa-4901-9c50-1942228eb9d0,Quadream,hours,Bell Design 1 hr,Bell Design,,,,1,1,1,1,1,1,0,2019-10-31,2019-10-31,
+8446efa5-5755-4cab-ba47-b15f2a4bc385,Quadream,hours,UI/UX November 19 (Inreach Budget) - 38.5,UI/UX November 19 (Inreach Budget),,,,38.5,35.25,15,35.25,38.5,35.25,3.25,2019-11-05,2019-11-29,
+5bdc751f-3cca-4547-9ac6-7aa9f94006e8,Quadream,hours,2 Gifs,2 Gifs,,,,,,,,,,,,,
+2fc34d75-c9f1-472f-b0d0-85b95f2ce8ac,Quadream,hours,UI/UX January 20 (Inreach Budget) - 42.25h,UI/UX January 20 (Inreach Budget),,,,42.25,38.5,19,38.5,42.25,38.5,3.75,2020-01-01,2020-01-28,
+55151648-6073-4d29-9ecb-be19b97bd019,Quadream,hours,UI/UX February 20 (Inreach Budget) - 36.75h,UI/UX February 20 (Inreach Budget),,,,36.75,33,14,33,36.75,33,3.75,2020-01-30,2020-02-27,
+619fe70d-17f1-4301-b6f0-df96c93ab678,Quadream,hours,UI/UX April 20 (Inreach Budget) - 29.25h,UI/UX April 20 (Inreach Budget),,,,29.25,26.5,13,26.5,29.25,26.5,2.75,2020-04-01,2020-04-30,
+5c8eb3f2-bc49-486c-85a3-3e6937a26c6f,Quadream,hours,UI/UX May 20 (Inreach Budget) - 31.25h,UI/UX May 20 (Inreach Budget),,,,31.25,26,14,26,31.25,26,5.25,2020-04-30,2020-05-24,
+c6b0715b-00b9-42b9-a03e-0d7558f651e4,Quadream,hours,Changable Name June - 7.25h,Changable Name June,,,,7.25,7.25,2,7.25,7.25,7.25,0,2020-06-15,2020-06-17,
+4129748e-a4a9-4628-a95c-4cbc9bad04ca,Quadream,שונות,Festive card (2) - 2h,Festive card,2,,,2,2,1,2,2,2,0,2020-12-16,2020-12-16,
+6b6151c5-b97c-4ee7-bd1e-f21b3c0fd522,Quadream,New Section,Invitation (5.5h) ,Invitation,5.5,,,,-8.5,7,-8.5,,,,2021-07-28,2021-08-16,
+14a7dcd7-573f-4ba3-92f7-461ebd0baf47,Quadream,January 22,ISS Prague June 2022 - 0.25h,ISS Prague June 2022,,,,0.25,0.25,1,,0.25,0.25,0,2022-03-20,2022-03-20,
+cb850816-99f6-4a7f-955f-b14ca7b52c09,Cognigo (d.day labs),,UX - 100.5 hrs ,UX,,,,100.5,,15,,100.5,,100.5,2017-01-31,2017-02-22,
+b0f574b8-f358-4b47-8eeb-754f87a2259b,Cognigo (d.day labs),,לשלוח הערכת שעות ומפת דרכים לפרוייקט,לשלוח הערכת שעות ומפת דרכים לפרוייקט,,,,,,,,,,,,,
+6f91d4a9-c8bd-4c61-a1de-2e95d83d6092,Cognigo (d.day labs),,branding&UI - 36hrs ,branding&UI,,,,36,-6,7,,36,-6,42,2017-02-16,2017-02-22,
+055ded87-7c06-43ff-a41b-bca2fe910bf9,Cognigo (d.day labs),,UX - 32hrs,UX,,,,32,,4,,32,,32,2017-02-23,2017-03-01,
+65a0f471-ddf4-4f12-8ebf-07d78f940ac8,Cognigo (d.day labs),,Branding&Ui -  42 hrs,Branding&Ui,,,,42,,6,,42,,42,2017-02-23,2017-03-05,
+acd9aa20-d09b-4e5e-a673-218991cb477a,Cognigo (d.day labs),,FONT avenir next - check  price,FONT avenir next - check price,,,,,,6,,,,,2017-02-26,2017-06-27,
+d0c9c512-de86-41b4-af3a-f19c0a25b9ea,Cognigo (d.day labs),,UX - MARCH - 117,UX - MARCH,,,,117,,14,,117,,117,2017-03-05,2017-03-30,
+a1e66f99-7d22-4198-9e47-4f4592d9db1a,Cognigo (d.day labs),,Ui Yam - 32 hrs,Ui Yam,,,,32,,3,,32,,32,2017-03-27,2017-03-29,
+f71f14db-a8c9-41e4-8f65-10453840aada,Cognigo (d.day labs),,UX - APRIL 117.5,UX - APRIL 117.5,,,,,,11,,,,,2017-04-02,2017-04-30,
+94376019-0609-43f2-91d7-d3363e3834ea,Cognigo (d.day labs),,UI - APRIL - 12 hrs,UI - APRIL,,,,12,,3,,12,,12,2017-04-05,2017-04-06,
+e736c999-1b04-4383-8d2c-0f487d774d0f,Cognigo (d.day labs),,BRANDING APRIL  - 2 hrs ,BRANDING APRIL,,,,2,,1,,2,,2,2017-04-03,2017-04-03,
+1d7d16b2-9a6d-4911-95a0-617f43f49e0b,Cognigo (d.day labs),,UX - MAY - 106,UX - MAY,,,,106,,12,,106,,106,2017-05-03,2017-05-29,
+d777e354-399d-4bd1-ba2b-c594ff7cdc93,Cognigo (d.day labs),,UI - JUNE - ,UI - JUNE,,,,,,,,,,,,,
+3999a6da-dd9d-48ed-9bd6-5d4264d7d7f8,Cognigo (d.day labs),,ghdg,ghdg,,,,,,,,,,,,,
+e44fbbb1-e271-4c29-be39-7fdeb977a62a,Cognigo (d.day labs),,UX JUNE -129.5,UX JUNE,,,,129.5,,16,,129.5,,129.5,2017-06-04,2017-06-30,
+b9a8362d-aebf-40af-8c74-9db0e42c8d15,Cognigo (d.day labs),,פגישה עם ניצן וים - שעתיים,פגישה עם ניצן וים - שעתיים,,,,,,1,,,,,2017-06-18,2017-06-18,
+7505742d-9ed7-4ff5-a345-09360a2b4cda,Cognigo (d.day labs),,policy,policy,,,,,,,,,,,,,
+17e40103-a5dc-44d9-b610-558ceb164160,Cognigo (d.day labs),,UI JULY -147.5,UI JULY,,,,147.5,,18,,147.5,,147.5,2017-07-02,2017-08-01,
+c8767d39-4182-4b60-8d03-ed0100454c58,Cognigo (d.day labs),,icons 10,icons 10,,,,,3.5,2,3.5,3.5,3.5,0,2017-07-16,2017-07-17,
+9ff4982b-b6b9-45a5-8317-1de5357f6135,Cognigo (d.day labs),to do list,to do list:,to do list:,,,,,,,,,,,,,
+1643edb7-8c4c-40cf-aada-6dbd2bae1454,Cognigo (d.day labs),to do list,timeline,timeline,,,,,,3,,,,,2017-07-27,2017-07-31,
+553dcb26-34ff-414e-a8d4-859f84c1e289,Cognigo (d.day labs),to do list,permissions,permissions,,,,,,2,,,,,2017-07-27,2017-08-17,
+65d5a711-7b15-4f25-bddd-52ecc0e94b96,Cognigo (d.day labs),to do list,"Create RULE from advanced search? Select policy, create new policy. ","Create RULE from advanced search? Select policy, create new policy.",,,,,,1,,,,,2017-07-30,2017-07-30,
+4cb927a2-b931-4121-9ad0-50626d0709ed,Cognigo (d.day labs),to do list,new icon for the reclassify. ,new icon for the reclassify.,,,,,,1,,,,,2017-07-30,2017-07-30,
+cf844ac2-bf68-4555-9c54-e83863711e40,Cognigo (d.day labs),to do list,Databases,Databases,,,,,,,,,,,,,
+382c59ba-e446-4da1-af73-3ae583b34d72,Cognigo (d.day labs),to do list,policy center colors,policy center colors,,,,,,3,,,,,2017-07-30,2017-07-30,
+7c3b884a-1f53-4fa5-b410-0b2a2b977e77,Cognigo (d.day labs),to do list,feed,feed,,,,,,,,,,,,,
+167b774c-4208-41d1-8d93-18eba6dd732a,Cognigo (d.day labs),to do list,actions pop-ups - UPLOAD TO ZEPLIN,actions pop-ups - UPLOAD TO ZEPLIN,,,,,,1,,,,,2017-07-30,2017-07-30,
+af81ea7b-4bd2-4d9c-bdae-1cc81f1fa12b,Cognigo (d.day labs),to do list,retention predicate,retention predicate,,,,,,1,,,,,2017-07-30,2017-07-30,
+2781f79d-3ec3-49c8-8f38-b0559f5272cb,Cognigo (d.day labs),to do list,Deleted files,Deleted files,,,,,,1,,,,,2017-07-30,2017-07-30,
+05548b53-927a-47d6-aa0e-82fd1745b240,Cognigo (d.day labs),to do list,Fix icons problem,Fix icons problem,,,,,,,,,,,,,
+71e37eb9-2f26-4529-b254-23962583fda7,Cognigo (d.day labs),,research - 3hrs,research,,,,3,,1,,3,,3,2017-08-02,2017-08-02,
+81714a3e-e929-4ce0-9fdf-a544a3b19138,Cognigo (d.day labs),to do list, icons,icons,,,,,2,4,2,2,2,0,2017-08-13,2017-08-15,
+c5694794-02aa-4643-96a5-1a6229623da6,Cognigo (d.day labs),to do list,patterns page design,patterns page design,,,,,,,,,,,,,
+2b339692-2065-4cc8-ab24-1afe6874b70d,Cognigo (d.day labs),to do list,empty states,empty states,,,,,,,,,,,,,
+f2a05406-17dd-42ef-8e5d-e36f736528de,Cognigo (d.day labs),,icons- 2 HR,icons,,,,2,,1,,2,,2,2017-09-02,2017-09-02,
+b5698671-54eb-45de-bb68-04f8554c8e64,Cognigo (d.day labs),,ui september - 88,ui september,,,,88,,14,,88,,88,2017-09-03,2017-09-28,
+59e9faf6-fac5-4004-89d9-afabc6bb2667,Cognigo (d.day labs),,ui - october - 23,ui - october,,,,23,,7,,23,,23,2017-10-02,2017-11-01,
+08ba8ffb-5c62-40a9-9ea9-888562c3a960,Cognigo (d.day labs),,ui - november- 53.5,ui - november- 53.5,,,,53.5,,14,,53.5,,53.5,2017-11-02,2017-11-28,
+2f110288-36be-4f10-94fc-57026a7d8532,Cognigo (d.day labs),,ui - december - 42.5,ui - december,,,,42.5,,8,,42.5,,42.5,2017-12-03,2017-12-31,
+8f3a1886-a9f6-4ec6-b9c9-43cef6c9bb86,Cognigo (d.day labs),,ui - february - 40h,ui - february,,,,40,,4,,40,,40,2018-02-11,2018-02-22,
+a4283b8d-5507-440b-be9c-b3126a50c72b,Cognigo (d.day labs),hours,hours:,hours:,,,,,,,,,,,,,
+94f659c6-0e95-4b13-9250-ccd9e02db929,Cognigo (d.day labs),,Movie Design -  15h,Movie Design,,,,15,,6,,15,,15,2018-04-26,2018-05-06,
+daf697bd-89ba-462e-b374-17f6fe154890,Cognigo (d.day labs),,offline - 1 hrs,offline,,,,1,1,1,,1,1,0,2018-05-01,2018-05-01,
+8a06704d-2ade-4d6a-a40f-04e156e2276a,Cognigo (d.day labs),,Animation (8 Hours from client),Animation,8,,,,,,,,,,,,
+b0d42449-8b83-4737-bae0-5833d415d3eb,Cognigo (d.day labs),,Cognigo GDPR DataSheet- 13.25h,Cognigo GDPR DataSheet,,,,13.25,13.25,5,13.25,13.25,13.25,0,2018-05-17,2018-05-29,
+d6a88c81-f940-4bac-ba14-59daff7af107,Cognigo (d.day labs),,Cognigo company DataSheet-13.75h,Cognigo company DataSheet,,,,13.75,13.75,6,13.75,13.75,13.75,0,2018-05-14,2018-05-29,
+1087106a-2492-4f98-ba3e-eb7d145912cf,Cognigo (d.day labs),,Cognigo Mini-Brochure- 5.5h,Cognigo Mini-Brochure,,,,5.5,5.5,3,5.5,5.5,5.5,0,2018-05-14,2018-05-29,
+5ba16d35-94dc-47a3-b0d8-f8f5565e1387,Cognigo (d.day labs),to do list,Blackhat show design for counter + logo - 2.75h ,Blackhat show design for counter + logo,,,,2.75,2.75,4,2.75,2.75,2.75,0,2018-07-04,2018-07-19,
+be2cf6fc-776a-4e84-a8f3-a0155103c87d,Cognigo (d.day labs),to do list,Presentation - 65.75h,Presentation,,,,65.75,65.75,18,65.75,65.75,65.75,0,2018-07-09,2018-09-05,
+76994407-a081-46c1-8f0b-c7e99314a6af,Cognigo (d.day labs),to do list,Banner for Black hat - 6h,Banner for Black hat,,,,6,5.5,4,5.5,6,5.5,0.5,2018-07-23,2018-07-29,
+c80d7aaa-f2aa-4093-8ede-ea850d0343fb,Cognigo (d.day labs),to do list,Letter head - 10.5h ,Letter head,,,,10.5,8.5,6,8.5,10.5,8.5,2,2018-07-16,2018-08-02,
+2b3f667a-48f8-4767-b43b-aa232402ff5f,Cognigo (d.day labs),to do list,Logo - 6h,Logo,,,,6,6,3,6,6,6,0,2018-07-24,2018-07-29,
+c5c7a441-f811-4618-af83-a2d9643afa7f,Cognigo (d.day labs),to do list,Business Cards - 7.5h,Business Cards,,,,7.5,7.5,6,7.5,7.5,7.5,0,2018-07-29,2018-10-16,
+cf0eeb4f-742d-44ae-a8c8-c017391eae73,Cognigo (d.day labs),to do list,New blog post (WP) - 6 h,New blog post (WP),,,,6,5.5,4,5.5,6,5.5,0.5,2018-08-30,2018-09-17,
+c9e413ed-78c9-4df5-a7d6-9cdab27d4372,Cognigo (d.day labs),to do list,Team slide - 1h,Team slide,,,,1,1,1,1,1,1,0,2018-09-02,2018-09-02,
+a6d46aa3-fcbd-4f8b-ac6f-6d7b421c06cc,Cognigo (d.day labs),to do list,Stickers - 3h,Stickers,,,,3,3,4,3,3,3,0,2018-09-02,2018-09-16,
+809a5c5d-922a-4c8b-84ed-0acb6f4062e4,Cognigo (d.day labs),to do list,Graphics for Cybertech Italy - 3.5 h,Graphics for Cybertech Italy,,,,3.5,3.25,4,3.25,3.5,3.25,0.25,2018-09-02,2018-09-05,
+81702a36-8a86-413e-9056-21ab7bf6b7df,Cognigo (d.day labs),to do list,פיצול שקף - 1.5h,פיצול שקף,,,,1.5,1.5,1,1.5,1.5,1.5,0,2018-09-02,2018-09-02,
+99a4ab39-0190-4b16-84f7-16493bf88200,Cognigo (d.day labs),to do list,AIP DataSheet - 1.5 hrs,AIP DataSheet,,,,1.5,1.5,1,1.5,1.5,1.5,0,2018-09-03,2018-09-03,
+a1fecf45-7c36-4f3c-9e12-2eaa18ec854a,Cognigo (d.day labs),to do list,Template Signature - 1.75hrs,Template Signature,,,,1.75,1.75,3,1.75,1.75,1.75,0,2018-09-06,2018-09-17,
+fe818f5a-f2e3-4bab-b784-c6a889a63aed,Cognigo (d.day labs),,Christmas card - 3 hrs,Christmas card,,,,3,3,2,3,3,3,0,2018-12-09,2018-12-10,
+443464fc-6be1-495f-8898-a875d2380276,Cognigo (d.day labs),to do list,Contextual data Datasheet - 13.5h,Contextual data Datasheet,,,,13.5,13.5,8,13.5,13.5,13.5,0,2019-04-16,2019-05-01,
+bee97260-0cdd-4acf-bdbd-394815c3a4fa,Cognigo (d.day labs),,Dashboard - 28.5,Dashboard,,,,28.5,,5,,28.5,,28.5,2018-09-25,2018-10-11,
+66fff086-e331-4308-bdf0-64c537bbf855,Cognigo (d.day labs),to do list,Organizing file for client - 2.5h,Organizing file for client,,,,2.5,-1.5,2,-1.5,2.5,-1.5,4,2018-10-03,2018-10-03,
+9ff54a88-20d0-41aa-b0f0-7af22310a1da,Cognigo (d.day labs),to do list,Dryfit Tshirt - 2,Dryfit Tshirt,,,,2,2,4,2,2,2,0,2018-10-08,2018-10-22,
+3ac75f5e-6f78-4a33-9e9a-4f61960e7693,Cognigo (d.day labs),to do list,Master Word template - 1 h ,Master Word template,,,,1,1,1,1,1,1,0,2018-10-10,2018-10-10,
+a2d77882-c6bb-4da0-aa08-daa179fa8089,Cognigo (d.day labs),to do list,Signature -1,Signature,,,,1,1,2,1,1,1,0,2018-10-08,2018-10-10,
+004cfe5b-b790-4993-97e7-733aa18cfcd2,Cognigo (d.day labs),to do list,Umbrella design - 1 h,Umbrella design,,,,1,1,1,1,1,1,0,2018-10-11,2018-10-11,
+d7abac95-8bb6-4b6c-84d0-ec66a2f7e279,Cognigo (d.day labs),to do list,Rollups for IAP - 3h,Rollups for IAP,,,,3,3,2,3,3,3,0,2018-10-11,2018-10-23,
+3c89e569-f9d4-4d65-9374-d860ac593c70,Cognigo (d.day labs),to do list,16 Baners - 7h,16 Baners,,,,7,7,4,7,7,7,0,2018-10-16,2018-10-23,
+9ee36e5d-bbc5-47c3-b8d1-f2f09723c53d,Cognigo (d.day labs),to do list,DSAR word template 0.75hrs,DSAR word template,,,,0.75,0.75,2,0.75,0.75,0.75,0,2018-10-18,2018-10-22,
+4efd12ae-0633-4051-963d-f7143ef56623,Cognigo (d.day labs),to do list,New Logo Weight - 0.5h,New Logo Weight,,,,0.5,,,,0.5,,0.5,,,
+0cd5c8c3-e096-4cf7-837e-1f8085c705ab,Cognigo (d.day labs),to do list, Happy Diwali 2 hrs,Happy Diwali,,,,2,,1,,2,,2,2018-11-29,2018-11-29,
+d7bc5812-9618-4a6e-a659-3cb8073e5c35,Cognigo (d.day labs),to do list,Business Card - 3 hrs,Business Card,,,,3,3,6,3,3,3,0,2018-12-02,2019-02-28,
+8ec4e945-71b5-466e-81ed-fc621dc02bb6,Cognigo (d.day labs),to do list,Executive Tshirt - 0.75,Executive Tshirt,,,,0.75,0.75,1,0.75,0.75,0.75,0,2018-12-05,2018-12-05,
+9030194d-f10d-4d70-bd2e-6036559dcee7,Cognigo (d.day labs),to do list, Bag design - 3.5h ,Bag design,,,,3.5,3.5,2,3.5,3.5,3.5,0,2018-12-09,2018-12-10,
+3ccc9977-01a8-40ee-aa0a-14ac0f7ea746,Cognigo (d.day labs),to do list,Exporting assets - 1hrs,Exporting assets,,,,1,1,2,1,1,1,0,2018-12-20,2018-12-26,
+7db465aa-9978-41f3-afad-9769907276ac,Cognigo (d.day labs),to do list,CyberTech baner - 2 hrs,CyberTech baner,,,,2,2,3,2,2,2,0,2018-12-24,2019-01-15,
+1dd2f459-cb42-4d33-a8ff-adbd57eac91a,Cognigo (d.day labs),to do list,CyberTech booth design - 0.75 hrs,CyberTech booth design,,,,0.75,0.75,1,0.75,0.75,0.75,0,2018-12-24,2018-12-24,
+0a2be695-b4d7-4c15-b09a-d467271017ec,Cognigo (d.day labs),to do list,Graphics for RSA - 0.75 hrs,Graphics for RSA,,,,0.75,0.75,1,0.75,0.75,0.75,0,2018-12-24,2018-12-24,
+758e781c-c571-4cfb-8a88-49629a15efb3,Cognigo (d.day labs),to do list,CIO Review magazine post - 1 hrs,CIO Review magazine post,,,,1,1,2,1,1,1,0,2018-12-26,2018-12-30,
+358523d1-817b-476b-925b-2489f73e6d3a,Cognigo (d.day labs),to do list,Cog_Prod_Tech Presentation (Ariel) - 41h,Cog_Prod_Tech Presentation (Ariel),,,,41,35,8,35,41,35,6,2019-01-07,2019-01-13,
+d3ea3e3f-599a-4d95-a5e6-c470cda6a9d7,Cognigo (d.day labs),to do list,Holiday Cards - 6h,Holiday Cards,,,,6,6,3,6,6,6,0,2019-01-07,2019-01-13,
+43c39823-a805-44e6-b2f0-8d21f7d864b2,Cognigo (d.day labs),to do list,Folder design - 3.5 h,Folder design,,,,3.5,3.5,2,3.5,3.5,3.5,0,2019-01-08,2019-01-20,
+b1ce04e3-236b-4f26-843b-9f5d88085df1,Cognigo (d.day labs),(no section),RSA banner - 7.5 h,RSA banner,,,,7.5,6.5,8,6.5,7.5,6.5,1,2019-01-22,2019-02-24,
+d6d45376-3925-4f49-8595-758b8c0d7b17,Cognigo (d.day labs),to do list,Web Blog template - 14.5h,Web Blog template,,,,14.5,13.5,7,13.5,14.5,13.5,1,2019-01-23,2019-03-03,
+63c4a168-f6be-4b72-a720-3a6a3fdd1700,Cognigo (d.day labs),to do list, suitcase sticker - 4.75,suitcase sticker,,,,4.75,4.75,4,4.75,4.75,4.75,0,2019-02-03,2019-02-07,
+ca666964-789e-4b91-a350-1b5ad1fbc0b4,Cognigo (d.day labs),to do list,Kite design for RSA - 3.75h,Kite design for RSA,,,,3.75,3.75,3,3.75,3.75,3.75,0,2019-02-04,2019-02-11,
+76b05168-01dc-4820-b397-04d3b73027fd,Cognigo (d.day labs),to do list,Whitepaper - DataSense Product Use Cases Brief - 10 hrs,Whitepaper - DataSense Product Use Cases Brief,,,,10,10,5,10,10,10,0,2019-02-21,2019-03-06,
+fd733164-43a8-40f8-a4cd-03b3eccffa04,Cognigo (d.day labs),to do list,Banner for IAPP UK - 3.25h ,Banner for IAPP UK,,,,3.25,3.25,2,3.25,3.25,3.25,0,2019-02-24,2019-02-28,
+57e1b006-1261-4a91-9bad-a39773a88781,Cognigo (d.day labs),to do list,Berlin schedule - 8h,Berlin schedule,,,,8,8,3,8,8,8,0,2019-02-26,2019-02-28,
+9cc53f07-c38c-4df6-ab4c-66a1785169dc,Cognigo (d.day labs),to do list,Classification Whitepaper - 9.75 h ,Classification Whitepaper,,,,9.75,8.5,6,8.5,9.75,8.5,1.25,2019-03-06,2019-03-24,
+a08ec929-787f-4bab-a710-c0ddfcd34e0c,Cognigo (d.day labs),to do list,CCPA Datasheet - 12.75h,CCPA Datasheet,,,,12.75,12.75,7,12.75,12.75,12.75,0,2019-03-26,2019-04-16,
+76ef6703-cfdb-40c9-8ba2-071525c45544,Cognigo (d.day labs),to do list,Icons - 0.5h,Icons,,,,0.5,0.5,1,0.5,0.5,0.5,0,2019-03-24,2019-03-24,
+92a2a688-1838-46f0-91e1-57656ecd76db,Cognigo (d.day labs),to do list,Whitepaper classification update - 1.5h,Whitepaper classification update,,,,1.5,1.5,2,1.5,1.5,1.5,0,2019-04-14,2019-04-16,
+4842f78f-46ce-44cb-b381-b53239aca99c,Cognigo (d.day labs),to do list,kermit - 0.5 h,kermit,,,,0.5,0.5,1,0.5,0.5,0.5,0,2019-04-16,2019-04-16,
+ff843017-92f5-4e5c-969f-2735bee30d13,Cognigo (d.day labs),to do list,Limited edition Party Products (8 hours from client) - 8.75 h,Limited edition Party Products,8,,,8.75,8.25,7,16,8.75,8.25,0.5,2019-05-21,2019-07-01,
+219571d4-e4d6-476c-b76b-b98ac6b1114b,Cognigo (d.day labs),to do list,Door sticker,Door sticker,,,,,,,,,,,,,
+ab8f000e-d59f-4e54-969d-5f76bc124c0d,In-reach,(no section),Conference invitation - 3.75h,Conference invitation,,,,3.75,3.75,4,3.75,3.75,3.75,0,2019-04-30,2020-02-23,
+eb2870ed-bb89-451d-b19b-926b1b263101,In-reach,(no section),Brochure update - 0.25h,Brochure update,,,,0.25,0.25,1,0.25,0.25,0.25,0,2019-05-05,2019-05-05,
+e29c61df-0935-4126-bd80-fc6b74fe1659,In-reach,(no section),Setup and Workflow WP - 11h,Setup and Workflow WP,,,,11,11,3,11,11,11,0,2019-05-21,2019-06-04,
+4bb28921-ccd0-48eb-99a0-b10d331ddbbb,In-reach,(no section),Diagram - 2.75h,Diagram,,,,2.75,2.75,1,2.75,2.75,2.75,0,2019-06-18,2019-06-18,
+6e183e82-8162-4e5f-83c2-5c8eb5b17a92,Siteaware,Branding,Branding:,Branding:,,,,,,,,,,,,,
+2dcdea9e-b76a-46fc-a00d-73fff47264e2,Siteaware,Branding,Logo (30 Hours from client) - 31.5h,Logo,30,,,31.5,30.5,10,30.5,31.5,30.5,1,2018-06-05,2018-07-04,
+af47835e-12da-43b7-9594-340cfdc12b2e,Siteaware,Branding,website - 5h ,website,,,,5,5,5,5,5,5,0,2018-07-26,2018-08-14,
+ee40ac89-92b0-48f8-b90d-e2d9f9e3a9c8,Siteaware,Branding,ppt template (6 hours from client) - 3.75hrs,ppt template,6,,,3.75,3.5,3,3.5,3.75,3.5,0.25,2018-08-01,2018-08-12,
+dca57d1f-bd11-4568-94db-0fb2d96cf68d,Siteaware,Branding,brand guide (4 hrs from client) - 4.5hrs,brand guide,4,,,4.5,4.5,3,4.5,4.5,4.5,0,2018-08-01,2018-08-02,
+c9b663d7-6724-49ea-a2cf-f27e28e19fc3,Siteaware,Digital,icon - 1 hrs,icon,,,,1,1,3,1,1,1,0,2018-08-06,2018-08-13,
+275b9df7-a0e5-41a9-b50c-a9ea9343bdee,Siteaware,Digital,Digital:,Digital:,,,,,,,,,,,,,
+f25cd390-fa08-412f-b0e8-ac8ba0b21811,Siteaware,Branding,Signature 0.75hrs,Signature,,,,0.75,0.75,1,0.75,0.75,0.75,0,2018-08-23,2018-08-23,
+85abc88e-b668-43f1-89a8-f9be5217cf41,Siteaware,Branding,Facade inspection - 2.5,Facade inspection,,,,2.5,2.5,1,2.5,2.5,2.5,0,2019-01-28,2019-01-28,
+458c0b2f-1c8f-45a0-bcad-20871d6b3131,Siteaware,Branding,Door Sticker - 0.75 h,Door Sticker,,,,0.75,0.75,2,0.75,0.75,0.75,0,2018-10-10,2018-10-11,
+dc8054f2-0f7e-4949-ae20-c43e3dfe9ae4,Siteaware,Branding,Booth Desig n - 6.75hrs,Booth Desig n,,,,6.75,6.75,4,6.75,6.75,6.75,0,2018-10-16,2018-10-22,
+cc26f5de-de73-4117-9936-dae663ecc897,Siteaware,Branding,business card - 0.75 hrs,business card,,,,0.75,0.75,2,0.75,0.75,0.75,0,2018-10-16,2018-10-18,
+35351e08-be57-4377-ab3a-eb952ac5249f,Siteaware,Branding,"few slides- 3hrs
+",few slides,,,,3,3,1,3,3,3,0,2019-01-07,2019-01-07,
+6903afb7-ed64-481f-9ac8-e91240ee56ef,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Meeting - 3h,Meeting,,,,3,3,3,3,3,3,0,2018-08-07,2018-08-09,
+901a074e-c4c8-4118-8477-5a5fa67edb86,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Study - 6h,Study,,,,6,6,2,6,6,6,0,2018-08-08,2018-08-09,
+61a3163a-9b6e-4f12-996c-11cc7e6e1ae9,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Logo - 51.5h,Logo,,,,51.5,51.5,14,51.5,51.5,51.5,0,2018-08-14,2018-10-09,
+75e01d59-ed1b-4a2a-8f04-a6bd6745c164,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Business card - 4.5h,Business card,,,,4.5,4.5,4,4.5,4.5,4.5,0,2018-10-04,2018-10-11,
+76850a76-5f3f-4948-a010-6ae94706c3be,New Era,Website (40 hours from client + 40 = 80) - 90.5h,Website (40 hours from client + 40 = 80) - 90.5h:,Website - 90.5h:,80,,,,,,,,,,,,
+ecf6a322-29d3-4029-829e-bdd39a04385c,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Presentation - 76.5h,Presentation,,,,76.5,74.25,23,74.25,76.5,74.25,2.25,2018-10-09,2018-12-11,
+c3112abf-3f09-4a44-b284-c62a373973a2,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Mail signature - 1.5,Mail signature,,,,1.5,1.5,2,1.5,1.5,1.5,0,2018-10-29,2018-10-31,
+26620f44-0bcb-4461-b0dd-8dad2dba331e,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,נייר מכתבים - 1.5,נייר מכתבים,,,,1.5,1.5,2,1.5,1.5,1.5,0,2018-10-31,2018-11-01,
+11f72877-2c30-442c-84a5-8d2dc41b58a3,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,One Pager - 5.5hrs,One Pager,,,,5.5,5.5,7,5.5,5.5,5.5,0,2018-11-08,2018-11-26,
+b98b5a04-866c-4212-b832-678a1c4404de,New Era,,Color Palette Doc. - 0.5h,Color Palette Doc.,,,,0.5,0.5,1,0.5,0.5,0.5,0,2018-12-03,2018-12-03,
+25a4d06e-4bcf-4528-841d-9990991ae31a,New Era,Branding (75 hours from client + 26 = 101) - 118.5h,Branding (75 hours from client + 26 = 101) - 118.5h:,Branding - 118.5h:,101,,,,,,,,,,,,
+9dbfbade-29e9-4c43-ae61-1008942ba561,New Era,Website (40 hours from client + 40 = 80) - 90.5h,SEO - 2 h,SEO,,,,2,2,2,2,2,2,0,2019-01-14,2019-01-15,
+af518976-29e2-4287-babc-71ca999f4004,New Era,Website (40 hours from client + 40 = 80) - 90.5h,New era web,New era web,,,,,-0.5,4,-0.5,,,,2019-02-03,2019-07-03,
+09f4e9fb-b6c8-4a5f-8f45-1bd517ac2514,Studio,Episode Ideas,Kickoffs and Heartbeats,Kickoffs and Heartbeats,,,,,,,,,,,,,
+851b98f6-3bcb-4150-88ff-3e53eccc0eeb,Studio,Episode Ideas,The Myth of the Overnight Sensation,The Myth of the Overnight Sensation,,,,,,,,,,,,,
+03ef6252-7046-4cd1-a221-a60bc2486b83,Studio,Scheduled,How to say you’re sorry,How to say you’re sorry,,,,,,,,,,,,,
+2cd7a725-5b29-482a-ada1-ba37d0e2fe83,Studio,Scheduled,Calendar Tetris,Calendar Tetris,,,,,,,,,,,,,
+9f439ec1-5a48-499e-a98c-2e6c767f0022,Studio,Editing,Building a new product,Building a new product,,,,,,,,,,,,,
+53ae7417-3fb8-46b9-930a-816c864129e0,Studio,Approved,ASAP is a poison,ASAP is a poison,,,,,,,,,,,,,
+9a864d1d-3313-4df7-9c89-42cada5da3ac,Studio,Done,Audience Questions,Audience Questions,,,,,,,,,,,,,
+6583ce3e-2467-4890-8172-8aea5104cc53,Studio,Done,Two-person Teams,Two-person Teams,,,,,,,,,,,,,
+00fbfa25-5cdd-46ef-8ec4-d65767f0a82e,Studio,Done,Taking a sabbatical as a business owner,Taking a sabbatical as a business owner,,,,,,,,,,,,,
+13e4c1c8-a738-49fb-bd26-bb33f8e87304,Studio,Done,Leaving the cloud,Leaving the cloud,,,,,,,,,,,,,
+91752162-64bd-4e92-be22-3f257c76a513,Studio,Done,Make tiny decisions,Make tiny decisions,,,,,,,,,,,,,
+af020997-7bbd-40a5-8d48-14b6250d47b6,Studio,Not now,Advice Expires,Advice Expires,,,,,,,,,,,,,
+83931c38-d0d4-497e-8254-9f85f6787b50,Studio,Not now,The Virtual Watercooler,The Virtual Watercooler,,,,,,,,,,,,,
+ac8977f8-5658-4769-8b86-5381074f96be,Studio,Two-Person Teams: Listener Questions,Edit,Edit,,,,,,,,,,,,,
+b1a0be0d-10a0-4338-8bea-5a7b8f8b56f9,Studio,Two-Person Teams: Listener Questions,Title/description/tags/show notes,Title/description/tags/show notes,,,,,,,,,,,,,
+b0d5d1f7-dc86-463e-a6b0-e34da9b9b00e,Studio,Two-Person Teams: Listener Questions,Upload,Upload,,,,,,,,,,,,,
+37f64db0-4678-4e15-b632-12b13da7d897,Studio,Two-Person Teams: Listener Questions,Newsletter,Newsletter,,,,,,,,,,,,,
+5c883871-ccc1-44a0-9049-6b02f07f4749,Studio,Two-Person Teams: Listener Questions,Blog post,Blog post,,,,,,,,,,,,,
+5cf91698-7494-4151-9127-3af9f0dd16e3,Studio,Two-Person Teams: Listener Questions,Record,Record,,,,,,,,,,,,,
+94b035f9-9dbb-4b46-8229-b25f269baf0d,Studio,Newsletter updates,Signup page,Signup page,,,,,,,,,,,,,
+e91b68e9-6407-47d7-8e25-dd09434bb89d,Studio,Newsletter updates,Inspiration section,Inspiration section,,,,,,,,,,,,,
+7dbf4337-f7b2-4bf8-b591-46954de65b70,Studio,Newsletter updates,Link to REWORK homepage,Link to REWORK homepage,,,,,,,,,,,,,
+1f5b10ca-f99a-47d4-8dad-a25d5c46b74b,Studio,Newsletter updates,Unique subject lines,Unique subject lines,,,,,,,,,,,,,
+56a5afc7-e9ca-4efd-9b17-535dd22a2c4e,Studio,Shnitz,1,1,,,,,,,,,,,,,
+883e5b60-95c4-47a2-b2fb-3734ea08411c,Studio,Shnitz,2,2,,,,,,,,,,,,,
+22b7cdd2-d09f-4681-89b4-04728f23fd1c,Studio,Shnitz,3,3,,,,,,,,,,,,,
+0015122a-1aed-47e6-b6df-7531a45189db,Studio,Shnitz,123,123,,,,,,,,,,,,,
+8181774a-3fe9-4100-b616-947ea360ae8c,Studio,Shnitz,123,123,,,,,,,,,,,,,
+7f715517-f194-41df-b9a9-838874dcbe5c,Studio,,Hero,Hero,,,,,,,,,,,,,
+267e228d-b527-4e4a-ab77-219520807f0c,Studio,,hero,hero,,,,,,,,,,,,,
+988666cd-b7da-48bf-ade5-a83784ba3280,Studio,,Mobile Hero,Mobile Hero,,,,,,,,,,,,,
+f704f770-d3d3-4f63-a3cf-cf1f3c184a02,Studio,,Careers,Careers,,,,,,,,,,,,,
+98f2d721-a7fd-4aa6-90ce-0dde1ab11170,Studio,,Homepage,Homepage,,,,,,,,,,,,,
+881eb353-c9bf-4ecc-8a6a-70ef10e67b43,Studio,,Logos Strip,Logos Strip,,,,,,,,,,,,,
+7d084d23-bca8-4951-ab83-1b5001b02bce,Studio,,Hero,Hero,,,,,,,,,,,,,

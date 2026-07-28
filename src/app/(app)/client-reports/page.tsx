@@ -49,7 +49,7 @@ function PaymentPeriods({ client }: { client: Client }) {
     updateBillingPeriod,
     deleteBillingPeriod,
     tasks,
-    entrySums,
+    entrySumsAll,
     updateClient,
   } = useData();
   const periods = billingPeriods.filter((p) => p.clientId === client.id);
@@ -63,8 +63,8 @@ function PaymentPeriods({ client }: { client: Client }) {
     [tasks, client.id],
   );
   const clientEntries = useMemo(
-    () => entrySums.filter((e) => clientTaskIds.has(e.taskId)),
-    [entrySums, clientTaskIds],
+    () => entrySumsAll.filter((e) => clientTaskIds.has(e.taskId)),
+    [entrySumsAll, clientTaskIds],
   );
 
   const minutesIn = (from: string, to: string) =>
@@ -260,7 +260,7 @@ function PublishWorkspace() {
     clients,
     sections,
     tasks,
-    entrySums,
+    entrySumsAll,
     billingPeriods,
     currentUserId,
     openSyncIssues,
@@ -307,7 +307,7 @@ function PublishWorkspace() {
   const candidates = useMemo(() => {
     const cutoff = toISODate(new Date(Date.now() - 90 * 86400000));
     const activeIds = new Set<string>();
-    for (const e of entrySums) {
+    for (const e of entrySumsAll) {
       if (e.date >= cutoff) {
         const cid = taskClient.get(e.taskId);
         if (cid) activeIds.add(cid);
@@ -317,7 +317,7 @@ function PublishWorkspace() {
     return clients
       .filter((c) => !c.archived && activeIds.has(c.id))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [clients, entrySums, taskClient, links]);
+  }, [clients, entrySumsAll, taskClient, links]);
 
   const visibleTabs = candidates.filter((c) => !hiddenTabs.includes(c.id));
   const selectedClient =
@@ -355,11 +355,11 @@ function PublishWorkspace() {
       selectedClient,
       sections,
       tasks,
-      entrySums,
+      entrySumsAll,
       billingPeriods.filter((p) => p.clientId === selectedClient.id),
       customWeeks,
     );
-  }, [selectedClient, sections, tasks, entrySums, billingPeriods, customWeeks]);
+  }, [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks]);
 
   // ── period dividers + editable columns ────────────────────────────────
   const clientPeriods = useMemo(

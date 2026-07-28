@@ -39,6 +39,7 @@ import type {
   DevItem,
   DevStatus,
   EntrySum,
+  UserEntrySum,
   PlanColumn,
   PlanEntry,
   PlanEntryType,
@@ -95,8 +96,18 @@ interface Store {
   comments: TaskComment[];
   attachments: Attachment[];
   timeEntries: TimeEntry[];
-  /** Slim rows for ALL time entries (no description) — for aggregations. */
-  entrySums: EntrySum[];
+  /**
+   * Slim rows for time entries (no description) — for aggregations.
+   * EXCLUDES pre-Everhour backfill: use this for anything personal or
+   * time-series (my hours, days worked, the feed timesheet, per-member totals).
+   */
+  entrySums: UserEntrySum[];
+  /**
+   * Every entry including the recovered pre-Everhour history. Use for
+   * CLIENT-FACING and per-task totals — client stats, reports, task hours —
+   * where the 2020–2022 work is real and belongs in the number.
+   */
+  entrySumsAll: EntrySum[];
   currentUserId: string;
   /** Name of the member an admin is previewing as (?viewAs=…), null when off. */
   viewingAs: string | null;
@@ -111,9 +122,19 @@ interface Store {
 
   openTask: (taskId: string | null) => void;
   updateTask: (taskId: string, patch: Partial<Task>) => void;
+  /**
+   * Apply one patch to many tasks in a single write, as ONE undo step.
+   * Moving between clients must also set `sectionId` (a section belongs to
+   * exactly one client, so the old id would strand the tasks).
+   */
+  updateTasksBulk: (taskIds: string[], patch: Partial<Task>) => void;
+  /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
+  restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
   /** Hard-delete a task. CASCADES to its time entries — confirm with the user first. */
   deleteTask: (taskId: string) => void;
+  /** Hard-delete many tasks. CASCADES to time entries — confirm with the user first. */
+  deleteTasksBulk: (taskIds: string[]) => void;
   addSection: (clientId: string, name: string) => void;
   updateSection: (sectionId: string, patch: Partial<Pick<Section, "name">>) => void;
   /** No-ops (with a visible write error) if the section still contains tasks. */
@@ -207,7 +228,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [entrySums, setEntrySums] = useState<EntrySum[]>([]);
+  const [entrySumsAll, setEntrySums] = useState<EntrySum[]>([]);
   const [planColumns, setPlanColumns] = useState<PlanColumn[]>([]);
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -303,11 +324,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const tagNameById = useMemo(() => new Map(tagRows.map((t) => [t.id, t.name])), [tagRows]);
   const tagIdByName = useMemo(() => new Map(tagRows.map((t) => [t.name, t.id])), [tagRows]);
 
+  /**
+   * The DEFAULT deliberately EXCLUDES pre-Everhour backfill (`legacy`). Those
+   * entries are attributed to people who still work here, so leaking them into a
+   * personal or time-series surface would invent 2021 working days for someone
+   * today — and the failure would be silent. Excluding by default means a surface
+   * nobody remembered to audit degrades safely; the client-facing totals that
+   * genuinely want the history opt in via `entrySumsAll`.
+   */
+  // The type narrowing is load-bearing, not cosmetic: dropping the legacy rows is
+  // exactly what guarantees a real user_id (0017 only allows null on those), so
+  // every downstream per-member aggregation indexes by userId without a guard.
+  const entrySums = useMemo(
+    () => entrySumsAll.filter((e): e is UserEntrySum => !e.legacy && e.userId != null),
+    [entrySumsAll],
+  );
+
+  // Task totals include the recovered history — that IS the task's real cost.
   const minutesByTask = useMemo(() => {
     const map = new Map<string, number>();
-    for (const e of entrySums) map.set(e.taskId, (map.get(e.taskId) ?? 0) + e.minutes);
+    for (const e of entrySumsAll) map.set(e.taskId, (map.get(e.taskId) ?? 0) + e.minutes);
     return map;
-  }, [entrySums]);
+  }, [entrySumsAll]);
 
   // ── initial load ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -336,16 +374,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
           (async () => {
             const cols =
               "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
+            // 0016 adds the recovered pre-Everhour history columns
+            const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
             try {
-              // post-0007 schema
-              return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${cols}`);
+              // post-0007 + post-0016 schema
+              return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${legacyCols}, ${cols}`);
             } catch {
-              return await fetchAll<DbRow>(supabase, "tasks", cols);
+              try {
+                return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${cols}`);
+              } catch {
+                return await fetchAll<DbRow>(supabase, "tasks", cols);
+              }
             }
           })(),
-          fetchAll<DbRow>(supabase, "time_entries", "id, task_id, user_id, date, minutes", (q) =>
-            q.not("minutes", "is", null),
-          ),
+          (async () => {
+            const cols = "id, task_id, user_id, date, minutes";
+            try {
+              // 0016: `legacy` marks a backfilled pre-Everhour entry
+              return await fetchAll<DbRow>(supabase, "time_entries", `${cols}, legacy`, (q) =>
+                q.not("minutes", "is", null),
+              );
+            } catch {
+              return await fetchAll<DbRow>(supabase, "time_entries", cols, (q) =>
+                q.not("minutes", "is", null),
+              );
+            }
+          })(),
           supabase
             .from("time_entries")
             .select("*")
@@ -482,6 +536,70 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, tagIdByName, tasks, record],
   );
 
+  /**
+   * Restores per-task prior values after a bulk update. Tasks that shared the
+   * same prior value are grouped into one write, so undoing "move 40 tasks from
+   * one client" costs a single round-trip rather than 40.
+   */
+  const restoreTasksBulk = useCallback(
+    (items: { id: string; patch: Partial<Task> }[]) => {
+      if (items.length === 0) return;
+      const byPatch = new Map<string, { patch: Partial<Task>; ids: string[] }>();
+      for (const it of items) {
+        const key = JSON.stringify(it.patch);
+        const group = byPatch.get(key);
+        if (group) group.ids.push(it.id);
+        else byPatch.set(key, { patch: it.patch, ids: [it.id] });
+      }
+      const patchById = new Map(items.map((it) => [it.id, it.patch]));
+      setTasks((prev) =>
+        prev.map((t) => {
+          const p = patchById.get(t.id);
+          return p ? { ...t, ...p } : t;
+        }),
+      );
+      for (const { patch, ids } of byPatch.values()) {
+        supabase
+          .from("tasks")
+          .update(taskPatchToRow(patch, tagIdByName))
+          .in("id", ids)
+          .then(({ error }) => {
+            if (error) noteWriteError("restoreTasksBulk", error);
+          });
+      }
+    },
+    [supabase, tagIdByName],
+  );
+
+  const updateTasksBulk = useCallback(
+    (taskIds: string[], patch: Partial<Task>) => {
+      const ids = [...new Set(taskIds)];
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+
+      // Each task can hold a different prior value, so the inverse is a list of
+      // per-task patches rather than one shared patch — but it is recorded as a
+      // SINGLE history entry, so one ⌘Z reverses the whole selection.
+      const before = tasks
+        .filter((t) => idSet.has(t.id))
+        .map((t) => ({ id: t.id, patch: inversePatch(t, patch) }));
+      record({
+        undo: () => methodsRef.current?.restoreTasksBulk(before),
+        redo: () => methodsRef.current?.updateTasksBulk(ids, patch),
+      });
+
+      setTasks((prev) => prev.map((t) => (idSet.has(t.id) ? { ...t, ...patch } : t)));
+      supabase
+        .from("tasks")
+        .update(taskPatchToRow(patch, tagIdByName))
+        .in("id", ids)
+        .then(({ error }) => {
+          if (error) noteWriteError("updateTasksBulk", error);
+        });
+    },
+    [supabase, tagIdByName, tasks, record],
+  );
+
   const addTask = useCallback(
     (clientId: string, sectionId: string | null, title: string) => {
       const position =
@@ -549,6 +667,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", taskId)
         .then(({ error }) => {
           if (error) noteWriteError("deleteTask", error);
+        });
+    },
+    [supabase],
+  );
+
+  // Deliberately NOT in the undo history, for the same reason as deleteTask:
+  // time entries, comments and attachments are ON DELETE CASCADE, so an "undo"
+  // would restore the tasks without their hours — worse than no undo at all.
+  const deleteTasksBulk = useCallback(
+    (taskIds: string[]) => {
+      const ids = [...new Set(taskIds)];
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      setTasks((prev) => prev.filter((t) => !idSet.has(t.id)));
+      setTimeEntries((prev) => prev.filter((e) => !idSet.has(e.taskId)));
+      setEntrySums((prev) => prev.filter((e) => !idSet.has(e.taskId)));
+      supabase
+        .from("tasks")
+        .delete()
+        .in("id", ids)
+        .then(({ error }) => {
+          if (error) noteWriteError("deleteTasksBulk", error);
         });
     },
     [supabase],
@@ -1118,7 +1258,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // full row if loaded; the slim sums row covers minutes/date-only patches
       const before =
         timeEntries.find((e) => e.id === entryId) ??
-        ("description" in patch ? undefined : entrySums.find((e) => e.id === entryId));
+        ("description" in patch ? undefined : entrySumsAll.find((e) => e.id === entryId));
       if (before) {
         const prev: typeof patch = {};
         if ("minutes" in patch) prev.minutes = before.minutes;
@@ -1147,13 +1287,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) noteWriteError("updateTimeEntry", error);
         });
     },
-    [supabase, timeEntries, entrySums, record],
+    [supabase, timeEntries, entrySumsAll, record],
   );
 
   const deleteTimeEntry = useCallback(
     (entryId: string) => {
       const full = timeEntries.find((e) => e.id === entryId);
-      const slim = entrySums.find((e) => e.id === entryId);
+      const slim = entrySumsAll.find((e) => e.id === entryId);
       const before: TimeEntry | undefined =
         full ?? (slim ? { ...slim, description: "", movedFromTaskId: null } : undefined);
       if (before) {
@@ -1172,7 +1312,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           if (error) noteWriteError("deleteTimeEntry", error);
         });
     },
-    [supabase, timeEntries, entrySums, record, restoreTimeEntry],
+    [supabase, timeEntries, entrySumsAll, record, restoreTimeEntry],
   );
 
   /** Re-insert a deleted billing period with its original id (undo support). */
@@ -1471,6 +1611,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       attachments,
       timeEntries,
       entrySums,
+      entrySumsAll,
       currentUserId: viewAsProfile ? viewAsProfile.id : currentUserId,
       viewingAs: viewAsProfile ? viewAsProfile.name : null,
       openSyncIssues,
@@ -1482,8 +1623,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       devItems,
       openTask,
       updateTask,
+      updateTasksBulk,
+      restoreTasksBulk,
       addTask,
       deleteTask,
+      deleteTasksBulk,
       addSection,
       updateSection,
       deleteSection,
@@ -1527,9 +1671,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dismissWriteError,
     }),
     [
-      loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums,
+      loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openSyncIssues, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, addTask, deleteTask, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
+      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );
 

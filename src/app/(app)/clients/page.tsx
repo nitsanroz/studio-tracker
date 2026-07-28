@@ -144,7 +144,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ClientsPage() {
-  const { clients, tasks, entrySums, profiles, currentUserId, updateClient } = useData();
+  const { clients, tasks, entrySumsAll, profiles, currentUserId, updateClient } = useData();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>(null);
   const [creating, setCreating] = useState(false);
@@ -158,20 +158,20 @@ export default function ClientsPage() {
   const week = useMemo(() => presetRange("This week"), []);
   const month = useMemo(() => presetRange("This month"), []);
   const weekMinutes = useMemo(
-    () => minutesByClientInRange(entrySums, week.from, week.to, taskClient),
-    [entrySums, week, taskClient],
+    () => minutesByClientInRange(entrySumsAll, week.from, week.to, taskClient),
+    [entrySumsAll, week, taskClient],
   );
   const monthMinutes = useMemo(
-    () => minutesByClientInRange(entrySums, month.from, month.to, taskClient),
-    [entrySums, month, taskClient],
+    () => minutesByClientInRange(entrySumsAll, month.from, month.to, taskClient),
+    [entrySumsAll, month, taskClient],
   );
   const totalMinutes = useMemo(
-    () => minutesByClientInRange(entrySums, "0000-01-01", "9999-12-31", taskClient),
-    [entrySums, taskClient],
+    () => minutesByClientInRange(entrySumsAll, "0000-01-01", "9999-12-31", taskClient),
+    [entrySumsAll, taskClient],
   );
   const lastActivity = useMemo(
-    () => latestActivityByClient(entrySums, taskClient),
-    [entrySums, taskClient],
+    () => latestActivityByClient(entrySumsAll, taskClient),
+    [entrySumsAll, taskClient],
   );
 
   // click = asc, again = desc, third = back to default (latest activity)

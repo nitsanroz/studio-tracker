@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { createContext, useContext, useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -12,6 +12,7 @@ import {
   Maximize2,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatDate, formatHoursShort } from "@/lib/format";
@@ -30,7 +31,7 @@ const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 
 /** Right-hand client stats: totals, hours per month, hours per user. */
 function ClientStats({ clientId }: { clientId: string }) {
-  const { tasks, profiles, entrySums, currentUserId } = useData();
+  const { tasks, profiles, entrySumsAll, currentUserId } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
 
   const stats = useMemo(() => {
@@ -40,17 +41,29 @@ function ClientStats({ clientId }: { clientId: string }) {
       tasks.filter((t) => t.clientId === clientId && t.billable).map((t) => t.id),
     );
 
+    // Recovered hours we could not pin to a person or a date. They are NOT in
+    // entrySumsAll (they never became entries), so they are added to the total
+    // separately and deliberately kept out of byMonth/byUser.
+    let unattributed = 0;
+    for (const t of tasks) {
+      if (t.clientId === clientId) unattributed += (t.legacyHours ?? 0) * 60;
+    }
+
     let total = 0;
     let billable = 0;
     const byMonth = new Map<string, number>();
     const byUser = new Map<string, number>();
-    for (const e of entrySums) {
+    for (const e of entrySumsAll) {
       if (!clientTaskIds.has(e.taskId)) continue;
       total += e.minutes;
       if (billableTaskIds.has(e.taskId)) billable += e.minutes;
       const month = e.date.slice(0, 7);
       byMonth.set(month, (byMonth.get(month) ?? 0) + e.minutes);
-      byUser.set(e.userId, (byUser.get(e.userId) ?? 0) + e.minutes);
+      // A recovered pre-Everhour entry can name an author who has no profile
+      // (they left before the current roster). Those hours still belong in the
+      // client total and in byMonth — they have a real date — but there is no
+      // person to attribute them to in the "hours per user" breakdown.
+      if (e.userId) byUser.set(e.userId, (byUser.get(e.userId) ?? 0) + e.minutes);
     }
 
     const months = [...byMonth.entries()]
@@ -67,8 +80,8 @@ function ClientStats({ clientId }: { clientId: string }) {
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 8);
 
-    return { total, billable, open, months, users };
-  }, [tasks, profiles, entrySums, clientId]);
+    return { total: total + unattributed, unattributed, billable, open, months, users };
+  }, [tasks, profiles, entrySumsAll, clientId]);
 
   const maxUser = stats.users[0]?.minutes ?? 0;
 
@@ -80,6 +93,14 @@ function ClientStats({ clientId }: { clientId: string }) {
           <div className="mt-0.5 text-xl font-semibold tabular-nums">
             {formatHoursShort(stats.total)}
           </div>
+          {stats.unattributed > 0 && (
+            <div
+              className="mt-0.5 text-[11px] text-faint"
+              title="Hours recovered from the pre-Everhour Asana history that couldn't be attributed to a person or a date. Included in the total above, but not in the charts below."
+            >
+              incl. {formatHoursShort(stats.unattributed)} pre-Everhour
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-border bg-surface p-3">
           <div className="text-[11px] font-medium text-muted">Open tasks</div>
@@ -125,13 +146,55 @@ function ClientStats({ clientId }: { clientId: string }) {
   );
 }
 
-// pl-9 clears the 28px drag-handle gutter (the handle is absolutely positioned, so
-// appearing on hover never shifts the row). The complete/name pair is then pulled
-// tight with -mr-1.5 on the first cell, keeping the tick beside the task title
-// rather than stranded between the grip and the name.
+// pl-9 clears the 36px left gutter, which holds BOTH the select checkbox (left-1)
+// and the drag handle (left-[18px]) — absolutely positioned, so appearing on hover
+// never shifts the row. The gutter was NOT widened to fit the checkbox: the fixed
+// columns already overflow this table's 720px min-width, leaving the name cell
+// about 89px, so every pixel spent here is taken straight off the task name. The
+// grip keeps its full row height (the v0.99.27 fix for intermittent dragging — the
+// height was what mattered) at half the width.
 const COLS = "flex items-center gap-3 pl-9 pr-4";
 /** Applied to the leading cell (the tick, and the header's spacer) so both stay aligned. */
 const LEAD_TIGHT = "-mr-1.5";
+
+/**
+ * Multi-select state, shared down to the rows. A context rather than props: the
+ * checkbox lives on TaskRow, the select-all on SectionGroup and the table header,
+ * and threading four callbacks through both would bury the drag/drop logic that
+ * already fills those signatures.
+ */
+type SelectionCtx = {
+  selected: Set<string>;
+  /** Display order of every visible task, for shift-click ranges. */
+  ordered: string[];
+  toggle: (taskId: string, shiftKey: boolean) => void;
+  setMany: (taskIds: string[], on: boolean) => void;
+};
+const SelectionContext = createContext<SelectionCtx | null>(null);
+const useSelection = () => useContext(SelectionContext);
+
+/** Tri-state select-all: checked when every id is selected, dash when only some are. */
+function SelectAllBox({ ids, title }: { ids: string[]; title: string }) {
+  const sel = useSelection();
+  if (!sel || ids.length === 0) return <span className="w-3.5" />;
+  const on = ids.filter((id) => sel.selected.has(id)).length;
+  const all = on === ids.length;
+  return (
+    <input
+      // `indeterminate` has no HTML attribute — it can only be set on the node.
+      ref={(el) => {
+        if (el) el.indeterminate = on > 0 && !all;
+      }}
+      type="checkbox"
+      checked={all}
+      title={title}
+      aria-label={title}
+      onClick={(e) => e.stopPropagation()}
+      onChange={() => sel.setMany(ids, !all)}
+      className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand)]"
+    />
+  );
+}
 
 /** Custom MIME so unrelated drop targets (weekly plan, report table) ignore these
  *  drags — and so `dragover` can tell whether to accept, since getData() is only
@@ -236,6 +299,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     currentUserId,
   } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const sel = useSelection();
+  const checked = sel?.selected.has(task.id) ?? false;
   const [dropBefore, setDropBefore] = useState(false);
   // Only a mousedown on the grip may start a drag. With the whole row draggable, any
   // press-and-move began a drag — fighting click-to-open, making text selection in
@@ -259,6 +324,9 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     return !!d && d.sectionId === task.sectionId && d.clientId === task.clientId;
   }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
+  // taskMinutes already counts the `legacy` entries; legacyHours is the remainder
+  // that never became one, so it has to be added on top for the true total.
+  const hoursDone = taskMinutes(task.id) + (task.legacyHours ?? 0) * 60;
   const done = task.status === "done";
   const active = openTaskId === task.id;
 
@@ -310,7 +378,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
       }}
       // inset shadow rather than a border: a real border-top would shift the row 2px
       className={`${COLS} group relative h-10 cursor-pointer border-b border-border text-sm transition-colors ${
-        active ? "bg-brand-soft/50" : "hover:bg-background"
+        checked ? "bg-brand-soft" : active ? "bg-brand-soft/50" : "hover:bg-background"
       } ${task.pending ? "opacity-50" : ""} ${
         dropBefore ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""
       }`}
@@ -320,6 +388,28 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           drag, so a small miss silently cancelled it — which felt like the drag
           working only sometimes. The icon fades in on hover; the hit area is always
           present and spans the row's full height. */}
+      {isAdmin && sel && (
+        // Stays visible once anything is selected, so the selection is legible at a
+        // glance instead of only under the cursor.
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className={`absolute left-1 top-0 flex h-full items-center transition-opacity ${
+            checked || sel.selected.size > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            aria-label={`Select ${task.title}`}
+            title="Select — shift-click to select a range"
+            onChange={(e) =>
+              sel.toggle(task.id, (e.nativeEvent as MouseEvent).shiftKey === true)
+            }
+            onClick={(e) => e.stopPropagation()}
+            className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand)]"
+          />
+        </span>
+      )}
       {isAdmin && (
         <span
           title="Drag to reorder, or onto another section to move it"
@@ -327,7 +417,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
             armedRef.current = true;
           }}
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-0 top-0 flex h-full w-7 cursor-grab items-center justify-center text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+          className="absolute left-[18px] top-0 flex h-full w-[18px] cursor-grab items-center justify-center text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
         >
           <GripVertical size={14} />
         </span>
@@ -434,10 +524,10 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <EditableNumberCell
             value={task.estimateHours}
             onCommit={(v) => updateTask(task.id, { estimateHours: v })}
-            display={<BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />}
+            display={<BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} />}
           />
         ) : (
-          <BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />
+          <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} />
         )}
       </span>
       {isAdmin && (
@@ -574,10 +664,18 @@ function SectionGroup({
       {/* A div, not a button: the name is inline-editable and there's a delete
           control, and neither can legally nest inside a button. */}
       <div
-        className={`${COLS} w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
+        className={`${COLS} relative w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
           sectionIsEmpty ? "opacity-50" : ""
         }`}
       >
+        {isAdmin && (
+          <span className="absolute left-1 top-0 flex h-full items-center">
+            <SelectAllBox
+              ids={tasks.map((t) => t.id)}
+              title={`Select all in ${section?.name ?? "No section"}`}
+            />
+          </span>
+        )}
         <button
           onClick={onToggle}
           title={open ? "Collapse" : "Expand"}
@@ -601,6 +699,19 @@ function SectionGroup({
           </button>
         )}
         <span className="shrink-0 text-xs font-normal text-faint">{tasks.length}</span>
+        {section && (section.legacyHours != null || section.estimateHours != null) && (
+          <span
+            className="shrink-0 text-xs font-normal text-faint"
+            title={
+              (section.legacyName ? `Originally: ${section.legacyName}\n` : "") +
+              "Hours and budget recovered from the old section name." +
+              (section.closedOn ? `\nClosed ${formatDate(section.closedOn)}.` : "")
+            }
+          >
+            {section.legacyHours != null && `${section.legacyHours}h`}
+            {section.estimateHours != null && ` / ${section.estimateHours}h budget`}
+          </span>
+        )}
         {isAdmin && section && (
           <button
             onClick={() => {
@@ -631,6 +742,148 @@ function SectionGroup({
   );
 }
 
+/**
+ * Sticky action bar for the current multi-selection. Admin-only; the caller
+ * renders it only when something is selected.
+ */
+function SelectionBar({
+  ids,
+  clientId,
+  onClear,
+}: {
+  ids: string[];
+  clientId: string;
+  onClear: () => void;
+}) {
+  const { clients, sections, tasks, taskMinutes, updateTasksBulk, deleteTasksBulk } = useData();
+  const [moveTo, setMoveTo] = useState("");
+
+  const targetSections = useMemo(
+    () => sections.filter((s) => s.clientId === (moveTo || clientId)).sort((a, b) => a.position - b.position),
+    [sections, moveTo, clientId],
+  );
+  const selectedTasks = tasks.filter((t) => ids.includes(t.id));
+  const minutes = selectedTasks.reduce((sum, t) => sum + taskMinutes(t.id), 0);
+
+  const done = () => {
+    setMoveTo("");
+    onClear();
+  };
+
+  return (
+    <div className="sticky bottom-4 z-20 mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-brand bg-surface px-3 py-2 text-sm shadow-card">
+      <span className="font-medium">
+        {ids.length} selected
+        {minutes > 0 && <span className="ml-1.5 text-muted">· {formatHoursShort(minutes)}</span>}
+      </span>
+
+      <span className="mx-1 h-4 w-px bg-border" />
+
+      <label className="flex items-center gap-1.5 text-muted">
+        Move to
+        <select
+          value={moveTo}
+          onChange={(e) => setMoveTo(e.target.value)}
+          className="rounded-md border border-border bg-surface px-1.5 py-1 text-sm text-foreground outline-none focus:border-brand"
+        >
+          <option value="">this client</option>
+          {clients
+            .filter((c) => c.id !== clientId)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.archived ? " (archived)" : ""}
+              </option>
+            ))}
+        </select>
+      </label>
+
+      <select
+        defaultValue=""
+        onChange={(e) => {
+          const sectionId = e.target.value === "__none" ? null : e.target.value;
+          // A section belongs to exactly one client, so a cross-client move MUST
+          // carry a section for the target — keeping the old id would strand these
+          // tasks inside another client's section.
+          updateTasksBulk(ids, moveTo ? { clientId: moveTo, sectionId } : { sectionId });
+          done();
+        }}
+        className="rounded-md border border-border bg-surface px-1.5 py-1 text-sm outline-none focus:border-brand"
+      >
+        <option value="" disabled>
+          section…
+        </option>
+        <option value="__none">No section</option>
+        {targetSections.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+
+      <span className="mx-1 h-4 w-px bg-border" />
+
+      <button
+        onClick={() => {
+          updateTasksBulk(ids, { status: "done" });
+          done();
+        }}
+        className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-success hover:text-success"
+      >
+        Mark done
+      </button>
+      <button
+        onClick={() => {
+          updateTasksBulk(ids, { billable: true });
+          done();
+        }}
+        className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-success hover:text-success"
+      >
+        Billable
+      </button>
+      <button
+        onClick={() => {
+          updateTasksBulk(ids, { billable: false });
+          done();
+        }}
+        className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-brand hover:text-brand"
+      >
+        Non-billable
+      </button>
+      <button
+        onClick={() => {
+          // Hours cascade away with the task and cannot be restored, so a selection
+          // holding any logged time is refused outright rather than warned about.
+          if (minutes > 0) {
+            alert(
+              `${formatHoursShort(minutes)} of logged time sits on these tasks.\n\n` +
+                `Deleting would destroy those hours permanently. Move the time off them first, ` +
+                `or delete those tasks one at a time.`,
+            );
+            return;
+          }
+          if (confirm(`Delete ${ids.length} task${ids.length === 1 ? "" : "s"}?\n\nThis cannot be undone.`)) {
+            deleteTasksBulk(ids);
+            done();
+          }
+        }}
+        className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-danger hover:text-danger"
+      >
+        Delete
+      </button>
+
+      <button
+        onClick={done}
+        title="Clear selection"
+        className="ml-auto rounded-md p-1 text-faint hover:text-foreground"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+
 export function ClientView({ clientId }: { clientId: string }) {
   const { clients, sections, tasks, profiles, taskMinutes, addSection, updateClient, currentUserId } =
     useData();
@@ -644,6 +897,9 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
   const [sort, setSort] = useState<Sort>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  /** Anchor for shift-click ranges — the last row toggled without shift. */
+  const lastPickedRef = useRef<string | null>(null);
 
   const client = clients.find((c) => c.id === clientId);
 
@@ -685,6 +941,51 @@ export function ClientView({ clientId }: { clientId: string }) {
       else next.add(key);
       return next;
     });
+
+  // Display order across every group, so a shift-click range spans sections the
+  // same way it reads on screen.
+  const orderedIds = [
+    ...noSection.map((t) => t.id),
+    ...clientSections.flatMap((s) =>
+      clientTasks.filter((t) => t.sectionId === s.id).map((t) => t.id),
+    ),
+  ];
+
+  const selectionValue: SelectionCtx = {
+    selected,
+    ordered: orderedIds,
+    toggle: (taskId, shiftKey) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        const anchor = lastPickedRef.current;
+        if (shiftKey && anchor && anchor !== taskId) {
+          const a = orderedIds.indexOf(anchor);
+          const b = orderedIds.indexOf(taskId);
+          if (a !== -1 && b !== -1) {
+            // A range always SELECTS — never deselects. Extending a selection and
+            // silently clearing part of it is the classic shift-click surprise.
+            for (const id of orderedIds.slice(Math.min(a, b), Math.max(a, b) + 1)) next.add(id);
+            return next;
+          }
+        }
+        if (next.has(taskId)) next.delete(taskId);
+        else next.add(taskId);
+        return next;
+      });
+      // Only a plain click moves the anchor, so repeated shift-clicks keep
+      // extending from the same origin.
+      if (!shiftKey) lastPickedRef.current = taskId;
+    },
+    setMany: (taskIds, on) =>
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const id of taskIds) {
+          if (on) next.add(id);
+          else next.delete(id);
+        }
+        return next;
+      }),
+  };
 
   const statuses: { key: Task["status"]; label: string }[] = [
     { key: "todo", label: "To do" },
@@ -750,8 +1051,9 @@ export function ClientView({ clientId }: { clientId: string }) {
       <div className="flex gap-4">
         <div className="min-w-0 max-w-[850px] flex-1">
       {view === "list" ? (
-        // dragstart/dragend bubble, so the whole table can know a drag is running
-        // without threading state through every row.
+        <SelectionContext.Provider value={isAdmin ? selectionValue : null}>
+        {/* dragstart/dragend bubble, so the whole table can know a drag is running
+            without threading state through every row. */}
         <div
           className="overflow-x-auto rounded-xl border border-border bg-surface"
           onDragStart={() => setDraggingTask(true)}
@@ -765,7 +1067,12 @@ export function ClientView({ clientId }: { clientId: string }) {
           }}
         >
           <div className="min-w-[720px]">
-            <div className={`${COLS} h-8 border-b border-border bg-background text-xs font-medium`}>
+            <div className={`${COLS} relative h-8 border-b border-border bg-background text-xs font-medium`}>
+              {isAdmin && (
+                <span className="absolute left-1 top-0 flex h-full items-center">
+                  <SelectAllBox ids={orderedIds} title="Select every task shown" />
+                </span>
+              )}
               <button
                 onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groupKeys))}
                 title={allCollapsed ? "Expand all sections" : "Collapse all sections"}
@@ -855,6 +1162,16 @@ export function ClientView({ clientId }: { clientId: string }) {
             )}
           </div>
         </div>
+        {isAdmin && selected.size > 0 && (
+          <SelectionBar
+            // Only ids still on screen: a task filtered out by "Show completed"
+            // or moved away must not be acted on invisibly.
+            ids={orderedIds.filter((id) => selected.has(id))}
+            clientId={clientId}
+            onClear={() => setSelected(new Set())}
+          />
+        )}
+        </SelectionContext.Provider>
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {statuses.map(({ key, label }) => {

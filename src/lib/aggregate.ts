@@ -1,4 +1,4 @@
-import type { EntrySum, Task } from "./types";
+import type { EntrySum, Task, UserEntrySum } from "./types";
 
 /** taskId → clientId lookup. */
 export function buildTaskClientMap(tasks: Task[]): Map<string, string> {
@@ -52,7 +52,7 @@ export function minutesByClientInRange(
 
 /** userId → total minutes within [from, to]. */
 export function minutesByUserInRange(
-  entrySums: EntrySum[],
+  entrySums: UserEntrySum[],
   from: string,
   to: string,
 ): Map<string, number> {

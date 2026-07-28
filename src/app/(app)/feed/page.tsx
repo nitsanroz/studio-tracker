@@ -503,7 +503,7 @@ function FeedPageContent() {
     let minutes = 0;
     let withNotes = 0;
     for (const e of feedRows) {
-      users.add(e.userId);
+      if (e.userId) users.add(e.userId);
       days.add(e.date);
       taskIds.add(e.taskId);
       minutes += e.minutes;

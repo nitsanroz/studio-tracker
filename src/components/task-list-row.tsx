@@ -180,7 +180,7 @@ function LoggedByGroup({ userIds, profiles }: { userIds: string[]; profiles: Ret
  * Used by the My Tasks page AND the Home "My tasks" card.
  */
 export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableKey?: string }) {
-  const { clients, sections, profiles, entrySums, currentUserId, openTask, updateTask, tags } =
+  const { clients, sections, profiles, entrySums, entrySumsAll, currentUserId, openTask, updateTask, tags } =
     useData();
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
   const [adding, setAdding] = useState<string | null>(null);
@@ -193,16 +193,22 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
     const total = new Map<string, number>();
     const mine = new Map<string, number>();
     const users = new Map<string, string[]>();
-    for (const e of entrySums) {
+    // A task's TOTAL is its real cost, so it counts the recovered pre-Everhour
+    // hours. "By me" and "logged by" are personal, so they come from the
+    // legacy-free list — a 2021 backfill shouldn't read as time you logged.
+    for (const e of entrySumsAll) {
       if (!ids.has(e.taskId)) continue;
       total.set(e.taskId, (total.get(e.taskId) ?? 0) + e.minutes);
+    }
+    for (const e of entrySums) {
+      if (!ids.has(e.taskId)) continue;
       if (e.userId === currentUserId) mine.set(e.taskId, (mine.get(e.taskId) ?? 0) + e.minutes);
       const arr = users.get(e.taskId) ?? [];
       if (!arr.includes(e.userId)) arr.push(e.userId);
       users.set(e.taskId, arr);
     }
     return { total, mine, users };
-  }, [entrySums, tasks, currentUserId]);
+  }, [entrySums, entrySumsAll, tasks, currentUserId]);
 
   const cell = (key: string) => ({ width: widths[key], flexShrink: 0 } as const);
   const todayIso = toISODate(new Date());
