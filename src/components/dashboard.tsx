@@ -519,6 +519,11 @@ function bucketize(dates: string[], hasRange: boolean) {
   return { keyFor, labelFor };
 }
 
+/** Clients named individually in the donut; the rest fold into "Other". */
+const PIE_CLIENTS = 15;
+/** Series label the "hours over time" headline reads (see totalSeries below). */
+const TOTAL_SERIES = "All hours";
+
 function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
   const { entrySums, entrySumsAll, tasks, clients, currentUserId } = useData();
 
@@ -545,12 +550,18 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
 
   const perBucket = useMemo(() => {
     const { keyFor, labelFor } = bucketize(scoped.map((e) => e.date), !!filter.range);
-    const map = new Map<string, number>();
-    for (const e of scoped) map.set(keyFor(e.date), (map.get(keyFor(e.date)) ?? 0) + e.minutes);
+    const map = new Map<string, { all: number; billable: number }>();
+    for (const e of scoped) {
+      const key = keyFor(e.date);
+      const cur = map.get(key) ?? { all: 0, billable: 0 };
+      cur.all += e.minutes;
+      if (taskById.get(e.taskId)?.billable) cur.billable += e.minutes;
+      map.set(key, cur);
+    }
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, minutes]) => ({ label: labelFor(key), minutes }));
-  }, [scoped, filter.range]);
+      .map(([key, v]) => ({ label: labelFor(key), minutes: v.all, billable: v.billable }));
+  }, [scoped, filter.range, taskById]);
 
   const pieSlices = useMemo(() => {
     const map = new Map<string, number>();
@@ -564,14 +575,14 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
       .filter((r) => r.client)
       .sort((a, b) => b.minutes - a.minutes);
     const slices: { label: string; minutes: number; color: string; href?: string }[] = rows
-      .slice(0, 6)
+      .slice(0, PIE_CLIENTS)
       .map((r) => ({
         label: r.client!.name,
         minutes: r.minutes,
         color: r.client!.color,
         href: `/clients/${r.client!.id}`,
       }));
-    const rest = rows.slice(6).reduce((s, r) => s + r.minutes, 0);
+    const rest = rows.slice(PIE_CLIENTS).reduce((s, r) => s + r.minutes, 0);
     if (rest > 0) slices.push({ label: "Other", minutes: rest, color: "#9ca3af" });
     return slices;
   }, [scoped, taskById, clientById]);
@@ -592,11 +603,25 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
               labels={perBucket.map((p) => p.label)}
               series={[
                 {
-                  label: filter.billableOnly ? "Billable hours" : "Studio hours",
+                  label: TOTAL_SERIES,
                   color: "#0b43ed",
                   values: perBucket.map((p) => p.minutes),
                 },
+                // Showing everything? Then the billable slice rides along as a
+                // second line. With "Billable only" on it would just retrace the
+                // first one, so it's dropped.
+                ...(filter.billableOnly
+                  ? []
+                  : [
+                      {
+                        label: "Billable",
+                        color: "#16a34a",
+                        values: perBucket.map((p) => p.billable),
+                      },
+                    ]),
               ]}
+              // billable ⊂ all hours, so the headline must read ONE series
+              totalSeries={TOTAL_SERIES}
               totalLabel={filter.label.toLowerCase()}
             />
           ) : (

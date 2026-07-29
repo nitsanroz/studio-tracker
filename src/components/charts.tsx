@@ -144,7 +144,7 @@ export function PieChart({
   const RO = 17.5; // outer radius
   const RI = 10.5; // inner radius (donut hole)
   const HOVER_RO = 19.2; // enlarged outer radius on hover
-  const SIZE = 150; // rendered px
+  const SIZE = 300; // rendered px
   const scale = SIZE / 42;
 
   const ang = (p: number) => -Math.PI / 2 + (p / 100) * 2 * Math.PI;
@@ -181,8 +181,12 @@ export function PieChart({
 
   return (
     <div className="flex items-center gap-4">
-      {/* legend — left */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      {/* legend — left. Capped at the donut's height and scrolled: the caller may
+          pass up to 15 clients, which is taller than the chart beside it. */}
+      <div
+        className="flex min-w-0 flex-1 flex-col gap-1 overflow-y-auto pr-1"
+        style={{ maxHeight: SIZE }}
+      >
         {segs.map((s) => {
           const hoverProps = {
             onMouseEnter: () => setHover(s.i),
@@ -430,11 +434,19 @@ export function MultiLineChart({
   labels,
   series,
   totalLabel,
+  totalSeries,
 }: {
   labels: string[];
   series: { label: string; color: string; values: number[] }[];
   /** caption under the big total, e.g. "this month" */
   totalLabel?: string;
+  /**
+   * Label of the one series the headline total + trend should read. Needed when
+   * the series OVERLAP — "billable" is a subset of "all hours", so the default
+   * sum-every-series would double-count. Omit for disjoint series (per client),
+   * where the sum is the right total.
+   */
+  totalSeries?: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const uid = useId().replace(/:/g, "");
@@ -456,9 +468,10 @@ export function MultiLineChart({
   const baseline = padTop + innerH;
 
   // headline: total hours in view + trend of the last bucket vs the one before
-  const total = series.reduce((s, ser) => s + ser.values.reduce((a, b) => a + b, 0), 0);
-  const lastSum = series.reduce((s, ser) => s + (ser.values.at(-1) ?? 0), 0);
-  const prevSum = n > 1 ? series.reduce((s, ser) => s + (ser.values.at(-2) ?? 0), 0) : 0;
+  const headline = totalSeries ? series.filter((s) => s.label === totalSeries) : series;
+  const total = headline.reduce((s, ser) => s + ser.values.reduce((a, b) => a + b, 0), 0);
+  const lastSum = headline.reduce((s, ser) => s + (ser.values.at(-1) ?? 0), 0);
+  const prevSum = n > 1 ? headline.reduce((s, ser) => s + (ser.values.at(-2) ?? 0), 0) : 0;
   const trend = prevSum > 0 ? Math.round(((lastSum - prevSum) / prevSum) * 100) : null;
 
   // tooltip rows: every series with hours at the hovered bucket, biggest first
