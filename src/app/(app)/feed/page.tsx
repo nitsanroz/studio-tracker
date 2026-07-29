@@ -21,7 +21,6 @@ import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/compone
 import { EditableTextCell } from "@/components/editable-cell";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import { TaskAutocomplete, type TaskMatch } from "@/components/task-autocomplete";
-import { EverhourSyncButton } from "@/components/everhour-sync-button";
 import type { TimeEntry } from "@/lib/types";
 
 type Period = "Recent" | RangePreset;
@@ -190,17 +189,20 @@ function UserDayDetails({
                 key={e.id}
                 entry={e}
                 leading={
+                  // client on its own line — a bare task title ("Homepage") reads
+                  // the same for half the studio's clients
                   <span
-                    className="flex w-48 shrink-0 items-center gap-1.5 text-xs text-muted"
-                    title={task?.title}
+                    className="flex w-48 shrink-0 flex-col gap-0.5 text-xs text-muted"
+                    title={client ? `${client.name} · ${task?.title ?? ""}` : task?.title}
                   >
                     {client && (
-                      <span
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: client.color }}
-                      />
+                      <span className="min-w-0 truncate">
+                        <ClientChip client={client} size="sm" />
+                      </span>
                     )}
-                    <span className="bidi-auto truncate">{task?.title ?? "(deleted task)"}</span>
+                    <span className="bidi-auto truncate text-foreground">
+                      {task?.title ?? "(deleted task)"}
+                    </span>
                   </span>
                 }
               />
@@ -623,7 +625,6 @@ function FeedPageContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && <EverhourSyncButton />}
           <button
             onClick={() => setUserPopup({ userId: currentUserId, date: toISODate(new Date()) })}
             className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
@@ -978,13 +979,17 @@ function FeedPageContent() {
                                 key={`${userId}-${taskId}`}
                                 className="border-b border-border/60 bg-background/50 text-xs last:border-b-0"
                               >
-                                <td className="max-w-64 py-1.5 pl-9 pr-2">
-                                  <span className="flex min-w-0 items-center gap-1.5" title={task?.title}>
+                                <td className="max-w-80 py-1.5 pl-9 pr-2">
+                                  <span
+                                    className="flex min-w-0 items-center gap-2"
+                                    title={client ? `${client.name} · ${task?.title ?? ""}` : task?.title}
+                                  >
+                                    {/* link={false}: the cells in this row open day
+                                        popups, so the chip stays a label here */}
                                     {client && (
-                                      <span
-                                        className="size-2 shrink-0 rounded-full"
-                                        style={{ backgroundColor: client.color }}
-                                      />
+                                      <span className="max-w-32 shrink-0 truncate">
+                                        <ClientChip client={client} size="sm" link={false} />
+                                      </span>
                                     )}
                                     <span className="bidi-auto truncate">
                                       {task?.title ?? "(deleted task)"}

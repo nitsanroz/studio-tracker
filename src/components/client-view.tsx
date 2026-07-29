@@ -24,6 +24,7 @@ import {
   EditableTextCell,
 } from "./editable-cell";
 import { ClientReportButtons } from "./client-report-buttons";
+import { useColWidths, ResizeHandle } from "./resizable";
 import { HBar, LineChart } from "./charts";
 import type { Profile, Section, Task } from "@/lib/types";
 
@@ -149,10 +150,12 @@ function ClientStats({ clientId }: { clientId: string }) {
 // pl-9 clears the 36px left gutter, which holds BOTH the select checkbox (left-1)
 // and the drag handle (left-[18px]) — absolutely positioned, so appearing on hover
 // never shifts the row. The gutter was NOT widened to fit the checkbox: the fixed
-// columns already overflow this table's 720px min-width, leaving the name cell
-// about 89px, so every pixel spent here is taken straight off the task name. The
-// grip keeps its full row height (the v0.99.27 fix for intermittent dragging — the
-// height was what mattered) at half the width.
+// columns leave the name cell little room, so every pixel spent here is taken
+// straight off the task name. The grip keeps its full row height (the v0.99.27 fix
+// for intermittent dragging — the height was what mattered) at half the width.
+// The name cell has a min-w-32 floor and the table wrapper is min-w-fit (as on My
+// Tasks): widening a resizable column scrolls the table sideways instead of
+// crushing the name to a single character.
 const COLS = "flex items-center gap-3 pl-9 pr-4";
 /** Applied to the leading cell (the tick, and the header's spacer) so both stay aligned. */
 const LEAD_TIGHT = "-mr-1.5";
@@ -172,6 +175,27 @@ type SelectionCtx = {
 };
 const SelectionContext = createContext<SelectionCtx | null>(null);
 const useSelection = () => useContext(SelectionContext);
+
+/**
+ * Drag-resizable column widths, same mechanism as the My Tasks table. A context
+ * for the same reason as the selection above: the header owns the drag handles
+ * but the widths have to reach TaskRow, which is rendered two levels down
+ * through SectionGroup. Defaults are the px equivalents of the Tailwind widths
+ * these cells used to carry (w-40 / w-16 / w-28 / w-36); the "$" column stays
+ * fixed — it holds one glyph and there is nothing to reveal by widening it.
+ */
+const COL_DEFAULTS: Record<string, number> = {
+  assignee: 160,
+  due: 64,
+  tag: 112,
+  budget: 144,
+};
+const ColWidthsContext = createContext<Record<string, number>>(COL_DEFAULTS);
+/** Width + no-shrink for one column cell, for `style={…}`. */
+function useColCell() {
+  const widths = useContext(ColWidthsContext);
+  return (key: string) => ({ width: widths[key] ?? COL_DEFAULTS[key], flexShrink: 0 }) as const;
+}
 
 /** Tri-state select-all: checked when every id is selected, dash when only some are. */
 function SelectAllBox({ ids, title }: { ids: string[]; title: string }) {
@@ -300,6 +324,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   } = useData();
   const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
   const sel = useSelection();
+  const colCell = useColCell();
   const checked = sel?.selected.has(task.id) ?? false;
   const [dropBefore, setDropBefore] = useState(false);
   // Only a mousedown on the grip may start a drag. With the whole row draggable, any
@@ -438,7 +463,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
         </span>
       )}
-      <span className={`flex min-w-0 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
+      <span className={`flex min-w-32 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
         {isAdmin ? (
           <EditableTextCell
             value={task.title}
@@ -480,7 +505,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           </span>
         )}
       </span>
-      <span className="hidden w-40 shrink-0 text-xs text-muted sm:block">
+      <span className="hidden text-xs text-muted sm:block" style={colCell("assignee")}>
         <EditableSelectCell
           value={task.assigneeId ?? ""}
           options={profiles.filter((p) => p.active || p.id === task.assigneeId).map((p) => ({ value: p.id, label: p.name }))}
@@ -498,7 +523,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           }
         />
       </span>
-      <span className="w-16 shrink-0 text-xs text-muted">
+      <span className="text-xs text-muted" style={colCell("due")}>
         {isAdmin ? (
           <EditableDateCell
             value={task.dueDate}
@@ -510,7 +535,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <span className="px-1.5 py-0.5">{task.dueDate ? formatDate(task.dueDate) : ""}</span>
         )}
       </span>
-      <span className="hidden w-28 shrink-0 lg:block">
+      <span className="hidden lg:block" style={colCell("tag")}>
         <EditableSelectCell
           value={task.tag ?? ""}
           options={tags.map((t) => ({ value: t.name, label: t.name }))}
@@ -519,7 +544,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           display={task.tag ? <TagBadge tag={task.tag} /> : null}
         />
       </span>
-      <span className="hidden w-36 shrink-0 md:block">
+      <span className="hidden md:block" style={colCell("budget")}>
         {isAdmin ? (
           <EditableNumberCell
             value={task.estimateHours}
@@ -584,7 +609,7 @@ function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: stri
           }
         }}
         placeholder="Task name — Enter to add"
-        className="bidi-auto min-w-0 flex-1 bg-transparent text-sm outline-none"
+        className="bidi-auto min-w-32 flex-1 bg-transparent text-sm outline-none"
       />
     </form>
   );
@@ -684,7 +709,7 @@ function SectionGroup({
           <CollapseChevron open={open} />
         </button>
         {isAdmin && section ? (
-          <span className="min-w-0 flex-1">
+          <span className="min-w-32 flex-1">
             <EditableTextCell
               value={section.name}
               onCommit={(v) => v && v !== section.name && updateSection(section.id, { name: v })}
@@ -693,7 +718,7 @@ function SectionGroup({
         ) : (
           <button
             onClick={onToggle}
-            className="bidi-auto min-w-0 flex-1 truncate text-left"
+            className="bidi-auto min-w-32 flex-1 truncate text-left"
           >
             {section?.name ?? "No section"}
           </button>
@@ -897,6 +922,8 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
   const [sort, setSort] = useState<Sort>(null);
+  const { widths, startResize } = useColWidths("client-tasks", COL_DEFAULTS);
+  const colCell = (key: string) => ({ width: widths[key], flexShrink: 0 }) as const;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   /** Anchor for shift-click ranges — the last row toggled without shift. */
   const lastPickedRef = useRef<string | null>(null);
@@ -1051,6 +1078,7 @@ export function ClientView({ clientId }: { clientId: string }) {
       <div className="flex gap-4">
         <div className="min-w-0 max-w-[850px] flex-1">
       {view === "list" ? (
+        <ColWidthsContext.Provider value={widths}>
         <SelectionContext.Provider value={isAdmin ? selectionValue : null}>
         {/* dragstart/dragend bubble, so the whole table can know a drag is running
             without threading state through every row. */}
@@ -1066,8 +1094,10 @@ export function ClientView({ clientId }: { clientId: string }) {
             draggedTaskId = null;
           }}
         >
-          <div className="min-w-[720px]">
-            <div className={`${COLS} relative h-8 border-b border-border bg-background text-xs font-medium`}>
+          <div className="min-w-fit">
+            <div
+              className={`${COLS} group/thead relative h-8 border-b border-border bg-background text-xs font-medium`}
+            >
               {isAdmin && (
                 <span className="absolute left-1 top-0 flex h-full items-center">
                   <SelectAllBox ids={orderedIds} title="Select every task shown" />
@@ -1081,20 +1111,24 @@ export function ClientView({ clientId }: { clientId: string }) {
               >
                 <CollapseChevron open={!allCollapsed} />
               </button>
-              <span className="min-w-0 flex-1">
+              <span className="min-w-32 flex-1">
                 <SortHeader label="Name" k="title" sort={sort} onSort={cycleSort} />
               </span>
-              <span className="hidden w-40 shrink-0 sm:block">
+              <span className="relative hidden sm:block" style={colCell("assignee")}>
                 <SortHeader label="Assignee" k="assignee" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("assignee")} />
               </span>
-              <span className="w-16 shrink-0">
+              <span className="relative" style={colCell("due")}>
                 <SortHeader label="Due" k="due" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("due")} />
               </span>
-              <span className="hidden w-28 shrink-0 lg:block">
+              <span className="relative hidden lg:block" style={colCell("tag")}>
                 <SortHeader label="Tag" k="tag" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("tag")} />
               </span>
-              <span className="hidden w-36 shrink-0 md:block">
+              <span className="relative hidden md:block" style={colCell("budget")}>
                 <SortHeader label="Hrs/budget" k="budget" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("budget")} />
               </span>
               {isAdmin && (
                 <span className="w-4 shrink-0">
@@ -1172,6 +1206,7 @@ export function ClientView({ clientId }: { clientId: string }) {
           />
         )}
         </SelectionContext.Provider>
+        </ColWidthsContext.Provider>
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {statuses.map(({ key, label }) => {

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bell, Check, Inbox } from "lucide-react";
+import { Bell, Check, Inbox } from "lucide-react";
 
 /**
  * Admin notification queue in the header. One place for things that are
- * waiting on a decision — client intake requests, and Everhour entries the
- * sync couldn't import. The badge is the total; nothing clears itself.
+ * waiting on a decision — currently client intake requests. The badge is the
+ * total; nothing clears itself.
  */
 
 interface Item {
@@ -19,13 +19,7 @@ interface Item {
   tone: "brand" | "danger";
 }
 
-export function NotificationsBell({
-  pendingIntake,
-  openSyncIssues,
-}: {
-  pendingIntake: number;
-  openSyncIssues: number;
-}) {
+export function NotificationsBell({ pendingIntake }: { pendingIntake: number }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -54,17 +48,9 @@ export function NotificationsBell({
       Icon: Inbox,
       tone: "brand",
     },
-    {
-      count: openSyncIssues,
-      href: "/sync-issues",
-      label: `${openSyncIssues} Everhour ${openSyncIssues === 1 ? "entry" : "entries"} not imported`,
-      detail: "Unmapped task or person — these hours are missing from reports",
-      Icon: AlertTriangle,
-      tone: "danger",
-    },
   ] satisfies Item[]).filter((i) => i.count > 0);
 
-  const total = pendingIntake + openSyncIssues;
+  const total = pendingIntake;
 
   return (
     <div className="relative" ref={ref}>

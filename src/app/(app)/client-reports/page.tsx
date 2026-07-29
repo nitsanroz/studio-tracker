@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertTriangle,
   Banknote,
   Check,
   ChevronLeft,
@@ -13,7 +12,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useData } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapReportLink } from "@/lib/db";
@@ -263,7 +261,6 @@ function PublishWorkspace() {
     entrySumsAll,
     billingPeriods,
     currentUserId,
-    openSyncIssues,
     openTask,
     updateTask,
     addBillingPeriod,
@@ -540,24 +537,6 @@ function PublishWorkspace() {
           </div>
         )}
       </div>
-
-      {/* Publishing freezes whatever is on screen — say so if hours are still
-          stuck in the Everhour queue, before a client sees an understated report. */}
-      {openSyncIssues > 0 && (
-        <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm">
-          <AlertTriangle size={17} strokeWidth={1.75} className="shrink-0 text-danger" />
-          <span>
-            {openSyncIssues} Everhour {openSyncIssues === 1 ? "entry" : "entries"} couldn&apos;t be
-            imported. Hours below may be understated — resolve them before publishing.
-          </span>
-          <Link
-            href="/sync-issues"
-            className="ml-auto shrink-0 rounded-md border border-danger/40 px-2.5 py-1 text-xs font-semibold text-danger hover:bg-danger/10"
-          >
-            Review sync issues
-          </Link>
-        </div>
-      )}
 
       {/* tabs — one line, scrollable with arrows when it overflows */}
       <div className="flex items-center gap-1">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
 
@@ -130,7 +131,9 @@ export function MiniColumnsLabeled({
 export function PieChart({
   slices,
 }: {
-  slices: { label: string; minutes: number; color: string }[];
+  /** `href` makes the legend row a link (e.g. to the client's page); aggregate
+   *  slices like "Other" simply leave it off and stay plain text. */
+  slices: { label: string; minutes: number; color: string; href?: string }[];
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const total = slices.reduce((s, x) => s + x.minutes, 0);
@@ -180,22 +183,33 @@ export function PieChart({
     <div className="flex items-center gap-4">
       {/* legend — left */}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {segs.map((s) => (
-          <div
-            key={s.i}
-            onMouseEnter={() => setHover(s.i)}
-            onMouseLeave={() => setHover(null)}
-            className={`flex cursor-default items-center justify-between gap-2 rounded px-1 py-0.5 text-xs transition-colors ${
-              hover === s.i ? "bg-background" : ""
-            }`}
-          >
-            <span className="flex min-w-0 items-center gap-1.5 font-medium">
-              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-              <span className="bidi-auto truncate">{s.label}</span>
-            </span>
-            <span className="shrink-0 tabular-nums text-muted">{s.pct.toFixed(1)}%</span>
-          </div>
-        ))}
+        {segs.map((s) => {
+          const hoverProps = {
+            onMouseEnter: () => setHover(s.i),
+            onMouseLeave: () => setHover(null),
+            className: `flex items-center justify-between gap-2 rounded px-1 py-0.5 text-xs transition-colors ${
+              s.href ? "cursor-pointer" : "cursor-default"
+            } ${hover === s.i ? "bg-background" : ""}`,
+          };
+          const body = (
+            <>
+              <span className="flex min-w-0 items-center gap-1.5 font-medium">
+                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                <span className={`bidi-auto truncate ${s.href ? "hover:underline" : ""}`}>{s.label}</span>
+              </span>
+              <span className="shrink-0 tabular-nums text-muted">{s.pct.toFixed(1)}%</span>
+            </>
+          );
+          return s.href ? (
+            <Link key={s.i} href={s.href} title={`Open ${s.label}`} {...hoverProps}>
+              {body}
+            </Link>
+          ) : (
+            <div key={s.i} {...hoverProps}>
+              {body}
+            </div>
+          );
+        })}
       </div>
 
       {/* donut — right */}

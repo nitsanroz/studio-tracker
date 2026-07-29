@@ -111,8 +111,6 @@ interface Store {
   currentUserId: string;
   /** Name of the member an admin is previewing as (?viewAs=…), null when off. */
   viewingAs: string | null;
-  /** Everhour entries that couldn't be imported and need an admin to resolve. */
-  openSyncIssues: number;
   openTaskId: string | null;
   planColumns: PlanColumn[];
   planEntries: PlanEntry[];
@@ -255,7 +253,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     );
     return target && target.id !== currentUserId ? target : null;
   }, [viewAsKey, currentUserId, profiles]);
-  const [openSyncIssues, setOpenSyncIssues] = useState(0);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [taskRequests, setTaskRequests] = useState<TaskRequest[]>([]);
   const loadedTaskExtras = useRef<Set<string>>(new Set());
@@ -359,7 +356,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       const tagsP = supabase.from("tags").select("*").order("position");
-      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, openIssues, requests, periods, days, dev] =
+      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, requests, periods, days, dev] =
         await Promise.all([
           // "*" keeps boot working whether or not migration 0004 is applied
           fetchAll<DbRow>(supabase, "profiles", "*"),
@@ -413,15 +410,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .order("date", { ascending: false })
             .order("created_at", { ascending: false })
             .limit(400),
-          // Open Everhour sync gaps, for the header notification bell.
-          // Admin-only via RLS (0 for designers); 0 too if 0014 isn't applied yet.
-          (async () => {
-            const { count, error } = await supabase
-              .from("sync_issues")
-              .select("id", { count: "exact", head: true })
-              .eq("status", "open");
-            return error ? 0 : (count ?? 0);
-          })(),
           // Returns [] for designers (RLS: admins only)
           supabase.from("task_requests").select("*").order("created_at", { ascending: false }),
           // pre-0007 these tables don't exist; RLS hides them from designers
@@ -451,7 +439,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTimeEntries((feed.data ?? []).map(mapTimeEntry));
       setPlanColumns(cols.map(mapPlanColumn));
       setPlanEntries(pe.map(mapPlanEntry));
-      setOpenSyncIssues(openIssues);
       setTaskRequests(((requests.data ?? []) as DbRow[]).map(mapTaskRequest));
       setLoading(false);
     })().catch((e) => {
@@ -1620,7 +1607,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       entrySumsAll,
       currentUserId: viewAsProfile ? viewAsProfile.id : currentUserId,
       viewingAs: viewAsProfile ? viewAsProfile.name : null,
-      openSyncIssues,
       openTaskId,
       planColumns,
       planEntries,
@@ -1678,7 +1664,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
-      currentUserId, viewAsProfile, openSyncIssues, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
+      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
       openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
     ],
   );

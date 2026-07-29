@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import {
-  AlertTriangle,
   CalendarDays,
   ChartPie,
   History,
@@ -62,7 +61,6 @@ function Shell({ children }: { children: ReactNode }) {
     currentUserId,
     loading,
     taskRequests,
-    openSyncIssues,
     viewingAs,
     writeError,
     dismissWriteError,
@@ -155,25 +153,6 @@ function Shell({ children }: { children: ReactNode }) {
               )}
             </Link>
           )}
-          {isAdmin && (
-            <Link
-              href="/sync-issues"
-              className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
-              style={
-                pathname.startsWith("/sync-issues")
-                  ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
-                  : { color: "var(--sb-muted)" }
-              }
-            >
-              <AlertTriangle size={20} strokeWidth={1.75} />
-              Sync issues
-              {openSyncIssues > 0 && (
-                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
-                  {openSyncIssues}
-                </span>
-              )}
-            </Link>
-          )}
           {NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
             if (!isAdmin) return null;
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -234,10 +213,7 @@ function Shell({ children }: { children: ReactNode }) {
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2.5">
             {isAdmin && (
-              <NotificationsBell
-                pendingIntake={pendingIntake}
-                openSyncIssues={openSyncIssues}
-              />
+              <NotificationsBell pendingIntake={pendingIntake} />
             )}
             <Link
               href="/settings"

@@ -168,10 +168,11 @@ function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: strin
       <span className="w-11 shrink-0 text-sm font-semibold tabular-nums">
         {formatHoursShort(entry.minutes)}
       </span>
+      {/* link={false}: clicking the row opens the inline editor, so a navigating
+          chip inside it would be a trap rather than a shortcut */}
       {client && (
-        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: client.color }} />
-          <span className="bidi-auto max-w-24 truncate">{client.name}</span>
+        <span className="max-w-28 shrink-0 truncate">
+          <ClientChip client={client} size="sm" link={false} />
         </span>
       )}
       <span className="bidi-auto min-w-0 flex-1 truncate text-sm">
@@ -493,6 +494,13 @@ interface HomeFilter {
   range: { from: string; to: string } | null; // null = all time
   label: string;
   clientId: string;
+  /**
+   * Admin toggle: when on, every hour figure on the page counts BILLABLE tasks
+   * only. The two billable-SHARE readouts (the Billable tile, the per-designer
+   * bars) deliberately keep their denominator on all hours — a share of a
+   * billable-only total is 100% by construction and would say nothing.
+   */
+  billableOnly: boolean;
 }
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -527,7 +535,9 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
       source.filter((e) => {
         if (!isAdmin && e.userId !== currentUserId) return false;
         if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
-        if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
+        const task = taskById.get(e.taskId);
+        if (filter.clientId && task?.clientId !== filter.clientId) return false;
+        if (filter.billableOnly && !task?.billable) return false;
         return true;
       }),
     [source, currentUserId, isAdmin, filter, taskById],
@@ -553,9 +563,14 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
       .map(([clientId, minutes]) => ({ client: clientById.get(clientId), minutes }))
       .filter((r) => r.client)
       .sort((a, b) => b.minutes - a.minutes);
-    const slices = rows
+    const slices: { label: string; minutes: number; color: string; href?: string }[] = rows
       .slice(0, 6)
-      .map((r) => ({ label: r.client!.name, minutes: r.minutes, color: r.client!.color }));
+      .map((r) => ({
+        label: r.client!.name,
+        minutes: r.minutes,
+        color: r.client!.color,
+        href: `/clients/${r.client!.id}`,
+      }));
     const rest = rows.slice(6).reduce((s, r) => s + r.minutes, 0);
     if (rest > 0) slices.push({ label: "Other", minutes: rest, color: "#9ca3af" });
     return slices;
@@ -569,7 +584,24 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
           Hours over time
         </h2>
         {perBucket.length > 0 ? (
-          <MiniColumnsLabeled points={perBucket} />
+          // Admins get the line form (same chart as the client-trend pane beside
+          // it, single series) — it thins the x labels, which matters at 20+ daily
+          // buckets. Members keep the labelled columns.
+          isAdmin ? (
+            <MultiLineChart
+              labels={perBucket.map((p) => p.label)}
+              series={[
+                {
+                  label: filter.billableOnly ? "Billable hours" : "Studio hours",
+                  color: "#0b43ed",
+                  values: perBucket.map((p) => p.minutes),
+                },
+              ]}
+              totalLabel={filter.label.toLowerCase()}
+            />
+          ) : (
+            <MiniColumnsLabeled points={perBucket} />
+          )
         ) : (
           <p className="text-sm text-faint">No hours in this scope.</p>
         )}
@@ -601,7 +633,9 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
   const { labels, series } = useMemo(() => {
     const scoped = entrySumsAll.filter((e) => {
       if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
-      if (filter.clientId && taskById.get(e.taskId)?.clientId !== filter.clientId) return false;
+      const task = taskById.get(e.taskId);
+      if (filter.clientId && task?.clientId !== filter.clientId) return false;
+      if (filter.billableOnly && !task?.billable) return false;
       return true;
     });
     const { keyFor, labelFor } = bucketize(scoped.map((e) => e.date), !!filter.range);
@@ -709,8 +743,19 @@ type ApiOccasion = {
   years?: number;
 };
 
+/** How far out the ADMIN pane looks. */
+const OCCASION_HORIZON_DAYS = 30;
+/**
+ * How far out the MEMBER hero looks. Shorter on purpose: the team should see
+ * what's actually imminent, not a month of future dates. The admin pane shows the
+ * full horizon and DIMS anything past this window — that dimming is exactly "not
+ * showing to the team yet".
+ */
+const MEMBER_OCCASION_DAYS = 7;
+
 /** `inline` drops the card chrome and inverts the colours, for use inside the blue
- *  member hero. Both forms keep the prev/next pagination. */
+ *  member hero, and only shows what members can actually see. The admin form is a
+ *  4-card carousel, soonest first, with the not-yet-visible ones dimmed. */
 function Celebrations({ inline = false }: { inline?: boolean }) {
   const [raw, setRaw] = useState<ApiOccasion[]>([]);
   const [at, setAt] = useState(0);
@@ -733,8 +778,16 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
   const upcoming = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const horizon = 30 * 86400000;
-    const out: { icon: string; text: string; when: string; rel: string; at: number }[] = [];
+    const horizon = OCCASION_HORIZON_DAYS * 86400000;
+    const out: {
+      icon: string;
+      text: string;
+      when: string;
+      rel: string;
+      at: number;
+      /** false = beyond the member window, so the team can't see it yet */
+      liveForMembers: boolean;
+    }[] = [];
 
     for (const o of raw) {
       let next: Date;
@@ -767,12 +820,15 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
         when: `${next.getDate()}/${next.getMonth() + 1}`,
         rel: inDays === 0 ? "today" : inDays === 1 ? "tomorrow" : `in ${inDays} days`,
         at: next.getTime(),
+        liveForMembers: inDays <= MEMBER_OCCASION_DAYS,
       });
     }
     // Sort on the timestamp: the old code compared the formatted "D/M" string, so
     // "10/8" sorted before "9/8".
-    return out.sort((a, b) => a.at - b.at);
-  }, [raw]);
+    const sorted = out.sort((a, b) => a.at - b.at);
+    // The member hero only ever shows what is live for members.
+    return inline ? sorted.filter((o) => o.liveForMembers) : sorted;
+  }, [raw, inline]);
 
   if (upcoming.length === 0) return null;
 
@@ -838,38 +894,62 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
     );
   }
 
+  // ── admin form: a window of 4 cards, soonest on the left ────────────────
+  const PER_PAGE = 4;
+  const start = Math.min(at, Math.max(0, upcoming.length - PER_PAGE));
+  const page = upcoming.slice(start, start + PER_PAGE);
+  const canPrev = start > 0;
+  const canNext = start + PER_PAGE < upcoming.length;
+
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-heading text-sm">Coming up — next 30 days</h2>
-        {many && (
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <h2 className="font-heading text-sm">Coming up — next {OCCASION_HORIZON_DAYS} days</h2>
+        {upcoming.length > PER_PAGE && (
           <div className="flex shrink-0 items-center gap-1">
             <span className="mr-1 text-xs tabular-nums text-faint">
-              {idx + 1}/{upcoming.length}
+              {start + 1}–{start + page.length} of {upcoming.length}
             </span>
             <button
-              onClick={() => setAt((v) => (v - 1 + upcoming.length) % upcoming.length)}
-              aria-label="Previous"
-              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand"
+              onClick={() => setAt(Math.max(0, start - 1))}
+              disabled={!canPrev}
+              aria-label="Earlier occasions"
+              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
             >
               <ChevronLeft size={14} />
             </button>
             <button
-              onClick={() => setAt((v) => (v + 1) % upcoming.length)}
-              aria-label="Next"
-              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand"
+              onClick={() => setAt(start + 1)}
+              disabled={!canNext}
+              aria-label="Later occasions"
+              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
             >
               <ChevronRight size={14} />
             </button>
           </div>
         )}
       </div>
-      <div className="flex flex-1 items-center gap-3">
-        <span className="text-2xl">{cur.icon}</span>
-        <span className="bidi-auto min-w-0 flex-1 text-sm font-medium">{cur.text}</span>
-        <span className="shrink-0 text-xs text-muted">
-          <span className="tabular-nums">{cur.when}</span> · {cur.rel}
-        </span>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        {page.map((o) => (
+          <div
+            key={o.at + o.text}
+            // Dimmed = past the member window, i.e. the team can't see it yet.
+            className={`flex flex-col gap-1.5 rounded-xl border border-border bg-background p-3 ${
+              o.liveForMembers ? "" : "opacity-50"
+            }`}
+            title={
+              o.liveForMembers
+                ? undefined
+                : `Not shown to the team yet — the studio sees occasions within ${MEMBER_OCCASION_DAYS} days`
+            }
+          >
+            <span className="text-xl leading-none">{o.icon}</span>
+            <span className="bidi-auto line-clamp-2 text-sm font-medium leading-tight">{o.text}</span>
+            <span className="mt-auto text-xs text-muted">
+              <span className="tabular-nums">{o.when}</span> · {o.rel}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -985,9 +1065,14 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   const s = useMemo(() => {
+    // curAll/prevAll ignore the billable-only toggle on purpose: they are the
+    // denominator of the Billable share, which is the one figure that has to stay
+    // "billable out of everything" whatever the page is scoped to.
     let cur = 0,
+      curAll = 0,
       curB = 0,
       prev = 0,
+      prevAll = 0,
       prevB = 0,
       curLive = 0;
     const designers = new Set<string>();
@@ -995,29 +1080,32 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
     for (const e of entrySumsAll) {
       const task = taskById.get(e.taskId);
       if (filter.clientId && task?.clientId !== filter.clientId) continue;
+      const counts = !filter.billableOnly || !!task?.billable;
       const inCur = !filter.range || (e.date >= filter.range.from && e.date <= filter.range.to);
       if (inCur) {
-        cur += e.minutes;
+        curAll += e.minutes;
         if (task?.billable) curB += e.minutes;
+        if (counts) cur += e.minutes;
         // "Tasks worked" and "Avg / designer" describe people working now. A 2019
         // backfill has no place in either — and 1,346 of those entries have no
         // profile at all, so they would skew the designer count toward nothing.
-        if (e.minutes > 0 && !e.legacy && e.userId) {
+        if (counts && e.minutes > 0 && !e.legacy && e.userId) {
           curLive += e.minutes;
           designers.add(e.userId);
           worked.add(e.taskId);
         }
       } else if (prevRange && e.date >= prevRange.from && e.date <= prevRange.to) {
-        prev += e.minutes;
+        prevAll += e.minutes;
         if (task?.billable) prevB += e.minutes;
+        if (counts) prev += e.minutes;
       }
     }
-    return { cur, curB, prev, prevB, curLive, designers: designers.size, worked: worked.size };
+    return { cur, curAll, curB, prev, prevAll, prevB, curLive, designers: designers.size, worked: worked.size };
   }, [entrySumsAll, taskById, filter, prevRange]);
 
   const hoursDelta = prevRange && s.prev > 0 ? Math.round(((s.cur - s.prev) / s.prev) * 100) : null;
-  const curPct = s.cur > 0 ? Math.round((s.curB / s.cur) * 100) : 0;
-  const prevPct = s.prev > 0 ? Math.round((s.prevB / s.prev) * 100) : null;
+  const curPct = s.curAll > 0 ? Math.round((s.curB / s.curAll) * 100) : 0;
+  const prevPct = s.prevAll > 0 ? Math.round((s.prevB / s.prevAll) * 100) : null;
   const pctDelta = prevPct != null ? curPct - prevPct : null;
   // Live hours over live designers. Dividing the history-inclusive total by the
   // count of people working today would report an average nobody worked.
@@ -1028,8 +1116,21 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <StatTile hi label="Studio hours" figure={hFig} unit={hUnit} delta={hoursDelta != null ? { value: hoursDelta, unit: "%" } : null} sub="this period" />
-      <StatTile label="Billable" figure={String(curPct)} unit="%" delta={pctDelta != null ? { value: pctDelta, unit: "pp" } : null} sub="of hours" />
+      <StatTile
+        hi
+        label={filter.billableOnly ? "Billable hours" : "Studio hours"}
+        figure={hFig}
+        unit={hUnit}
+        delta={hoursDelta != null ? { value: hoursDelta, unit: "%" } : null}
+        sub="this period"
+      />
+      <StatTile
+        label="Billable"
+        figure={String(curPct)}
+        unit="%"
+        delta={pctDelta != null ? { value: pctDelta, unit: "pp" } : null}
+        sub={filter.billableOnly ? "of all hours" : "of hours"}
+      />
       <StatTile label="Tasks worked" figure={String(s.worked)} sub="this period" />
       <StatTile label="Avg / designer" figure={pdFig} unit={pdUnit} sub={`${s.designers} designer${s.designers === 1 ? "" : "s"}`} />
     </div>
@@ -1056,7 +1157,13 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
       .filter((p) => p.active)
       .map((p) => {
         const r = per.get(p.id) ?? { min: 0, bil: 0 };
-        return { p, min: r.min, pct: r.min > 0 ? Math.round((r.bil / r.min) * 100) : 0 };
+        // The bar is the billable SHARE, so it stays over all hours even when the
+        // page shows billable only — otherwise every designer reads a flat 100%.
+        return {
+          p,
+          min: filter.billableOnly ? r.bil : r.min,
+          pct: r.min > 0 ? Math.round((r.bil / r.min) * 100) : 0,
+        };
       })
       .filter((x) => x.min > 0)
       .sort((a, b) => b.min - a.min);
@@ -1074,7 +1181,9 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
           View team <ArrowRight size={12} />
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
+      {/* half-width pane since v0.99.35 (it took the My-tasks slot), so 4 across at
+          most — 8 columns here would leave each card too narrow to read */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
         {rows.map(({ p, min, pct }) => (
           <Link
             key={p.id}
@@ -1230,14 +1339,18 @@ export function Dashboard() {
   const [rangeKey, setRangeKey] = useState<(typeof HOME_RANGES)[number]>("This month");
   const [periodOffset, setPeriodOffset] = useState(0);
   const [filterClient, setFilterClient] = useState("");
+  const [billableOnly, setBillableOnly] = useState(false);
   const filter: HomeFilter = useMemo(() => {
     const b = periodBounds(rangeKey, periodOffset);
     return {
       range: b ? { from: toISODate(b.start), to: toISODate(b.end) } : null,
       label: rangeLabel(rangeKey, periodOffset),
       clientId: filterClient,
+      // Members have no toggle — internal vs client work isn't a distinction their
+      // own hours are read through, and the control is admin-only.
+      billableOnly: isAdmin && billableOnly,
     };
-  }, [rangeKey, periodOffset, filterClient]);
+  }, [rangeKey, periodOffset, filterClient, isAdmin, billableOnly]);
   const prevRange = useMemo(
     () => comparablePrevRange(rangeKey, periodOffset),
     [rangeKey, periodOffset],
@@ -1291,7 +1404,8 @@ export function Dashboard() {
                 onClick={() => openTask(t.id)}
                 className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left hover:bg-background"
               >
-                {c && <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />}
+                {/* link={false}: the whole row is a button, and an <a> can't nest in one */}
+                {c && <ClientChip client={c} size="sm" link={false} />}
                 <span className="bidi-auto min-w-0 flex-1 truncate text-sm font-medium">{t.title}</span>
                 {t.dueDate && (
                   <span className="shrink-0 text-xs tabular-nums text-muted">{formatFeedDate(t.dueDate)}</span>
@@ -1332,10 +1446,14 @@ export function Dashboard() {
             <p className="text-xs text-muted">In the studio</p>
           </div>
         )}
-        <div>
-          <div className="font-serif-accent text-[30px] leading-9">{myTasks.length}</div>
-          <p className="text-xs text-muted">Tasks assigned</p>
-        </div>
+        {/* admins don't triage their own assignments from here — the counter went
+            with the My-tasks pane */}
+        {!isAdmin && (
+          <div>
+            <div className="font-serif-accent text-[30px] leading-9">{myTasks.length}</div>
+            <p className="text-xs text-muted">Tasks assigned</p>
+          </div>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
           {HOME_RANGES.map((r) => (
             <button
@@ -1384,6 +1502,24 @@ export function Dashboard() {
               )}
             </div>
           )}
+          {isAdmin && (
+            <label
+              title="Count only hours logged on billable tasks — every tile, graph and designer figure on this page follows it. The two billable-share readouts keep all hours as their denominator."
+              className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${
+                billableOnly
+                  ? "border-brand bg-brand-soft text-brand-dark"
+                  : "border-border bg-surface text-muted hover:border-border-strong"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={billableOnly}
+                onChange={(e) => setBillableOnly(e.target.checked)}
+                className="size-3.5 accent-brand"
+              />
+              Billable only
+            </label>
+          )}
           <select
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
@@ -1422,14 +1558,13 @@ export function Dashboard() {
           <div className="empty:hidden">
             <Celebrations />
           </div>
-          {/* analytics 2×2 — hours over time / by client, then client-trend + my tasks */}
+          {/* analytics 2×2 — hours over time / by client, then client-trend and the
+              studio roster, which took the My-tasks slot (admins use /my-tasks) */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={isAdmin} />
             <StudioClientTrend filter={filter} />
-            {compactTasksCard}
+            <StudioTeamStrip filter={filter} />
           </div>
-          {/* the studio roster */}
-          <StudioTeamStrip filter={filter} />
         </>
       ) : (
         <>
