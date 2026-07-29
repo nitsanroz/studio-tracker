@@ -8,6 +8,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
+import { key as clientKey, resolve } from "./lib/client-names.mjs";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -102,10 +103,15 @@ const tasks = await fetchAll("tasks", "id, title, client_id, section_id, project
 const sections = await fetchAll("sections", "id, name, client_id, closed_on");
 let entries;
 try {
-  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy, date_estimated, asana_story_gid");
+  entries = await fetchAll("time_entries", "id, task_id, user_id, minutes, date, legacy, date_estimated, asana_story_gid, legacy_author_name");
 } catch {
-  entries = (await fetchAll("time_entries", "id, task_id, user_id, minutes, date")).map((e) => ({ ...e, legacy: false, date_estimated: false }));
+  entries = (await fetchAll("time_entries", "id, task_id, user_id, minutes, date")).map((e) => ({ ...e, legacy: false, date_estimated: false, legacy_author_name: null }));
 }
+// Read-only; used to verify the finance-derived months against their source.
+const financeMonthly = await fetchAll(
+  "finance_client_monthly",
+  "year, month, client_canon, hours, state",
+).catch(() => []);
 
 const byId = new Map(clients.map((c) => [c.id, c]));
 const unsorted = clients.find((c) => c.name === "Imported / Unsorted");
@@ -245,11 +251,32 @@ const inWindow = (m, from, to) => {
   const hi = a <= b ? b : a;
   return m >= lo && m <= hi;
 };
+// A third source, from backfill-from-finance.mjs: the finance plan sheets record
+// a client's hours PER MONTH, so for those rows the month is the evidence itself
+// and there is no Asana window to sit inside. Checking them against the sheet is
+// stronger than a window check, not weaker — the client must actually have billed
+// hours in that exact month.
+const financeMonths = new Set();
+{
+  const knownKeys = new Set(clients.map((c) => clientKey(c.name)));
+  for (const r of financeMonthly) {
+    if (r.state === "predicted" || !Number(r.hours ?? 0)) continue;
+    const k = resolve(clientKey(r.client_canon), knownKeys);
+    financeMonths.add(`${k}|${r.year}-${String(r.month).padStart(2, "0")}`);
+  }
+}
+const FINANCE_AUTHOR = "(from finance plan)";
+
 const outsideWindow = legacyEntries.filter((e) => {
   if (!e.date_estimated) return false;
   const t = taskById2.get(e.task_id);
   if (!t) return true;
   const m = e.date.slice(0, 7);
+  if (e.legacy_author_name === FINANCE_AUTHOR) {
+    const c = byId.get(t.client_id);
+    // Must name a real client AND a month that client actually billed.
+    return !c || !financeMonths.has(`${clientKey(c.name)}|${m}`);
+  }
   if (inWindow(m, t.activity_from, t.activity_to)) return false;
   if (inWindow(m, t.created_at, t.completed_at)) return false;
   if (inWindow(m, t.due_date, t.due_date)) return false;

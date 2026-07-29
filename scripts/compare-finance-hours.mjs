@@ -24,6 +24,7 @@
  *    signal at all can't be compared and is reported separately.
  */
 import { createClient } from "@supabase/supabase-js";
+import { canon, alias, resolve } from "./lib/client-names.mjs";
 
 const PER_CLIENT = process.argv.includes("--client");
 
@@ -44,44 +45,6 @@ async function fetchAll(table, columns) {
   return out;
 }
 
-/**
- * Client names were typed independently into the plan sheet and the tracker, so
- * they differ in ways no exact key survives: "Harmon.ie"/"harmoni",
- * "Mobileye Corporate"/"mobileye", "In-reach"/"inreach", "Volta Solar"/"Volta".
- * Squash to letters only, then treat a prefix match as the same client. Without
- * the prefix step this report is 90% false gaps.
- */
-const canon = (s) =>
-  String(s ?? "")
-    .toLowerCase()
-    .replace(/\(.*?\)/g, " ")
-    .replace(/&more|\bltd\b|\binc\b|\bcloud\b|\btasks?\b|corporate|solar|group/g, " ")
-    .replace(/[^a-z0-9֐-׿]+/g, "");
-
-/**
- * Same client, two identities — confirmed by Nitsan 2026-07-29. Applied to BOTH
- * sides, so the pair is compared as one client and neither an over- nor an
- * under-count shows up where it's really an attribution difference.
- *   double   → donsplus  the client renamed itself mid-relationship
- *   inreach  → quadream  one client; some months were billed against the
- *                        In-reach budget, and 11 Quadream task titles say so
- *                        outright ("UI/UX March 20 (Inreach Budget) - 51.75h")
- */
-const ALIASES = new Map([
-  ["double", "donsplus"],
-  ["inreach", "quadream"],
-  ["inrich", "quadream"],
-]);
-const alias = (k) => ALIASES.get(k) ?? k;
-
-/** Resolve a canon name against a set of known names, prefix-matching either way. */
-function resolve(k, known) {
-  if (known.has(k)) return k;
-  for (const c of known) {
-    if (c.length >= 5 && k.length >= 5 && (c.startsWith(k) || k.startsWith(c))) return c;
-  }
-  return k;
-}
 
 const clients = await fetchAll("clients", "id, name, billable, archived");
 const clientById = new Map(clients.map((c) => [c.id, c]));
