@@ -58,6 +58,22 @@ const canon = (s) =>
     .replace(/&more|\bltd\b|\binc\b|\bcloud\b|\btasks?\b|corporate|solar|group/g, " ")
     .replace(/[^a-z0-9֐-׿]+/g, "");
 
+/**
+ * Same client, two identities — confirmed by Nitsan 2026-07-29. Applied to BOTH
+ * sides, so the pair is compared as one client and neither an over- nor an
+ * under-count shows up where it's really an attribution difference.
+ *   double   → donsplus  the client renamed itself mid-relationship
+ *   inreach  → quadream  one client; some months were billed against the
+ *                        In-reach budget, and 11 Quadream task titles say so
+ *                        outright ("UI/UX March 20 (Inreach Budget) - 51.75h")
+ */
+const ALIASES = new Map([
+  ["double", "donsplus"],
+  ["inreach", "quadream"],
+  ["inrich", "quadream"],
+]);
+const alias = (k) => ALIASES.get(k) ?? k;
+
 /** Resolve a canon name against a set of known names, prefix-matching either way. */
 function resolve(k, known) {
   if (known.has(k)) return k;
@@ -125,10 +141,25 @@ for (const t of tasks) {
 }
 
 // ── finance hours by year ─────────────────────────────────────────────────
+// Split on whether the client exists in the tracker at all. Without this split
+// the headline read -44% for 2018-2021 and looked like a failed recovery; nearly
+// all of it is clients whose boards predate Asana, where there is nothing to
+// recover from and never was. Only the `matched` column is a like-for-like test.
+// Third bucket for a finance client that maps to an INTERNAL tracker client —
+// the plan sheet carries "Studio" as a revenue row, but the tracker holds the
+// same work as non-billable. Counting it as matched made 2024-2026 read -20%
+// against a tracker column that deliberately excludes it.
+const knownAll = new Set(clients.map((c) => alias(canon(c.name))));
+const internalNames = new Set(
+  clients.filter((c) => !c.billable).map((c) => alias(canon(c.name))),
+);
 const fin = new Map();
 for (const r of finance) {
   if (r.state === "predicted") continue; // plan, not actuals
-  fin.set(r.year, (fin.get(r.year) ?? 0) + Number(r.hours ?? 0));
+  if (!fin.has(r.year)) fin.set(r.year, { matched: 0, orphan: 0, internal: 0 });
+  const k = resolve(alias(canon(r.client_canon)), knownAll);
+  const b = internalNames.has(k) ? "internal" : knownAll.has(k) ? "matched" : "orphan";
+  fin.get(r.year)[b] += Number(r.hours ?? 0);
 }
 
 const years = [...new Set([...yr.keys(), ...fin.keys()])].filter((y) => y >= 2015).sort();
@@ -136,40 +167,48 @@ const n = (v) => (v ? v.toFixed(0).padStart(7) : "      –");
 
 console.log("Tracker vs finance-admin — BILLABLE hours per year");
 console.log("(tracker billable = tracked + legacy entries + apportioned remainder)\n");
-console.log("year    finance   tracker      diff    diff%   |  all-tracker");
+console.log("        ── billable, clients in BOTH ──   fin:internal   fin:no");
+console.log("year    finance   tracker     diff  diff%    (Studio)     tracker row");
+let netDiff = 0;
 for (const y of years) {
   const b = yr.get(y) ?? { billTracked: 0, billLegacy: 0, remainder: 0, tracked: 0, legacy: 0 };
-  const f = fin.get(y);
+  const f = fin.get(y) ?? { matched: 0, orphan: 0, internal: 0 };
   // The remainder isn't split billable/internal, so it is attributed in the same
   // proportion as this year's dated hours rather than assumed to be all billable.
   const dated = b.tracked + b.legacy;
   const share = dated ? (b.billTracked + b.billLegacy) / dated : 1;
   const trk = b.billTracked + b.billLegacy + b.remainder * share;
   const all = b.tracked + b.legacy + b.remainder;
-  const d = f == null ? null : trk - f;
+  const d = f.matched ? trk - f.matched : null;
+  if (d != null) netDiff += d;
   console.log(
-    `${y}  ${n(f)}  ${n(trk)}  ${d == null ? "        –" : n(d)}  ` +
-      `${d == null || !f ? "      –" : `${((d / f) * 100).toFixed(0).padStart(5)}%`}   |  ${n(all)}`,
+    `${y}  ${n(f.matched)}  ${n(trk)}  ${d == null ? "       –" : n(d)}  ` +
+      `${d == null ? "     –" : `${((d / f.matched) * 100).toFixed(0).padStart(4)}%`}     ` +
+      `${n(f.internal)}      ${n(f.orphan)}`,
   );
+  void all;
 }
 
-const finTotal = [...fin.entries()].filter(([y]) => y >= 2015).reduce((a, [, v]) => a + v, 0);
-console.log(`\nfinance billable total  ${finTotal.toFixed(0)}h`);
-console.log(`undatable legacy_hours  ${undatable.toFixed(2)}h  (no activity window — excluded above)`);
+const sum = (k) => [...fin.values()].reduce((a, v) => a + v[k], 0);
+console.log(`\nnet diff, billable shared clients  ${netDiff >= 0 ? "+" : ""}${netDiff.toFixed(0)}h`);
+console.log(`finance: billable shared clients   ${sum("matched").toFixed(0)}h`);
+console.log(`finance: internal (Studio) rows    ${sum("internal").toFixed(0)}h  ← revenue row in the sheet, non-billable here`);
+console.log(`finance: no tracker client at all  ${sum("orphan").toFixed(0)}h  ← unrecoverable, boards predate Asana`);
+console.log(`undatable legacy_hours             ${undatable.toFixed(2)}h  (no activity window — excluded above)`);
 
 // ── per-client, for the years where the yearly totals disagree ─────────────
 if (PER_CLIENT) {
   // The tracker's client list is the reference vocabulary; finance names resolve
   // into it. Doing it the other way round would merge two tracker clients that
   // share a prefix.
-  const known = new Set(clients.filter((c) => c.billable).map((c) => canon(c.name)));
+  const known = new Set(clients.filter((c) => c.billable).map((c) => alias(canon(c.name))));
   const trkByClient = new Map();
   const finByClient = new Map();
   const add = (m, k, h) => m.set(k, (m.get(k) ?? 0) + h);
 
   const trackerKey = (cid) => {
     const c = clientById.get(cid);
-    return c?.billable ? canon(c.name) : null;
+    return c?.billable ? alias(canon(c.name)) : null;
   };
   for (const e of entries) {
     const t = taskById.get(e.task_id);
@@ -184,7 +223,7 @@ if (PER_CLIENT) {
   }
   for (const r of finance) {
     if (r.state === "predicted") continue;
-    add(finByClient, resolve(canon(r.client_canon), known), Number(r.hours ?? 0));
+    add(finByClient, resolve(alias(canon(r.client_canon)), known), Number(r.hours ?? 0));
   }
 
   const rows = [...new Set([...finByClient.keys(), ...trkByClient.keys()])]
@@ -197,10 +236,14 @@ if (PER_CLIENT) {
   for (const r of rows.slice(0, 30)) {
     console.log(`${r.k.slice(0, 28).padEnd(30)}${n(r.f)}  ${n(r.t)}  ${n(r.d)}`);
   }
-  const missing = rows.filter((r) => !r.t && r.f);
-  console.log(
-    `\nin finance but NOT in the tracker at all: ${missing.length} clients, ` +
-      `${missing.reduce((a, r) => a + r.f, 0).toFixed(0)}h`,
-  );
-  console.log(missing.slice(0, 25).map((r) => `${r.k} ${r.f.toFixed(0)}h`).join(", "));
+  // Two very different situations, so don't lump them: a client the tracker never
+  // heard of vs one that has a row (often archived) whose hours never made it in.
+  const zero = rows.filter((r) => !r.t && r.f);
+  const noRow = zero.filter((r) => !knownAll.has(r.k));
+  const emptyRow = zero.filter((r) => knownAll.has(r.k));
+  const h = (a) => a.reduce((s, r) => s + r.f, 0).toFixed(0);
+  console.log(`\nno client row in the tracker at all: ${noRow.length} clients, ${h(noRow)}h`);
+  console.log("  " + noRow.slice(0, 20).map((r) => `${r.k} ${r.f.toFixed(0)}h`).join(", "));
+  console.log(`\nclient row exists but zero billable hours: ${emptyRow.length}, ${h(emptyRow)}h`);
+  console.log("  " + emptyRow.map((r) => `${r.k} ${r.f.toFixed(0)}h`).join(", "));
 }
