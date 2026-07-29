@@ -15,6 +15,12 @@ export interface Profile {
    */
   hasAccount?: boolean;
   startDate: string | null;
+  /**
+   * Last day in the studio (migration 0020). Non-null forces `active` false — the
+   * database enforces it, so never set one without expecting the other. Null means
+   * either still here or simply not recorded yet; read `active` for that.
+   */
+  endDate: string | null;
   capacityHoursWeek: number | null;
 }
 

@@ -14,8 +14,8 @@ import {
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
 import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges";
-import { Avatar, ClientChip } from "@/components/ui";
-import { HBar, MiniColumns, SplitBar } from "@/components/charts";
+import { Avatar, ClientChip, CollapseChevron } from "@/components/ui";
+import { HBar, MultiLineChart, SplitBar } from "@/components/charts";
 
 interface ReportEntry {
   id: string; // "" for rows added locally this session (not editable until reload)
@@ -219,16 +219,19 @@ function RangeStats({
     // long before the current roster). Dropping them — as a `.filter(r => r.profile)`
     // used to — left their hours in the period total but missing from these bars, so
     // the breakdown silently failed to add up. They are grouped by their raw name.
-    const map = new Map<string, number>();
+    const map = new Map<string, { minutes: number; billable: number }>();
     for (const e of enriched) {
       const key = e.user_id ?? `name:${e.legacy_author_name || "Unknown"}`;
-      map.set(key, (map.get(key) ?? 0) + e.minutes);
+      const row = map.get(key) ?? { minutes: 0, billable: 0 };
+      row.minutes += e.minutes;
+      if (e.task?.billable) row.billable += e.minutes;
+      map.set(key, row);
     }
     return [...map.entries()]
-      .map(([id, minutes]) => ({
+      .map(([id, v]) => ({
         profile: id.startsWith("name:") ? undefined : profiles.find((p) => p.id === id),
         formerName: id.startsWith("name:") ? id.slice(5) : null,
-        minutes,
+        ...v,
       }))
       .filter((r) => r.profile || r.formerName)
       .sort((a, b) => b.minutes - a.minutes)
@@ -280,7 +283,17 @@ function RangeStats({
         >
           Hours in period
         </h3>
-        <MiniColumns points={buckets} />
+        {buckets.length > 0 ? (
+          // same line form as "Hours over time" on the home page — one series, so
+          // the headline reads the whole of it
+          <MultiLineChart
+            labels={buckets.map((b) => b.label)}
+            series={[{ label: "Hours", color: "#0b43ed", values: buckets.map((b) => b.minutes) }]}
+            totalLabel="in this period"
+          />
+        ) : (
+          <p className="text-sm text-faint">No hours in this period.</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
@@ -290,9 +303,19 @@ function RangeStats({
         >
           Hours by user
         </h3>
-        {byUser.map(({ profile, formerName, minutes }) => (
+        {byUser.map(({ profile, formerName, minutes, billable }) => (
           <HBar
             key={profile?.id ?? `former:${formerName}`}
+            // solid blue = billable, washed-out blue tail = non-billable; the exact
+            // hours live in the segment tooltips rather than crowding the row
+            bar={
+              <SplitBar
+                billable={billable}
+                nonBillable={minutes - billable}
+                maxMinutes={maxUser}
+                tone="blue"
+              />
+            }
             label={
               profile ? (
                 <span className="flex items-center gap-1.5">
@@ -306,7 +329,13 @@ function RangeStats({
                 </span>
               )
             }
-            right={formatHoursShort(minutes)}
+            right={
+              <span
+                title={`${formatHoursShort(billable)} billable · ${formatHoursShort(minutes - billable)} non-billable · ${formatHoursShort(minutes)} total`}
+              >
+                {formatHoursShort(minutes)}
+              </span>
+            }
             minutes={minutes}
             maxMinutes={maxUser}
           />
@@ -422,6 +451,7 @@ export default function ReportsPage() {
   const totalMinutes = enriched.reduce((s, e) => s + e.minutes, 0);
   const billableMinutes = enriched.reduce((s, e) => s + (e.task?.billable ? e.minutes : 0), 0);
   const maxClientTotal = byClient[0]?.total ?? 0;
+  const anyOpen = byClient.some((r) => expanded.has(r.client.id));
 
   const exportCSV = useCallback(() => {
     const esc = (v: string | number) => {
@@ -557,8 +587,17 @@ export default function ReportsPage() {
       {/* ── per-client expandable table with billable split graph ── */}
       <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-faint">
-          <span className="flex-1" title="Clients with hours in the selected range — click a row for its tasks">
-            Client
+          <span className="flex flex-1 items-center gap-2">
+            {/* one chevron for the lot. It reads "open" as soon as ANY row is, so a
+                half-expanded table collapses on the first click instead of expanding
+                the rest and needing a second. */}
+            <CollapseChevron
+              open={anyOpen}
+              onClick={() => setExpanded(anyOpen ? new Set() : new Set(byClient.map((r) => r.client.id)))}
+            />
+            <span title="Clients with hours in the selected range — click a row for its tasks">
+              Client
+            </span>
           </span>
           <span className="w-40" title="Billable (blue) vs non-billable (grey) hours">
             Billable split
@@ -589,7 +628,10 @@ export default function ReportsPage() {
                   })
                 }
               >
-                <span className="flex flex-1 items-center gap-1.5">
+                <span className="flex flex-1 items-center gap-2">
+                  {/* no onClick: the whole row already toggles, so this is the
+                      affordance that says so rather than a second hit target */}
+                  <CollapseChevron open={isOpen} />
                   <ClientChip client={client} link={false} />
                 </span>
                 <span className="w-40">
@@ -625,8 +667,9 @@ export default function ReportsPage() {
                               return next;
                             })
                           }
-                          className="flex w-full items-center gap-1 rounded-md bg-gray-200/80 px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
+                          className="flex w-full items-center gap-1.5 rounded-md bg-gray-200/80 px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
                         >
+                          <CollapseChevron open={!folded} size={12} />
                           <span className="bidi-auto min-w-0 flex-1 truncate text-left">
                             {sec.sectionName}
                           </span>

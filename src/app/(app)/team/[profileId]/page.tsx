@@ -280,8 +280,9 @@ export default function MemberPage({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-muted shadow-card">
           <Archive size={14} />
           <span>
-            <span className="font-medium text-foreground">{profile.name}</span> is archived — hidden
-            from the team list, assignee pickers and the weekly plan. All logged hours are kept.
+            <span className="font-medium text-foreground">{profile.name}</span> is archived
+            {profile.endDate ? ` — last day ${profile.endDate}` : ""} — hidden from the team list,
+            assignee pickers and the weekly plan. All logged hours are kept.
           </span>
         </div>
       )}
@@ -314,7 +315,9 @@ export default function MemberPage({
           title={
             profile.active
               ? "Archive this member — they keep all their logged hours but drop off the team list, pickers and plan"
-              : "Bring this member back onto the team list and pickers"
+              : profile.endDate
+                ? "Bring this member back — this also clears their end date, which would otherwise re-archive them"
+                : "Bring this member back onto the team list and pickers"
           }
           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
             profile.active
@@ -375,6 +378,20 @@ export default function MemberPage({
               onChange={(e) => updateProfile(profile.id, { startDate: e.target.value || null })}
               className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+            End date
+            <input
+              type="date"
+              value={profile.endDate ?? ""}
+              min={profile.startDate ?? undefined}
+              onChange={(e) => updateProfile(profile.id, { endDate: e.target.value || null })}
+              title="Last day in the studio. Setting it archives them; clearing it does not bring them back — use Restore for that."
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+            />
+            {profile.endDate && (
+              <span className="text-[11px] font-normal text-faint">archived by this date</span>
+            )}
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-muted">
             Capacity (h/week)

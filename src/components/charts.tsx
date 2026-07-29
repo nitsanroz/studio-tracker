@@ -11,12 +11,15 @@ export function HBar({
   minutes,
   maxMinutes,
   barClass = "bg-brand",
+  bar,
 }: {
   label: React.ReactNode;
   right?: React.ReactNode;
   minutes: number;
   maxMinutes: number;
   barClass?: string;
+  /** replaces the plain bar — e.g. a <SplitBar> when the row has a breakdown */
+  bar?: React.ReactNode;
 }) {
   const pct = maxMinutes > 0 ? Math.min(100, (minutes / maxMinutes) * 100) : 0;
   return (
@@ -25,9 +28,11 @@ export function HBar({
         <span className="flex min-w-0 items-center gap-1.5 truncate font-medium">{label}</span>
         {right && <span className="shrink-0 tabular-nums text-muted">{right}</span>}
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-border">
-        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${pct}%` }} />
-      </div>
+      {bar ?? (
+        <div className="h-2 overflow-hidden rounded-full bg-border">
+          <div className={`h-full rounded-full ${barClass}`} style={{ width: `${pct}%` }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -37,17 +42,29 @@ export function SplitBar({
   billable,
   nonBillable,
   maxMinutes,
+  /** the non-billable tail — "blue" keeps it in the brand as a washed-out
+   *  continuation of the same bar, "grey" reads as a separate quantity */
+  tone = "grey",
 }: {
   billable: number;
   nonBillable: number;
   maxMinutes: number;
+  tone?: "grey" | "blue";
 }) {
   const pctA = maxMinutes > 0 ? (billable / maxMinutes) * 100 : 0;
   const pctB = maxMinutes > 0 ? (nonBillable / maxMinutes) * 100 : 0;
   return (
     <div className="flex h-2 overflow-hidden rounded-full bg-border">
-      <div className="h-full bg-brand" style={{ width: `${pctA}%` }} title="Billable" />
-      <div className="h-full bg-gray-400" style={{ width: `${pctB}%` }} title="Non-billable" />
+      <div
+        className="h-full bg-brand"
+        style={{ width: `${pctA}%` }}
+        title={`Billable ${formatHoursShort(billable)}`}
+      />
+      <div
+        className={`h-full ${tone === "blue" ? "bg-brand/30" : "bg-gray-400"}`}
+        style={{ width: `${pctB}%` }}
+        title={`Non-billable ${formatHoursShort(nonBillable)}`}
+      />
     </div>
   );
 }
@@ -191,15 +208,21 @@ export function PieChart({
           const hoverProps = {
             onMouseEnter: () => setHover(s.i),
             onMouseLeave: () => setHover(null),
-            className: `flex items-center justify-between gap-2 rounded px-1 py-0.5 text-xs transition-colors ${
+            className: `group/legend flex items-center justify-between gap-2 rounded px-1 py-0.5 text-xs transition-colors ${
               s.href ? "cursor-pointer" : "cursor-default"
             } ${hover === s.i ? "bg-background" : ""}`,
           };
           const body = (
             <>
-              <span className="flex min-w-0 items-center gap-1.5 font-medium">
+              {/* same white capsule as ClientChip — these are client names beside a
+                  colour dot, and they should read the same everywhere */}
+              <span
+                className={`flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-surface px-1.5 py-0.5 font-medium ${
+                  s.href ? "group-hover/legend:border-brand group-hover/legend:text-brand" : ""
+                }`}
+              >
                 <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-                <span className={`bidi-auto truncate ${s.href ? "hover:underline" : ""}`}>{s.label}</span>
+                <span className="bidi-auto truncate">{s.label}</span>
               </span>
               <span className="shrink-0 tabular-nums text-muted">{s.pct.toFixed(1)}%</span>
             </>
@@ -435,6 +458,7 @@ export function MultiLineChart({
   series,
   totalLabel,
   totalSeries,
+  projection,
 }: {
   labels: string[];
   series: { label: string; color: string; values: number[] }[];
@@ -447,12 +471,28 @@ export function MultiLineChart({
    * where the sum is the right total.
    */
   totalSeries?: string;
+  /**
+   * The last bucket is still running, so its actual value isn't comparable to the
+   * full buckets before it. `values[si]` is the run-rate estimate of the FULL
+   * bucket for series `si`; the chart plots that instead, dashes the segment
+   * leading into it, and says so in the tooltip. The headline total keeps reading
+   * real logged hours — an estimate has no business inflating it.
+   */
+  projection?: { index: number; values: number[] };
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const uid = useId().replace(/:/g, "");
   if (!series.length || !labels.length) return null;
 
-  const max = Math.max(1, ...series.flatMap((s) => s.values));
+  const pi = projection && projection.index > 0 && projection.index < labels.length
+    ? projection.index
+    : null;
+  // what gets DRAWN: actual everywhere, estimate at the projected bucket
+  const drawn = series.map((s, si) =>
+    pi == null ? s.values : s.values.map((v, i) => (i === pi ? (projection!.values[si] ?? v) : v)),
+  );
+
+  const max = Math.max(1, ...drawn.flat());
   const n = labels.length;
   const W = 340;
   const H = 190;
@@ -467,11 +507,17 @@ export function MultiLineChart({
   const step = Math.max(1, Math.ceil(n / 6));
   const baseline = padTop + innerH;
 
-  // headline: total hours in view + trend of the last bucket vs the one before
-  const headline = totalSeries ? series.filter((s) => s.label === totalSeries) : series;
-  const total = headline.reduce((s, ser) => s + ser.values.reduce((a, b) => a + b, 0), 0);
-  const lastSum = headline.reduce((s, ser) => s + (ser.values.at(-1) ?? 0), 0);
-  const prevSum = n > 1 ? headline.reduce((s, ser) => s + (ser.values.at(-2) ?? 0), 0) : 0;
+  // headline: real hours in view + trend of the last bucket vs the one before.
+  // The trend reads the DRAWN values, so a partial final bucket is compared as its
+  // projected full self against a complete previous one — the whole point of the
+  // projection. The total stays on the actual figures.
+  const pick = (arr: number[][]) =>
+    totalSeries ? arr.filter((_, si) => series[si].label === totalSeries) : arr;
+  const headline = pick(series.map((s) => s.values));
+  const headlineDrawn = pick(drawn);
+  const total = headline.reduce((s, v) => s + v.reduce((a, b) => a + b, 0), 0);
+  const lastSum = headlineDrawn.reduce((s, v) => s + (v.at(-1) ?? 0), 0);
+  const prevSum = n > 1 ? headlineDrawn.reduce((s, v) => s + (v.at(-2) ?? 0), 0) : 0;
   const trend = prevSum > 0 ? Math.round(((lastSum - prevSum) / prevSum) * 100) : null;
 
   // tooltip rows: every series with hours at the hovered bucket, biggest first
@@ -479,11 +525,17 @@ export function MultiLineChart({
     hover == null
       ? []
       : series
-          .map((s) => {
-            const v = s.values[hover] ?? 0;
-            const prev = hover > 0 ? (s.values[hover - 1] ?? 0) : null;
+          .map((s, si) => {
+            const v = drawn[si][hover] ?? 0;
+            const prev = hover > 0 ? (drawn[si][hover - 1] ?? 0) : null;
             const delta = prev && prev > 0 ? Math.round(((v - prev) / prev) * 100) : null;
-            return { label: s.label, color: s.color, v, delta };
+            return {
+              label: s.label,
+              color: s.color,
+              v,
+              delta,
+              actual: hover === pi ? (s.values[hover] ?? 0) : null,
+            };
           })
           .filter((r) => r.v > 0)
           .sort((a, b) => b.v - a.v)
@@ -512,6 +564,11 @@ export function MultiLineChart({
             )}
           </div>
           {totalLabel && <div className="mt-0.5 text-[11px] text-muted">{totalLabel}</div>}
+          {pi != null && (
+            <div className="mt-0.5 text-[10px] text-faint" title={`${labels[pi]} is still running — the dashed end projects it to a full period at the rate logged so far, so it can be read against the complete periods before it. The total above counts real hours only.`}>
+              dashed = {labels[pi]} projected
+            </div>
+          )}
         </div>
         <div className="flex max-w-[62%] flex-wrap justify-end gap-x-3 gap-y-1">
           {series.map((s, si) => (
@@ -568,10 +625,14 @@ export function MultiLineChart({
             />
           )}
 
-          {/* area + line per series */}
+          {/* area + line per series. With a projected last bucket the line is cut
+              in two: solid over what really happened, dashed into the estimate. */}
           {series.map((s, si) => {
-            const pts = s.values.map((v, i) => ({ x: x(i), y: y(v) }));
+            const pts = drawn[si].map((v, i) => ({ x: x(i), y: y(v) }));
             const line = smoothPath(pts);
+            // the dashed run starts one point EARLIER, so the segment arriving at
+            // the estimate is the dashed one
+            const solid = pi == null ? line : smoothPath(pts.slice(0, pi));
             return (
               <g key={si}>
                 <path
@@ -580,13 +641,24 @@ export function MultiLineChart({
                   opacity={hover == null ? 0.75 : 0.35}
                 />
                 <path
-                  d={line}
+                  d={solid}
                   fill="none"
                   style={{ stroke: s.color }}
                   strokeWidth={1.6}
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
+                {pi != null && (
+                  <path
+                    d={smoothPath(pts.slice(pi - 1))}
+                    fill="none"
+                    style={{ stroke: s.color }}
+                    strokeWidth={1.6}
+                    strokeDasharray="3 2.5"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                )}
               </g>
             );
           })}
@@ -594,7 +666,7 @@ export function MultiLineChart({
           {/* dots on the hovered bucket */}
           {hover != null &&
             series.map((s, si) => {
-              const v = s.values[hover] ?? 0;
+              const v = drawn[si][hover] ?? 0;
               if (v <= 0) return null;
               return (
                 <circle
@@ -629,7 +701,9 @@ export function MultiLineChart({
           {/* x labels */}
           {labels.map((l, i) => {
             const on = hover === i;
-            return i % step === 0 || on ? (
+            // the projected bucket always keeps its label — it's the one the
+            // reader most needs named, and the tilde flags it as an estimate
+            return i % step === 0 || on || i === pi ? (
               <text
                 key={i}
                 x={x(i)}
@@ -637,9 +711,10 @@ export function MultiLineChart({
                 textAnchor="middle"
                 fontSize={7.5}
                 fontWeight={on ? 700 : 400}
+                fontStyle={i === pi ? "italic" : undefined}
                 style={{ fill: on ? "var(--color-foreground)" : "var(--color-faint)" }}
               >
-                {l}
+                {i === pi ? `~${l}` : l}
               </text>
             ) : null;
           })}
@@ -654,14 +729,26 @@ export function MultiLineChart({
               transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)",
             }}
           >
-            <div className="mb-1.5 text-[11px] font-semibold">{labels[hover]}</div>
+            <div className="mb-1.5 text-[11px] font-semibold">
+              {labels[hover]}
+              {hover === pi && (
+                <span className="ml-1 font-normal text-faint">· estimated full period</span>
+              )}
+            </div>
             <div className="flex flex-col gap-1.5">
               {rows.map((r) => (
                 <div key={r.label} className="flex items-center gap-2">
                   <span className="h-6 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
                   <div className="min-w-0 flex-1">
                     <div className="bidi-auto max-w-24 truncate text-[10px] text-muted">{r.label}</div>
-                    <div className="text-[11px] font-semibold tabular-nums">{formatHoursShort(r.v)}</div>
+                    <div className="text-[11px] font-semibold tabular-nums">
+                      {formatHoursShort(r.v)}
+                      {r.actual != null && (
+                        <span className="ml-1 font-normal text-faint">
+                          ({formatHoursShort(r.actual)} so far)
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {r.delta != null && (
                     <span

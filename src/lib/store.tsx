@@ -812,6 +812,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(
     (profileId: string, patch: Partial<Profile>) => {
       const before = profiles.find((p) => p.id === profileId);
+      // An end date and `active` are two halves of one fact, and migration 0020
+      // enforces the first half in the DB (a trigger). Mirror it here so the UI
+      // doesn't briefly disagree with the row, and close the other direction too:
+      // restoring somebody has to clear the date, or the trigger just re-archives
+      // them and the button looks broken.
+      if (patch.endDate) patch = { ...patch, active: false };
+      else if (patch.active === true && before?.endDate) patch = { ...patch, endDate: null };
       if (before) {
         const prev = inversePatch(before, patch);
         record({
@@ -825,6 +832,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if ("role" in patch) row.role = patch.role;
       if ("active" in patch) row.active = patch.active;
       if ("startDate" in patch) row.start_date = patch.startDate;
+      if ("endDate" in patch) row.end_date = patch.endDate;
       if ("capacityHoursWeek" in patch) row.capacity_hours_week = patch.capacityHoursWeek;
       supabase
         .from("profiles")

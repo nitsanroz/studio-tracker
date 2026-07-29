@@ -96,6 +96,44 @@ export function CollapseChevron({
   );
 }
 
+/**
+ * Small circled "i" that reveals an explanation on hover/focus. A real popover
+ * rather than a `title` attribute: these carry two or three lines about how a
+ * figure is calculated, which the native tooltip renders as one unreadable run
+ * and only after a delay.
+ */
+export function InfoDot({
+  title,
+  children,
+  align = "left",
+}: {
+  title?: string;
+  children: React.ReactNode;
+  /** which edge of the dot the card hangs from — flip to "right" near a pane edge */
+  align?: "left" | "right";
+}) {
+  return (
+    <span className="group/info relative inline-flex align-middle">
+      <button
+        type="button"
+        aria-label={title ? `About ${title}` : "About this figure"}
+        className="flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-current text-[9px] font-bold leading-none opacity-60 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none"
+      >
+        i
+      </button>
+      <span
+        role="tooltip"
+        className={`pointer-events-none absolute top-5 z-30 hidden w-60 rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
+          align === "right" ? "right-0" : "left-0"
+        }`}
+      >
+        {title && <span className="mb-1 block font-semibold">{title}</span>}
+        <span className="block text-muted">{children}</span>
+      </span>
+    </span>
+  );
+}
+
 const AVATAR_COLORS = [
   "#0b43ed",
   "#7c5cff",
@@ -185,13 +223,20 @@ export function ClientChip({
       {client.name}
     </>
   );
-  const cls = `inline-flex items-center gap-1.5 font-medium ${size === "sm" ? "text-xs" : "text-sm"}`;
+  // The dot and the name read as one object, so they sit in a white capsule
+  // together. bg-surface (not white) so it still separates from a background-toned
+  // row, and the border is what makes it visible on a surface-toned one.
+  const cls = `inline-flex items-center gap-1.5 rounded-full border border-border bg-surface font-medium ${
+    size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-sm"
+  }`;
   if (!link) return <span className={cls}>{inner}</span>;
   return (
     <Link
       href={`/clients/${client.id}`}
       onClick={(e) => e.stopPropagation()}
-      className={`${cls} hover:underline`}
+      // the capsule already reads as a target, so the hover is a border tint
+      // rather than an underline running under the dot
+      className={`${cls} hover:border-brand hover:text-brand`}
       title={`Open ${client.name}`}
     >
       {inner}

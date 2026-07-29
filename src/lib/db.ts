@@ -55,6 +55,7 @@ export const mapProfile = (r: any): Profile => ({
   active: r.active,
   hasAccount: r.has_account ?? true, // column exists from migration 0018
   startDate: r.start_date ?? null,
+  endDate: r.end_date ?? null,
   capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),
 });
 

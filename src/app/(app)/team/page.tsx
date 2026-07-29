@@ -314,6 +314,8 @@ export default function TeamPage() {
                 <div className="truncate text-xs capitalize text-muted">
                   {p.role}
                   {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
+                  {/* tenure of someone who left reads as if they were still here */}
+                  {p.endDate ? ` · until ${p.endDate}` : ""}
                 </div>
                 {email && (
                   <div className="truncate text-xs text-muted" title={email}>
