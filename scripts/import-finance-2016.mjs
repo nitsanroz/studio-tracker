@@ -15,7 +15,7 @@
  * script never updates and never deletes: if a 2016 row already exists it is
  * skipped, so a second run is a no-op rather than a double-count.
  *
- * It also always writes data/0021_finance_2016.sql, because writes to the finance
+ * It also always writes data/finance-2016-import.sql, because writes to the finance
  * tables have been blocked by the sandbox classifier before — if that happens the
  * SQL file is the same import, runnable in the Supabase SQL editor.
  *
@@ -29,7 +29,7 @@ import path from "node:path";
 
 const APPLY = process.argv.includes("--apply");
 const DATA = path.join(import.meta.dirname, "..", "data");
-const SQL_OUT = path.join(DATA, "0021_finance_2016.sql");
+const SQL_OUT = path.join(DATA, "finance-2016-import.sql");
 
 const payload = JSON.parse(fs.readFileSync(path.join(DATA, "finance-2016.json"), "utf8"));
 const { client_monthly: cm, pnl_monthly: pnl } = payload;
@@ -69,7 +69,7 @@ const newPnl = pnl.filter((r) => !pnlKey.has(`${r.month}|${r.line_item}`));
 
 // ── the SQL fallback, always written ──────────────────────────────────────
 const lines = [
-  `-- 0021 — the 2016 plan sheet, which was never imported.`,
+  `-- The 2016 plan sheet, which was never imported.`,
   `--`,
   `-- INSERT ONLY: no UPDATE, no DELETE, no DDL. Rows go in already state='final',`,
   `-- which the finance_guard_locked trigger permits because it only fires on`,

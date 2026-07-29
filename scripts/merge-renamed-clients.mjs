@@ -34,7 +34,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const APPLY = process.argv.includes("--apply");
-const OUT = path.join(import.meta.dirname, "..", "data", "0020_merge_clients.sql");
+const OUT = path.join(import.meta.dirname, "..", "data", "merge-clients-inreach-quadream.sql");
 const ADMIN_ID = "7bd6a9e3-7179-4805-ae9a-d89fdc4f005c"; // Nitsan; only so is_admin() passes
 
 const supabase = createClient(
@@ -111,7 +111,7 @@ if (!ir || !quad) {
   lines.push(`update clients set archived = true where id = ${q(ir.id)};`);
 
   const sql = [
-    `-- 0020 — In-reach and Quadream are ONE client (confirmed 2026-07-29).`,
+    `-- In-reach and Quadream are ONE client (confirmed 2026-07-29).`,
     `--`,
     `-- Moves In-reach's ${tasks.length} tasks to Quadream and archives the empty client row.`,
     `-- NO DELETE and NO DDL: clients → tasks is ON DELETE CASCADE, and a cascading`,

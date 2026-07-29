@@ -79,7 +79,7 @@ const LEGACY_PROJECT_CLIENT = [
   ["as:1201715599799021", "One Zero"],
   // In-reach and Quadream are ONE client (confirmed 2026-07-29): work sat on
   // Quadream's board while some months were billed against the In-reach budget,
-  // and 11 Quadream titles say so outright. data/0020_merge_clients.sql moved
+  // and 11 Quadream titles say so outright. data/merge-clients-inreach-quadream.sql moved
   // these 6 tasks, so Quadream is now the correct destination — the old
   // expectation would fail on a merge that was deliberate.
   ["as:455542718969443", "Quadream"],

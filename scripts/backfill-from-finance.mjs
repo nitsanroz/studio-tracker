@@ -97,7 +97,7 @@ const entries = await fetchAll("time_entries", "task_id, date, minutes, legacy_a
 const finance = await fetchAll("finance_client_monthly", "year, month, client_canon, hours, state");
 
 // A key can cover SEVERAL tracker client rows — In-reach and Quadream both alias
-// to "quadream" and stay separate rows until data/0020_merge_clients.sql is run.
+// to "quadream" and stay separate rows until data/merge-clients-inreach-quadream.sql is run.
 // Group them: hours already recovered must be summed across the whole group, or
 // the shortfall is measured against one row and wildly overstated. The row that
 // receives the top-up is the one whose own name IS the key.
