@@ -17,11 +17,9 @@ import {
 } from "@/lib/format";
 import {
   HOME_RANGES,
-  MONTH_SHORT,
   bucketProjection,
   bucketize,
   comparablePrevRange,
-  daysBetween,
   periodBounds,
   rangeLabel,
 } from "@/lib/period-math";
@@ -30,6 +28,7 @@ import { MemberPhoto } from "./member-photo";
 import { ConfirmDetailsBanner } from "./confirm-details-banner";
 import { Avatar, ClientChip, InfoDot } from "./ui";
 import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
+import { WeekTimesheet } from "./week-timesheet";
 import type { TimeEntry } from "@/lib/types";
 
 function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
@@ -1128,7 +1127,10 @@ function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { fro
   const scope = filter.clientId ? " Limited to the selected client." : "";
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    // 2×2, not a row of four: on the admin home these sit in the left half of a
+    // two-column grid beside the week timesheet, so each tile keeps roughly the
+    // width it had when the four spanned the page.
+    <div className="grid grid-cols-2 gap-4">
       <StatTile
         hi
         label={filter.billableOnly ? "Billable hours" : "Studio hours"}
@@ -1657,8 +1659,13 @@ export function Dashboard() {
 
       {isAdmin ? (
         <>
-          {/* KPI tiles across the top */}
-          <StatTiles filter={filter} prevRange={prevRange} />
+          {/* KPI tiles 2×2 in the left half, the week's timesheet beside them —
+              "did everyone log their hours" is a daily admin question and it
+              belongs at the top, not behind a click on /feed. */}
+          <div className="grid items-start gap-4 lg:grid-cols-2">
+            <StatTiles filter={filter} prevRange={prevRange} />
+            <WeekTimesheet />
+          </div>
           {/* Up here with the intake banner, not at the foot of the page — an
               upcoming date is only useful if you see it before the day arrives. */}
           <div className="empty:hidden">
