@@ -190,6 +190,31 @@ export function TaskPanel() {
 
   const [commentDraft, setCommentDraft] = useState("");
   const [timeDraft, setTimeDraft] = useState({ hours: "", description: "" });
+  /**
+   * Who the new time entry is for. Admins log hours on behalf of designers who
+   * forgot, so the form needs a person; members never see the control and
+   * always attribute to themselves. `null` means "me" so it can't go stale if
+   * the session changes under us.
+   */
+  const [timeForUserId, setTimeForUserId] = useState<string | null>(null);
+  /**
+   * Members who can hold a time entry: current, with a login (see 0018).
+   * Me first — it is the default and the common case, and sorting it by real
+   * name buried "Me" in the middle of the list.
+   */
+  const loggableMembers = useMemo(
+    () =>
+      profiles
+        .filter((p) => p.active && p.hasAccount !== false)
+        .sort((a, b) =>
+          a.id === currentUserId
+            ? -1
+            : b.id === currentUserId
+              ? 1
+              : a.name.localeCompare(b.name),
+        ),
+    [profiles, currentUserId],
+  );
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showMove, setShowMove] = useState(false);
   const [editingFigma, setEditingFigma] = useState(false);
@@ -462,12 +487,18 @@ export function TaskPanel() {
               Time — {formatHours(doneMinutes)} total
             </div>
             <form
-              className="mb-2 flex gap-2"
+              className="mb-2 flex flex-wrap gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 const h = parseFloat(timeDraft.hours);
                 if (!h || !timeDraft.description.trim()) return;
-                addTimeEntry(task.id, Math.round(h * 60), timeDraft.description.trim());
+                addTimeEntry(
+                  task.id,
+                  Math.round(h * 60),
+                  timeDraft.description.trim(),
+                  undefined, // today
+                  timeForUserId ?? undefined, // undefined ⇒ the signed-in user
+                );
                 setTimeDraft({ hours: "", description: "" });
               }}
             >
@@ -488,6 +519,24 @@ export function TaskPanel() {
                 value={timeDraft.description}
                 onChange={(e) => setTimeDraft((d) => ({ ...d, description: e.target.value }))}
               />
+              {/* Admins log for whoever actually did the work; members can only
+                  ever log for themselves, so they don't get the control. */}
+              {isAdmin && (
+                <select
+                  value={timeForUserId ?? currentUserId ?? ""}
+                  onChange={(e) =>
+                    setTimeForUserId(e.target.value === currentUserId ? null : e.target.value)
+                  }
+                  title="Who these hours are for"
+                  className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+                >
+                  {loggableMembers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.id === currentUserId ? "Me" : p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black">
                 Add
               </button>

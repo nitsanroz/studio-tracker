@@ -1662,7 +1662,9 @@ export function Dashboard() {
           {/* KPI tiles 2×2 in the left half, the week's timesheet beside them —
               "did everyone log their hours" is a daily admin question and it
               belongs at the top, not behind a click on /feed. */}
-          <div className="grid items-start gap-4 lg:grid-cols-2">
+          {/* no items-start: the two columns stretch to the same height so the
+              timesheet lines up with the tile block rather than floating short */}
+          <div className="grid gap-4 lg:grid-cols-2">
             <StatTiles filter={filter} prevRange={prevRange} />
             <WeekTimesheet />
           </div>
