@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { useData } from "@/lib/store";
-import { formatDate, formatHours } from "@/lib/format";
+import { formatDate, formatHours, toISODate } from "@/lib/format";
+import { loggableMembers } from "@/lib/members";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
 import type { Task } from "@/lib/types";
 
@@ -198,23 +199,12 @@ export function TaskPanel() {
    */
   const [timeForUserId, setTimeForUserId] = useState<string | null>(null);
   /**
-   * Members who can hold a time entry: current, with a login (see 0018).
-   * Me first — it is the default and the common case, and sorting it by real
-   * name buried "Me" in the middle of the list.
+   * The day the new entry is for. Admins backfill hours a designer forgot, so
+   * "today" is often wrong; it stays put after an add rather than snapping back,
+   * because backfilling is usually several entries on the same past day.
    */
-  const loggableMembers = useMemo(
-    () =>
-      profiles
-        .filter((p) => p.active && p.hasAccount !== false)
-        .sort((a, b) =>
-          a.id === currentUserId
-            ? -1
-            : b.id === currentUserId
-              ? 1
-              : a.name.localeCompare(b.name),
-        ),
-    [profiles, currentUserId],
-  );
+  const [timeDate, setTimeDate] = useState(() => toISODate(new Date()));
+  const timeMembers = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showMove, setShowMove] = useState(false);
   const [editingFigma, setEditingFigma] = useState(false);
@@ -496,7 +486,7 @@ export function TaskPanel() {
                   task.id,
                   Math.round(h * 60),
                   timeDraft.description.trim(),
-                  undefined, // today
+                  timeDate,
                   timeForUserId ?? undefined, // undefined ⇒ the signed-in user
                 );
                 setTimeDraft({ hours: "", description: "" });
@@ -519,23 +509,34 @@ export function TaskPanel() {
                 value={timeDraft.description}
                 onChange={(e) => setTimeDraft((d) => ({ ...d, description: e.target.value }))}
               />
-              {/* Admins log for whoever actually did the work; members can only
-                  ever log for themselves, so they don't get the control. */}
+              {/* Admins log for whoever actually did the work, on whatever day
+                  they did it — backfilling forgotten hours is the point.
+                  Members can only ever log for themselves today, so they get
+                  neither control. */}
               {isAdmin && (
-                <select
-                  value={timeForUserId ?? currentUserId ?? ""}
-                  onChange={(e) =>
-                    setTimeForUserId(e.target.value === currentUserId ? null : e.target.value)
-                  }
-                  title="Who these hours are for"
-                  className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-                >
-                  {loggableMembers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.id === currentUserId ? "Me" : p.name}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    value={timeForUserId ?? currentUserId ?? ""}
+                    onChange={(e) =>
+                      setTimeForUserId(e.target.value === currentUserId ? null : e.target.value)
+                    }
+                    title="Who these hours are for"
+                    className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+                  >
+                    {timeMembers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.id === currentUserId ? "Me" : p.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={timeDate}
+                    onChange={(e) => setTimeDate(e.target.value || toISODate(new Date()))}
+                    title="The day these hours were worked"
+                    className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+                  />
+                </>
               )}
               <button className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black">
                 Add

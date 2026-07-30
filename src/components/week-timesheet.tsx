@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useData } from "@/lib/store";
 import { addDays, formatHoursShort, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
+import { Avatar } from "./ui";
 import { UserDayDetails } from "./user-day-details";
 
 /**
@@ -99,7 +100,7 @@ export function WeekTimesheet() {
           <tr>
             {/* the corner cell is otherwise dead space, and the pane has no
                 title of its own to hang this off */}
-            <th className="w-20 pb-1 text-left">
+            <th className="w-28 pb-1 text-left">
               <Link
                 href="/feed"
                 className="flex items-center gap-0.5 text-[11px] font-medium text-brand hover:underline"
@@ -130,8 +131,13 @@ export function WeekTimesheet() {
             const forUser = byUserDay.get(m.id);
             return (
               <tr key={m.id} className="border-t border-border">
-                <td className="w-20 max-w-20 truncate pr-1 text-xs font-medium" title={m.name}>
-                  {m.name.split(" ")[0]}
+                <td className="w-28 max-w-28 pr-1" title={m.name}>
+                  <span className="flex items-center gap-1.5">
+                    <Avatar profile={m} size={20} />
+                    <span className="min-w-0 truncate text-xs font-medium">
+                      {m.name.split(" ")[0]}
+                    </span>
+                  </span>
                 </td>
                 {days.map((iso) => {
                   const entries = forUser?.get(iso);

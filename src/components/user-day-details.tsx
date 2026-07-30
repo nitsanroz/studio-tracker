@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { formatFeedDate, formatHours, formatHoursShort, parseDuration } from "@/lib/format";
+import { loggableMembers } from "@/lib/members";
 import { Avatar, ClientChip } from "./ui";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import type { TimeEntry } from "@/lib/types";
@@ -80,7 +81,15 @@ export function EntryEditRow({
   );
 }
 
-/** A designer's entries on one day (timesheet cell) — editable per line. */
+/**
+ * A designer's entries on one day (timesheet cell) — editable per line.
+ *
+ * The `userId`/`date` props are the STARTING point, not a fixed target: an admin
+ * can switch both from the header, which is what makes the Time Feed's generic
+ * "Add new hours" button useful (it opens on today/self, and the studio needs to
+ * backfill someone else's Tuesday). Members can only ever see their own day, so
+ * they get the plain static header.
+ */
 export function UserDayDetails({
   userId,
   date,
@@ -90,34 +99,49 @@ export function UserDayDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, profiles, timeEntries, addTimeEntry, loadDayEntries } = useData();
-  const [loaded, setLoaded] = useState<TimeEntry[]>([]);
-  const [ready, setReady] = useState(false);
+  const { tasks, clients, profiles, timeEntries, addTimeEntry, loadDayEntries, currentUserId } =
+    useData();
+  const [targetUserId, setTargetUserId] = useState(userId);
+  const [targetDate, setTargetDate] = useState(date);
+  /**
+   * The fetched day, tagged with the person+date it belongs to. Keeping the key
+   * WITH the rows means "ready" is derived rather than a second piece of state:
+   * when an admin switches person or date, `loaded` is empty until the matching
+   * fetch lands, so the previous person's entries can never flash up under a new
+   * name — and there's no setState-in-effect to reset a separate flag.
+   */
+  const [fetched, setFetched] = useState<{ key: string; rows: TimeEntry[] } | null>(null);
   const [adding, setAdding] = useState(true); // open the add form immediately
   const [picked, setPicked] = useState<TaskMatch | null>(null);
   const [addDuration, setAddDuration] = useState("");
   const [addDescription, setAddDescription] = useState("");
-  const profile = profiles.find((p) => p.id === userId) ?? null;
+  const profile = profiles.find((p) => p.id === targetUserId) ?? null;
+  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const members = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
+
+  const dayKey = `${targetUserId}|${targetDate}`;
+  const ready = fetched?.key === dayKey;
 
   useEffect(() => {
     let cancelled = false;
-    loadDayEntries(userId, date).then((rows) => {
-      if (cancelled) return;
-      setLoaded(rows);
-      setReady(true);
+    loadDayEntries(targetUserId, targetDate).then((rows) => {
+      if (!cancelled) setFetched({ key: `${targetUserId}|${targetDate}`, rows });
     });
     return () => {
       cancelled = true;
     };
-  }, [loadDayEntries, userId, date]);
+  }, [loadDayEntries, targetUserId, targetDate]);
 
   const entries = useMemo(() => {
-    const byId = new Map(loaded.map((e) => [e.id, e]));
+    // only the fetch that matches the currently selected person+day counts
+    const rows = fetched?.key === dayKey ? fetched.rows : [];
+    const byId = new Map(rows.map((e) => [e.id, e]));
+    // the store's copy wins: it reflects edits and adds made since the fetch
     for (const e of timeEntries) {
-      if (e.userId === userId && e.date === date && e.minutes > 0) byId.set(e.id, e);
+      if (e.userId === targetUserId && e.date === targetDate && e.minutes > 0) byId.set(e.id, e);
     }
     return [...byId.values()];
-  }, [loaded, timeEntries, userId, date]);
+  }, [fetched, dayKey, timeEntries, targetUserId, targetDate]);
   const total = entries.reduce((s, e) => s + e.minutes, 0);
 
   const addMinutes = parseDuration(addDuration);
@@ -125,7 +149,7 @@ export function UserDayDetails({
 
   function submitAdd() {
     if (!canAdd || !picked || addMinutes == null) return;
-    addTimeEntry(picked.task.id, addMinutes, addDescription.trim(), date, userId);
+    addTimeEntry(picked.task.id, addMinutes, addDescription.trim(), targetDate, targetUserId);
     setPicked(null);
     setAddDuration("");
     setAddDescription("");
@@ -138,13 +162,43 @@ export function UserDayDetails({
         <div className="mb-1 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Avatar profile={profile} size={26} />
-            <div className="min-w-0">
-              <h3 className="truncate font-heading text-sm">{profile?.name ?? "Member"}</h3>
-              <div className="text-xs text-muted">
-                {formatFeedDate(date)} ·{" "}
-                <span className="font-semibold tabular-nums">{formatHours(total)}</span>
+            {isAdmin ? (
+              // Whose day and which day are both editable: an admin opening this
+              // from "Add new hours" lands on today/self and almost always needs
+              // to change one of them.
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <select
+                  value={targetUserId}
+                  onChange={(e) => setTargetUserId(e.target.value)}
+                  title="Whose hours these are"
+                  className="rounded-md border border-border bg-surface px-1.5 py-1 text-sm font-medium"
+                >
+                  {members.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.id === currentUserId ? "Me" : p.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => e.target.value && setTargetDate(e.target.value)}
+                  title="The day these hours were worked"
+                  className="rounded-md border border-border bg-surface px-1.5 py-1 text-xs"
+                />
+                <span className="text-xs text-muted">
+                  <span className="font-semibold tabular-nums">{formatHours(total)}</span> logged
+                </span>
               </div>
-            </div>
+            ) : (
+              <div className="min-w-0">
+                <h3 className="truncate font-heading text-sm">{profile?.name ?? "Member"}</h3>
+                <div className="text-xs text-muted">
+                  {formatFeedDate(targetDate)} ·{" "}
+                  <span className="font-semibold tabular-nums">{formatHours(total)}</span>
+                </div>
+              </div>
+            )}
           </div>
           <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
             <X size={16} />
