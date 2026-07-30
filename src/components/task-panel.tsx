@@ -545,11 +545,17 @@ export function TaskPanel() {
                         title="Select for moving"
                       />
                     )}
-                    {/* The avatar is blank for a recovered entry, so the author's
-                        name is only reachable here. */}
-                    <span className="shrink-0" title={author || undefined}>
-                      <Avatar profile={user} size={22} />
-                    </span>
+                    {/* A recovered entry has no profile to draw, so the avatar
+                        falls back to a dashed "?" — and its own tooltip has to
+                        carry the author, since an inner title wins over a
+                        wrapper's. `author` is the stored provenance string for
+                        rows that name nobody ("(from finance plan)"), which is
+                        still more use than the word "Unassigned". */}
+                    <Avatar
+                      profile={user}
+                      size={22}
+                      emptyTitle={author || "Author not recorded — recovered history"}
+                    />
                     <span
                       className={`w-14 shrink-0 text-xs ${e.dateEstimated ? "text-faint italic" : "text-muted"}`}
                       // The hours are the studio's own recorded figure; only the day

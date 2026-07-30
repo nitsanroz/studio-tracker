@@ -64,6 +64,7 @@ function Shell({ children }: { children: ReactNode }) {
     viewingAs,
     writeError,
     dismissWriteError,
+    bootError,
   } = useData();
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = me?.role === "admin";
@@ -75,6 +76,33 @@ function Shell({ children }: { children: ReactNode }) {
         <div className="flex flex-col items-center gap-4">
           <span className="brand-wordmark w-48 animate-pulse bg-brand" />
           <span className="text-sm text-muted">Loading the studio…</span>
+        </div>
+      </div>
+    );
+  }
+
+  // The boot query failed, so there is no data — not "no tasks", no data. An
+  // empty dashboard would be a claim about the studio that we can't stand
+  // behind, so replace the app rather than letting every pane render zero.
+  if (bootError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-border bg-surface p-8 shadow-card">
+          <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
+          <h1 className="text-lg font-semibold">The studio data couldn&apos;t be loaded</h1>
+          <p className="text-sm text-muted">
+            Nothing was shown rather than showing an empty studio — the figures on the page would
+            all have read zero. This is usually a dropped connection.
+          </p>
+          <p className="rounded-lg bg-background px-3 py-2 font-mono text-[11px] text-faint">
+            {bootError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg bg-brand py-2.5 font-semibold text-white hover:bg-brand-dark"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );

@@ -159,13 +159,27 @@ function hashColor(name: string): string {
   return AVATAR_COLORS[h];
 }
 
-export function Avatar({ profile, size = 28 }: { profile: Profile | null; size?: number }) {
+export function Avatar({
+  profile,
+  size = 28,
+  emptyTitle = "Unassigned",
+}: {
+  profile: Profile | null;
+  size?: number;
+  /**
+   * Tooltip for the no-profile placeholder. Needed because this span's own
+   * `title` beats any wrapper's on hover: a caller that knew who the person was
+   * (a recovered entry naming its author, say) had its label silently replaced
+   * by the word "Unassigned", which said the opposite of the truth.
+   */
+  emptyTitle?: string;
+}) {
   if (!profile) {
     return (
       <span
         className="inline-flex items-center justify-center rounded-full border border-dashed border-border-strong text-faint shrink-0"
         style={{ width: size, height: size, fontSize: size * 0.45 }}
-        title="Unassigned"
+        title={emptyTitle}
       >
         ?
       </span>

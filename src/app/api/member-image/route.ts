@@ -80,7 +80,10 @@ export async function POST(request: NextRequest) {
     .from("profiles")
     .update({ [COLUMN[kind]]: pub.publicUrl })
     .eq("id", target.profileId);
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
+  if (pErr) {
+    console.error("member image profile update failed", pErr);
+    return NextResponse.json({ error: "Could not save the picture" }, { status: 400 });
+  }
 
   return NextResponse.json({ url: pub.publicUrl, kind, profileId: target.profileId });
 }
@@ -102,6 +105,9 @@ export async function DELETE(request: NextRequest) {
     .from("profiles")
     .update({ [COLUMN[kind]]: null })
     .eq("id", target.profileId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    console.error("member image clear failed", error);
+    return NextResponse.json({ error: "Could not remove the picture" }, { status: 400 });
+  }
   return NextResponse.json({ ok: true, kind, profileId: target.profileId });
 }

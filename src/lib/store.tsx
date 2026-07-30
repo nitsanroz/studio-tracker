@@ -13,6 +13,7 @@ import {
 import { createClient } from "./supabase/client";
 import {
   fetchAll,
+  isMissingSchema,
   mapBillingPeriod,
   mapClient,
   mapComment,
@@ -157,6 +158,8 @@ interface Store {
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
   addTimeEntry: (taskId: string, minutes: number, description: string, date?: string, userId?: string) => void;
+  /** One member's entries for one date. `timeEntries` only holds the recent 400. */
+  loadDayEntries: (userId: string, dateIso: string) => Promise<TimeEntry[]>;
   updateTimeEntry: (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => void;
   deleteTimeEntry: (entryId: string) => void;
   moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
@@ -178,6 +181,12 @@ interface Store {
   /** Set when a background write to Supabase fails; the UI surfaces a banner. */
   writeError: string | null;
   dismissWriteError: () => void;
+  /**
+   * Set when the initial load failed. Distinct from `writeError`: there is no
+   * data at all, so the UI must not render an empty state that reads as "the
+   * studio has nothing" — see AppShell.
+   */
+  bootError: string | null;
 }
 
 interface HistoryAction {
@@ -264,6 +273,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // reload to resync with the server.
   const [writeError, setWriteError] = useState<string | null>(null);
   const dismissWriteError = useCallback(() => setWriteError(null), []);
+  /** Boot query failed outright — the app has no data, and must say so. */
+  const [bootError, setBootError] = useState<string | null>(null);
   const noteWriteError = useCallback((label: string, error: { message: string }) => {
     console.error(`${label} failed`, error.message);
     setWriteError("Some changes couldn't be saved. Reload to get the latest from the server.");
@@ -373,16 +384,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
               "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
             // 0016 adds the recovered pre-Everhour history columns
             const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
-            try {
-              // post-0007 + post-0016 schema
-              return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${legacyCols}, ${cols}`);
-            } catch {
+            // Only step down when the column is genuinely absent (isMissingSchema);
+            // anything else — a dropped connection, an RLS change — must surface
+            // rather than quietly serve a reduced app. See DbError in db.ts.
+            for (const select of [
+              `client_id, ${legacyCols}, ${cols}`, // post-0007 + post-0016
+              `client_id, ${cols}`, // post-0007
+              cols, // pre-0007
+            ]) {
               try {
-                return await fetchAll<DbRow>(supabase, "tasks", `client_id, ${cols}`);
-              } catch {
-                return await fetchAll<DbRow>(supabase, "tasks", cols);
+                return await fetchAll<DbRow>(supabase, "tasks", select);
+              } catch (e) {
+                if (!isMissingSchema(e)) throw e;
               }
             }
+            throw new Error("tasks: could not load with any known column set");
           })(),
           (async () => {
             const cols = "id, task_id, user_id, date, minutes";
@@ -397,8 +413,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 return await fetchAll<DbRow>(supabase, "time_entries", `${cols}${extra}`, (q) =>
                   q.not(notNull, "is", null),
                 );
-              } catch {
-                /* try the next-smaller column set */
+              } catch (e) {
+                // A missing column means the migration isn't applied — step down.
+                // Any other failure must NOT be read as "the column is gone",
+                // or a network blip drops the `legacy` flag and the backfill
+                // leaks into every personal figure on the site.
+                if (!isMissingSchema(e)) throw e;
               }
             }
             throw new Error("time_entries: could not load with any known column set");
@@ -443,6 +463,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     })().catch((e) => {
       console.error("store load failed", e);
+      if (cancelled) return;
+      // Without this the app renders as if the studio simply had no tasks,
+      // clients or hours — an empty state is a claim about the data, and this
+      // isn't one we can make. Surface it and offer a reload instead.
+      setBootError(
+        e instanceof Error && e.message ? e.message : "The studio data couldn't be loaded.",
+      );
       setLoading(false);
     });
     return () => {
@@ -1254,6 +1281,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry],
   );
 
+  /**
+   * One member's entries for one day, straight from the DB.
+   *
+   * The store's `timeEntries` is only the most recent 400 rows studio-wide, so
+   * it cannot answer "what did I log on 3 March" — hence a real query. It lives
+   * here rather than in the component so the Supabase client and the row
+   * mappers stay behind one boundary; "Log my hours" used to open its own
+   * client and call mapTimeEntry itself.
+   */
+  const loadDayEntries = useCallback(
+    async (userId: string, dateIso: string): Promise<TimeEntry[]> => {
+      const { data, error } = await supabase
+        .from("time_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("date", dateIso)
+        .not("minutes", "is", null)
+        .order("created_at");
+      if (error) {
+        console.error("loadDayEntries failed", error.message);
+        return [];
+      }
+      return (data ?? []).map(mapTimeEntry);
+    },
+    [supabase],
+  );
+
   const updateTimeEntry = useCallback(
     (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => {
       // full row if loaded; the slim sums row covers minutes/date-only patches
@@ -1649,7 +1703,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addComment,
       addAttachment,
       removeAttachment,
-      addTimeEntry,
+      addTimeEntry, loadDayEntries,
       updateTimeEntry,
       deleteTimeEntry,
       moveTimeEntries,
@@ -1669,11 +1723,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       redo,
       writeError,
       dismissWriteError,
+      bootError,
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError,
+      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, bootError,
     ],
   );
 

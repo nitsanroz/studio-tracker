@@ -24,6 +24,33 @@ import type {
 /** An untyped row as it comes back from Supabase (no generated types). */
 export type DbRow = Record<string, unknown>;
 
+/**
+ * A failed query, with the Postgres error code preserved.
+ *
+ * The boot path asks for columns that only exist after certain migrations and
+ * falls back to a smaller column set when they're absent. That fallback has to
+ * be able to tell "this column doesn't exist yet" from "the network dropped" —
+ * otherwise a transient failure silently degrades the app to a column set with
+ * no `legacy` flag, and ~4,000h of backfill starts reading as ordinary logged
+ * time. Throwing a bare Error threw that distinction away.
+ */
+export class DbError extends Error {
+  readonly code?: string;
+  constructor(table: string, message: string, code?: string) {
+    super(`${table}: ${message}`);
+    this.name = "DbError";
+    this.code = code;
+  }
+}
+
+/** 42703 undefined_column · 42P01 undefined_table — i.e. a migration isn't applied. */
+const MISSING_SCHEMA_CODES = new Set(["42703", "42P01"]);
+
+/** True when the query failed because the schema lacks something, not because the request failed. */
+export function isMissingSchema(e: unknown): boolean {
+  return e instanceof DbError && !!e.code && MISSING_SCHEMA_CODES.has(e.code);
+}
+
 /** Supabase caps selects at 1000 rows — page through everything. */
 export async function fetchAll<T>(
   sb: SupabaseClient,
@@ -37,7 +64,7 @@ export async function fetchAll<T>(
     let q = sb.from(table).select(columns).range(from, from + PAGE - 1);
     if (modify) q = modify(q);
     const { data, error } = await q;
-    if (error) throw new Error(`${table}: ${error.message}`);
+    if (error) throw new DbError(table, error.message, error.code);
     out.push(...((data ?? []) as T[]));
     if (!data || data.length < PAGE) break;
   }

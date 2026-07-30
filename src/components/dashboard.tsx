@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-react";
 import { useData } from "@/lib/store";
-import { createClient } from "@/lib/supabase/client";
-import { mapTimeEntry } from "@/lib/db";
 import {
   addDays,
   formatFeedDate,
@@ -17,90 +15,22 @@ import {
   toISODate,
   DAY_NAMES,
 } from "@/lib/format";
+import {
+  HOME_RANGES,
+  MONTH_SHORT,
+  bucketProjection,
+  bucketize,
+  comparablePrevRange,
+  daysBetween,
+  periodBounds,
+  rangeLabel,
+} from "@/lib/period-math";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import { MemberPhoto } from "./member-photo";
 import { ConfirmDetailsBanner } from "./confirm-details-banner";
 import { Avatar, ClientChip, InfoDot } from "./ui";
 import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
 import type { TimeEntry } from "@/lib/types";
-
-/** Full calendar bounds of a period, `offset` steps from the current one
- *  (0 = current, −1 = previous, …). null for "All time". */
-function periodBounds(
-  rangeKey: (typeof HOME_RANGES)[number],
-  offset: number,
-): { start: Date; end: Date } | null {
-  const now = new Date();
-  switch (rangeKey) {
-    case "This week": {
-      const start = addDays(startOfWeek(now), offset * 7);
-      return { start, end: addDays(start, 6) };
-    }
-    case "This month":
-      return {
-        start: new Date(now.getFullYear(), now.getMonth() + offset, 1),
-        end: new Date(now.getFullYear(), now.getMonth() + offset + 1, 0),
-      };
-    case "This year":
-      return {
-        start: new Date(now.getFullYear() + offset, 0, 1),
-        end: new Date(now.getFullYear() + offset, 11, 31),
-      };
-    default:
-      return null; // All time
-  }
-}
-
-/** whole calendar days from a → b (both floored to local midnight) */
-function daysBetween(a: Date, b: Date): number {
-  const ms =
-    new Date(b.getFullYear(), b.getMonth(), b.getDate()).getTime() -
-    new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime();
-  return Math.round(ms / 86_400_000);
-}
-
-/** Human label for the selected period, e.g. "This month", "Last week", "March", "2025". */
-function rangeLabel(rangeKey: (typeof HOME_RANGES)[number], offset: number): string {
-  if (rangeKey === "All time") return "All time";
-  if (offset === 0) return rangeKey;
-  if (offset === -1) return rangeKey === "This week" ? "Last week" : rangeKey === "This month" ? "Last month" : "Last year";
-  const b = periodBounds(rangeKey, offset)!;
-  if (rangeKey === "This week") {
-    return `${b.start.getDate()}/${b.start.getMonth() + 1}–${b.end.getDate()}/${b.end.getMonth() + 1}`;
-  }
-  if (rangeKey === "This month") {
-    const now = new Date();
-    const m = MONTH_SHORT[b.start.getMonth()];
-    return b.start.getFullYear() === now.getFullYear() ? m : `${m} ${b.start.getFullYear()}`;
-  }
-  return String(b.start.getFullYear());
-}
-
-/**
- * The comparable previous range for the "vs last period" delta. When the
- * selected period is still ongoing (partial), the previous range is truncated
- * to the SAME elapsed portion — e.g. this month up to the 15th compares against
- * last month up to the 15th, not the whole of last month.
- */
-function comparablePrevRange(
-  rangeKey: (typeof HOME_RANGES)[number],
-  offset: number,
-): { from: string; to: string } | null {
-  const sel = periodBounds(rangeKey, offset);
-  const prev = periodBounds(rangeKey, offset - 1);
-  if (!sel || !prev) return null;
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let prevEnd = prev.end;
-  // `<=` on the end: on the last day of the period it is still running, and
-  // comparing a part-day against a whole previous period reads as a collapse
-  const ongoing = today >= sel.start && today <= sel.end;
-  if (ongoing) {
-    const candidate = addDays(prev.start, daysBetween(sel.start, today));
-    if (candidate < prevEnd) prevEnd = candidate;
-  }
-  return { from: toISODate(prev.start), to: toISODate(prevEnd) };
-}
 
 function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
   const { tasks, clients, updateTimeEntry } = useData();
@@ -195,8 +125,8 @@ function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: strin
 }
 
 function DayLog() {
-  const { addTimeEntry, deleteTimeEntry, timeEntries, tasks, clients, currentUserId, profiles } = useData();
-  const supabase = useMemo(() => createClient(), []);
+  const { addTimeEntry, deleteTimeEntry, loadDayEntries, timeEntries, tasks, clients, currentUserId, profiles } =
+    useData();
   const todayIso = toISODate(new Date());
   const [dateIso, setDateIso] = useState(todayIso);
   const [loaded, setLoaded] = useState<TimeEntry[]>([]);
@@ -209,23 +139,15 @@ function DayLog() {
     if (!currentUserId) return;
     let cancelled = false;
     setLoading(true);
-    supabase
-      .from("time_entries")
-      .select("*")
-      .eq("user_id", currentUserId)
-      .eq("date", dateIso)
-      .not("minutes", "is", null)
-      .order("created_at")
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) console.error("day log load failed", error.message);
-        setLoaded((data ?? []).map(mapTimeEntry));
-        setLoading(false);
-      });
+    loadDayEntries(currentUserId, dateIso).then((rows) => {
+      if (cancelled) return;
+      setLoaded(rows);
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [supabase, currentUserId, dateIso]);
+  }, [loadDayEntries, currentUserId, dateIso]);
 
   // Prefer the store's copy (reflects live edits/additions), fall back to the fetch.
   const entries = useMemo(() => {
@@ -503,52 +425,6 @@ interface HomeFilter {
    * billable-only total is 100% by construction and would say nothing.
    */
   billableOnly: boolean;
-}
-
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** Period-adaptive time buckets: day (≤31d range), else month (≤24), else year. */
-function bucketize(dates: string[], hasRange: boolean) {
-  const byDay = hasRange && new Set(dates).size <= 31;
-  const byMonth = !byDay && new Set(dates.map((d) => d.slice(0, 7))).size <= 24;
-  const keyFor = (date: string) => (byDay ? date : byMonth ? date.slice(0, 7) : date.slice(0, 4));
-  const labelFor = (key: string) =>
-    byDay
-      ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
-      : byMonth
-        ? MONTH_SHORT[Number(key.slice(5, 7)) - 1]
-        : key;
-  const unit: "day" | "month" | "year" = byDay ? "day" : byMonth ? "month" : "year";
-  return { keyFor, labelFor, unit };
-}
-
-/**
- * How much to scale the LAST bucket by so it reads as a full period.
- *
- * Every bucket on these charts is a completed month or year except, usually, the
- * one on the right: comparing 12 logged days of July against the whole of June
- * makes the studio look like it fell off a cliff. So the running bucket is
- * projected at the rate logged so far and drawn dashed.
- *
- * Returns null when there's nothing to project — the bucket is already complete,
- * or the buckets are single days (a day is either over or it's today, and
- * scaling "today" by the hours left in the evening is noise, not a forecast).
- */
-function bucketProjection(unit: "day" | "month" | "year", lastKey: string): number | null {
-  if (unit === "day") return null;
-  const now = new Date();
-  if (unit === "month") {
-    const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    if (lastKey !== cur) return null;
-    const elapsed = now.getDate();
-    const total = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return elapsed > 0 && elapsed < total ? total / elapsed : null;
-  }
-  if (lastKey !== String(now.getFullYear())) return null;
-  const jan1 = new Date(now.getFullYear(), 0, 1);
-  const elapsed = daysBetween(jan1, now) + 1;
-  const total = daysBetween(jan1, new Date(now.getFullYear(), 11, 31)) + 1;
-  return elapsed > 0 && elapsed < total ? total / elapsed : null;
 }
 
 /** Clients named individually in the donut; the rest fold into "Other". */
@@ -1543,7 +1419,6 @@ function MemberWelcome({
   );
 }
 
-const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 
 export function Dashboard() {
   const { profiles, tasks, clients, currentUserId, taskRequests, openTask } = useData();

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { classifyUpload } from "@/lib/uploads";
 
 // Upload / delete task attachments. Session-verified; storage via service key.
 function admin() {
@@ -27,6 +28,18 @@ export async function POST(request: NextRequest) {
   if (file.size > 25 * 1024 * 1024) {
     return NextResponse.json({ error: "Max 25MB — use a link for larger files" }, { status: 400 });
   }
+  // Never store a client-supplied Content-Type: `task-files` is a public
+  // bucket, so an .html/.svg uploaded as text/html would be a permanent
+  // script-hosting URL on the studio's own Supabase origin. The allowlist
+  // picks the type server-side and rejects anything renderable as active
+  // content — the same guard /api/intake and the two image routes already use.
+  const cls = classifyUpload(file);
+  if (!cls.ok) {
+    return NextResponse.json(
+      { error: "That file type isn't allowed — use a PDF, image, document, or zip" },
+      { status: 400 },
+    );
+  }
 
   const sb = admin();
 
@@ -38,7 +51,7 @@ export async function POST(request: NextRequest) {
   const path = `${taskId}/${Date.now()}-${safe}`;
   const { error: upErr } = await sb.storage
     .from("task-files")
-    .upload(path, file, { contentType: file.type });
+    .upload(path, file, { contentType: cls.contentType });
   if (upErr) {
     console.error("attachment upload failed", upErr);
     return NextResponse.json({ error: "Upload failed" }, { status: 400 });

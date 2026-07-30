@@ -29,6 +29,30 @@ const FIELDS = [
   "emergency_contact_phone",
 ] as const;
 
+/**
+ * Per-field limits. Everything here is the member's own record, so the risk is
+ * low — but `String(v)` with no bound let a caller push an unbounded blob into
+ * a PII table and store junk in a field the admin UI renders as fact.
+ * `max` caps length; `pattern`, where present, rejects the obviously wrong
+ * shape. Anything not listed falls back to FALLBACK_MAX.
+ */
+const FALLBACK_MAX = 120;
+const LIMITS: Partial<Record<(typeof FIELDS)[number], { max: number; pattern?: RegExp }>> = {
+  national_id: { max: 20, pattern: /^[0-9A-Za-z\-/ ]+$/ },
+  birth_date: { max: 10, pattern: /^\d{4}-\d{2}-\d{2}$/ },
+  personal_email: { max: 254, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+  phone: { max: 32, pattern: /^[0-9+()\-. ]+$/ },
+  emergency_contact_phone: { max: 32, pattern: /^[0-9+()\-. ]+$/ },
+  zip: { max: 12, pattern: /^[0-9A-Za-z\- ]+$/ },
+  street: { max: 160 },
+  city: { max: 80 },
+};
+
+/** Human field name for an error message, e.g. personal_email → "personal email". */
+function label(field: string) {
+  return field.replace(/_/g, " ");
+}
+
 async function me() {
   const supabase = await createClient();
   const {
@@ -54,7 +78,10 @@ export async function GET() {
     .select([...FIELDS, "confirmed_at"].join(", "))
     .eq("profile_id", userId)
     .maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    console.error("me/hr read failed", error);
+    return NextResponse.json({ error: "Could not load your details" }, { status: 400 });
+  }
 
   return NextResponse.json({ details: data ?? null });
 }
@@ -73,7 +100,19 @@ export async function PATCH(request: NextRequest) {
   for (const f of FIELDS) {
     if (f in body) {
       const v = body[f];
-      patch[f] = v === "" || v == null ? null : String(v);
+      if (v === "" || v == null) {
+        patch[f] = null;
+        continue;
+      }
+      const value = String(v).trim();
+      const rule = LIMITS[f];
+      if (value.length > (rule?.max ?? FALLBACK_MAX)) {
+        return NextResponse.json({ error: `Your ${label(f)} is too long` }, { status: 400 });
+      }
+      if (rule?.pattern && !rule.pattern.test(value)) {
+        return NextResponse.json({ error: `That doesn't look like a valid ${label(f)}` }, { status: 400 });
+      }
+      patch[f] = value;
     }
   }
   if (body.confirm === true) patch.confirmed_at = new Date().toISOString();
@@ -81,7 +120,11 @@ export async function PATCH(request: NextRequest) {
   const { error } = await service()
     .from("member_hr")
     .upsert({ profile_id: userId, ...patch, updated_at: new Date().toISOString() }, { onConflict: "profile_id" });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    // Never echo the Postgres message: it names columns and constraints.
+    console.error("me/hr upsert failed", error);
+    return NextResponse.json({ error: "Could not save your details" }, { status: 400 });
+  }
 
   return NextResponse.json({ ok: true });
 }

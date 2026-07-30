@@ -45,7 +45,10 @@ export async function POST(request: NextRequest) {
     .from("profiles")
     .update({ avatar_url: pub.publicUrl })
     .eq("id", user.id);
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
+  if (pErr) {
+    console.error("avatar profile update failed", pErr);
+    return NextResponse.json({ error: "Could not save your avatar" }, { status: 400 });
+  }
 
   return NextResponse.json({ avatarUrl: pub.publicUrl });
 }
@@ -59,6 +62,9 @@ export async function DELETE() {
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) {
+    console.error("avatar clear failed", error);
+    return NextResponse.json({ error: "Could not remove your avatar" }, { status: 400 });
+  }
   return NextResponse.json({ ok: true });
 }
