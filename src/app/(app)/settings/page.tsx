@@ -354,8 +354,12 @@ function ChangePassword() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-3 font-heading">Change password</h2>
+    // matches the other own-account cards, now that it stands alone on its tab
+    <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 className="mb-1 font-heading">Change password</h2>
+      <p className="mb-4 text-xs text-muted">
+        At least 6 characters. You stay signed in on this device.
+      </p>
       <div className="flex max-w-sm flex-col gap-2">
         <input
           type="password"
@@ -389,7 +393,7 @@ function ChangePassword() {
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -405,25 +409,48 @@ function MyDetails() {
   );
 }
 
-type SettingsTab = "account" | "clients" | "studio";
+type SettingsTab = "pictures" | "details" | "password" | "clients" | "studio";
 const TAB_KEY = "settings.tab";
+
+/**
+ * The own-account surface, split for EVERYONE rather than only for members: it is
+ * the same three blocks whoever is looking, and one long scroll past two picture
+ * uploaders and fourteen HR fields to reach the password field is the same scroll
+ * for an admin. Members used to get no strip at all, because their whole page was
+ * one tab — which is also why it was the longest page in the app.
+ */
+const ACCOUNT_TABS = [
+  { value: "pictures" as const, label: "My pictures" },
+  { value: "details" as const, label: "My details" },
+  { value: "password" as const, label: "Password" },
+];
+const ADMIN_TABS = [
+  { value: "clients" as const, label: "Clients" },
+  { value: "studio" as const, label: "Studio setup" },
+];
+/** v1.1.x stored a single "account" tab, which has since split into three */
+const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
 
 export default function SettingsPage() {
   const isAdmin = useIsAdmin();
-  const [tab, setTab] = useState<SettingsTab>("account");
+  const [tab, setTab] = useState<SettingsTab>("pictures");
 
-  // A member's whole surface is "My account", so they get no strip at all — a
-  // one-tab control is a control that does nothing.
-  const tabs = isAdmin
-    ? ([
-        { value: "account" as const, label: "My account" },
-        { value: "clients" as const, label: "Clients" },
-        { value: "studio" as const, label: "Studio setup" },
-      ])
-    : ([{ value: "account" as const, label: "My account" }]);
+  const tabs = isAdmin ? [...ACCOUNT_TABS, ...ADMIN_TABS] : ACCOUNT_TABS;
+  /**
+   * Lazily mounted, then never unmounted — `HrDetailsForm` is controlled state
+   * behind ONE explicit Save, so unmounting it on a tab switch would silently
+   * discard fourteen fields of typed-but-unsaved text. Keeping it mounted also
+   * means /api/me/hr is read once per visit, and not at all until you open the
+   * tab.
+   */
+  const [detailsMounted, setDetailsMounted] = useState(false);
+  useEffect(() => {
+    if (tab === "details") setDetailsMounted(true);
+  }, [tab]);
 
   useEffect(() => {
-    const v = localStorage.getItem(TAB_KEY);
+    const raw = localStorage.getItem(TAB_KEY);
+    const v = raw ? (LEGACY_TABS[raw] ?? raw) : null;
     // Validated against the tabs actually visible: a stored "clients" becomes
     // invalid under ?viewAs or after a role change, and an unvalidated read would
     // render a blank page.
@@ -441,17 +468,27 @@ export default function SettingsPage() {
     <div className="flex max-w-[1500px] flex-col gap-4">
       <h1 className="font-serif-accent text-3xl">Settings</h1>
 
-      {tabs.length > 1 && (
-        <Tabs value={tab} onChange={pickTab} items={tabs} ariaLabel="Settings sections" />
-      )}
+      <Tabs value={tab} onChange={pickTab} items={tabs} ariaLabel="Settings sections" />
 
       {/* The hand-split two-column masonry is gone. It was why ChangePassword had
           to be rendered TWICE (once per column, to balance an admin's page), and
           it meant source order didn't match visual order. */}
-      {tab === "account" && (
+      {tab === "pictures" && (
         <div className="flex max-w-[860px] flex-col gap-4">
           <MyProfile />
+        </div>
+      )}
+
+      {detailsMounted && (
+        <div
+          className={`flex max-w-[860px] flex-col gap-4 ${tab === "details" ? "" : "hidden"}`}
+        >
           <MyDetails />
+        </div>
+      )}
+
+      {tab === "password" && (
+        <div className="flex max-w-[860px] flex-col gap-4">
           <ChangePassword />
         </div>
       )}

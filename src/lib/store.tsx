@@ -94,6 +94,24 @@ export interface NewPlanEntry {
   absenceType?: AbsenceType | null;
 }
 
+/** What a plan entry may be changed INTO — see `updatePlanEntry`. */
+export interface PlanEntryPatch {
+  type?: PlanEntryType;
+  taskId?: string | null;
+  text?: string;
+  clientId?: string | null;
+  absenceType?: AbsenceType | null;
+}
+
+/** The one place a `PlanEntryPatch` field is paired with its column name. */
+const PLAN_ENTRY_FIELDS: { key: keyof PlanEntryPatch; col: string }[] = [
+  { key: "type", col: "type" },
+  { key: "taskId", col: "task_id" },
+  { key: "text", col: "text" },
+  { key: "clientId", col: "client_id" },
+  { key: "absenceType", col: "absence_type" },
+];
+
 export interface TimeEntryPatch {
   minutes?: number;
   description?: string;
@@ -165,6 +183,12 @@ interface Store {
   updateTag: (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => void;
   deleteTag: (tagId: string) => void;
   addPlanEntry: (input: NewPlanEntry) => void;
+  /**
+   * Change what an existing plan entry IS — a free-text note becomes a real task,
+   * an absence changes kind, a note's wording or client changes. One undo step,
+   * restoring every field it touched.
+   */
+  updatePlanEntry: (entryId: string, patch: PlanEntryPatch) => void;
   movePlanEntry: (entryId: string, target: { date: string | null; columnId: string }) => void;
   /**
    * The weekly plan's drop target: move the entry, and when it lands in a
@@ -1245,6 +1269,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, wrote],
   );
 
+  /**
+   * Putting a task in the plan says someone is going to work on it, so a task
+   * that was marked done is reopened when it is planned — the studio's rule, and
+   * the reason the plan's search offers completed tasks at all. Returns the task
+   * (with its previous status) when it needs reopening, so the caller can fold
+   * that into ONE undo step with whatever put it in the plan; null otherwise.
+   *
+   * It lives here rather than in the modal because every route a task takes into
+   * the plan goes through `addPlanEntry` or `updatePlanEntry` — including paste —
+   * so the rule cannot be bypassed by adding a new caller.
+   */
+  const plannedTaskToReopen = useCallback(
+    (taskId: string | null | undefined) => {
+      if (!taskId) return null;
+      const task = tasks.find((t) => t.id === taskId);
+      return task && task.status === "done" ? task : null;
+    },
+    [tasks],
+  );
+
   const addPlanEntry = useCallback(
     (input: NewPlanEntry) => {
       const position =
@@ -1275,13 +1319,78 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
           const entry = mapPlanEntry(data);
           setPlanEntries((prev) => [...prev, entry]);
-          record({
-            undo: () => methodsRef.current?.deletePlanEntry(entry.id),
-            redo: () => restorePlanEntry(entry),
+          const reopen = plannedTaskToReopen(input.taskId);
+          const action = {
+            undo: () => {
+              methodsRef.current?.deletePlanEntry(entry.id);
+              if (reopen) methodsRef.current?.updateTask(reopen.id, { status: reopen.status });
+            },
+            redo: () => {
+              restorePlanEntry(entry);
+              // restorePlanEntry re-inserts the row verbatim and knows nothing
+              // about the reopen rule, so redo has to reapply it
+              if (reopen) methodsRef.current?.updateTask(reopen.id, { status: "todo" });
+            },
+          };
+          if (!reopen) {
+            record(action);
+            return;
+          }
+          // the row is already in; only the reopen still has to run under the
+          // same history step
+          asOneStep(action, () => {
+            methodsRef.current?.updateTask(reopen.id, { status: "todo" });
           });
         });
     },
-    [supabase, planEntries, record, restorePlanEntry, noteWriteError],
+    [supabase, planEntries, record, asOneStep, restorePlanEntry, noteWriteError, plannedTaskToReopen],
+  );
+
+  const updatePlanEntry = useCallback(
+    (entryId: string, patch: PlanEntryPatch) => {
+      const before = planEntries.find((e) => e.id === entryId);
+      if (!before) return;
+
+      // One pass builds all three shapes from ONE field list: the DB row (the
+      // camelCase/snake_case mapping lives here and nowhere else — the same trap
+      // `updateTimeEntry` fell into), the local patch, and the inverse for undo.
+      // Only fields the patch actually names are touched, so an undo can never
+      // reset something the caller left alone.
+      const prev: PlanEntryPatch = {};
+      const local: PlanEntryPatch = {};
+      const row: Record<string, unknown> = {};
+      for (const f of PLAN_ENTRY_FIELDS) {
+        const v = patch[f.key];
+        if (v === undefined) continue;
+        (prev as Record<string, unknown>)[f.key] = before[f.key];
+        (local as Record<string, unknown>)[f.key] = v;
+        row[f.col] = v;
+      }
+      if (Object.keys(row).length === 0) return;
+
+      const apply = () => {
+        setPlanEntries((p) => p.map((e) => (e.id === entryId ? { ...e, ...local } : e)));
+        supabase.from("plan_entries").update(row).eq("id", entryId).then(wrote("updatePlanEntry"));
+      };
+      const reopen = plannedTaskToReopen(patch.taskId);
+      const action = {
+        undo: () => {
+          methodsRef.current?.updatePlanEntry(entryId, prev);
+          if (reopen) methodsRef.current?.updateTask(reopen.id, { status: reopen.status });
+        },
+        redo: () => methodsRef.current?.updatePlanEntry(entryId, patch),
+      };
+      if (!reopen) {
+        record(action);
+        apply();
+        return;
+      }
+      asOneStep(action, () => {
+        apply();
+        methodsRef.current?.updateTask(reopen.id, { status: "todo" });
+      });
+    },
+    [supabase, planEntries, record, asOneStep, wrote, plannedTaskToReopen],
   );
 
   const movePlanEntry = useCallback(
@@ -1986,6 +2095,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateTag,
       deleteTag,
       addPlanEntry,
+      updatePlanEntry,
       movePlanEntry,
       movePlanEntryToCell,
       deletePlanEntry,
@@ -2026,7 +2136,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

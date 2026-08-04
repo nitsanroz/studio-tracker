@@ -61,6 +61,13 @@ const DEV_STATUS: Record<DevStatus, { label: string; chip: string }> = {
 
 const DEV_STATUS_ORDER: DevStatus[] = ["pricing", "in_approval", "wip", "qa", "client_qa", "done"];
 
+/** The absence buttons in the add/edit modal, in the order the studio reads them. */
+const ABSENCE_CHOICES: { key: AbsenceType; label: string; chip: string }[] = [
+  { key: "sick", label: "🤒 Sick", chip: "bg-black text-white" },
+  { key: "vacation", label: "🌴 Vacation", chip: "bg-blue-700 text-white" },
+  { key: "day_off", label: "– Day off", chip: "bg-gray-200 text-gray-600" },
+];
+
 interface CellTarget {
   date: string | null;
   columnId: string;
@@ -78,6 +85,14 @@ interface ChipPayload {
 /** Module-level clipboard: survives re-renders, intentionally not persisted. */
 let planClipboard: ChipPayload | null = null;
 
+/**
+ * Every person column is exactly this wide, whatever is in it. Only the header
+ * row's widths matter (see the table's `table-fixed`), so this lives as a class
+ * there — 175px is Nitsan's floor, and a wider window shares the spare space out
+ * between the columns equally rather than giving it to the busiest one.
+ */
+const PERSON_COL = "w-[175px]";
+
 // ── chips ────────────────────────────────────────────────────────────────
 
 function EntryChip({
@@ -85,11 +100,18 @@ function EntryChip({
   canEdit,
   onMenu,
   onHover,
+  onEdit,
 }: {
   entry: PlanEntry;
   canEdit: boolean;
   onMenu?: (e: ReactMouseEvent, entry: PlanEntry) => void;
   onHover?: (entry: PlanEntry | null) => void;
+  /**
+   * Clicking anything that ISN'T a task — an absence, a free-text note — opens the
+   * editor, since there is nowhere else to change them. A task chip keeps opening
+   * the task pane instead: that's where a task is edited.
+   */
+  onEdit?: (entry: PlanEntry) => void;
 }) {
   const { tasks, clients, openTask, deletePlanEntry } = useData();
   const task = entry.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
@@ -118,24 +140,41 @@ function EntryChip({
       }
     : {};
 
+  // task chips handle their own click (they open the pane), so this is only wired
+  // for the rest
+  const editable = canEdit && !!onEdit && !entry.taskId;
   const wrapperProps = {
     ...dragProps,
     onContextMenu: onMenu ? (e: ReactMouseEvent) => onMenu(e, entry) : undefined,
     onMouseEnter: onHover ? () => onHover(entry) : undefined,
     onMouseLeave: onHover ? () => onHover(null) : undefined,
+    ...(editable
+      ? {
+          onClick: (e: ReactMouseEvent) => {
+            e.stopPropagation();
+            onEdit?.(entry);
+          },
+        }
+      : {}),
   };
+  /** appended to the chip's own tooltip rather than set on the wrapper, whose
+   *  title an inner element with its own would hide */
+  const editHint = editable ? " — click to edit" : "";
 
   // Absence: full-cell fill (rendered stretched by PlanCell), not a chip.
   if (entry.type === "absence") {
     const type = entry.absenceType ?? "day_off";
     const { icon: AbsenceIcon, label: absenceLabel } = ABSENCE_CELL[type];
     return (
-      <div className="group/chip relative flex min-h-8 flex-1" {...wrapperProps}>
+      <div
+        className={`group/chip relative flex min-h-8 flex-1 ${editable ? "cursor-pointer" : ""}`}
+        {...wrapperProps}
+      >
         {/* no rounding: an absence fills its cell edge to edge, so it reads as
             "this day is gone" rather than as one more card sitting in the day */}
         <div
           className={`flex flex-1 items-center justify-center gap-1 text-xs font-medium ${ABSENCE_FILL[type]}`}
-          title={ABSENCE_LABELS[type]}
+          title={`${ABSENCE_LABELS[type]}${editHint}`}
         >
           <AbsenceIcon size={12} />
           {absenceLabel}
@@ -164,7 +203,11 @@ function EntryChip({
               {client.name}
             </div>
           )}
-          <div className={`bidi-auto truncate text-left ${done ? "line-through" : ""}`}>{label}</div>
+          {/* wraps rather than truncates: the columns are a fixed equal width now,
+              so a long title has to use more lines instead of more width */}
+          <div className={`bidi-auto break-words text-left ${done ? "line-through" : ""}`}>
+            {label}
+          </div>
         </div>
         {remove}
       </div>
@@ -174,16 +217,19 @@ function EntryChip({
   // Free text with a client: lighter shade of the client color, no outline.
   if (client) {
     return (
-      <div className="group/chip relative" {...wrapperProps}>
+      <div
+        className={`group/chip relative ${editable ? "cursor-pointer" : ""}`}
+        {...wrapperProps}
+      >
         <div
           className="rounded-md px-2 py-1 text-xs font-medium text-white"
           style={{ backgroundColor: `color-mix(in srgb, ${color} 75%, white)` }}
-          title={`${client.name} — ${label}`}
+          title={`${client.name} — ${label}${editHint}`}
         >
           <div className="truncate text-right text-[9px] font-semibold uppercase tracking-wide text-white/85">
             {client.name}
           </div>
-          <div className="bidi-auto truncate text-left">{label}</div>
+          <div className="bidi-auto break-words text-left">{label}</div>
         </div>
         {remove}
       </div>
@@ -192,10 +238,10 @@ function EntryChip({
 
   // Plain free text: darker grey so it doesn't disappear against the cell.
   return (
-    <div className="group/chip relative" {...wrapperProps}>
+    <div className={`group/chip relative ${editable ? "cursor-pointer" : ""}`} {...wrapperProps}>
       <div
-        className="bidi-auto truncate rounded-md bg-gray-300 px-2 py-1 text-left text-xs font-medium text-gray-700"
-        title={label}
+        className="bidi-auto break-words rounded-md bg-gray-300 px-2 py-1 text-left text-xs font-medium text-gray-700"
+        title={`${label}${editHint}`}
       >
         {label}
       </div>
@@ -204,11 +250,29 @@ function EntryChip({
   );
 }
 
-// ── add-entry modal ──────────────────────────────────────────────────────
+// ── add / edit entry modal ───────────────────────────────────────────────
 
-function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () => void }) {
-  const { clients, tasks, planEntries, entrySums, addPlanEntry } = useData();
-  const [clientId, setClientId] = useState<string>("");
+/**
+ * One modal for putting something in a cell and for changing what is already
+ * there. Editing IS choosing again — pick a task, retype the note, or pick an
+ * absence — so a separate editor would have been the same three controls with a
+ * different verb.
+ *
+ * `entry` switches it to edit mode. Task chips never open it: clicking one opens
+ * the task pane, which is where a task is edited.
+ */
+function EntryModal({
+  target,
+  entry,
+  onClose,
+}: {
+  target: CellTarget;
+  entry?: PlanEntry;
+  onClose: () => void;
+}) {
+  const { clients, tasks, planEntries, entrySums, addPlanEntry, updatePlanEntry, deletePlanEntry } =
+    useData();
+  const [clientId, setClientId] = useState<string>(entry?.clientId ?? "");
 
   const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
 
@@ -235,31 +299,45 @@ function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () =>
 
   const selectedClient = clients.find((c) => c.id === clientId);
 
+  /**
+   * Add or change, from one place. Every field is named on both paths, so an
+   * absence turning into a task can't keep the absence kind, and a note turning
+   * into a task can't keep its text.
+   */
+  function commit(patch: {
+    type: PlanEntry["type"];
+    taskId: string | null;
+    text: string;
+    clientId: string | null;
+    absenceType: AbsenceType | null;
+  }) {
+    if (entry) updatePlanEntry(entry.id, patch);
+    else addPlanEntry({ date: target.date, columnId: target.columnId, ...patch });
+    onClose();
+  }
+
   function pickTask(m: TaskMatch) {
-    addPlanEntry({
-      date: target.date,
-      columnId: target.columnId,
+    commit({
       type: "task",
       taskId: m.task.id,
+      text: "",
       clientId: m.client?.id ?? m.task.clientId,
+      absenceType: null,
     });
-    onClose();
   }
 
   function addFreeText(text: string) {
-    addPlanEntry({
-      date: target.date,
-      columnId: target.columnId,
-      type: "free_text",
-      text,
-      clientId: clientId || null,
-    });
-    onClose();
+    commit({ type: "free_text", taskId: null, text, clientId: clientId || null, absenceType: null });
   }
 
   function addAbsence(key: AbsenceType) {
-    addPlanEntry({ date: target.date, columnId: target.columnId, type: "absence", absenceType: key });
-    onClose();
+    // re-picking the kind it already is would be a write and an undo step for
+    // nothing
+    if (entry?.type === "absence" && entry.absenceType === key) {
+      onClose();
+      return;
+    }
+    commit({ type: "absence", taskId: null, text: "", clientId: null, absenceType: key });
   }
 
   return (
@@ -267,7 +345,9 @@ function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () =>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
       <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-heading text-sm">Add to {target.label}</h3>
+          <h3 className="font-heading text-sm">
+            {entry ? "Edit" : "Add to"} {target.label}
+          </h3>
           <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
             <X size={16} />
           </button>
@@ -294,6 +374,13 @@ function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () =>
           clientId={clientId || null}
           allowFreeText
           autoFocus
+          // the plan is the one place a FINISHED task is a legitimate choice:
+          // work comes back. Picking one reopens it (see `plannedTaskToReopen`).
+          includeDone
+          // editing a note starts from what it says, so it can be amended rather
+          // than retyped
+          initialQuery={entry?.type === "free_text" ? entry.text : ""}
+          freeTextLabel={entry?.type === "free_text" ? "Save as text" : "Add free text"}
           placeholder={
             selectedClient
               ? `Search ${selectedClient.name} tasks, or type free text…`
@@ -303,26 +390,34 @@ function AddEntryModal({ target, onClose }: { target: CellTarget; onClose: () =>
           onFreeText={addFreeText}
         />
 
-        <div className="mt-3 flex items-center gap-1.5 border-t border-border pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
           <span className="mr-1 text-xs text-faint">Absence:</span>
-          <button
-            onClick={() => addAbsence("sick")}
-            className="rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white hover:opacity-80"
-          >
-            🤒 Sick
-          </button>
-          <button
-            onClick={() => addAbsence("vacation")}
-            className="rounded-md bg-blue-700 px-3 py-1.5 text-xs font-medium text-white hover:opacity-80"
-          >
-            🌴 Vacation
-          </button>
-          <button
-            onClick={() => addAbsence("day_off")}
-            className="rounded-md bg-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:opacity-80"
-          >
-            – Day off
-          </button>
+          {ABSENCE_CHOICES.map((a) => {
+            const active = entry?.type === "absence" && entry.absenceType === a.key;
+            return (
+              <button
+                key={a.key}
+                onClick={() => addAbsence(a.key)}
+                title={active ? "Already set" : undefined}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium hover:opacity-80 ${a.chip} ${
+                  active ? "ring-2 ring-brand ring-offset-1" : ""
+                }`}
+              >
+                {a.label}
+              </button>
+            );
+          })}
+          {entry && (
+            <button
+              onClick={() => {
+                deletePlanEntry(entry.id);
+                onClose();
+              }}
+              className="ml-auto rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-danger hover:text-danger"
+            >
+              Remove from plan
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -631,6 +726,7 @@ function PlanCell({
   onCellMenu,
   onHoverCell,
   onHoverEntry,
+  onEditEntry,
 }: {
   date: string | null;
   columnId: string;
@@ -642,6 +738,8 @@ function PlanCell({
   onCellMenu?: (e: ReactMouseEvent, target: CellTarget) => void;
   onHoverCell?: (target: CellTarget | null) => void;
   onHoverEntry?: (entry: PlanEntry | null) => void;
+  /** the cell passes its own target along, since the editor's header names it */
+  onEditEntry?: (entry: PlanEntry, target: CellTarget) => void;
 }) {
   const { movePlanEntryToCell } = useData();
   const [over, setOver] = useState(false);
@@ -688,14 +786,26 @@ function PlanCell({
         .filter((e) => e.type === "absence")
         .map((e) => (
           <div key={e.id} className="absolute inset-0 z-0 flex">
-            <EntryChip entry={e} canEdit={canEdit} onMenu={onChipMenu} onHover={onHoverEntry} />
+            <EntryChip
+              entry={e}
+              canEdit={canEdit}
+              onMenu={onChipMenu}
+              onHover={onHoverEntry}
+              onEdit={onEditEntry ? (en) => onEditEntry(en, target) : undefined}
+            />
           </div>
         ))}
       {entries
         .filter((e) => e.type !== "absence")
         .map((e) => (
           <div key={e.id} className="relative z-10">
-            <EntryChip entry={e} canEdit={canEdit} onMenu={onChipMenu} onHover={onHoverEntry} />
+            <EntryChip
+              entry={e}
+              canEdit={canEdit}
+              onMenu={onChipMenu}
+              onHover={onHoverEntry}
+              onEdit={onEditEntry ? (en) => onEditEntry(en, target) : undefined}
+            />
           </div>
         ))}
       {hasAbsence && <div className="min-h-8 flex-1" aria-hidden />}
@@ -725,7 +835,11 @@ export function WeeklyPlan() {
   const [rangeStart, setRangeStart] = useState(() => addDays(startOfWeek(new Date()), -14));
   const [rangeEnd, setRangeEnd] = useState(() => addDays(startOfWeek(new Date()), 27));
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [addTarget, setAddTarget] = useState<CellTarget | null>(null);
+  // one piece of state for both jobs: `entry` present = editing what is there,
+  // absent = adding to the cell
+  const [entryModal, setEntryModal] = useState<{ target: CellTarget; entry?: PlanEntry } | null>(
+    null,
+  );
   const [dayStateTarget, setDayStateTarget] = useState<string | null>(null);
   const [showColumns, setShowColumns] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
@@ -804,7 +918,7 @@ export function WeeklyPlan() {
       y: e.clientY,
       items: [
         { label: "Paste", hint: "⌘V", disabled: !planClipboard, onClick: () => pasteInto(cell) },
-        { label: "Add…", onClick: () => setAddTarget(cell) },
+        { label: "Add…", onClick: () => setEntryModal({ target: cell }) },
       ],
     });
   };
@@ -947,7 +1061,18 @@ export function WeeklyPlan() {
           className="min-w-0 flex-1 overflow-auto rounded-xl border border-border bg-surface"
           style={{ maxHeight: "calc(100vh - 170px)" }}
         >
-          <table className="w-full border-collapse">
+          {/*
+            `table-fixed`, so every person column is exactly as wide as every
+            other one. Under auto layout a column was sized by its longest chip,
+            which is why one designer's column was visibly wider than the rest —
+            and it moved around as the week's work changed. Chips wrap instead.
+
+            `w-full` only ever ADDS width: measured in Chrome, a fixed table whose
+            columns total more than the container keeps their widths and lets the
+            wrapper scroll (which is what it did before), and when they total less
+            the spare is split evenly. So no min-width is needed here.
+          */}
+          <table className="w-full table-fixed border-collapse">
             <thead className="sticky top-0 z-20">
               <tr>
                 <th className="sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint">
@@ -967,11 +1092,16 @@ export function WeeklyPlan() {
                   return (
                     <th
                       key={col.id}
-                      className={`min-w-32 border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${col.type === "studio" ? "bg-brand-soft/60" : ""} ${isMe ? "bg-aqua/20" : ""}`}
+                      // a width, not a min-width: under fixed layout the header
+                      // row's widths ARE the column widths
+                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${col.type === "studio" ? "bg-brand-soft/60" : ""} ${isMe ? "bg-aqua/20" : ""}`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-semibold">
                         {profile ? <Avatar profile={profile} size={20} /> : null}
-                        {col.name}
+                        {/* the column no longer widens to fit a long name */}
+                        <span className="min-w-0 truncate" title={col.name}>
+                          {col.name}
+                        </span>
                       </div>
                     </th>
                   );
@@ -1058,11 +1188,12 @@ export function WeeklyPlan() {
                           label={`${col.name} — ${name} ${date}`}
                           entries={entriesByCell.get(`${iso}::${col.id}`) ?? []}
                           canEdit={canEdit}
-                          onAdd={setAddTarget}
+                          onAdd={(t) => setEntryModal({ target: t })}
                           onChipMenu={openChipMenu}
                           onCellMenu={openCellMenu}
                           onHoverCell={(t) => (hoveredCell.current = t)}
                           onHoverEntry={(en) => (hoveredEntry.current = en)}
+                          onEditEntry={(en, t) => setEntryModal({ target: t, entry: en })}
                         />
                       </td>
                     ))}
@@ -1103,11 +1234,12 @@ export function WeeklyPlan() {
                   label="Waiting list"
                   entries={entriesByCell.get(`wl::${waitingCol.id}`) ?? []}
                   canEdit={canEdit}
-                  onAdd={setAddTarget}
+                  onAdd={(t) => setEntryModal({ target: t })}
                   onChipMenu={openChipMenu}
                   onCellMenu={openCellMenu}
                   onHoverCell={(t) => (hoveredCell.current = t)}
                   onHoverEntry={(en) => (hoveredEntry.current = en)}
+                  onEditEntry={(en, t) => setEntryModal({ target: t, entry: en })}
                 />
               </div>
             )}
@@ -1125,7 +1257,13 @@ export function WeeklyPlan() {
         </p>
       )}
 
-      {addTarget && <AddEntryModal target={addTarget} onClose={() => setAddTarget(null)} />}
+      {entryModal && (
+        <EntryModal
+          target={entryModal.target}
+          entry={entryModal.entry}
+          onClose={() => setEntryModal(null)}
+        />
+      )}
       {dayStateTarget && (
         <DayStateModal dateIso={dayStateTarget} onClose={() => setDayStateTarget(null)} />
       )}

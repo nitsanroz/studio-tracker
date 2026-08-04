@@ -49,6 +49,8 @@ export function LogTimeForm({
   const [forUserId, setForUserId] = useState<string>(fixedUserId ?? currentUserId);
   const [date, setDate] = useState<string>(fixedDate ?? toISODate(new Date()));
   const [busy, setBusy] = useState(false);
+  /** bumped after an add, as the autocomplete's `key`, to reset its filled-in title */
+  const [pickerNonce, setPickerNonce] = useState(0);
 
   const minutes = parseDuration(duration);
   const ready = !!taskId && !!minutes && minutes > 0 && description.trim().length > 0 && !busy;
@@ -67,7 +69,12 @@ export function LogTimeForm({
     setBusy(false);
     setDuration("");
     setDescription("");
-    if (!fixedTaskId) setTaskId(null);
+    if (!fixedTaskId) {
+      setTaskId(null);
+      // the picker holds the chosen title in its own input; remount it so the
+      // field doesn't keep naming a task that is no longer selected
+      setPickerNonce((n) => n + 1);
+    }
     onAdded?.(entry);
   }
 
@@ -79,9 +86,11 @@ export function LogTimeForm({
       {!fixedTaskId && (
         <div className={stacked ? "" : "min-w-48 flex-1"}>
           <TaskAutocomplete
+            key={pickerNonce}
             placeholder="Which task?"
             autoFocus={autoFocus}
             onPickTask={(m) => setTaskId(m.task.id)}
+            onQueryEdited={() => setTaskId(null)}
           />
         </div>
       )}
