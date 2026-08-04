@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import {
   addDays,
   formatFeedDate,
@@ -26,8 +26,9 @@ import {
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
 import { MemberPhoto } from "./member-photo";
 import { ConfirmDetailsBanner } from "./confirm-details-banner";
-import { Avatar, ClientChip, InfoDot } from "./ui";
+import { Avatar, ClientChip, InfoDot, Tabs } from "./ui";
 import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
+import { PeriodStepper } from "./period-stepper";
 import { WeekTimesheet } from "./week-timesheet";
 import type { TimeEntry } from "@/lib/types";
 
@@ -431,7 +432,12 @@ const PIE_CLIENTS = 15;
 /** Series label the "hours over time" headline reads (see totalSeries below). */
 const TOTAL_SERIES = "All hours";
 
-function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+/**
+ * The rows both "Hours over time" and the by-client donut read, scoped by the
+ * page filter. One hook so the two panes can never disagree about which hours
+ * they are describing.
+ */
+function useHoursScope(filter: HomeFilter, isAdmin: boolean) {
   const { entrySums, entrySumsAll, tasks, clients, currentUserId } = useData();
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
@@ -454,6 +460,12 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
       }),
     [source, currentUserId, isAdmin, filter, taskById],
   );
+
+  return { scoped, taskById, clientById };
+}
+
+function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+  const { scoped, taskById } = useHoursScope(filter, isAdmin);
 
   const { perBucket, projection } = useMemo(() => {
     const { keyFor, labelFor, unit } = bucketize(scoped.map((e) => e.date), !!filter.range);
@@ -487,6 +499,52 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
     };
   }, [scoped, filter.range, taskById]);
 
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 className="mb-3 font-heading text-sm" title="Your logged hours over the selected period">
+        Hours over time
+      </h2>
+      {perBucket.length > 0 ? (
+        // Admins get the line form (same chart as the client-trend pane beside
+        // it, single series) — it thins the x labels, which matters at 20+ daily
+        // buckets. Members keep the labelled columns.
+        isAdmin ? (
+          <MultiLineChart
+            labels={perBucket.map((p) => p.label)}
+            series={[
+              { label: TOTAL_SERIES, color: "#0b43ed", values: perBucket.map((p) => p.minutes) },
+              // Showing everything? Then the billable slice rides along as a
+              // second line. With "Billable only" on it would just retrace the
+              // first one, so it's dropped.
+              ...(filter.billableOnly
+                ? []
+                : [
+                    {
+                      label: "Billable",
+                      color: "#16a34a",
+                      values: perBucket.map((p) => p.billable),
+                    },
+                  ]),
+            ]}
+            // billable ⊂ all hours, so the headline must read ONE series
+            totalSeries={TOTAL_SERIES}
+            totalLabel={filter.label.toLowerCase()}
+            projection={projection}
+          />
+        ) : (
+          <MiniColumnsLabeled points={perBucket} />
+        )
+      ) : (
+        <p className="text-sm text-faint">No hours in this scope.</p>
+      )}
+    </div>
+  );
+}
+
+/** The donut half of "Hours by client". */
+function HoursByClientDonut({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+  const { scoped, taskById, clientById } = useHoursScope(filter, isAdmin);
+
   const pieSlices = useMemo(() => {
     const map = new Map<string, number>();
     for (const e of scoped) {
@@ -511,64 +569,53 @@ function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean })
     return slices;
   }, [scoped, taskById, clientById]);
 
-  return (
-    <>
-      {/* by time */}
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-        <h2 className="mb-3 font-heading text-sm" title="Your logged hours over the selected period">
-          Hours over time
-        </h2>
-        {perBucket.length > 0 ? (
-          // Admins get the line form (same chart as the client-trend pane beside
-          // it, single series) — it thins the x labels, which matters at 20+ daily
-          // buckets. Members keep the labelled columns.
-          isAdmin ? (
-            <MultiLineChart
-              labels={perBucket.map((p) => p.label)}
-              series={[
-                {
-                  label: TOTAL_SERIES,
-                  color: "#0b43ed",
-                  values: perBucket.map((p) => p.minutes),
-                },
-                // Showing everything? Then the billable slice rides along as a
-                // second line. With "Billable only" on it would just retrace the
-                // first one, so it's dropped.
-                ...(filter.billableOnly
-                  ? []
-                  : [
-                      {
-                        label: "Billable",
-                        color: "#16a34a",
-                        values: perBucket.map((p) => p.billable),
-                      },
-                    ]),
-              ]}
-              // billable ⊂ all hours, so the headline must read ONE series
-              totalSeries={TOTAL_SERIES}
-              totalLabel={filter.label.toLowerCase()}
-              projection={projection}
-            />
-          ) : (
-            <MiniColumnsLabeled points={perBucket} />
-          )
-        ) : (
-          <p className="text-sm text-faint">No hours in this scope.</p>
-        )}
-      </div>
+  if (pieSlices.length === 0) return <p className="text-sm text-faint">No hours in this scope.</p>;
+  return <PieChart slices={pieSlices} />;
+}
 
-      {/* by client */}
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-        <h2 className="mb-3 font-heading text-sm" title="Your hours split by client">
+/**
+ * "Hours by client", two ways, in one pane. The split (donut) and the trend over
+ * time answer the same question — who the studio's hours went to — so they were
+ * two panes competing for the same slot rather than two separate facts.
+ * Members only ever had the donut, so they get it without a tab strip.
+ */
+function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+  const [tab, setTab] = useState<"split" | "trend">("split");
+  const show = isAdmin ? tab : "split";
+
+  return (
+    <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2
+          className="font-heading text-sm"
+          title={
+            show === "split"
+              ? "Hours split by client over the selected period"
+              : "Studio hours per client over the selected period"
+          }
+        >
           Hours by client
         </h2>
-        {pieSlices.length > 0 ? (
-          <PieChart slices={pieSlices} />
-        ) : (
-          <p className="text-sm text-faint">No hours in this scope.</p>
+        {isAdmin && (
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            items={[
+              { value: "split" as const, label: "Split" },
+              { value: "trend" as const, label: "Over time" },
+            ]}
+            variant="segmented"
+            size="sm"
+            ariaLabel="Hours by client view"
+          />
         )}
       </div>
-    </>
+      {show === "split" ? (
+        <HoursByClientDonut filter={filter} isAdmin={isAdmin} />
+      ) : (
+        <StudioClientTrend filter={filter} />
+      )}
+    </div>
   );
 }
 
@@ -660,22 +707,14 @@ function StudioClientTrend({ filter }: { filter: HomeFilter }) {
     return { labels: keys.map(labelFor), series, projection };
   }, [entrySumsAll, filter, taskById, clientById]);
 
+  if (series.length === 0) return <p className="text-sm text-faint">No hours in this scope.</p>;
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-3 font-heading text-sm" title="Studio hours per client over the selected period">
-        Hours by client over time
-      </h2>
-      {series.length > 0 ? (
-        <MultiLineChart
-          labels={labels}
-          series={series}
-          totalLabel={`top clients · ${filter.label.toLowerCase()}`}
-          projection={projection}
-        />
-      ) : (
-        <p className="text-sm text-faint">No hours in this scope.</p>
-      )}
-    </div>
+    <MultiLineChart
+      labels={labels}
+      series={series}
+      totalLabel={`top clients · ${filter.label.toLowerCase()}`}
+      projection={projection}
+    />
   );
 }
 
@@ -866,63 +905,52 @@ function Celebrations({ inline = false }: { inline?: boolean }) {
     );
   }
 
-  // ── admin form: a window of 4 cards, soonest on the left ────────────────
-  const PER_PAGE = 4;
-  const start = Math.min(at, Math.max(0, upcoming.length - PER_PAGE));
-  const page = upcoming.slice(start, start + PER_PAGE);
-  const canPrev = start > 0;
-  const canNext = start + PER_PAGE < upcoming.length;
+  // ── admin form: a vertical scrolling list beside the week timesheet ──────
+  //
+  // Capped by COUNT, not by days: v0.99.37 deliberately deleted the 30-day
+  // horizon because the next occasions matter whenever they fall, and a day
+  // horizon would reintroduce exactly that. The sources are all recurring, so
+  // "everything" is ~30–40 rows whose tail is a full year out.
+  const LIST_MAX = 12;
+  const shown = upcoming.slice(0, LIST_MAX);
+  const hidden = upcoming.length - shown.length;
 
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className="mb-2.5 flex items-center justify-between gap-2">
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="mb-2 flex shrink-0 items-baseline justify-between gap-2">
         <h2 className="font-heading text-sm">Coming up</h2>
-        {upcoming.length > PER_PAGE && (
-          <div className="flex shrink-0 items-center gap-1">
-            <span className="mr-1 text-xs tabular-nums text-faint">
-              {start + 1}–{start + page.length} of {upcoming.length}
-            </span>
-            <button
-              onClick={() => setAt(Math.max(0, start - 1))}
-              disabled={!canPrev}
-              aria-label="Earlier occasions"
-              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <button
-              onClick={() => setAt(start + 1)}
-              disabled={!canNext}
-              aria-label="Later occasions"
-              className="rounded-md border border-border p-0.5 text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
+        <span className="text-[11px] tabular-nums text-faint">{upcoming.length} ahead</span>
       </div>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-        {page.map((o) => (
+      {/* min-h-0 is load-bearing: without it a flex child refuses to shrink below
+          its content and the scrollbar never appears — the pane would grow and
+          stretch the whole row instead. */}
+      <div className="-mr-1 min-h-0 flex-1 divide-y divide-border overflow-y-auto pr-1 max-lg:max-h-[420px]">
+        {shown.map((o) => (
           <div
             key={o.at + o.text}
             // Dimmed = past the member window, i.e. the team can't see it yet.
-            className={`flex flex-col gap-1.5 rounded-xl border border-border bg-background p-3 ${
-              o.liveForMembers ? "" : "opacity-50"
-            }`}
+            className={`flex items-start gap-2 py-2 ${o.liveForMembers ? "" : "opacity-50"}`}
             title={
               o.liveForMembers
                 ? undefined
                 : `Not shown to the team yet — the studio sees occasions within ${MEMBER_OCCASION_DAYS} days`
             }
           >
-            <span className="text-xl leading-none">{o.icon}</span>
-            <span className="bidi-auto line-clamp-2 text-sm font-medium leading-tight">{o.text}</span>
-            <span className="mt-auto text-xs text-muted">
-              <span className="tabular-nums">{o.when}</span> · {o.rel}
-            </span>
+            <span className="shrink-0 text-base leading-tight">{o.icon}</span>
+            <div className="min-w-0 flex-1">
+              <div className="bidi-auto line-clamp-2 text-xs font-medium leading-tight">
+                {o.text}
+              </div>
+              <div className="mt-0.5 text-[10px] text-muted">
+                <span className="tabular-nums">{o.when}</span> · {o.rel}
+              </div>
+            </div>
           </div>
         ))}
       </div>
+      {hidden > 0 && (
+        <p className="mt-1.5 shrink-0 text-[10px] text-faint">+{hidden} further ahead</p>
+      )}
     </div>
   );
 }
@@ -1264,7 +1292,9 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
       </div>
       {/* half-width pane since v0.99.35 (it took the My-tasks slot), so 4 across at
           most — 8 columns here would leave each card too narrow to read */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+      {/* full-page width again (the client-trend pane merged into its neighbour),
+          so the roster fits more designers per row instead of wrapping at four */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7">
         {rows.map(({ p, min, pct, archived }) => (
           <Link
             key={p.id}
@@ -1425,7 +1455,7 @@ function MemberWelcome({
 export function Dashboard() {
   const { profiles, tasks, clients, currentUserId, taskRequests, openTask } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
-  const isAdmin = me?.role === "admin";
+  const isAdmin = useIsAdmin();
 
   // page-wide filters — rangeKey picks the unit, periodOffset walks it (0 = current)
   const [rangeKey, setRangeKey] = useState<(typeof HOME_RANGES)[number]>("This month");
@@ -1579,55 +1609,20 @@ export function Dashboard() {
               Billable only
             </label>
           )}
-          {HOME_RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setRangeKey(r);
-                setPeriodOffset(0);
-              }}
-              className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
-                rangeKey === r
-                  ? "border-brand bg-brand-soft text-brand-dark"
-                  : "border-border bg-surface text-muted hover:border-border-strong"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-          {/* Step the selected period back/forward. Always rendered — these used to
-              vanish on "All time" and the "Now" reset only appeared once you had
-              already moved, so the row reflowed as you used it. Disabled + dimmed
-              instead, so the controls stay where the hand left them. */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPeriodOffset((o) => o - 1)}
-              disabled={!canNavigate}
-              title={canNavigate ? "Previous period" : "All time has no previous period"}
-              className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span className="min-w-[72px] text-center text-xs font-medium tabular-nums" title="Selected period">
-              {filter.label}
-            </span>
-            <button
-              onClick={() => setPeriodOffset((o) => Math.min(0, o + 1))}
-              disabled={!canNavigate || periodOffset >= 0}
-              title={canNavigate ? "Next period" : "All time has no next period"}
-              className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
-            >
-              <ChevronRight size={15} />
-            </button>
-            <button
-              onClick={() => setPeriodOffset(0)}
-              disabled={!canNavigate || periodOffset === 0}
-              title="Back to the current period"
-              className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
-            >
-              Now
-            </button>
-          </div>
+          {/* Extracted to period-stepper.tsx so reports and the team page get the
+              same control — including the rule that the arrows and "Now" are
+              disabled and dimmed rather than removed, so the row can't reflow
+              under the cursor. */}
+          <PeriodStepper
+            ranges={HOME_RANGES}
+            value={rangeKey}
+            offset={periodOffset}
+            label={filter.label}
+            canStep={canNavigate}
+            disabledReason="All time has no previous period"
+            onChange={setRangeKey}
+            onOffset={setPeriodOffset}
+          />
           <select
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
@@ -1659,27 +1654,37 @@ export function Dashboard() {
 
       {isAdmin ? (
         <>
-          {/* KPI tiles 2×2 in the left half, the week's timesheet beside them —
-              "did everyone log their hours" is a daily admin question and it
-              belongs at the top, not behind a click on /feed. */}
-          {/* no items-start: the two columns stretch to the same height so the
-              timesheet lines up with the tile block rather than floating short */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <StatTiles filter={filter} prevRange={prevRange} />
-            <WeekTimesheet />
-          </div>
-          {/* Up here with the intake banner, not at the foot of the page — an
-              upcoming date is only useful if you see it before the day arrives. */}
-          <div className="empty:hidden">
-            <Celebrations />
+          {/* One row: KPI tiles at half width, then the week's timesheet and the
+              occasions list sharing the other half. 12 columns rather than 4
+              because the three panes want different shares — 6/4/2 keeps the tiles
+              exactly the width they had, and 2/12 is comfortable for a vertical
+              occasion row.
+              No items-start: the columns stretch to the same height.
+              lg:h-0 + lg:min-h-full on the last one means it FILLS the row's
+              height without CONTRIBUTING to it — otherwise a long occasion list
+              would stretch the whole row. */}
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-6">
+              <StatTiles filter={filter} prevRange={prevRange} />
+            </div>
+            <div className="lg:col-span-4">
+              <WeekTimesheet />
+            </div>
+            <div className="empty:hidden lg:col-span-2 lg:h-0 lg:min-h-full">
+              <Celebrations />
+            </div>
           </div>
           {/* analytics 2×2 — hours over time / by client, then client-trend and the
               studio roster, which took the My-tasks slot (admins use /my-tasks) */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={isAdmin} />
-            <StudioClientTrend filter={filter} />
-            <StudioTeamStrip filter={filter} />
+            {/* the split and the trend answer the same question, so they share a
+                pane with a tab rather than competing for two slots */}
+            <ClientBreakdown filter={filter} isAdmin={isAdmin} />
           </div>
+          {/* full width now that the pane beside it has gone — the roster fits
+              more designers per row instead of wrapping at four */}
+          <StudioTeamStrip filter={filter} />
         </>
       ) : (
         <>
@@ -1699,6 +1704,7 @@ export function Dashboard() {
               That frees the row so both graphs sit side by side. */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={false} />
+            <ClientBreakdown filter={filter} isAdmin={false} />
           </div>
         </>
       )}

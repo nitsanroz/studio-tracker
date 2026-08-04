@@ -12,17 +12,13 @@ import {
 } from "react";
 import { createClient } from "./supabase/client";
 import {
-  fetchAll,
-  isMissingSchema,
   mapBillingPeriod,
   mapClient,
   mapComment,
   mapDayState,
   mapDevItem,
-  mapEntrySum,
   mapPlanColumn,
   mapPlanEntry,
-  mapProfile,
   mapSection,
   mapTag,
   mapTask,
@@ -30,6 +26,17 @@ import {
   taskPatchToRow,
   type DbRow,
 } from "./db";
+import {
+  fetchCold,
+  fetchFull,
+  fetchHot,
+  fingerprint,
+  mergeTasks,
+  mergeTimeEntries,
+  type ColdSnapshot,
+  type HotCtx,
+  type HotSnapshot,
+} from "./snapshot";
 import { toISODate } from "./format";
 import type {
   AbsenceType,
@@ -87,6 +94,14 @@ export interface NewPlanEntry {
   absenceType?: AbsenceType | null;
 }
 
+export interface TimeEntryPatch {
+  minutes?: number;
+  description?: string;
+  date?: string;
+  /** admin-only: move the entry to another member */
+  userId?: string;
+}
+
 interface Store {
   loading: boolean;
   profiles: Profile[];
@@ -140,6 +155,8 @@ interface Store {
   deleteSection: (sectionId: string) => void;
   /** Move `movedId` before `beforeId` within its own section; null = to the end. */
   reorderTask: (movedId: string, beforeId: string | null) => void;
+  /** Move a section before another within its own client; null = to the end. */
+  reorderSection: (movedId: string, beforeId: string | null) => void;
   addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
   updateProfile: (profileId: string, patch: Partial<Profile>) => void;
@@ -149,6 +166,12 @@ interface Store {
   deleteTag: (tagId: string) => void;
   addPlanEntry: (input: NewPlanEntry) => void;
   movePlanEntry: (entryId: string, target: { date: string | null; columnId: string }) => void;
+  /**
+   * The weekly plan's drop target: move the entry, and when it lands in a
+   * DIFFERENT person's column, reassign the underlying task to them — as one
+   * undo step. Falls back to a plain move when there is nobody to reassign to.
+   */
+  movePlanEntryToCell: (entryId: string, target: { date: string | null; columnId: string }) => void;
   deletePlanEntry: (entryId: string) => void;
   addPlanColumn: (name: string) => void;
   updatePlanColumn: (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => void;
@@ -157,10 +180,22 @@ interface Store {
   addComment: (taskId: string, body: string) => void;
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
-  addTimeEntry: (taskId: string, minutes: number, description: string, date?: string, userId?: string) => void;
+  /** Resolves to the inserted entry (or null) so a caller can edit it immediately. */
+  addTimeEntry: (
+    taskId: string,
+    minutes: number,
+    description: string,
+    date?: string,
+    userId?: string,
+  ) => Promise<TimeEntry | null>;
   /** One member's entries for one date. `timeEntries` only holds the recent 400. */
   loadDayEntries: (userId: string, dateIso: string) => Promise<TimeEntry[]>;
-  updateTimeEntry: (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => void;
+  /**
+   * `userId` reassigns the entry to another member — admins only. RLS refuses it
+   * for members anyway: `own time update`'s USING clause constrains the very
+   * column being changed, and Postgres reuses it as the check on the new row.
+   */
+  updateTimeEntry: (entryId: string, patch: TimeEntryPatch) => void;
   deleteTimeEntry: (entryId: string) => void;
   moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
   addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position" | "paid">) => void;
@@ -182,6 +217,19 @@ interface Store {
   writeError: string | null;
   dismissWriteError: () => void;
   /**
+   * A neutral, informational message — currently only "that undo expired".
+   * Deliberately NOT writeError: that banner is about failed saves and says
+   * "reload", neither of which applies here.
+   */
+  notice: string | null;
+  dismissNotice: () => void;
+  /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
+  refreshing: boolean;
+  /** epoch ms of the last successful sync, for the indicator's tooltip. */
+  lastSyncedAt: number | null;
+  /** Force a refresh now (the interval and tab-focus do this automatically). */
+  refresh: () => void;
+  /**
    * Set when the initial load failed. Distinct from `writeError`: there is no
    * data at all, so the UI must not render an empty state that reads as "the
    * studio has nothing" — see AppShell.
@@ -192,7 +240,25 @@ interface Store {
 interface HistoryAction {
   undo: () => void;
   redo: () => void;
+  /**
+   * Which refresh generation this step was recorded against. An undo whose epoch
+   * has moved on would push a value captured BEFORE a colleague's change back to
+   * the server — silently reverting their edit. See `undo`.
+   */
+  epoch: number;
 }
+
+// ── background refresh cadence ──────────────────────────────────────────
+/** Hot poll. A minute is inside "my colleague sees my drag soon" for the plan. */
+const HOT_INTERVAL_MS = 60_000;
+/** Studio structure (people, clients, sections, tags) every 10th hot tick. */
+const COLD_EVERY_N_TICKS = 10;
+/** Don't refetch for an alt-tab. */
+const FOCUS_MIN_GAP_MS = 20_000;
+/** Coming back after this long is worth a full refresh, not just the hot half. */
+const COLD_AFTER_AWAY_MS = 5 * 60_000;
+/** How long an in-flight write blocks a refresh before we assume it leaked. */
+const WRITE_SETTLE_MS = 15_000;
 
 /** prev values of exactly the patched keys — the inverse patch for undo */
 function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T> {
@@ -280,20 +346,97 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setWriteError("Some changes couldn't be saved. Reload to get the latest from the server.");
   }, []);
 
+  // ── background refresh plumbing ───────────────────────────────────────
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  /** Bumped by boot AND every refresh, so a slow response can tell it's stale. */
+  const generation = useRef(0);
+  const refreshInFlight = useRef(false);
+  const refreshQueued = useRef(false);
+  const fingerprintRef = useRef<string | null>(null);
+  const lastSyncedRef = useRef<number | null>(null);
+  const refreshRef = useRef<((opts?: { cold?: boolean; reason?: string }) => void) | null>(null);
+  /** What `fetchHot` needs from the cold half; kept in a ref so refresh() is stable. */
+  const coldCtxRef = useRef<HotCtx>({ tagNames: new Map(), projectClient: new Map() });
+  const openTaskIdRef = useRef<string | null>(null);
+
+  // In-flight optimistic writes. A refresh must not land between the local
+  // setState and the server commit, or the user's own edit flickers backwards.
+  const writes = useRef(0);
+  const lastWriteAt = useRef(0);
+  /** A rejected promise could leak the counter, so it also expires. */
+  const writesBusy = useCallback(
+    () => writes.current > 0 && Date.now() - lastWriteAt.current < WRITE_SETTLE_MS,
+    [],
+  );
+  /** Cheap global "the user is mid-edit" test — no per-field registry needed. */
+  const focusInEditor = useCallback(() => {
+    const el = typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null);
+    return (
+      !!el &&
+      (el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT" ||
+        el.isContentEditable)
+    );
+  }, []);
+  /**
+   * The tail every optimistic update/delete ends with. Counts the write as in
+   * flight so a refresh defers, surfaces failures exactly as before, and runs a
+   * deferred refresh once the write settles.
+   *
+   * Inserts deliberately don't use this: a new row can't be clobbered — if the
+   * refresh lands first the row simply isn't in the snapshot yet and the insert
+   * callback appends it; if it lands after, the row is already there.
+   */
+  const wrote = useCallback(
+    (label: string) => {
+      writes.current++;
+      lastWriteAt.current = Date.now();
+      return ({ error }: { error: { message: string } | null }) => {
+        writes.current = Math.max(0, writes.current - 1);
+        lastWriteAt.current = Date.now();
+        if (error) noteWriteError(label, error);
+        else if (refreshQueued.current && writes.current === 0) {
+          refreshQueued.current = false;
+          void refreshRef.current?.({ reason: "after-write" });
+        }
+      };
+    },
+    [noteWriteError],
+  );
+
   // ── undo / redo history (last 10 data actions) ────────────────────────
   const historyRef = useRef<{ past: HistoryAction[]; future: HistoryAction[] }>({ past: [], future: [] });
   const suppressHistory = useRef(false);
+  /** Bumped whenever a background refresh brings in someone else's change. */
+  const epoch = useRef(0);
   /** Latest mutation methods, so history actions never call stale closures. */
   const methodsRef = useRef<Store | null>(null);
-  const record = useCallback((action: HistoryAction) => {
+  const record = useCallback((action: Omit<HistoryAction, "epoch">) => {
     if (suppressHistory.current) return;
-    historyRef.current.past.push(action);
+    historyRef.current.past.push({ ...action, epoch: epoch.current });
     if (historyRef.current.past.length > 10) historyRef.current.past.shift();
     historyRef.current.future = [];
+  }, []);
+  /**
+   * True when the step is older than the last change a refresh brought in. Undoing
+   * it would write a value captured before that change, quietly reverting whoever
+   * made it — so the whole history goes instead (everything older is equally stale).
+   */
+  const expired = useCallback((action: HistoryAction) => {
+    if (action.epoch === epoch.current) return false;
+    historyRef.current.past.length = 0;
+    historyRef.current.future.length = 0;
+    setNotice("Someone else changed the studio data since then, so that undo is no longer available.");
+    return true;
   }, []);
   const undo = useCallback(() => {
     const action = historyRef.current.past.pop();
     if (!action) return;
+    if (expired(action)) return;
     suppressHistory.current = true;
     try {
       action.undo();
@@ -301,10 +444,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       suppressHistory.current = false;
     }
     historyRef.current.future.push(action);
-  }, []);
+  }, [expired]);
   const redo = useCallback(() => {
     const action = historyRef.current.future.pop();
     if (!action) return;
+    if (expired(action)) return;
     suppressHistory.current = true;
     try {
       action.redo();
@@ -312,7 +456,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
       suppressHistory.current = false;
     }
     historyRef.current.past.push(action);
-  }, []);
+  }, [expired]);
+  /**
+   * Record ONE undo step for a gesture that calls several mutations — a
+   * cross-column plan drag both moves the entry and reassigns the task, and
+   * should take one ⌘Z, not two.
+   *
+   * `record` runs first so an outer undo/redo still suppresses it, and the inner
+   * suppression saves and RESTORES the flag rather than clearing it: `redo()`
+   * already holds it, and a bare `= false` would release it half-way through.
+   */
+  const asOneStep = useCallback(
+    (action: Omit<HistoryAction, "epoch">, apply: () => void) => {
+      record(action);
+      const outer = suppressHistory.current;
+      suppressHistory.current = true;
+      try {
+        apply();
+      } finally {
+        suppressHistory.current = outer;
+      }
+    },
+    [record],
+  );
 
   // cmd/ctrl+Z → undo, +shift → redo; text fields keep the browser's native undo
   useEffect(() => {
@@ -356,6 +522,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [entrySumsAll]);
 
   // ── initial load ──────────────────────────────────────────────────────
+  const applyCold = useCallback((c: ColdSnapshot) => {
+    setProfiles(c.profiles);
+    setClients(c.clients);
+    setSections(c.sections);
+    setTagRows(c.tags);
+    setPlanColumns(c.planColumns);
+    setBillingPeriods(c.billingPeriods);
+    setDayStates(c.dayStates);
+    // a hot-only refresh maps its tasks with these, so they must follow the cold half
+    coldCtxRef.current = {
+      tagNames: new Map(c.tags.map((t) => [t.id, t.name])),
+      projectClient: c.projectClient,
+    };
+  }, []);
+
+  const applyHot = useCallback((h: HotSnapshot) => {
+    setTasks((prev) => mergeTasks(h.tasks, prev));
+    setTimeEntries((prev) => mergeTimeEntries(h.timeEntries, h.entrySums, prev));
+    // same commit as the 400-row window above, so the feed and the aggregates
+    // can never disagree about which entries exist
+    setEntrySums(h.entrySums);
+    setPlanEntries(h.planEntries);
+    setTaskRequests(h.taskRequests.map(mapTaskRequest));
+    setDevItems(h.devItems);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -365,101 +557,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         window.location.href = "/login";
         return;
       }
-
-      const tagsP = supabase.from("tags").select("*").order("position");
-      const [prof, cli, projLegacy, sec, tagsRes, cols, pe, taskRows, sums, feed, requests, periods, days, dev] =
-        await Promise.all([
-          // "*" keeps boot working whether or not migration 0004 is applied
-          fetchAll<DbRow>(supabase, "profiles", "*"),
-          fetchAll<DbRow>(supabase, "clients", "*"),
-          // legacy layer: only used to derive client_id before migration 0007
-          fetchAll<DbRow>(supabase, "projects", "id, client_id"),
-          // "*" tolerates pre-0007 schema (no client_id column yet)
-          fetchAll<DbRow>(supabase, "sections", "*"),
-          tagsP,
-          fetchAll<DbRow>(supabase, "plan_columns", "*"),
-          fetchAll<DbRow>(supabase, "plan_entries", "*"),
-          (async () => {
-            const cols =
-              "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
-            // 0016 adds the recovered pre-Everhour history columns
-            const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
-            // Only step down when the column is genuinely absent (isMissingSchema);
-            // anything else — a dropped connection, an RLS change — must surface
-            // rather than quietly serve a reduced app. See DbError in db.ts.
-            for (const select of [
-              `client_id, ${legacyCols}, ${cols}`, // post-0007 + post-0016
-              `client_id, ${cols}`, // post-0007
-              cols, // pre-0007
-            ]) {
-              try {
-                return await fetchAll<DbRow>(supabase, "tasks", select);
-              } catch (e) {
-                if (!isMissingSchema(e)) throw e;
-              }
-            }
-            throw new Error("tasks: could not load with any known column set");
-          })(),
-          (async () => {
-            const cols = "id, task_id, user_id, date, minutes";
-            const notNull = "minutes";
-            // Degrade ONE column at a time. Collapsing straight to `cols` on any
-            // failure would drop `legacy` as well, and without that flag the
-            // ~4,000h of 2016–2022 backfill reads as ordinary logged time — it
-            // would land in days-worked, tenure, "my hours" and the feed timesheet,
-            // which is precisely what the flag exists to prevent.
-            for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
-              try {
-                return await fetchAll<DbRow>(supabase, "time_entries", `${cols}${extra}`, (q) =>
-                  q.not(notNull, "is", null),
-                );
-              } catch (e) {
-                // A missing column means the migration isn't applied — step down.
-                // Any other failure must NOT be read as "the column is gone",
-                // or a network blip drops the `legacy` flag and the backfill
-                // leaks into every personal figure on the site.
-                if (!isMissingSchema(e)) throw e;
-              }
-            }
-            throw new Error("time_entries: could not load with any known column set");
-          })(),
-          supabase
-            .from("time_entries")
-            .select("*")
-            .not("minutes", "is", null)
-            .order("date", { ascending: false })
-            .order("created_at", { ascending: false })
-            .limit(400),
-          // Returns [] for designers (RLS: admins only)
-          supabase.from("task_requests").select("*").order("created_at", { ascending: false }),
-          // pre-0007 these tables don't exist; RLS hides them from designers
-          fetchAll<DbRow>(supabase, "client_billing_periods", "*").catch(() => []),
-          fetchAll<DbRow>(supabase, "plan_day_states", "*").catch(() => []),
-          fetchAll<DbRow>(supabase, "dev_items", "*").catch(() => []),
-        ]);
-
+      const snap = await fetchFull(supabase);
       if (cancelled) return;
-
-      const tagList = ((tagsRes.data ?? []) as DbRow[]).map(mapTag);
-      const tagMap = new Map(tagList.map((t) => [t.id, t.name]));
-      const projectClient = new Map<string, string>(
-        projLegacy.map((p) => [p.id as string, p.client_id as string]),
-      );
-
+      generation.current++;
       setCurrentUserId(uid);
-      setProfiles(prof.map(mapProfile));
-      setClients(cli.map(mapClient));
-      setSections(sec.map((r) => mapSection(r, projectClient)));
-      setTagRows(tagList);
-      setTasks(taskRows.map((r) => mapTask({ ...r, brief: undefined }, tagMap, projectClient)));
-      setBillingPeriods(periods.map(mapBillingPeriod).sort((a: BillingPeriod, b: BillingPeriod) => a.dateFrom.localeCompare(b.dateFrom)));
-      setDayStates(days.map(mapDayState));
-      setDevItems(dev.map(mapDevItem).sort((a: DevItem, b: DevItem) => a.position - b.position));
-      setEntrySums(sums.map(mapEntrySum));
-      setTimeEntries((feed.data ?? []).map(mapTimeEntry));
-      setPlanColumns(cols.map(mapPlanColumn));
-      setPlanEntries(pe.map(mapPlanEntry));
-      setTaskRequests(((requests.data ?? []) as DbRow[]).map(mapTaskRequest));
+      applyCold(snap);
+      applyHot(snap);
+      fingerprintRef.current = fingerprint(snap);
+      lastSyncedRef.current = Date.now();
       setLoading(false);
     })().catch((e) => {
       console.error("store load failed", e);
@@ -475,63 +580,169 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, applyCold, applyHot]);
 
   // ── lazy per-task detail (brief, comments, full entries) ─────────────
-  const openTask = useCallback(
-    (taskId: string | null) => {
-      setOpenTaskId(taskId);
-      if (!taskId || loadedTaskExtras.current.has(taskId)) return;
-      loadedTaskExtras.current.add(taskId);
-      (async () => {
-        const [detail, cm, entries, atts] = await Promise.all([
-          supabase.from("tasks").select("id, brief").eq("id", taskId).single(),
-          supabase.from("task_comments").select("*").eq("task_id", taskId).order("created_at"),
-          supabase
-            .from("time_entries")
-            .select("*")
-            .eq("task_id", taskId)
-            .not("minutes", "is", null)
-            .order("date", { ascending: false }),
-          supabase.from("attachments").select("*").eq("task_id", taskId).order("created_at"),
-        ]);
-        if (atts.data) {
-          setAttachments((prev) => {
-            const seen = new Set(prev.map((a) => a.id));
-            const mapped = (atts.data as DbRow[])
-              .filter((a) => !seen.has(a.id as string))
-              .map((a) => ({
-                id: a.id as string,
-                taskId: a.task_id as string,
-                fileName: a.file_name as string,
-                filePath: a.file_path as string,
-                sizeBytes: a.size_bytes as number,
-                uploadedBy: a.uploaded_by as string,
-              }));
-            return [...prev, ...mapped];
-          });
-        }
-        if (detail.data) {
-          setTasks((prev) =>
-            prev.map((t) => (t.id === taskId ? { ...t, brief: detail.data.brief ?? "" } : t)),
-          );
-        }
-        if (cm.data) {
-          setComments((prev) => {
-            const seen = new Set(prev.map((c) => c.id));
-            return [...prev, ...(cm.data as DbRow[]).filter((c) => !seen.has(c.id as string)).map(mapComment)];
-          });
-        }
-        if (entries.data) {
-          setTimeEntries((prev) => {
-            const seen = new Set(prev.map((e) => e.id));
-            return [...prev, ...(entries.data as DbRow[]).filter((e) => !seen.has(e.id as string)).map(mapTimeEntry)];
-          });
-        }
-      })().catch((e) => console.error("task detail load failed", e));
+  /**
+   * Each merge REPLACES this task's rows rather than appending unseen ones.
+   * Append-dedup could never reflect a deleted or edited comment, which is
+   * exactly what a background refresh needs to be able to do. Safe because each
+   * query is `eq("task_id")` — a strict superset of what the list already holds
+   * for that task.
+   */
+  const loadTaskExtras = useCallback(
+    async (taskId: string) => {
+      const [detail, cm, entries, atts] = await Promise.all([
+        supabase.from("tasks").select("id, brief").eq("id", taskId).single(),
+        supabase.from("task_comments").select("*").eq("task_id", taskId).order("created_at"),
+        supabase
+          .from("time_entries")
+          .select("*")
+          .eq("task_id", taskId)
+          .not("minutes", "is", null)
+          .order("date", { ascending: false }),
+        supabase.from("attachments").select("*").eq("task_id", taskId).order("created_at"),
+      ]);
+      if (atts.data) {
+        const mapped = (atts.data as DbRow[]).map((a) => ({
+          id: a.id as string,
+          taskId: a.task_id as string,
+          fileName: a.file_name as string,
+          filePath: a.file_path as string,
+          sizeBytes: a.size_bytes as number,
+          uploadedBy: a.uploaded_by as string,
+        }));
+        setAttachments((prev) => [...prev.filter((a) => a.taskId !== taskId), ...mapped]);
+      }
+      if (detail.data) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, brief: detail.data.brief ?? "" } : t)),
+        );
+      }
+      if (cm.data) {
+        const mapped = (cm.data as DbRow[]).map(mapComment);
+        setComments((prev) => [...prev.filter((c) => c.taskId !== taskId), ...mapped]);
+      }
+      if (entries.data) {
+        const mapped = (entries.data as DbRow[]).map(mapTimeEntry);
+        setTimeEntries((prev) => [...prev.filter((e) => e.taskId !== taskId), ...mapped]);
+      }
     },
     [supabase],
   );
+
+  const openTask = useCallback(
+    (taskId: string | null) => {
+      setOpenTaskId(taskId);
+      openTaskIdRef.current = taskId;
+      if (!taskId || loadedTaskExtras.current.has(taskId)) return;
+      loadedTaskExtras.current.add(taskId);
+      loadTaskExtras(taskId).catch((e) => console.error("task detail load failed", e));
+    },
+    [loadTaskExtras],
+  );
+
+  // ── background refresh ────────────────────────────────────────────────
+  // Polling, deliberately: no websockets and nothing to enable in Supabase.
+  //
+  // Three things this must NEVER do, each of which would be worse than stale data:
+  //  · touch `loading` or `bootError` — either would throw the full-screen splash
+  //    or the error page over a working app on every tick
+  //  · run getUser()/redirect-to-login — a transient auth hiccup would navigate
+  //    someone away mid-edit
+  //  · land while an optimistic write is in flight — it would overwrite the
+  //    user's own edit with the pre-edit server row
+  const refresh = useCallback(
+    async (opts: { cold?: boolean; reason?: string } = {}) => {
+      if (refreshInFlight.current) return;
+      // Defer rather than clobber: a fresh snapshot landing between an optimistic
+      // setState and its server commit would flicker the edit backwards. The
+      // write tail re-runs this, and the next tick retries anyway.
+      if (writesBusy() || focusInEditor()) {
+        refreshQueued.current = true;
+        return;
+      }
+      refreshInFlight.current = true;
+      const mine = ++generation.current;
+      setRefreshing(true);
+      try {
+        const cold = opts.cold ? await fetchCold(supabase) : null;
+        const hot = await fetchHot(supabase, {
+          tagNames: coldCtxRef.current.tagNames,
+          projectClient: coldCtxRef.current.projectClient,
+        });
+        // A newer refresh (or a boot) started while we were waiting — drop this
+        // response rather than overwrite fresher data with older data.
+        if (mine !== generation.current) return;
+        // An empty studio is never a real refresh result: it means the session
+        // expired and RLS returned nothing. Applying it would blank the app.
+        if (hot.tasks.length === 0 || (cold && cold.profiles.length === 0)) {
+          throw new Error("refresh returned an empty studio — treating as auth, not data");
+        }
+        if (cold) applyCold(cold);
+        applyHot(hot);
+
+        const next = fingerprint(hot);
+        const changed = fingerprintRef.current !== null && next !== fingerprintRef.current;
+        fingerprintRef.current = next;
+        // Someone else's change landed, so every undo step taken before it is now
+        // built on values that are no longer current — see `undo`.
+        if (changed) epoch.current++;
+        lastSyncedRef.current = Date.now();
+        setLastSyncedAt(Date.now());
+
+        // The open task's comments/attachments are lazily loaded and were being
+        // memoised forever, so the most collaborative surface in the app was the
+        // one place a refresh couldn't reach.
+        loadedTaskExtras.current.clear();
+        const open = openTaskIdRef.current;
+        if (open) {
+          loadedTaskExtras.current.add(open);
+          void loadTaskExtras(open);
+        }
+        if (changed) console.debug("[refresh]", opts.reason ?? "", { cold: !!cold, changed });
+      } catch (e) {
+        // Soft failure by design: keep the data we have, say nothing to the user.
+        // A background tick failing is not something they can act on.
+        console.warn("[refresh] failed", e);
+      } finally {
+        refreshInFlight.current = false;
+        setRefreshing(false);
+      }
+    },
+    [supabase, applyCold, applyHot, loadTaskExtras, writesBusy, focusInEditor],
+  );
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+  /** Void-returning wrapper for the context (callers don't await a refresh). */
+  const refreshNow = useCallback(() => {
+    void refresh({ cold: true, reason: "manual" });
+  }, [refresh]);
+
+  useEffect(() => {
+    if (loading || bootError) return; // boot owns the first load
+    let ticks = 0;
+    const id = setInterval(() => {
+      if (document.hidden) return; // nothing to look at, nothing to fetch
+      ticks++;
+      void refreshRef.current?.({ cold: ticks % COLD_EVERY_N_TICKS === 0, reason: "interval" });
+    }, HOT_INTERVAL_MS);
+    const onFocus = () => {
+      if (document.hidden) return;
+      const since = Date.now() - (lastSyncedRef.current ?? 0);
+      // macOS fires focus on every window switch; don't refetch for an alt-tab
+      if (since < FOCUS_MIN_GAP_MS) return;
+      void refreshRef.current?.({ cold: since > COLD_AFTER_AWAY_MS, reason: "focus" });
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [loading, bootError]);
 
   // ── mutations ─────────────────────────────────────────────────────────
   const updateTask = useCallback(
@@ -549,11 +760,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tasks")
         .update(taskPatchToRow(patch, tagIdByName))
         .eq("id", taskId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateTask", error);
-        });
+        .then(wrote("updateTask"));
     },
-    [supabase, tagIdByName, tasks, record],
+    [supabase, tagIdByName, tasks, record, wrote],
   );
 
   /**
@@ -583,12 +792,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .from("tasks")
           .update(taskPatchToRow(patch, tagIdByName))
           .in("id", ids)
-          .then(({ error }) => {
-            if (error) noteWriteError("restoreTasksBulk", error);
-          });
+          .then(wrote("restoreTasksBulk"));
       }
     },
-    [supabase, tagIdByName],
+    [supabase, tagIdByName, wrote],
   );
 
   const updateTasksBulk = useCallback(
@@ -613,11 +820,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tasks")
         .update(taskPatchToRow(patch, tagIdByName))
         .in("id", ids)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateTasksBulk", error);
-        });
+        .then(wrote("updateTasksBulk"));
     },
-    [supabase, tagIdByName, tasks, record],
+    [supabase, tagIdByName, tasks, record, wrote],
   );
 
   const addTask = useCallback(
@@ -643,7 +848,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
         });
     },
-    [supabase, tasks, tagNameById, clients],
+    [supabase, tasks, tagNameById, clients, noteWriteError],
   );
 
   const addSection = useCallback(
@@ -663,7 +868,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setSections((prev) => [...prev, mapSection(data)]);
         });
     },
-    [supabase, sections],
+    [supabase, sections, noteWriteError],
   );
 
   /**
@@ -685,11 +890,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tasks")
         .delete()
         .eq("id", taskId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteTask", error);
-        });
+        .then(wrote("deleteTask"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   // Deliberately NOT in the undo history, for the same reason as deleteTask:
@@ -707,11 +910,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tasks")
         .delete()
         .in("id", ids)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteTasksBulk", error);
-        });
+        .then(wrote("deleteTasksBulk"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const updateSection = useCallback(
@@ -729,11 +930,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("sections")
         .update(patch)
         .eq("id", sectionId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateSection", error);
-        });
+        .then(wrote("updateSection"));
     },
-    [supabase, sections, record],
+    [supabase, sections, record, wrote],
   );
 
   /** Refuses if any task still points at the section — deleting one with tasks in it
@@ -750,11 +949,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("sections")
         .delete()
         .eq("id", sectionId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteSection", error);
-        });
+        .then(wrote("deleteSection"));
     },
-    [supabase, tasks],
+    [supabase, tasks, wrote, noteWriteError],
   );
 
   /**
@@ -793,7 +990,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
               .from("tasks")
               .update({ position })
               .eq("id", id)
-              .then(({ error }) => error && noteWriteError("reorderTask undo", error));
+              .then(wrote("reorderTask undo"));
           }
         },
         redo: () => methodsRef.current?.reorderTask(movedId, beforeId),
@@ -808,10 +1005,68 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .from("tasks")
           .update({ position })
           .eq("id", id)
-          .then(({ error }) => error && noteWriteError("reorderTask", error));
+          .then(wrote("reorderTask"));
       }
     },
-    [supabase, tasks, record],
+    [supabase, tasks, record, wrote],
+  );
+
+  /**
+   * Reorder sections inside one client, exactly as `reorderTask` does for tasks:
+   * dense 1..n, only changed rows written, one undo step.
+   *
+   * NOTE on existing data: the imports never set `sections.position`, so many
+   * clients have every section at 0 and their display order is incidental — the
+   * first drag in such a client assigns real positions to all of its sections.
+   */
+  const reorderSection = useCallback(
+    (movedId: string, beforeId: string | null) => {
+      const moved = sections.find((s) => s.id === movedId);
+      if (!moved || movedId === beforeId) return;
+
+      const siblings = sections
+        .filter((s) => s.clientId === moved.clientId)
+        .sort((a, b) => a.position - b.position);
+      const without = siblings.filter((s) => s.id !== movedId);
+      const at = beforeId ? without.findIndex((s) => s.id === beforeId) : without.length;
+      if (at === -1) return;
+      const ordered = [...without.slice(0, at), moved, ...without.slice(at)];
+
+      const changed = ordered
+        .map((s, i) => ({ id: s.id, position: i + 1, was: s.position }))
+        .filter((r) => r.position !== r.was);
+      if (changed.length === 0) return;
+
+      const prevById = new Map(changed.map((r) => [r.id, r.was]));
+      record({
+        undo: () => {
+          setSections((prev) =>
+            prev.map((s) => (prevById.has(s.id) ? { ...s, position: prevById.get(s.id)! } : s)),
+          );
+          for (const [id, position] of prevById) {
+            supabase
+              .from("sections")
+              .update({ position })
+              .eq("id", id)
+              .then(wrote("reorderSection undo"));
+          }
+        },
+        redo: () => methodsRef.current?.reorderSection(movedId, beforeId),
+      });
+
+      const posById = new Map(changed.map((r) => [r.id, r.position]));
+      setSections((prev) =>
+        prev.map((s) => (posById.has(s.id) ? { ...s, position: posById.get(s.id)! } : s)),
+      );
+      for (const { id, position } of changed) {
+        supabase
+          .from("sections")
+          .update({ position })
+          .eq("id", id)
+          .then(wrote("reorderSection"));
+      }
+    },
+    [supabase, sections, record, wrote],
   );
 
   const addClient = useCallback(
@@ -829,7 +1084,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setClients((prev) => [...prev, client]);
       return client;
     },
-    [supabase],
+    [supabase, noteWriteError],
   );
 
   const patchProfileLocal = useCallback((profileId: string, patch: Partial<Profile>) => {
@@ -865,11 +1120,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .update(row)
         .eq("id", profileId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateProfile", error);
-        });
+        .then(wrote("updateProfile"));
     },
-    [supabase, profiles, record],
+    [supabase, profiles, record, wrote],
   );
 
   const addTag = useCallback(
@@ -888,7 +1141,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTagRows((prev) => [...prev, mapTag(data)]);
         });
     },
-    [supabase, tagRows],
+    [supabase, tagRows, noteWriteError],
   );
 
   const updateTag = useCallback(
@@ -911,11 +1164,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tags")
         .update(patch)
         .eq("id", tagId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateTag", error);
-        });
+        .then(wrote("updateTag"));
     },
-    [supabase, tagRows, record],
+    [supabase, tagRows, record, wrote],
   );
 
   const deleteTag = useCallback(
@@ -927,11 +1178,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("tags")
         .delete()
         .eq("id", tagId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteTag", error);
-        });
+        .then(wrote("deleteTag"));
     },
-    [supabase, tagRows],
+    [supabase, tagRows, wrote],
   );
 
   const updateClient = useCallback(
@@ -957,9 +1206,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("clients")
         .update(row)
         .eq("id", clientId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateClient", error);
-        });
+        .then(wrote("updateClient"));
       // Marking a client internal makes all its existing tasks non-billable.
       // The reverse is NOT mass-applied (keys tasks etc. must stay non-billable).
       if (patch.billable === false) {
@@ -970,12 +1217,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .from("tasks")
           .update({ billable: false })
           .eq("client_id", clientId)
-          .then(({ error }) => {
-            if (error) noteWriteError("updateClient tasks-billable", error);
-          });
+          .then(wrote("updateClient tasks-billable"));
       }
     },
-    [supabase, clients, record],
+    [supabase, clients, record, wrote],
   );
 
   /** Re-insert a deleted plan entry with its original id (undo support). */
@@ -995,11 +1240,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           client_id: entry.clientId,
           absence_type: entry.absenceType,
         })
-        .then(({ error }) => {
-          if (error) noteWriteError("restorePlanEntry", error);
-        });
+        .then(wrote("restorePlanEntry"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const addPlanEntry = useCallback(
@@ -1038,7 +1281,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
     },
-    [supabase, planEntries, record, restorePlanEntry],
+    [supabase, planEntries, record, restorePlanEntry, noteWriteError],
   );
 
   const movePlanEntry = useCallback(
@@ -1065,11 +1308,54 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_entries")
         .update({ date: target.date, column_id: target.columnId, position })
         .eq("id", entryId)
-        .then(({ error }) => {
-          if (error) noteWriteError("movePlanEntry", error);
-        });
+        .then(wrote("movePlanEntry"));
     },
-    [supabase, planEntries, record],
+    [supabase, planEntries, record, wrote],
+  );
+
+  /**
+   * What the weekly plan's cells actually call. Reassigns the task ONLY when all
+   * of these hold — otherwise it is a plain move:
+   *  · the entry is task-linked (free text and absences carry no task)
+   *  · the column actually changed (another day in the same column is not a
+   *    reassignment)
+   *  · the target column is a real person — `type: "member"` WITH a profileId, so
+   *    "Studio", "Waiting list" and name-only columns like "Freelancers" are out
+   *  · the task isn't already theirs
+   *
+   * Dragging OUT of someone into Studio or the waiting list deliberately does NOT
+   * clear the assignee: unscheduled is not unassigned.
+   */
+  const movePlanEntryToCell = useCallback(
+    (entryId: string, target: { date: string | null; columnId: string }) => {
+      const entry = planEntries.find((e) => e.id === entryId);
+      const col = planColumns.find((c) => c.id === target.columnId);
+      const task = entry?.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
+      const to = col?.type === "member" ? col.profileId : null;
+
+      if (!entry || !task || !to || entry.columnId === target.columnId || task.assigneeId === to) {
+        movePlanEntry(entryId, target);
+        return;
+      }
+      const back = { date: entry.date, columnId: entry.columnId };
+      const wasAssignedTo = task.assigneeId;
+      asOneStep(
+        {
+          undo: () => {
+            methodsRef.current?.updateTask(task.id, { assigneeId: wasAssignedTo });
+            methodsRef.current?.movePlanEntry(entryId, back);
+          },
+          redo: () => methodsRef.current?.movePlanEntryToCell(entryId, target),
+        },
+        () => {
+          // Both read their own pre-call snapshots, so running them in one tick is
+          // safe; the two setStates batch into a single commit.
+          movePlanEntry(entryId, target);
+          methodsRef.current?.updateTask(task.id, { assigneeId: to });
+        },
+      );
+    },
+    [planEntries, planColumns, tasks, movePlanEntry, asOneStep],
   );
 
   const deletePlanEntry = useCallback(
@@ -1086,11 +1372,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_entries")
         .delete()
         .eq("id", entryId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deletePlanEntry", error);
-        });
+        .then(wrote("deletePlanEntry"));
     },
-    [supabase, planEntries, record, restorePlanEntry],
+    [supabase, planEntries, record, restorePlanEntry, wrote],
   );
 
   const addPlanColumn = useCallback(
@@ -1110,7 +1394,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setPlanColumns((prev) => [...prev, mapPlanColumn(data)]);
         });
     },
-    [supabase, planColumns],
+    [supabase, planColumns, noteWriteError],
   );
 
   const updatePlanColumn = useCallback(
@@ -1121,14 +1405,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_columns")
         .update(patch)
         .eq("id", columnId)
-        .then(({ error }) => {
-          if (error) {
-            noteWriteError("updatePlanColumn", error);
-            setPlanColumns(prev); // e.g. `hidden` migration not applied yet
-          }
+        .then((res) => {
+          wrote("updatePlanColumn")(res);
+          if (res.error) setPlanColumns(prev); // e.g. `hidden` migration not applied yet
         });
     },
-    [supabase, planColumns],
+    [supabase, planColumns, wrote],
   );
 
   const movePlanColumn = useCallback(
@@ -1153,18 +1435,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_columns")
         .update({ position: swapWith.position })
         .eq("id", a.id)
-        .then(({ error }) => {
-          if (error) noteWriteError("movePlanColumn", error);
-        });
+        .then(wrote("movePlanColumn"));
       supabase
         .from("plan_columns")
         .update({ position: a.position })
         .eq("id", swapWith.id)
-        .then(({ error }) => {
-          if (error) noteWriteError("movePlanColumn", error);
-        });
+        .then(wrote("movePlanColumn"));
     },
-    [supabase, planColumns],
+    [supabase, planColumns, wrote],
   );
 
   const deletePlanColumn = useCallback(
@@ -1175,11 +1453,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_columns")
         .delete()
         .eq("id", columnId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deletePlanColumn", error);
-        });
+        .then(wrote("deletePlanColumn"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const addComment = useCallback(
@@ -1205,7 +1481,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setComments((prev) => prev.map((c) => (c.id === optimistic.id ? mapComment(data) : c)));
         });
     },
-    [supabase, currentUserId],
+    [supabase, currentUserId, noteWriteError],
   );
 
   const addAttachment = useCallback((attachment: Attachment) => {
@@ -1225,12 +1501,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         userId: entry.userId,
         date: entry.date,
         minutes: entry.minutes,
+        legacy: entry.legacy,
+        dateEstimated: entry.dateEstimated,
       },
       ...prev.filter((e) => e.id !== entry.id),
     ]);
   }, []);
 
-  /** Re-insert a deleted time entry with its original id (undo support). */
+  /**
+   * Re-insert a deleted time entry with its original id (undo support).
+   *
+   * It MUST carry `legacy` and its companions. This used to write only
+   * id/task/user/date/minutes/description, so undoing the deletion of a recovered
+   * pre-Everhour entry brought it back as an ORDINARY one — and its hours then
+   * leaked into days-worked, tenure, "my hours" and the feed timesheet, which is
+   * exactly what the flag exists to prevent.
+   */
   const restoreTimeEntry = useCallback(
     (entry: TimeEntry) => {
       applyEntryLocally(entry);
@@ -1243,17 +1529,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
           date: entry.date,
           minutes: entry.minutes,
           description: entry.description,
+          legacy: entry.legacy ?? false,
+          date_estimated: entry.dateEstimated ?? false,
+          legacy_author_name: entry.legacyAuthorName ?? null,
+          moved_from_task_id: entry.movedFromTaskId,
         })
-        .then(({ error }) => {
-          if (error) noteWriteError("restoreTimeEntry", error);
-        });
+        .then(wrote("restoreTimeEntry"));
     },
-    [supabase, applyEntryLocally],
+    [supabase, applyEntryLocally, wrote],
   );
 
+  /** Resolves to the inserted entry, so a caller can edit it without a reload. */
   const addTimeEntry = useCallback(
-    (taskId: string, minutes: number, description: string, date?: string, userId?: string) => {
-      supabase
+    async (
+      taskId: string,
+      minutes: number,
+      description: string,
+      date?: string,
+      userId?: string,
+    ): Promise<TimeEntry | null> => {
+      const { data, error } = await supabase
         .from("time_entries")
         .insert({
           task_id: taskId,
@@ -1264,21 +1559,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
           description,
         })
         .select()
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addTimeEntry", error);
-            return;
-          }
-          const entry = mapTimeEntry(data);
-          applyEntryLocally(entry);
-          record({
-            undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
-            redo: () => restoreTimeEntry(entry),
-          });
-        });
+        .single();
+      if (error) {
+        noteWriteError("addTimeEntry", error);
+        return null;
+      }
+      const entry = mapTimeEntry(data);
+      applyEntryLocally(entry);
+      record({
+        undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
+        redo: () => restoreTimeEntry(entry),
+      });
+      return entry;
     },
-    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry],
+    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError],
   );
 
   /**
@@ -1309,40 +1603,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const updateTimeEntry = useCallback(
-    (entryId: string, patch: { minutes?: number; description?: string; date?: string }) => {
+    (entryId: string, patch: TimeEntryPatch) => {
       // full row if loaded; the slim sums row covers minutes/date-only patches
       const before =
         timeEntries.find((e) => e.id === entryId) ??
         ("description" in patch ? undefined : entrySumsAll.find((e) => e.id === entryId));
       if (before) {
-        const prev: typeof patch = {};
+        const prev: TimeEntryPatch = {};
         if ("minutes" in patch) prev.minutes = before.minutes;
         if ("date" in patch) prev.date = before.date;
         if ("description" in patch) prev.description = (before as TimeEntry).description;
+        // without this an undo would leave the reassignment in place
+        if ("userId" in patch) prev.userId = before.userId ?? undefined;
         record({
           undo: () => methodsRef.current?.updateTimeEntry(entryId, prev),
           redo: () => methodsRef.current?.updateTimeEntry(entryId, patch),
         });
       }
       setTimeEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...patch } : e)));
-      if (patch.minutes != null || patch.date != null) {
+      if (patch.minutes != null || patch.date != null || patch.userId != null) {
+        // entrySums is the per-person source behind days-worked, tenure, the week
+        // timesheet and "avg / designer", so a reassignment has to reach it too
         setEntrySums((prev) =>
           prev.map((e) =>
             e.id === entryId
-              ? { ...e, ...(patch.minutes != null && { minutes: patch.minutes }), ...(patch.date != null && { date: patch.date }) }
+              ? {
+                  ...e,
+                  ...(patch.minutes != null && { minutes: patch.minutes }),
+                  ...(patch.date != null && { date: patch.date }),
+                  ...(patch.userId != null && { userId: patch.userId }),
+                }
               : e,
           ),
         );
       }
+      // Built explicitly: this used to pass `patch` straight to .update() and got
+      // away with it only because minutes/description/date are spelled the same
+      // in camelCase and snake_case. `userId` is not.
+      const row: DbRow = {};
+      if ("minutes" in patch) row.minutes = patch.minutes;
+      if ("description" in patch) row.description = patch.description;
+      if ("date" in patch) row.date = patch.date;
+      if ("userId" in patch) row.user_id = patch.userId;
       supabase
         .from("time_entries")
-        .update(patch)
+        .update(row)
         .eq("id", entryId)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateTimeEntry", error);
-        });
+        .then(wrote("updateTimeEntry"));
     },
-    [supabase, timeEntries, entrySumsAll, record],
+    [supabase, timeEntries, entrySumsAll, record, wrote],
   );
 
   const deleteTimeEntry = useCallback(
@@ -1363,11 +1672,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("time_entries")
         .delete()
         .eq("id", entryId)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteTimeEntry", error);
-        });
+        .then(wrote("deleteTimeEntry"));
     },
-    [supabase, timeEntries, entrySumsAll, record, restoreTimeEntry],
+    [supabase, timeEntries, entrySumsAll, record, restoreTimeEntry, wrote],
   );
 
   /** Re-insert a deleted billing period with its original id (undo support). */
@@ -1390,11 +1697,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // omit `paid: false` so the insert also works before migration 0010
           ...(p.paid && { paid: true }),
         })
-        .then(({ error }) => {
-          if (error) noteWriteError("restoreBillingPeriod", error);
-        });
+        .then(wrote("restoreBillingPeriod"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const addBillingPeriod = useCallback(
@@ -1429,7 +1734,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
     },
-    [supabase, billingPeriods, record, restoreBillingPeriod],
+    [supabase, billingPeriods, record, restoreBillingPeriod, noteWriteError],
   );
 
   const updateBillingPeriod = useCallback(
@@ -1454,11 +1759,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("client_billing_periods")
         .update(row)
         .eq("id", id)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateBillingPeriod", error);
-        });
+        .then(wrote("updateBillingPeriod"));
     },
-    [supabase, billingPeriods, record],
+    [supabase, billingPeriods, record, wrote],
   );
 
   const deleteBillingPeriod = useCallback(
@@ -1475,11 +1778,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("client_billing_periods")
         .delete()
         .eq("id", id)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteBillingPeriod", error);
-        });
+        .then(wrote("deleteBillingPeriod"));
     },
-    [supabase, billingPeriods, record, restoreBillingPeriod],
+    [supabase, billingPeriods, record, restoreBillingPeriod, wrote],
   );
 
   const addDayState = useCallback(
@@ -1497,7 +1798,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setDayStates((prev) => [...prev, mapDayState(data)]);
         });
     },
-    [supabase, currentUserId],
+    [supabase, currentUserId, noteWriteError],
   );
 
   const deleteDayState = useCallback(
@@ -1507,11 +1808,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("plan_day_states")
         .delete()
         .eq("id", id)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteDayState", error);
-        });
+        .then(wrote("deleteDayState"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const addDevItem = useCallback(
@@ -1530,7 +1829,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setDevItems((prev) => [...prev, mapDevItem(data)]);
         });
     },
-    [supabase, devItems],
+    [supabase, devItems, noteWriteError],
   );
 
   const updateDevItem = useCallback(
@@ -1548,11 +1847,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("dev_items")
         .update(patch)
         .eq("id", id)
-        .then(({ error }) => {
-          if (error) noteWriteError("updateDevItem", error);
-        });
+        .then(wrote("updateDevItem"));
     },
-    [supabase, devItems, record],
+    [supabase, devItems, record, wrote],
   );
 
   const deleteDevItem = useCallback(
@@ -1562,11 +1859,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("dev_items")
         .delete()
         .eq("id", id)
-        .then(({ error }) => {
-          if (error) noteWriteError("deleteDevItem", error);
-        });
+        .then(wrote("deleteDevItem"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const moveTimeEntries = useCallback(
@@ -1589,11 +1884,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           moved_by: currentUserId,
         })
         .in("id", entryIds)
-        .then(({ error }) => {
-          if (error) noteWriteError("moveTimeEntries", error);
-        });
+        .then(wrote("moveTimeEntries"));
     },
-    [supabase, currentUserId],
+    [supabase, currentUserId, wrote],
   );
 
   const approveRequest = useCallback(
@@ -1630,7 +1923,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ),
       );
     },
-    [supabase, taskRequests, tagNameById, clients],
+    [supabase, taskRequests, tagNameById, clients, noteWriteError],
   );
 
   const rejectRequest = useCallback(
@@ -1642,11 +1935,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("task_requests")
         .update({ status: "rejected" })
         .eq("id", requestId)
-        .then(({ error }) => {
-          if (error) noteWriteError("rejectRequest", error);
-        });
+        .then(wrote("rejectRequest"));
     },
-    [supabase],
+    [supabase, wrote],
   );
 
   const taskMinutes = useCallback(
@@ -1686,6 +1977,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateSection,
       deleteSection,
       reorderTask,
+      reorderSection,
       addClient,
       patchProfileLocal,
       updateProfile,
@@ -1695,6 +1987,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteTag,
       addPlanEntry,
       movePlanEntry,
+      movePlanEntryToCell,
       deletePlanEntry,
       addPlanColumn,
       updatePlanColumn,
@@ -1723,12 +2016,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       redo,
       writeError,
       dismissWriteError,
+      notice,
+      dismissNotice,
+      refreshing,
+      lastSyncedAt,
+      refresh: refreshNow,
       bootError,
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, bootError,
+      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 
@@ -1749,4 +2047,18 @@ export function useData(): Store {
 /** Like useData, but returns null outside a DataProvider (for shared UI primitives). */
 export function useDataMaybe(): Store | null {
   return useContext(StoreContext);
+}
+
+/**
+ * The signed-in member — or, under `?viewAs=`, the member an admin is previewing,
+ * since the store swaps the exposed `currentUserId`. That is the whole point of
+ * reading it through here: member preview keeps working everywhere for free.
+ */
+export function useMe(): Profile | null {
+  const { profiles, currentUserId } = useData();
+  return profiles.find((p) => p.id === currentUserId) ?? null;
+}
+
+export function useIsAdmin(): boolean {
+  return useMe()?.role === "admin";
 }

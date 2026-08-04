@@ -1,8 +1,8 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import { useEffect, useRef, type MouseEvent } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
 import { useDataMaybe } from "@/lib/store";
 import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
@@ -64,6 +64,230 @@ export function ContextMenu({
         ))}
       </div>
     </>
+  );
+}
+
+export type TabItem<T extends string> =
+  | T
+  | { value: T; label: React.ReactNode; count?: number; title?: string; disabled?: boolean };
+
+/**
+ * The tab strip — and ONLY the strip. It deliberately doesn't own the panels:
+ * the member page needs its HR panel kept mounted while hidden (its inputs are
+ * uncontrolled, so unmounting would discard typed text), which a component that
+ * renders `children` for the active tab can't offer.
+ *
+ * Two skins: `underline` for a real tab bar, `segmented` for the pill group that
+ * was copy-pasted into the client view and the time feed.
+ *
+ * Not used by the client-report tab strip, which carries colour dots, a per-tab
+ * hide button and overflow arrows — folding that in would bloat this API.
+ */
+export function Tabs<T extends string>({
+  value,
+  onChange,
+  items,
+  variant = "underline",
+  size = "md",
+  className = "",
+  ariaLabel,
+  right,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  items: readonly TabItem<T>[];
+  variant?: "underline" | "segmented";
+  size?: "sm" | "md";
+  className?: string;
+  ariaLabel?: string;
+  /** trailing content inside the strip's row (underline variant only) */
+  right?: React.ReactNode;
+}) {
+  // a bare string item renders capitalised, which is what makes
+  // `items={["list","board"] as const}` a drop-in for the old segmented controls
+  const norm = items.map((it) =>
+    typeof it === "string"
+      ? { value: it, label: it as React.ReactNode, bare: true, count: undefined, title: undefined, disabled: false }
+      : { ...it, bare: false },
+  );
+  const pad = size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm";
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const enabled = norm.filter((t) => !t.disabled);
+    const i = enabled.findIndex((t) => t.value === value);
+    if (i < 0) return;
+    e.preventDefault();
+    const next = enabled[(i + (e.key === "ArrowRight" ? 1 : enabled.length - 1)) % enabled.length];
+    onChange(next.value);
+  }
+
+  const buttons = norm.map((t) => {
+    const active = t.value === value;
+    const cls =
+      variant === "segmented"
+        ? `rounded-md font-medium transition-colors disabled:opacity-40 ${pad} ${
+            active ? "bg-brand-soft text-brand-dark" : "text-muted hover:text-foreground"
+          }`
+        : `-mb-px border-b-2 font-medium transition-colors disabled:opacity-40 ${
+            size === "sm" ? "px-1.5 pb-1.5 text-xs" : "px-1 pb-2 text-sm"
+          } ${
+            active
+              ? "border-brand text-brand-dark"
+              : "border-transparent text-muted hover:text-foreground"
+          }`;
+    return (
+      <button
+        key={t.value}
+        type="button"
+        role="tab"
+        aria-selected={active}
+        disabled={t.disabled}
+        title={t.title}
+        onClick={() => onChange(t.value)}
+        className={t.bare ? `capitalize ${cls}` : cls}
+      >
+        {t.label}
+        {t.count != null && <span className="ml-1.5 text-xs tabular-nums text-faint">{t.count}</span>}
+      </button>
+    );
+  });
+
+  if (variant === "segmented") {
+    return (
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        onKeyDown={onKeyDown}
+        className={`flex rounded-lg border border-border bg-surface p-0.5 ${className}`}
+      >
+        {buttons}
+      </div>
+    );
+  }
+  return (
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      onKeyDown={onKeyDown}
+      className={`flex items-center gap-4 border-b border-border ${className}`}
+    >
+      {buttons}
+      {right && <span className="ml-auto pb-1">{right}</span>}
+    </div>
+  );
+}
+
+const MODAL_WIDTH = {
+  xs: "max-w-xs",
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+} as const;
+
+/**
+ * The overlay + centred card every popup in the app hand-rolled. Adds two things
+ * none of them had: Escape closes, and focus moves into the card on open.
+ *
+ * `layer="raised"` is for a popup opened from INSIDE the task drawer, which is
+ * itself overlay-40 / panel-50 — at equal z-index the drawer wins on DOM order
+ * and the popup would be visible but dead.
+ */
+export function Modal({
+  onClose,
+  children,
+  width = "md",
+  align = "third",
+  layer = "base",
+  labelledBy,
+  className = "",
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+  width?: keyof typeof MODAL_WIDTH;
+  align?: "third" | "center";
+  layer?: "base" | "raised";
+  labelledBy?: string;
+  className?: string;
+}) {
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    card.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const [overlayZ, cardZ] = layer === "raised" ? ["z-[60]", "z-[70]"] : ["z-40", "z-50"];
+  return (
+    <>
+      <div className={`fixed inset-0 ${overlayZ} bg-black/20`} onClick={onClose} />
+      <div
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
+        className={`fixed left-1/2 ${align === "center" ? "top-1/2" : "top-1/3"} ${cardZ} w-full ${
+          MODAL_WIDTH[width]
+        } -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl focus:outline-none ${className}`}
+      >
+        {children}
+      </div>
+    </>
+  );
+}
+
+/** The ✕ every modal puts in its header. */
+export function ModalClose({ onClose }: { onClose: () => void }) {
+  return (
+    <button
+      onClick={onClose}
+      title="Close"
+      className="shrink-0 rounded p-1 text-muted hover:bg-background hover:text-foreground"
+    >
+      <X size={16} />
+    </button>
+  );
+}
+
+/**
+ * A task title that opens the task pane. `beforeOpen` lets a popup close itself
+ * first — the pane is mounted last in the shell, so at equal z-index it paints
+ * over a popup card while the popup's own dimmer still sits above the pane.
+ */
+export function TaskNameLink({
+  title,
+  taskId,
+  beforeOpen,
+  className = "",
+}: {
+  title: string;
+  taskId: string;
+  beforeOpen?: () => void;
+  className?: string;
+}) {
+  const store = useDataMaybe();
+  if (!store) return <span className={`bidi-auto truncate ${className}`}>{title}</span>;
+  return (
+    <button
+      type="button"
+      title="Open task"
+      onClick={(e) => {
+        e.stopPropagation();
+        beforeOpen?.();
+        store.openTask(taskId);
+      }}
+      className={`bidi-auto max-w-full truncate text-left underline-offset-2 hover:text-brand hover:underline ${className}`}
+    >
+      {title}
+    </button>
   );
 }
 
@@ -293,14 +517,25 @@ export function TagBadge({ tag }: { tag: string }) {
 export function BudgetBar({
   doneMinutes,
   estimateHours,
+  label = "both",
 }: {
   doneMinutes: number;
   estimateHours: number | null;
+  /**
+   * What text rides beside the bar. `doneMinutes` is always required — it drives
+   * the fill and the over-budget colour whichever label you pick.
+   * `both` = "12/24h" (the original) · `budget` = "24h", for a table that has a
+   * separate Hours column · `none` = bar only, where the numbers are already
+   * spelled out above it.
+   */
+  label?: "both" | "budget" | "none";
 }) {
   // No budget set: still show the hours logged. This used to render nothing at all,
   // which meant a task without an estimate showed no hours anywhere on the client
   // table — the logged time was invisible unless someone opened the task.
   if (estimateHours == null) {
+    if (label === "none") return null;
+    if (label === "budget") return <span className="text-xs text-faint">–</span>;
     return (
       <span className={`text-xs whitespace-nowrap ${doneMinutes > 0 ? "text-muted" : "text-faint"}`}>
         {doneMinutes > 0 ? `${formatHoursDecimal(doneMinutes)}h` : "–"}
@@ -318,9 +553,14 @@ export function BudgetBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`text-xs whitespace-nowrap ${over ? "text-danger font-semibold" : "text-muted"}`}>
-        {formatHoursDecimal(doneMinutes)}/{estimateHours}h
-      </span>
+      {label !== "none" && (
+        <span
+          className={`text-xs whitespace-nowrap ${over ? "text-danger font-semibold" : "text-muted"}`}
+        >
+          {label === "both" && `${formatHoursDecimal(doneMinutes)}/`}
+          {estimateHours}h
+        </span>
+      )}
     </div>
   );
 }

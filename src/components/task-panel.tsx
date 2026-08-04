@@ -1,12 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pencil, X } from "lucide-react";
-import { useData } from "@/lib/store";
-import { formatDate, formatHours, toISODate } from "@/lib/format";
-import { loggableMembers } from "@/lib/members";
+import { Pencil, Plus, X } from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
+import { formatDate, formatHours, formatHoursDecimal } from "@/lib/format";
+import { taskHoursDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
-import type { Task } from "@/lib/types";
+import { EditableTextCell } from "./editable-cell";
+import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
+import type { Task, TimeEntry } from "@/lib/types";
+
+/** Comments from the same person within this window share one avatar + byline. */
+const COMMENT_GROUP_MS = 10 * 60_000;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -184,35 +189,20 @@ export function TaskPanel() {
     tags,
     updateTask,
     addComment,
-    addTimeEntry,
     taskMinutes,
     currentUserId,
   } = useData();
 
   const [commentDraft, setCommentDraft] = useState("");
-  const [timeDraft, setTimeDraft] = useState({ hours: "", description: "" });
-  /**
-   * Who the new time entry is for. Admins log hours on behalf of designers who
-   * forgot, so the form needs a person; members never see the control and
-   * always attribute to themselves. `null` means "me" so it can't go stale if
-   * the session changes under us.
-   */
-  const [timeForUserId, setTimeForUserId] = useState<string | null>(null);
-  /**
-   * The day the new entry is for. Admins backfill hours a designer forgot, so
-   * "today" is often wrong; it stays put after an add rather than snapping back,
-   * because backfilling is usually several entries on the same past day.
-   */
-  const [timeDate, setTimeDate] = useState(() => toISODate(new Date()));
-  const timeMembers = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  /** Add ({entry:null}) or edit one time entry. */
+  const [entryModal, setEntryModal] = useState<{ entry: TimeEntry | null } | null>(null);
   const [showMove, setShowMove] = useState(false);
   const [editingFigma, setEditingFigma] = useState(false);
+  const isAdmin = useIsAdmin();
 
   const task = tasks.find((t) => t.id === openTaskId);
   if (!task) return null;
-
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
 
   const client = clients.find((c) => c.id === task.clientId);
   const section = sections.find((s) => s.id === task.sectionId);
@@ -224,7 +214,16 @@ export function TaskPanel() {
   const entries = timeEntries
     .filter((e) => e.taskId === task.id)
     .sort((a, b) => b.date.localeCompare(a.date));
-  const doneMinutes = taskMinutes(task.id);
+  /**
+   * The SAME total the client table shows — it includes the pre-Everhour remainder
+   * that never became individual entries. The pane used to count only itemised
+   * entries, so a recovered task read 12h here and 165h in the table. The list
+   * below carries an explicit line for the remainder, so the rows still add up to
+   * this headline.
+   */
+  const doneMinutes = taskHoursDone(task, taskMinutes);
+  const legacyMinutes = taskLegacyMinutes(task);
+  const overBudget = task.estimateHours != null && doneMinutes / 60 > task.estimateHours;
   const activeProfiles = profiles.filter((p) => p.active);
 
   return (
@@ -279,7 +278,18 @@ export function TaskPanel() {
         </div>
 
         <div className="flex flex-col gap-5 px-6 py-5">
-          <h2 className="bidi-auto text-2xl">{task.title}</h2>
+          {/* The pane is now the ONLY place a task can be renamed — the client
+              table's inline editor was removed in favour of click-to-open. */}
+          {isAdmin ? (
+            <h2 className="text-2xl">
+              <EditableTextCell
+                value={task.title}
+                onCommit={(v) => v && v !== task.title && updateTask(task.id, { title: v })}
+              />
+            </h2>
+          ) : (
+            <h2 className="bidi-auto text-2xl">{task.title}</h2>
+          )}
 
           {/* Meta rows, Asana-style label:value */}
           <div className="flex flex-col gap-2.5 text-sm">
@@ -380,33 +390,50 @@ export function TaskPanel() {
                 </span>
               )}
             </div>
+            {/* Logged / budget as one prominent figure. The left number is
+                computed, the right one is the editable budget. */}
             <div className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-muted">Budget</span>
-              {isAdmin ? (
-                <input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  className="w-20 rounded-md border border-transparent bg-transparent px-1.5 py-1 hover:border-border"
-                  value={task.estimateHours ?? ""}
-                  placeholder="—"
-                  onChange={(e) =>
-                    updateTask(task.id, {
-                      estimateHours: e.target.value === "" ? null : Number(e.target.value),
-                    })
-                  }
-                />
-              ) : (
-                <span className="w-20 px-1.5 py-1 tabular-nums">{task.estimateHours ?? "—"}</span>
-              )}
-              <span className="text-xs text-muted">hours</span>
-              <span className="min-w-0 flex-1">
-                {task.estimateHours != null ? (
-                  <BudgetBar doneMinutes={doneMinutes} estimateHours={task.estimateHours} />
+              <span className="w-24 shrink-0 text-muted">Hours</span>
+              <span className="flex items-baseline gap-1">
+                <span
+                  className={`text-2xl font-semibold tabular-nums ${overBudget ? "text-danger" : ""}`}
+                  title={`${formatHours(doneMinutes)} logged`}
+                >
+                  {formatHoursDecimal(doneMinutes)}
+                </span>
+                <span className="text-2xl text-faint">/</span>
+                {isAdmin ? (
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    className="w-16 rounded-md border border-transparent bg-transparent text-2xl font-semibold tabular-nums hover:border-border focus:border-brand focus:outline-none"
+                    value={task.estimateHours ?? ""}
+                    placeholder="–"
+                    title="Budget in hours"
+                    onChange={(e) =>
+                      updateTask(task.id, {
+                        estimateHours: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                  />
                 ) : (
-                  <span className="text-xs text-muted">{formatHours(doneMinutes)} logged</span>
+                  <span className="w-16 text-2xl font-semibold tabular-nums">
+                    {task.estimateHours ?? "–"}
+                  </span>
                 )}
+                <span className="self-end pb-1 text-xs text-muted">h</span>
               </span>
+              {task.estimateHours != null && (
+                <span className="min-w-0 flex-1">
+                  {/* label="none": the numbers are already spelled out above it */}
+                  <BudgetBar
+                    doneMinutes={doneMinutes}
+                    estimateHours={task.estimateHours}
+                    label="none"
+                  />
+                </span>
+              )}
             </div>
           </div>
 
@@ -476,72 +503,6 @@ export function TaskPanel() {
             <div className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
               Time — {formatHours(doneMinutes)} total
             </div>
-            <form
-              className="mb-2 flex flex-wrap gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const h = parseFloat(timeDraft.hours);
-                if (!h || !timeDraft.description.trim()) return;
-                addTimeEntry(
-                  task.id,
-                  Math.round(h * 60),
-                  timeDraft.description.trim(),
-                  timeDate,
-                  timeForUserId ?? undefined, // undefined ⇒ the signed-in user
-                );
-                setTimeDraft({ hours: "", description: "" });
-              }}
-            >
-              <input
-                type="number"
-                min={0.25}
-                step={0.25}
-                required
-                placeholder="1.5"
-                className="w-20 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-                value={timeDraft.hours}
-                onChange={(e) => setTimeDraft((d) => ({ ...d, hours: e.target.value }))}
-              />
-              <input
-                required
-                placeholder="What did you do? (required)"
-                className="bidi-auto flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-                value={timeDraft.description}
-                onChange={(e) => setTimeDraft((d) => ({ ...d, description: e.target.value }))}
-              />
-              {/* Admins log for whoever actually did the work, on whatever day
-                  they did it — backfilling forgotten hours is the point.
-                  Members can only ever log for themselves today, so they get
-                  neither control. */}
-              {isAdmin && (
-                <>
-                  <select
-                    value={timeForUserId ?? currentUserId ?? ""}
-                    onChange={(e) =>
-                      setTimeForUserId(e.target.value === currentUserId ? null : e.target.value)
-                    }
-                    title="Who these hours are for"
-                    className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-                  >
-                    {timeMembers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.id === currentUserId ? "Me" : p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="date"
-                    value={timeDate}
-                    onChange={(e) => setTimeDate(e.target.value || toISODate(new Date()))}
-                    title="The day these hours were worked"
-                    className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-                  />
-                </>
-              )}
-              <button className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black">
-                Add
-              </button>
-            </form>
             {isAdmin && selectedEntries.size > 0 && (
               <div className="mb-2 flex items-center justify-between rounded-lg bg-brand-soft px-3 py-2 text-sm">
                 <span className="font-medium text-brand-dark">
@@ -569,6 +530,17 @@ export function TaskPanel() {
               </div>
             )}
             <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+              {/* 37px = the rendered height of a px-3 py-2 text-sm row, so the tile
+                  is square and flush with the lines below it */}
+              <div className="flex">
+                <button
+                  onClick={() => setEntryModal({ entry: null })}
+                  title="Log time on this task"
+                  className="flex size-[37px] items-center justify-center text-faint hover:bg-brand-soft hover:text-brand"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
               {entries.length === 0 && (
                 <div className="px-3 py-2.5 text-sm text-faint">No time logged yet.</div>
               )}
@@ -577,12 +549,35 @@ export function TaskPanel() {
                 // Same as the comments below: a recovered entry names its author in
                 // legacy_author_name because that person has no account here.
                 const author = user?.name ?? e.legacyAuthorName ?? "";
+                // Rows you may not change are NOT interactive at all — no pointer,
+                // no hover, no handler. An editor you can open but not use is worse
+                // than none.
+                const clickable = canEditEntry(e, isAdmin, currentUserId);
                 return (
-                  <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 text-sm">
+                  <div
+                    key={e.id}
+                    role={clickable ? "button" : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    onClick={clickable ? () => setEntryModal({ entry: e }) : undefined}
+                    onKeyDown={
+                      clickable
+                        ? (ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault();
+                              setEntryModal({ entry: e });
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
+                      clickable ? "cursor-pointer hover:bg-background" : ""
+                    }`}
+                  >
                     {isAdmin && (
                       <input
                         type="checkbox"
                         checked={selectedEntries.has(e.id)}
+                        onClick={(ev) => ev.stopPropagation()}
                         onChange={(ev) =>
                           setSelectedEntries((prev) => {
                             const next = new Set(prev);
@@ -631,6 +626,24 @@ export function TaskPanel() {
                   </div>
                 );
               })}
+              {/* The remainder that never became entries. Without this line the rows
+                  would sum to less than the headline with no explanation, which is
+                  exactly how a figure loses people's trust. */}
+              {legacyMinutes > 0 && (
+                <div
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-faint"
+                  title="Recorded on the task itself in the pre-Everhour Asana history, with no person or day to pin it to. Counted in the total above."
+                >
+                  <span className="w-[22px] shrink-0 text-center">–</span>
+                  <span className="w-14 shrink-0 text-xs">—</span>
+                  <span className="w-14 shrink-0 font-medium tabular-nums">
+                    {formatHours(legacyMinutes)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate italic">
+                    pre-Everhour history (not itemised)
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -639,34 +652,71 @@ export function TaskPanel() {
             <div className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
               Discussion
             </div>
-            <div className="mb-2 flex flex-col gap-3">
-              {taskComments.map((c) => {
+            {/* A conversation, not another log: bubbles, own messages on the
+                right, and one avatar + byline per run of messages from the same
+                person. It used to be avatar-plus-two-lines, which is exactly the
+                shape of the time rows above and read as more of the same. */}
+            <div className="mb-2 flex flex-col gap-2">
+              {taskComments.map((c, i) => {
                 const user = profiles.find((p) => p.id === c.userId) ?? null;
                 // An imported pre-Everhour comment usually has no profile — its author
                 // left long before the current roster. Without this fallback the name
                 // rendered EMPTY on 2,175 of the 2,397 imported comments.
                 const author = user?.name ?? c.authorName ?? "";
+                // imported comments have no userId, so they correctly sit on the left
+                const mine = !!c.userId && c.userId === currentUserId;
+                const prev = taskComments[i - 1];
+                const sameRun =
+                  !!prev &&
+                  prev.userId === c.userId &&
+                  (prev.authorName ?? null) === (c.authorName ?? null) &&
+                  new Date(c.createdAt).getTime() - new Date(prev.createdAt).getTime() <
+                    COMMENT_GROUP_MS;
+                const stamp = new Date(c.createdAt);
+                const today = new Date().toDateString() === stamp.toDateString();
                 return (
-                  <div key={c.id} className="flex gap-2.5">
-                    <Avatar profile={user} size={26} />
-                    <div className="min-w-0">
-                      <div className="text-xs text-muted">
-                        <span className="font-medium text-foreground">{author}</span>{" "}
-                        {new Date(c.createdAt).toLocaleString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                      <div className="bidi-auto text-sm">{c.body}</div>
+                  <div
+                    key={c.id}
+                    className={`flex gap-2.5 ${mine ? "flex-row-reverse" : ""} ${
+                      sameRun ? "" : "mt-1"
+                    }`}
+                  >
+                    {sameRun ? (
+                      <span className="size-[26px] shrink-0" aria-hidden />
+                    ) : (
+                      <Avatar profile={user} size={26} emptyTitle={author || "Unknown author"} />
+                    )}
+                    <div className={`flex min-w-0 flex-col ${mine ? "items-end" : "items-start"}`}>
+                      {!sameRun && (
+                        <span className="mb-0.5 text-xs font-medium">{author}</span>
+                      )}
+                      <span
+                        className={`bidi-auto max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                          mine
+                            ? "rounded-tr-sm bg-brand-soft text-brand-dark"
+                            : "rounded-tl-sm border border-border bg-background"
+                        }`}
+                      >
+                        {c.body}
+                      </span>
+                      <span
+                        className="mt-0.5 text-[10px] text-faint"
+                        title={stamp.toLocaleString("en-GB")}
+                      >
+                        {today
+                          ? stamp.toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : stamp.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                      </span>
                     </div>
                   </div>
                 );
               })}
             </div>
             <form
-              className="flex gap-2"
+              className="flex gap-2 border-t border-border pt-3"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!commentDraft.trim()) return;
@@ -705,6 +755,16 @@ export function TaskPanel() {
             setShowMove(false);
             setSelectedEntries(new Set());
           }}
+        />
+      )}
+
+      {entryModal && (
+        // "raised": this opens from inside the drawer, which is itself z-40/z-50
+        <TimeEntryModal
+          taskId={task.id}
+          entry={entryModal.entry}
+          layer="raised"
+          onClose={() => setEntryModal(null)}
         />
       )}
     </>

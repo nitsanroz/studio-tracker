@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Search } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { formatHoursShort } from "@/lib/format";
 import { presetRange } from "@/lib/date-ranges";
 import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
@@ -144,12 +144,12 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function ClientsPage() {
-  const { clients, tasks, entrySumsAll, profiles, currentUserId, updateClient } = useData();
+  const { clients, tasks, entrySumsAll, updateClient } = useData();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>(null);
   const [creating, setCreating] = useState(false);
 
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
 
   const taskClient = useMemo(
     () => new Map(tasks.map((t) => [t.id, t.clientId])),

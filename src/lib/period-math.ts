@@ -12,6 +12,23 @@ import { addDays, startOfWeek, toISODate } from "./format";
 export const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 export type HomeRange = (typeof HOME_RANGES)[number];
 
+/**
+ * Quarters exist for the team page only, which had its own inline quarter maths
+ * before this. Deliberately NOT added to HOME_RANGES: that array drives the
+ * admin home's pill row, so appending to it grows a control nobody asked to grow.
+ */
+export const TEAM_RANGES = [
+  "This week",
+  "This month",
+  "This quarter",
+  "This year",
+  "All time",
+] as const;
+export type PeriodKey = HomeRange | "This quarter";
+
+/** Reports steps through periods too, but "All time" would pull every entry ever. */
+export const REPORT_RANGES = ["This week", "This month", "This year"] as const;
+
 export const MONTH_SHORT = [
   "Jan",
   "Feb",
@@ -38,7 +55,7 @@ export function daysBetween(a: Date, b: Date): number {
 /** Full calendar bounds of a period, `offset` steps from the current one
  *  (0 = current, −1 = previous, …). null for "All time". */
 export function periodBounds(
-  rangeKey: HomeRange,
+  rangeKey: PeriodKey,
   offset: number,
   now: Date = new Date(),
 ): { start: Date; end: Date } | null {
@@ -52,6 +69,15 @@ export function periodBounds(
         start: new Date(now.getFullYear(), now.getMonth() + offset, 1),
         end: new Date(now.getFullYear(), now.getMonth() + offset + 1, 0),
       };
+    case "This quarter": {
+      // month arithmetic normalises overflow, so offset −1 from Q1 lands on the
+      // previous year's Q4 without any special-casing
+      const q = Math.floor(now.getMonth() / 3) + offset;
+      return {
+        start: new Date(now.getFullYear(), q * 3, 1),
+        end: new Date(now.getFullYear(), q * 3 + 3, 0),
+      };
+    }
     case "This year":
       return {
         start: new Date(now.getFullYear() + offset, 0, 1),
@@ -63,7 +89,7 @@ export function periodBounds(
 }
 
 /** Human label for the selected period, e.g. "This month", "Last week", "March", "2025". */
-export function rangeLabel(rangeKey: HomeRange, offset: number, now: Date = new Date()): string {
+export function rangeLabel(rangeKey: PeriodKey, offset: number, now: Date = new Date()): string {
   if (rangeKey === "All time") return "All time";
   if (offset === 0) return rangeKey;
   if (offset === -1)
@@ -71,7 +97,9 @@ export function rangeLabel(rangeKey: HomeRange, offset: number, now: Date = new 
       ? "Last week"
       : rangeKey === "This month"
         ? "Last month"
-        : "Last year";
+        : rangeKey === "This quarter"
+          ? "Last quarter"
+          : "Last year";
   const b = periodBounds(rangeKey, offset, now)!;
   if (rangeKey === "This week") {
     return `${b.start.getDate()}/${b.start.getMonth() + 1}–${b.end.getDate()}/${b.end.getMonth() + 1}`;
@@ -80,7 +108,21 @@ export function rangeLabel(rangeKey: HomeRange, offset: number, now: Date = new 
     const m = MONTH_SHORT[b.start.getMonth()];
     return b.start.getFullYear() === now.getFullYear() ? m : `${m} ${b.start.getFullYear()}`;
   }
+  if (rangeKey === "This quarter") {
+    const q = `Q${Math.floor(b.start.getMonth() / 3) + 1}`;
+    return b.start.getFullYear() === now.getFullYear() ? q : `${q} ${b.start.getFullYear()}`;
+  }
   return String(b.start.getFullYear());
+}
+
+/** `periodBounds` as ISO strings, which is the shape every page's filter wants. */
+export function periodRange(
+  rangeKey: PeriodKey,
+  offset: number,
+  now: Date = new Date(),
+): { from: string; to: string } | null {
+  const b = periodBounds(rangeKey, offset, now);
+  return b ? { from: toISODate(b.start), to: toISODate(b.end) } : null;
 }
 
 /**
@@ -90,7 +132,7 @@ export function rangeLabel(rangeKey: HomeRange, offset: number, now: Date = new 
  * last month up to the 15th, not the whole of last month.
  */
 export function comparablePrevRange(
-  rangeKey: HomeRange,
+  rangeKey: PeriodKey,
   offset: number,
   now: Date = new Date(),
 ): { from: string; to: string } | null {

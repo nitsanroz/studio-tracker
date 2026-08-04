@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapReportLink } from "@/lib/db";
 import {
@@ -680,8 +680,8 @@ function PublishWorkspace() {
 // ── page ────────────────────────────────────────────────────────────────────
 
 export default function ClientReportsPage() {
-  const { profiles, currentUserId } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const {  } = useData();
+  const isAdmin = useIsAdmin();
 
   if (!isAdmin) {
     return <p className="text-sm text-muted">Client reports are for admins only.</p>;

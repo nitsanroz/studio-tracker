@@ -9,14 +9,14 @@ import {
   ArrowUpDown,
   CheckCircle2,
   GripVertical,
-  Maximize2,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
-import { useData } from "@/lib/store";
-import { formatDate, formatHoursShort } from "@/lib/format";
-import { Avatar, BudgetBar, CollapseChevron, TagBadge } from "./ui";
+import { useData, useIsAdmin } from "@/lib/store";
+import { formatDate, formatHoursDecimal, formatHoursShort } from "@/lib/format";
+import { taskHoursDone } from "@/lib/task-hours";
+import { Avatar, BudgetBar, CollapseChevron, Tabs, TagBadge } from "./ui";
 import {
   EditableDateCell,
   EditableNumberCell,
@@ -30,10 +30,15 @@ import type { Profile, Section, Task } from "@/lib/types";
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** Right-hand client stats: totals, hours per month, hours per user. */
-function ClientStats({ clientId }: { clientId: string }) {
-  const { tasks, profiles, entrySumsAll, currentUserId } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+/**
+ * Client stats: totals, hours per month, hours per user.
+ *
+ * `inTab` drops the fixed 300px column and the `xl:` gate — it lives on the
+ * Overview tab now, where it is finally reachable on a laptop.
+ */
+function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: boolean }) {
+  const { tasks, profiles, entrySumsAll } = useData();
+  const isAdmin = useIsAdmin();
 
   const stats = useMemo(() => {
     const clientTaskIds = new Set(tasks.filter((t) => t.clientId === clientId).map((t) => t.id));
@@ -87,7 +92,13 @@ function ClientStats({ clientId }: { clientId: string }) {
   const maxUser = stats.users[0]?.minutes ?? 0;
 
   return (
-    <aside className="hidden w-[300px] shrink-0 flex-col gap-4 self-start xl:flex">
+    <aside
+      className={
+        inTab
+          ? "flex flex-col gap-4"
+          : "hidden w-[300px] shrink-0 flex-col gap-4 self-start xl:flex"
+      }
+    >
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border bg-surface p-3">
           <div className="text-[11px] font-medium text-muted">Total logged</div>
@@ -188,7 +199,11 @@ const COL_DEFAULTS: Record<string, number> = {
   assignee: 160,
   due: 64,
   tag: 112,
-  budget: 144,
+  hours: 64,
+  // trimmed from 144 now that the logged hours have their own column and this one
+  // prints just the budget beside the bar. NOTE: `useColWidths` merges the stored
+  // blob OVER these, so anyone with a saved width keeps their old 144.
+  budget: 112,
 };
 const ColWidthsContext = createContext<Record<string, number>>(COL_DEFAULTS);
 /** Width + no-shrink for one column cell, for `style={…}`. */
@@ -231,7 +246,12 @@ const TASK_DRAG_TYPE = "application/x-studio-task-id";
  *  (it handles it) or a move from another section (it lets the group handle it). */
 let draggedTaskId: string | null = null;
 
-type SortKey = "title" | "assignee" | "due" | "tag" | "budget" | "billable";
+/** Distinct from TASK_DRAG_TYPE so the two drag systems in this table never
+ *  mistake one another's payloads. */
+const SECTION_DRAG_TYPE = "application/x-studio-section-id";
+let draggedSectionId: string | null = null;
+
+type SortKey = "title" | "assignee" | "due" | "tag" | "hours" | "budget" | "billable";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
 
 /** Nulls/empties always sort last regardless of direction. */
@@ -248,8 +268,6 @@ function makeComparator(
   taskMinutes: (id: string) => number,
 ): (a: Task, b: Task) => number {
   const name = (t: Task) => profiles.find((p) => p.id === t.assigneeId)?.name ?? null;
-  const budget = (t: Task) =>
-    t.estimateHours ? taskMinutes(t.id) / 60 / t.estimateHours : null;
   const str = (x: string, y: string) => x.localeCompare(y);
   const num = (x: number, y: number) => x - y;
   switch (sort.key) {
@@ -261,19 +279,26 @@ function makeComparator(
       return (a, b) => cmpNullable(a.dueDate, b.dueDate, str, sort.dir);
     case "tag":
       return (a, b) => cmpNullable(a.tag, b.tag, str, sort.dir);
+    case "hours":
+      // must include the legacy remainder, exactly like the cell — sorting by a
+      // number the user can't see is worse than not sorting at all
+      return (a, b) => num(taskHoursDone(a, taskMinutes), taskHoursDone(b, taskMinutes)) * sort.dir;
     case "budget":
-      return (a, b) => cmpNullable(budget(a), budget(b), num, sort.dir);
+      // Was utilisation (logged ÷ estimate). The column now shows the budget
+      // number itself, so sorting it by a hidden ratio is indefensible.
+      return (a, b) => cmpNullable(a.estimateHours, b.estimateHours, num, sort.dir);
     case "billable":
       return (a, b) => (Number(b.billable) - Number(a.billable)) * sort.dir;
   }
 }
 
 const SORT_HINTS: Record<SortKey, string> = {
-  title: "Task title — click a cell to rename. Click to sort",
+  title: "Task title — click to open the task. Click the header to sort",
   assignee: "Who the task is assigned to — click a cell to change. Click to sort",
   due: "Due date — click a cell to change. Click to sort",
   tag: "Task tag — click a cell to change. Click to sort",
-  budget: "Hours logged vs the estimate — click a cell to edit the budget. Click to sort",
+  hours: "Hours logged so far. Click to sort",
+  budget: "Budget in hours — click a cell to edit it. Click to sort",
   billable: "Billable task? Non-billable hours don't appear on client reports. Click to sort",
 };
 
@@ -320,9 +345,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     reorderTask,
     taskMinutes,
     openTaskId,
-    currentUserId,
   } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
   const sel = useSelection();
   const colCell = useColCell();
   const checked = sel?.selected.has(task.id) ?? false;
@@ -349,9 +373,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     return !!d && d.sectionId === task.sectionId && d.clientId === task.clientId;
   }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
-  // taskMinutes already counts the `legacy` entries; legacyHours is the remainder
-  // that never became one, so it has to be added on top for the true total.
-  const hoursDone = taskMinutes(task.id) + (task.legacyHours ?? 0) * 60;
+  const hoursDone = taskHoursDone(task, taskMinutes);
+  const overBudget = task.estimateHours != null && hoursDone / 60 > task.estimateHours;
   const done = task.status === "done";
   const active = openTaskId === task.id;
 
@@ -464,24 +487,17 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
         </span>
       )}
       <span className={`flex min-w-32 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
-        {isAdmin ? (
-          <EditableTextCell
-            value={task.title}
-            onCommit={(v) => v && updateTask(task.id, { title: v })}
-          />
-        ) : (
-          <span className="bidi-auto truncate px-1.5 py-0.5">{task.title}</span>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openTask(task.id);
-          }}
+        {/* A span, not a button, and no inline editor: the row already opens the
+            pane on click, and a button would kill drag-selecting the title text.
+            Renaming happens in the pane's own title. The dedicated "open details"
+            icon button is gone with it — a third target for the same action, on a
+            row whose width has been fought over pixel by pixel. */}
+        <span
+          className="bidi-auto truncate px-1.5 py-0.5 group-hover:underline group-hover:decoration-border-strong group-hover:underline-offset-2"
           title="Open details"
-          className="invisible ml-1 shrink-0 rounded p-0.5 text-faint hover:bg-background hover:text-brand group-hover:visible"
         >
-          <Maximize2 size={13} />
-        </button>
+          {task.title}
+        </span>
         {isAdmin && (
           <button
             onClick={(e) => {
@@ -544,15 +560,30 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           display={task.tag ? <TagBadge tag={task.tag} /> : null}
         />
       </span>
+      <span
+        className="hidden text-xs tabular-nums md:block"
+        style={colCell("hours")}
+        title={`${formatHoursShort(hoursDone)} logged`}
+      >
+        {hoursDone > 0 ? (
+          <span className={overBudget ? "font-semibold text-danger" : "text-muted"}>
+            {formatHoursDecimal(hoursDone)}h
+          </span>
+        ) : (
+          <span className="text-faint">–</span>
+        )}
+      </span>
       <span className="hidden md:block" style={colCell("budget")}>
         {isAdmin ? (
           <EditableNumberCell
             value={task.estimateHours}
             onCommit={(v) => updateTask(task.id, { estimateHours: v })}
-            display={<BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} />}
+            display={
+              <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} label="budget" />
+            }
           />
         ) : (
-          <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} />
+          <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} label="budget" />
         )}
       </span>
       {isAdmin && (
@@ -638,11 +669,20 @@ function SectionGroup({
     updateTask,
     updateSection,
     deleteSection,
-    profiles,
-    currentUserId,
+    reorderSection,
   } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
+  const sel = useSelection();
   const [dragOver, setDragOver] = useState(false);
+  /** Insert line while another section is being dragged over this header. */
+  const [sectionOver, setSectionOver] = useState(false);
+  /**
+   * Only a mousedown on the grip may start a section drag — a ref, not state,
+   * because toggling `draggable` from mousedown races React's batching and the
+   * attribute can still be false when the browser decides the gesture. Same
+   * pattern as TaskRow, and it is what keeps the inline name editor usable.
+   */
+  const armedRef = useRef(false);
 
   const sectionId = section?.id ?? null;
   // Against ALL tasks, not the `tasks` prop: that one is filtered by "Show
@@ -681,6 +721,54 @@ function SectionGroup({
       }
     : {};
 
+  /**
+   * Section reordering, kept strictly apart from the task drags that share this
+   * table: every handler bails while a TASK drag is running, and the group's own
+   * onDragOver already ignores anything that isn't a task — so a task dropped on a
+   * section header still bubbles up and becomes a move-into-section.
+   *
+   * The "No section" group is never draggable and never moves; since it always
+   * renders first, the first real section's header is the "insert at the top" target.
+   */
+  const sectionDragProps =
+    isAdmin && section
+      ? {
+          draggable: true,
+          onDragStart: (e: React.DragEvent) => {
+            if (!armedRef.current) {
+              e.preventDefault();
+              return;
+            }
+            armedRef.current = false;
+            draggedSectionId = section.id;
+            e.dataTransfer.setData(SECTION_DRAG_TYPE, section.id);
+            e.dataTransfer.setData("text/plain", section.id);
+            e.dataTransfer.effectAllowed = "move";
+          },
+          onDragEnd: () => {
+            draggedSectionId = null;
+            setSectionOver(false);
+          },
+          onDragOver: (e: React.DragEvent) => {
+            if (draggedTaskId || !draggedSectionId || draggedSectionId === section.id) return;
+            e.preventDefault();
+            e.stopPropagation(); // don't also light up the group's task drop ring
+            e.dataTransfer.dropEffect = "move" as const;
+            setSectionOver(true);
+          },
+          onDragLeave: () => setSectionOver(false),
+          onDrop: (e: React.DragEvent) => {
+            if (draggedTaskId || !draggedSectionId) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setSectionOver(false);
+            const moved = draggedSectionId;
+            draggedSectionId = null;
+            if (moved !== section.id) reorderSection(moved, section.id);
+          },
+        }
+      : {};
+
   return (
     <div
       {...dropProps}
@@ -689,16 +777,33 @@ function SectionGroup({
       {/* A div, not a button: the name is inline-editable and there's a delete
           control, and neither can legally nest inside a button. */}
       <div
-        className={`${COLS} relative w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
+        {...sectionDragProps}
+        className={`${COLS} group relative w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
           sectionIsEmpty ? "opacity-50" : ""
-        }`}
+        } ${sectionOver ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""}`}
       >
         {isAdmin && (
-          <span className="absolute left-1 top-0 flex h-full items-center">
+          // hidden until you hover THIS header (not its rows — that's why the
+          // `group` sits on this div rather than the wrapper), and stays visible
+          // while anything is selected. Same rule as the task rows.
+          <span
+            className={`absolute left-1 top-0 flex h-full items-center transition-opacity ${
+              (sel?.selected.size ?? 0) > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
             <SelectAllBox
               ids={tasks.map((t) => t.id)}
               title={`Select all in ${section?.name ?? "No section"}`}
             />
+          </span>
+        )}
+        {isAdmin && section && (
+          <span
+            onMouseDown={() => (armedRef.current = true)}
+            className="absolute left-[18px] top-0 flex h-full w-[18px] cursor-grab items-center justify-center text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+            title="Drag to reorder this section"
+          >
+            <GripVertical size={14} />
           </span>
         )}
         <button
@@ -910,15 +1015,16 @@ function SelectionBar({
 }
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskMinutes, addSection, updateClient, currentUserId } =
+  const { clients, sections, tasks, profiles, taskMinutes, addSection, updateClient } =
     useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
   const [showDone, setShowDone] = useState(false);
   const [draggingTask, setDraggingTask] = useState(false);
   // Collapsed-by-exception: sections are open unless their key is in here, so new
   // sections appear expanded. "" stands for the null "No section" group.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"list" | "board">("list");
+  const [tab, setTab] = useState<"tasks" | "overview">("tasks");
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
   const [sort, setSort] = useState<Sort>(null);
@@ -936,13 +1042,24 @@ export function ClientView({ clientId }: { clientId: string }) {
       prev?.key !== key ? { key, dir: 1 } : prev.dir === 1 ? { key, dir: -1 } : null,
     );
 
-  const clientSections = useMemo(
-    () =>
-      sections
-        .filter((s) => s.clientId === clientId)
-        .sort((a, b) => a.position - b.position),
-    [sections, clientId],
-  );
+  const { clientSections, hiddenSections } = useMemo(() => {
+    const all = sections
+      .filter((s) => s.clientId === clientId)
+      .sort((a, b) => a.position - b.position);
+    if (showDone) return { clientSections: all, hiddenSections: 0 };
+    // A section whose tasks are ALL done folds away with them — an old finished
+    // section is exactly as much noise as the finished tasks inside it, and it
+    // comes back with them when "Show completed" is ticked.
+    //
+    // Measured against ALL tasks, and an EMPTY section stays visible: it has
+    // nothing finished to hide behind, and a section you just created must not
+    // disappear the moment you make it.
+    const open = all.filter((sec) => {
+      const own = tasks.filter((t) => t.sectionId === sec.id);
+      return own.length === 0 || own.some((t) => t.status !== "done");
+    });
+    return { clientSections: open, hiddenSections: all.length - open.length };
+  }, [sections, clientId, tasks, showDone]);
 
   const clientTasks = useMemo(() => {
     const list = tasks
@@ -953,6 +1070,11 @@ export function ClientView({ clientId }: { clientId: string }) {
   }, [tasks, clientId, showDone, sort, profiles, taskMinutes]);
 
   if (!client) return <div className="text-muted">Client not found.</div>;
+
+  // the billing note is xl-only inline, so the full text always lives on the title
+  const titleTooltip = client.billingPeriodNote
+    ? `${client.name} — billing: ${client.billingPeriodNote}`
+    : client.name;
 
   const noSection = clientTasks.filter((t) => t.sectionId === null);
 
@@ -1032,51 +1154,88 @@ export function ClientView({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <div className="flex items-center gap-2">
-          <ClientReportButtons clientId={client.id} />
-          {isAdmin && (
-            <button
-              onClick={() => updateClient(client.id, { archived: !client.archived })}
-              title={
-                client.archived
-                  ? "Restore this client everywhere"
-                  : "Hide this client from pickers, reports and search — hours are kept"
-              }
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
-                client.archived
-                  ? "border-border bg-surface text-brand hover:border-brand"
-                  : "border-border bg-surface text-muted hover:border-danger hover:text-danger"
-              }`}
-            >
-              {client.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
-              {client.archived ? "Restore" : "Archive"}
-            </button>
+      {/*
+        Name + actions on ONE line, pinned under the app header while you scroll a
+        long board. top-14 because the header is exactly h-14; z-10 keeps it under
+        the header (z-30) and over the table, which carries no z-index; -mx-6/px-6
+        covers main's 24px padding so card corners don't peek out from beneath it.
+        It must stay OUTSIDE the overflow-x-auto table wrapper below, or sticky dies.
+      */}
+      <div className="sticky top-14 z-10 -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="truncate text-2xl font-bold tracking-tight" title={titleTooltip}>
+            {client.name}
+          </h1>
+          {client.billingPeriodNote && (
+            <span className="hidden truncate text-xs text-muted xl:inline">
+              Billing: {client.billingPeriodNote}
+            </span>
           )}
-          <label className="flex items-center gap-1.5 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={showDone}
-              onChange={(e) => setShowDone(e.target.checked)}
-            />
-            Show completed
-          </label>
-          <div className="flex rounded-lg border border-border bg-surface p-0.5">
-            {(["list", "board"] as const).map((v) => (
+          <div className="ml-auto flex items-center gap-2">
+            <ClientReportButtons clientId={client.id} />
+            {isAdmin && (
               <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`rounded-md px-3 py-1 text-sm font-medium capitalize ${view === v ? "bg-brand-soft text-brand-dark" : "text-muted"}`}
+                onClick={() => updateClient(client.id, { archived: !client.archived })}
+                title={
+                  client.archived
+                    ? "Restore this client everywhere"
+                    : "Hide this client from pickers, reports and search — hours are kept"
+                }
+                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
+                  client.archived
+                    ? "border-border bg-surface text-brand hover:border-brand"
+                    : "border-border bg-surface text-muted hover:border-danger hover:text-danger"
+                }`}
               >
-                {v}
+                {client.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                {client.archived ? "Restore" : "Archive"}
               </button>
-            ))}
+            )}
+            {tab === "tasks" && (
+              <>
+                <label className="flex items-center gap-1.5 text-sm text-muted">
+                  <input
+                    type="checkbox"
+                    checked={showDone}
+                    onChange={(e) => setShowDone(e.target.checked)}
+                  />
+                  Show completed
+                </label>
+                {/* list/board is a view mode OF the tasks, not a peer of them, so it
+                    stays a segmented control rather than becoming a third tab */}
+                <Tabs
+                  value={view}
+                  onChange={setView}
+                  items={["list", "board"] as const}
+                  variant="segmented"
+                  ariaLabel="Layout"
+                />
+              </>
+            )}
           </div>
         </div>
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            { value: "tasks" as const, label: "Tasks" },
+            { value: "overview" as const, label: "Overview" },
+          ]}
+          ariaLabel="Client sections"
+        />
       </div>
 
-      <div className="flex gap-4">
-        <div className="min-w-0 max-w-[850px] flex-1">
+      {/* Overview holds the stats that used to be an xl-only aside — below 1280px
+          the total logged, open-task count, billable share and per-user hours were
+          simply invisible. */}
+      {tab === "overview" && (
+        <div className="max-w-3xl">
+          <ClientStats clientId={clientId} inTab />
+        </div>
+      )}
+
+      <div className={`flex gap-4 ${tab === "tasks" ? "" : "hidden"}`}>
+        <div className="min-w-0 flex-1">
       {view === "list" ? (
         <ColWidthsContext.Provider value={widths}>
         <SelectionContext.Provider value={isAdmin ? selectionValue : null}>
@@ -1084,14 +1243,21 @@ export function ClientView({ clientId }: { clientId: string }) {
             without threading state through every row. */}
         <div
           className="overflow-x-auto rounded-xl border border-border bg-surface"
-          onDragStart={() => setDraggingTask(true)}
+          // dragstart bubbles AFTER the row handler has set draggedTaskId, so this
+          // can tell a task drag from a section drag — without the check, dragging a
+          // section would reveal the empty "No section" group.
+          onDragStart={() => {
+            if (draggedTaskId) setDraggingTask(true);
+          }}
           onDragEnd={() => {
             setDraggingTask(false);
             draggedTaskId = null; // belt-and-braces: a stale id would make targets accept
+            draggedSectionId = null;
           }}
           onDrop={() => {
             setDraggingTask(false);
             draggedTaskId = null;
+            draggedSectionId = null;
           }}
         >
           <div className="min-w-fit">
@@ -1126,8 +1292,14 @@ export function ClientView({ clientId }: { clientId: string }) {
                 <SortHeader label="Tag" k="tag" sort={sort} onSort={cycleSort} />
                 <ResizeHandle onMouseDown={startResize("tag")} />
               </span>
+              {/* Hours and Budget appear and disappear together — a Budget column
+                  with no Hours beside it would read worse than today's merged one */}
+              <span className="relative hidden md:block" style={colCell("hours")}>
+                <SortHeader label="Hours" k="hours" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("hours")} />
+              </span>
               <span className="relative hidden md:block" style={colCell("budget")}>
-                <SortHeader label="Hrs/budget" k="budget" sort={sort} onSort={cycleSort} />
+                <SortHeader label="Budget" k="budget" sort={sort} onSort={cycleSort} />
                 <ResizeHandle onMouseDown={startResize("budget")} />
               </span>
               {isAdmin && (
@@ -1167,6 +1339,17 @@ export function ClientView({ clientId }: { clientId: string }) {
                 }
               />
             ))}
+            {hiddenSections > 0 && (
+              // Folding a finished section away silently would read as data loss.
+              <button
+                onClick={() => setShowDone(true)}
+                className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs text-faint hover:text-brand"
+                title="Sections whose tasks are all done are folded away with them"
+              >
+                {hiddenSections} finished section{hiddenSections === 1 ? "" : "s"} hidden — show
+                completed
+              </button>
+            )}
             {addingSection ? (
               <form
                 className="flex items-center gap-2 px-3 py-2"
@@ -1230,7 +1413,6 @@ export function ClientView({ clientId }: { clientId: string }) {
         </div>
       )}
         </div>
-        <ClientStats clientId={clientId} />
       </div>
     </div>
   );

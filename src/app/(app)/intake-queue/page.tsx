@@ -1,8 +1,62 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useData, type TaskRequest } from "@/lib/store";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Link2 } from "lucide-react";
+import { useData, useIsAdmin, type TaskRequest } from "@/lib/store";
+import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { formatDate } from "@/lib/format";
+
+/** Copies the studio-wide intake form URL, so it can be pasted to a client. */
+function CopyFormLinkButton() {
+  const isAdmin = useIsAdmin();
+  const [url, setUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Prefetched on mount so the click can call writeText SYNCHRONOUSLY — Safari
+  // drops the clipboard permission as soon as an await intervenes.
+  useEffect(() => {
+    studioIntakeLinkUrl().then(setUrl).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2500);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  if (!isAdmin) return null;
+
+  async function copy() {
+    setError(null);
+    if (url) {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      return;
+    }
+    const made = await ensureStudioIntakeLink();
+    if (!made) {
+      setError("Couldn't get a form link — check migration 0003.");
+      return;
+    }
+    setUrl(made);
+    await navigator.clipboard.writeText(made);
+    setCopied(true);
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        onClick={copy}
+        title="Copy the client intake form link — share it with clients"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand"
+      >
+        {copied ? <Check size={14} /> : <Link2 size={14} />}
+        {copied ? "Copied ✓" : "Copy form link"}
+      </button>
+      {error && <span className="text-[11px] text-danger">{error}</span>}
+    </div>
+  );
+}
 
 function ReviewCard({ request }: { request: TaskRequest }) {
   const { clients, sections, profiles, approveRequest, rejectRequest, openTask } =
@@ -201,14 +255,17 @@ export default function IntakeQueuePage() {
               : `${pending.length} submission${pending.length === 1 ? "" : "s"} waiting for review.`}
           </p>
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted">
-          <input
-            type="checkbox"
-            checked={showHandled}
-            onChange={(e) => setShowHandled(e.target.checked)}
-          />
-          Show handled
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-xs text-muted">
+            <input
+              type="checkbox"
+              checked={showHandled}
+              onChange={(e) => setShowHandled(e.target.checked)}
+            />
+            Show handled
+          </label>
+          <CopyFormLinkButton />
+        </div>
       </div>
 
       {clients.length > 0 && pending.length === 0 && !showHandled && (

@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import { Archive, ArchiveRestore, ArrowLeft } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
-import { formatHoursShort, MONTH_NAMES_SHORT } from "@/lib/format";
+import { formatHoursShort, toISODate, MONTH_NAMES_SHORT } from "@/lib/format";
+import { bucketProjection } from "@/lib/period-math";
 import { useMemberEmails } from "@/lib/use-member-emails";
-import { ClientChip } from "@/components/ui";
+import { ClientChip, Tabs, TagBadge } from "@/components/ui";
 import { PictureEditBadge } from "@/components/picture-editor";
-import { HBar, MiniColumns } from "@/components/charts";
+import { HBar, MultiLineChart } from "@/components/charts";
 import type { Role } from "@/lib/types";
 
 function NotesField({ profileId }: { profileId: string }) {
@@ -152,6 +153,68 @@ function HrFields({ profileId }: { profileId: string }) {
   );
 }
 
+/**
+ * The member's open assigned tasks. Independent of the period selector on
+ * purpose — "what are they carrying right now" is not a question about a date
+ * range, and every other pane here is scoped, so the subtitle says so.
+ *
+ * Deliberately NOT the shared TaskTable: its "by me" column keys off the VIEWING
+ * admin (so on someone else's page it reports the wrong person's hours), it
+ * measures 800px+ in a half-width pane, and it is a full inline editor on a page
+ * meant to read a person's record.
+ */
+function OpenTasksPane({ profileId }: { profileId: string }) {
+  const { tasks, clients, openTask } = useData();
+  const todayIso = toISODate(new Date());
+  const open = tasks
+    .filter((t) => t.assigneeId === profileId && t.status !== "done")
+    .sort(
+      (a, b) =>
+        (a.dueDate ? 0 : 1) - (b.dueDate ? 0 : 1) ||
+        (a.dueDate ?? "").localeCompare(b.dueDate ?? "") ||
+        a.position - b.position,
+    );
+
+  return (
+    <div className="flex flex-col rounded-xl border border-border bg-surface p-4">
+      <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
+        Open tasks ({open.length})
+      </h2>
+      <p className="mb-2 text-[11px] text-faint">open now — not scoped to a period</p>
+      <div className="flex max-h-[300px] flex-col divide-y divide-border overflow-y-auto">
+        {open.map((t) => {
+          const client = clients.find((c) => c.id === t.clientId);
+          const overdue = t.dueDate != null && t.dueDate < todayIso;
+          return (
+            <button
+              key={t.id}
+              onClick={() => openTask(t.id)}
+              className="flex items-center gap-2 py-2 text-left text-sm hover:bg-background"
+            >
+              {/* link={false}: an <a> cannot nest inside this button */}
+              {client && (
+                <span className="max-w-32 shrink-0 truncate">
+                  <ClientChip client={client} size="sm" link={false} />
+                </span>
+              )}
+              <span className="bidi-auto min-w-0 flex-1 truncate">{t.title}</span>
+              {t.tag && <TagBadge tag={t.tag} />}
+              {t.dueDate && (
+                <span
+                  className={`shrink-0 text-xs tabular-nums ${overdue ? "text-danger" : "text-muted"}`}
+                >
+                  {t.dueDate.slice(5)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        {open.length === 0 && <p className="py-2 text-sm text-faint">No open tasks assigned.</p>}
+      </div>
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-3">
@@ -167,10 +230,20 @@ export default function MemberPage({
   params: Promise<{ profileId: string }>;
 }) {
   const { profileId } = use(params);
-  const { profiles, tasks, clients, entrySumsAll, currentUserId, updateProfile } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const { profiles, tasks, clients, entrySumsAll, updateProfile } = useData();
+  const isAdmin = useIsAdmin();
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
+  const [tab, setTab] = useState<"overview" | "hr">("overview");
+  /**
+   * Lazily mounted, then never unmounted — see the HR block below. Never
+   * persisted and never deep-linked either: a URL or a sticky preference that
+   * lands you on a sheet of national IDs every visit is the wrong default.
+   */
+  const [hrMounted, setHrMounted] = useState(false);
+  useEffect(() => {
+    if (tab === "hr") setHrMounted(true);
+  }, [tab]);
   const email = useMemberEmails(isAdmin)[profileId];
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
@@ -232,6 +305,21 @@ export default function MemberPage({
     }
     return buckets;
   }, [mine]);
+
+  /**
+   * Dash the running month as a projection, the same way the admin home does.
+   * Safe by construction for former staff: bucketProjection returns null unless
+   * the last bucket IS the current month, and an ex-employee's window ends years
+   * ago — so their chart is never drawn as an estimate.
+   */
+  const projection = useMemo(() => {
+    const last = perMonth.at(-1);
+    if (!last) return null;
+    const f = bucketProjection("month", last.key);
+    return f == null
+      ? null
+      : { index: perMonth.length - 1, values: [Math.round(last.minutes * f)] };
+  }, [perMonth]);
 
   // ── most active clients, all time ──
   const { topClients, clientCount } = useMemo(() => {
@@ -330,24 +418,56 @@ export default function MemberPage({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Hours this month" value={formatHoursShort(monthMinutes)} />
-        <Stat
-          label="Billable share (month)"
-          value={monthMinutes > 0 ? `${Math.round((monthBillable / monthMinutes) * 100)}%` : "–"}
-        />
-        <Stat label="Total logged" value={formatHoursShort(totalMinutes)} />
-        <Stat label="Clients worked on" value={String(clientCount)} />
-      </div>
+      {/* Back link, archived banner and the header stay OUTSIDE the tabs: they are
+          identity and page-level state, and the Archive control must be reachable
+          from either tab. */}
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: "overview" as const, label: "Overview" },
+          { value: "hr" as const, label: "HR details" },
+        ]}
+        ariaLabel="Member sections"
+      />
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4">
+      {/* Tiles fill the left half, the chart the right. content-start keeps the
+          tile column its natural height instead of stretching four tall empty
+          boxes to match the chart. Below lg it stacks, tiles staying 2×2. */}
+      <div className={`grid items-stretch gap-4 lg:grid-cols-2 ${tab === "overview" ? "" : "hidden"}`}>
+        {/* Tiles, then the open-task list directly under them — it fills the
+            height the chart sets beside it instead of leaving the column short. */}
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Stat label="Hours this month" value={formatHoursShort(monthMinutes)} />
+            <Stat
+              label="Billable share (month)"
+              value={monthMinutes > 0 ? `${Math.round((monthBillable / monthMinutes) * 100)}%` : "–"}
+            />
+            <Stat label="Total logged" value={formatHoursShort(totalMinutes)} />
+            <Stat label="Clients worked on" value={String(clientCount)} />
+          </div>
+          <OpenTasksPane profileId={profile.id} />
+        </div>
+
+        <div className="flex h-full flex-col rounded-xl border border-border bg-surface p-4">
           <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">
             Hours per month
           </h2>
-          <MiniColumns points={perMonth.map((b) => ({ label: b.label, minutes: b.minutes }))} />
+          {/* MultiLineChart, not LineChart: with 12 buckets LineChart labels no
+              points at all and degrades to an unlabelled squiggle, while this one
+              brings gridlines, y-axis hours, thinned x-labels and a tooltip with
+              the change vs the previous month. */}
+          <MultiLineChart
+            labels={perMonth.map((b) => b.label)}
+            series={[{ label: "Hours", color: "#0b43ed", values: perMonth.map((b) => b.minutes) }]}
+            totalLabel="last 12 months of activity"
+            projection={projection ?? undefined}
+          />
         </div>
+      </div>
 
+      <div className={tab === "overview" ? "" : "hidden"}>
         <div className="flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-4">
           <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
             Most active clients
@@ -367,7 +487,14 @@ export default function MemberPage({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+      {/* Mounted only once the tab has been opened, then kept mounted and hidden.
+          Two reasons, both load-bearing: HrFields uses uncontrolled defaultValue
+          inputs saved on blur, so unmounting would silently discard typed text;
+          and until an admin asks for this tab, member_hr / member_notes are never
+          queried at all — opening someone's page to check their hours no longer
+          pulls national IDs and home addresses into the browser. */}
+      {hrMounted && (
+      <div className={`flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 ${tab === "hr" ? "" : "hidden"}`}>
         <h2 className="text-xs font-medium uppercase tracking-wide text-faint">HR details</h2>
         <div className="grid grid-cols-2 gap-2 sm:max-w-md">
           <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -432,6 +559,7 @@ export default function MemberPage({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

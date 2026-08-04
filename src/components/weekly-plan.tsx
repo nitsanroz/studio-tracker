@@ -22,11 +22,12 @@ import {
   Thermometer,
   X,
 } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { addDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
 import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
-import type { AbsenceType, DevStatus, PlanColumn, PlanEntry } from "@/lib/types";
+import { ResizeHandle, useColWidths } from "./resizable";
+import type { AbsenceType, DevStatus, PlanEntry } from "@/lib/types";
 
 const ABSENCE_LABELS: Record<AbsenceType, string> = {
   vacation: "🌴 Vacation",
@@ -130,8 +131,10 @@ function EntryChip({
     const { icon: AbsenceIcon, label: absenceLabel } = ABSENCE_CELL[type];
     return (
       <div className="group/chip relative flex min-h-8 flex-1" {...wrapperProps}>
+        {/* no rounding: an absence fills its cell edge to edge, so it reads as
+            "this day is gone" rather than as one more card sitting in the day */}
         <div
-          className={`flex flex-1 items-center justify-center gap-1 rounded-sm text-xs font-medium ${ABSENCE_FILL[type]}`}
+          className={`flex flex-1 items-center justify-center gap-1 text-xs font-medium ${ABSENCE_FILL[type]}`}
           title={ABSENCE_LABELS[type]}
         >
           <AbsenceIcon size={12} />
@@ -640,7 +643,7 @@ function PlanCell({
   onHoverCell?: (target: CellTarget | null) => void;
   onHoverEntry?: (entry: PlanEntry | null) => void;
 }) {
-  const { movePlanEntry } = useData();
+  const { movePlanEntryToCell } = useData();
   const [over, setOver] = useState(false);
 
   const hasAbsence = entries.some((e) => e.type === "absence");
@@ -660,14 +663,21 @@ function PlanCell({
           e.preventDefault();
           setOver(false);
           const id = e.dataTransfer.getData("text/plan-entry");
-          if (id) movePlanEntry(id, { date, columnId });
+          // dropping into someone else's column also reassigns the task to them
+          if (id) movePlanEntryToCell(id, { date, columnId });
         },
       }
     : {};
 
   return (
+    // p-1.5 = the 4px the <td> used to carry plus the 2px this cell did. The
+    // padding had to move INSIDE the absolute layer's containing block, or an
+    // absence's `inset-0` stops at the td's padding and leaves a visible gap; the
+    // total is unchanged, so chips and row heights are pixel-identical.
+    // The drop outline needs -outline-offset-2 now that it has no td padding to
+    // sit in, else it paints over the cell borders into the next column.
     <div
-      className={`group/cell relative flex min-h-8 flex-col gap-1 rounded-sm p-0.5 ${over ? "bg-brand-soft outline-2 outline-dashed outline-brand" : ""}`}
+      className={`group/cell relative flex h-full min-h-8 flex-col gap-1 p-1.5 ${over ? "bg-brand-soft outline-2 -outline-offset-2 outline-dashed outline-brand" : ""}`}
       onContextMenu={canEdit && onCellMenu ? (e) => onCellMenu(e, target) : undefined}
       onMouseEnter={onHoverCell ? () => onHoverCell(target) : undefined}
       onMouseLeave={onHoverCell ? () => onHoverCell(null) : undefined}
@@ -723,9 +733,19 @@ export function WeeklyPlan() {
   const hoveredCell = useRef<CellTarget | null>(null);
   const hoveredEntry = useRef<PlanEntry | null>(null);
   const todayIso = toISODate(new Date());
+  /**
+   * Width of the waiting-list / in-development rail, persisted per browser under
+   * `colw.plan-rail` — the same mechanism as the resizable table columns.
+   * Min 150: below that the waiting-list chips lose their client line. Max 420:
+   * past that the grid starts squeezing the columns you actually plan in.
+   */
+  const { widths: rail, startResize: startRailResize } = useColWidths(
+    "plan-rail",
+    { w: 192 },
+    { min: 150, max: 420, invert: true },
+  );
 
-  const me = profiles.find((p) => p.id === currentUserId);
-  const canEdit = me?.role === "admin";
+  const canEdit = useIsAdmin();
 
   // ── copy / paste ───────────────────────────────────────────────────────
   const copyEntry = (entry: PlanEntry) => {
@@ -1024,7 +1044,13 @@ export function WeeklyPlan() {
                     {gridCols.map((col) => (
                       <td
                         key={col.id}
-                        className={`border-b border-r border-border p-1 align-top last:border-r-0 ${col.type === "studio" && !weekend ? "bg-brand-soft/30" : ""} ${col.profileId === currentUserId && !weekend ? "bg-aqua/10" : ""}`}
+                        // p-0 (the padding lives in PlanCell) + h-px: a table cell
+                        // only gives a percentage-height child something to resolve
+                        // against when it has a height of its own, and the row
+                        // overrides h-px anyway — so PlanCell's h-full finally
+                        // stretches to the ROW height and an absence fills a tall
+                        // row instead of one chip's worth of it.
+                        className={`h-px border-b border-r border-border p-0 align-top last:border-r-0 ${col.type === "studio" && !weekend ? "bg-brand-soft/30" : ""} ${col.profileId === currentUserId && !weekend ? "bg-aqua/10" : ""}`}
                       >
                         <PlanCell
                           date={iso}
@@ -1058,7 +1084,14 @@ export function WeeklyPlan() {
         </div>
 
         {canEdit && (
-          <div className="flex w-48 shrink-0 flex-col gap-4 self-start">
+          <div
+            className="group/resize relative flex shrink-0 flex-col gap-4 self-start"
+            style={{ width: rail.w }}
+          >
+            {/* Handle centred in the flex gap, dragging left to grow the rail.
+                `always` because a pane edge — unlike a table column edge — gives
+                no hint that it can be dragged. */}
+            <ResizeHandle side="left" visibility="always" onMouseDown={startRailResize("w")} />
             {waitingCol && !waitingCol.hidden && (
               <div className="rounded-xl border border-border bg-surface p-3">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
@@ -1085,9 +1118,10 @@ export function WeeklyPlan() {
 
       {canEdit && (
         <p className="text-xs text-faint">
-          Hover a cell to add a task, free text or absence · drag chips between days · right-click to
-          copy/paste (or ⌘C/⌘V over a chip/cell) · click a date cell to mark a holiday · click month
-          names to fold them.
+          Hover a cell to add a task, free text or absence · drag chips between days, or into
+          someone else&apos;s column to reassign the task to them · right-click to copy/paste (or
+          ⌘C/⌘V over a chip/cell) · click a date cell to mark a holiday · click month names to fold
+          them · drag the edge of the right-hand panel to resize it.
         </p>
       )}
 

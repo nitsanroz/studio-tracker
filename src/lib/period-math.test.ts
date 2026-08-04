@@ -5,6 +5,7 @@ import {
   comparablePrevRange,
   daysBetween,
   periodBounds,
+  periodRange,
   rangeLabel,
 } from "./period-math";
 
@@ -169,6 +170,61 @@ describe("bucketize", () => {
     // hasRange=false is "All time": a handful of distinct dates must still not
     // collapse to day buckets, or the axis would claim a range it doesn't have.
     expect(bucketize(["2026-07-01", "2026-07-02"], false).unit).not.toBe("day");
+  });
+});
+
+describe("quarters", () => {
+  // The team page computed quarters inline before this moved here. The first
+  // case asserts the new arithmetic against that old expression verbatim, so
+  // the hours a member's card shows on "This quarter" cannot have moved.
+  it("matches the team page's previous inline computation", () => {
+    const now = at(2026, 8, 3);
+    const q = Math.floor(now.getMonth() / 3);
+    const old = {
+      start: new Date(now.getFullYear(), q * 3, 1),
+      end: new Date(now.getFullYear(), q * 3 + 3, 0),
+    };
+    const b = periodBounds("This quarter", 0, now)!;
+    expect(b.start.getTime()).toBe(old.start.getTime());
+    expect(b.end.getTime()).toBe(old.end.getTime());
+    expect(periodRange("This quarter", 0, now)).toEqual({ from: "2026-07-01", to: "2026-09-30" });
+  });
+
+  it("steps back across a year boundary", () => {
+    // Q1 2026 minus one quarter is Q4 2025, not "month −3 of 2026".
+    expect(periodRange("This quarter", -1, at(2026, 2, 10))).toEqual({
+      from: "2025-10-01",
+      to: "2025-12-31",
+    });
+    expect(periodRange("This quarter", -5, at(2026, 8, 3))).toEqual({
+      from: "2025-04-01",
+      to: "2025-06-30",
+    });
+    // Four quarters back is the same quarter, previous year.
+    expect(periodRange("This quarter", -4, at(2026, 8, 3))).toEqual({
+      from: "2025-07-01",
+      to: "2025-09-30",
+    });
+  });
+
+  it("labels quarters, with the year only when it isn't this one", () => {
+    expect(rangeLabel("This quarter", 0, at(2026, 8, 3))).toBe("This quarter");
+    expect(rangeLabel("This quarter", -1, at(2026, 8, 3))).toBe("Last quarter");
+    expect(rangeLabel("This quarter", -2, at(2026, 8, 3))).toBe("Q1");
+    expect(rangeLabel("This quarter", -3, at(2026, 8, 3))).toBe("Q4 2025");
+  });
+
+  it("clips the previous quarter to the same elapsed portion", () => {
+    // Q3 2026 starts 1 Jul; on 3 Aug that's 33 days in, so the comparison
+    // window is Q2 (1 Apr) plus 33 days.
+    expect(comparablePrevRange("This quarter", 0, at(2026, 8, 3))).toEqual({
+      from: "2026-04-01",
+      to: "2026-05-04",
+    });
+  });
+
+  it("periodRange is null for All time", () => {
+    expect(periodRange("All time", 0, at(2026, 8, 3))).toBeNull();
   });
 });
 

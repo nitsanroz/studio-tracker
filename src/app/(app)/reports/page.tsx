@@ -1,20 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Plus, X } from "lucide-react";
-import { useData } from "@/lib/store";
+import { Download } from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll } from "@/lib/db";
 import {
   formatFeedDate,
   formatHours,
   formatHoursShort,
-  parseDuration,
-  toISODate,
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
-import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges";
-import { Avatar, ClientChip, CollapseChevron } from "@/components/ui";
+import { periodRange, rangeLabel, REPORT_RANGES } from "@/lib/period-math";
+
+/** Reports adds "Custom" to the steppable units. */
+const REPORT_TAB_RANGES = [...REPORT_RANGES, "Custom"] as const;
+type ReportRange = (typeof REPORT_TAB_RANGES)[number];
+import {
+  Avatar,
+  ClientChip,
+  CollapseChevron,
+  Modal,
+  ModalClose,
+  TaskNameLink,
+} from "@/components/ui";
+import { LogTimeForm } from "@/components/log-time-form";
+import { TimeEntryModal } from "@/components/time-entry-modal";
+import { PeriodStepper } from "@/components/period-stepper";
 import { HBar, MultiLineChart, SplitBar } from "@/components/charts";
 
 interface ReportEntry {
@@ -30,65 +42,25 @@ interface ReportEntry {
   description: string;
 }
 
-/** minutes → "H:MM", the one duration format parseDuration round-trips exactly */
-function minutesToInput(m: number): string {
-  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
-}
-
-function EditableMinutes({
-  entry,
-  onSaved,
-}: {
-  entry: ReportEntry;
-  onSaved: (id: string, minutes: number) => void;
-}) {
-  const { updateTimeEntry } = useData();
-  const [value, setValue] = useState(() => minutesToInput(entry.minutes));
-  const parsed = parseDuration(value);
-
-  function commit() {
-    if (parsed == null || parsed <= 0 || parsed === entry.minutes) {
-      setValue(minutesToInput(entry.minutes));
-      return;
-    }
-    updateTimeEntry(entry.id, { minutes: parsed });
-    onSaved(entry.id, parsed);
-  }
-
-  return (
-    <input
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      className={`w-14 shrink-0 rounded-md border bg-transparent px-1 py-0.5 text-sm font-semibold tabular-nums outline-none focus:border-brand ${
-        parsed == null || parsed <= 0 ? "border-danger" : "border-transparent hover:border-border"
-      }`}
-      title="Edit hours (e.g. 1:30, 1.5h, 90m)"
-    />
-  );
-}
-
 // ── task drill-in: period entries + add time ───────────────────────────────
 
 function TaskHoursModal({
   taskId,
   entries,
   onAdd,
-  onUpdate,
+  onChanged,
   onClose,
 }: {
   taskId: string;
   entries: ReportEntry[];
   onAdd: (entry: ReportEntry) => void;
-  onUpdate: (id: string, minutes: number) => void;
+  /** patch = the fields that changed; null = the row left this period (re-dated or deleted). */
+  onChanged: (id: string, patch: Partial<ReportEntry> | null) => void;
   onClose: () => void;
 }) {
-  const { tasks, sections, clients, profiles, addTimeEntry, currentUserId } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
-  const [duration, setDuration] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(() => toISODate(new Date()));
+  const { tasks, sections, clients, profiles, currentUserId } = useData();
+  const isAdmin = useIsAdmin();
+  const [editing, setEditing] = useState<ReportEntry | null>(null);
 
   const task = tasks.find((t) => t.id === taskId);
   const section = sections.find((s) => s.id === task?.sectionId);
@@ -99,36 +71,58 @@ function TaskHoursModal({
     [entries],
   );
   const total = rows.reduce((s, e) => s + e.minutes, 0);
-  const minutes = parseDuration(duration);
-  const canAdd = minutes != null && minutes > 0 && description.trim();
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+      <Modal onClose={onClose} width="lg" align="center" className="flex max-h-[80vh] flex-col">
         <div className="mb-2 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="bidi-auto truncate font-heading text-sm">{task?.title ?? "Task"}</h3>
+            {/* the task name is the popup's title, not a caption over the rows */}
+            <h3 className="truncate font-heading text-lg leading-tight">
+              {task ? (
+                // the drawer is mounted after the page and shares this z-layer, so
+                // it would paint over a popup left open behind it
+                <TaskNameLink title={task.title} taskId={task.id} beforeOpen={onClose} />
+              ) : (
+                "Task"
+              )}
+            </h3>
             <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
-              {client && <ClientChip client={client} size="sm" link={false} />}
+              {/* link on: the chip navigates to the client page */}
+              {client && <ClientChip client={client} size="sm" />}
               <span className="truncate">{section?.name}</span>
-              <span className="shrink-0 font-semibold tabular-nums">{formatHours(total)} in period</span>
+              <span className="shrink-0 font-semibold tabular-nums">
+                {formatHours(total)} in period
+              </span>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
-            <X size={16} />
-          </button>
+          <ModalClose onClose={onClose} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows.map((e, i) => {
             const user = profiles.find((p) => p.id === e.user_id) ?? null;
             const authorLabel = user?.name ?? e.legacy_author_name ?? "";
-            const editable = !!e.id && (isAdmin || e.user_id === currentUserId);
+            const editable = !e.legacy && !!e.id && (isAdmin || e.user_id === currentUserId);
             return (
               <div
                 key={e.id || `${e.date}-${i}`}
-                className="flex items-center gap-2.5 border-b border-border py-2 text-sm last:border-b-0"
+                role={editable ? "button" : undefined}
+                tabIndex={editable ? 0 : undefined}
+                onClick={editable ? () => setEditing(e) : undefined}
+                onKeyDown={
+                  editable
+                    ? (ev) => {
+                        if (ev.key === "Enter" || ev.key === " ") {
+                          ev.preventDefault();
+                          setEditing(e);
+                        }
+                      }
+                    : undefined
+                }
+                className={`flex items-center gap-2.5 border-b border-border py-2 text-sm last:border-b-0 ${
+                  editable ? "cursor-pointer hover:bg-background" : ""
+                }`}
               >
                 {/* A recovered pre-Everhour row has no profile, so the avatar is
                     blank — the tooltip is the only place its author appears. */}
@@ -136,13 +130,9 @@ function TaskHoursModal({
                   <Avatar profile={user} size={24} />
                 </span>
                 <span className="w-20 shrink-0 text-xs text-muted">{formatFeedDate(e.date)}</span>
-                {editable ? (
-                  <EditableMinutes entry={e} onSaved={onUpdate} />
-                ) : (
-                  <span className="w-14 shrink-0 font-semibold tabular-nums">
-                    {formatHours(e.minutes)}
-                  </span>
-                )}
+                <span className="w-14 shrink-0 font-semibold tabular-nums">
+                  {formatHours(e.minutes)}
+                </span>
                 <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
                   {e.description || <span className="italic text-faint">no description</span>}
                 </span>
@@ -154,49 +144,52 @@ function TaskHoursModal({
           )}
         </div>
 
-        <div className="mt-3 flex gap-2 border-t border-border pt-3">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-          />
-          <input
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            placeholder="1.5h"
-            className={`w-16 rounded-md border bg-surface px-1.5 py-1.5 text-sm outline-none focus:border-brand ${
-              duration && minutes == null ? "border-danger" : "border-border"
-            }`}
-          />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (required)"
-            className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
-          />
-          <button
-            disabled={!canAdd}
-            onClick={() => {
-              if (!canAdd || minutes == null) return;
-              addTimeEntry(taskId, minutes, description.trim(), date);
+        <div className="mt-3 border-t border-border pt-3">
+          <LogTimeForm
+            taskId={taskId}
+            onAdded={(entry) => {
+              // the real inserted row, so it's immediately editable — this used to
+              // push a sentinel with id:"" that stayed read-only until a reload
+              if (!entry) return;
               onAdd({
-                id: "",
-                task_id: taskId,
-                user_id: currentUserId,
-                date,
-                minutes,
-                description: description.trim(),
+                id: entry.id,
+                task_id: entry.taskId,
+                user_id: entry.userId,
+                date: entry.date,
+                minutes: entry.minutes,
+                description: entry.description,
               });
-              setDuration("");
-              setDescription("");
             }}
-            className="flex shrink-0 items-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
-          >
-            <Plus size={13} /> Add
-          </button>
+          />
         </div>
-      </div>
+      </Modal>
+
+      {editing && (
+        <TimeEntryModal
+          taskId={taskId}
+          entry={{
+            id: editing.id,
+            taskId: editing.task_id,
+            userId: editing.user_id,
+            legacyAuthorName: editing.legacy_author_name ?? null,
+            date: editing.date,
+            minutes: editing.minutes,
+            description: editing.description,
+            movedFromTaskId: null,
+            legacy: editing.legacy,
+          }}
+          onSaved={(patch) =>
+            onChanged(editing.id, {
+              minutes: patch.minutes,
+              description: patch.description,
+              date: patch.date,
+              ...(patch.userId ? { user_id: patch.userId } : {}),
+            })
+          }
+          onDeleted={() => onChanged(editing.id, null)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </>
   );
 }
@@ -349,12 +342,23 @@ function RangeStats({
 // ── page ────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const { tasks, sections, clients, profiles, currentUserId } = useData();
+  const { tasks, sections, clients, profiles } = useData();
   const supabase = useMemo(() => createClient(), []);
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
 
-  const [preset, setPreset] = useState<RangePreset>("This week");
-  const [range, setRange] = useState(() => presetRange("This week"));
+  /**
+   * Unit + offset, not a preset list. "Last week"/"Last month"/"Last year" were
+   * presets that already encoded an offset, so stepping back from one had no
+   * coherent meaning — one axis plus one integer is what supports the arrows, and
+   * ◀ still lands on a period labelled "Last month".
+   *
+   * "All time" is deliberately absent: the query below is .gte/.lte, so an
+   * unbounded range would pull every time entry ever into the browser.
+   */
+  const [rangeKey, setRangeKey] = useState<ReportRange>("This week");
+  const [periodOffset, setPeriodOffset] = useState(0);
+  /** Kept separately so switching to Custom and back doesn't lose the dates. */
+  const [customRange, setCustomRange] = useState(() => periodRange("This week", 0)!);
   const [clientFilter, setClientFilter] = useState("");
   const [designerFilter, setDesignerFilter] = useState("");
   const [billableFilter, setBillableFilter] = useState<"" | "billable" | "non_billable">("");
@@ -364,10 +368,9 @@ export default function ReportsPage() {
   const [foldedSections, setFoldedSections] = useState<Set<string>>(new Set());
   const [taskModal, setTaskModal] = useState<string | null>(null);
 
-  function pickPreset(p: RangePreset) {
-    setPreset(p);
-    if (p !== "Custom") setRange(presetRange(p));
-  }
+  const range =
+    rangeKey === "Custom" ? customRange : (periodRange(rangeKey, periodOffset) ?? customRange);
+  const periodLabel = rangeKey === "Custom" ? "Custom" : rangeLabel(rangeKey, periodOffset);
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
@@ -495,7 +498,7 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl">Reports</h1>
           <p className="text-sm text-muted">
-            {range.from} → {range.to} ·{" "}
+            {periodLabel} · {range.from} → {range.to} ·{" "}
             {loading
               ? "loading…"
               : `${formatHoursShort(totalMinutes)} total, ${formatHoursShort(billableMinutes)} billable`}
@@ -510,36 +513,31 @@ export default function ReportsPage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {RANGE_PRESETS.map((p) => (
-          <button
-            key={p}
-            onClick={() => pickPreset(p)}
-            className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
-              preset === p
-                ? "border-brand bg-brand-soft text-brand-dark"
-                : "border-border bg-surface text-muted hover:border-border-strong"
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
+      <PeriodStepper
+        ranges={REPORT_TAB_RANGES}
+        value={rangeKey}
+        offset={periodOffset}
+        label={periodLabel}
+        canStep={rangeKey !== "Custom"}
+        disabledReason="A custom range has no previous period"
+        onChange={setRangeKey}
+        onOffset={setPeriodOffset}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
-        {preset === "Custom" && (
+        {rangeKey === "Custom" && (
           <>
             <input
               type="date"
               value={range.from}
-              onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
+              onChange={(e) => setCustomRange((r) => ({ ...r, from: e.target.value }))}
               className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
             />
             <span className="text-muted">→</span>
             <input
               type="date"
               value={range.to}
-              onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
+              onChange={(e) => setCustomRange((r) => ({ ...r, to: e.target.value }))}
               className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
             />
           </>
@@ -723,10 +721,18 @@ export default function ReportsPage() {
           taskId={taskModal}
           entries={enriched.filter((e) => e.task_id === taskModal)}
           onAdd={(entry) => setEntries((prev) => (prev ? [...prev, entry] : [entry]))}
-          onUpdate={(id, minutes) =>
-            setEntries((prev) =>
-              prev ? prev.map((e) => (e.id === id ? { ...e, minutes } : e)) : prev,
-            )
+          onChanged={(id, patch) =>
+            setEntries((prev) => {
+              if (!prev) return prev;
+              // A deleted row, or one re-dated out of the selected period, has to
+              // LEAVE this page's state: every total, the client breakdown, the
+              // stats and the CSV derive from it, so keeping it would make the
+              // period total quietly disagree with the database.
+              if (!patch) return prev.filter((e) => e.id !== id);
+              const gone = patch.date != null && (patch.date < range.from || patch.date > range.to);
+              if (gone) return prev.filter((e) => e.id !== id);
+              return prev.map((e) => (e.id === id ? { ...e, ...patch } : e));
+            })
           }
           onClose={() => setTaskModal(null)}
         />

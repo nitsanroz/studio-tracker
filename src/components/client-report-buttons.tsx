@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { FileBarChart, Link2 } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { ensureClientReportLink } from "@/lib/report-links";
 
 /** Admin-only "Client report" actions: open in new tab + copy link. */
 export function ClientReportButtons({ clientId }: { clientId: string }) {
-  const { profiles, currentUserId } = useData();
+  const { currentUserId } = useData();
   const [toast, setToast] = useState(false);
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     if (!toast) return;

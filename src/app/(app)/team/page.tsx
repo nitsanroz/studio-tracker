@@ -1,41 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
-import { useData } from "@/lib/store";
-import { presetRange } from "@/lib/date-ranges";
+import { LayoutGrid, Plus, Table2, X } from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
+import { periodRange, rangeLabel, TEAM_RANGES, type PeriodKey } from "@/lib/period-math";
 import { toISODate } from "@/lib/format";
 import { formatHoursAvg, formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
 import { MemberPhoto } from "@/components/member-photo";
+import { Tabs } from "@/components/ui";
+import { PeriodStepper } from "@/components/period-stepper";
 import { PercentRing } from "@/components/charts";
+import { MemberTable, type MemberRow } from "./member-table";
 
-// ── time scope ──────────────────────────────────────────────────────────────
+type Layout = "cards" | "table";
+const LAYOUT_KEY = "team.layout";
+const RANGE_KEY = "team.range";
 
-const SCOPES = ["This week", "This month", "This quarter", "This year", "All time"] as const;
-type Scope = (typeof SCOPES)[number];
-
-/** Inclusive ISO range for a scope; null = all time (no filtering). */
-function scopeRange(scope: Scope): { from: string; to: string } | null {
-  switch (scope) {
-    case "This week":
-    case "This month":
-    case "This year":
-      return presetRange(scope);
-    case "This quarter": {
-      const now = new Date();
-      const q = Math.floor(now.getMonth() / 3);
-      return {
-        from: toISODate(new Date(now.getFullYear(), q * 3, 1)),
-        to: toISODate(new Date(now.getFullYear(), q * 3 + 3, 0)),
-      };
-    }
-    case "All time":
-      return null;
-  }
-}
+// Period selection lives in period-math.ts now (quarters included), so the team
+// page and the admin home step through periods with the same arithmetic and the
+// same control.
 
 /** "2y 4m" since a start date. */
 function tenureShort(startIso: string): string {
@@ -162,14 +148,42 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function TeamPage() {
-  const { profiles, tasks, entrySumsAll, currentUserId } = useData();
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const { profiles, tasks, entrySumsAll } = useData();
+  const isAdmin = useIsAdmin();
   const [showDeactivated, setShowDeactivated] = useState(false);
-  const [scope, setScope] = useState<Scope>("This month");
   const [addOpen, setAddOpen] = useState(false);
   const memberEmails = useMemberEmails(isAdmin);
 
-  const range = useMemo(() => scopeRange(scope), [scope]);
+  const [rangeKey, setRangeKey] = useState<PeriodKey>("This month");
+  /** Deliberately NOT persisted, unlike the range key: reopening the page on
+   *  "Q2 2025" would present stale hours as if they were current. */
+  const [periodOffset, setPeriodOffset] = useState(0);
+  const [layout, setLayout] = useState<Layout>("cards");
+
+  // localStorage in an effect, never in a useState initialiser: these pages are
+  // still server-prerendered, so reading it during render is a hydration mismatch.
+  useEffect(() => {
+    const v = localStorage.getItem(LAYOUT_KEY);
+    if (v === "cards" || v === "table") setLayout(v);
+    const r = localStorage.getItem(RANGE_KEY);
+    // validate — a renamed range must fall back, not render an empty page
+    if (r && (TEAM_RANGES as readonly string[]).includes(r)) setRangeKey(r as PeriodKey);
+  }, []);
+  function pickLayout(v: Layout) {
+    setLayout(v);
+    try {
+      localStorage.setItem(LAYOUT_KEY, v);
+    } catch {}
+  }
+  function pickRange(v: PeriodKey) {
+    setRangeKey(v);
+    try {
+      localStorage.setItem(RANGE_KEY, v);
+    } catch {}
+  }
+
+  const range = useMemo(() => periodRange(rangeKey, periodOffset), [rangeKey, periodOffset]);
+  const periodLabel = rangeLabel(rangeKey, periodOffset);
 
   const statsByUser = useMemo(() => {
     const billableTaskIds = new Set(tasks.filter((t) => t.billable).map((t) => t.id));
@@ -226,6 +240,20 @@ export default function TeamPage() {
     .filter((p) => showDeactivated || p.active)
     .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
 
+  // Built from statsByUser / activeTaskByUser, exactly like the cards below, so
+  // the two layouts can never show different numbers for the same person.
+  const tableRows: MemberRow[] = team.map((p) => {
+    const st = statsByUser.get(p.id);
+    return {
+      profile: p,
+      minutes: st?.total ?? 0,
+      billablePct: st && st.total > 0 ? Math.round((st.billable / st.total) * 100) : null,
+      openTasks: activeTaskByUser.get(p.id) ?? 0,
+      email: memberEmails[p.id],
+      tenure: p.startDate ? tenureShort(p.startDate) : null,
+    };
+  });
+
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
       <div className="flex items-end justify-between gap-2">
@@ -244,31 +272,53 @@ export default function TeamPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {SCOPES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
-                scope === s
-                  ? "border-brand bg-brand-soft text-brand-dark"
-                  : "border-border bg-surface text-muted hover:border-border-strong"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+        <PeriodStepper
+          ranges={TEAM_RANGES}
+          value={rangeKey}
+          offset={periodOffset}
+          label={periodLabel}
+          canStep={rangeKey !== "All time"}
+          disabledReason="All time has no previous period"
+          onChange={pickRange}
+          onOffset={setPeriodOffset}
+        />
+        <div className="flex items-center gap-2">
+          <Tabs
+            value={layout}
+            onChange={pickLayout}
+            items={[
+              {
+                value: "cards" as const,
+                label: (
+                  <span className="flex items-center gap-1.5">
+                    <LayoutGrid size={14} /> Cards
+                  </span>
+                ),
+              },
+              {
+                value: "table" as const,
+                label: (
+                  <span className="flex items-center gap-1.5">
+                    <Table2 size={14} /> Table
+                  </span>
+                ),
+              },
+            ]}
+            variant="segmented"
+            size="sm"
+            ariaLabel="Layout"
+          />
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          >
+            <Plus size={15} /> Add user
+          </button>
         </div>
-        <button
-          onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-        >
-          <Plus size={15} /> Add user
-        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label={`Hours · ${scope.toLowerCase()}`} value={formatHoursShort(teamStats.total)} />
+        <Stat label={`Hours · ${periodLabel.toLowerCase()}`} value={formatHoursShort(teamStats.total)} />
         <Stat
           label="Billable share"
           value={teamStats.billablePct == null ? "–" : `${teamStats.billablePct}%`}
@@ -279,6 +329,9 @@ export default function TeamPage() {
 
       {/* Portrait left, everything else stacked left-aligned beside it — wider
           cards than the old centred column, so three across rather than four. */}
+      {layout === "table" ? (
+        <MemberTable rows={tableRows} periodLabel={periodLabel} />
+      ) : (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {team.map((p) => {
           const s = statsByUser.get(p.id);
@@ -349,6 +402,7 @@ export default function TeamPage() {
           );
         })}
       </div>
+      )}
 
       {addOpen && <AddUserModal onClose={() => setAddOpen(false)} />}
     </div>

@@ -2,64 +2,37 @@
 
 import { useMemo, useRef, useState } from "react";
 import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
-import { useData } from "@/lib/store";
-import { formatHoursDecimal, formatHoursShort, parseDuration, toISODate } from "@/lib/format";
+import { useData, useIsAdmin } from "@/lib/store";
+import { formatHoursDecimal, formatHoursShort, toISODate } from "@/lib/format";
 import { Avatar, ClientChip, TagBadge } from "./ui";
-import { EditableDateCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
+import { LogTimeForm } from "./log-time-form";
+import { taskHoursDone } from "@/lib/task-hours";
+import {
+  EditableDateCell,
+  EditableNumberCell,
+  EditableSelectCell,
+  EditableTextCell,
+} from "./editable-cell";
 import { useColWidths, ResizeHandle } from "./resizable";
 import type { Task } from "@/lib/types";
 
+/**
+ * Log-time popover on a task row. The form itself is the shared one, so this only
+ * owns the popover chrome — and an admin gets the member picker here too, which
+ * this copy never had.
+ */
 function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => void }) {
-  const { addTimeEntry } = useData();
-  const [duration, setDuration] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState(() => toISODate(new Date()));
-
-  const minutes = parseDuration(duration);
-  const canAdd = minutes != null && minutes > 0 && description.trim() !== "";
-
-  function submit() {
-    if (!canAdd || minutes == null) return;
-    addTimeEntry(taskId, minutes, description.trim(), date);
-    onClose();
-  }
-
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full z-50 mt-1 flex w-64 flex-col gap-2 rounded-2xl border border-border bg-surface shadow-card p-3 shadow-xl">
-        <div className="flex gap-2">
-          <input
-            autoFocus
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            placeholder="1.5h"
-            className={`w-16 rounded-md border bg-surface px-1.5 py-1.5 text-sm outline-none focus:border-brand ${
-              duration && minutes == null ? "border-danger" : "border-border"
-            }`}
-          />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
-          />
-        </div>
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="What was done? (required)"
-          className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+      <div className="absolute right-0 top-full z-50 mt-1 flex w-72 flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+        <LogTimeForm
+          taskId={taskId}
+          layout="stacked"
+          submitLabel="Add time"
+          autoFocus
+          onAdded={onClose}
         />
-        <button
-          disabled={!canAdd}
-          onClick={submit}
-          className="flex items-center justify-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
-        >
-          <Plus size={13} /> Add time
-        </button>
       </div>
     </>
   );
@@ -149,7 +122,10 @@ const COLS: { key: string; label: string; w: number; hint?: string }[] = [
   { key: "due", label: "Due", w: 50, hint: "Due date — click a cell to change it" },
   { key: "tags", label: "Tags", w: 84, hint: "Task tag — click a cell to change it" },
   { key: "figma", label: "Figma", w: 58, hint: "Linked Figma file" },
-  { key: "hrsBudget", label: "Hrs/budget", w: 108, hint: "Hours done / budget (% done)" },
+  // split from one merged "Hrs/budget" cell so this table reads the same as the
+  // client page's; the utilisation % moved into the tooltip rather than being dropped
+  { key: "hours", label: "Hours", w: 64, hint: "Hours logged so far" },
+  { key: "budget", label: "Budget", w: 64, hint: "Budget in hours — click a cell to change it" },
   { key: "mine", label: "by me", w: 58, hint: "Hours you logged on the task" },
   { key: "loggedBy", label: "Logged by", w: 84, hint: "Who logged hours on the task" },
   { key: "add", label: "", w: 90 },
@@ -185,7 +161,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
   const [adding, setAdding] = useState<string | null>(null);
   // members may edit tags + figma link only; name/budget/due are admin-only
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
 
   // hours per task (total / mine) + who logged
   const stats = useMemo(() => {
@@ -238,17 +214,15 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
         {tasks.map((task) => {
           const client = clients.find((c) => c.id === task.clientId);
           const section = sections.find((s) => s.id === task.sectionId);
-          const total = stats.total.get(task.id) ?? 0;
+          // the shared helper, so this table and the client page can't disagree
+          // about a task's hours (it adds the pre-Everhour remainder on top)
+          const total = taskHoursDone(task, (id) => stats.total.get(id) ?? 0);
           const my = stats.mine.get(task.id) ?? 0;
           const budget = task.estimateHours;
           const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
           const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
-          // merged "Hrs/budget" cell: "10/20 (50%)" — or just hours done when no budget ("10")
-          const doneStr = total > 0 ? formatHoursDecimal(total) : "0";
-          const hrsBudget =
-            budget != null
-              ? `${doneStr}/${budget}${pctDone != null ? ` (${pctDone}%)` : ""}`
-              : doneStr;
+          const hoursTitle =
+            pctDone != null ? `${formatHoursDecimal(total)}h of ${budget}h — ${pctDone}%` : "Hours logged";
           return (
             <div
               key={task.id}
@@ -316,10 +290,34 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
               </span>
               <span
                 className={`text-xs tabular-nums ${pctDone != null && pctDone > 100 ? "font-medium text-danger" : "text-muted"}`}
-                style={cell("hrsBudget")}
-                title="Hours done / budget (% done)"
+                style={cell("hours")}
+                title={hoursTitle}
               >
-                {hrsBudget}
+                {total > 0 ? `${formatHoursDecimal(total)}h` : <span className="text-faint">–</span>}
+              </span>
+              <span
+                className="text-xs tabular-nums text-muted"
+                style={cell("budget")}
+                onClick={(e) => isAdmin && e.stopPropagation()}
+                title={hoursTitle}
+              >
+                {isAdmin ? (
+                  <EditableNumberCell
+                    value={budget}
+                    onCommit={(v) => updateTask(task.id, { estimateHours: v })}
+                    display={
+                      budget != null ? (
+                        <span>{budget}h</span>
+                      ) : (
+                        <span className="text-faint">–</span>
+                      )
+                    }
+                  />
+                ) : budget != null ? (
+                  `${budget}h`
+                ) : (
+                  <span className="text-faint">–</span>
+                )}
               </span>
               <span className="text-xs tabular-nums text-muted" style={cell("mine")}>
                 {my > 0 ? formatHoursShort(my) : "–"}

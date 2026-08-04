@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
-import { useData } from "@/lib/store";
+import { Trash2 } from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
 import { formatFeedDate, formatHours, formatHoursShort, parseDuration } from "@/lib/format";
 import { loggableMembers } from "@/lib/members";
-import { Avatar, ClientChip } from "./ui";
-import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
+import { Avatar, ClientChip, Modal, ModalClose, TaskNameLink } from "./ui";
+import { LogTimeForm } from "./log-time-form";
 import type { TimeEntry } from "@/lib/types";
 
 // Extracted from the Time Feed page so the admin home's week timesheet opens
@@ -99,8 +99,7 @@ export function UserDayDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, profiles, timeEntries, addTimeEntry, loadDayEntries, currentUserId } =
-    useData();
+  const { tasks, clients, profiles, timeEntries, loadDayEntries, currentUserId } = useData();
   const [targetUserId, setTargetUserId] = useState(userId);
   const [targetDate, setTargetDate] = useState(date);
   /**
@@ -111,12 +110,8 @@ export function UserDayDetails({
    * name — and there's no setState-in-effect to reset a separate flag.
    */
   const [fetched, setFetched] = useState<{ key: string; rows: TimeEntry[] } | null>(null);
-  const [adding, setAdding] = useState(true); // open the add form immediately
-  const [picked, setPicked] = useState<TaskMatch | null>(null);
-  const [addDuration, setAddDuration] = useState("");
-  const [addDescription, setAddDescription] = useState("");
   const profile = profiles.find((p) => p.id === targetUserId) ?? null;
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
   const members = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
 
   const dayKey = `${targetUserId}|${targetDate}`;
@@ -144,21 +139,9 @@ export function UserDayDetails({
   }, [fetched, dayKey, timeEntries, targetUserId, targetDate]);
   const total = entries.reduce((s, e) => s + e.minutes, 0);
 
-  const addMinutes = parseDuration(addDuration);
-  const canAdd = picked && addMinutes != null && addMinutes > 0 && addDescription.trim().length > 0;
-
-  function submitAdd() {
-    if (!canAdd || !picked || addMinutes == null) return;
-    addTimeEntry(picked.task.id, addMinutes, addDescription.trim(), targetDate, targetUserId);
-    setPicked(null);
-    setAddDuration("");
-    setAddDescription("");
-  }
-
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
+    <Modal onClose={onClose} width="2xl">
+      <>
         <div className="mb-1 flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Avatar profile={profile} size={26} />
@@ -200,9 +183,7 @@ export function UserDayDetails({
               </div>
             )}
           </div>
-          <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
-            <X size={16} />
-          </button>
+          <ModalClose onClose={onClose} />
         </div>
         <div className="mt-2 flex max-h-96 flex-col overflow-y-auto">
           {!ready && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
@@ -228,9 +209,17 @@ export function UserDayDetails({
                         <ClientChip client={client} size="sm" />
                       </span>
                     )}
-                    <span className="bidi-auto truncate text-foreground">
-                      {task?.title ?? "(deleted task)"}
-                    </span>
+                    {task ? (
+                      // opening the task closes this popup — see CellDetails
+                      <TaskNameLink
+                        title={task.title}
+                        taskId={task.id}
+                        beforeOpen={onClose}
+                        className="text-foreground"
+                      />
+                    ) : (
+                      <span className="bidi-auto truncate text-foreground">(deleted task)</span>
+                    )}
                   </span>
                 }
               />
@@ -238,65 +227,13 @@ export function UserDayDetails({
           })}
         </div>
 
+        {/* person and day come from the header controls above, so the form shows
+            neither picker — one control for each, not two */}
         <div className="mt-2 border-t border-border pt-2.5">
-          {adding ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <input
-                  value={addDuration}
-                  onChange={(e) => setAddDuration(e.target.value)}
-                  placeholder="1.5h"
-                  className={`w-16 shrink-0 rounded-md border bg-surface px-1.5 py-1.5 text-sm outline-none focus:border-brand ${
-                    addDuration && addMinutes == null ? "border-danger" : "border-border"
-                  }`}
-                />
-                {picked ? (
-                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm">
-                    {picked.client && <ClientChip client={picked.client} size="sm" link={false} />}
-                    <span className="bidi-auto min-w-0 flex-1 truncate font-medium">
-                      {picked.task.title}
-                    </span>
-                    <button
-                      onClick={() => setPicked(null)}
-                      className="shrink-0 text-muted hover:text-foreground"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="min-w-0 flex-1">
-                    <TaskAutocomplete placeholder="Search a task…" onPickTask={setPicked} />
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={addDescription}
-                  onChange={(e) => setAddDescription(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitAdd()}
-                  placeholder="What was done? (required)"
-                  className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
-                />
-                <button
-                  disabled={!canAdd}
-                  onClick={submitAdd}
-                  className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-muted hover:text-brand"
-              title="Log a new time entry on this day"
-            >
-              <Plus size={13} /> Add hours to this day
-            </button>
-          )}
+          <LogTimeForm userId={targetUserId} date={targetDate} />
         </div>
-      </div>
-    </>
+      </>
+    </Modal>
   );
 }
+

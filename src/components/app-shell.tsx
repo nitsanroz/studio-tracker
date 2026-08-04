@@ -16,7 +16,7 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
-import { DataProvider, useData } from "@/lib/store";
+import { DataProvider, useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { APP_VERSION } from "@/lib/version";
 import { Avatar } from "./ui";
@@ -54,6 +54,31 @@ function ThemeInit() {
   return null;
 }
 
+/**
+ * The only visible sign that data refreshes itself now: a faint dot while a
+ * background fetch is in flight, and the time of the last one on hover. Small on
+ * purpose — the feature's whole point is that nobody has to think about it — but
+ * without it there'd be no way to tell working from broken.
+ */
+function SyncDot() {
+  const { refreshing, lastSyncedAt, refresh } = useData();
+  const when = lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "not yet";
+  return (
+    <button
+      onClick={refresh}
+      title={`Updated ${when} — click to refresh now`}
+      aria-label="Refresh data"
+      className="flex size-6 shrink-0 items-center justify-center rounded-full hover:bg-black/5"
+    >
+      <span
+        className={`size-1.5 rounded-full bg-brand transition-opacity ${
+          refreshing ? "animate-pulse opacity-70" : "opacity-20"
+        }`}
+      />
+    </button>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const {
@@ -64,10 +89,12 @@ function Shell({ children }: { children: ReactNode }) {
     viewingAs,
     writeError,
     dismissWriteError,
+    notice,
+    dismissNotice,
     bootError,
   } = useData();
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
-  const isAdmin = me?.role === "admin";
+  const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
 
   if (loading) {
@@ -234,12 +261,20 @@ function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="ml-52 flex min-w-0 flex-1 flex-col">
+        {/* z-scale, and why the header is 30:
+              sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
+            `backdrop-blur` makes this header its own stacking context, so the
+            search and bell dropdowns inside it can never rise above its z-index —
+            at z-20 the weekly plan's sticky `thead` (also 20, and later in the
+            DOM) painted straight over the open search results. Every modal
+            overlay is ≥40, so the task drawer still dims the header. */}
         <header
-          className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border px-6 backdrop-blur"
+          className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border px-6 backdrop-blur"
           style={{ backgroundColor: "var(--header-bg)" }}
         >
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-2.5">
+            <SyncDot />
             {isAdmin && (
               <NotificationsBell pendingIntake={pendingIntake} />
             )}
@@ -271,6 +306,24 @@ function Shell({ children }: { children: ReactNode }) {
             className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium hover:bg-white/30"
           >
             Exit
+          </button>
+        </div>
+      )}
+
+      {/* Neutral, not the red write-error banner: nothing failed to save and
+          reloading wouldn't help. Currently only "that undo expired". */}
+      {notice && (
+        <div
+          role="status"
+          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-foreground px-4 py-3 text-sm text-white shadow-lg"
+        >
+          <span className="flex-1">{notice}</span>
+          <button
+            onClick={dismissNotice}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium opacity-80 hover:opacity-100"
+          >
+            ✕
           </button>
         </div>
       )}

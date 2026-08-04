@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { TagBadge } from "@/components/ui";
+import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
+import { Tabs, TagBadge } from "@/components/ui";
 import { MemberPictures } from "@/components/picture-editor";
 import { HrDetailsForm } from "@/components/hr-details-form";
 import { OccasionsSettings } from "@/components/occasions-settings";
@@ -129,12 +130,13 @@ function IntakeSettings() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: setting }, { data: links }] = await Promise.all([
+      const [{ data: setting }, url] = await Promise.all([
         supabase.from("app_settings").select("value").eq("key", "intake_notify_emails").maybeSingle(),
-        supabase.from("intake_links").select("token").is("client_id", null).eq("active", true).limit(1),
+        // read-only, so merely opening Settings never mints a link
+        studioIntakeLinkUrl(),
       ]);
       if (Array.isArray(setting?.value)) setEmails((setting.value as string[]).join(", "));
-      if (links?.[0]) setLink(`${window.location.origin}/intake/${links[0].token}`);
+      if (url) setLink(url);
       setLoaded(true);
     })().catch(() => setLoaded(true));
   }, [supabase]);
@@ -151,16 +153,12 @@ function IntakeSettings() {
   }
 
   async function createLink() {
-    const { data, error } = await supabase
-      .from("intake_links")
-      .insert({ client_id: null })
-      .select("token")
-      .single();
-    if (error) {
-      setStatus(error.message.includes("column") ? "Run migration 0003 first" : error.message);
+    const url = await ensureStudioIntakeLink();
+    if (!url) {
+      setStatus("Couldn't create a form link — check that migration 0003 is applied.");
       return;
     }
-    setLink(`${window.location.origin}/intake/${data.token}`);
+    setLink(url);
   }
 
   if (!loaded) return null;
@@ -407,44 +405,81 @@ function MyDetails() {
   );
 }
 
+type SettingsTab = "account" | "clients" | "studio";
+const TAB_KEY = "settings.tab";
+
 export default function SettingsPage() {
-  const { profiles, currentUserId } = useData();
-  const me = profiles.find((p) => p.id === currentUserId);
-  const isAdmin = me?.role === "admin";
+  const isAdmin = useIsAdmin();
+  const [tab, setTab] = useState<SettingsTab>("account");
+
+  // A member's whole surface is "My account", so they get no strip at all — a
+  // one-tab control is a control that does nothing.
+  const tabs = isAdmin
+    ? ([
+        { value: "account" as const, label: "My account" },
+        { value: "clients" as const, label: "Clients" },
+        { value: "studio" as const, label: "Studio setup" },
+      ])
+    : ([{ value: "account" as const, label: "My account" }]);
+
+  useEffect(() => {
+    const v = localStorage.getItem(TAB_KEY);
+    // Validated against the tabs actually visible: a stored "clients" becomes
+    // invalid under ?viewAs or after a role change, and an unvalidated read would
+    // render a blank page.
+    if (v && tabs.some((t) => t.value === v)) setTab(v as SettingsTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+  function pickTab(v: SettingsTab) {
+    setTab(v);
+    try {
+      localStorage.setItem(TAB_KEY, v);
+    } catch {}
+  }
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
       <h1 className="font-serif-accent text-3xl">Settings</h1>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-4">
+      {tabs.length > 1 && (
+        <Tabs value={tab} onChange={pickTab} items={tabs} ariaLabel="Settings sections" />
+      )}
+
+      {/* The hand-split two-column masonry is gone. It was why ChangePassword had
+          to be rendered TWICE (once per column, to balance an admin's page), and
+          it meant source order didn't match visual order. */}
+      {tab === "account" && (
+        <div className="flex max-w-[860px] flex-col gap-4">
           <MyProfile />
           <MyDetails />
-
-          {isAdmin && (
-            <Link
-              href="/team"
-              className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-brand"
-            >
-              Users are managed on the Team page
-              <ArrowRight size={15} className="ml-auto text-muted" />
-            </Link>
-          )}
-
-          {isAdmin && <IntakeSettings />}
-
-          {isAdmin && <TagsSection isAdmin={isAdmin} />}
-
-          {isAdmin && <OccasionsSettings />}
-
-          {!isAdmin && <ChangePassword />}
+          <ChangePassword />
         </div>
+      )}
 
-        <div className="flex min-w-0 flex-col gap-4">
-          {isAdmin && <ClientsSection isAdmin={isAdmin} />}
-          {isAdmin && <ChangePassword />}
+      {/* Every admin block keeps its own gate, so a bug in tab visibility can
+          never become a data-exposure bug. */}
+      {tab === "clients" && isAdmin && (
+        <div className="flex max-w-[860px] flex-col gap-4">
+          <Link
+            href="/team"
+            className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-brand"
+          >
+            Users are managed on the Team page
+            <ArrowRight size={15} className="ml-auto text-muted" />
+          </Link>
+          <ClientsSection isAdmin={isAdmin} />
         </div>
-      </div>
+      )}
+
+      {tab === "studio" && isAdmin && (
+        // three cards, so plain source-order auto-placement rather than a
+        // hand-split masonry
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <TagsSection isAdmin={isAdmin} />
+          <IntakeSettings />
+          <OccasionsSettings />
+        </div>
+      )}
     </div>
   );
 }

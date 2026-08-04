@@ -2,8 +2,8 @@
 
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
-import { useData } from "@/lib/store";
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapTimeEntry } from "@/lib/db";
 import {
@@ -17,7 +17,17 @@ import {
   DAY_NAMES,
 } from "@/lib/format";
 import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges";
-import { Avatar, ClientChip, ContextMenu, type ContextMenuItem } from "@/components/ui";
+import {
+  Avatar,
+  ClientChip,
+  ContextMenu,
+  Modal,
+  ModalClose,
+  Tabs,
+  TaskNameLink,
+  type ContextMenuItem,
+} from "@/components/ui";
+import { LogTimeForm } from "@/components/log-time-form";
 import { EditableTextCell } from "@/components/editable-cell";
 import { EntryEditRow, UserDayDetails } from "@/components/user-day-details";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
@@ -46,12 +56,10 @@ function CellDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, timeEntries, addTimeEntry, currentUserId } = useData();
+  const { tasks, clients, timeEntries } = useData();
   const supabase = useMemo(() => createClient(), []);
   const [loadedIds, setLoadedIds] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState<TimeEntry[]>([]);
-  const [addDuration, setAddDuration] = useState("");
-  const [addDescription, setAddDescription] = useState("");
 
   const task = tasks.find((t) => t.id === taskId);
   const client = clients.find((c) => c.id === task?.clientId);
@@ -86,67 +94,44 @@ function CellDetails({
   }, [loaded, timeEntries, taskId, date]);
 
   const total = entries.reduce((s, e) => s + e.minutes, 0);
-  const addMinutes = parseDuration(addDuration);
-  const canAdd = addMinutes != null && addMinutes > 0 && addDescription.trim() && currentUserId;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
-      <div className="fixed left-1/2 top-1/3 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl">
-        <div className="mb-1 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="bidi-auto truncate font-heading text-sm">{task?.title ?? "Task"}</h3>
-            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
-              {client && <ClientChip client={client} size="sm" />}
-              <span>{formatFeedDate(date)}</span>
-              <span className="font-semibold tabular-nums">{formatHours(total)}</span>
-            </div>
+    <Modal onClose={onClose} width="md">
+      <div className="mb-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate font-heading text-sm">
+            {task ? (
+              // opening the task closes this popup: both sit at the same layer and
+              // the drawer is mounted later, so leaving both open gives two dimmers
+              // and a card you can see but not use
+              <TaskNameLink title={task.title} taskId={task.id} beforeOpen={onClose} />
+            ) : (
+              "Task"
+            )}
+          </h3>
+          <div className="mt-0.5 flex items-center gap-2 text-xs text-muted">
+            {client && <ClientChip client={client} size="sm" />}
+            <span>{formatFeedDate(date)}</span>
+            <span className="font-semibold tabular-nums">{formatHours(total)}</span>
           </div>
-          <button onClick={onClose} className="rounded-md px-1.5 text-muted hover:bg-background">
-            <X size={16} />
-          </button>
         </div>
-
-        <div className="mt-2 flex max-h-64 flex-col overflow-y-auto">
-          {loadedIds === null && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
-          {loadedIds !== null && entries.length === 0 && (
-            <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
-          )}
-          {entries.map((e) => (
-            <EntryEditRow key={e.id} entry={e} />
-          ))}
-        </div>
-
-        <div className="mt-3 flex gap-2 border-t border-border pt-3">
-          <input
-            value={addDuration}
-            onChange={(e) => setAddDuration(e.target.value)}
-            placeholder="1.5h"
-            className={`w-16 rounded-md border bg-surface px-1.5 py-1.5 text-sm outline-none focus:border-brand ${
-              addDuration && addMinutes == null ? "border-danger" : "border-border"
-            }`}
-          />
-          <input
-            value={addDescription}
-            onChange={(e) => setAddDescription(e.target.value)}
-            placeholder="What was done? (required)"
-            className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
-          />
-          <button
-            disabled={!canAdd}
-            onClick={() => {
-              if (!canAdd || addMinutes == null) return;
-              addTimeEntry(taskId, addMinutes, addDescription.trim(), date);
-              setAddDuration("");
-              setAddDescription("");
-            }}
-            className="flex shrink-0 items-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
-          >
-            <Plus size={13} /> Add
-          </button>
-        </div>
+        <ModalClose onClose={onClose} />
       </div>
-    </>
+
+      <div className="mt-2 flex max-h-64 flex-col overflow-y-auto">
+        {loadedIds === null && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
+        {loadedIds !== null && entries.length === 0 && (
+          <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
+        )}
+        {entries.map((e) => (
+          <EntryEditRow key={e.id} entry={e} />
+        ))}
+      </div>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <LogTimeForm taskId={taskId} date={date} />
+      </div>
+    </Modal>
   );
 }
 
@@ -214,7 +199,7 @@ function FeedPageContent() {
 
   const myHours = memberFilter === currentUserId && memberFilter !== "";
   // members only ever see their own hours; admins see everyone (filterable)
-  const isAdmin = profiles.find((p) => p.id === currentUserId)?.role === "admin";
+  const isAdmin = useIsAdmin();
   const effectiveMemberFilter = isAdmin ? memberFilter : currentUserId;
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
@@ -395,19 +380,13 @@ function FeedPageContent() {
           >
             <Plus size={15} /> Add new hours
           </button>
-          <div className="flex rounded-lg border border-border bg-surface p-0.5">
-            {(["feed", "timesheet"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`rounded-md px-3 py-1 text-sm font-medium capitalize ${
-                  view === v ? "bg-brand-soft text-brand-dark" : "text-muted"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            value={view}
+            onChange={setView}
+            items={["feed", "timesheet"] as const}
+            variant="segmented"
+            ariaLabel="View"
+          />
           {isAdmin && (
             <button
               onClick={() => setMemberFilter(myHours ? "" : currentUserId)}
@@ -561,8 +540,10 @@ function FeedPageContent() {
                   <span className="bidi-auto shrink-0 truncate text-muted" style={{ width: colWidths.section }}>
                     {section?.name}
                   </span>
-                  <span className="bidi-auto shrink-0 truncate font-medium" style={{ width: colWidths.task }}>
-                    {task?.title}
+                  <span className="shrink-0 truncate" style={{ width: colWidths.task }}>
+                    {task && (
+                      <TaskNameLink title={task.title} taskId={task.id} className="font-medium" />
+                    )}
                   </span>
                   <span className="min-w-0 flex-1 text-muted" onClick={(e) => e.stopPropagation()}>
                     <EditableTextCell
@@ -755,9 +736,11 @@ function FeedPageContent() {
                                         <ClientChip client={client} size="sm" link={false} />
                                       </span>
                                     )}
-                                    <span className="bidi-auto truncate">
-                                      {task?.title ?? "(deleted task)"}
-                                    </span>
+                                    {task ? (
+                                      <TaskNameLink title={task.title} taskId={task.id} />
+                                    ) : (
+                                      <span className="bidi-auto truncate">(deleted task)</span>
+                                    )}
                                   </span>
                                 </td>
                                 {sheet.days.map((d) => {
