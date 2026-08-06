@@ -10,6 +10,7 @@ import { presetRange } from "@/lib/date-ranges";
 import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import { EditableTextCell } from "@/components/editable-cell";
+import { ClientAvatar } from "@/components/client-avatar";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -271,12 +272,7 @@ export default function ClientsPage() {
             className="flex items-center gap-3 border-b border-border px-3 py-2 transition-colors last:border-b-0 hover:bg-background"
           >
             <span className="flex min-w-0 flex-1 items-center gap-2.5">
-              <span
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-                style={{ backgroundColor: client.color }}
-              >
-                {client.name[0]}
-              </span>
+              <ClientAvatar client={client} size={32} />
               <span className="min-w-0 flex-1">
                 <EditableTextCell
                   value={client.name}

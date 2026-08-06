@@ -80,14 +80,19 @@ export const CLIENT_ICON_NAMES = Object.keys(CLIENT_ICONS);
 export function ClientAvatar({
   client,
   size = 24,
+  radius = "lg",
   className = "",
 }: {
   client: Pick<Client, "name" | "color" | "icon" | "iconUrl">;
   size?: number;
+  /** `full` for the round mark inside a pill; `lg` for the standalone tile */
+  radius?: "lg" | "full";
   className?: string;
 }) {
   const Icon = client.icon ? CLIENT_ICONS[client.icon] : undefined;
-  const common = "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg";
+  const common = `inline-flex shrink-0 items-center justify-center overflow-hidden ${
+    radius === "full" ? "rounded-full" : "rounded-lg"
+  }`;
 
   if (client.iconUrl) {
     return (

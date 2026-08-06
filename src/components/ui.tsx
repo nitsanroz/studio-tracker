@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, X } from "lucide-react";
 import { useDataMaybe } from "@/lib/store";
 import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
+import { ClientAvatar } from "./client-avatar";
 
 export interface ContextMenuItem {
   label: string;
@@ -450,22 +451,20 @@ export function ClientChip({
 }) {
   const inner = (
     <>
-      <span
-        className="rounded-full shrink-0"
-        style={{
-          width: size === "sm" ? 8 : 10,
-          height: size === "sm" ? 8 : 10,
-          backgroundColor: client.color,
-        }}
-      />
+      <ClientAvatar client={client} size={size === "sm" ? 16 : 18} radius="full" />
       {client.name}
     </>
   );
-  // The dot and the name read as one object, so they sit in a white capsule
+  // The mark and the name read as one object, so they sit in a white capsule
   // together. bg-surface (not white) so it still separates from a background-toned
   // row, and the border is what makes it visible on a surface-toned one.
-  const cls = `inline-flex items-center gap-1.5 rounded-full border border-border bg-surface font-medium ${
-    size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-0.5 text-sm"
+  //
+  // The mark sits FLUSH to the left edge (`pl-0.5`) rather than inset like the
+  // old colour dot: that is what keeps the capsule at its previous height —
+  // 22px at sm, 26px at md — so no feed row, table row or header grows when a
+  // client gains an icon.
+  const cls = `inline-flex items-center rounded-full border border-border bg-surface font-medium ${
+    size === "sm" ? "gap-1 py-0.5 pl-0.5 pr-2 text-xs" : "gap-1.5 py-0.5 pl-0.5 pr-2.5 text-sm"
   }`;
   if (!link) return <span className={cls}>{inner}</span>;
   return (
@@ -473,7 +472,7 @@ export function ClientChip({
       href={`/clients/${client.id}`}
       onClick={(e) => e.stopPropagation()}
       // the capsule already reads as a target, so the hover is a border tint
-      // rather than an underline running under the dot
+      // rather than an underline running under the mark
       className={`${cls} hover:border-brand hover:text-brand`}
       title={`Open ${client.name}`}
     >
