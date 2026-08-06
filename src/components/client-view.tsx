@@ -1168,7 +1168,9 @@ export function ClientView({ clientId }: { clientId: string }) {
       */}
       <div className="sticky top-14 z-10 -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
         <div className="flex flex-wrap items-center gap-2">
-          <ClientAvatar client={client} size={28} />
+          {/* 40px against a 24px title: the mark is the client's identity on
+              their own page, so it leads rather than annotates. */}
+          <ClientAvatar client={client} size={40} />
           <h1 className="truncate text-2xl font-bold tracking-tight" title={titleTooltip}>
             {client.name}
           </h1>

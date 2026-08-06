@@ -7,6 +7,8 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { Tabs, TagBadge } from "@/components/ui";
+import { ClientAvatar } from "@/components/client-avatar";
+import { ClientMarkModal } from "@/components/client-mark-picker";
 import { MemberPictures } from "@/components/picture-editor";
 import { HrDetailsForm } from "@/components/hr-details-form";
 import { OccasionsSettings } from "@/components/occasions-settings";
@@ -31,6 +33,10 @@ function MyProfile() {
 function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
   const { clients, updateClient } = useData();
   const [showArchived, setShowArchived] = useState(false);
+  // which client's mark is being edited — a 25-glyph grid plus an upload has no
+  // place inline in a list row, so it opens over it
+  const [markFor, setMarkFor] = useState<string | null>(null);
+  const marking = markFor ? clients.find((c) => c.id === markFor) : null;
 
   const list = clients
     .filter((c) => showArchived || !c.archived)
@@ -54,13 +60,18 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
           <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm">
             {isAdmin ? (
               <span className="flex shrink-0 items-center gap-1">
-                <input
-                  type="color"
-                  value={c.color}
-                  onChange={(e) => updateClient(c.id, { color: e.target.value })}
-                  className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
-                  title={`Color for ${c.name}`}
-                />
+                {/* the mark itself is the button — clicking what you want to
+                    change beats hunting for a pencil three columns away */}
+                <button
+                  onClick={() => setMarkFor(c.id)}
+                  title={`Change ${c.name}'s mark — colour, glyph or image`}
+                  className="rounded-lg outline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-brand"
+                >
+                  <ClientAvatar client={c} size={26} />
+                </button>
+                {/* No swatch beside it: the mark IS the colour, and two
+                    coloured squares in a row read as two different things.
+                    The colour wheel lives in the mark popup. */}
                 <input
                   key={c.color}
                   defaultValue={c.color}
@@ -75,7 +86,7 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
                 />
               </span>
             ) : (
-              <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+              <ClientAvatar client={c} size={26} />
             )}
             <span className={`min-w-0 flex-1 truncate font-medium ${c.archived ? "opacity-40" : ""}`}>
               {c.name}
@@ -109,9 +120,11 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
           </div>
         ))}
       </div>
+      {marking && <ClientMarkModal client={marking} onClose={() => setMarkFor(null)} />}
       {isAdmin && (
         <p className="mt-2 text-xs text-faint">
-          The color marks the client&apos;s chips across the app. Archived clients disappear from the
+          Click a mark to change its colour, pick a glyph, or upload and remove the client&apos;s
+          logo. The color marks the client&apos;s chips across the app. Archived clients disappear from the
           Clients page and pickers; their history stays in reports. Switching a client to
           &quot;Internal&quot; marks all its tasks (existing and future) non-billable; switching back
           only affects new tasks.
