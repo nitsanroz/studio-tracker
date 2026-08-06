@@ -77,6 +77,19 @@ export function formatDate(iso: string): string {
   return `${d}/${m}/${String(y).slice(2)}`;
 }
 
+/**
+ * "19/8" — day and month only, for table cells.
+ *
+ * Dropping the year is safe HERE and nowhere else: a task table is read in the
+ * present tense, and every row carries the same two digits. Keep `formatDate`
+ * for anything historical (time entries, reports), where the year is the whole
+ * point.
+ */
+export function formatDayMonth(iso: string): string {
+  const [, m, d] = iso.split("-").map(Number);
+  return `${d}/${m}`;
+}
+
 export const MONTH_NAMES_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",

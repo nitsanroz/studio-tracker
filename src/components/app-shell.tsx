@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   ChartPie,
   History,
   House,
+  ChevronsLeft,
+  ChevronsRight,
   Inbox,
   LogOut,
   Receipt,
@@ -15,6 +17,7 @@ import {
   SquareCheckBig,
   Users,
   UsersRound,
+  type LucideIcon,
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
@@ -36,6 +39,83 @@ const NAV = [
   { href: "/client-reports", label: "Client Reports", Icon: Receipt, adminOnly: true },
   { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
 ];
+
+/**
+ * One sidebar entry, in both widths.
+ *
+ * Folded, the label becomes a tooltip that appears with NO delay — a native
+ * `title` waits about a second, which is fine for a rarely-used icon and useless
+ * for a nav bar you're scanning. It's rendered inside the `fixed` aside, which
+ * has no overflow clipping, so it can sit outside the 64px rail.
+ */
+function NavItem({
+  href,
+  label,
+  Icon,
+  active,
+  folded,
+  badge,
+  activeStyle,
+}: {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  active: boolean;
+  folded: boolean;
+  badge?: number;
+  /** the intake row paints itself aqua when something is waiting */
+  activeStyle?: React.CSSProperties;
+}) {
+  return (
+    <Link
+      href={href}
+      title={folded ? undefined : label}
+      aria-label={label}
+      className={`group/nav font-heading relative flex items-center rounded-lg py-2.5 text-sm transition-colors ${
+        folded ? "justify-center px-0" : "gap-3 px-3"
+      }`}
+      style={
+        activeStyle ??
+        (active
+          ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+          : { color: "var(--sb-muted)" })
+      }
+      onMouseEnter={(e) => {
+        if (!active && !activeStyle) e.currentTarget.style.backgroundColor = "var(--sb-hover-bg)";
+      }}
+      onMouseLeave={(e) => {
+        if (!active && !activeStyle) e.currentTarget.style.backgroundColor = "";
+      }}
+    >
+      <span className="relative shrink-0">
+        <Icon size={20} strokeWidth={1.75} />
+        {/* Folded, the count can't sit at the end of a row that no longer exists,
+            so it rides the icon's corner instead of disappearing. */}
+        {folded && badge != null && badge > 0 && (
+          <span className="absolute -right-2 -top-1.5 flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+            {badge}
+          </span>
+        )}
+      </span>
+      {!folded && label}
+      {!folded && badge != null && badge > 0 && (
+        <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
+          {badge}
+        </span>
+      )}
+      {folded && (
+        // no transition: the point of the tooltip is that it's already there
+        <span
+          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg group-hover/nav:block"
+          style={{ backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }}
+          role="tooltip"
+        >
+          {label}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 function ThemeInit() {
   useEffect(() => {
@@ -97,6 +177,17 @@ function Shell({ children }: { children: ReactNode }) {
   const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
 
+  // Read in an effect, never in the useState initialiser: the server renders
+  // this too, and reading localStorage there is a hydration mismatch. Same
+  // pattern as `theme` and the team page's layout.
+  const [folded, setFolded] = useState(false);
+  useEffect(() => {
+    setFolded(localStorage.getItem("sidebar.folded") === "1");
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("sidebar.folded", folded ? "1" : "0");
+  }, [folded]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -138,48 +229,59 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <aside
-        className="fixed inset-y-0 left-0 z-30 flex w-52 flex-col border-r"
+        className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r transition-[width] duration-150 ${
+          folded ? "w-16" : "w-52"
+        }`}
         style={{
           backgroundColor: "var(--sb-bg)",
           color: "var(--sb-fg)",
           borderColor: "var(--sb-border)",
         }}
       >
-        <div className="px-4 pb-5 pt-6">
+        {/* Folded, the wordmark becomes the ampersand alone — the studio's mark
+            without the word it can no longer fit. The chevron keeps the SAME
+            place in both states: immediately right of the mark, so the control
+            doesn't move out from under the cursor that just used it. */}
+        {/* Folded, the ampersand is CENTRED on the rail like every nav icon
+            below it — a mark sitting 6px left of the column of icons it heads
+            reads as a mistake. The chevron then has nowhere to go but the right
+            edge, which is where it already is when expanded, so it doesn't
+            move between states. */}
+        <div
+          className={`relative flex items-center pb-4 pt-5 ${folded ? "justify-center px-1" : "gap-2 px-4"}`}
+        >
           <Link
             href="/"
             aria-label="Studio&more"
-            className="text-[28px] leading-none"
+            className={`leading-none ${folded ? "text-[26px]" : "text-[28px]"}`}
             style={{ color: "var(--sb-fg)", fontWeight: 700 }}
           >
-            &amp;more
+            {folded ? "&" : <>&amp;more</>}
           </Link>
+          <button
+            onClick={() => setFolded((f) => !f)}
+            title={folded ? "Expand the menu" : "Collapse the menu"}
+            aria-label={folded ? "Expand the menu" : "Collapse the menu"}
+            aria-expanded={!folded}
+            className={`shrink-0 rounded-md p-1 opacity-60 transition-opacity hover:opacity-100 ${
+              folded ? "absolute right-0" : "ml-auto"
+            }`}
+            style={{ color: "var(--sb-fg)" }}
+          >
+            {folded ? <ChevronsRight size={14} strokeWidth={2} /> : <ChevronsLeft size={16} strokeWidth={2} />}
+          </button>
         </div>
         <nav className="flex flex-1 flex-col gap-2 px-2">
-          {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
-                style={
-                  active
-                    ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
-                    : { color: "var(--sb-muted)" }
-                }
-                onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "var(--sb-hover-bg)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "";
-                }}
-              >
-                <Icon size={20} strokeWidth={1.75} />
-                {label}
-              </Link>
-            );
-          })}
+          {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => (
+            <NavItem
+              key={href}
+              href={href}
+              label={label}
+              Icon={Icon}
+              folded={folded}
+              active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
+            />
+          ))}
           {isAdmin && (
             <div
               className="mx-3 my-2 border-t"
@@ -188,79 +290,68 @@ function Shell({ children }: { children: ReactNode }) {
             />
           )}
           {isAdmin && (
-            <Link
+            <NavItem
               href="/intake-queue"
-              className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
-              style={
+              label="Intake"
+              Icon={Inbox}
+              folded={folded}
+              badge={pendingIntake}
+              active={pathname.startsWith("/intake-queue")}
+              activeStyle={
                 pathname.startsWith("/intake-queue")
                   ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
                   : pendingIntake > 0
                     ? { backgroundColor: "var(--aqua)", color: "#06112f" }
-                    : { color: "var(--sb-muted)" }
+                    : undefined
               }
-            >
-              <Inbox size={20} strokeWidth={1.75} />
-              Intake
-              {pendingIntake > 0 && (
-                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
-                  {pendingIntake}
-                </span>
-              )}
-            </Link>
+            />
           )}
-          {NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
-            if (!isAdmin) return null;
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
+          {isAdmin &&
+            NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => (
+              <NavItem
                 key={href}
                 href={href}
-                className="font-heading flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
-                style={
-                  active
-                    ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
-                    : { color: "var(--sb-muted)" }
-                }
-                onMouseEnter={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "var(--sb-hover-bg)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) e.currentTarget.style.backgroundColor = "";
-                }}
-              >
-                <Icon size={20} strokeWidth={1.75} />
-                {label}
-              </Link>
-            );
-          })}
+                label={label}
+                Icon={Icon}
+                folded={folded}
+                active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
+              />
+            ))}
         </nav>
         <div
-          className="flex items-center gap-2.5 border-t px-4 py-3"
+          className={`flex items-center border-t py-3 ${folded ? "flex-col gap-2 px-2" : "gap-2.5 px-4"}`}
           style={{ borderColor: "var(--sb-border)" }}
         >
           <Avatar profile={me} size={30} />
-          <div className="min-w-0 flex-1">
-            <div className="font-serif-accent truncate text-[15px]">{me?.name}</div>
-            <div className="text-xs capitalize" style={{ color: "var(--sb-muted)" }}>
-              {me?.role}
+          {!folded && (
+            <div className="min-w-0 flex-1">
+              <div className="font-serif-accent truncate text-[15px]">{me?.name}</div>
+              <div className="text-xs capitalize" style={{ color: "var(--sb-muted)" }}>
+                {me?.role}
+              </div>
             </div>
-          </div>
+          )}
           <button
             onClick={async () => {
               await createClient().auth.signOut();
               window.location.href = "/login";
             }}
             title="Sign out"
+            aria-label="Sign out"
             className="shrink-0 rounded-md p-1.5 opacity-70 transition-opacity hover:opacity-100"
             style={{ color: "var(--sb-muted)" }}
           >
             <LogOut size={17} strokeWidth={1.75} />
           </button>
         </div>
-        <div className="px-4 pb-2 text-right text-[10px] text-white/50">{APP_VERSION}</div>
+        {!folded && (
+          <div className="px-4 pb-2 text-right text-[10px] text-white/50">{APP_VERSION}</div>
+        )}
       </aside>
 
-      <div className="ml-52 flex min-w-0 flex-1 flex-col">
+      <div
+        className={`flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "ml-16" : "ml-52"}`}
+      >
         {/* z-scale, and why the header is 30:
               sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
             `backdrop-blur` makes this header its own stacking context, so the

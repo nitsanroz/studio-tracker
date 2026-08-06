@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Archive,
   ArrowDown,
@@ -8,19 +16,20 @@ import {
   ArrowUpDown,
   CheckCircle2,
   GripVertical,
+  Columns3,
   Pencil,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { formatDate, formatHoursDecimal, formatHoursShort } from "@/lib/format";
+import { formatDate, formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, BudgetBar, CollapseChevron, Tabs, TagBadge } from "./ui";
 import { ClientAvatar } from "./client-avatar";
 import { ClientInfoModal } from "./client-info-modal";
 import { ClientNotes } from "./client-notes";
-import { ClientTimeline } from "./client-timeline";
+import { ClientTimeline, type Zoom } from "./client-timeline";
 import {
   EditableDateCell,
   EditableNumberCell,
@@ -28,6 +37,7 @@ import {
   EditableTextCell,
 } from "./editable-cell";
 import { ClientReportButtons } from "./client-report-buttons";
+import { TaskBulkControls } from "./task-bulk-controls";
 import { useColWidths, ResizeHandle } from "./resizable";
 import { HBar, LineChart } from "./charts";
 import type { Profile, Section, Task } from "@/lib/types";
@@ -200,8 +210,14 @@ const useSelection = () => useContext(SelectionContext);
  * fixed — it holds one glyph and there is nothing to reveal by widening it.
  */
 const COL_DEFAULTS: Record<string, number> = {
+  // The name cell still flexes to fill what's left; this is its FLOOR, and
+  // dragging the handle raises it. Past the table's width the wrapper
+  // (`min-w-fit`) scrolls sideways rather than crushing the other columns.
+  name: 128,
   assignee: 160,
-  due: 64,
+  start: 72,
+  due: 72,
+  type: 104,
   tag: 112,
   hours: 64,
   // trimmed from 144 now that the logged hours have their own column and this one
@@ -214,6 +230,90 @@ const ColWidthsContext = createContext<Record<string, number>>(COL_DEFAULTS);
 function useColCell() {
   const widths = useContext(ColWidthsContext);
   return (key: string) => ({ width: widths[key] ?? COL_DEFAULTS[key], flexShrink: 0 }) as const;
+}
+/** The name cell flexes, so it takes a floor rather than a fixed width. */
+function useNameCell() {
+  const widths = useContext(ColWidthsContext);
+  return { minWidth: widths.name ?? COL_DEFAULTS.name } as const;
+}
+
+/**
+ * Which optional columns are shown. Eight columns is more than any one person
+ * needs at once — someone scheduling wants Start/Due/Type, someone invoicing
+ * wants Hours/Budget/$ — so the set is per-user and persisted, like the widths.
+ * The task NAME is not in here: a table of tasks with no titles is not a view
+ * anyone wants, and leaving it out means the menu can never empty the table.
+ */
+const OPTIONAL_COLS = [
+  { key: "assignee", label: "Assignee" },
+  { key: "start", label: "Start" },
+  { key: "due", label: "Due" },
+  { key: "type", label: "Type" },
+  { key: "tag", label: "Status" },
+  { key: "hours", label: "Hours" },
+  { key: "budget", label: "Budget" },
+  { key: "billable", label: "$ (billable)" },
+] as const;
+type ColKey = (typeof OPTIONAL_COLS)[number]["key"];
+const ALL_COLS = OPTIONAL_COLS.map((c) => c.key) as ColKey[];
+
+const HiddenColsContext = createContext<Set<string>>(new Set());
+/** `show("due")` — false when the user has hidden that column. */
+function useShowCol() {
+  const hidden = useContext(HiddenColsContext);
+  return (key: ColKey) => !hidden.has(key);
+}
+
+function ColumnsMenu({
+  hidden,
+  onToggle,
+}: {
+  hidden: Set<string>;
+  onToggle: (key: ColKey, on: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [open]);
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Show or hide columns"
+        aria-label="Show or hide columns"
+        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
+      >
+        <Columns3 size={14} />
+        {hidden.size > 0 && <span className="text-xs tabular-nums">{ALL_COLS.length - hidden.size}</span>}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-1 flex w-44 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
+          {OPTIONAL_COLS.map((c) => (
+            <label
+              key={c.key}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-background"
+            >
+              <input
+                type="checkbox"
+                checked={!hidden.has(c.key)}
+                onChange={(e) => onToggle(c.key, e.target.checked)}
+                className="size-3.5 accent-[var(--brand)]"
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Tri-state select-all: checked when every id is selected, dash when only some are. */
@@ -255,7 +355,16 @@ let draggedTaskId: string | null = null;
 const SECTION_DRAG_TYPE = "application/x-studio-section-id";
 let draggedSectionId: string | null = null;
 
-type SortKey = "title" | "assignee" | "due" | "tag" | "hours" | "budget" | "billable";
+type SortKey =
+  | "title"
+  | "assignee"
+  | "start"
+  | "due"
+  | "type"
+  | "tag"
+  | "hours"
+  | "budget"
+  | "billable";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
 
 /** Nulls/empties always sort last regardless of direction. */
@@ -270,6 +379,7 @@ function makeComparator(
   sort: NonNullable<Sort>,
   profiles: Profile[],
   taskMinutes: (id: string) => number,
+  typeName: (id: string | null) => string | null,
 ): (a: Task, b: Task) => number {
   const name = (t: Task) => profiles.find((p) => p.id === t.assigneeId)?.name ?? null;
   const str = (x: string, y: string) => x.localeCompare(y);
@@ -279,8 +389,13 @@ function makeComparator(
       return (a, b) => str(a.title, b.title) * sort.dir;
     case "assignee":
       return (a, b) => cmpNullable(name(a), name(b), str, sort.dir);
+    case "start":
+      return (a, b) => cmpNullable(a.startDate, b.startDate, str, sort.dir);
     case "due":
       return (a, b) => cmpNullable(a.dueDate, b.dueDate, str, sort.dir);
+    case "type":
+      // by NAME, not by id — the id is a uuid and would sort at random
+      return (a, b) => cmpNullable(typeName(a.typeId), typeName(b.typeId), str, sort.dir);
     case "tag":
       return (a, b) => cmpNullable(a.tag, b.tag, str, sort.dir);
     case "hours":
@@ -299,7 +414,9 @@ function makeComparator(
 const SORT_HINTS: Record<SortKey, string> = {
   title: "Task title — click to open the task. Click the header to sort",
   assignee: "Who the task is assigned to — click a cell to change. Click to sort",
+  start: "When work is planned to start — drives the Timeline bar. Click to sort",
   due: "Due date — click a cell to change. Click to sort",
+  type: "The kind of work — colours the task's bar on the Timeline. Click to sort",
   tag: "Where the task is in the process — click a cell to change. Click to sort",
   hours: "Hours logged so far. Click to sort",
   budget: "Budget in hours — click a cell to edit it. Click to sort",
@@ -342,6 +459,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   const {
     profiles,
     tags,
+    taskTypes,
     tasks: allTasks,
     openTask,
     updateTask,
@@ -353,6 +471,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   const isAdmin = useIsAdmin();
   const sel = useSelection();
   const colCell = useColCell();
+  const nameCell = useNameCell();
+  const show = useShowCol();
   const checked = sel?.selected.has(task.id) ?? false;
   const [dropBefore, setDropBefore] = useState(false);
   // Only a mousedown on the grip may start a drag. With the whole row draggable, any
@@ -377,6 +497,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
     return !!d && d.sectionId === task.sectionId && d.clientId === task.clientId;
   }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
+  const taskType = taskTypes.find((t) => t.id === task.typeId) ?? null;
   const hoursDone = taskHoursDone(task, taskMinutes);
   const overBudget = task.estimateHours != null && hoursDone / 60 > task.estimateHours;
   const done = task.status === "done";
@@ -490,7 +611,10 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <CheckCircle2 size={17} strokeWidth={1.75} fill={done ? "currentColor" : "none"} className={done ? "[&>path]:stroke-white" : ""} />
         </span>
       )}
-      <span className={`flex min-w-32 flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}>
+      <span
+        className={`flex flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}
+        style={nameCell}
+      >
         {/* A span, not a button, and no inline editor: the row already opens the
             pane on click, and a button would kill drag-selecting the title text.
             Renaming happens in the pane's own title. The dedicated "open details"
@@ -525,6 +649,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           </span>
         )}
       </span>
+      {show("assignee") && (
       <span className="hidden text-xs text-muted sm:block" style={colCell("assignee")}>
         <EditableSelectCell
           value={task.assigneeId ?? ""}
@@ -543,18 +668,64 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           }
         />
       </span>
+      )}
+      {/* Start and Due sit together and hide together — a start date with no due
+          date beside it is half a sentence. Both are admin-only to WRITE because
+          0022 put `start_date` in migration 0011's protected column list. */}
+      {show("start") && (
+      <span className="hidden text-xs text-muted lg:block" style={colCell("start")}>
+        {isAdmin ? (
+          <EditableDateCell
+            value={task.startDate}
+            onCommit={(v) => updateTask(task.id, { startDate: v })}
+            format={formatDayMonth}
+            fallback={task.dueDate}
+          />
+        ) : (
+          <span className="px-1.5 py-0.5">{task.startDate ? formatDayMonth(task.startDate) : "–"}</span>
+        )}
+      </span>
+      )}
+      {show("due") && (
       <span className="text-xs text-muted" style={colCell("due")}>
         {isAdmin ? (
           <EditableDateCell
             value={task.dueDate}
             onCommit={(v) => updateTask(task.id, { dueDate: v })}
-            format={formatDate}
-            placeholder=""
+            format={formatDayMonth}
+            fallback={task.startDate}
           />
         ) : (
-          <span className="px-1.5 py-0.5">{task.dueDate ? formatDate(task.dueDate) : ""}</span>
+          <span className="px-1.5 py-0.5">{task.dueDate ? formatDayMonth(task.dueDate) : "–"}</span>
         )}
       </span>
+      )}
+      {/* Type = the kind of work, Status = where it is in the process. Both are
+          member-writable (0024 deliberately left `type_id` out of the trigger —
+          describing the work is collaborative). */}
+      {show("type") && (
+      <span className="hidden xl:block" style={colCell("type")}>
+        <EditableSelectCell
+          value={task.typeId ?? ""}
+          options={taskTypes.map((t) => ({ value: t.id, label: t.name }))}
+          onCommit={(v) => updateTask(task.id, { typeId: v || null })}
+          emptyLabel="No type"
+          display={
+            taskType ? (
+              <span className="flex items-center gap-1.5 text-xs">
+                <span
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: taskType.color }}
+                  aria-hidden
+                />
+                <span className="truncate">{taskType.name}</span>
+              </span>
+            ) : null
+          }
+        />
+      </span>
+      )}
+      {show("tag") && (
       <span className="hidden lg:block" style={colCell("tag")}>
         <EditableSelectCell
           value={task.tag ?? ""}
@@ -564,6 +735,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           display={task.tag ? <TagBadge tag={task.tag} /> : null}
         />
       </span>
+      )}
+      {show("hours") && (
       <span
         className="hidden text-xs tabular-nums md:block"
         style={colCell("hours")}
@@ -577,6 +750,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <span className="text-faint">–</span>
         )}
       </span>
+      )}
+      {show("budget") && (
       <span className="hidden md:block" style={colCell("budget")}>
         {isAdmin ? (
           <EditableNumberCell
@@ -590,7 +765,8 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} label="budget" />
         )}
       </span>
-      {isAdmin && (
+      )}
+      {isAdmin && show("billable") && (
         <span
           className={`w-4 shrink-0 text-center text-xs ${task.billable ? "text-success" : "text-faint"}`}
           title={task.billable ? "Billable" : "Non-billable"}
@@ -958,6 +1134,10 @@ function SelectionBar({
 
       <span className="mx-1 h-4 w-px bg-border" />
 
+      <TaskBulkControls ids={ids} onDone={done} />
+
+      <span className="mx-1 h-4 w-px bg-border" />
+
       <button
         onClick={() => {
           updateTasksBulk(ids, { status: "done" });
@@ -1019,7 +1199,7 @@ function SelectionBar({
 }
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskMinutes, addSection } =
+  const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection } =
     useData();
   const isAdmin = useIsAdmin();
   const [showDone, setShowDone] = useState(false);
@@ -1028,6 +1208,8 @@ export function ClientView({ clientId }: { clientId: string }) {
   // sections appear expanded. "" stands for the null "No section" group.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"list" | "board">("list");
+  // Lifted out of ClientTimeline so the zoom control can live on the tab strip.
+  const [zoom, setZoom] = useState<Zoom>("week");
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
   const [showInfo, setShowInfo] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
@@ -1035,6 +1217,34 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [sort, setSort] = useState<Sort>(null);
   const { widths, startResize } = useColWidths("client-tasks", COL_DEFAULTS);
   const colCell = (key: string) => ({ width: widths[key], flexShrink: 0 }) as const;
+
+  // Hidden columns, per user. Read in an effect, never in the initialiser —
+  // localStorage on the server is a hydration mismatch.
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("client-tasks.hiddenCols");
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      // validate against the current column list: a stored key we no longer
+      // have would hide nothing and quietly linger
+      if (Array.isArray(list)) {
+        setHiddenCols(new Set(list.filter((k: string) => (ALL_COLS as string[]).includes(k))));
+      }
+    } catch {
+      /* a corrupt blob just means "show everything" */
+    }
+  }, []);
+  const toggleCol = useCallback((key: ColKey, on: boolean) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (on) next.delete(key);
+      else next.add(key);
+      localStorage.setItem("client-tasks.hiddenCols", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+  const showCol = (key: ColKey) => !hiddenCols.has(key);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   /** Anchor for shift-click ranges — the last row toggled without shift. */
   const lastPickedRef = useRef<string | null>(null);
@@ -1066,13 +1276,18 @@ export function ClientView({ clientId }: { clientId: string }) {
     return { clientSections: open, hiddenSections: all.length - open.length };
   }, [sections, clientId, tasks, showDone]);
 
+  const typeName = useCallback(
+    (id: string | null) => (id ? (taskTypes.find((t) => t.id === id)?.name ?? null) : null),
+    [taskTypes],
+  );
+
   const clientTasks = useMemo(() => {
     const list = tasks
       .filter((t) => t.clientId === clientId && (showDone || t.status !== "done"))
       .sort((a, b) => a.position - b.position);
-    if (sort) list.sort(makeComparator(sort, profiles, taskMinutes));
+    if (sort) list.sort(makeComparator(sort, profiles, taskMinutes, typeName));
     return list;
-  }, [tasks, clientId, showDone, sort, profiles, taskMinutes]);
+  }, [tasks, clientId, showDone, sort, profiles, taskMinutes, typeName]);
 
   if (!client) return <div className="text-muted">Client not found.</div>;
 
@@ -1171,15 +1386,33 @@ export function ClientView({ clientId }: { clientId: string }) {
           {/* 40px against a 24px title: the mark is the client's identity on
               their own page, so it leads rather than annotates. */}
           <ClientAvatar client={client} size={40} />
-          <h1 className="truncate text-2xl font-bold tracking-tight" title={titleTooltip}>
-            {client.name}
-          </h1>
-          {client.billingPeriodNote && (
-            <span className="hidden truncate text-xs text-muted xl:inline">
-              Billing: {client.billingPeriodNote}
-            </span>
-          )}
+          {/* Billing sits UNDER the name rather than beside it: as a sibling of
+              the title it competed with it for the same line and was dropped
+              below xl, so on a laptop the terms of the engagement were invisible.
+              Stacked, it reads as a subtitle of the client and always shows. */}
+          <span className="flex min-w-0 flex-col">
+            <h1 className="truncate text-2xl font-bold leading-tight tracking-tight" title={titleTooltip}>
+              {client.name}
+            </h1>
+            {client.billingPeriodNote && (
+              <span className="truncate text-xs text-muted" title={client.billingPeriodNote}>
+                {client.billingPeriodNote}
+              </span>
+            )}
+          </span>
           <div className="ml-auto flex items-center gap-2">
+            {/* Both tabs list tasks, so "Show completed" belongs to both — and
+                it leads the cluster, to the LEFT of the report buttons. */}
+            {tab !== "overview" && (
+              <label className="flex items-center gap-1.5 text-sm text-muted">
+                <input
+                  type="checkbox"
+                  checked={showDone}
+                  onChange={(e) => setShowDone(e.target.checked)}
+                />
+                Show completed
+              </label>
+            )}
             <ClientReportButtons clientId={client.id} />
             {/* Icon only, and admin only: this edits the client RECORD (mark,
                 name, billing note, archive). Notes and links live on Overview,
@@ -1198,14 +1431,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             )}
             {tab === "tasks" && (
               <>
-                <label className="flex items-center gap-1.5 text-sm text-muted">
-                  <input
-                    type="checkbox"
-                    checked={showDone}
-                    onChange={(e) => setShowDone(e.target.checked)}
-                  />
-                  Show completed
-                </label>
+                <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
                 {/* list/board is a view mode OF the tasks, not a peer of them, so it
                     stays a segmented control rather than becoming a third tab */}
                 <Tabs
@@ -1219,19 +1445,38 @@ export function ClientView({ clientId }: { clientId: string }) {
             )}
           </div>
         </div>
-        <Tabs
-          value={tab}
-          onChange={setTab}
-          items={[
-            { value: "tasks" as const, label: "Tasks" },
-            { value: "timeline" as const, label: "Timeline" },
-            { value: "overview" as const, label: "Overview" },
-          ]}
-          ariaLabel="Client sections"
-        />
+        {/* The tab strip, with the Timeline's own zoom control CENTRED on the
+            same line — it's a property of the view being shown, so it reads as
+            part of this row rather than as the first thing inside the panel. */}
+        <div className="relative flex items-center">
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            items={[
+              { value: "tasks" as const, label: "Tasks" },
+              { value: "timeline" as const, label: "Timeline" },
+              { value: "overview" as const, label: "Overview" },
+            ]}
+            ariaLabel="Client sections"
+          />
+          {tab === "timeline" && (
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <Tabs
+                value={zoom}
+                onChange={setZoom}
+                items={["day", "week", "month"] as const}
+                variant="segmented"
+                size="sm"
+                ariaLabel="Timeline zoom"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      {tab === "timeline" && <ClientTimeline clientId={clientId} />}
+      {tab === "timeline" && (
+        <ClientTimeline clientId={clientId} zoom={zoom} showDone={showDone} />
+      )}
 
       {/* Overview holds the stats that used to be an xl-only aside — below 1280px
           the total logged, open-task count, billable share and per-user hours were
@@ -1250,6 +1495,7 @@ export function ClientView({ clientId }: { clientId: string }) {
         <div className="min-w-0 flex-1">
       {view === "list" ? (
         <ColWidthsContext.Provider value={widths}>
+        <HiddenColsContext.Provider value={hiddenCols}>
         <SelectionContext.Provider value={isAdmin ? selectionValue : null}>
         {/* dragstart/dragend bubble, so the whole table can know a drag is running
             without threading state through every row. */}
@@ -1289,32 +1535,55 @@ export function ClientView({ clientId }: { clientId: string }) {
               >
                 <CollapseChevron open={!allCollapsed} />
               </button>
-              <span className="min-w-32 flex-1">
+              <span className="relative flex-1" style={{ minWidth: widths.name ?? COL_DEFAULTS.name }}>
                 <SortHeader label="Name" k="title" sort={sort} onSort={cycleSort} />
+                <ResizeHandle onMouseDown={startResize("name")} />
               </span>
-              <span className="relative hidden sm:block" style={colCell("assignee")}>
-                <SortHeader label="Assignee" k="assignee" sort={sort} onSort={cycleSort} />
-                <ResizeHandle onMouseDown={startResize("assignee")} />
-              </span>
-              <span className="relative" style={colCell("due")}>
-                <SortHeader label="Due" k="due" sort={sort} onSort={cycleSort} />
-                <ResizeHandle onMouseDown={startResize("due")} />
-              </span>
-              <span className="relative hidden lg:block" style={colCell("tag")}>
-                <SortHeader label="Status" k="tag" sort={sort} onSort={cycleSort} />
-                <ResizeHandle onMouseDown={startResize("tag")} />
-              </span>
+              {showCol("assignee") && (
+                <span className="relative hidden sm:block" style={colCell("assignee")}>
+                  <SortHeader label="Assignee" k="assignee" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("assignee")} />
+                </span>
+              )}
+              {showCol("start") && (
+                <span className="relative hidden lg:block" style={colCell("start")}>
+                  <SortHeader label="Start" k="start" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("start")} />
+                </span>
+              )}
+              {showCol("due") && (
+                <span className="relative" style={colCell("due")}>
+                  <SortHeader label="Due" k="due" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("due")} />
+                </span>
+              )}
+              {showCol("type") && (
+                <span className="relative hidden xl:block" style={colCell("type")}>
+                  <SortHeader label="Type" k="type" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("type")} />
+                </span>
+              )}
+              {showCol("tag") && (
+                <span className="relative hidden lg:block" style={colCell("tag")}>
+                  <SortHeader label="Status" k="tag" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("tag")} />
+                </span>
+              )}
               {/* Hours and Budget appear and disappear together — a Budget column
                   with no Hours beside it would read worse than today's merged one */}
-              <span className="relative hidden md:block" style={colCell("hours")}>
-                <SortHeader label="Hours" k="hours" sort={sort} onSort={cycleSort} />
-                <ResizeHandle onMouseDown={startResize("hours")} />
-              </span>
-              <span className="relative hidden md:block" style={colCell("budget")}>
-                <SortHeader label="Budget" k="budget" sort={sort} onSort={cycleSort} />
-                <ResizeHandle onMouseDown={startResize("budget")} />
-              </span>
-              {isAdmin && (
+              {showCol("hours") && (
+                <span className="relative hidden md:block" style={colCell("hours")}>
+                  <SortHeader label="Hours" k="hours" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("hours")} />
+                </span>
+              )}
+              {showCol("budget") && (
+                <span className="relative hidden md:block" style={colCell("budget")}>
+                  <SortHeader label="Budget" k="budget" sort={sort} onSort={cycleSort} />
+                  <ResizeHandle onMouseDown={startResize("budget")} />
+                </span>
+              )}
+              {isAdmin && showCol("billable") && (
                 <span className="w-4 shrink-0">
                   <SortHeader label="$" k="billable" sort={sort} onSort={cycleSort} />
                 </span>
@@ -1401,6 +1670,7 @@ export function ClientView({ clientId }: { clientId: string }) {
           />
         )}
         </SelectionContext.Provider>
+        </HiddenColsContext.Provider>
         </ColWidthsContext.Provider>
       ) : (
         <div className="grid grid-cols-3 gap-4">

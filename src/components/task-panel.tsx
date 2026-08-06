@@ -1,15 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Link2, Maximize2, Minimize2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  ChevronDown,
+  Link2,
+  Maximize2,
+  Minimize2,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { formatDate, formatHours, formatHoursDecimal } from "@/lib/format";
+import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskHoursDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
 import { EditableTextCell } from "./editable-cell";
 import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
 import { BriefModal } from "./brief-modal";
-import { LinksEditor } from "./links-editor";
+import { LinksEditor, type LinksEditorHandle } from "./links-editor";
 import type { Task, TimeEntry } from "@/lib/types";
 
 /** Query param that deep-links straight to a task — what "Copy task link" writes. */
@@ -52,7 +62,8 @@ const META_ROW = "group/row flex items-center gap-3";
  * Anything genuinely incidental (a file size, a timestamp) stays `text-faint`.
  */
 const SECTION_HEADING = "text-sm font-semibold text-foreground";
-const FIELD_LABEL = "w-24 shrink-0 text-[13px] text-muted";
+/** w-20, not w-24: at half the pane's width every pixel of label is taken off the control. */
+const FIELD_LABEL = "w-20 shrink-0 text-[13px] text-muted";
 
 /**
  * A select with no permanent chrome. `appearance-none` removes the arrow the
@@ -79,6 +90,110 @@ function QuietSelect({
         aria-hidden
         className="pointer-events-none absolute right-1.5 text-faint opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
       />
+    </span>
+  );
+}
+
+/** "19/8 – 22/8", or one date, or an em dash. */
+function dateRangeText(task: Task): string {
+  const { startDate, dueDate } = task;
+  if (startDate && dueDate) {
+    return startDate === dueDate
+      ? formatDayMonth(dueDate)
+      : `${formatDayMonth(startDate)} – ${formatDayMonth(dueDate)}`;
+  }
+  if (dueDate) return formatDayMonth(dueDate);
+  if (startDate) return `${formatDayMonth(startDate)} – ?`;
+  return "—";
+}
+
+/**
+ * The schedule as one control: the range in the row, both ends in a popover.
+ *
+ * Quiet like every other field here — it reads as text until hovered. The
+ * popover is `absolute` (not `fixed`): the pane is its own scroll container, so
+ * an anchored panel travels with the field instead of detaching from it.
+ */
+function DatesField({
+  task,
+  onChange,
+}: {
+  task: Task;
+  onChange: (patch: { startDate?: string | null; dueDate?: string | null }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [open]);
+
+  const field =
+    "rounded-md border border-border bg-surface px-1.5 py-1 text-xs tabular-nums outline-none focus:border-brand";
+
+  return (
+    <span ref={wrap} className="relative flex min-w-0 flex-1 items-center">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Set the start and due dates"
+        className={`${QUIET_FIELD} text-left tabular-nums ${task.dueDate || task.startDate ? "" : "text-faint"}`}
+      >
+        {dateRangeText(task)}
+      </button>
+      <CalendarDays
+        size={13}
+        aria-hidden
+        className="pointer-events-none absolute right-1.5 text-faint opacity-0 transition-opacity group-hover/row:opacity-100"
+      />
+      {open && (
+        // Anchored to the field's RIGHT edge: Dates sits in the right-hand
+        // column of the two-column grid, a few pixels from the pane's edge, so
+        // a left-anchored 224px panel hung off the side of the screen.
+        <span className="absolute right-0 top-full z-40 mt-1 flex w-56 flex-col gap-2 rounded-xl border border-border bg-surface p-2.5 shadow-xl">
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <span className="w-9 shrink-0">Start</span>
+            {/* An empty end opens on the OTHER end's month, not on today: a
+                task due in October should not make you page back from August
+                to give it a start date. Uncontrolled with a key so the default
+                re-seeds when the sibling date changes; nothing is written
+                until the value actually changes. */}
+            <input
+              key={`start-${task.startDate ?? task.dueDate ?? "none"}`}
+              type="date"
+              defaultValue={task.startDate ?? task.dueDate ?? ""}
+              max={task.dueDate ?? undefined}
+              onChange={(e) => onChange({ startDate: e.target.value || null })}
+              className={`${field} min-w-0 flex-1`}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <span className="w-9 shrink-0">Due</span>
+            <input
+              key={`due-${task.dueDate ?? task.startDate ?? "none"}`}
+              type="date"
+              defaultValue={task.dueDate ?? task.startDate ?? ""}
+              min={task.startDate ?? undefined}
+              onChange={(e) => onChange({ dueDate: e.target.value || null })}
+              className={`${field} min-w-0 flex-1`}
+            />
+          </label>
+          {task.startDate && (
+            // Clearing the start turns a span back into a plain deadline, which
+            // is what the Timeline draws as a diamond.
+            <button
+              onClick={() => onChange({ startDate: null })}
+              className="self-start rounded-md px-1.5 py-0.5 text-[11px] text-muted hover:bg-background hover:text-danger"
+            >
+              Clear start
+            </button>
+          )}
+        </span>
+      )}
     </span>
   );
 }
@@ -281,6 +396,7 @@ export function TaskPanel() {
   const [showMove, setShowMove] = useState(false);
   const [editingFigma, setEditingFigma] = useState(false);
   const [editingBrief, setEditingBrief] = useState(false);
+  const linksRef = useRef<LinksEditorHandle>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAdmin = useIsAdmin();
@@ -448,8 +564,14 @@ export function TaskPanel() {
             <h2 className="bidi-auto text-[22px] font-semibold leading-tight">{task.title}</h2>
           )}
 
-          {/* Meta rows, Asana-style label:value */}
-          <div className="flex flex-col gap-2.5 text-sm text-foreground">
+          {/*
+            Meta rows, Asana-style label:value — in TWO columns above the Hours
+            figure. Seven single-file rows pushed the brief and the discussion
+            below the fold on a laptop; paired up they cost half the height. The
+            grid collapses to one column under `sm`, where two 130px controls
+            would be unusable.
+          */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-2.5 text-sm text-foreground sm:grid-cols-2">
             <div className={META_ROW}>
               <span className={FIELD_LABEL}>Assignee</span>
               <Avatar profile={assignee} size={24} />
@@ -463,21 +585,15 @@ export function TaskPanel() {
                 ))}
               </QuietSelect>
             </div>
+            {/* ONE Dates row, not a Start row and a Due row. A task's schedule
+                is a span — "19/8 – 22/8" is the sentence people say — and two
+                separate fields made you read both to learn one fact. */}
             <div className={META_ROW}>
-              <span className={FIELD_LABEL}>Due date</span>
+              <span className={FIELD_LABEL}>Dates</span>
               {isAdmin ? (
-                <input
-                  type="date"
-                  // the browser's calendar glyph is painted unconditionally, so
-                  // it has to be faded by hand like every other cue here
-                  className={`${QUIET_FIELD} [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:transition-opacity group-hover/row:[&::-webkit-calendar-picker-indicator]:opacity-60`}
-                  value={task.dueDate ?? ""}
-                  onChange={(e) => updateTask(task.id, { dueDate: e.target.value || null })}
-                />
+                <DatesField task={task} onChange={(patch) => updateTask(task.id, patch)} />
               ) : (
-                <span className="px-1.5 py-1 tabular-nums">
-                  {task.dueDate ? formatDate(task.dueDate) : "—"}
-                </span>
+                <span className="px-1.5 py-1 tabular-nums">{dateRangeText(task)}</span>
               )}
             </div>
             <div className={META_ROW}>
@@ -570,9 +686,9 @@ export function TaskPanel() {
                 </span>
               )}
             </div>
-            {/* Logged / budget as one prominent figure. The left number is
-                computed, the right one is the editable budget. */}
-            <div className={META_ROW}>
+            {/* Hours spans both columns: the 24px figure and its bar are the
+                one thing here that isn't a label:value pair. */}
+            <div className={`${META_ROW} sm:col-span-2`}>
               <span className={FIELD_LABEL}>Hours</span>
               <span className="flex items-baseline gap-1">
                 <span
@@ -685,6 +801,16 @@ export function TaskPanel() {
               >
                 <Pencil size={12} /> Edit
               </button>
+              {/* Adding a link is a heading-level action, so it sits on the
+                  heading's line — not below the list, where it was one more
+                  left-aligned control in a stack of them. */}
+              <button
+                onClick={() => linksRef.current?.startAdding()}
+                className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-muted hover:bg-background hover:text-brand"
+                title="Add a titled link"
+              >
+                + Add link
+              </button>
             </div>
             <button
               onClick={() => setEditingBrief(true)}
@@ -696,7 +822,13 @@ export function TaskPanel() {
             {/* Links live with the brief because that's where they were being
                 pasted: a Google Doc URL in the middle of a paragraph. */}
             <div className="mt-2">
-              <LinksEditor owner={{ taskId: task.id }} canEdit emptyHint="" />
+              <LinksEditor
+                ref={linksRef}
+                owner={{ taskId: task.id }}
+                canEdit
+                emptyHint=""
+                showAddButton={false}
+              />
             </div>
           </div>
 

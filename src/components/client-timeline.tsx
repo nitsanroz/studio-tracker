@@ -1,11 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, GripVertical } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  Columns3,
+  GripVertical,
+  Pencil,
+  X,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatHoursDecimal, MONTH_NAMES_SHORT } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, Tabs } from "./ui";
+import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
+import { TaskBulkControls } from "./task-bulk-controls";
 import type { Profile, Section, Task, TaskType } from "@/lib/types";
 
 /**
@@ -34,7 +45,7 @@ import type { Profile, Section, Task, TaskType } from "@/lib/types";
  * `timeline_position` in the 0011 trigger's protected list.
  */
 
-type Zoom = "day" | "week" | "month";
+export type Zoom = "day" | "week" | "month";
 
 /** Pixels per DAY at each zoom — every position here is computed in days. */
 const PX_PER_DAY: Record<Zoom, number> = { day: 26, week: 9, month: 3 };
@@ -45,11 +56,97 @@ const SECTION_H = 30;
    is half of a two-panel layout and a drag here would desynchronise it from the
    chart's own horizontal scroll. */
 const GRIP_W = 16;
-const NAME_W = 230;
+const CHECK_W = 22;
+const NAME_W = 200;
+/** Just the face, but its own column now that clicking it reassigns the task. */
+const ASSIGNEE_W = 44;
 const DATES_W = 104;
-const DURATION_W = 68;
+/** 72, not 68: at 68 the word "Duration" in the header clipped by exactly 1px. */
+const DURATION_W = 72;
 const HOURS_W = 56;
-const LEFT_W = GRIP_W + NAME_W + DATES_W + DURATION_W + HOURS_W * 2;
+
+/**
+ * ONLY this block sticks while the chart scrolls sideways.
+ *
+ * Pinning the whole left table (566px) meant that on a laptop half the visible
+ * width was permanently spent on columns you weren't reading. The task name is
+ * the one thing a row is useless without, so grip + checkbox + name hold their
+ * place and everything else scrolls away with the calendar.
+ */
+const STICKY_W = GRIP_W + CHECK_W + NAME_W;
+
+/** The optional left-table columns, in order, with their widths. */
+const TL_COLS = [
+  { key: "who", label: "Who", w: ASSIGNEE_W, title: "Assignee" },
+  { key: "dates", label: "Dates", w: DATES_W, title: "Start and due dates" },
+  {
+    key: "duration",
+    label: "Duration",
+    w: DURATION_W,
+    title: "Working days — Fri/Sat and studio holidays don't count",
+  },
+  { key: "actual", label: "Actual", w: HOURS_W, title: "Hours logged so far" },
+  { key: "budget", label: "Budget", w: HOURS_W, title: "Budgeted hours" },
+] as const;
+type TlCol = (typeof TL_COLS)[number]["key"];
+const TL_COL_KEYS = TL_COLS.map((c) => c.key) as TlCol[];
+
+/** Left-table width for a given hidden set. The name block is never optional. */
+function leftWidth(hidden: Set<string>): number {
+  return TL_COLS.reduce((w, c) => w + (hidden.has(c.key) ? 0 : c.w), STICKY_W);
+}
+
+function TimelineColumnsMenu({
+  hidden,
+  onToggle,
+}: {
+  hidden: Set<string>;
+  onToggle: (key: TlCol, on: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [open]);
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Show or hide columns"
+        aria-label="Show or hide columns"
+        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+      >
+        <Columns3 size={13} />
+        Columns
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
+          {TL_COLS.map((c) => (
+            <label
+              key={c.key}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-background"
+            >
+              <input
+                type="checkbox"
+                checked={!hidden.has(c.key)}
+                onChange={(e) => onToggle(c.key, e.target.checked)}
+                className="size-3.5 accent-[var(--brand)]"
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Below this the "12/24h" label doesn't fit and is dropped rather than clipped. */
 const LABEL_MIN_PX = 64;
@@ -63,6 +160,16 @@ const HANDLE_MIN_PX = 30;
 const SHADE_MIN_PX_PER_DAY = 6;
 /** A deadline diamond is a fixed size — it marks a point, so it can't scale with a span. */
 const DIAMOND = 11;
+/** Bar height. One shape now, rather than a rule plus a band. */
+const BAR_H = 16;
+/** Corner radius, in the reference's proportion to the height (~1:4). */
+const BAR_R = 4;
+/**
+ * Measured height of the Dates popover (title + two fields + the button row).
+ * Used to decide whether it opens downwards or flips above the cell — it is
+ * `fixed`, so nothing else stops it running off the bottom of the window.
+ */
+const PANEL_H = 200;
 
 function parseISO(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
@@ -168,7 +275,16 @@ interface Group {
 let draggedRowId: string | null = null;
 let draggedFromSection: string | null = null;
 
-export function ClientTimeline({ clientId }: { clientId: string }) {
+export function ClientTimeline({
+  clientId,
+  zoom,
+  showDone,
+}: {
+  clientId: string;
+  /** owned by ClientView: its control sits on the tab strip, not in here */
+  zoom: Zoom;
+  showDone: boolean;
+}) {
   const {
     tasks,
     sections,
@@ -178,17 +294,41 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
     taskTypes,
     taskMinutes,
     updateTask,
+    updateSection,
     openTask,
     reorderTimelineTasks,
   } = useData();
   const isAdmin = useIsAdmin();
-  const [zoom, setZoom] = useState<Zoom>("week");
-  const [showDone, setShowDone] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const dragging = drag !== null;
   const [dropBefore, setDropBefore] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("timeline.hiddenCols");
+      const list = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(list)) {
+        setHiddenCols(new Set(list.filter((k: string) => (TL_COL_KEYS as string[]).includes(k))));
+      }
+    } catch {
+      /* a corrupt blob just means "show everything" */
+    }
+  }, []);
+  const toggleCol = (key: TlCol, on: boolean) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (on) next.delete(key);
+      else next.add(key);
+      localStorage.setItem("timeline.hiddenCols", JSON.stringify([...next]));
+      return next;
+    });
+  };
+  const leftW = leftWidth(hiddenCols);
+  /** anchor for shift-click ranges, same rule as the client table */
+  const lastPicked = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const scrolledOnce = useRef(false);
 
@@ -314,6 +454,42 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
 
+  const assignableProfiles = useMemo(
+    () => profiles.filter((p) => p.active).sort((a, b) => a.name.localeCompare(b.name)),
+    [profiles],
+  );
+
+  /** Display order across every open group — the range a shift-click covers. */
+  const orderedIds = useMemo(
+    () =>
+      groups.flatMap((g) =>
+        collapsed.has(g.section?.id ?? "") ? [] : g.rows.map((r) => r.task.id),
+      ),
+    [groups, collapsed],
+  );
+
+  function toggleSelected(taskId: string, shiftKey: boolean, on: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const anchor = lastPicked.current;
+      if (shiftKey && anchor && anchor !== taskId) {
+        const a = orderedIds.indexOf(anchor);
+        const b = orderedIds.indexOf(taskId);
+        if (a >= 0 && b >= 0) {
+          for (const id of orderedIds.slice(Math.min(a, b), Math.max(a, b) + 1)) {
+            if (on) next.add(id);
+            else next.delete(id);
+          }
+          return next;
+        }
+      }
+      if (on) next.add(taskId);
+      else next.delete(taskId);
+      return next;
+    });
+    lastPicked.current = taskId;
+  }
+
   /** Total content height, so the grid and the today line can span every row. */
   const bodyH = groups.reduce(
     (h, g) => h + SECTION_H + (collapsed.has(g.section?.id ?? "") ? 0 : g.rows.length * ROW_H),
@@ -408,48 +584,45 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs
-          value={zoom}
-          onChange={setZoom}
-          items={["day", "week", "month"] as const}
-          variant="segmented"
-          size="sm"
-          ariaLabel="Timeline zoom"
-        />
-        <label className="flex items-center gap-1.5 text-sm text-muted">
-          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} />
-          Show completed
-        </label>
+      {/* One line: what you can do on the left, what the colours mean on the
+          right. The zoom control is no longer here — it lives on the tab strip,
+          centred, because it belongs to the view rather than to this panel. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <span className="text-xs text-faint">
           {isAdmin
-            ? "Drag a bar to move it · an edge to resize · the grip to reorder within its section."
+            ? "Click a name to open it, the pencil to rename · drag a bar to move it, an edge to resize, the grip to reorder · tick rows to change several at once."
             : "Read-only — only admins can re-schedule"}
         </span>
-      </div>
-
-      {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
-          {usedTypes.map((t) => (
-            <span key={t.id} className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm" style={{ backgroundColor: t.color }} aria-hidden />
-              {t.name}
-            </span>
-          ))}
-          {allRows.some((r) => !r.type) && (
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-brand" aria-hidden />
-              No type
-            </span>
+        <div className="flex shrink-0 items-center gap-3">
+          {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
+            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[11px] text-muted">
+              {usedTypes.map((t) => (
+                <span key={t.id} className="flex items-center gap-1.5">
+                  <span
+                    className="size-2.5 rounded-sm"
+                    style={{ backgroundColor: t.color }}
+                    aria-hidden
+                  />
+                  {t.name}
+                </span>
+              ))}
+              {allRows.some((r) => !r.type) && (
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-sm bg-brand" aria-hidden />
+                  No type
+                </span>
+              )}
+              {allRows.some((r) => !r.hasStart) && (
+                <span className="flex items-center gap-1.5 text-faint">
+                  <span className="size-2 rotate-45 border border-current" aria-hidden />
+                  Deadline — no start
+                </span>
+              )}
+            </div>
           )}
-          {allRows.some((r) => !r.hasStart) && (
-            <span className="flex items-center gap-1.5 text-faint">
-              <span className="size-2 rotate-45 border border-current" aria-hidden />
-              Deadline — no start date set
-            </span>
-          )}
+          <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
         </div>
-      )}
+      </div>
 
       {allRows.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface px-4 py-10 text-center text-sm text-faint">
@@ -458,16 +631,30 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-surface">
-          <div ref={scroller} className="overflow-x-auto">
-            <div style={{ width: LEFT_W + chartW }}>
+          {/*
+            A BOUNDED height is what makes the column titles stick. `sticky top-0`
+            resolves against the nearest scrolling ancestor, and an
+            `overflow-x-auto` box with no height limit never scrolls vertically —
+            so the header had nothing to stick to and slid away with the page.
+            Capping the height moves both axes inside this box: the titles hold at
+            the top, the left rail holds at the left.
+          */}
+          <div ref={scroller} className="max-h-[min(70vh,640px)] overflow-auto">
+            <div style={{ width: leftW + chartW }}>
               <TimelineHeader
                 from={from}
                 totalDays={totalDays}
                 zoom={zoom}
                 pxPerDay={pxPerDay}
                 off={offDates}
+                hidden={hiddenCols}
+                leftW={leftW}
               />
-              <div className="relative">
+              {/* The chart canvas is `bg-background` while every cell and title
+                  on the left is `bg-surface`: the two tones are what separate
+                  "the table" from "the calendar" now that the left rail is
+                  pinned over the chart while you scroll. */}
+              <div className="relative bg-background">
                 {/* One layer for the whole grid — weak vertical rules on every
                     tick plus a wash over non-working days — drawn once behind
                     the rows rather than per row. */}
@@ -479,8 +666,9 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
                   off={offDates}
                   offLabel={offLabel}
                   height={bodyH}
+                  leftW={leftW}
                 />
-                <TodayLine left={LEFT_W + daysBetween(from, today) * pxPerDay} height={bodyH} />
+                <TodayLine left={leftW + daysBetween(from, today) * pxPerDay} height={bodyH} />
 
                 {groups.map((g) => {
                   const key = g.section?.id ?? "";
@@ -495,6 +683,11 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
                         pxPerDay={pxPerDay}
                         totalDays={totalDays}
                         color={client?.color ?? "#0b43ed"}
+                        canEdit={isAdmin}
+                        leftW={leftW}
+                        onRename={(name) =>
+                          g.section && updateSection(g.section.id, { name })
+                        }
                       />
                       {!isCollapsed &&
                         g.rows.map((row) => (
@@ -504,10 +697,28 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
                             from={from}
                             pxPerDay={pxPerDay}
                             totalDays={totalDays}
+                            leftW={leftW}
+                            hidden={hiddenCols}
                             canEdit={isAdmin}
                             off={offDates}
                             drag={drag?.taskId === row.task.id ? drag : null}
                             dropTarget={dropBefore === row.task.id}
+                            selected={selected.has(row.task.id)}
+                            anySelected={selected.size > 0}
+                            assignableProfiles={assignableProfiles}
+                            onSelect={(shiftKey, on) => toggleSelected(row.task.id, shiftKey, on)}
+                            onRename={(title) => updateTask(row.task.id, { title })}
+                            onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
+                            onSetBudget={(estimateHours) =>
+                              updateTask(row.task.id, { estimateHours })
+                            }
+                            onSetDuration={(days) =>
+                              updateTask(row.task.id, {
+                                // n working days INCLUSIVE of the start, so the
+                                // last day is start + (n-1) working days.
+                                dueDate: toISO(addWorkDays(row.start, days - 1, offDates)),
+                              })
+                            }
                             onDragStart={(mode, clientX) => {
                               const next: DragState = {
                                 taskId: row.task.id,
@@ -551,6 +762,21 @@ export function ClientTimeline({ clientId }: { clientId: string }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div className="sticky bottom-4 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-brand bg-surface px-3 py-2 text-sm shadow-card">
+          <span className="font-medium">{selected.size} selected</span>
+          <span className="mx-1 h-4 w-px bg-border" />
+          <TaskBulkControls ids={[...selected]} onDone={() => setSelected(new Set())} />
+          <button
+            onClick={() => setSelected(new Set())}
+            title="Clear selection"
+            className="ml-auto rounded-md p-1 text-faint hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -735,7 +961,13 @@ function DatesCell({
         ref={btn}
         onClick={() => {
           const r = btn.current!.getBoundingClientRect();
-          setPos({ left: r.left, top: r.bottom + 4 });
+          // FLIP UP when there isn't room below. On the last rows of a long
+          // timeline the panel opened downwards and its Done button landed
+          // past the bottom of the window, where nothing could reach it.
+          const below = window.innerHeight - r.bottom;
+          const top =
+            below < PANEL_H + 12 ? Math.max(8, r.top - PANEL_H - 4) : r.bottom + 4;
+          setPos({ left: r.left, top });
           setOpen(true);
         }}
         title="Click to set exact dates"
@@ -756,9 +988,15 @@ function DatesCell({
             </div>
             <label className="mb-2 flex items-center gap-2 text-xs">
               <span className="w-10 shrink-0 text-muted">Start</span>
+              {/* An empty start opens on the DUE date's month rather than on
+                  today — a task due in October shouldn't make you page back
+                  two months to give it a start. Uncontrolled so the seed is a
+                  starting point, not a saved value; the key re-seeds it when
+                  the due date moves. */}
               <input
+                key={`start-${startISO || dueISO}`}
                 type="date"
-                value={startISO}
+                defaultValue={startISO || dueISO}
                 max={dueISO}
                 onChange={(e) => commit(e.target.value, dueISO)}
                 className="min-w-0 flex-1 rounded-md border border-border bg-surface px-1.5 py-1 outline-none focus:border-brand"
@@ -821,6 +1059,7 @@ function GridLayer({
   off,
   offLabel,
   height,
+  leftW,
 }: {
   from: Date;
   totalDays: number;
@@ -829,6 +1068,7 @@ function GridLayer({
   off: Set<string>;
   offLabel: Map<string, string>;
   height: number;
+  leftW: number;
 }) {
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   // At 3px a day the stripes would be denser than the data sitting on them.
@@ -849,7 +1089,7 @@ function GridLayer({
   return (
     <div
       className="pointer-events-none absolute top-0"
-      style={{ left: LEFT_W, width: totalDays * pxPerDay, height }}
+      style={{ left: leftW, width: totalDays * pxPerDay, height }}
       aria-hidden
     >
       {offDays.map((d) => (
@@ -879,21 +1119,28 @@ function TimelineHeader({
   zoom,
   pxPerDay,
   off,
+  hidden,
+  leftW,
 }: {
   from: Date;
   totalDays: number;
   zoom: Zoom;
   pxPerDay: number;
   off: Set<string>;
+  hidden: Set<string>;
+  leftW: number;
 }) {
   const { ticks, groups } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
   const head = "shrink-0 text-[10px] font-medium uppercase tracking-wide text-faint";
 
   return (
-    <div className="sticky top-0 z-20 border-b border-border bg-surface">
+    // z-30 over the rows' own sticky name block (z-20): scrolling down must not
+    // slide task names over the column titles.
+    <div className="sticky top-0 z-30 border-b border-border bg-surface">
       <div className="relative flex h-6 items-end">
-        <span style={{ width: LEFT_W }} className="shrink-0" />
+        <span className="sticky left-0 z-10 h-full shrink-0 bg-surface" style={{ width: STICKY_W }} />
+        <span className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
         <span className="relative flex-1">
           {groups.map((g) => (
             <span
@@ -907,33 +1154,26 @@ function TimelineHeader({
         </span>
       </div>
       <div className="relative flex h-6 items-center border-t border-border">
-        <span className={`${head} truncate pl-6`} style={{ width: GRIP_W + NAME_W }}>
-          Task name
-        </span>
-        <span className={`${head} truncate border-l border-border px-2`} style={{ width: DATES_W }}>
-          Dates
-        </span>
         <span
-          className={`${head} truncate border-l border-border px-2`}
-          style={{ width: DURATION_W }}
-          title="Working days — Fri/Sat and studio holidays don't count"
+          className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface"
+          style={{ width: STICKY_W }}
         >
-          Duration
+          <span className={`${head} truncate pl-2`} style={{ width: STICKY_W }}>
+            Task name
+          </span>
         </span>
-        <span
-          className={`${head} truncate border-l border-border px-1.5 text-right`}
-          style={{ width: HOURS_W }}
-          title="Hours logged so far"
-        >
-          Actual
-        </span>
-        <span
-          className={`${head} truncate border-l border-border px-1.5 text-right`}
-          style={{ width: HOURS_W }}
-          title="Budgeted hours"
-        >
-          Budget
-        </span>
+        {TL_COLS.filter((c) => !hidden.has(c.key)).map((c) => (
+          <span
+            key={c.key}
+            className={`${head} truncate border-l border-border bg-surface px-1.5 ${
+              c.key === "actual" || c.key === "budget" ? "text-right" : ""
+            }`}
+            style={{ width: c.w }}
+            title={c.title}
+          >
+            {c.label}
+          </span>
+        ))}
         <span className="relative h-full flex-1 border-l border-border">
           {ticks.map((t) => {
             const date = shiftDays(from, Math.round(t.left / pxPerDay));
@@ -965,6 +1205,9 @@ function SectionHeaderRow({
   pxPerDay,
   totalDays,
   color,
+  canEdit,
+  leftW,
+  onRename,
 }: {
   group: Group;
   collapsed: boolean;
@@ -973,38 +1216,169 @@ function SectionHeaderRow({
   pxPerDay: number;
   totalDays: number;
   color: string;
+  canEdit: boolean;
+  leftW: number;
+  onRename: (name: string) => void;
 }) {
   const left = daysBetween(from, group.start) * pxPerDay;
   const width = Math.max(8, (daysBetween(group.start, group.due) + 1) * pxPerDay);
+  const [renaming, setRenaming] = useState(false);
+  // "No section" is a bucket, not a row in `sections` — there is nothing to rename.
+  const renameable = canEdit && !!group.section;
 
   return (
     <div
-      className="relative border-b border-border bg-background/60"
-      style={{ height: SECTION_H, width: LEFT_W + totalDays * pxPerDay }}
+      className="relative flex border-b border-border bg-background/60"
+      style={{ height: SECTION_H, width: leftW + totalDays * pxPerDay }}
     >
-      <button
-        onClick={onToggle}
-        className="absolute left-0 top-0 flex h-full items-center gap-1.5 px-2 text-left hover:text-brand"
-        style={{ width: LEFT_W }}
-      >
-        {collapsed ? (
-          <ChevronRight size={13} className="shrink-0 text-muted" />
-        ) : (
-          <ChevronDown size={13} className="shrink-0 text-muted" />
-        )}
-        <span className="bidi-auto truncate text-xs font-semibold">
-          {group.section?.name ?? "No section"}
-        </span>
-        <span className="shrink-0 text-[11px] tabular-nums text-faint">{group.rows.length}</span>
-      </button>
-      {/* The group's whole span as one slim bar — the reference's device for
-          "this workstream runs from here to here" without reading every row. */}
       <div
-        className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full"
-        style={{ left: LEFT_W + left, width, backgroundColor: color, opacity: 0.85 }}
-        title={`${group.section?.name ?? "No section"} — ${dateRangeLabel(group.start, group.due, true)}`}
-      />
+        className="group/sec sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-[color-mix(in_srgb,var(--color-surface)_88%,var(--color-foreground))] px-2"
+        style={{ width: leftW }}
+      >
+        <button
+          onClick={onToggle}
+          title={collapsed ? "Expand" : "Collapse"}
+          className="shrink-0 text-muted hover:text-brand"
+        >
+          {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+        </button>
+        {renaming ? (
+          <span className="min-w-0 flex-1 text-xs font-semibold">
+            <EditableTextCell
+              value={group.section!.name}
+              onCommit={(v) => {
+                if (v && v !== group.section!.name) onRename(v);
+                setRenaming(false);
+              }}
+              inputClassName="text-xs font-semibold"
+            />
+          </span>
+        ) : (
+          <>
+            <button
+              onClick={onToggle}
+              className="bidi-auto min-w-0 truncate text-left text-xs font-semibold hover:text-brand"
+            >
+              {group.section?.name ?? "No section"}
+            </button>
+            <span className="shrink-0 text-[11px] tabular-nums text-faint">
+              {group.rows.length}
+            </span>
+            {renameable && (
+              <button
+                onClick={() => setRenaming(true)}
+                title="Rename section"
+                aria-label="Rename section"
+                className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-brand group-hover/sec:opacity-100"
+              >
+                <Pencil size={11} />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
+        {/* The group's whole span as one slim bar — the reference's device for
+            "this workstream runs from here to here" without reading every row. */}
+        <div
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full"
+          style={{ left, width, backgroundColor: color, opacity: 0.85 }}
+          title={`${group.section?.name ?? "No section"} — ${dateRangeLabel(group.start, group.due, true)}`}
+        />
+      </div>
     </div>
+  );
+}
+
+/**
+ * The face, and a real list of people behind it.
+ *
+ * A `<select>` in a 44px cell was technically an editor and practically
+ * unusable — the control was 30px wide with a 20px avatar on top of it, and
+ * picking anyone meant hitting a native menu you couldn't see. This is a
+ * plain button that opens a list with faces and names in it.
+ */
+function AssigneeCell({
+  assignee,
+  canEdit,
+  profiles,
+  onAssign,
+}: {
+  assignee: Profile | null;
+  canEdit: boolean;
+  profiles: Profile[];
+  onAssign: (id: string | null) => void;
+}) {
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!pos) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPos(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pos]);
+
+  if (!canEdit) return <Avatar profile={assignee} size={20} />;
+
+  const listH = Math.min(240, 40 + profiles.length * 30);
+
+  return (
+    <>
+      <button
+        ref={btn}
+        onClick={() => {
+          const r = btn.current!.getBoundingClientRect();
+          // `fixed` from the measured rect, and flipped when the window runs
+          // out below: this cell lives inside a scroller that clips BOTH axes,
+          // so an absolutely-positioned list would be cut off on the last rows.
+          const below = window.innerHeight - r.bottom;
+          setPos({
+            left: r.left,
+            top: below < listH + 12 ? Math.max(8, r.top - listH - 4) : r.bottom + 4,
+          });
+        }}
+        title={assignee ? `${assignee.name} — click to reassign` : "Unassigned — click to assign"}
+        className="rounded-full outline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-brand"
+      >
+        <Avatar profile={assignee} size={20} />
+      </button>
+      {pos && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setPos(null)} />
+          <div
+            className="fixed z-50 flex w-44 flex-col overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl"
+            style={{ left: Math.min(pos.left, window.innerWidth - 190), top: pos.top, maxHeight: listH }}
+          >
+            <button
+              onClick={() => {
+                onAssign(null);
+                setPos(null);
+              }}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted hover:bg-background"
+            >
+              <Avatar profile={null} size={18} />
+              Unassigned
+            </button>
+            {profiles.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  onAssign(p.id);
+                  setPos(null);
+                }}
+                className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-background ${
+                  p.id === assignee?.id ? "font-semibold text-brand" : ""
+                }`}
+              >
+                <Avatar profile={p} size={18} />
+                <span className="truncate">{p.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -1013,10 +1387,16 @@ function TimelineRow({
   from,
   pxPerDay,
   totalDays,
+  leftW,
+  hidden,
   canEdit,
   off,
   drag,
   dropTarget,
+  selected,
+  anySelected,
+  assignableProfiles,
+  onSelect,
   onDragStart,
   onRowDragStart,
   onRowDragOver,
@@ -1024,15 +1404,26 @@ function TimelineRow({
   onRowDragEnd,
   onOpen,
   onSetDates,
+  onRename,
+  onAssign,
+  onSetBudget,
+  onSetDuration,
 }: {
   row: Row;
   from: Date;
   pxPerDay: number;
   totalDays: number;
+  leftW: number;
+  hidden: Set<string>;
   canEdit: boolean;
   off: Set<string>;
   drag: DragState | null;
   dropTarget: boolean;
+  selected: boolean;
+  /** keeps every checkbox visible once one is ticked, so the set is legible */
+  anySelected: boolean;
+  assignableProfiles: Profile[];
+  onSelect: (shiftKey: boolean, on: boolean) => void;
   onDragStart: (mode: DragState["mode"], clientX: number) => void;
   onRowDragStart: () => void;
   onRowDragOver: () => void;
@@ -1040,8 +1431,15 @@ function TimelineRow({
   onRowDragEnd: () => void;
   onOpen: () => void;
   onSetDates: (startDate: string | null, dueDate: string) => void;
+  onRename: (title: string) => void;
+  onAssign: (assigneeId: string | null) => void;
+  onSetBudget: (hours: number | null) => void;
+  /** working days → a new DUE date; the start never moves */
+  onSetDuration: (workDays: number) => void;
 }) {
   const { task } = row;
+  const [renaming, setRenaming] = useState(false);
+  const show = (key: TlCol) => !hidden.has(key);
   // While dragging, the bar follows the pointer without a single write; the
   // dates only reach the store on pointerup.
   const delta = drag?.deltaDays ?? 0;
@@ -1074,12 +1472,6 @@ function TimelineRow({
   const workLen = workDaysBetween(previewStart, previewDue, off);
   // A task with no type keeps the brand blue — untyped is normal, not degraded.
   const color = row.type?.color ?? "#0b43ed";
-  /**
-   * Never fully transparent: the top rule is what tells you where the span ENDS
-   * when almost nothing is logged, so a 0% task still has to draw its full
-   * extent. 0.28 → 1 across the budget.
-   */
-  const lineStrength = 0.28 + 0.72 * Math.min(1, pct / 100);
 
   const hoursLabel =
     estimate != null
@@ -1102,10 +1494,10 @@ function TimelineRow({
 
   return (
     <div
-      className={`group/trow relative border-b border-border last:border-b-0 hover:bg-background/40 ${
+      className={`group/trow relative flex border-b border-border last:border-b-0 ${
         dropTarget ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""
       }`}
-      style={{ height: ROW_H, width: LEFT_W + totalDays * pxPerDay }}
+      style={{ height: ROW_H, width: leftW + totalDays * pxPerDay }}
       onDragOver={(e) => {
         if (!draggedRowId) return;
         e.preventDefault();
@@ -1113,9 +1505,12 @@ function TimelineRow({
       }}
       onDrop={onRowDrop}
     >
+      {/* Only this block is sticky — see STICKY_W. */}
       <div
-        className="absolute left-0 top-0 flex h-full items-center bg-surface group-hover/trow:bg-background/40"
-        style={{ width: LEFT_W }}
+        className={`sticky left-0 z-20 flex h-full shrink-0 items-center ${
+          selected ? "bg-brand-soft" : "bg-surface group-hover/trow:bg-background/40"
+        }`}
+        style={{ width: STICKY_W }}
       >
         <span
           draggable={canEdit}
@@ -1129,50 +1524,179 @@ function TimelineRow({
         >
           {canEdit && <GripVertical size={12} />}
         </span>
-        <button
-          onClick={onOpen}
-          title={task.title}
-          className="flex h-full min-w-0 items-center gap-2 pr-2 text-left"
+        {/* Was the completion circle. It duplicated the strikethrough and the
+            dimming that already say "done", and cost the row the one control a
+            Gantt actually wants: a way to pick several tasks and set a date, a
+            type or a status on all of them at once. */}
+        <span
+          className="flex h-full shrink-0 items-center justify-center"
+          style={{ width: CHECK_W }}
+        >
+          {canEdit ? (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => onSelect((e.nativeEvent as MouseEvent).shiftKey === true, e.target.checked)}
+              title="Select — shift-click for a range"
+              aria-label={`Select ${task.title}`}
+              className={`size-3.5 cursor-pointer accent-[var(--brand)] ${
+                selected || anySelected ? "" : "opacity-0 group-hover/trow:opacity-100"
+              }`}
+            />
+          ) : done ? (
+            <CheckCircle2 size={14} className="text-success" />
+          ) : (
+            <Circle size={14} className="text-faint" />
+          )}
+        </span>
+        <span
+          className={`group/name flex h-full min-w-0 items-center pr-1 ${
+            done ? "text-muted line-through" : "font-medium"
+          }`}
           style={{ width: NAME_W }}
         >
-          {done ? (
-            <CheckCircle2 size={14} className="shrink-0 text-success" />
+          {renaming ? (
+            <span className="min-w-0 flex-1 text-xs">
+              <EditableTextCell
+                value={task.title}
+                onCommit={(v) => {
+                  if (v && v !== task.title) onRename(v);
+                  setRenaming(false);
+                }}
+                inputClassName="text-xs"
+              />
+            </span>
           ) : (
-            <Circle size={14} className="shrink-0 text-faint" />
+            <>
+              <button
+                onClick={onOpen}
+                title={task.title}
+                className="bidi-auto min-w-0 flex-1 truncate text-left text-xs hover:underline"
+              >
+                {task.title}
+              </button>
+              {canEdit && (
+                // Click opens the task, the pencil renames it. One target each:
+                // making the name itself an editor would take away the only way
+                // to open a task from this table.
+                <button
+                  onClick={() => setRenaming(true)}
+                  title="Rename"
+                  aria-label="Rename"
+                  className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-brand group-hover/name:opacity-100"
+                >
+                  <Pencil size={11} />
+                </button>
+              )}
+            </>
           )}
-          <span
-            className={`bidi-auto min-w-0 flex-1 truncate text-xs ${
-              done ? "text-muted line-through" : "font-medium"
-            }`}
-          >
-            {task.title}
-          </span>
-          {/* Just the face — who it's on is the one person-fact a Gantt row
-              needs, and a name would halve the room for the title. */}
-          <Avatar profile={row.assignee} size={20} />
-        </button>
-        <DatesCell row={row} canEdit={canEdit} width={DATES_W} off={off} onSet={onSetDates} />
-        <span
-          className={`${cell} tabular-nums ${row.hasStart ? "text-muted" : "text-faint"}`}
-          style={{ width: DURATION_W }}
-          title={row.hasStart ? "Working days" : "No start date — this is a deadline, not a span"}
-        >
-          {row.hasStart ? `${workLen} day${workLen === 1 ? "" : "s"}` : "—"}
-        </span>
-        <span
-          className={`${cell} text-right tabular-nums ${over ? "font-semibold text-danger" : "text-foreground"}`}
-          style={{ width: HOURS_W }}
-        >
-          {row.doneMinutes > 0 ? `${formatHoursDecimal(row.doneMinutes)}h` : "–"}
-        </span>
-        <span
-          className={`${cell} text-right tabular-nums text-muted`}
-          style={{ width: HOURS_W }}
-        >
-          {estimate != null ? `${estimate}h` : "–"}
         </span>
       </div>
 
+      {/* The rest of the table scrolls away with the chart. */}
+      <div
+        className={`flex h-full shrink-0 items-center ${
+          selected ? "bg-brand-soft" : "bg-surface group-hover/trow:bg-background/40"
+        }`}
+        style={{ width: leftW - STICKY_W }}
+      >
+        {show("who") && (
+          <span
+            className="flex h-full shrink-0 items-center justify-center border-l border-border"
+            style={{ width: ASSIGNEE_W }}
+          >
+            <AssigneeCell
+              assignee={row.assignee}
+              canEdit={canEdit}
+              profiles={assignableProfiles}
+              onAssign={onAssign}
+            />
+          </span>
+        )}
+        {show("dates") && (
+          <DatesCell row={row} canEdit={canEdit} width={DATES_W} off={off} onSet={onSetDates} />
+        )}
+        {show("duration") && (
+          <span
+            className={`${cell} tabular-nums ${row.hasStart ? "text-muted" : "text-faint"}`}
+            style={{ width: DURATION_W }}
+            title={
+              row.hasStart
+                ? canEdit
+                  ? "Working days — type a number to move the DUE date; the start stays put"
+                  : "Working days"
+                : "No start date — this is a deadline, not a span"
+            }
+          >
+            {/* Editable only when the task HAS a span. A deadline has no
+                duration to change, and typing one would have to invent a start
+                date — which is a different decision, made by dragging the
+                diamond's left edge or by the Dates cell. */}
+            {row.hasStart && canEdit ? (
+              <EditableNumberCell
+                value={workLen}
+                onCommit={(v) => v != null && v >= 1 && onSetDuration(Math.round(v))}
+                format={(v) => `${v} day${v === 1 ? "" : "s"}`}
+              />
+            ) : row.hasStart ? (
+              `${workLen} day${workLen === 1 ? "" : "s"}`
+            ) : (
+              "—"
+            )}
+          </span>
+        )}
+        {show("actual") && (
+          <span
+            className={`${cell} text-right tabular-nums ${over ? "font-semibold text-danger" : "text-foreground"}`}
+            style={{ width: HOURS_W }}
+            title={`${formatHoursDecimal(row.doneMinutes)}h logged`}
+          >
+            {row.doneMinutes > 0 ? `${formatHoursDecimal(row.doneMinutes)}h` : "–"}
+          </span>
+        )}
+        {show("budget") && (
+          <span className={`${cell} text-right tabular-nums text-muted`} style={{ width: HOURS_W }}>
+            {canEdit ? (
+              <EditableNumberCell
+                value={estimate}
+                onCommit={(v) => onSetBudget(v)}
+                className="text-right"
+              />
+            ) : estimate != null ? (
+              `${estimate}h`
+            ) : (
+              "–"
+            )}
+          </span>
+        )}
+      </div>
+
+      <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
+      {/*
+        Live readout while dragging. Dragging a bar used to be blind — you were
+        aiming a rectangle at a column of week ticks and only learned the date
+        you'd chosen after you let go. It sits BESIDE the edge being dragged,
+        inside the row: the chart is in a scroller that clips both axes, so a
+        chip floating above the bar would be cut off on the top row.
+      */}
+      {drag && (
+        <span
+          className="pointer-events-none absolute top-1/2 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
+          style={
+            drag.mode === "start"
+              ? { left: left - 6, transform: "translate(-100%, -50%)" }
+              : { left: left + (hasSpan ? barWidth : DIAMOND) + 6 }
+          }
+        >
+          {drag.mode === "move"
+            ? dateRangeLabel(previewStart, previewDue, hasSpan)
+            : dateRangeLabel(
+                drag.mode === "start" ? previewStart : previewDue,
+                drag.mode === "start" ? previewStart : previewDue,
+                false,
+              )}
+        </span>
+      )}
       {hasSpan ? (
         <div
           role={canEdit ? "button" : undefined}
@@ -1192,37 +1716,36 @@ function TimelineRow({
               onOpen();
             }
           }}
-          className={`absolute top-1/2 -translate-y-1/2 overflow-hidden rounded ${
+          className={`absolute top-1/2 -translate-y-1/2 overflow-hidden ${
             done ? "opacity-55" : ""
           } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
             drag ? "ring-2 ring-brand" : ""
           }`}
-          style={{ left: LEFT_W + left, width: barWidth, height: 20 }}
+          style={{
+            left,
+            width: barWidth,
+            height: BAR_H,
+            // ~1/4 of the height, matching the reference's proportion. A full
+            // pill (radius = half the height) rounded the ends so hard that a
+            // short bar stopped reading as a span at all.
+            borderRadius: BAR_R,
+            // The whole span, tinted: this is the track. `overflow-hidden` plus
+            // the pill radius is what squares off the fill's right edge while
+            // keeping the bar's own ends round — the shape in the reference.
+            backgroundColor: `${color}3d`,
+          }}
         >
-          {/* The PLAN is a thin rule along the top, spanning the whole span;
-              the band beneath it is hours logged against budget. The rule's
-              strength tracks completion — faint on a task nobody has started,
-              solid on one that's used its budget — so a glance down a column
-              reads as "which of these is actually moving" without comparing
-              fill widths. (A diagonal hatch did the same job far more loudly.) */}
+          {/*
+            ONE bar: a tinted track for the plan, a solid fill for the hours
+            logged against budget. The old design put a 2px rule along the top
+            whose opacity tracked completion — it read as a stray hairline
+            floating above the bar rather than as part of it, and it said the
+            same thing the fill already says.
+          */}
           <div
-            className="absolute inset-x-0 top-0 h-[2px] rounded-full"
-            style={{ backgroundColor: over ? "var(--danger)" : color, opacity: lineStrength }}
+            className="h-full"
+            style={{ width: `${pct}%`, backgroundColor: over ? "var(--danger)" : color }}
           />
-          <div
-            className="absolute inset-x-0 bottom-0 h-[11px] rounded"
-            style={{ backgroundColor: `${color}1f` }}
-          >
-            <div
-              className="h-full rounded"
-              style={{ width: `${pct}%`, backgroundColor: over ? "var(--danger)" : color }}
-            />
-          </div>
-          {barWidth >= LABEL_MIN_PX && (
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-end px-1.5 text-[10px] font-medium tabular-nums text-foreground/75">
-              {hoursLabel}
-            </span>
-          )}
           {canEdit && barWidth >= HANDLE_MIN_PX && (
             <>
               <span
@@ -1246,7 +1769,19 @@ function TimelineRow({
             </>
           )}
         </div>
-      ) : (
+      ) : null}
+      {/* The hours sit OUTSIDE the bar now. Inside, they had to be legible over
+          both the solid fill and the pale track, and were dropped entirely on
+          bars under 64px — which is most of them at week zoom. */}
+      {hasSpan && barWidth >= LABEL_MIN_PX && !drag && (
+        <span
+          className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] tabular-nums text-faint"
+          style={{ left: left + barWidth + 6 }}
+        >
+          {hoursLabel}
+        </span>
+      )}
+      {!hasSpan && (
         /* No start date: a deadline, drawn as a diamond on the due date. Its
            LEFT edge is still a resize handle — that's how a deadline becomes a
            scheduled span in the first place. */
@@ -1274,13 +1809,14 @@ function TimelineRow({
             drag ? "ring-2 ring-brand" : ""
           }`}
           style={{
-            left: LEFT_W + left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
+            left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
             width: DIAMOND,
             height: DIAMOND,
             backgroundColor: over ? "var(--danger)" : color,
           }}
         />
       )}
+      </div>
     </div>
   );
 }

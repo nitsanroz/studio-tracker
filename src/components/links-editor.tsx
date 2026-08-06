@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ExternalLink, Link2, Pencil, X } from "lucide-react";
+import { useImperativeHandle, useState, type Ref } from "react";
+import { ExternalLink, Link2, Pencil, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { Link as RefLink } from "@/lib/types";
@@ -18,18 +18,30 @@ import type { Link as RefLink } from "@/lib/types";
  * ever stored (`normalizeUrl`) and again before it is rendered (`isSafeUrl`):
  * a `javascript:` link under a friendly title is a trap nobody could spot.
  */
+export interface LinksEditorHandle {
+  /** open the add form — for callers that host their own "+ Add link" control */
+  startAdding: () => void;
+}
+
 export function LinksEditor({
   owner,
   canEdit,
   emptyHint = "No links yet.",
+  showAddButton = true,
+  ref,
 }: {
   owner: { taskId: string } | { clientId: string };
   canEdit: boolean;
   emptyHint?: string;
+  /** false when the surrounding heading provides the add control instead */
+  showAddButton?: boolean;
+  ref?: Ref<LinksEditorHandle>;
 }) {
   const { links, addLink, updateLink, deleteLink } = useData();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  useImperativeHandle(ref, () => ({ startAdding: () => setAdding(true) }), []);
 
   const mine = links
     .filter((l) => ("taskId" in owner ? l.taskId === owner.taskId : l.clientId === owner.clientId))
@@ -63,7 +75,9 @@ export function LinksEditor({
           )}
         </div>
       )}
-      {mine.length === 0 && !adding && <p className="text-sm text-faint">{emptyHint}</p>}
+      {mine.length === 0 && !adding && showAddButton && (
+        <p className="text-sm text-faint">{emptyHint}</p>
+      )}
       {canEdit &&
         (adding ? (
           <div className="rounded-lg border border-border">
@@ -78,12 +92,14 @@ export function LinksEditor({
             />
           </div>
         ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm text-muted hover:bg-background hover:text-brand"
-          >
-            <Link2 size={14} /> Add link
-          </button>
+          showAddButton && (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm text-muted hover:bg-background hover:text-brand"
+            >
+              <Link2 size={14} /> Add link
+            </button>
+          )
         ))}
     </div>
   );
@@ -133,12 +149,15 @@ function LinkRow({
           >
             <Pencil size={13} />
           </button>
+          {/* A trash, not an ×: this deletes the link, and an × beside a row
+              reads as "close" or "dismiss" — the one thing it doesn't do. */}
           <button
             onClick={onRemove}
-            title="Remove link"
+            title="Delete link"
+            aria-label="Delete link"
             className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-danger group-hover/link:opacity-100"
           >
-            <X size={14} />
+            <Trash2 size={13} />
           </button>
         </>
       )}
