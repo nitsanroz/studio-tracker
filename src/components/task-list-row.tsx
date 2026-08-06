@@ -120,7 +120,7 @@ const COLS: { key: string; label: string; w: number; hint?: string }[] = [
   { key: "section", label: "Section", w: 120, hint: "Board section the task lives in" },
   // task column flexes — no fixed width; Due renders immediately after it
   { key: "due", label: "Due", w: 50, hint: "Due date — click a cell to change it" },
-  { key: "tags", label: "Tags", w: 84, hint: "Task tag — click a cell to change it" },
+  { key: "tags", label: "Status", w: 84, hint: "Where the task is in the process — click a cell to change it" },
   { key: "figma", label: "Figma", w: 58, hint: "Linked Figma file" },
   // split from one merged "Hrs/budget" cell so this table reads the same as the
   // client page's; the utilisation % moved into the tooltip rather than being dropped
@@ -279,7 +279,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
                   options={tags.map((t) => ({ value: t.name, label: t.name }))}
                   onCommit={(v) => updateTask(task.id, { tag: v || null })}
                   display={task.tag ? <TagBadge tag={task.tag} /> : null}
-                  emptyLabel="No tag"
+                  emptyLabel="No status"
                 />
               </span>
               <span style={cell("figma")} onClick={(e) => e.stopPropagation()}>

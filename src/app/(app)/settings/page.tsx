@@ -10,7 +10,7 @@ import { Tabs, TagBadge } from "@/components/ui";
 import { MemberPictures } from "@/components/picture-editor";
 import { HrDetailsForm } from "@/components/hr-details-form";
 import { OccasionsSettings } from "@/components/occasions-settings";
-import type { Tag } from "@/lib/types";
+import type { Tag, TaskType } from "@/lib/types";
 
 function MyProfile() {
   const { profiles, currentUserId } = useData();
@@ -255,7 +255,7 @@ function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
         value={tag.color}
         onChange={(e) => updateTag(tag.id, { color: e.target.value })}
         className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
-        title="Tag color"
+        title="Status colour"
       />
       <input
         value={name}
@@ -270,15 +270,124 @@ function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
       <TagBadge tag={tag.name} />
       <button
         onClick={() => {
-          if (confirm(`Delete tag "${tag.name}"? Tasks using it will lose the tag.`))
+          if (confirm(`Delete status "${tag.name}"? Tasks using it will lose it.`))
             deleteTag(tag.id);
         }}
         className="shrink-0 rounded p-1.5 text-muted hover:bg-red-50 hover:text-danger"
-        title="Delete tag"
+        title="Delete status"
       >
         <Trash2 size={14} />
       </button>
     </div>
+  );
+}
+
+/**
+ * Kinds of work (migration 0024) — the colours the client Timeline paints with.
+ *
+ * Deliberately its own section beside Task statuses rather than merged into it: a
+ * tag says where a task is in the process ("Client approval"), a type says what
+ * the work IS ("QA"). Sharing one list would force a task to pick one or the
+ * other.
+ */
+function TaskTypeRow({ type }: { type: TaskType }) {
+  const { tasks, updateTaskType, deleteTaskType } = useData();
+  const [name, setName] = useState(type.name);
+  const inUse = tasks.filter((t) => t.typeId === type.id).length;
+
+  return (
+    <div className="flex items-center gap-3 py-1.5 text-sm">
+      <input
+        type="color"
+        value={type.color}
+        onChange={(e) => updateTaskType(type.id, { color: e.target.value })}
+        className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+        title="Type colour — used for this type's bars on the client Timeline"
+      />
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => {
+          const trimmed = name.trim();
+          if (!trimmed || trimmed === type.name) {
+            setName(type.name);
+            return;
+          }
+          updateTaskType(type.id, { name: trimmed });
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape") setName(type.name);
+        }}
+        className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 font-medium hover:border-border focus:border-brand focus:outline-none"
+      />
+      <span className="shrink-0 text-xs tabular-nums text-faint">
+        {inUse === 0 ? "unused" : `${inUse} task${inUse === 1 ? "" : "s"}`}
+      </span>
+      <button
+        onClick={() => {
+          // The FK is ON DELETE SET NULL, so nothing is lost but the label —
+          // say how many tasks that affects rather than asking blind.
+          const warn = inUse
+            ? `Delete type "${type.name}"? ${inUse} task${inUse === 1 ? "" : "s"} will lose it.`
+            : `Delete type "${type.name}"?`;
+          if (confirm(warn)) deleteTaskType(type.id);
+        }}
+        className="shrink-0 rounded p-1.5 text-muted hover:bg-red-50 hover:text-danger"
+        title="Delete type"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
+function TaskTypesSection() {
+  const { taskTypes, addTaskType } = useData();
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("#0b43ed");
+
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-1 font-heading">Task types</h2>
+      <p className="mb-2 text-xs text-muted">
+        The kind of work a task is. Each type&apos;s colour is what its bars are drawn in on a
+        client&apos;s Timeline.
+      </p>
+      <div className="flex flex-col divide-y divide-border">
+        {taskTypes.map((t) => (
+          <TaskTypeRow key={t.id} type={t} />
+        ))}
+        {taskTypes.length === 0 && <p className="py-2 text-sm text-faint">No types yet.</p>}
+      </div>
+      <form
+        className="mt-3 flex items-center gap-2 border-t border-border pt-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const trimmed = newName.trim();
+          if (!trimmed) return;
+          addTaskType(trimmed, newColor);
+          setNewName("");
+        }}
+      >
+        <input
+          type="color"
+          value={newColor}
+          onChange={(e) => setNewColor(e.target.value)}
+          className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+          title="New type colour"
+        />
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="New type — e.g. Wireframe…"
+          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+        />
+        <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
+          Add
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -289,12 +398,16 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-2 font-heading">Task tags</h2>
+      <h2 className="mb-1 font-heading">Task statuses</h2>
+      <p className="mb-2 text-xs text-muted">
+        Where a task is in the process — in design, waiting on the client, approved. What KIND of
+        work it is lives in Task types above.
+      </p>
       <div className="flex flex-col divide-y divide-border">
         {tags.map((t) => (
           <TagRow key={t.id} tag={t} isAdmin={isAdmin} />
         ))}
-        {tags.length === 0 && <p className="py-2 text-sm text-faint">No tags yet.</p>}
+        {tags.length === 0 && <p className="py-2 text-sm text-faint">No statuses yet.</p>}
       </div>
       {isAdmin && (
         <form
@@ -312,12 +425,12 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
             className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
-            title="New tag color"
+            title="New status colour"
           />
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="New tag name…"
+            placeholder="New status — e.g. In review…"
             className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
           />
           <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
@@ -512,6 +625,7 @@ export default function SettingsPage() {
         // three cards, so plain source-order auto-placement rather than a
         // hand-split masonry
         <div className="grid items-start gap-4 lg:grid-cols-2">
+          <TaskTypesSection />
           <TagsSection isAdmin={isAdmin} />
           <IntakeSettings />
           <OccasionsSettings />

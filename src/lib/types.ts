@@ -24,6 +24,33 @@ export interface Profile {
   capacityHoursWeek: number | null;
 }
 
+/**
+ * A kind of work — Design, QA, Wireframe (migration 0024). Separate from `Tag`
+ * (shown as "Status" in the UI),
+ * which records where a task is in the process: the two answer different
+ * questions and a task legitimately has both. The Timeline paints its bars with
+ * this colour.
+ */
+export interface TaskType {
+  id: string;
+  name: string;
+  color: string;
+  position: number;
+}
+
+/**
+ * ⚠️ **Called "Status" everywhere in the UI** (renamed 2026-08-06) — it records
+ * where a task is in the process: "in design", "Client approval", "Approved".
+ * The table, the column and every identifier are still `tag`/`tags`/`tag_id`,
+ * because renaming the schema and ~40 references is a large, risky diff for a
+ * label change. If you touch this: UI copy says Status, code says tag.
+ *
+ * Not to be confused with `Task.status` (todo | in_progress | done), which the
+ * UI never calls "status" — it surfaces as the completion tick and the board's
+ * To do / In progress / Done columns.
+ *
+ * Also not `TaskType`, which is the KIND of work rather than its stage.
+ */
 export interface Tag {
   id: string;
   name: string;
@@ -40,6 +67,34 @@ export interface Client {
   billable: boolean;
   /** free-text invoice day of month shown on Reports ("15th", "1st"…) */
   invoiceNote: string;
+  /**
+   * A preset glyph name from CLIENT_ICONS (migration 0023), or null for the
+   * client's initial. Ignored when `iconUrl` is set.
+   */
+  icon: string | null;
+  /** uploaded client mark (migration 0023). Wins over `icon` when both exist. */
+  iconUrl: string | null;
+  /**
+   * The client-level equivalent of a task brief (migration 0022): standing
+   * context anyone in the studio may need — tone of voice, who signs off,
+   * where the assets live. Readable by everyone, admin-writable.
+   */
+  notes: string;
+}
+
+/**
+ * A titled reference link (migration 0022) belonging to EITHER a task or a
+ * client — exactly one of the two ids is set, which the DB enforces. Only the
+ * title is rendered; the URL hides behind it, because these are Google Docs and
+ * Dropbox URLs that are 200 characters of nothing anyone can read.
+ */
+export interface Link {
+  id: string;
+  taskId: string | null;
+  clientId: string | null;
+  title: string;
+  url: string;
+  position: number;
 }
 
 export interface Section {
@@ -68,11 +123,26 @@ export interface Task {
   figmaUrl: string | null;
   status: TaskStatus;
   tag: string | null;
+  /** kind of work (0024) — held by ID, unlike `tag`, which is denormalised to its name */
+  typeId: string | null;
   assigneeId: string | null;
   dueDate: string | null;
+  /**
+   * Left edge of the task's bar on the client Timeline (migration 0022). Null
+   * means "no duration known" — the timeline draws a single-day bar on the due
+   * date, and dragging its left edge is what fills this in. Admin-only in the
+   * DB, like `dueDate` (0022 amends the 0011 trigger to say so).
+   */
+  startDate: string | null;
   billable: boolean;
   estimateHours: number | null;
   position: number;
+  /**
+   * Row order on the client Timeline (migration 0023) — deliberately NOT
+   * `position`, which is per-section and drives the Tasks tab. Null means
+   * "never dragged"; those rows sort after the placed ones, by start date.
+   */
+  timelinePosition: number | null;
   /** true while a client intake request is approved-pending confirmation */
   pending?: boolean;
   /**

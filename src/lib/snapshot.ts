@@ -21,6 +21,8 @@ import {
   mapDayState,
   mapDevItem,
   mapEntrySum,
+  mapLink,
+  mapTaskType,
   mapPlanColumn,
   mapPlanEntry,
   mapProfile,
@@ -36,12 +38,14 @@ import type {
   DayState,
   DevItem,
   EntrySum,
+  Link,
   PlanColumn,
   PlanEntry,
   Profile,
   Section,
   Tag,
   Task,
+  TaskType,
   TimeEntry,
 } from "./types";
 
@@ -57,6 +61,10 @@ export interface ColdSnapshot {
   planColumns: PlanColumn[];
   billingPeriods: BillingPeriod[];
   dayStates: DayState[];
+  /** titled reference links on tasks and clients (0022) */
+  links: Link[];
+  /** kinds of work, with their colours (0024) */
+  taskTypes: TaskType[];
   /** projects → client_id, needed by mapTask/mapSection on pre-0007 data */
   projectClient: Map<string, string>;
 }
@@ -79,7 +87,8 @@ export interface HotCtx {
 }
 
 export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
-  const [prof, cli, projLegacy, sec, tagsRes, cols, periods, days] = await Promise.all([
+  const [prof, cli, projLegacy, sec, tagsRes, cols, periods, days, linkRows, typeRows] =
+    await Promise.all([
     // "*" keeps boot working whether or not migration 0004 is applied
     fetchAll<DbRow>(sb, "profiles", "*"),
     fetchAll<DbRow>(sb, "clients", "*"),
@@ -92,6 +101,11 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     // pre-0007 these tables don't exist; RLS hides them from designers
     fetchAll<DbRow>(sb, "client_billing_periods", "*").catch(() => [] as DbRow[]),
     fetchAll<DbRow>(sb, "plan_day_states", "*").catch(() => [] as DbRow[]),
+    // the whole table doesn't exist until 0022; an empty list simply means
+    // "no links anywhere", which is exactly how the app renders it
+    fetchAll<DbRow>(sb, "links", "*").catch(() => [] as DbRow[]),
+    // absent until 0024; an empty list simply means "no types defined"
+    fetchAll<DbRow>(sb, "task_types", "*").catch(() => [] as DbRow[]),
   ]);
 
   const projectClient = new Map<string, string>(
@@ -107,6 +121,8 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
       .map(mapBillingPeriod)
       .sort((a: BillingPeriod, b: BillingPeriod) => a.dateFrom.localeCompare(b.dateFrom)),
     dayStates: days.map(mapDayState),
+    links: linkRows.map(mapLink).sort((a: Link, b: Link) => a.position - b.position),
+    taskTypes: typeRows.map(mapTaskType).sort((a: TaskType, b: TaskType) => a.position - b.position),
     projectClient,
   };
 }
@@ -119,10 +135,23 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
         "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
       // 0016 adds the recovered pre-Everhour history columns
       const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
+      // 0022 adds the timeline's left edge. Its own rung, so a studio that
+      // hasn't run 0022 yet keeps the legacy columns — dropping those is the
+      // expensive mistake this ladder exists to avoid.
+      const startCol = "start_date";
+      // 0023 adds the Timeline's row order. Its own rung again, for the same
+      // reason: each new column must be able to fall away without taking the
+      // rungs below it with it.
+      const orderCol = "timeline_position";
+      // 0024 adds the kind-of-work colour the Timeline paints with.
+      const typeCol = "type_id";
       // Only step down when the column is genuinely absent (isMissingSchema);
       // anything else — a dropped connection, an RLS change — must surface
       // rather than quietly serve a reduced app. See DbError in db.ts.
       for (const select of [
+        `client_id, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0024
+        `client_id, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0023
+        `client_id, ${startCol}, ${legacyCols}, ${cols}`, // post-0007 + 0016 + 0022
         `client_id, ${legacyCols}, ${cols}`, // post-0007 + post-0016
         `client_id, ${cols}`, // post-0007
         cols, // pre-0007

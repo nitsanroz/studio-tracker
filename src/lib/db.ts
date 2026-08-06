@@ -10,6 +10,7 @@ import type {
   DayState,
   DevItem,
   EntrySum,
+  Link,
   PlanColumn,
   PlanEntry,
   Profile,
@@ -18,6 +19,7 @@ import type {
   Tag,
   Task,
   TaskComment,
+  TaskType,
   TimeEntry,
 } from "./types";
 
@@ -86,6 +88,13 @@ export const mapProfile = (r: any): Profile => ({
   capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),
 });
 
+export const mapTaskType = (r: any): TaskType => ({
+  id: r.id,
+  name: r.name,
+  color: r.color ?? "#6b7280",
+  position: r.position ?? 0,
+});
+
 export const mapTag = (r: any): Tag => ({
   id: r.id,
   name: r.name,
@@ -152,6 +161,18 @@ export const mapClient = (r: any): Client => ({
   archived: r.archived,
   billable: r.billable ?? true, // column exists from migration 0009
   invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
+  notes: r.notes ?? "", // column exists from migration 0022
+  icon: r.icon ?? null, // columns exist from migration 0023
+  iconUrl: r.icon_url ?? null,
+});
+
+export const mapLink = (r: any): Link => ({
+  id: r.id,
+  taskId: r.task_id ?? null,
+  clientId: r.client_id ?? null,
+  title: r.title,
+  url: r.url,
+  position: r.position ?? 0,
 });
 
 // Pre-0007 rows have client_id null; fall back via projectClientById (legacy).
@@ -180,8 +201,11 @@ export const mapTask = (
   figmaUrl: r.figma_url,
   status: r.status,
   tag: r.tag_id ? (tagNameById.get(r.tag_id) ?? null) : null,
+  typeId: r.type_id ?? null, // migration 0024
   assigneeId: r.assignee_id,
   dueDate: r.due_date,
+  startDate: r.start_date ?? null, // column exists from migration 0022
+  timelinePosition: r.timeline_position ?? null, // migration 0023
   billable: r.billable,
   estimateHours: r.estimate_hours == null ? null : Number(r.estimate_hours),
   position: r.position,
@@ -250,11 +274,14 @@ export function taskPatchToRow(
     row.completed_at = patch.status === "done" ? new Date().toISOString() : null;
   }
   if ("tag" in patch) row.tag_id = patch.tag ? (tagIdByName.get(patch.tag) ?? null) : null;
+  if ("typeId" in patch) row.type_id = patch.typeId;
   // Without this a "move to another client" updated local state, wrote an EMPTY
   // patch object, and silently reverted on the next reload.
   if ("clientId" in patch) row.client_id = patch.clientId;
   if ("assigneeId" in patch) row.assignee_id = patch.assigneeId;
   if ("dueDate" in patch) row.due_date = patch.dueDate;
+  if ("startDate" in patch) row.start_date = patch.startDate;
+  if ("timelinePosition" in patch) row.timeline_position = patch.timelinePosition;
   if ("billable" in patch) row.billable = patch.billable;
   if ("estimateHours" in patch) row.estimate_hours = patch.estimateHours;
   if ("sectionId" in patch) row.section_id = patch.sectionId;

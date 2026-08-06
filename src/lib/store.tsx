@@ -17,6 +17,8 @@ import {
   mapComment,
   mapDayState,
   mapDevItem,
+  mapLink,
+  mapTaskType,
   mapPlanColumn,
   mapPlanEntry,
   mapSection,
@@ -48,6 +50,7 @@ import type {
   DevStatus,
   EntrySum,
   UserEntrySum,
+  Link,
   PlanColumn,
   PlanEntry,
   PlanEntryType,
@@ -56,6 +59,7 @@ import type {
   Tag,
   Task,
   TaskComment,
+  TaskType,
   TimeEntry,
 } from "./types";
 
@@ -150,6 +154,11 @@ interface Store {
   planEntries: PlanEntry[];
   billingPeriods: BillingPeriod[];
   dayStates: DayState[];
+  links: Link[];
+  /** kinds of work with their colours (0024); the Timeline paints bars with these */
+  taskTypes: TaskType[];
+  /** true once this task's lazily-loaded brief has arrived and is safe to edit */
+  briefLoaded: (taskId: string) => boolean;
   devItems: DevItem[];
 
   openTask: (taskId: string | null) => void;
@@ -177,8 +186,13 @@ interface Store {
   reorderSection: (movedId: string, beforeId: string | null) => void;
   addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
+  /** local-only; for values an API route already persisted with the service key */
+  patchClientLocal: (clientId: string, patch: Partial<Client>) => void;
   updateProfile: (profileId: string, patch: Partial<Profile>) => void;
   updateClient: (clientId: string, patch: Partial<Client>) => void;
+  addTaskType: (name: string, color: string) => void;
+  updateTaskType: (typeId: string, patch: Partial<Pick<TaskType, "name" | "color">>) => void;
+  deleteTaskType: (typeId: string) => void;
   addTag: (name: string, color: string) => void;
   updateTag: (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => void;
   deleteTag: (tagId: string) => void;
@@ -202,6 +216,10 @@ interface Store {
   movePlanColumn: (columnId: string, direction: -1 | 1) => void;
   deletePlanColumn: (columnId: string) => void;
   addComment: (taskId: string, body: string) => void;
+  /** admin-only in the UI; undo restores the row with its original id and timestamp */
+  deleteComment: (id: string) => void;
+  /** Timeline row order (0023) — pass the FULL list of shown ids in their new order */
+  reorderTimelineTasks: (orderedIds: string[]) => void;
   addAttachment: (attachment: Attachment) => void;
   removeAttachment: (id: string) => void;
   /** Resolves to the inserted entry (or null) so a caller can edit it immediately. */
@@ -227,6 +245,10 @@ interface Store {
   deleteBillingPeriod: (id: string) => void;
   addDayState: (dateFrom: string, dateTo: string, label: string) => void;
   deleteDayState: (id: string) => void;
+  /** `owner` is exactly one of taskId / clientId — see the DB CHECK in 0022 */
+  addLink: (owner: { taskId: string } | { clientId: string }, title: string, url: string) => void;
+  updateLink: (id: string, patch: { title?: string; url?: string }) => void;
+  deleteLink: (id: string) => void;
   addDevItem: (text: string) => void;
   updateDevItem: (id: string, patch: { text?: string; status?: DevStatus }) => void;
   deleteDevItem: (id: string) => void;
@@ -319,6 +341,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [sections, setSections] = useState<Section[]>([]);
   const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
   const [dayStates, setDayStates] = useState<DayState[]>([]);
+  const [links, setLinks] = useState<Link[]>([]);
+  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
+  /** tasks whose lazily-fetched `brief` has actually arrived — see loadTaskExtras */
+  const [briefLoaded, setBriefLoaded] = useState<Set<string>>(new Set());
   const [devItems, setDevItems] = useState<DevItem[]>([]);
   const [tagRows, setTagRows] = useState<Tag[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -554,6 +580,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setPlanColumns(c.planColumns);
     setBillingPeriods(c.billingPeriods);
     setDayStates(c.dayStates);
+    setLinks(c.links);
+    setTaskTypes(c.taskTypes);
     // a hot-only refresh maps its tasks with these, so they must follow the cold half
     coldCtxRef.current = {
       tagNames: new Map(c.tags.map((t) => [t.id, t.name])),
@@ -642,6 +670,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setTasks((prev) =>
           prev.map((t) => (t.id === taskId ? { ...t, brief: detail.data.brief ?? "" } : t)),
         );
+        // The brief editor MUST NOT open before this lands. Until it does,
+        // `task.brief` is "" for every task in the list — not because the task
+        // has no brief, but because the snapshot query doesn't fetch the column.
+        // Saving from that state would write an empty string over real text.
+        // Monotonic on purpose: a later refresh re-runs this fetch, and
+        // `mergeTasks` keeps the brief in the meantime, so it never un-loads.
+        setBriefLoaded((prev) => (prev.has(taskId) ? prev : new Set(prev).add(taskId)));
       }
       if (cm.data) {
         const mapped = (cm.data as DbRow[]).map(mapComment);
@@ -654,6 +689,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     },
     [supabase],
   );
+
+  const isBriefLoaded = useCallback((taskId: string) => briefLoaded.has(taskId), [briefLoaded]);
 
   const openTask = useCallback(
     (taskId: string | null) => {
@@ -1115,6 +1152,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
   }, []);
 
+  /**
+   * Local-only client patch, for a value an API ROUTE has already written with
+   * the service key (the client-icon upload). Calling `updateClient` instead
+   * would issue a second, redundant write — and record an undo step for a change
+   * the store never made.
+   */
+  const patchClientLocal = useCallback((clientId: string, patch: Partial<Client>) => {
+    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
+  }, []);
+
   const updateProfile = useCallback(
     (profileId: string, patch: Partial<Profile>) => {
       const before = profiles.find((p) => p.id === profileId);
@@ -1147,6 +1194,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .then(wrote("updateProfile"));
     },
     [supabase, profiles, record, wrote],
+  );
+
+  // ── task types (0024) ─────────────────────────────────────────────────
+  // Simpler than tags in one respect: tasks reference a type by ID, so a rename
+  // needs no cascade. `deleteTaskType` relies on the FK's ON DELETE SET NULL
+  // rather than clearing tasks itself — but local state has to be swept too, or
+  // the pane keeps showing a type that no longer exists until the next refresh.
+  const addTaskType = useCallback(
+    (name: string, color: string) => {
+      const position = Math.max(0, ...taskTypes.map((t) => t.position)) + 1;
+      supabase
+        .from("task_types")
+        .insert({ name, color, position })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            noteWriteError("addTaskType", error);
+            return;
+          }
+          setTaskTypes((prev) => [...prev, mapTaskType(data)]);
+        });
+    },
+    [supabase, taskTypes, noteWriteError],
+  );
+
+  const updateTaskType = useCallback(
+    (typeId: string, patch: Partial<Pick<TaskType, "name" | "color">>) => {
+      const before = taskTypes.find((t) => t.id === typeId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateTaskType(typeId, prev),
+          redo: () => methodsRef.current?.updateTaskType(typeId, patch),
+        });
+      }
+      setTaskTypes((prev) => prev.map((t) => (t.id === typeId ? { ...t, ...patch } : t)));
+      supabase.from("task_types").update(patch).eq("id", typeId).then(wrote("updateTaskType"));
+    },
+    [supabase, taskTypes, record, wrote],
+  );
+
+  const deleteTaskType = useCallback(
+    (typeId: string) => {
+      setTaskTypes((prev) => prev.filter((t) => t.id !== typeId));
+      setTasks((prev) => prev.map((t) => (t.typeId === typeId ? { ...t, typeId: null } : t)));
+      supabase.from("task_types").delete().eq("id", typeId).then(wrote("deleteTaskType"));
+    },
+    [supabase, wrote],
   );
 
   const addTag = useCallback(
@@ -1593,6 +1689,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, currentUserId, noteWriteError],
   );
 
+  /**
+   * Admin-only in the UI. Undo re-inserts the row WITH ITS ORIGINAL ID and its
+   * original `created_at`, so a restored comment lands back in its place in the
+   * thread rather than jumping to the bottom — the thread is ordered by time,
+   * and an imported 2019 comment reappearing under today's would be a lie about
+   * when it was said. `author_name` is carried too: 2,175 of the 2,397 imported
+   * comments have no profile, and it's the only record of who wrote them.
+   */
+  const deleteComment = useCallback(
+    (id: string) => {
+      const gone = comments.find((c) => c.id === id);
+      if (gone) {
+        record({
+          undo: () => {
+            setComments((prev) =>
+              prev.some((c) => c.id === gone.id) ? prev : [...prev, gone],
+            );
+            supabase
+              .from("task_comments")
+              .insert({
+                id: gone.id,
+                task_id: gone.taskId,
+                user_id: gone.userId,
+                body: gone.body,
+                created_at: gone.createdAt,
+                author_name: gone.authorName ?? null,
+              })
+              .then(wrote("restoreComment"));
+          },
+          redo: () => methodsRef.current?.deleteComment(id),
+        });
+      }
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      supabase.from("task_comments").delete().eq("id", id).then(wrote("deleteComment"));
+    },
+    [supabase, comments, record, wrote],
+  );
+
   const addAttachment = useCallback((attachment: Attachment) => {
     setAttachments((prev) => [...prev, attachment]);
   }, []);
@@ -1973,6 +2107,131 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, wrote],
   );
 
+  /**
+   * Row order on the client Timeline (0023). Mirrors `reorderSection`: dense
+   * `1..n` renumbering over the tasks the caller is showing, only changed rows
+   * written, one undo step recording the prior numbers.
+   *
+   * `orderedIds` is the FULL list the Timeline renders, already in its new
+   * order — the component owns the sort (date fallback for never-dragged rows),
+   * so the store doesn't need to reproduce it and the two can't disagree.
+   */
+  const reorderTimelineTasks = useCallback(
+    (orderedIds: string[]) => {
+      const byId = new Map(tasks.map((t) => [t.id, t]));
+      const changed = orderedIds
+        .map((id, i) => ({ id, position: i + 1, was: byId.get(id)?.timelinePosition ?? null }))
+        .filter((r) => byId.has(r.id) && r.position !== r.was);
+      if (changed.length === 0) return;
+
+      const prevById = new Map(changed.map((r) => [r.id, r.was]));
+      const applyLocal = (m: Map<string, number | null>) =>
+        setTasks((prev) =>
+          prev.map((t) => (m.has(t.id) ? { ...t, timelinePosition: m.get(t.id)! } : t)),
+        );
+
+      record({
+        undo: () => {
+          applyLocal(prevById);
+          for (const [id, timeline_position] of prevById) {
+            supabase
+              .from("tasks")
+              .update({ timeline_position })
+              .eq("id", id)
+              .then(wrote("reorderTimelineTasks undo"));
+          }
+        },
+        redo: () => methodsRef.current?.reorderTimelineTasks(orderedIds),
+      });
+
+      applyLocal(new Map(changed.map((r) => [r.id, r.position as number | null])));
+      for (const { id, position } of changed) {
+        supabase
+          .from("tasks")
+          .update({ timeline_position: position })
+          .eq("id", id)
+          .then(wrote("reorderTimelineTasks"));
+      }
+    },
+    [supabase, tasks, record, wrote],
+  );
+
+  // ── reference links (0022) ────────────────────────────────────────────
+  // `owner` is exactly one of taskId / clientId — the DB has a CHECK saying so,
+  // and the two RLS policies differ (task links are member-writable like the
+  // brief they sit under; client links are admin-only).
+  const addLink = useCallback(
+    (owner: { taskId: string } | { clientId: string }, title: string, url: string) => {
+      const scope =
+        "taskId" in owner
+          ? { task_id: owner.taskId, client_id: null }
+          : { task_id: null, client_id: owner.clientId };
+      const siblings = links.filter((l) =>
+        "taskId" in owner ? l.taskId === owner.taskId : l.clientId === owner.clientId,
+      );
+      const position = Math.max(0, ...siblings.map((l) => l.position)) + 1;
+      supabase
+        .from("links")
+        .insert({ ...scope, title, url, position })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            noteWriteError("addLink", error);
+            return;
+          }
+          setLinks((prev) => [...prev, mapLink(data)]);
+        });
+    },
+    [supabase, links, noteWriteError],
+  );
+
+  const updateLink = useCallback(
+    (id: string, patch: { title?: string; url?: string }) => {
+      const before = links.find((l) => l.id === id);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateLink(id, prev),
+          redo: () => methodsRef.current?.updateLink(id, patch),
+        });
+      }
+      setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+      supabase.from("links").update(patch).eq("id", id).then(wrote("updateLink"));
+    },
+    [supabase, links, record, wrote],
+  );
+
+  const deleteLink = useCallback(
+    (id: string) => {
+      const gone = links.find((l) => l.id === id);
+      // Undo re-inserts the row WITH ITS ORIGINAL ID. Without that, the row the
+      // undo creates is a different link, and a redo of the delete would miss it.
+      if (gone) {
+        record({
+          undo: () => {
+            setLinks((prev) => (prev.some((l) => l.id === gone.id) ? prev : [...prev, gone]));
+            supabase
+              .from("links")
+              .insert({
+                id: gone.id,
+                task_id: gone.taskId,
+                client_id: gone.clientId,
+                title: gone.title,
+                url: gone.url,
+                position: gone.position,
+              })
+              .then(wrote("restoreLink"));
+          },
+          redo: () => methodsRef.current?.deleteLink(id),
+        });
+      }
+      setLinks((prev) => prev.filter((l) => l.id !== id));
+      supabase.from("links").delete().eq("id", id).then(wrote("deleteLink"));
+    },
+    [supabase, links, record, wrote],
+  );
+
   const moveTimeEntries = useCallback(
     (entryIds: string[], fromTaskId: string, toTaskId: string) => {
       const idSet = new Set(entryIds);
@@ -2074,6 +2333,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       planEntries,
       billingPeriods,
       dayStates,
+      links,
+      taskTypes,
+      briefLoaded: isBriefLoaded,
       devItems,
       openTask,
       updateTask,
@@ -2089,8 +2351,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reorderSection,
       addClient,
       patchProfileLocal,
+      patchClientLocal,
       updateProfile,
       updateClient,
+      addTaskType,
+      updateTaskType,
+      deleteTaskType,
       addTag,
       updateTag,
       deleteTag,
@@ -2104,6 +2370,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       movePlanColumn,
       deletePlanColumn,
       addComment,
+      deleteComment,
+      reorderTimelineTasks,
       addAttachment,
       removeAttachment,
       addTimeEntry, loadDayEntries,
@@ -2115,6 +2383,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteBillingPeriod,
       addDayState,
       deleteDayState,
+      addLink,
+      updateLink,
+      deleteLink,
       addDevItem,
       updateDevItem,
       deleteDevItem,
@@ -2135,8 +2406,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
-      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, devItems,
-      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, updateProfile, updateClient, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, taskTypes, isBriefLoaded, devItems,
+      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

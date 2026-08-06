@@ -3,12 +3,12 @@
 import { createContext, useContext, useMemo, useRef, useState } from "react";
 import {
   Archive,
-  ArchiveRestore,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   CheckCircle2,
   GripVertical,
+  Pencil,
   Plus,
   Trash2,
   X,
@@ -17,6 +17,10 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { formatDate, formatHoursDecimal, formatHoursShort } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, BudgetBar, CollapseChevron, Tabs, TagBadge } from "./ui";
+import { ClientAvatar } from "./client-avatar";
+import { ClientInfoModal } from "./client-info-modal";
+import { ClientNotes } from "./client-notes";
+import { ClientTimeline } from "./client-timeline";
 import {
   EditableDateCell,
   EditableNumberCell,
@@ -296,7 +300,7 @@ const SORT_HINTS: Record<SortKey, string> = {
   title: "Task title — click to open the task. Click the header to sort",
   assignee: "Who the task is assigned to — click a cell to change. Click to sort",
   due: "Due date — click a cell to change. Click to sort",
-  tag: "Task tag — click a cell to change. Click to sort",
+  tag: "Where the task is in the process — click a cell to change. Click to sort",
   hours: "Hours logged so far. Click to sort",
   budget: "Budget in hours — click a cell to edit it. Click to sort",
   billable: "Billable task? Non-billable hours don't appear on client reports. Click to sort",
@@ -556,7 +560,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
           value={task.tag ?? ""}
           options={tags.map((t) => ({ value: t.name, label: t.name }))}
           onCommit={(v) => updateTask(task.id, { tag: v || null })}
-          emptyLabel="No tag"
+          emptyLabel="No status"
           display={task.tag ? <TagBadge tag={task.tag} /> : null}
         />
       </span>
@@ -1015,7 +1019,7 @@ function SelectionBar({
 }
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskMinutes, addSection, updateClient } =
+  const { clients, sections, tasks, profiles, taskMinutes, addSection } =
     useData();
   const isAdmin = useIsAdmin();
   const [showDone, setShowDone] = useState(false);
@@ -1024,7 +1028,8 @@ export function ClientView({ clientId }: { clientId: string }) {
   // sections appear expanded. "" stands for the null "No section" group.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"list" | "board">("list");
-  const [tab, setTab] = useState<"tasks" | "overview">("tasks");
+  const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
+  const [showInfo, setShowInfo] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
   const [sort, setSort] = useState<Sort>(null);
@@ -1163,6 +1168,7 @@ export function ClientView({ clientId }: { clientId: string }) {
       */}
       <div className="sticky top-14 z-10 -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
         <div className="flex flex-wrap items-center gap-2">
+          <ClientAvatar client={client} size={28} />
           <h1 className="truncate text-2xl font-bold tracking-tight" title={titleTooltip}>
             {client.name}
           </h1>
@@ -1173,22 +1179,19 @@ export function ClientView({ clientId }: { clientId: string }) {
           )}
           <div className="ml-auto flex items-center gap-2">
             <ClientReportButtons clientId={client.id} />
+            {/* Icon only, and admin only: this edits the client RECORD (mark,
+                name, billing note, archive). Notes and links live on Overview,
+                where members can read them too. Archive lives in here rather
+                than beside it — two archive buttons on one screen is one too
+                many, and it belongs with renaming. */}
             {isAdmin && (
               <button
-                onClick={() => updateClient(client.id, { archived: !client.archived })}
-                title={
-                  client.archived
-                    ? "Restore this client everywhere"
-                    : "Hide this client from pickers, reports and search — hours are kept"
-                }
-                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-medium ${
-                  client.archived
-                    ? "border-border bg-surface text-brand hover:border-brand"
-                    : "border-border bg-surface text-muted hover:border-danger hover:text-danger"
-                }`}
+                onClick={() => setShowInfo(true)}
+                title="Edit client"
+                aria-label="Edit client"
+                className="rounded-lg border border-border bg-surface p-1.5 text-muted hover:border-brand hover:text-brand"
               >
-                {client.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
-                {client.archived ? "Restore" : "Archive"}
+                <Pencil size={14} />
               </button>
             )}
             {tab === "tasks" && (
@@ -1219,17 +1222,24 @@ export function ClientView({ clientId }: { clientId: string }) {
           onChange={setTab}
           items={[
             { value: "tasks" as const, label: "Tasks" },
+            { value: "timeline" as const, label: "Timeline" },
             { value: "overview" as const, label: "Overview" },
           ]}
           ariaLabel="Client sections"
         />
       </div>
 
+      {tab === "timeline" && <ClientTimeline clientId={clientId} />}
+
       {/* Overview holds the stats that used to be an xl-only aside — below 1280px
           the total logged, open-task count, billable share and per-user hours were
           simply invisible. */}
       {tab === "overview" && (
-        <div className="max-w-3xl">
+        <div className="flex max-w-3xl flex-col gap-4">
+          {/* Notes and links live HERE rather than behind the edit button:
+              they are for everyone to read, and the edit button is admin-only.
+              Admins edit them in place; members see the same panes read-only. */}
+          <ClientNotes client={client} />
           <ClientStats clientId={clientId} inTab />
         </div>
       )}
@@ -1289,7 +1299,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                 <ResizeHandle onMouseDown={startResize("due")} />
               </span>
               <span className="relative hidden lg:block" style={colCell("tag")}>
-                <SortHeader label="Tag" k="tag" sort={sort} onSort={cycleSort} />
+                <SortHeader label="Status" k="tag" sort={sort} onSort={cycleSort} />
                 <ResizeHandle onMouseDown={startResize("tag")} />
               </span>
               {/* Hours and Budget appear and disappear together — a Budget column
@@ -1414,6 +1424,8 @@ export function ClientView({ clientId }: { clientId: string }) {
       )}
         </div>
       </div>
+
+      {showInfo && <ClientInfoModal client={client} onClose={() => setShowInfo(false)} />}
     </div>
   );
 }
