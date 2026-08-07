@@ -802,20 +802,23 @@ export function ClientTimeline({
           {legendItems.map((it) => (
             <span
               key={it.key}
-              // `ring-2 ring-surface` is what makes the overlap read as a stack
-              // rather than as swatches that have run into each other.
+              // `ring-2 ring-background` is what makes the overlap read as a
+              // stack rather than as swatches run together — and it is
+              // `background`, not `surface`: this toolbar sits on the page, so a
+              // #fff ring was a brighter stroke against the page's #f0f1fa
+              // rather than the invisible gap it is supposed to be.
               className={`-ml-1 flex items-center transition-all duration-200 ease-out first:ml-0 group-hover/legend:ml-0 group-hover/legend:mr-3 ${
                 it.faint ? "text-faint" : ""
               }`}
             >
               {it.diamond ? (
                 <span
-                  className="size-2 rotate-45 border border-current ring-2 ring-surface"
+                  className="size-2 rotate-45 border border-current ring-2 ring-background"
                   aria-hidden
                 />
               ) : (
                 <span
-                  className="size-2.5 rounded-sm ring-2 ring-surface"
+                  className="size-2.5 rounded-sm ring-2 ring-background"
                   style={{ backgroundColor: it.color }}
                   aria-hidden
                 />
