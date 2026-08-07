@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   BAR_H,
   BAR_LABEL_MIN_PX,
@@ -43,9 +44,13 @@ export interface PublicGanttGroup {
   tasks: PublicGanttTask[];
 }
 
-const NAME_W = 240;
-const DATES_W = 116;
-const STICKY_W = NAME_W + DATES_W;
+/**
+ * The pinned column is the task's NAME and nothing else. A Dates column
+ * repeated, in text, what the bar beside it already says in position and
+ * length — and it was the widest thing competing with the chart for a screen
+ * the client is reading on. The exact dates are in the bar's tooltip.
+ */
+const STICKY_W = 260;
 const FALLBACK = "#0b43ed";
 
 /**
@@ -76,6 +81,15 @@ export function PublicGanttView({
   const scroller = useRef<HTMLDivElement>(null);
   const centred = useRef(false);
   const [tip, setTip] = useState<{ x: number; y: number; task: PublicGanttTask } | null>(null);
+  /** Section keys the reader has folded away. */
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const fold = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const today = useMemo(() => {
     const n = new Date();
@@ -134,7 +148,10 @@ export function PublicGanttView({
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
-  const bodyH = rows.reduce((h, g) => h + SECTION_H + g.rows.length * ROW_H, 0);
+  const bodyH = rows.reduce(
+    (h, g) => h + SECTION_H + (collapsed.has(g.key) ? 0 : g.rows.length * ROW_H),
+    0,
+  );
   const todayLeft = daysBetween(from, today) * pxPerDay;
 
   /** Open on today rather than on the oldest thing anyone ever scheduled. */
@@ -154,14 +171,29 @@ export function PublicGanttView({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-4 p-4 sm:p-8">
-      <header className="flex items-center gap-3">
+    // ⚠️ `w-full min-w-0`. `body` is `display: flex`, so this is a FLEX ITEM,
+    // and a flex item's automatic minimum size is its MIN-CONTENT — which here
+    // is the 4000px-wide chart. Without this the whole page grew to 1500px on a
+    // 1180px screen, scrolled horizontally as a document, and pushed the studio
+    // wordmark clean off the right edge. The card's own scroller is what should
+    // absorb a wide chart, and it can only do that once this can shrink.
+    <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-[1500px] flex-col gap-4 p-4 sm:p-8">
+      {/* Three tracks so the zoom control is centred on the ROW, not in whatever
+          space the two ends happen to leave — the same reason the app's tab
+          strip is a grid. */}
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
         {clientIconUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          // `brightness(0)` paints every opaque pixel black while keeping the
+          // alpha, because these marks are drawn WHITE for the coloured tile
+          // they sit on inside the app — on this page there is no tile, so the
+          // logo was white on white and simply absent.
+          // eslint-disable-next-line @next/next/no-img-element -- Supabase storage URL, no loader configured
           <img
             src={clientIconUrl}
             alt=""
-            className="size-10 shrink-0 rounded-lg object-cover"
+            className="size-10 shrink-0 object-contain"
+            style={{ filter: "brightness(0)" }}
           />
         ) : (
           <span
@@ -175,7 +207,8 @@ export function PublicGanttView({
           <h1 className="truncate text-2xl font-bold leading-tight tracking-tight">{clientName}</h1>
           <span className="text-xs text-muted">Schedule · updates automatically</span>
         </span>
-        <div className="ml-auto flex rounded-lg border border-border bg-surface p-0.5">
+        </div>
+        <div className="flex justify-center rounded-lg border border-border bg-surface p-0.5">
           {(["day", "week", "month"] as const).map((z) => (
             <button
               key={z}
@@ -188,6 +221,13 @@ export function PublicGanttView({
             </button>
           ))}
         </div>
+        {/* Whose plan this is. The mask + `bg-brand` is how every other public
+            page (intake, password reset) draws the wordmark. */}
+        <span
+          className="brand-wordmark w-28 justify-self-end bg-brand"
+          role="img"
+          aria-label="Studio&more"
+        />
       </header>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -263,18 +303,33 @@ export function PublicGanttView({
               const gDue = g.rows.reduce((a, r) => (r.due > a ? r.due : a), g.rows[0].due);
               const gLeft = daysBetween(from, gStart) * pxPerDay;
               const gWidth = Math.max(8, (daysBetween(gStart, gDue) + 1) * pxPerDay);
+              const isFolded = collapsed.has(g.key);
               return (
                 <div key={g.key || "none"}>
                   <div
                     className="relative flex border-b border-border"
                     style={{ height: SECTION_H, width: STICKY_W + chartW }}
                   >
-                    <div
-                      className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-surface px-3 text-sm font-semibold"
+                    {/* The whole block is the toggle: a client scanning a long
+                        plan wants whole workstreams out of the way, and a 13px
+                        chevron is a poor target for that. */}
+                    <button
+                      onClick={() => fold(g.key)}
+                      aria-expanded={!isFolded}
+                      title={isFolded ? `Show ${g.name}` : `Hide ${g.name}`}
+                      className="sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-surface px-3 text-left text-sm font-semibold hover:text-brand"
                       style={{ width: STICKY_W }}
                     >
+                      {isFolded ? (
+                        <ChevronRight size={14} className="shrink-0 text-muted" />
+                      ) : (
+                        <ChevronDown size={14} className="shrink-0 text-muted" />
+                      )}
                       <span className="bidi-auto truncate">{g.name}</span>
-                    </div>
+                      <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
+                        {g.rows.length}
+                      </span>
+                    </button>
                     <div className="relative h-full shrink-0" style={{ width: chartW }}>
                       <span
                         className="absolute"
@@ -309,7 +364,8 @@ export function PublicGanttView({
                     </div>
                   </div>
 
-                  {g.rows.map((r) => {
+                  {!isFolded &&
+                    g.rows.map((r) => {
                     const color = r.task.typeColor ?? FALLBACK;
                     const left = daysBetween(from, r.start) * pxPerDay;
                     const barW = Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay);
@@ -319,21 +375,17 @@ export function PublicGanttView({
                         className="relative flex border-b border-border last:border-b-0"
                         style={{ height: ROW_H, width: STICKY_W + chartW }}
                       >
+                        {/* `pl-8` lines the name up under its section's title,
+                            which the chevron has pushed in by that much. */}
                         <div
-                          className="sticky left-0 z-20 flex h-full shrink-0 items-center gap-2 bg-surface px-3"
+                          className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-surface pl-8 pr-3"
                           style={{ width: STICKY_W }}
                         >
                           <span
-                            className="bidi-auto min-w-0 flex-1 truncate text-xs"
+                            className="bidi-auto min-w-0 truncate text-xs"
                             title={r.task.title}
                           >
                             {r.task.title}
-                          </span>
-                          <span
-                            className="shrink-0 text-[11px] tabular-nums text-muted"
-                            style={{ width: DATES_W - 24 }}
-                          >
-                            {dateRangeLabel(r.start, r.due, r.hasStart)}
                           </span>
                         </div>
                         <div className="relative h-full shrink-0" style={{ width: chartW }}>
