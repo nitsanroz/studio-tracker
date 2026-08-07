@@ -162,12 +162,15 @@ function TipHead({
   color: string;
 }) {
   return (
-    <div className="px-3 py-2.5" style={{ backgroundColor: `${color}${TIP_TINT}` }}>
+    // Tight: `py-1.5` and `leading-tight` on both lines. The band is an
+    // identifier, not a paragraph — at py-2.5 with default leading it was
+    // taller than the four fact rows underneath it put together.
+    <div className="px-3 py-1.5" style={{ backgroundColor: `${color}${TIP_TINT}` }}>
       {/* 13/570 against the type's 11/380: two steps clear of it, and the same
           rule the section headers follow — +2px and the heavier of the two
           weights this type system has. */}
-      <div className="text-[13px] font-semibold leading-snug text-foreground">{title}</div>
-      {subtitle && <div className="mt-0.5 text-muted">{subtitle}</div>}
+      <div className="text-[13px] font-semibold leading-tight text-foreground">{title}</div>
+      {subtitle && <div className="leading-tight text-muted">{subtitle}</div>}
     </div>
   );
 }
