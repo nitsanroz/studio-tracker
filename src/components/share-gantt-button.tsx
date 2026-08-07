@@ -62,7 +62,7 @@ export function ShareGanttButton({ clientId }: { clientId: string }) {
       onClick={copy}
       disabled={busy}
       title="Copy a link to this schedule for the client — read-only, no hours, and it stays up to date"
-      className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+      className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
     >
       {copied ? <Check size={13} className="text-success" /> : <Share2 size={13} />}
       {copied ? "Link copied" : "Share"}

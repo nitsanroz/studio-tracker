@@ -44,7 +44,6 @@ import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
-import { ShareGanttButton } from "./share-gantt-button";
 import type { Profile, Section, Task, TaskType } from "@/lib/types";
 
 /**
@@ -754,7 +753,6 @@ export function ClientTimeline({
         </div>
       )}
       <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
-      <ShareGanttButton clientId={clientId} />
     </>
   );
 

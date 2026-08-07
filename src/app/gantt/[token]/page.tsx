@@ -79,7 +79,7 @@ export default async function PublicGanttPage({
       dueDate: t.due_date as string,
       typeName: type?.name ?? null,
       typeColor: type?.color ?? null,
-      order: (t.timeline_position as number | null) ?? 0,
+      order: (t.timeline_position as number | null) ?? null,
     };
   });
 
@@ -113,7 +113,16 @@ export default async function PublicGanttPage({
       key,
       name: key ? ((sections ?? []).find((s) => s.id === key)?.name as string) : "No section",
       rank: key ? (order.get(key) ?? 0) : Number.MAX_SAFE_INTEGER,
-      tasks: list.sort((a, b) => a.order - b.order || a.dueDate.localeCompare(b.dueDate)),
+      // The SAME rule as the studio's Timeline, tiebreak for tiebreak:
+      // hand-placed rows first in their placed order, never-dragged rows to the
+      // bottom by START date (not due), then by title. A client comparing this
+      // page with a screenshot from the studio must not see a different order.
+      tasks: list.sort(
+        (a, b) =>
+          (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+          (a.startDate ?? a.dueDate).localeCompare(b.startDate ?? b.dueDate) ||
+          a.title.localeCompare(b.title),
+      ),
     }))
     .sort((a, b) => a.rank - b.rank);
 

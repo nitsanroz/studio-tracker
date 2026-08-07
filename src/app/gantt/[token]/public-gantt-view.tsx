@@ -33,7 +33,7 @@ export interface PublicGanttTask {
   dueDate: string;
   typeName: string | null;
   typeColor: string | null;
-  order: number;
+  order: number | null;
 }
 
 export interface PublicGanttGroup {

@@ -38,6 +38,7 @@ import {
   EditableTextCell,
 } from "./editable-cell";
 import { ClientReportButtons } from "./client-report-buttons";
+import { ShareGanttButton } from "./share-gantt-button";
 import { TaskBulkControls } from "./task-bulk-controls";
 import { useColWidths, ResizeHandle } from "./resizable";
 import { HBar, LineChart } from "./charts";
@@ -1462,23 +1463,30 @@ export function ClientView({ clientId }: { clientId: string }) {
             )}
           </span>
           <div className="ml-auto flex items-center gap-2">
-            {/* Both tabs list tasks, so "Show completed" belongs to both — and
-                it leads the cluster, to the LEFT of the report buttons. */}
+            {/* A toggle BUTTON, not a checkbox. Both tabs list tasks, so it
+                belongs to both, and it leads the cluster — but a bare checkbox
+                floating among pill buttons read as a form control that had
+                wandered into a toolbar. The pressed state carries the answer
+                now, which the checkbox needed its label to do. */}
             {tab !== "overview" && (
-              <label className="flex items-center gap-1.5 text-sm text-muted">
-                <input
-                  type="checkbox"
-                  checked={showDone}
-                  onChange={(e) => setShowDone(e.target.checked)}
-                />
+              <button
+                onClick={() => setShowDone(!showDone)}
+                aria-pressed={showDone}
+                title={showDone ? "Hide completed tasks" : "Show completed tasks"}
+                className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors ${
+                  showDone
+                    ? "border-brand bg-brand-soft text-brand-dark"
+                    : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                <CheckCircle2 size={14} />
                 Show completed
-              </label>
+              </button>
             )}
             {/* The report is about HOURS and money; the Timeline is about dates.
                 On the Timeline tab its two buttons were the wrong offer next to
-                the wrong view — and the thing you actually want to hand a client
-                from here, a link to the schedule, lives in that tab's own
-                toolbar as "Share". */}
+                the wrong view, so that tab swaps them for "Share" (below) — the
+                thing you actually want to hand a client from a schedule. */}
             {tab !== "timeline" && <ClientReportButtons clientId={client.id} />}
             {/* Icon only, and admin only: this edits the client RECORD (mark,
                 name, billing note, archive). Notes and links live on Overview,
@@ -1495,6 +1503,10 @@ export function ClientView({ clientId }: { clientId: string }) {
                 <Pencil size={14} />
               </button>
             )}
+            {/* To the RIGHT of the pencil, and only on the Timeline: it shares
+                the schedule, so it belongs to that view — the same swap the
+                report buttons make in the other direction. */}
+            {tab === "timeline" && <ShareGanttButton clientId={client.id} />}
             {tab === "tasks" && (
               <>
                 <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
