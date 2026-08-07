@@ -217,6 +217,11 @@ const MODAL_WIDTH = {
   lg: "max-w-lg",
   xl: "max-w-xl",
   "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  // Wide enough for a multi-column figure grid. Anything reading as a POSTER
+  // rather than a form wants these; a text modal should never go past 2xl.
+  "4xl": "max-w-4xl",
+  "5xl": "max-w-5xl",
 } as const;
 
 /**
@@ -246,7 +251,12 @@ export function Modal({
 }) {
   const card = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    card.current?.focus();
+    // preventScroll, because a card taller than the viewport makes the browser
+    // scroll to reveal it — and on a COLD open (web fonts still loading) the
+    // content is briefly taller than it ends up, so a modal with its own
+    // scroller opened part-way down and stayed there. The card is fixed and
+    // centred, so there is never anything to scroll to.
+    card.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -362,11 +372,18 @@ export function InfoDot({
   title,
   children,
   align = "left",
+  side = "down",
 }: {
   title?: string;
   children: React.ReactNode;
   /** which edge of the dot the card hangs from — flip to "right" near a pane edge */
   align?: "left" | "right";
+  /**
+   * which way it opens. Flip to "up" on the last row of anything that sits in a
+   * scroller or near the bottom of a panel — a card opening downward there is
+   * clipped, and an explanation you can't finish reading is worse than none.
+   */
+  side?: "down" | "up";
 }) {
   return (
     <span className="group/info relative inline-flex align-middle">
@@ -379,9 +396,9 @@ export function InfoDot({
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute top-5 z-30 hidden w-60 rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
+        className={`pointer-events-none absolute z-30 hidden w-60 rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
           align === "right" ? "right-0" : "left-0"
-        }`}
+        } ${side === "up" ? "bottom-5" : "top-5"}`}
       >
         {title && <span className="mb-1 block font-semibold">{title}</span>}
         <span className="block text-muted">{children}</span>

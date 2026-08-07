@@ -1,0 +1,256 @@
+{
+  "generatedAt": "2026-08-07",
+  "studio": {
+    "hours": 87577,
+    "recoveredHours": 42953,
+    "entries": 23612,
+    "clients": 167,
+    "tasks": 4597,
+    "people": 55,
+    "firstEntry": "2016-05-15",
+    "lastEntry": "2026-08-06",
+    "years": 11
+  },
+  "build": {
+    "commits": 95,
+    "versions": 50,
+    "firstCommit": "2026-07-05",
+    "lastCommit": "2026-08-07",
+    "commitDays": 16,
+    "files": 160,
+    "lines": 39521,
+    "migrations": 25,
+    "releases": [
+      {
+        "version": "v0.92",
+        "date": "2026-07-13"
+      },
+      {
+        "version": "v0.93",
+        "date": "2026-07-13"
+      },
+      {
+        "version": "v0.94",
+        "date": "2026-07-16"
+      },
+      {
+        "version": "v0.96",
+        "date": "2026-07-17"
+      },
+      {
+        "version": "v0.97",
+        "date": "2026-07-17"
+      },
+      {
+        "version": "v0.99.5",
+        "date": "2026-07-24"
+      },
+      {
+        "version": "v0.99.6",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.7",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.8",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.9",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.11",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.12",
+        "date": "2026-07-25"
+      },
+      {
+        "version": "v0.99.13",
+        "date": "2026-07-26"
+      },
+      {
+        "version": "v0.99.14",
+        "date": "2026-07-26"
+      },
+      {
+        "version": "v0.99.15",
+        "date": "2026-07-26"
+      },
+      {
+        "version": "v0.99.16",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.17",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.18",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.19",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.20",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.21",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.22",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.23",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.24",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.25",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.26",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.27",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.28",
+        "date": "2026-07-27"
+      },
+      {
+        "version": "v0.99.30",
+        "date": "2026-07-28"
+      },
+      {
+        "version": "v0.99.31",
+        "date": "2026-07-28"
+      },
+      {
+        "version": "v0.99.32",
+        "date": "2026-07-28"
+      },
+      {
+        "version": "v0.99.33",
+        "date": "2026-07-28"
+      },
+      {
+        "version": "v0.99.34",
+        "date": "2026-07-28"
+      },
+      {
+        "version": "v0.99.35",
+        "date": "2026-07-29"
+      },
+      {
+        "version": "v0.99.36",
+        "date": "2026-07-29"
+      },
+      {
+        "version": "v1.0.0",
+        "date": "2026-07-29"
+      },
+      {
+        "version": "v1.0.2",
+        "date": "2026-07-30"
+      },
+      {
+        "version": "v1.0.3",
+        "date": "2026-07-30"
+      },
+      {
+        "version": "v1.0.4",
+        "date": "2026-07-30"
+      },
+      {
+        "version": "v1.0.5",
+        "date": "2026-07-30"
+      },
+      {
+        "version": "v1.1.1",
+        "date": "2026-08-04"
+      },
+      {
+        "version": "v1.1.2",
+        "date": "2026-08-04"
+      },
+      {
+        "version": "v1.5.0",
+        "date": "2026-08-06"
+      },
+      {
+        "version": "v1.5.1",
+        "date": "2026-08-06"
+      },
+      {
+        "version": "v1.5.2",
+        "date": "2026-08-06"
+      },
+      {
+        "version": "v1.6.0",
+        "date": "2026-08-06"
+      },
+      {
+        "version": "v1.6.1",
+        "date": "2026-08-07"
+      },
+      {
+        "version": "v1.7.0",
+        "date": "2026-08-07"
+      },
+      {
+        "version": "v1.8.0",
+        "date": "2026-08-07"
+      },
+      {
+        "version": "v1.9.0",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "effort": {
+    "models": [
+      {
+        "name": "claude-opus-5",
+        "share": 48.7,
+        "cost": 2316
+      },
+      {
+        "name": "claude-fable-5",
+        "share": 27.8,
+        "cost": 2752
+      },
+      {
+        "name": "claude-opus-4-8",
+        "share": 23.5,
+        "cost": 807
+      }
+    ],
+    "costUsd": 5876,
+    "claudeHours": 36,
+    "humanHours": 21,
+    "wallClockHours": 57,
+    "sessions": 15,
+    "prompts": 460,
+    "toolCalls": 7487,
+    "days": 25,
+    "outputTokensM": 12.2,
+    "inputTokensM": 4534,
+    "idleThresholdMinutes": 20
+  }
+}

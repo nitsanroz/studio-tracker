@@ -26,6 +26,7 @@ import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
+import { AboutModal } from "./about-modal";
 
 // admin-only sections render LAST, below a thin divider
 const NAV = [
@@ -181,6 +182,7 @@ function Shell({ children }: { children: ReactNode }) {
   // this too, and reading localStorage there is a hydration mismatch. Same
   // pattern as `theme` and the team page's layout.
   const [folded, setFolded] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   useEffect(() => {
     setFolded(localStorage.getItem("sidebar.folded") === "1");
   }, []);
@@ -345,7 +347,26 @@ function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
         {!folded && (
-          <div className="px-4 pb-2 text-right text-[10px] text-white/50">{APP_VERSION}</div>
+          <div className="flex items-center justify-end gap-2 px-4 pb-2 text-[10px]">
+            {/* The version was already here and is the natural place to ask what
+                this thing is — so it opens the panel rather than sitting beside
+                a second control competing for the same corner. */}
+            <button
+              onClick={() => setAboutOpen(true)}
+              title="About the tracker"
+              className="text-white/50 transition-colors hover:text-white/90 hover:underline"
+            >
+              About
+            </button>
+            <span className="text-white/30">·</span>
+            <button
+              onClick={() => setAboutOpen(true)}
+              title="About the tracker"
+              className="text-white/50 transition-colors hover:text-white/90"
+            >
+              {APP_VERSION}
+            </button>
+          </div>
         )}
       </aside>
 
@@ -442,6 +463,7 @@ function Shell({ children }: { children: ReactNode }) {
       )}
 
       <TaskPanel />
+      {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
     </div>
   );
 }

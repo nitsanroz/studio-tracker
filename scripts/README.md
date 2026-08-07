@@ -23,6 +23,7 @@ appended after a real token silently shadows it and every API call 401s.
 
 | Script | Status | Notes |
 | --- | --- | --- |
+| `build-about-stats.mjs` | **repeatable** | Regenerates `src/lib/about-data.json`, the figures behind the About panel (sidebar → version number). Reads Supabase, `git`, and the local Claude Code transcripts; writes only that one JSON. Preview with no flag, write with `--apply`. Re-run whenever the panel looks stale — it is the only way those numbers change. |
 | `compare-finance-hours.mjs` | **read-only** | Tracker vs `finance_client_monthly`, per client-year. Run any time. |
 | `report-missing-clients.mjs` | **read-only** | → `data/missing-clients.csv`. Clients the plan sheets bill for that the tracker is short on. |
 | `report-overages.mjs` | **read-only** | Where the tracker exceeds the finance sheets. |
