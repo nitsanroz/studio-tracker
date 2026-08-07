@@ -197,6 +197,9 @@ function TipRow({
   );
 }
 
+/** "Sep 2026" at 11px semibold plus the cell's px-1.5, with a little slack. */
+const MONTH_LABEL_MIN_PX = 72;
+
 /** Longest legend label. Past this the chips start pushing each other around. */
 const LEGEND_MAX = 10;
 /** Cut to `LEGEND_MAX`, ellipsis included in the count so the width is fixed. */
@@ -1059,7 +1062,20 @@ function ticksFor(from: Date, totalDays: number, zoom: Zoom, pxPerDay: number) {
       groups.push({
         left: cursor * pxPerDay,
         width: len * pxPerDay,
-        label: `${MONTH_NAMES_SHORT[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`,
+        // The FULL year, not `.slice(2)`.
+        //
+        // "Jul 26" sat directly above a row of 26/7, 2/8, 9/8 day/month ticks,
+        // so it read as the 26th of July — a date in the same format as the
+        // scale beneath it, pointing at a different day. Four digits can't be a
+        // day of the month, so the ambiguity is gone rather than mitigated.
+        // There is room for it: a month is ~270px at week zoom and ~780px at day.
+        // The exception is a PARTIAL month at either end of the range — the
+        // chart can start on the 28th — where the year is dropped rather than
+        // truncated into "Jul 20…". The full months either side still carry it.
+        label:
+          len * pxPerDay >= MONTH_LABEL_MIN_PX
+            ? `${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`
+            : MONTH_NAMES_SHORT[date.getMonth()],
       });
       cursor += len;
     }
