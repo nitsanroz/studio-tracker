@@ -24,6 +24,8 @@ export function EditableTextCell({
   inputClassName = "",
   bidi = true,
   stopClick = true,
+  startEditing = false,
+  onExit,
 }: {
   value: string;
   onCommit: (v: string) => void;
@@ -32,8 +34,16 @@ export function EditableTextCell({
   inputClassName?: string;
   bidi?: boolean;
   stopClick?: boolean;
+  /**
+   * Mount straight into the input. For callers whose OWN control is the edit
+   * affordance — a rename pencil, say. Without it a pencil handed you a second
+   * "Click to edit" target for the intent you had just declared.
+   */
+  startEditing?: boolean;
+  /** Editing ended, by commit OR by Escape. Lets a `startEditing` caller reset. */
+  onExit?: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startEditing);
   const cancelled = useRef(false);
 
   if (editing) {
@@ -62,6 +72,9 @@ export function EditableTextCell({
           }
           cancelled.current = false;
           setEditing(false);
+          // Escape does NOT call onCommit, so a caller that gates this on its own
+          // `renaming` state would be stuck showing an editor it can't dismiss.
+          onExit?.();
         }}
         className={`${FOCUS} w-full min-w-0 px-1.5 py-0.5 text-inherit ${bidi ? "bidi-auto" : ""} ${inputClassName}`}
       />

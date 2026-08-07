@@ -105,8 +105,9 @@ const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
 
 /** Rough tooltip box, used only to decide which way it flips near an edge.
  *  Named apart from the section bar's TIP_W/TIP_H, which are its end points. */
-const TOOLTIP_W = 260;
-const TOOLTIP_H = 96;
+const TOOLTIP_W = 244;
+/** Measured at its tallest — a typed task with a span, hours and the hint: 176. */
+const TOOLTIP_H = 180;
 
 /**
  * The bars' tooltip, on the spot.
@@ -116,20 +117,80 @@ const TOOLTIP_H = 96;
  * which is a write. It is `fixed` and portalled to `document.body` for the usual
  * reason in this file: the chart is in a scroller that clips BOTH axes, so
  * anything anchored inside a row is cut off on the first and last of them.
+ *
+ * It takes NODES, not a string. As five `\n`-joined lines everything in it —
+ * the task's name, its type, its dates, its hours, and a line of instructions
+ * that never changes — arrived at the same size, weight and colour, so there was
+ * nothing to read first. See `TipRow` and the callers for the three bands.
  */
-function HoverTip({ text, x, y }: { text: string; x: number; y: number }) {
+function HoverTip({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
   const left = Math.min(Math.max(8, x + 12), window.innerWidth - TOOLTIP_W - 8);
   const below = y + 18;
   const flip = below + TOOLTIP_H > window.innerHeight;
   return createPortal(
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-[70] max-w-[260px] whitespace-pre-line rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[11px] leading-relaxed text-muted shadow-xl"
+      // `overflow-hidden`, and no padding of its own: the heading band is a
+      // full-bleed tint that has to reach the rounded corners.
+      className="pointer-events-none fixed z-[70] w-[244px] overflow-hidden rounded-xl border border-border bg-surface text-[11px] leading-normal shadow-xl"
       style={{ left, top: flip ? y - 12 : below, transform: flip ? "translateY(-100%)" : undefined }}
     >
-      {text}
+      {children}
     </div>,
     document.body,
+  );
+}
+
+/** Weak tint for the heading band — enough to read as the type's colour. */
+const TIP_TINT = "29";
+
+/**
+ * The heading band: what this is, on a wash of its own colour.
+ *
+ * The colour used to be a dot beside the type's name, which spent a line on
+ * saying what the band now says by being that colour. Dividers went with it —
+ * the tint already ends where the facts begin, so a rule on top of that was one
+ * boundary drawn twice.
+ */
+function TipHead({
+  title,
+  subtitle,
+  color,
+}: {
+  title: string;
+  subtitle?: string | null;
+  color: string;
+}) {
+  return (
+    <div className="px-3 py-2.5" style={{ backgroundColor: `${color}${TIP_TINT}` }}>
+      {/* 13/570 against the type's 11/380: two steps clear of it, and the same
+          rule the section headers follow — +2px and the heavier of the two
+          weights this type system has. */}
+      <div className="text-[13px] font-semibold leading-snug text-foreground">{title}</div>
+      {subtitle && <div className="mt-0.5 text-muted">{subtitle}</div>}
+    </div>
+  );
+}
+
+/** One fact: a faint label on the left, the value right-aligned against it. */
+function TipRow({
+  label,
+  value,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="shrink-0 text-faint">{label}</span>
+      <span
+        className={`truncate tabular-nums ${danger ? "font-semibold text-danger" : "text-foreground"}`}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -1412,11 +1473,12 @@ function SectionHeaderRow({
         {renaming ? (
           <span className="min-w-0 flex-1 text-sm font-semibold">
             <EditableTextCell
+              startEditing
               value={group.section!.name}
               onCommit={(v) => {
                 if (v && v !== group.section!.name) onRename(v);
-                setRenaming(false);
               }}
+              onExit={() => setRenaming(false)}
               inputClassName="text-sm font-semibold"
             />
           </span>
@@ -1464,11 +1526,13 @@ function SectionHeaderRow({
             events off it could never be hovered to show them. Nothing sits under
             a section row to intercept, so there is nothing to get in the way of. */}
         {tip && (
-          <HoverTip
-            text={`${group.section?.name ?? "No section"}\n${dateRangeLabel(group.start, group.due, true)} · ${group.rows.length} task${group.rows.length === 1 ? "" : "s"}`}
-            x={tip.x}
-            y={tip.y}
-          />
+          <HoverTip x={tip.x} y={tip.y}>
+            <TipHead title={group.section?.name ?? "No section"} subtitle="Section" color={color} />
+            <div className="flex flex-col gap-1 px-3 py-2.5">
+              <TipRow label="Runs" value={dateRangeLabel(group.start, group.due, true)} />
+              <TipRow label="Tasks" value={String(group.rows.length)} />
+            </div>
+          </HoverTip>
         )}
         <span
           className="absolute"
@@ -1805,11 +1869,12 @@ function TimelineRow({
           {renaming ? (
             <span className="min-w-0 flex-1 text-xs">
               <EditableTextCell
+                startEditing
                 value={task.title}
                 onCommit={(v) => {
                   if (v && v !== task.title) onRename(v);
-                  setRenaming(false);
                 }}
+                onExit={() => setRenaming(false)}
                 inputClassName="text-xs"
               />
             </span>
@@ -1960,7 +2025,36 @@ function TimelineRow({
       <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
       {/* Suppressed while dragging: the drag chip is already saying where this
           bar is going, and two panels following one pointer is one too many. */}
-      {tip && !drag && <HoverTip text={title} x={tip.x} y={tip.y} />}
+      {tip && !drag && (
+        <HoverTip x={tip.x} y={tip.y}>
+          <TipHead title={task.title} subtitle={row.type?.name ?? "No type"} color={color} />
+          <div className="flex flex-col gap-1 px-3 py-2.5">
+            {hasSpan ? (
+              <>
+                <TipRow label="Dates" value={dateRangeLabel(previewStart, previewDue, true)} />
+                <TipRow
+                  label="Duration"
+                  value={`${workLen} working day${workLen === 1 ? "" : "s"}`}
+                />
+              </>
+            ) : (
+              <TipRow label="Due" value={dateRangeLabel(previewDue, previewDue, false)} />
+            )}
+            <TipRow
+              label="Logged"
+              value={estimate != null ? hoursLabel : `${hoursLabel} · no budget`}
+              danger={over}
+            />
+          </div>
+          {/* The instructions are the only line here that is the same on every
+              bar, so they sit apart and smaller — read once, then ignorable. */}
+          {canEdit && (
+            <div className="px-3 pb-2.5 text-[10px] text-faint">
+              {hasSpan ? "Drag to move · drag an edge to resize" : "Drag to move · alt-drag to give it a start"}
+            </div>
+          )}
+        </HoverTip>
+      )}
       {/*
         Live readout while dragging. Dragging a bar used to be blind — you were
         aiming a rectangle at a column of week ticks and only learned the date

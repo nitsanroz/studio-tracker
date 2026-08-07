@@ -882,6 +882,8 @@ function SectionGroup({
   const [dragOver, setDragOver] = useState(false);
   /** Insert line while another section is being dragged over this header. */
   const [sectionOver, setSectionOver] = useState(false);
+  /** The name is a plain heading until the pencil says otherwise. */
+  const [renaming, setRenaming] = useState(false);
   /**
    * Only a mousedown on the grip may start a section drag — a ref, not state,
    * because toggling `draggable` from mousedown races React's batching and the
@@ -1025,22 +1027,43 @@ function SectionGroup({
         >
           <CollapseChevron open={open} />
         </button>
-        {isAdmin && section ? (
+        {/* Renaming is the PENCIL's job, as on the Timeline. As a click-to-edit
+            cell the section title was the one heading in the app that couldn't
+            be clicked to collapse its own group — and it advertised "Click to
+            edit" on a row whose obvious action is open/close. One target each. */}
+        {renaming && section ? (
           <span className="min-w-32 flex-1">
             <EditableTextCell
+              startEditing
               value={section.name}
-              onCommit={(v) => v && v !== section.name && updateSection(section.id, { name: v })}
+              onCommit={(v) => {
+                if (v && v !== section.name) updateSection(section.id, { name: v });
+              }}
+              onExit={() => setRenaming(false)}
             />
           </span>
         ) : (
-          <button
-            onClick={onToggle}
-            className="bidi-auto min-w-32 flex-1 truncate text-left"
-          >
-            {section?.name ?? "No section"}
-          </button>
+          // The name TRUNCATES rather than flexing, and the count and pencil sit
+          // inside the same flex-1 box — so both land immediately after the
+          // title, as on the Timeline, instead of being flung to the far right
+          // by a name cell that had taken the whole row's spare width.
+          <span className="flex min-w-32 flex-1 items-center gap-1.5">
+            <button onClick={onToggle} className="bidi-auto min-w-0 truncate text-left">
+              {section?.name ?? "No section"}
+            </button>
+            <span className="shrink-0 text-xs font-normal text-faint">{tasks.length}</span>
+            {isAdmin && section && (
+              <button
+                onClick={() => setRenaming(true)}
+                title="Rename section"
+                aria-label={`Rename ${section.name}`}
+                className="shrink-0 rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+          </span>
         )}
-        <span className="shrink-0 text-xs font-normal text-faint">{tasks.length}</span>
         {section && (section.legacyHours != null || section.estimateHours != null) && (
           <span
             className="shrink-0 text-xs font-normal text-faint"
