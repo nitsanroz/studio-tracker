@@ -8,6 +8,7 @@ import {
   Circle,
   Columns3,
   GripVertical,
+  Maximize2,
   Pencil,
   X,
 } from "lucide-react";
@@ -60,6 +61,8 @@ const CHECK_W = 22;
 const NAME_W = 200;
 /** Just the face, but its own column now that clicking it reassigns the task. */
 const ASSIGNEE_W = 44;
+/** Dot + name. 96 fits "Presentation" — the longest type the studio uses. */
+const TYPE_W = 96;
 const DATES_W = 104;
 /** 72, not 68: at 68 the word "Duration" in the header clipped by exactly 1px. */
 const DURATION_W = 72;
@@ -78,6 +81,7 @@ const STICKY_W = GRIP_W + CHECK_W + NAME_W;
 /** The optional left-table columns, in order, with their widths. */
 const TL_COLS = [
   { key: "who", label: "Who", w: ASSIGNEE_W, title: "Assignee" },
+  { key: "type", label: "Type", w: TYPE_W, title: "Kind of work — this is what colours the bar" },
   { key: "dates", label: "Dates", w: DATES_W, title: "Start and due dates" },
   {
     key: "duration",
@@ -164,6 +168,18 @@ const DIAMOND = 11;
 const BAR_H = 16;
 /** Corner radius, in the reference's proportion to the height (~1:4). */
 const BAR_R = 4;
+/**
+ * A section's summary bar is deliberately NOT a task bar: 30% of the height, so
+ * a group reads as a bracket over its rows rather than as one more piece of
+ * work. `Math.round(16 * 0.3)` = 5.
+ */
+const SECTION_BAR_H = Math.round(BAR_H * 0.3);
+/** The tips: a downward point at each end, the width and depth of one. */
+const TIP_W = 6;
+/** Measured from the TOP of the bar, so the point drops 4px below it. */
+const TIP_H = SECTION_BAR_H + 4;
+/** Below this the two tips would meet and the span would read as a chevron. */
+const TIP_MIN_W = TIP_W * 2 + 2;
 /**
  * Measured height of the Dates popover (title + two fields + the button row).
  * Used to decide whether it opens downwards or flips above the cell — it is
@@ -709,6 +725,8 @@ export function ClientTimeline({
                             onSelect={(shiftKey, on) => toggleSelected(row.task.id, shiftKey, on)}
                             onRename={(title) => updateTask(row.task.id, { title })}
                             onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
+                            taskTypes={taskTypes}
+                            onSetType={(typeId) => updateTask(row.task.id, { typeId })}
                             onSetBudget={(estimateHours) =>
                               updateTask(row.task.id, { estimateHours })
                             }
@@ -1231,9 +1249,19 @@ function SectionHeaderRow({
       className="relative flex border-b border-border bg-background/60"
       style={{ height: SECTION_H, width: leftW + totalDays * pxPerDay }}
     >
+      {/*
+        STICKY_W, not leftW — the same block the task rows pin.
+
+        Pinning the section label across the whole left table meant that once you
+        scrolled the chart sideways, an opaque 666px band sat on top of the first
+        666px of the calendar and swallowed the summary bar whole: the bars were
+        in the DOM, in the right place, and invisible for most of the scroll
+        range. The rest of the table's width follows as a plain filler that
+        scrolls away with the columns it belongs to.
+      */}
       <div
         className="group/sec sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-[color-mix(in_srgb,var(--color-surface)_88%,var(--color-foreground))] px-2"
-        style={{ width: leftW }}
+        style={{ width: STICKY_W }}
       >
         <button
           onClick={onToggle}
@@ -1277,14 +1305,54 @@ function SectionHeaderRow({
           </>
         )}
       </div>
+      <div
+        className="h-full shrink-0 bg-[color-mix(in_srgb,var(--color-surface)_88%,var(--color-foreground))]"
+        style={{ width: leftW - STICKY_W }}
+      />
       <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
-        {/* The group's whole span as one slim bar — the reference's device for
-            "this workstream runs from here to here" without reading every row. */}
-        <div
-          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full"
-          style={{ left, width, backgroundColor: color, opacity: 0.85 }}
+        {/*
+          The group's whole span, drawn as the reference's bracket rather than as
+          a bar: a thin rule at 30% of a task bar's height with a point dropping
+          off each end. The tips are what stop it being mistaken for work — they
+          say "everything under here falls between these two dates", which is a
+          claim about the rows, not a thing anyone is assigned to.
+
+          Each tip is the CSS border triangle: a 0×0 box whose coloured top
+          border mitres into a transparent side border, so the hypotenuse runs
+          from the outer edge down to the point. Left tip mitres right, right tip
+          mitres left, and both sit flush with the bar's ends.
+        */}
+        <span
+          className="pointer-events-none absolute"
+          style={{ left, width, top: `calc(50% - ${SECTION_BAR_H / 2}px)` }}
           title={`${group.section?.name ?? "No section"} — ${dateRangeLabel(group.start, group.due, true)}`}
-        />
+        >
+          <span
+            className="absolute inset-x-0 top-0 rounded-[1px]"
+            style={{ height: SECTION_BAR_H, backgroundColor: color, opacity: 0.85 }}
+          />
+          {width >= TIP_MIN_W && (
+            <>
+              <span
+                className="absolute left-0 top-0"
+                style={{
+                  borderTop: `${TIP_H}px solid ${color}`,
+                  borderRight: `${TIP_W}px solid transparent`,
+                  opacity: 0.85,
+                }}
+              />
+              <span
+                className="absolute top-0"
+                style={{
+                  left: width - TIP_W,
+                  borderTop: `${TIP_H}px solid ${color}`,
+                  borderLeft: `${TIP_W}px solid transparent`,
+                  opacity: 0.85,
+                }}
+              />
+            </>
+          )}
+        </span>
       </div>
     </div>
   );
@@ -1408,6 +1476,8 @@ function TimelineRow({
   onAssign,
   onSetBudget,
   onSetDuration,
+  taskTypes,
+  onSetType,
 }: {
   row: Row;
   from: Date;
@@ -1436,6 +1506,9 @@ function TimelineRow({
   onSetBudget: (hours: number | null) => void;
   /** working days → a new DUE date; the start never moves */
   onSetDuration: (workDays: number) => void;
+  /** every type in the studio, not just the ones this client already uses */
+  taskTypes: TaskType[];
+  onSetType: (typeId: string | null) => void;
 }) {
   const { task } = row;
   const [renaming, setRenaming] = useState(false);
@@ -1472,6 +1545,17 @@ function TimelineRow({
   const workLen = workDaysBetween(previewStart, previewDue, off);
   // A task with no type keeps the brand blue — untyped is normal, not degraded.
   const color = row.type?.color ?? "#0b43ed";
+
+  const typeDisplay = row.type ? (
+    <span className="flex items-center gap-1.5 text-xs">
+      <span
+        className="size-2 shrink-0 rounded-full"
+        style={{ backgroundColor: row.type.color }}
+        aria-hidden
+      />
+      <span className="truncate">{row.type.name}</span>
+    </span>
+  ) : null;
 
   const hoursLabel =
     estimate != null
@@ -1575,6 +1659,19 @@ function TimelineRow({
               >
                 {task.title}
               </button>
+              {/* The name opens the task too, but nothing SAID so — a plain
+                  underline on hover is the weakest signal in the app, and on a
+                  Gantt where every other click drags something, "this one opens
+                  a panel" needs an icon. Hover-only, like the pencil: at rest
+                  the column is names, not a row of controls. */}
+              <button
+                onClick={onOpen}
+                title="Open details"
+                aria-label={`Open ${task.title}`}
+                className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-brand group-hover/name:opacity-100"
+              >
+                <Maximize2 size={11} />
+              </button>
               {canEdit && (
                 // Click opens the task, the pencil renames it. One target each:
                 // making the name itself an editor would take away the only way
@@ -1611,6 +1708,32 @@ function TimelineRow({
               profiles={assignableProfiles}
               onAssign={onAssign}
             />
+          </span>
+        )}
+        {/* The type is what colours this row's bar, so a legend on the right and
+            no per-row answer meant counting swatches to find out what a bar was.
+            Admin-only here, like every other editor in this table — members can
+            still set a task's type from the client table, where 0024 allows it. */}
+        {show("type") && (
+          <span
+            className="flex h-full shrink-0 items-center border-l border-border px-0.5"
+            style={{ width: TYPE_W }}
+          >
+            <span className="min-w-0 flex-1">
+              {canEdit ? (
+                <EditableSelectCell
+                  value={task.typeId ?? ""}
+                  options={taskTypes.map((t) => ({ value: t.id, label: t.name }))}
+                  onCommit={(v) => onSetType(v || null)}
+                  emptyLabel="No type"
+                  display={typeDisplay}
+                />
+              ) : (
+                <span className="block truncate px-1.5 py-0.5 text-xs">
+                  {typeDisplay ?? <span className="text-faint">–</span>}
+                </span>
+              )}
+            </span>
           </span>
         )}
         {show("dates") && (
