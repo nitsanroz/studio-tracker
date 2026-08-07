@@ -35,6 +35,8 @@ export interface PublicGanttTask {
   typeName: string | null;
   typeColor: string | null;
   order: number | null;
+  /** Budgeted hours — the agreed scope, never the hours spent against it. */
+  budgetHours: number | null;
 }
 
 export interface PublicGanttGroup {
@@ -45,12 +47,14 @@ export interface PublicGanttGroup {
 }
 
 /**
- * The pinned column is the task's NAME and nothing else. A Dates column
- * repeated, in text, what the bar beside it already says in position and
- * length — and it was the widest thing competing with the chart for a screen
- * the client is reading on. The exact dates are in the bar's tooltip.
+ * The pinned column is the task's name and its budget. There is no Dates column:
+ * it repeated, in text, what the bar beside it already says in position and
+ * length, and it was the widest thing competing with the chart for a screen the
+ * client is reading on. The exact dates are in the bar's tooltip.
  */
-const STICKY_W = 260;
+const NAME_W = 260;
+const BUDGET_W = 56;
+const STICKY_W = NAME_W + BUDGET_W;
 const FALLBACK = "#0b43ed";
 
 /**
@@ -58,9 +62,11 @@ const FALLBACK = "#0b43ed";
  *
  * Same geometry as the studio's Timeline — `@/lib/gantt` is the single source
  * for both, so a bar cannot land on a different day here — and deliberately
- * less of everything else. There are no hours, no status, no assignees and no
- * controls beyond the zoom: the page never receives those fields (see the
- * `select` in page.tsx), so there is nothing to hide, only nothing to show.
+ * less of everything else. There are no LOGGED hours, no status, no assignees
+ * and no controls beyond the zoom: the page never receives those fields (see
+ * the `select` in page.tsx), so there is nothing to hide, only nothing to show.
+ * The budget IS shown — it is the scope the client agreed to, and it says
+ * nothing about how much of it has been used.
  */
 export function PublicGanttView({
   clientName,
@@ -240,7 +246,10 @@ export function PublicGanttView({
                   className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface pl-3 text-[10px] font-medium uppercase tracking-wide text-faint"
                   style={{ width: STICKY_W }}
                 >
-                  Task
+                  <span className="flex-1">Task</span>
+                  <span className="pr-3 text-right" style={{ width: BUDGET_W }}>
+                    Budget
+                  </span>
                 </span>
                 <span className="relative h-full flex-1 border-l border-border">
                   {ticks.map((t) => (
@@ -382,10 +391,18 @@ export function PublicGanttView({
                           style={{ width: STICKY_W }}
                         >
                           <span
-                            className="bidi-auto min-w-0 truncate text-xs"
+                            className="bidi-auto min-w-0 flex-1 truncate text-xs"
                             title={r.task.title}
                           >
                             {r.task.title}
+                          </span>
+                          {/* The budget, and only the budget: what was agreed,
+                              not what has been spent against it. */}
+                          <span
+                            className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
+                            style={{ width: BUDGET_W }}
+                          >
+                            {r.task.budgetHours != null ? `${r.task.budgetHours}h` : "–"}
                           </span>
                         </div>
                         <div className="relative h-full shrink-0" style={{ width: chartW }}>
@@ -481,6 +498,12 @@ function Tip({
             {dateRangeLabel(start, due, hasStart)}
           </span>
         </div>
+        {task.budgetHours != null && (
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="shrink-0 text-faint">Budget</span>
+            <span className="truncate tabular-nums text-foreground">{task.budgetHours}h</span>
+          </div>
+        )}
         {hasStart && (
           <div className="flex items-baseline justify-between gap-3">
             <span className="shrink-0 text-faint">Duration</span>

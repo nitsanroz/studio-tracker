@@ -9,10 +9,12 @@ import { PublicGanttView, type PublicGanttGroup, type PublicGanttTask } from "./
  * is a plan, and a plan the client is reading is only worth reading if it is
  * the current one; so it re-reads on every request.
  *
- * ⚠️ The narrowing happens HERE, in the `select`, not in the view. Hours,
- * status, assignees and budgets are never fetched, so they cannot leak through
- * a prop, a serialised payload or a future edit to the component. What the
- * client gets is: section names, task names, dates, and the type colour.
+ * ⚠️ The narrowing happens HERE, in the `select`, not in the view. LOGGED
+ * hours, status and assignees are never fetched, so they cannot leak through a
+ * prop, a serialised payload or a future edit to the component. What the client
+ * gets is: section names, task names, dates, the type colour, and the BUDGET —
+ * budget is the scope that was agreed, which the client already knows; what
+ * they must not see is how much of it has been spent.
  */
 export const dynamic = "force-dynamic";
 
@@ -57,7 +59,9 @@ export default async function PublicGanttPage({
     // `status` IS read — only to EXCLUDE completed work, never sent onward.
     sb
       .from("tasks")
-      .select("id, title, section_id, start_date, due_date, type_id, timeline_position, status")
+      .select(
+        "id, title, section_id, start_date, due_date, type_id, timeline_position, status, estimate_hours",
+      )
       .eq("client_id", link.client_id)
       .not("due_date", "is", null)
       .neq("status", "done"),
@@ -80,6 +84,7 @@ export default async function PublicGanttPage({
       typeName: type?.name ?? null,
       typeColor: type?.color ?? null,
       order: (t.timeline_position as number | null) ?? null,
+      budgetHours: (t.estimate_hours as number | null) ?? null,
     };
   });
 
