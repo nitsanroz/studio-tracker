@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   GripVertical,
   Columns3,
+  Info,
   Pencil,
   Plus,
   Trash2,
@@ -29,7 +30,7 @@ import { Avatar, BudgetBar, CollapseChevron, Tabs, TagBadge } from "./ui";
 import { ClientAvatar } from "./client-avatar";
 import { ClientInfoModal } from "./client-info-modal";
 import { ClientNotes } from "./client-notes";
-import { ClientTimeline, type Zoom } from "./client-timeline";
+import { ClientTimeline, timelineHint, type Zoom } from "./client-timeline";
 import {
   EditableDateCell,
   EditableNumberCell,
@@ -210,10 +211,22 @@ const useSelection = () => useContext(SelectionContext);
  * fixed — it holds one glyph and there is nothing to reveal by widening it.
  */
 const COL_DEFAULTS: Record<string, number> = {
-  // The name cell still flexes to fill what's left; this is its FLOOR, and
-  // dragging the handle raises it. Past the table's width the wrapper
-  // (`min-w-fit`) scrolls sideways rather than crushing the other columns.
-  name: 128,
+  /**
+   * A REAL width, not a floor.
+   *
+   * The name cell used to be `flex-1` with this as its `minWidth`, and that made
+   * both column-resize complaints true at once. Dragging any OTHER column's
+   * handle right grew that column out of the name cell's width — total row width
+   * was fixed, so the handle stayed under your cursor while the column silently
+   * grew to the LEFT: the drag read as backwards. And dragging the name handle
+   * did nothing at all, because it moved a minimum that sat far below the width
+   * flex had already given the cell.
+   *
+   * Fixed-width like every other column, the row grows and the wrapper
+   * (`min-w-fit`) scrolls sideways instead. Every handle now moves the edge it
+   * is sitting on, in the direction you drag it.
+   */
+  name: 320,
   assignee: 160,
   start: 72,
   due: 72,
@@ -231,10 +244,19 @@ function useColCell() {
   const widths = useContext(ColWidthsContext);
   return (key: string) => ({ width: widths[key] ?? COL_DEFAULTS[key], flexShrink: 0 }) as const;
 }
-/** The name cell flexes, so it takes a floor rather than a fixed width. */
+/**
+ * The name cell. The 160px clamp is for anyone who dragged this handle while it
+ * was still a `minWidth`: the drag looked like it did nothing but it DID store a
+ * width, so a saved 40 or 128 would suddenly apply the first time they load this
+ * version and the column would arrive crushed.
+ */
+const NAME_MIN = 160;
 function useNameCell() {
   const widths = useContext(ColWidthsContext);
-  return { minWidth: widths.name ?? COL_DEFAULTS.name } as const;
+  return {
+    width: Math.max(NAME_MIN, widths.name ?? COL_DEFAULTS.name),
+    flexShrink: 0,
+  } as const;
 }
 
 /**
@@ -612,7 +634,11 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
         </span>
       )}
       <span
-        className={`flex flex-1 items-center font-medium ${done ? "text-faint line-through" : ""}`}
+        // `pl-3.5` is the indent, and it lives INSIDE the name cell so only the
+        // text moves — every column to the right stays where it was. That gives
+        // the Timeline's relationship: the section title sits to the left of the
+        // task names that belong to it, rather than starting at the same x.
+        className={`flex min-w-0 items-center pl-3.5 ${done ? "text-faint line-through" : ""}`}
         style={nameCell}
       >
         {/* A span, not a button, and no inline editor: the row already opens the
@@ -958,7 +984,13 @@ function SectionGroup({
           control, and neither can legally nest inside a button. */}
       <div
         {...sectionDragProps}
-        className={`${COLS} group relative w-full border-b border-border bg-background/60 py-1.5 text-left text-sm font-bold hover:bg-background ${
+        // Same treatment as the Timeline's section rows, for the same reason.
+        // `text-sm font-bold` on a tinted band was IDENTICAL to a task row in
+        // both size and weight — globals.css collapses medium/semibold/bold onto
+        // one weight (570), so the only thing separating a section from its tasks
+        // was the grey. One step up in size and one down for the rows carries it
+        // properly, and the band can go: two materials in one table was noise.
+        className={`${COLS} group relative w-full border-b border-border py-1.5 text-left text-base font-semibold hover:bg-background ${
           sectionIsEmpty ? "opacity-50" : ""
         } ${sectionOver ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""}`}
       >
@@ -1210,6 +1242,9 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [view, setView] = useState<"list" | "board">("list");
   // Lifted out of ClientTimeline so the zoom control can live on the tab strip.
   const [zoom, setZoom] = useState<Zoom>("week");
+  /** The tab strip's right end, which ClientTimeline portals its toolbar into.
+   *  State rather than a ref: the portal has to re-render once the node exists. */
+  const [tlToolbar, setTlToolbar] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
   const [showInfo, setShowInfo] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
@@ -1400,6 +1435,25 @@ export function ClientView({ clientId }: { clientId: string }) {
               </span>
             )}
           </span>
+          {/* The Timeline's how-to, on demand. A custom panel rather than
+              `title`: the browser's own tooltip waits about a second, and this
+              is a paragraph you want the instant you go looking for it — the
+              same reason the folded sidebar's labels aren't `title` either. */}
+          {tab === "timeline" && (
+            <button
+              type="button"
+              // A button, not a decorated span: it is the only place this help
+              // now lives, so it has to be reachable by keyboard — which is also
+              // why the panel opens on focus as well as on hover.
+              aria-label={`How the Timeline works: ${timelineHint(isAdmin)}`}
+              className="group/hint relative shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
+            >
+              <Info size={15} aria-hidden />
+              <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-1.5 hidden w-72 -translate-x-1/2 rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs leading-relaxed text-muted shadow-xl group-hover/hint:block group-focus-visible/hint:block">
+                {timelineHint(isAdmin)}
+              </span>
+            </button>
+          )}
           <div className="ml-auto flex items-center gap-2">
             {/* Both tabs list tasks, so "Show completed" belongs to both — and
                 it leads the cluster, to the LEFT of the report buttons. */}
@@ -1448,19 +1502,31 @@ export function ClientView({ clientId }: { clientId: string }) {
         {/* The tab strip, with the Timeline's own zoom control CENTRED on the
             same line — it's a property of the view being shown, so it reads as
             part of this row rather than as the first thing inside the panel. */}
-        <div className="relative flex items-center">
-          <Tabs
-            value={tab}
-            onChange={setTab}
-            items={[
-              { value: "tasks" as const, label: "Tasks" },
-              { value: "timeline" as const, label: "Timeline" },
-              { value: "overview" as const, label: "Overview" },
-            ]}
-            ariaLabel="Client sections"
-          />
-          {tab === "timeline" && (
-            <div className="absolute left-1/2 -translate-x-1/2">
+        {/*
+          A GRID, not a flex row with an absolutely-centred child.
+
+          The zoom control was `absolute left-1/2`, which takes it out of flow —
+          so once the legend moved onto this line it had no idea the control was
+          there and slid straight under it, at every width I tried. Three tracks
+          with `auto` in the middle keeps the control exactly on the row's centre
+          (the side tracks are equal `1fr`s) AND gives the legend a box of its
+          own to be clipped by instead of a neighbour to overlap.
+        */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex min-w-0">
+            <Tabs
+              value={tab}
+              onChange={setTab}
+              items={[
+                { value: "tasks" as const, label: "Tasks" },
+                { value: "timeline" as const, label: "Timeline" },
+                { value: "overview" as const, label: "Overview" },
+              ]}
+              ariaLabel="Client sections"
+            />
+          </div>
+          <div className="flex justify-center">
+            {tab === "timeline" && (
               <Tabs
                 value={zoom}
                 onChange={setZoom}
@@ -1469,25 +1535,44 @@ export function ClientView({ clientId }: { clientId: string }) {
                 size="sm"
                 ariaLabel="Timeline zoom"
               />
-            </div>
-          )}
+            )}
+          </div>
+          {/* The Timeline's legend and Columns button land here, by portal. They
+              used to have a row of their own between the tabs and the chart;
+              on the tab strip they cost nothing, because this line was already
+              half empty. */}
+          <div ref={setTlToolbar} className="flex min-w-0 items-center justify-end gap-3" />
         </div>
       </div>
 
       {tab === "timeline" && (
-        <ClientTimeline clientId={clientId} zoom={zoom} showDone={showDone} />
+        <ClientTimeline
+          clientId={clientId}
+          zoom={zoom}
+          showDone={showDone}
+          toolbarSlot={tlToolbar}
+        />
       )}
 
       {/* Overview holds the stats that used to be an xl-only aside — below 1280px
           the total logged, open-task count, billable share and per-user hours were
           simply invisible. */}
       {tab === "overview" && (
-        <div className="flex max-w-3xl flex-col gap-4">
+        // Notes and links are the reading surface and take the width; the
+        // figures are a sidebar at ~30%. Stacked in one 3xl column they pushed
+        // "Hours per month" below the fold on a laptop while half the screen sat
+        // empty beside a 500px-wide notes box. Below lg it falls back to one
+        // column, notes first — the figures are reference, not the point.
+        <div className="grid gap-4 lg:grid-cols-[7fr_3fr]">
           {/* Notes and links live HERE rather than behind the edit button:
               they are for everyone to read, and the edit button is admin-only.
               Admins edit them in place; members see the same panes read-only. */}
-          <ClientNotes client={client} />
-          <ClientStats clientId={clientId} inTab />
+          <div className="min-w-0">
+            <ClientNotes client={client} />
+          </div>
+          <div className="min-w-0">
+            <ClientStats clientId={clientId} inTab />
+          </div>
         </div>
       )}
 
@@ -1535,7 +1620,10 @@ export function ClientView({ clientId }: { clientId: string }) {
               >
                 <CollapseChevron open={!allCollapsed} />
               </button>
-              <span className="relative flex-1" style={{ minWidth: widths.name ?? COL_DEFAULTS.name }}>
+              <span
+                className="relative"
+                style={{ width: Math.max(NAME_MIN, widths.name ?? COL_DEFAULTS.name), flexShrink: 0 }}
+              >
                 <SortHeader label="Name" k="title" sort={sort} onSort={cycleSort} />
                 <ResizeHandle onMouseDown={startResize("name")} />
               </span>

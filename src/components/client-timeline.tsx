@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CheckCircle2,
   ChevronDown,
@@ -48,6 +49,19 @@ import type { Profile, Section, Task, TaskType } from "@/lib/types";
 
 export type Zoom = "day" | "week" | "month";
 
+/**
+ * How this view works, in one sentence per verb.
+ *
+ * It used to sit above the chart as a permanent line of grey text — read once,
+ * then a row of height paid for on every visit. ClientView shows it from an (i)
+ * beside the client name instead, which is why it lives here as a string.
+ */
+export function timelineHint(isAdmin: boolean): string {
+  return isAdmin
+    ? "Click a name to open it, the pencil to rename · drag a bar to move it, an edge to resize, the grip to reorder · tick rows to change several at once."
+    : "Read-only — only admins can re-schedule.";
+}
+
 /** Pixels per DAY at each zoom — every position here is computed in days. */
 const PX_PER_DAY: Record<Zoom, number> = { day: 26, week: 9, month: 3 };
 const ROW_H = 34;
@@ -77,6 +91,54 @@ const HOURS_W = 56;
  * place and everything else scrolls away with the calendar.
  */
 const STICKY_W = GRIP_W + CHECK_W + NAME_W;
+
+/**
+ * The pinned header's shadow, applied only when rows are hidden above it. The
+ * negative spread confines it to the bottom edge; without it the shadow would
+ * also smear sideways across the column titles.
+ *
+ * The horizontal counterpart is NOT a class: it is one full-height gradient in
+ * the scroller (see the `shadow.x` layer), because a per-row box-shadow came out
+ * broken by every row border it crossed.
+ */
+const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
+
+/** Rough tooltip box, used only to decide which way it flips near an edge.
+ *  Named apart from the section bar's TIP_W/TIP_H, which are its end points. */
+const TOOLTIP_W = 260;
+const TOOLTIP_H = 96;
+
+/**
+ * The bars' tooltip, on the spot.
+ *
+ * These were `title` attributes, and the browser sits on one for about a second
+ * before showing it — long enough that you give up and click the bar instead,
+ * which is a write. It is `fixed` and portalled to `document.body` for the usual
+ * reason in this file: the chart is in a scroller that clips BOTH axes, so
+ * anything anchored inside a row is cut off on the first and last of them.
+ */
+function HoverTip({ text, x, y }: { text: string; x: number; y: number }) {
+  const left = Math.min(Math.max(8, x + 12), window.innerWidth - TOOLTIP_W - 8);
+  const below = y + 18;
+  const flip = below + TOOLTIP_H > window.innerHeight;
+  return createPortal(
+    <div
+      role="tooltip"
+      className="pointer-events-none fixed z-[70] max-w-[260px] whitespace-pre-line rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[11px] leading-relaxed text-muted shadow-xl"
+      style={{ left, top: flip ? y - 12 : below, transform: flip ? "translateY(-100%)" : undefined }}
+    >
+      {text}
+    </div>,
+    document.body,
+  );
+}
+
+/** Longest legend label. Past this the chips start pushing each other around. */
+const LEGEND_MAX = 10;
+/** Cut to `LEGEND_MAX`, ellipsis included in the count so the width is fixed. */
+function short(name: string): string {
+  return name.length > LEGEND_MAX ? `${name.slice(0, LEGEND_MAX - 1)}…` : name;
+}
 
 /** The optional left-table columns, in order, with their widths. */
 const TL_COLS = [
@@ -164,8 +226,20 @@ const HANDLE_MIN_PX = 30;
 const SHADE_MIN_PX_PER_DAY = 6;
 /** A deadline diamond is a fixed size — it marks a point, so it can't scale with a span. */
 const DIAMOND = 11;
-/** Bar height. One shape now, rather than a rule plus a band. */
-const BAR_H = 16;
+/** Bar height. 20, not 16: the task's name now sits INSIDE the bar and 16px
+ *  left an 11px line with 2px of air above and below, which read as cramped. */
+const BAR_H = 20;
+/**
+ * Below this a name is one truncated letter and an ellipsis — noise, not a
+ * label. The bar's `title` still carries the full name at any width.
+ */
+const BAR_LABEL_MIN_PX = 34;
+/**
+ * Where the label switches from dark to white. The label starts at the bar's
+ * left edge and so does the hours fill, so past roughly half the bar the label
+ * is sitting on solid colour rather than on the tinted track.
+ */
+const LABEL_ON_FILL_PCT = 55;
 /** Corner radius, in the reference's proportion to the height (~1:4). */
 const BAR_R = 4;
 /**
@@ -295,11 +369,14 @@ export function ClientTimeline({
   clientId,
   zoom,
   showDone,
+  toolbarSlot,
 }: {
   clientId: string;
   /** owned by ClientView: its control sits on the tab strip, not in here */
   zoom: Zoom;
   showDone: boolean;
+  /** where to render the legend + Columns button — the tab strip's right end */
+  toolbarSlot: HTMLElement | null;
 }) {
   const {
     tasks,
@@ -347,6 +424,23 @@ export function ClientTimeline({
   const lastPicked = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const scrolledOnce = useRef(false);
+  /**
+   * Whether anything is hidden behind the pinned header / pinned name column.
+   *
+   * Both edges are silent otherwise: the panel is a fixed-height pocket, so a
+   * client with 30 tasks and a client with 5 look the same until you happen to
+   * spin the wheel, and the calendar scrolls sideways UNDER the name column with
+   * no seam to say so. A shadow appears on each edge only once there is
+   * something behind it, which makes it information rather than decoration.
+   */
+  const [shadow, setShadow] = useState({ x: false, y: false });
+  function onScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const x = el.scrollLeft > 0;
+    const y = el.scrollTop > 0;
+    // Only a boundary crossing re-renders; scrolling within a state is free.
+    setShadow((s) => (s.x === x && s.y === y ? s : { x, y }));
+  }
 
   const client = clients.find((c) => c.id === clientId);
   const clientTasks = useMemo(() => tasks.filter((t) => t.clientId === clientId), [tasks, clientId]);
@@ -598,47 +692,53 @@ export function ClientTimeline({
     });
   }
 
+  /*
+    The legend and the Columns button are rendered INTO the tab strip, through a
+    slot ClientView hands down. They belong to this panel and read its state, so
+    lifting them would mean lifting `hiddenCols` and the used-type set with them;
+    a portal keeps the state here and only moves the pixels. Together with the
+    how-to moving onto an (i) beside the client name, that is a whole row of
+    chrome removed from above a chart that is already fighting for height.
+  */
+  const toolbar = (
+    <>
+      {/* One line, never two: this row exists to SAVE height, so a legend that
+          wrapped would give back exactly what the move bought. Every label is cut
+          to LEGEND_MAX characters with the full one in its `title` — a "Client
+          side presentation" costs the same as "QA" here, and the Type column now
+          spells out each row's type in full anyway. */}
+      {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
+        <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-x-3 overflow-hidden whitespace-nowrap text-[11px] text-muted lg:flex">
+          {usedTypes.map((t) => (
+            <span key={t.id} className="flex items-center gap-1.5" title={t.name}>
+              <span className="size-2.5 rounded-sm" style={{ backgroundColor: t.color }} aria-hidden />
+              {short(t.name)}
+            </span>
+          ))}
+          {allRows.some((r) => !r.type) && (
+            <span className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-sm bg-brand" aria-hidden />
+              No type
+            </span>
+          )}
+          {allRows.some((r) => !r.hasStart) && (
+            <span
+              className="flex items-center gap-1.5 text-faint"
+              title="Deadline — a due date with no start date, so there is no span to draw"
+            >
+              <span className="size-2 rotate-45 border border-current" aria-hidden />
+              Deadline
+            </span>
+          )}
+        </div>
+      )}
+      <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-3">
-      {/* One line: what you can do on the left, what the colours mean on the
-          right. The zoom control is no longer here — it lives on the tab strip,
-          centred, because it belongs to the view rather than to this panel. */}
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
-        <span className="text-xs text-faint">
-          {isAdmin
-            ? "Click a name to open it, the pencil to rename · drag a bar to move it, an edge to resize, the grip to reorder · tick rows to change several at once."
-            : "Read-only — only admins can re-schedule"}
-        </span>
-        <div className="flex shrink-0 items-center gap-3">
-          {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
-            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-[11px] text-muted">
-              {usedTypes.map((t) => (
-                <span key={t.id} className="flex items-center gap-1.5">
-                  <span
-                    className="size-2.5 rounded-sm"
-                    style={{ backgroundColor: t.color }}
-                    aria-hidden
-                  />
-                  {t.name}
-                </span>
-              ))}
-              {allRows.some((r) => !r.type) && (
-                <span className="flex items-center gap-1.5">
-                  <span className="size-2.5 rounded-sm bg-brand" aria-hidden />
-                  No type
-                </span>
-              )}
-              {allRows.some((r) => !r.hasStart) && (
-                <span className="flex items-center gap-1.5 text-faint">
-                  <span className="size-2 rotate-45 border border-current" aria-hidden />
-                  Deadline — no start
-                </span>
-              )}
-            </div>
-          )}
-          <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
-        </div>
-      </div>
+      {toolbarSlot && createPortal(toolbar, toolbarSlot)}
 
       {allRows.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface px-4 py-10 text-center text-sm text-faint">
@@ -655,8 +755,34 @@ export function ClientTimeline({
             Capping the height moves both axes inside this box: the titles hold at
             the top, the left rail holds at the left.
           */}
-          <div ref={scroller} className="max-h-[min(70vh,640px)] overflow-auto">
-            <div style={{ width: leftW + chartW }}>
+          <div
+            ref={scroller}
+            onScroll={onScroll}
+            className="max-h-[min(70vh,640px)] overflow-auto"
+          >
+            <div className="relative" style={{ width: leftW + chartW }}>
+              {/*
+                ONE shadow for the whole pinned column, not one per row.
+
+                Row-by-row, every block cast its own — and each row's bottom
+                border cut across it, so what should have been a single soft edge
+                came out as a column of separate smudges with ticks between them.
+                This is a full-height gradient that sticks at the column's right
+                edge and runs unbroken from the top of the header to the last row,
+                over the borders instead of between them.
+              */}
+              {shadow.x && (
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-40 w-full">
+                  <div
+                    className="sticky h-full w-2.5"
+                    style={{
+                      left: STICKY_W,
+                      background:
+                        "linear-gradient(to right, rgba(0,0,0,0.075), rgba(0,0,0,0))",
+                    }}
+                  />
+                </div>
+              )}
               <TimelineHeader
                 from={from}
                 totalDays={totalDays}
@@ -665,6 +791,7 @@ export function ClientTimeline({
                 off={offDates}
                 hidden={hiddenCols}
                 leftW={leftW}
+                shadow={shadow}
               />
               {/* The chart canvas is `bg-background` while every cell and title
                   on the left is `bg-surface`: the two tones are what separate
@@ -727,7 +854,7 @@ export function ClientTimeline({
                             onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
                             taskTypes={taskTypes}
                             onSetType={(typeId) => updateTask(row.task.id, { typeId })}
-                            onSetBudget={(estimateHours) =>
+                                onSetBudget={(estimateHours) =>
                               updateTask(row.task.id, { estimateHours })
                             }
                             onSetDuration={(days) =>
@@ -1139,6 +1266,7 @@ function TimelineHeader({
   off,
   hidden,
   leftW,
+  shadow,
 }: {
   from: Date;
   totalDays: number;
@@ -1147,6 +1275,7 @@ function TimelineHeader({
   off: Set<string>;
   hidden: Set<string>;
   leftW: number;
+  shadow: { x: boolean; y: boolean };
 }) {
   const { ticks, groups } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
@@ -1155,9 +1284,14 @@ function TimelineHeader({
   return (
     // z-30 over the rows' own sticky name block (z-20): scrolling down must not
     // slide task names over the column titles.
-    <div className="sticky top-0 z-30 border-b border-border bg-surface">
+    <div
+      className={`sticky top-0 z-30 border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}
+    >
       <div className="relative flex h-6 items-end">
-        <span className="sticky left-0 z-10 h-full shrink-0 bg-surface" style={{ width: STICKY_W }} />
+        <span
+          className="sticky left-0 z-10 h-full shrink-0 bg-surface"
+          style={{ width: STICKY_W }}
+        />
         <span className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
         <span className="relative flex-1">
           {groups.map((g) => (
@@ -1241,6 +1375,7 @@ function SectionHeaderRow({
   const left = daysBetween(from, group.start) * pxPerDay;
   const width = Math.max(8, (daysBetween(group.start, group.due) + 1) * pxPerDay);
   const [renaming, setRenaming] = useState(false);
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
   // "No section" is a bucket, not a row in `sections` — there is nothing to rename.
   const renameable = canEdit && !!group.section;
 
@@ -1259,8 +1394,12 @@ function SectionHeaderRow({
         range. The rest of the table's width follows as a plain filler that
         scrolls away with the columns it belongs to.
       */}
+      {/* Same `bg-surface` as a task row: the section used to be a darker band,
+          which made the left table read as two alternating materials. The type
+          hierarchy carries the distinction on its own now — the name is one step
+          up in size and one step up in weight from a task's. */}
       <div
-        className="group/sec sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-[color-mix(in_srgb,var(--color-surface)_88%,var(--color-foreground))] px-2"
+        className="group/sec sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-surface px-2"
         style={{ width: STICKY_W }}
       >
         <button
@@ -1271,21 +1410,23 @@ function SectionHeaderRow({
           {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
         {renaming ? (
-          <span className="min-w-0 flex-1 text-xs font-semibold">
+          <span className="min-w-0 flex-1 text-sm font-semibold">
             <EditableTextCell
               value={group.section!.name}
               onCommit={(v) => {
                 if (v && v !== group.section!.name) onRename(v);
                 setRenaming(false);
               }}
-              inputClassName="text-xs font-semibold"
+              inputClassName="text-sm font-semibold"
             />
           </span>
         ) : (
           <>
+            {/* 14px/600 against a task's 12px/500 — two steps of hierarchy, both
+                cheap, so the grouping survives losing the background tint. */}
             <button
               onClick={onToggle}
-              className="bidi-auto min-w-0 truncate text-left text-xs font-semibold hover:text-brand"
+              className="bidi-auto min-w-0 truncate text-left text-sm font-semibold hover:text-brand"
             >
               {group.section?.name ?? "No section"}
             </button>
@@ -1305,10 +1446,7 @@ function SectionHeaderRow({
           </>
         )}
       </div>
-      <div
-        className="h-full shrink-0 bg-[color-mix(in_srgb,var(--color-surface)_88%,var(--color-foreground))]"
-        style={{ width: leftW - STICKY_W }}
-      />
+      <div className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
       <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
         {/*
           The group's whole span, drawn as the reference's bracket rather than as
@@ -1322,10 +1460,21 @@ function SectionHeaderRow({
           from the outer edge down to the point. Left tip mitres right, right tip
           mitres left, and both sit flush with the bar's ends.
         */}
+        {/* NOT `pointer-events-none`: it carries the group's dates, and with
+            events off it could never be hovered to show them. Nothing sits under
+            a section row to intercept, so there is nothing to get in the way of. */}
+        {tip && (
+          <HoverTip
+            text={`${group.section?.name ?? "No section"}\n${dateRangeLabel(group.start, group.due, true)} · ${group.rows.length} task${group.rows.length === 1 ? "" : "s"}`}
+            x={tip.x}
+            y={tip.y}
+          />
+        )}
         <span
-          className="pointer-events-none absolute"
+          className="absolute"
           style={{ left, width, top: `calc(50% - ${SECTION_BAR_H / 2}px)` }}
-          title={`${group.section?.name ?? "No section"} — ${dateRangeLabel(group.start, group.due, true)}`}
+          onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
+          onMouseLeave={() => setTip(null)}
         >
           <span
             className="absolute inset-x-0 top-0 rounded-[1px]"
@@ -1512,6 +1661,8 @@ function TimelineRow({
 }) {
   const { task } = row;
   const [renaming, setRenaming] = useState(false);
+  /** Pointer position of the last mouseenter on this row's bar, or null. */
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
   const show = (key: TlCol) => !hidden.has(key);
   // While dragging, the bar follows the pointer without a single write; the
   // dates only reach the store on pointerup.
@@ -1633,9 +1784,21 @@ function TimelineRow({
             <Circle size={14} className="text-faint" />
           )}
         </span>
+        {/*
+          Body weight, not `font-medium`.
+
+          globals.css collapses `.font-medium`, `.font-semibold` and `.font-bold`
+          onto ONE weight — Saans is used at 380 and 570 and nothing else, per the
+          Figma round-trip. So a task name at `font-medium` and a section name at
+          `font-semibold` were rendering at the SAME 570, and no amount of class
+          juggling would separate them. Putting the task at the body weight and
+          leaving the section at 570 is the one step of contrast this type system
+          actually has — and it's the right way round, since the section is the
+          heading and the task is the content.
+        */}
         <span
           className={`group/name flex h-full min-w-0 items-center pr-1 ${
-            done ? "text-muted line-through" : "font-medium"
+            done ? "text-muted line-through" : ""
           }`}
           style={{ width: NAME_W }}
         >
@@ -1795,6 +1958,9 @@ function TimelineRow({
       </div>
 
       <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
+      {/* Suppressed while dragging: the drag chip is already saying where this
+          bar is going, and two panels following one pointer is one too many. */}
+      {tip && !drag && <HoverTip text={title} x={tip.x} y={tip.y} />}
       {/*
         Live readout while dragging. Dragging a bar used to be blind — you were
         aiming a rectangle at a column of week ticks and only learned the date
@@ -1824,7 +1990,9 @@ function TimelineRow({
         <div
           role={canEdit ? "button" : undefined}
           tabIndex={canEdit ? 0 : undefined}
-          title={title}
+          aria-label={title}
+          onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
+          onMouseLeave={() => setTip(null)}
           onPointerDown={(e) => {
             if (!canEdit) return;
             e.preventDefault();
@@ -1855,7 +2023,11 @@ function TimelineRow({
             // The whole span, tinted: this is the track. `overflow-hidden` plus
             // the pill radius is what squares off the fill's right edge while
             // keeping the bar's own ends round — the shape in the reference.
-            backgroundColor: `${color}3d`,
+            //
+            // 0x52 (32%), up from 0x3d (24%): the track now carries the task's
+            // name, and at 24% a pale tint under dark text made the bar itself
+            // disappear and left the name floating on the row background.
+            backgroundColor: `${color}52`,
           }}
         >
           {/*
@@ -1866,9 +2038,30 @@ function TimelineRow({
             same thing the fill already says.
           */}
           <div
-            className="h-full"
+            className="absolute inset-y-0 left-0"
             style={{ width: `${pct}%`, backgroundColor: over ? "var(--danger)" : color }}
           />
+          {/*
+            The name, in the bar. Reading this chart used to mean holding a row's
+            name in your head while your eye travelled 600px to its bar; with 28
+            rows that is the whole cost of the view. Truncated by the bar's own
+            width — the full name is in the bar's `title`, along with the dates
+            and hours it already carried.
+
+            Dark on the tint, white once the hours fill has grown past the label:
+            both ends of that range are legible, and the switch is at a fixed
+            percentage rather than something measured, so it can't flicker.
+          */}
+          {barWidth >= BAR_LABEL_MIN_PX && (
+            <span
+              className={`pointer-events-none absolute inset-y-0 left-0 flex items-center truncate px-1.5 text-[11px] font-medium leading-none ${
+                done ? "line-through" : ""
+              } ${pct >= LABEL_ON_FILL_PCT ? "text-white" : "text-foreground"}`}
+              style={{ maxWidth: barWidth }}
+            >
+              {task.title}
+            </span>
+          )}
           {canEdit && barWidth >= HANDLE_MIN_PX && (
             <>
               <span
@@ -1911,7 +2104,9 @@ function TimelineRow({
         <div
           role={canEdit ? "button" : undefined}
           tabIndex={canEdit ? 0 : undefined}
-          title={title}
+          aria-label={title}
+          onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
+          onMouseLeave={() => setTip(null)}
           onPointerDown={(e) => {
             if (!canEdit) return;
             e.preventDefault();
