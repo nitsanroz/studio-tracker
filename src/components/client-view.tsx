@@ -1474,7 +1474,12 @@ export function ClientView({ clientId }: { clientId: string }) {
                 Show completed
               </label>
             )}
-            <ClientReportButtons clientId={client.id} />
+            {/* The report is about HOURS and money; the Timeline is about dates.
+                On the Timeline tab its two buttons were the wrong offer next to
+                the wrong view — and the thing you actually want to hand a client
+                from here, a link to the schedule, lives in that tab's own
+                toolbar as "Share". */}
+            {tab !== "timeline" && <ClientReportButtons clientId={client.id} />}
             {/* Icon only, and admin only: this edits the client RECORD (mark,
                 name, billing note, archive). Notes and links live on Overview,
                 where members can read them too. Archive lives in here rather

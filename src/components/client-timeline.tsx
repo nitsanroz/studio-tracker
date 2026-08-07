@@ -14,11 +14,37 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import {
+  addWorkDays,
+  BAR_H,
+  BAR_LABEL_MIN_PX,
+  BAR_R,
+  DIAMOND,
+  dateRangeLabel,
+  daysBetween,
+  isWorkDay,
+  parseISO,
+  PX_PER_DAY,
+  ROW_H,
+  SECTION_BAR_H,
+  SECTION_H,
+  SHADE_MIN_PX_PER_DAY,
+  shiftDays,
+  snapToWorkDay,
+  ticksFor,
+  TIP_H,
+  TIP_MIN_W,
+  TIP_W,
+  toISO,
+  workDaysBetween,
+  type Zoom,
+} from "@/lib/gantt";
 import { formatHoursDecimal, MONTH_NAMES_SHORT } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
+import { ShareGanttButton } from "./share-gantt-button";
 import type { Profile, Section, Task, TaskType } from "@/lib/types";
 
 /**
@@ -47,7 +73,8 @@ import type { Profile, Section, Task, TaskType } from "@/lib/types";
  * `timeline_position` in the 0011 trigger's protected list.
  */
 
-export type Zoom = "day" | "week" | "month";
+/** Re-exported so `client-view` keeps importing the view's own type from here. */
+export type { Zoom };
 
 /**
  * How this view works, in one sentence per verb.
@@ -62,10 +89,6 @@ export function timelineHint(isAdmin: boolean): string {
     : "Read-only — only admins can re-schedule.";
 }
 
-/** Pixels per DAY at each zoom — every position here is computed in days. */
-const PX_PER_DAY: Record<Zoom, number> = { day: 26, week: 9, month: 3 };
-const ROW_H = 34;
-const SECTION_H = 30;
 
 /* Left table geometry. The columns are fixed rather than resizable: this panel
    is half of a two-panel layout and a drag here would desynchronise it from the
@@ -197,9 +220,6 @@ function TipRow({
   );
 }
 
-/** "Jan 2027" at 10px semibold plus the tick's px-1. A week tick is 63px. */
-const YEAR_LABEL_MIN_PX = 56;
-
 /** Longest legend label. Past this the chips start pushing each other around. */
 const LEGEND_MAX = 10;
 /** Cut to `LEGEND_MAX`, ellipsis included in the count so the width is fixed. */
@@ -289,115 +309,18 @@ const LABEL_MIN_PX = 64;
  * Narrower bars are move-only.
  */
 const HANDLE_MIN_PX = 30;
-/** Per-day weekend/holiday shading is drawn up to this zoom; at 3px/day it's noise. */
-const SHADE_MIN_PX_PER_DAY = 6;
-/** A deadline diamond is a fixed size — it marks a point, so it can't scale with a span. */
-const DIAMOND = 11;
-/** Bar height. 20, not 16: the task's name now sits INSIDE the bar and 16px
- *  left an 11px line with 2px of air above and below, which read as cramped. */
-const BAR_H = 20;
-/**
- * Below this a name is one truncated letter and an ellipsis — noise, not a
- * label. The bar's `title` still carries the full name at any width.
- */
-const BAR_LABEL_MIN_PX = 34;
 /**
  * Where the label switches from dark to white. The label starts at the bar's
  * left edge and so does the hours fill, so past roughly half the bar the label
  * is sitting on solid colour rather than on the tinted track.
  */
 const LABEL_ON_FILL_PCT = 55;
-/** Corner radius, in the reference's proportion to the height (~1:4). */
-const BAR_R = 4;
-/**
- * A section's summary bar is deliberately NOT a task bar: 30% of the height, so
- * a group reads as a bracket over its rows rather than as one more piece of
- * work. `Math.round(16 * 0.3)` = 5.
- */
-const SECTION_BAR_H = Math.round(BAR_H * 0.3);
-/** The tips: a downward point at each end, the width and depth of one. */
-const TIP_W = 6;
-/** Measured from the TOP of the bar, so the point drops 4px below it. */
-const TIP_H = SECTION_BAR_H + 4;
-/** Below this the two tips would meet and the span would read as a chevron. */
-const TIP_MIN_W = TIP_W * 2 + 2;
 /**
  * Measured height of the Dates popover (title + two fields + the button row).
  * Used to decide whether it opens downwards or flips above the cell — it is
  * `fixed`, so nothing else stops it running off the bottom of the window.
  */
 const PANEL_H = 200;
-
-function parseISO(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-/** DST-safe: builds the date by parts rather than adding 86,400,000 ms. */
-function shiftDays(d: Date, days: number): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
-}
-
-function daysBetween(a: Date, b: Date): number {
-  // Math.round absorbs the ±1h a DST boundary puts into the difference.
-  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
-}
-
-function toISO(d: Date): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
-/** "18 Aug", and for a range "18 – 24 Aug" / "28 Aug – 2 Sep". */
-function dateRangeLabel(start: Date, due: Date, hasStart: boolean): string {
-  const day = (d: Date) => d.getDate();
-  const mon = (d: Date) => MONTH_NAMES_SHORT[d.getMonth()];
-  if (!hasStart) return `${day(due)} ${mon(due)}`;
-  if (daysBetween(start, due) === 0) return `${day(start)} ${mon(start)}`;
-  // Repeating the month twice inside one cell is noise when it's the same month.
-  if (start.getMonth() === due.getMonth() && start.getFullYear() === due.getFullYear()) {
-    return `${day(start)} – ${day(due)} ${mon(due)}`;
-  }
-  return `${day(start)} ${mon(start)} – ${day(due)} ${mon(due)}`;
-}
-
-/* ── working-day calendar ─────────────────────────────────────────────────
-   `off` holds every yyyy-mm-dd the weekly plan marks as a whole-studio day
-   off. Fri/Sat are the studio's weekend — restated here rather than imported
-   from format.ts because this also has to answer for holidays. */
-
-function isWorkDay(d: Date, off: Set<string>): boolean {
-  const day = d.getDay();
-  if (day === 5 || day === 6) return false; // Friday, Saturday
-  return !off.has(toISO(d));
-}
-
-/** Nearest working day at or after (dir=1) / at or before (dir=-1) `d`. */
-function snapToWorkDay(d: Date, dir: 1 | -1, off: Set<string>): Date {
-  let out = d;
-  // 30 is far more than any run of non-working days; it stops a bad `off` set
-  // from spinning forever.
-  for (let i = 0; i < 30 && !isWorkDay(out, off); i++) out = shiftDays(out, dir);
-  return out;
-}
-
-/** `n` working days after `from` (n=0 → `from` itself, snapped forward). */
-function addWorkDays(from: Date, n: number, off: Set<string>): Date {
-  let out = snapToWorkDay(from, 1, off);
-  for (let i = 0; i < n; i++) out = snapToWorkDay(shiftDays(out, 1), 1, off);
-  return out;
-}
-
-/** Working days from `a` to `b` inclusive; 1 when they're the same working day. */
-function workDaysBetween(a: Date, b: Date, off: Set<string>): number {
-  let count = 0;
-  const span = daysBetween(a, b);
-  for (let i = 0; i <= span; i++) {
-    if (isWorkDay(shiftDays(a, i), off)) count++;
-  }
-  return Math.max(1, count);
-}
 
 /** What's being dragged and by how much — held locally so a drag is one write, not sixty. */
 interface DragState {
@@ -831,6 +754,7 @@ export function ClientTimeline({
         </div>
       )}
       <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
+      <ShareGanttButton clientId={clientId} />
     </>
   );
 
@@ -1067,81 +991,6 @@ function plannedPatch(
 
   const next = snapToWorkDay(shiftDays(row.due, deltaDays), dir, off);
   return { dueDate: toISO(next < row.start ? snapToWorkDay(row.start, 1, off) : next) };
-}
-
-/** Ticks and their month/year grouping — shared by the header and the grid. */
-function ticksFor(from: Date, totalDays: number, zoom: Zoom, pxPerDay: number) {
-  /**
-   * `boundary` = the first tick of a new month (of a new YEAR at month zoom).
-   * `weekStart` = a Sunday, at day zoom only — the studio's week starts there,
-   * Fri+Sat being the weekend, so the divider falls between Sat and Sun.
-   */
-  const ticks: {
-    left: number;
-    width: number;
-    label: string;
-    boundary: boolean;
-    weekStart?: boolean;
-  }[] = [];
-  const step = zoom === "day" ? 1 : zoom === "week" ? 7 : 0; // 0 = calendar months
-
-  if (step > 0) {
-    let lastMonth = -1;
-    let lastYear = -1;
-    for (let d = 0; d < totalDays; d += step) {
-      const date = shiftDays(from, d);
-      const month = date.getMonth();
-      const year = date.getFullYear();
-      // The month is announced by the first tick that falls INSIDE it, not by
-      // the 1st: at week zoom the ticks are Sundays and almost never land on it.
-      const boundary = month !== lastMonth;
-      // The year is stated once, where it CHANGES. Nothing else on this chart
-      // carries it now that the month band is gone — the ticks are d/m and the
-      // Dates column drops the year too — so a plan running into next January
-      // would otherwise never say which January. Only where it fits: at day
-      // zoom a tick is 26px and "Jan 2027" would be cut to "Jan 2…".
-      const newYear = boundary && lastYear !== -1 && year !== lastYear;
-      const width = Math.min(step, totalDays - d) * pxPerDay;
-      lastMonth = month;
-      lastYear = year;
-      ticks.push({
-        left: d * pxPerDay,
-        width,
-        label: boundary
-          ? newYear && width >= YEAR_LABEL_MIN_PX
-            ? `${MONTH_NAMES_SHORT[month]} ${year}`
-            : MONTH_NAMES_SHORT[month]
-          : zoom === "day"
-            ? String(date.getDate())
-            : `${date.getDate()}/${month + 1}`,
-        boundary,
-        weekStart: zoom === "day" && date.getDay() === 0,
-      });
-    }
-  } else {
-    let cursor = 0;
-    let lastYear = -1;
-    while (cursor < totalDays) {
-      const date = shiftDays(from, cursor);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-      const len = Math.min(daysBetween(date, monthEnd), totalDays - cursor);
-      const year = date.getFullYear();
-      // At this zoom every tick is already a month, so the boundary worth
-      // marking is the YEAR — and the tick that opens one carries it.
-      const boundary = year !== lastYear;
-      lastYear = year;
-      ticks.push({
-        left: cursor * pxPerDay,
-        width: len * pxPerDay,
-        label: boundary
-          ? `${MONTH_NAMES_SHORT[date.getMonth()]} ${year}`
-          : MONTH_NAMES_SHORT[date.getMonth()],
-        boundary,
-      });
-      cursor += len;
-    }
-  }
-  return { ticks };
 }
 
 /**
