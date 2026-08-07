@@ -1264,7 +1264,10 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [view, setView] = useState<"list" | "board">("list");
   // Lifted out of ClientTimeline so the zoom control can live on the tab strip.
-  const [zoom, setZoom] = useState<Zoom>("week");
+  // Day by default: at week zoom a one-day task is a 9px sliver and the weekend
+  // shading is dropped entirely, so the calendar you land on says least about
+  // the days you actually plan in.
+  const [zoom, setZoom] = useState<Zoom>("day");
   /** The tab strip's right end, which ClientTimeline portals its toolbar into.
    *  State rather than a ref: the portal has to re-render once the node exists. */
   const [tlToolbar, setTlToolbar] = useState<HTMLDivElement | null>(null);
@@ -1458,25 +1461,6 @@ export function ClientView({ clientId }: { clientId: string }) {
               </span>
             )}
           </span>
-          {/* The Timeline's how-to, on demand. A custom panel rather than
-              `title`: the browser's own tooltip waits about a second, and this
-              is a paragraph you want the instant you go looking for it — the
-              same reason the folded sidebar's labels aren't `title` either. */}
-          {tab === "timeline" && (
-            <button
-              type="button"
-              // A button, not a decorated span: it is the only place this help
-              // now lives, so it has to be reachable by keyboard — which is also
-              // why the panel opens on focus as well as on hover.
-              aria-label={`How the Timeline works: ${timelineHint(isAdmin)}`}
-              className="group/hint relative shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
-            >
-              <Info size={15} aria-hidden />
-              <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-1.5 hidden w-72 -translate-x-1/2 rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs leading-relaxed text-muted shadow-xl group-hover/hint:block group-focus-visible/hint:block">
-                {timelineHint(isAdmin)}
-              </span>
-            </button>
-          )}
           <div className="ml-auto flex items-center gap-2">
             {/* Both tabs list tasks, so "Show completed" belongs to both — and
                 it leads the cluster, to the LEFT of the report buttons. */}
@@ -1536,13 +1520,41 @@ export function ClientView({ clientId }: { clientId: string }) {
           own to be clipped by instead of a neighbour to overlap.
         */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="flex min-w-0">
+          <div className="flex min-w-0 items-center">
             <Tabs
               value={tab}
               onChange={setTab}
               items={[
                 { value: "tasks" as const, label: "Tasks" },
-                { value: "timeline" as const, label: "Timeline" },
+                {
+                  value: "timeline" as const,
+                  label: "Timeline",
+                  /* The Timeline's how-to, on demand, ON ITS OWN TAB — next to
+                     the client name it was help floating beside something it
+                     wasn't about, appearing and vanishing as you changed tabs,
+                     which read as a glitch in the title rather than as part of
+                     the view. `after` puts it on the tab's own line.
+
+                     A button, not a decorated span: it is the only place this
+                     help now lives, so it has to be reachable by keyboard —
+                     hence opening on focus as well as hover. And a custom panel
+                     rather than `title`, because the browser's own tooltip waits
+                     about a second and this is a paragraph you want the instant
+                     you go looking for it. */
+                  after:
+                    tab === "timeline" ? (
+                      <button
+                        type="button"
+                        aria-label={`How the Timeline works: ${timelineHint(isAdmin)}`}
+                        className="group/hint relative flex shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
+                      >
+                        <Info size={15} aria-hidden />
+                        <span className="pointer-events-none absolute left-0 top-full z-40 mt-1.5 hidden w-72 rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs leading-relaxed text-muted shadow-xl group-hover/hint:block group-focus-visible/hint:block">
+                          {timelineHint(isAdmin)}
+                        </span>
+                      </button>
+                    ) : undefined,
+                },
                 { value: "overview" as const, label: "Overview" },
               ]}
               ariaLabel="Client sections"

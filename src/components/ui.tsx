@@ -70,7 +70,19 @@ export function ContextMenu({
 
 export type TabItem<T extends string> =
   | T
-  | { value: T; label: React.ReactNode; count?: number; title?: string; disabled?: boolean };
+  | {
+      value: T;
+      label: React.ReactNode;
+      count?: number;
+      title?: string;
+      disabled?: boolean;
+      /**
+       * Rendered as a SIBLING of the tab button, on the same line. For a control
+       * that belongs to one tab — the Timeline's (i) — which can't go inside the
+       * label, because a button cannot contain a button.
+       */
+      after?: React.ReactNode;
+    };
 
 /**
  * The tab strip — and ONLY the strip. It deliberately doesn't own the panels:
@@ -108,7 +120,15 @@ export function Tabs<T extends string>({
   // `items={["list","board"] as const}` a drop-in for the old segmented controls
   const norm = items.map((it) =>
     typeof it === "string"
-      ? { value: it, label: it as React.ReactNode, bare: true, count: undefined, title: undefined, disabled: false }
+      ? {
+          value: it,
+          label: it as React.ReactNode,
+          bare: true,
+          count: undefined,
+          title: undefined,
+          disabled: false,
+          after: undefined,
+        }
       : { ...it, bare: false },
   );
   const pad = size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm";
@@ -137,7 +157,7 @@ export function Tabs<T extends string>({
               ? "border-brand text-brand-dark"
               : "border-transparent text-muted hover:text-foreground"
           }`;
-    return (
+    const button = (
       <button
         key={t.value}
         type="button"
@@ -151,6 +171,17 @@ export function Tabs<T extends string>({
         {t.label}
         {t.count != null && <span className="ml-1.5 text-xs tabular-nums text-faint">{t.count}</span>}
       </button>
+    );
+    if (!t.after) return button;
+    // The nudge matches the button's own bottom padding, so the adornment sits
+    // on the label's line rather than on the centre of the taller tab box.
+    return (
+      <span key={t.value} className="flex items-center gap-1">
+        {button}
+        <span className={variant === "underline" ? (size === "sm" ? "mb-1.5" : "mb-2") : ""}>
+          {t.after}
+        </span>
+      </span>
     );
   });
 

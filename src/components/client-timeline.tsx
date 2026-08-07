@@ -197,8 +197,8 @@ function TipRow({
   );
 }
 
-/** "Sep 2026" at 11px semibold plus the cell's px-1.5, with a little slack. */
-const MONTH_LABEL_MIN_PX = 72;
+/** "Jan 2027" at 10px semibold plus the tick's px-1. A week tick is 63px. */
+const YEAR_LABEL_MIN_PX = 56;
 
 /** Longest legend label. Past this the chips start pushing each other around. */
 const LEGEND_MAX = 10;
@@ -767,36 +767,64 @@ export function ClientTimeline({
     how-to moving onto an (i) beside the client name, that is a whole row of
     chrome removed from above a chart that is already fighting for height.
   */
+  /** One flat list, so the stack can animate them with a single rule. */
+  const legendItems = [
+    ...usedTypes.map((t) => ({ key: t.id, label: short(t.name), color: t.color, faint: false, diamond: false })),
+    ...(allRows.some((r) => !r.type)
+      ? [{ key: "__none", label: "No type", color: "#0b43ed", faint: false, diamond: false }]
+      : []),
+    ...(allRows.some((r) => !r.hasStart)
+      ? [{ key: "__deadline", label: "Deadline", color: "", faint: true, diamond: true }]
+      : []),
+  ];
+
   const toolbar = (
     <>
-      {/* One line, never two: this row exists to SAVE height, so a legend that
-          wrapped would give back exactly what the move bought. Every label is cut
-          to LEGEND_MAX characters with the full one in its `title` — a "Client
-          side presentation" costs the same as "QA" here, and the Type column now
-          spells out each row's type in full anyway. */}
+      {/*
+        A STACK that unfolds.
+
+        At rest this is a row of overlapping swatches — the colours, and nothing
+        else. Hover and each one slides apart and grows its label. That keeps the
+        toolbar honest at every width (the folded stack is ~40px, so it can never
+        reach the centred zoom control) while the names are still one gesture
+        away, and it means the legend costs almost nothing on a row whose whole
+        purpose was to stop costing a row.
+
+        Widths animate through `max-w`, the usual trick for a value CSS can't
+        transition from `auto`; the 24 (96px) just has to exceed the widest
+        label, which `short()` already caps at 10 characters.
+      */}
       {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
-        <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-x-3 overflow-hidden whitespace-nowrap text-[11px] text-muted lg:flex">
-          {usedTypes.map((t) => (
-            <span key={t.id} className="flex items-center gap-1.5" title={t.name}>
-              <span className="size-2.5 rounded-sm" style={{ backgroundColor: t.color }} aria-hidden />
-              {short(t.name)}
+        <div
+          className="group/legend hidden min-w-0 flex-nowrap items-center justify-end overflow-hidden whitespace-nowrap text-[11px] text-muted lg:flex"
+          title="Task types — hover to read"
+        >
+          {legendItems.map((it) => (
+            <span
+              key={it.key}
+              // `ring-2 ring-surface` is what makes the overlap read as a stack
+              // rather than as swatches that have run into each other.
+              className={`-ml-1 flex items-center transition-all duration-200 ease-out first:ml-0 group-hover/legend:ml-0 group-hover/legend:mr-3 ${
+                it.faint ? "text-faint" : ""
+              }`}
+            >
+              {it.diamond ? (
+                <span
+                  className="size-2 rotate-45 border border-current ring-2 ring-surface"
+                  aria-hidden
+                />
+              ) : (
+                <span
+                  className="size-2.5 rounded-sm ring-2 ring-surface"
+                  style={{ backgroundColor: it.color }}
+                  aria-hidden
+                />
+              )}
+              <span className="max-w-0 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover/legend:ml-1.5 group-hover/legend:max-w-24 group-hover/legend:opacity-100">
+                {it.label}
+              </span>
             </span>
           ))}
-          {allRows.some((r) => !r.type) && (
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-brand" aria-hidden />
-              No type
-            </span>
-          )}
-          {allRows.some((r) => !r.hasStart) && (
-            <span
-              className="flex items-center gap-1.5 text-faint"
-              title="Deadline — a due date with no start date, so there is no span to draw"
-            >
-              <span className="size-2 rotate-45 border border-current" aria-hidden />
-              Deadline
-            </span>
-          )}
         </div>
       )}
       <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
@@ -857,7 +885,6 @@ export function ClientTimeline({
                 pxPerDay={pxPerDay}
                 off={offDates}
                 hidden={hiddenCols}
-                leftW={leftW}
                 shadow={shadow}
               />
               {/* The chart canvas is `bg-background` while every cell and title
@@ -1041,75 +1068,77 @@ function plannedPatch(
 
 /** Ticks and their month/year grouping — shared by the header and the grid. */
 function ticksFor(from: Date, totalDays: number, zoom: Zoom, pxPerDay: number) {
-  const ticks: { left: number; width: number; label: string }[] = [];
-  const groups: { left: number; width: number; label: string }[] = [];
+  /**
+   * `boundary` = the first tick of a new month (of a new YEAR at month zoom).
+   * `weekStart` = a Sunday, at day zoom only — the studio's week starts there,
+   * Fri+Sat being the weekend, so the divider falls between Sat and Sun.
+   */
+  const ticks: {
+    left: number;
+    width: number;
+    label: string;
+    boundary: boolean;
+    weekStart?: boolean;
+  }[] = [];
   const step = zoom === "day" ? 1 : zoom === "week" ? 7 : 0; // 0 = calendar months
 
   if (step > 0) {
+    let lastMonth = -1;
+    let lastYear = -1;
     for (let d = 0; d < totalDays; d += step) {
       const date = shiftDays(from, d);
+      const month = date.getMonth();
+      const year = date.getFullYear();
+      // The month is announced by the first tick that falls INSIDE it, not by
+      // the 1st: at week zoom the ticks are Sundays and almost never land on it.
+      const boundary = month !== lastMonth;
+      // The year is stated once, where it CHANGES. Nothing else on this chart
+      // carries it now that the month band is gone — the ticks are d/m and the
+      // Dates column drops the year too — so a plan running into next January
+      // would otherwise never say which January. Only where it fits: at day
+      // zoom a tick is 26px and "Jan 2027" would be cut to "Jan 2…".
+      const newYear = boundary && lastYear !== -1 && year !== lastYear;
+      const width = Math.min(step, totalDays - d) * pxPerDay;
+      lastMonth = month;
+      lastYear = year;
       ticks.push({
         left: d * pxPerDay,
-        width: Math.min(step, totalDays - d) * pxPerDay,
-        label: zoom === "day" ? String(date.getDate()) : `${date.getDate()}/${date.getMonth() + 1}`,
+        width,
+        label: boundary
+          ? newYear && width >= YEAR_LABEL_MIN_PX
+            ? `${MONTH_NAMES_SHORT[month]} ${year}`
+            : MONTH_NAMES_SHORT[month]
+          : zoom === "day"
+            ? String(date.getDate())
+            : `${date.getDate()}/${month + 1}`,
+        boundary,
+        weekStart: zoom === "day" && date.getDay() === 0,
       });
-    }
-    let cursor = 0;
-    while (cursor < totalDays) {
-      const date = shiftDays(from, cursor);
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-      const len = Math.min(daysBetween(date, monthEnd), totalDays - cursor);
-      groups.push({
-        left: cursor * pxPerDay,
-        width: len * pxPerDay,
-        // The FULL year, not `.slice(2)`.
-        //
-        // "Jul 26" sat directly above a row of 26/7, 2/8, 9/8 day/month ticks,
-        // so it read as the 26th of July — a date in the same format as the
-        // scale beneath it, pointing at a different day. Four digits can't be a
-        // day of the month, so the ambiguity is gone rather than mitigated.
-        // There is room for it: a month is ~270px at week zoom and ~780px at day.
-        // The exception is a PARTIAL month at either end of the range — the
-        // chart can start on the 28th — where the year is dropped rather than
-        // truncated into "Jul 20…". The full months either side still carry it.
-        label:
-          len * pxPerDay >= MONTH_LABEL_MIN_PX
-            ? `${MONTH_NAMES_SHORT[date.getMonth()]} ${date.getFullYear()}`
-            : MONTH_NAMES_SHORT[date.getMonth()],
-      });
-      cursor += len;
     }
   } else {
     let cursor = 0;
+    let lastYear = -1;
     while (cursor < totalDays) {
       const date = shiftDays(from, cursor);
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
       const len = Math.min(daysBetween(date, monthEnd), totalDays - cursor);
+      const year = date.getFullYear();
+      // At this zoom every tick is already a month, so the boundary worth
+      // marking is the YEAR — and the tick that opens one carries it.
+      const boundary = year !== lastYear;
+      lastYear = year;
       ticks.push({
         left: cursor * pxPerDay,
         width: len * pxPerDay,
-        label: MONTH_NAMES_SHORT[date.getMonth()],
+        label: boundary
+          ? `${MONTH_NAMES_SHORT[date.getMonth()]} ${year}`
+          : MONTH_NAMES_SHORT[date.getMonth()],
+        boundary,
       });
       cursor += len;
     }
-    let year = -1;
-    let runStart = 0;
-    for (let d = 0; d <= totalDays; d++) {
-      const y = d < totalDays ? shiftDays(from, d).getFullYear() : -2;
-      if (y !== year) {
-        if (year !== -1) {
-          groups.push({
-            left: runStart * pxPerDay,
-            width: (d - runStart) * pxPerDay,
-            label: String(year),
-          });
-        }
-        year = y;
-        runStart = d;
-      }
-    }
   }
-  return { ticks, groups };
+  return { ticks };
 }
 
 /**
@@ -1327,10 +1356,23 @@ function GridLayer({
       ))}
       {ticks.map((t) => (
         // Weak on purpose: the grid lets you read a date off a bar, it isn't a
-        // table. Anything stronger competes with the bars.
+        // table. Anything stronger competes with the bars. A MONTH boundary is
+        // the exception — it is the one line worth finding at a glance, and it
+        // continues the rule under that month's name in the header, so the two
+        // read as one divider running the height of the chart.
+        //
+        // `foreground/15`, not `border-strong`: that token computes to oklab
+        // lightness 0.87, which next to the weekly rules at 0.93/40% was a
+        // difference you had to be told about to see.
         <div
           key={t.left}
-          className="absolute top-0 h-full border-l border-border/40"
+          className={`absolute top-0 h-full border-l ${
+            t.boundary
+              ? "border-foreground/15"
+              : t.weekStart
+                ? "border-foreground/[0.07]"
+                : "border-border/40"
+          }`}
           style={{ left: t.left }}
         />
       ))}
@@ -1345,7 +1387,6 @@ function TimelineHeader({
   pxPerDay,
   off,
   hidden,
-  leftW,
   shadow,
 }: {
   from: Date;
@@ -1354,38 +1395,27 @@ function TimelineHeader({
   pxPerDay: number;
   off: Set<string>;
   hidden: Set<string>;
-  leftW: number;
   shadow: { x: boolean; y: boolean };
 }) {
-  const { ticks, groups } = ticksFor(from, totalDays, zoom, pxPerDay);
+  const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
   const head = "shrink-0 text-[10px] font-medium uppercase tracking-wide text-faint";
 
   return (
-    // z-30 over the rows' own sticky name block (z-20): scrolling down must not
-    // slide task names over the column titles.
+    /*
+      ONE row. There used to be a month band above this one — 25px of header, on
+      every visit, to print six words. The months live in the tick row itself
+      now: the first tick that falls inside a month prints the month's name in
+      place of its date, in the emphasis weight, with a rule down its left edge
+      that GridLayer continues through the rows. Nothing was lost and a row was.
+
+      z-30 over the rows' own sticky name block (z-20): scrolling down must not
+      slide task names over the column titles.
+    */
     <div
       className={`sticky top-0 z-30 border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}
     >
-      <div className="relative flex h-6 items-end">
-        <span
-          className="sticky left-0 z-10 h-full shrink-0 bg-surface"
-          style={{ width: STICKY_W }}
-        />
-        <span className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
-        <span className="relative flex-1">
-          {groups.map((g) => (
-            <span
-              key={g.left}
-              className="absolute bottom-0 truncate px-1.5 text-[11px] font-semibold text-foreground"
-              style={{ left: g.left, width: g.width }}
-            >
-              {g.label}
-            </span>
-          ))}
-        </span>
-      </div>
-      <div className="relative flex h-6 items-center border-t border-border">
+      <div className="relative flex h-6 items-center">
         <span
           className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface"
           style={{ width: STICKY_W }}
@@ -1413,8 +1443,10 @@ function TimelineHeader({
             return (
               <span
                 key={t.left}
-                className={`absolute top-0 flex h-full items-center truncate px-1 text-[10px] tabular-nums ${
-                  nonWork ? "text-faint/60" : "text-muted"
+                className={`absolute top-0 flex h-full items-center truncate px-1 text-[10px] ${
+                  t.boundary
+                    ? "border-l border-foreground/15 font-semibold text-foreground"
+                    : `tabular-nums ${nonWork ? "text-faint/60" : "text-muted"}`
                 }`}
                 style={{ left: t.left, width: t.width }}
               >
