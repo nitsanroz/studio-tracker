@@ -1,24 +1,24 @@
 {
-  "generatedAt": "2026-08-07",
+  "generatedAt": "2026-08-08",
   "studio": {
     "hours": 87577,
     "recoveredHours": 42953,
     "entries": 23612,
     "clients": 167,
-    "tasks": 4597,
+    "tasks": 4618,
     "people": 55,
     "firstEntry": "2016-05-15",
     "lastEntry": "2026-08-06",
     "years": 11
   },
   "build": {
-    "commits": 95,
-    "versions": 50,
+    "commits": 96,
+    "versions": 51,
     "firstCommit": "2026-07-05",
-    "lastCommit": "2026-08-07",
-    "commitDays": 16,
+    "lastCommit": "2026-08-08",
+    "commitDays": 17,
     "files": 160,
-    "lines": 39521,
+    "lines": 39983,
     "migrations": 25,
     "releases": [
       {
@@ -220,6 +220,10 @@
       {
         "version": "v1.9.0",
         "date": "2026-08-07"
+      },
+      {
+        "version": "v1.9.1",
+        "date": "2026-08-08"
       }
     ]
   },
@@ -227,30 +231,30 @@
     "models": [
       {
         "name": "claude-opus-5",
-        "share": 48.7,
-        "cost": 2316
+        "share": 49.1,
+        "cost": 2425
       },
       {
         "name": "claude-fable-5",
-        "share": 27.8,
+        "share": 27.6,
         "cost": 2752
       },
       {
         "name": "claude-opus-4-8",
-        "share": 23.5,
+        "share": 23.3,
         "cost": 807
       }
     ],
-    "costUsd": 5876,
+    "costUsd": 5984,
     "claudeHours": 36,
     "humanHours": 21,
     "wallClockHours": 57,
     "sessions": 15,
-    "prompts": 460,
-    "toolCalls": 7487,
-    "days": 25,
-    "outputTokensM": 12.2,
-    "inputTokensM": 4534,
+    "prompts": 461,
+    "toolCalls": 7624,
+    "days": 26,
+    "outputTokensM": 12.3,
+    "inputTokensM": 4694,
     "idleThresholdMinutes": 20
   }
 }

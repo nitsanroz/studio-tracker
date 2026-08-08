@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   CheckCircle2,
@@ -41,7 +48,7 @@ import {
 } from "@/lib/gantt";
 import { formatHoursDecimal, MONTH_NAMES_SHORT } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
-import { Avatar, Tabs } from "./ui";
+import { Avatar, ContextMenu, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
 import type { Profile, Section, Task, TaskType } from "@/lib/types";
@@ -337,6 +344,8 @@ interface Row {
   due: Date;
   /** false = a deadline with no span; drawn as a diamond, not a bar */
   hasStart: boolean;
+  /** no dates at all — listed so it can be scheduled, but nothing is drawn */
+  undated: boolean;
   doneMinutes: number;
   assignee: Profile | null;
   type: TaskType | null;
@@ -358,12 +367,15 @@ export function ClientTimeline({
   clientId,
   zoom,
   showDone,
+  showUndated,
   toolbarSlot,
 }: {
   clientId: string;
   /** owned by ClientView: its control sits on the tab strip, not in here */
   zoom: Zoom;
   showDone: boolean;
+  /** also list tasks with no dates at all, as rows with no bar */
+  showUndated: boolean;
   /** where to render the legend + Columns button — the tab strip's right end */
   toolbarSlot: HTMLElement | null;
 }) {
@@ -379,9 +391,16 @@ export function ClientTimeline({
     updateSection,
     openTask,
     reorderTimelineTasks,
+    addTaskNear,
   } = useData();
   const isAdmin = useIsAdmin();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  /** Right-click menu on a bar row, and the row it was opened from. */
+  const [rowMenu, setRowMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
+  /** Where the inline "new task" field is currently open, if anywhere. */
+  const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
+    null,
+  );
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const dragging = drag !== null;
@@ -458,15 +477,23 @@ export function ClientTimeline({
     return { offDates: dates, offLabel: labels };
   }, [dayStates]);
 
+  const today = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, []);
+
   /** Rows grouped by section, in the client's section order, "No section" last. */
   const groups = useMemo<Group[]>(() => {
     const profileById = new Map(profiles.map((p) => [p.id, p]));
     const typeById = new Map(taskTypes.map((t) => [t.id, t]));
 
     const rows: Row[] = clientTasks
-      .filter((t) => t.dueDate && (showDone || t.status !== "done"))
+      .filter((t) => (t.dueDate || showUndated) && (showDone || t.status !== "done"))
       .map((t) => {
-        const due = parseISO(t.dueDate!);
+        // An undated task has no geometry. It still needs a start/due to satisfy
+        // the row shape, so it borrows today's date — nothing is ever drawn from
+        // them, and `undated` is what every drawing branch actually checks.
+        const due = t.dueDate ? parseISO(t.dueDate) : today;
         // A start after the due date would draw a bar backwards. Clamp rather
         // than refuse to render it — the data stays visible and draggable.
         const rawStart = t.startDate ? parseISO(t.startDate) : due;
@@ -475,6 +502,7 @@ export function ClientTimeline({
           start: rawStart > due ? due : rawStart,
           due,
           hasStart: !!t.startDate,
+          undated: !t.dueDate,
           doneMinutes: taskHoursDone(t, taskMinutes),
           assignee: t.assigneeId ? (profileById.get(t.assigneeId) ?? null) : null,
           type: t.typeId ? (typeById.get(t.typeId) ?? null) : null,
@@ -513,7 +541,7 @@ export function ClientTimeline({
       out.push({ section: key ? (byId.get(key) ?? null) : null, rows: list, start, due });
     }
     return out;
-  }, [clientTasks, sections, clientId, profiles, taskTypes, taskMinutes, showDone]);
+  }, [clientTasks, sections, clientId, profiles, taskTypes, taskMinutes, showDone, showUndated, today]);
 
   const allRows = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
   const undated = clientTasks.filter((t) => !t.dueDate && (showDone || t.status !== "done")).length;
@@ -522,11 +550,6 @@ export function ClientTimeline({
     const ids = new Set(allRows.map((r) => r.type?.id).filter(Boolean));
     return taskTypes.filter((t) => ids.has(t.id));
   }, [allRows, taskTypes]);
-
-  const today = useMemo(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }, []);
 
   /**
    * The window the chart spans. Padded a week either side so a bar never starts
@@ -853,8 +876,17 @@ export function ClientTimeline({
                       />
                       {!isCollapsed &&
                         g.rows.map((row) => (
+                          <Fragment key={row.task.id}>
+                          {insert?.anchorId === row.task.id && insert.where === "before" && (
+                            <TimelineInsertRow
+                              anchorId={row.task.id}
+                              where="before"
+                              leftW={leftW}
+                              width={leftW + totalDays * pxPerDay}
+                              onDone={() => setInsert(null)}
+                            />
+                          )}
                           <TimelineRow
-                            key={row.task.id}
                             row={row}
                             from={from}
                             pxPerDay={pxPerDay}
@@ -909,7 +941,25 @@ export function ClientTimeline({
                             onSetDates={(startDate, dueDate) =>
                               updateTask(row.task.id, { startDate, dueDate })
                             }
+                            onContextMenu={
+                              isAdmin
+                                ? (e, taskId) => {
+                                    e.preventDefault();
+                                    setRowMenu({ x: e.clientX, y: e.clientY, taskId });
+                                  }
+                                : undefined
+                            }
                           />
+                          {insert?.anchorId === row.task.id && insert.where === "after" && (
+                            <TimelineInsertRow
+                              anchorId={row.task.id}
+                              where="after"
+                              leftW={leftW}
+                              width={leftW + totalDays * pxPerDay}
+                              onDone={() => setInsert(null)}
+                            />
+                          )}
+                          </Fragment>
                         ))}
                       {/* dropping below the last row appends to this section */}
                       {!isCollapsed && (
@@ -944,13 +994,108 @@ export function ClientTimeline({
         </div>
       )}
 
-      {undated > 0 && (
+      {undated > 0 && !showUndated && (
         <p className="text-xs text-faint">
           {undated} {showDone ? "" : "open "}task{undated === 1 ? "" : "s"} with no due date
-          {undated === 1 ? " isn't" : " aren't"} shown — a bar needs an end date.
+          {undated === 1 ? " isn't" : " aren't"}{" "}shown — a bar needs an end date. Turn on
+          &ldquo;Show undated&rdquo; to list {undated === 1 ? "it" : "them"} and set dates here.
         </p>
       )}
+      {undated > 0 && showUndated && (
+        <p className="text-xs text-faint">
+          {undated} {showDone ? "" : "open "}task{undated === 1 ? "" : "s"} with no dates
+          {undated === 1 ? " is" : " are"}{" "}listed with no bar — set dates to place
+          {undated === 1 ? " it" : " them"} on the chart.
+        </p>
+      )}
+
+      {rowMenu && (
+        <ContextMenu
+          x={rowMenu.x}
+          y={rowMenu.y}
+          items={[
+            {
+              label: "Add task above",
+              onClick: () => setInsert({ anchorId: rowMenu.taskId, where: "before" }),
+            },
+            {
+              label: "Add task below",
+              onClick: () => setInsert({ anchorId: rowMenu.taskId, where: "after" }),
+            },
+          ]}
+          onClose={() => setRowMenu(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * The inline name field for a task being inserted at a chosen place on the chart.
+ *
+ * It occupies a real row so the bars below it move down as you type — the point
+ * of the command is placement, and an editor floating somewhere else would not
+ * show you where the task is about to land.
+ *
+ * ⚠️ It creates the task with `copyDates`, seeding start and due from the anchor.
+ * The Timeline only draws tasks that HAVE a due date, so a dateless insert would
+ * disappear the instant it was created and read as a failed command. Landing on
+ * the anchor's dates puts the bar exactly where the row is, ready to drag.
+ */
+function TimelineInsertRow({
+  anchorId,
+  where,
+  leftW,
+  width,
+  onDone,
+}: {
+  anchorId: string;
+  where: "before" | "after";
+  leftW: number;
+  width: number;
+  onDone: () => void;
+}) {
+  const { addTaskNear } = useData();
+  const [title, setTitle] = useState("");
+
+  const commit = () => {
+    if (title.trim()) addTaskNear(anchorId, where, title.trim(), { copyDates: true });
+    onDone();
+  };
+
+  return (
+    <form
+      className="relative flex border-b border-border bg-brand-soft/40"
+      style={{ height: ROW_H, width }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+    >
+      <div
+        className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-brand-soft px-2"
+        style={{ width: leftW }}
+      >
+        <input
+          autoFocus
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onDone();
+            // Explicit, not implicit form submission: the input sits inside a
+            // wrapper div and a form with no submit button can't be relied on to
+            // submit on Enter — it silently did nothing.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+            }
+          }}
+          placeholder={`New task ${where} this one — Enter to add`}
+          className="bidi-auto w-full bg-transparent text-xs outline-none"
+        />
+      </div>
+    </form>
   );
 }
 
@@ -1023,9 +1168,12 @@ function DatesCell({
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
 
-  const startISO = row.hasStart ? toISO(row.start) : "";
-  const dueISO = toISO(row.due);
-  const label = dateRangeLabel(row.start, row.due, row.hasStart);
+  // ⚠️ An undated row borrows today's date so the row shape stays valid, so the
+  // cell must NOT read `row.due` — it would state a due date the task does not
+  // have. It shows an invitation instead, and the editor opens empty.
+  const startISO = row.undated || !row.hasStart ? "" : toISO(row.start);
+  const dueISO = row.undated ? "" : toISO(row.due);
+  const label = row.undated ? "Set dates" : dateRangeLabel(row.start, row.due, row.hasStart);
 
   useEffect(() => {
     if (!open) return;
@@ -1592,6 +1740,7 @@ function TimelineRow({
   onSetDuration,
   taskTypes,
   onSetType,
+  onContextMenu,
 }: {
   row: Row;
   from: Date;
@@ -1623,6 +1772,8 @@ function TimelineRow({
   /** every type in the studio, not just the ones this client already uses */
   taskTypes: TaskType[];
   onSetType: (typeId: string | null) => void;
+  /** right-click → "Add task above/below"; the chart owns the menu and the composer */
+  onContextMenu?: (e: ReactMouseEvent, taskId: string) => void;
 }) {
   const { task } = row;
   const [renaming, setRenaming] = useState(false);
@@ -1681,9 +1832,11 @@ function TimelineRow({
   const title = [
     task.title,
     row.type ? `Type: ${row.type.name}` : undefined,
-    hasSpan
-      ? `${dateRangeLabel(previewStart, previewDue, true)} · ${workLen} working day${workLen === 1 ? "" : "s"}`
-      : `Due ${dateRangeLabel(previewStart, previewDue, false)} — no start date, so no duration`,
+    row.undated
+      ? "No dates yet — set them to place this on the chart"
+      : hasSpan
+        ? `${dateRangeLabel(previewStart, previewDue, true)} · ${workLen} working day${workLen === 1 ? "" : "s"}`
+        : `Due ${dateRangeLabel(previewStart, previewDue, false)} — no start date, so no duration`,
     estimate != null ? `${hoursLabel} logged` : `${hoursLabel} logged, no budget`,
     canEdit ? "Drag to move · drag an edge to resize" : undefined,
   ]
@@ -1698,6 +1851,7 @@ function TimelineRow({
         dropTarget ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""
       }`}
       style={{ height: ROW_H, width: leftW + totalDays * pxPerDay }}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, task.id) : undefined}
       onDragOver={(e) => {
         if (!draggedRowId) return;
         e.preventDefault();
@@ -1870,7 +2024,7 @@ function TimelineRow({
         )}
         {show("duration") && (
           <span
-            className={`${cell} tabular-nums ${row.hasStart ? "text-muted" : "text-faint"}`}
+            className={`${cell} tabular-nums ${row.hasStart && !row.undated ? "text-muted" : "text-faint"}`}
             style={{ width: DURATION_W }}
             title={
               row.hasStart
@@ -1884,13 +2038,13 @@ function TimelineRow({
                 duration to change, and typing one would have to invent a start
                 date — which is a different decision, made by dragging the
                 diamond's left edge or by the Dates cell. */}
-            {row.hasStart && canEdit ? (
+            {row.hasStart && !row.undated && canEdit ? (
               <EditableNumberCell
                 value={workLen}
                 onCommit={(v) => v != null && v >= 1 && onSetDuration(Math.round(v))}
                 format={(v) => `${v} day${v === 1 ? "" : "s"}`}
               />
-            ) : row.hasStart ? (
+            ) : row.hasStart && !row.undated ? (
               `${workLen} day${workLen === 1 ? "" : "s"}`
             ) : (
               "—"
@@ -1963,7 +2117,7 @@ function TimelineRow({
         inside the row: the chart is in a scroller that clips both axes, so a
         chip floating above the bar would be cut off on the top row.
       */}
-      {drag && (
+      {drag && !row.undated && (
         <span
           className="pointer-events-none absolute top-1/2 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
           style={
@@ -1981,7 +2135,7 @@ function TimelineRow({
               )}
         </span>
       )}
-      {hasSpan ? (
+      {row.undated ? null : hasSpan ? (
         <div
           role={canEdit ? "button" : undefined}
           tabIndex={canEdit ? 0 : undefined}
@@ -2084,7 +2238,7 @@ function TimelineRow({
       {/* The hours sit OUTSIDE the bar now. Inside, they had to be legible over
           both the solid fill and the pale track, and were dropped entirely on
           bars under 64px — which is most of them at week zoom. */}
-      {hasSpan && barWidth >= LABEL_MIN_PX && !drag && (
+      {hasSpan && !row.undated && barWidth >= LABEL_MIN_PX && !drag && (
         <span
           className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] tabular-nums text-faint"
           style={{ left: left + barWidth + 6 }}
@@ -2092,7 +2246,7 @@ function TimelineRow({
           {hoursLabel}
         </span>
       )}
-      {!hasSpan && (
+      {!hasSpan && !row.undated && (
         /* No start date: a deadline, drawn as a diamond on the due date. Its
            LEFT edge is still a resize handle — that's how a deadline becomes a
            scheduled span in the first place. */

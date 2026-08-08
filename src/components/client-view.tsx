@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   createContext,
   useCallback,
   useContext,
@@ -8,12 +9,15 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Archive,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  CalendarOff,
   CheckCircle2,
   GripVertical,
   Columns3,
@@ -26,7 +30,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatDate, formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
-import { Avatar, BudgetBar, CollapseChevron, Tabs, TagBadge } from "./ui";
+import { Avatar, BudgetBar, CollapseChevron, ContextMenu, Tabs, TagBadge } from "./ui";
 import { ClientAvatar } from "./client-avatar";
 import { ClientInfoModal } from "./client-info-modal";
 import { ClientNotes } from "./client-notes";
@@ -478,7 +482,16 @@ function SortHeader({
   );
 }
 
-function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boolean }) {
+function TaskRow({
+  task,
+  reorderable = true,
+  onContextMenu,
+}: {
+  task: Task;
+  reorderable?: boolean;
+  /** right-click → "Add task above/below"; the section owns the menu and the composer */
+  onContextMenu?: (e: ReactMouseEvent, task: Task) => void;
+}) {
   const {
     profiles,
     tags,
@@ -529,6 +542,7 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   return (
     <div
       draggable={isAdmin}
+      onContextMenu={onContextMenu ? (e) => onContextMenu(e, task) : undefined}
       onDragStart={(e) => {
         if (!armedRef.current) {
           e.preventDefault(); // not started from the grip — don't drag
@@ -805,6 +819,119 @@ function TaskRow({ task, reorderable = true }: { task: Task; reorderable?: boole
   );
 }
 
+/**
+ * The inline name field for a task being inserted at a chosen position.
+ *
+ * Deliberately the same shape as `AddTaskRow`'s editing state: right-click "Add
+ * task below" opens an empty row you type into, rather than creating a row named
+ * "New task" and asking you to rename it. Changing your mind then costs an
+ * Escape instead of a delete — and a delete here cascades to time entries.
+ */
+function InsertTaskRow({
+  anchorId,
+  where,
+  copyDates,
+  onDone,
+}: {
+  anchorId: string;
+  where: "before" | "after";
+  copyDates?: boolean;
+  onDone: () => void;
+}) {
+  const { addTaskNear } = useData();
+  const [title, setTitle] = useState("");
+
+  const commit = () => {
+    if (title.trim()) addTaskNear(anchorId, where, title.trim(), { copyDates });
+    onDone();
+  };
+
+  return (
+    <form
+      className={`${COLS} h-10 border-b border-border bg-brand-soft/40`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+    >
+      <span className="w-[17px]" />
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onDone();
+          // Explicit, not implicit form submission: the input sits inside a
+          // wrapper div and a form with no submit button can't be relied on to
+          // submit on Enter — it silently did nothing.
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        placeholder={`New task ${where} this one — Enter to add`}
+        className="bidi-auto min-w-32 flex-1 bg-transparent text-sm outline-none"
+      />
+    </form>
+  );
+}
+
+/**
+ * The (i) beside the Timeline tab, and its help card.
+ *
+ * ⚠️ The card is PORTALLED to `document.body` and positioned `fixed`. As a
+ * plain `absolute` child it was `z-40` inside the client page's sticky bar,
+ * which is `sticky z-10` — and a positioned ancestor with a z-index is a
+ * stacking context, so nothing inside it can paint above the Timeline's own
+ * `z-20` sticky header no matter how high its z-index goes. It rendered
+ * underneath the table. Same root cause as the weekly plan's search dropdown
+ * (v1.1.0) and the Timeline's own `HoverTip`; the portal is the fix all three use.
+ *
+ * A button, not a decorated span: this is the only place the help lives, so it
+ * has to be reachable by keyboard — hence opening on focus as well as hover.
+ */
+function TimelineHintDot({ text }: { text: string }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+
+  const open = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const W = 288; // w-72
+    setAt({
+      left: Math.min(Math.max(8, r.left), window.innerWidth - W - 8),
+      top: r.bottom + 6,
+    });
+  };
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={`How the Timeline works: ${text}`}
+      className="flex shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
+      onMouseEnter={open}
+      onFocus={open}
+      onMouseLeave={() => setAt(null)}
+      onBlur={() => setAt(null)}
+    >
+      <Info size={15} aria-hidden />
+      {at &&
+        createPortal(
+          <span
+            role="tooltip"
+            className="pointer-events-none fixed z-[70] w-72 rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs leading-relaxed text-muted shadow-xl"
+            style={{ left: at.left, top: at.top }}
+          >
+            {text}
+          </span>,
+          document.body,
+        )}
+    </button>
+  );
+}
+
 function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: string | null }) {
   const { addTask } = useData();
   const [editing, setEditing] = useState(false);
@@ -883,6 +1010,17 @@ function SectionGroup({
   const [dragOver, setDragOver] = useState(false);
   /** Insert line while another section is being dragged over this header. */
   const [sectionOver, setSectionOver] = useState(false);
+  /** Right-click menu on a task row, and the row it was opened from. */
+  const [menu, setMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
+  /** Where the inline "new task" field is currently open, if anywhere. */
+  const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
+    null,
+  );
+
+  const openRowMenu = (e: ReactMouseEvent, task: Task) => {
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY, taskId: task.id });
+  };
   /** The name is a plain heading until the pencil says otherwise. */
   const [renaming, setRenaming] = useState(false);
   /**
@@ -1099,10 +1237,39 @@ function SectionGroup({
       {open && (
         <>
           {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} reorderable={reorderable} />
+            <Fragment key={t.id}>
+              {insert?.anchorId === t.id && insert.where === "before" && (
+                <InsertTaskRow
+                  anchorId={t.id}
+                  where="before"
+                  onDone={() => setInsert(null)}
+                />
+              )}
+              <TaskRow task={t} reorderable={reorderable} onContextMenu={openRowMenu} />
+              {insert?.anchorId === t.id && insert.where === "after" && (
+                <InsertTaskRow anchorId={t.id} where="after" onDone={() => setInsert(null)} />
+              )}
+            </Fragment>
           ))}
           <AddTaskRow clientId={clientId} sectionId={section?.id ?? null} />
         </>
+      )}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={[
+            {
+              label: "Add task above",
+              onClick: () => setInsert({ anchorId: menu.taskId, where: "before" }),
+            },
+            {
+              label: "Add task below",
+              onClick: () => setInsert({ anchorId: menu.taskId, where: "after" }),
+            },
+          ]}
+          onClose={() => setMenu(null)}
+        />
       )}
     </div>
   );
@@ -1259,6 +1426,8 @@ export function ClientView({ clientId }: { clientId: string }) {
     useData();
   const isAdmin = useIsAdmin();
   const [showDone, setShowDone] = useState(false);
+  /** Timeline only: also list the tasks that have no dates at all. */
+  const [showUndated, setShowUndated] = useState(false);
   const [draggingTask, setDraggingTask] = useState(false);
   // Collapsed-by-exception: sections are open unless their key is in here, so new
   // sections appear expanded. "" stands for the null "No section" group.
@@ -1483,6 +1652,27 @@ export function ClientView({ clientId }: { clientId: string }) {
                 Show completed
               </button>
             )}
+            {/* Timeline only: the Tasks tab already lists undated work, so the
+                toggle would be a no-op there. */}
+            {tab === "timeline" && (
+              <button
+                onClick={() => setShowUndated(!showUndated)}
+                aria-pressed={showUndated}
+                title={
+                  showUndated
+                    ? "Hide tasks that have no dates"
+                    : "Show tasks that have no dates, so you can schedule them here"
+                }
+                className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors ${
+                  showUndated
+                    ? "border-brand bg-brand-soft text-brand-dark"
+                    : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
+                }`}
+              >
+                <CalendarOff size={14} />
+                Show undated
+              </button>
+            )}
             {/* The report is about HOURS and money; the Timeline is about dates.
                 On the Timeline tab its two buttons were the wrong offer next to
                 the wrong view, so that tab swaps them for "Share" (below) — the
@@ -1558,19 +1748,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                      rather than `title`, because the browser's own tooltip waits
                      about a second and this is a paragraph you want the instant
                      you go looking for it. */
-                  after:
-                    tab === "timeline" ? (
-                      <button
-                        type="button"
-                        aria-label={`How the Timeline works: ${timelineHint(isAdmin)}`}
-                        className="group/hint relative flex shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
-                      >
-                        <Info size={15} aria-hidden />
-                        <span className="pointer-events-none absolute left-0 top-full z-40 mt-1.5 hidden w-72 rounded-lg border border-border bg-surface px-3 py-2 text-left text-xs leading-relaxed text-muted shadow-xl group-hover/hint:block group-focus-visible/hint:block">
-                          {timelineHint(isAdmin)}
-                        </span>
-                      </button>
-                    ) : undefined,
+                  after: tab === "timeline" ? <TimelineHintDot text={timelineHint(isAdmin)} /> : undefined,
                 },
                 { value: "overview" as const, label: "Overview" },
               ]}
@@ -1602,6 +1780,7 @@ export function ClientView({ clientId }: { clientId: string }) {
           clientId={clientId}
           zoom={zoom}
           showDone={showDone}
+          showUndated={showUndated}
           toolbarSlot={tlToolbar}
         />
       )}

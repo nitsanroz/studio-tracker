@@ -172,6 +172,12 @@ interface Store {
   /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
   restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
+  addTaskNear: (
+    anchorTaskId: string,
+    where: "before" | "after",
+    title: string,
+    opts?: { copyDates?: boolean },
+  ) => void;
   /** Hard-delete a task. CASCADES to its time entries — confirm with the user first. */
   deleteTask: (taskId: string) => void;
   /** Hard-delete many tasks. CASCADES to time entries — confirm with the user first. */
@@ -910,6 +916,128 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
     },
     [supabase, tasks, tagNameById, clients, noteWriteError],
+  );
+
+  /**
+   * Create a task immediately before or after an existing one, in the same
+   * section — the right-click "Add task above/below" in the client table and the
+   * Timeline. `addTask` always appends, which is the whole reason this exists.
+   *
+   * It slots into BOTH orderings — `position` (client table, per section) and
+   * `timeline_position` (Timeline, per client; see 0023) — so the new row lands
+   * beside its anchor whichever view you created it from, instead of appearing
+   * adjacent in one and at the bottom of the other.
+   *
+   * ⚠️ It DENSIFIES the section rather than shifting one gap. Every task the
+   * imports created has `position = 0`, so a section can be entirely zeros and
+   * "insert after X" has no gap to open — renumbering the whole run 1..n is what
+   * makes the placement mean anything there. Same reason `reorderTask` does it.
+   *
+   * `copyDates` seeds the new task from the anchor's start/due. The Timeline
+   * passes it because that view only renders tasks that HAVE a due date — a
+   * dateless insert would vanish the instant it was created, which reads as the
+   * command having failed.
+   *
+   * Like `addTask`, deliberately NOT in the undo history: nothing that creates a
+   * task is undoable in this app, and an inverse would have to unpick the
+   * renumbering too. Delete the row instead.
+   */
+  const addTaskNear = useCallback(
+    (
+      anchorTaskId: string,
+      where: "before" | "after",
+      title: string,
+      opts?: { copyDates?: boolean },
+    ) => {
+      const anchor = tasks.find((t) => t.id === anchorTaskId);
+      if (!anchor) return;
+
+      // Same comparator the client table renders with, so "after" means after
+      // the row the user actually right-clicked.
+      const siblings = tasks
+        .filter((t) => t.clientId === anchor.clientId && t.sectionId === anchor.sectionId)
+        .sort((a, b) => a.position - b.position);
+      const listAt = siblings.findIndex((t) => t.id === anchorTaskId) + (where === "after" ? 1 : 0);
+
+      // The Timeline's own axis. Only rows that have been placed carry a
+      // position; if the anchor is unplaced there is nothing to slot between,
+      // so the new task stays unplaced too and sorts by date like its neighbour.
+      const placed = tasks
+        .filter((t) => t.clientId === anchor.clientId && t.timelinePosition != null)
+        .sort((a, b) => (a.timelinePosition ?? 0) - (b.timelinePosition ?? 0));
+      const tlIndex = placed.findIndex((t) => t.id === anchorTaskId);
+      const tlAt = tlIndex === -1 ? -1 : tlIndex + (where === "after" ? 1 : 0);
+
+      supabase
+        .from("tasks")
+        .insert({
+          client_id: anchor.clientId,
+          section_id: anchor.sectionId,
+          title,
+          billable: clients.find((c) => c.id === anchor.clientId)?.billable ?? true,
+          position: listAt + 1,
+          ...(tlAt === -1 ? {} : { timeline_position: tlAt + 1 }),
+          ...(opts?.copyDates
+            ? { start_date: anchor.startDate ?? null, due_date: anchor.dueDate ?? null }
+            : {}),
+        })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            noteWriteError("addTaskNear", error);
+            return;
+          }
+          const created = mapTask(data, tagNameById);
+          setTasks((prev) => [...prev, created]);
+
+          // Renumber around it. Everything from the insertion point on shifts by
+          // one; anything already correct is left alone so we don't write rows
+          // that didn't move.
+          const listOrder = [...siblings.slice(0, listAt), created, ...siblings.slice(listAt)];
+          const listChanged = listOrder
+            .map((t, i) => ({ id: t.id, position: i + 1, was: t.position }))
+            .filter((r) => r.id !== created.id && r.position !== r.was);
+
+          const tlChanged =
+            tlAt === -1
+              ? []
+              : [...placed.slice(0, tlAt), created, ...placed.slice(tlAt)]
+                  .map((t, i) => ({ id: t.id, position: i + 1, was: t.timelinePosition ?? null }))
+                  .filter((r) => r.id !== created.id && r.position !== r.was);
+
+          if (listChanged.length || tlChanged.length) {
+            const listPos = new Map(listChanged.map((r) => [r.id, r.position]));
+            const tlPos = new Map(tlChanged.map((r) => [r.id, r.position]));
+            setTasks((prev) =>
+              prev.map((t) =>
+                listPos.has(t.id) || tlPos.has(t.id)
+                  ? {
+                      ...t,
+                      position: listPos.get(t.id) ?? t.position,
+                      timelinePosition: tlPos.get(t.id) ?? t.timelinePosition,
+                    }
+                  : t,
+              ),
+            );
+            for (const { id, position } of listChanged) {
+              supabase
+                .from("tasks")
+                .update({ position })
+                .eq("id", id)
+                .then(wrote("addTaskNear list order"));
+            }
+            for (const { id, position } of tlChanged) {
+              supabase
+                .from("tasks")
+                .update({ timeline_position: position })
+                .eq("id", id)
+                .then(wrote("addTaskNear timeline order"));
+            }
+          }
+        });
+    },
+    [supabase, tasks, clients, tagNameById, noteWriteError, wrote],
   );
 
   const addSection = useCallback(
@@ -2342,6 +2470,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       updateTasksBulk,
       restoreTasksBulk,
       addTask,
+      addTaskNear,
       deleteTask,
       deleteTasksBulk,
       addSection,
