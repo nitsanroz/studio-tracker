@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   BAR_H,
@@ -53,9 +53,26 @@ export interface PublicGanttGroup {
  * client is reading on. The exact dates are in the bar's tooltip.
  */
 const NAME_W = 260;
+/** On a phone, 260px of task name leaves ~40px of calendar — so the pinned
+ *  column has to give way. It is the ONLY responsive dimension here: the bars
+ *  are drawn at a fixed px-per-day so the chart can be read the same way on
+ *  every screen, and it scrolls. */
+const NAME_W_NARROW = 150;
+const NARROW_PX = 640;
 const BUDGET_W = 56;
-const STICKY_W = NAME_W + BUDGET_W;
 const FALLBACK = "#0b43ed";
+
+/** Server-rendered wide, corrected on mount — the width is a browser fact. */
+function useStickyWidth() {
+  const [nameW, setNameW] = useState(NAME_W);
+  useEffect(() => {
+    const apply = () => setNameW(window.innerWidth < NARROW_PX ? NAME_W_NARROW : NAME_W);
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, []);
+  return nameW + BUDGET_W;
+}
 
 /**
  * The client's view of the plan.
@@ -84,6 +101,12 @@ export function PublicGanttView({
   offDays: { from: string; to: string; label: string }[];
 }) {
   const [zoom, setZoom] = useState<Zoom>("day");
+  const STICKY_W = useStickyWidth();
+  // Day zoom on a phone shows five days, which reads as an empty plan. Only on
+  // MOUNT — rotating the device must not overrule a zoom the reader picked.
+  useEffect(() => {
+    if (window.innerWidth < NARROW_PX) setZoom("week");
+  }, []);
   const scroller = useRef<HTMLDivElement>(null);
   const centred = useRef(false);
   const [tip, setTip] = useState<{ x: number; y: number; task: PublicGanttTask } | null>(null);
@@ -183,12 +206,27 @@ export function PublicGanttView({
     // 1180px screen, scrolled horizontally as a document, and pushed the studio
     // wordmark clean off the right edge. The card's own scroller is what should
     // absorb a wide chart, and it can only do that once this can shrink.
-    <main className="mx-auto flex min-h-screen w-full min-w-0 max-w-[1500px] flex-col gap-4 p-4 sm:p-8">
+    // The width cap is DELIBERATELY wider than the app's own 1500px. Every
+    // other page is reading-width text and tables; this page is one chart that
+    // is always wider than the window (91 days × 26px at day zoom = 2.4k), so
+    // every pixel given to it is another day the client can see without
+    // scrolling. Capped at all only so it doesn't stretch absurdly on a 34"
+    // ultrawide.
+    // ⚠️ `h-dvh`, NOT `min-h-screen`. A minimum height is not a height, so the
+    // card below grew to its own content (1700px of rows on Anchor) and the
+    // PAGE scrolled — which is exactly what the card's own scroller exists to
+    // prevent. A definite height is what makes `flex-1` cap the card instead
+    // of merely letting it grow. `dvh` so a phone's collapsing URL bar doesn't
+    // leave a dead strip.
+    <main className="mx-auto flex h-dvh w-full min-w-0 max-w-[2200px] flex-col gap-4 p-4 sm:p-8">
       {/* Three tracks so the zoom control is centred on the ROW, not in whatever
           space the two ends happen to leave — the same reason the app's tab
-          strip is a grid. */}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+          strip is a grid. That is right on a desktop and impossible on a phone:
+          at 375px the middle track squeezed the client's own name to nothing
+          and the wordmark sat on top of it. Below `sm` it wraps to two rows —
+          name, then zoom and wordmark at either end. */}
+      <header className="flex flex-wrap items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
+        <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
         {clientIconUrl ? (
           // `brightness(0)` paints every opaque pixel black while keeping the
           // alpha, because these marks are drawn WHITE for the coloured tile
@@ -214,7 +252,7 @@ export function PublicGanttView({
           <span className="text-xs text-muted">Schedule · updates automatically</span>
         </span>
         </div>
-        <div className="flex justify-center rounded-lg border border-border bg-surface p-0.5">
+        <div className="mr-auto flex justify-center rounded-lg border border-border bg-surface p-0.5 sm:mr-0">
           {(["day", "week", "month"] as const).map((z) => (
             <button
               key={z}
@@ -230,14 +268,19 @@ export function PublicGanttView({
         {/* Whose plan this is. The mask + `bg-brand` is how every other public
             page (intake, password reset) draws the wordmark. */}
         <span
-          className="brand-wordmark w-28 justify-self-end bg-brand"
+          className="brand-wordmark w-24 shrink-0 justify-self-end bg-brand sm:w-28"
           role="img"
           aria-label="Studio&more"
         />
       </header>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div ref={onScrollerReady} className="max-h-[min(78vh,760px)] overflow-auto">
+      {/* The card TAKES the height the header and footer leave, rather than
+          capping at a fixed 760px — on a 27" screen that cap left a third of
+          the window empty while the chart scrolled inside it. `min-h-0` is
+          what lets a flex child shrink below its content so its own scroller
+          absorbs the overflow. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface">
+        <div ref={onScrollerReady} className="min-h-0 flex-1 overflow-auto">
           <div className="relative" style={{ width: STICKY_W + chartW }}>
             {/* header */}
             <div className="sticky top-0 z-30 border-b border-border bg-surface">
