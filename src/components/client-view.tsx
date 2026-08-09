@@ -910,7 +910,10 @@ function TimelineHintDot({ text }: { text: string }) {
       ref={ref}
       type="button"
       aria-label={`How the Timeline works: ${text}`}
-      className="flex shrink-0 cursor-help text-faint hover:text-brand focus-visible:text-brand"
+      // `text-muted`, matching `InfoDot`: `text-faint` is 2.6:1 on white, under
+      // the 3:1 floor for a control. The two (i) affordances in the app should
+      // also not be different greys.
+      className="flex shrink-0 cursor-help text-muted hover:text-brand focus-visible:text-brand"
       onMouseEnter={open}
       onFocus={open}
       onMouseLeave={() => setAt(null)}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type MouseEvent } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, X } from "lucide-react";
 import { useDataMaybe } from "@/lib/store";
 import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
@@ -390,13 +390,32 @@ export function InfoDot({
       <button
         type="button"
         aria-label={title ? `About ${title}` : "About this figure"}
-        className="flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-current text-[9px] font-bold leading-none opacity-60 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none"
+        // ⚠️ The glyph is DRAWN, not typeset. This was a bordered circle with a
+        // 9px "i" inside it, and `leading-none` makes the line box shorter than
+        // the font's own content box — so the ascent overflowed upward and the
+        // letter sat 1px high, touching the ring. Any pixel nudge that fixed it
+        // would be a fact about Rubik, and this app falls back to Rubik only
+        // until the real Saans lands (see the Brand section of CLAUDE.md) — at
+        // which point the nudge would be wrong again. An icon centres by
+        // geometry and cannot drift with the font.
+        //
+        // opacity-80, not 60: the dot usually inherits `text-muted`, and at 60%
+        // that composites to roughly 2.5:1 on white — under the 3:1 floor for a
+        // control, on a 14px target. It still reads as secondary.
+        className="flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full opacity-80 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none"
       >
-        i
+        <Info size={14} strokeWidth={2.25} aria-hidden />
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute z-30 hidden w-60 rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
+        // ⚠️ `whitespace-normal` is load-bearing, not tidiness. A dot placed
+        // inside anything `whitespace-nowrap` (the About panel's donut legend)
+        // inherits it, and the card keeps its 240px box while the sentence
+        // runs out of the side as ONE line — measured at 1,277px of spill.
+        // The same reasoning as the `normal-case`/`tracking-normal`/
+        // `leading-relaxed` beside it: this card is prose, so it has to
+        // re-state every text property its host might have set for a label.
+        className={`pointer-events-none absolute z-30 hidden w-60 whitespace-normal rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
           align === "right" ? "right-0" : "left-0"
         } ${side === "up" ? "bottom-5" : "top-5"}`}
       >

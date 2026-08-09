@@ -106,7 +106,14 @@ function BuildLog() {
                 } ${first ? "text-left" : last ? "-translate-x-full text-right" : "-translate-x-1/2 text-center"}`}
                 style={{ left: `${pos}%` }}
               >
-                <span className="block text-brand">{formatShort(m.date)}</span>
+                {/* The date leads its caption, so it carries the emphasis
+                    weight and a step of size over the label under it. Saans
+                    only has two weights here — `font-semibold` resolves to 570,
+                    the same as `font-medium`/`font-bold` (see globals.css), so
+                    size is the other half of the hierarchy, not decoration. */}
+                <span className="block text-[13px] font-semibold text-brand">
+                  {formatShort(m.date)}
+                </span>
                 <span className={m.major ? "text-foreground" : "text-muted"}>
                   {m.label}
                 </span>
@@ -194,7 +201,7 @@ function ModelDonut() {
             </span>
           </div>
         ))}
-        <div className="whitespace-nowrap pt-1 text-[10px] leading-snug text-faint">
+        <div className="whitespace-nowrap pt-1 text-[10px] leading-snug text-muted">
           <div className="flex items-center gap-1">
             <span>at list price</span>
             <InfoDot title="Cost of the compute" align="right" side="up">
@@ -274,7 +281,7 @@ function Ledger({
             {info}
           </InfoDot>
         </span>
-        <span className="text-[11px] text-faint">{total}</span>
+        <span className="text-[11px] text-muted">{total}</span>
       </div>
       <div className="flex h-9 overflow-hidden rounded-lg">
         {segments.map((s) => (
@@ -314,7 +321,7 @@ function SectionHeading({
           </InfoDot>
         )}
       </h3>
-      {note && <span className="text-[11px] text-faint">{note}</span>}
+      {note && <span className="text-[11px] text-muted">{note}</span>}
     </div>
   );
 }
@@ -364,7 +371,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
       className="p-0!"
     >
       <div className="relative rounded-t-2xl bg-brand px-7 py-4 text-white">
-        <div className="absolute right-3 top-3 [&_button]:text-white/70 [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
+        <div className="absolute right-3 top-3 [&_button]:text-white/85 [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
           <ModalClose onClose={onClose} />
         </div>
 
@@ -376,7 +383,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
             <h2 id="about-title" className={`${HERO_FIGURE} text-xl`}>
               Behind the tracker
             </h2>
-            <p className="mt-1 text-[12px] text-white/70">
+            <p className="mt-1 text-[12px] text-white/85">
               Studio&amp;more Tracker {APP_VERSION} — the studio&rsquo;s own
               task and time tracker.
             </p>
@@ -386,20 +393,17 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                 <div className={`${HERO_FIGURE} text-[40px]`}>
                   {group(studio.hours)}
                 </div>
-                <div className="mt-1 text-[12px] text-white/70">
+                <div className="mt-1 text-[12px] text-white/85">
                   hours of studio work, in one place
                 </div>
               </div>
               <div>
                 <div className={`${HERO_FIGURE} text-2xl`}>{studio.years}</div>
-                <div className="mt-1 text-[12px] text-white/70">
-                  years covered · {studio.firstEntry.slice(0, 4)}–
-                  {studio.lastEntry.slice(0, 4)}
-                </div>
+                <div className="mt-1 text-[12px] text-white/85">years covered</div>
               </div>
               <div>
                 <div className={`${HERO_FIGURE} text-2xl`}>{span}</div>
-                <div className="mt-1 text-[12px] text-white/70">
+                <div className="mt-1 text-[12px] text-white/85">
                   days to build it
                 </div>
               </div>
@@ -411,9 +415,9 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
               was empty. The count is the point: everyone remembers Everhour,
               Asana and the plan sheet; the other four went quietly. */}
           <div className="w-full shrink-0 border-t border-white/15 pt-3 sm:w-60 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
-            <div className="flex items-center gap-1 text-[12px] text-white/70">
+            <div className="flex items-center gap-1 text-[12px] text-white/85">
               Replaces {REPLACED.length} tools
-              <span className="text-white/80">
+              <span className="text-white/85">
                 <InfoDot
                   title={`${REPLACED.length} tools retired`}
                   align="right"
@@ -577,8 +581,8 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
             developer instruction, and everyone in the studio opens this panel.
             How to refresh the figures is documented in `scripts/README.md` and
             at the top of `src/lib/about.ts`, where whoever needs it will be. */}
-        <p className="text-[11px] text-faint">
-          Zero to production in {toV1} days; live for the team since 29 July. Figures generated{" "}
+        <p className="text-[11px] text-muted">
+          * Zero to production in {toV1} days; live for the team since 29 July. Figures generated{" "}
           {formatDay(ABOUT.generatedAt)}.
         </p>
       </div>
