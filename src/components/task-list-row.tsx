@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatHoursDecimal, formatHoursShort, toISODate } from "@/lib/format";
@@ -16,16 +17,41 @@ import {
 import { useColWidths, ResizeHandle } from "./resizable";
 import type { Task } from "@/lib/types";
 
+/** The panel's own box, for the flip decision. 432px (w-72 + 50%) is wide enough
+ *  that the duration/member/date row fits on ONE line, which is what gives the
+ *  description the full width. Erring HIGH on the height only flips a little
+ *  early; erring low clips. */
+const ADD_W = 432;
+const ADD_H = 160;
+
 /**
  * Log-time popover on a task row. The form itself is the shared one, so this only
  * owns the popover chrome — and an admin gets the member picker here too, which
  * this copy never had.
+ *
+ * ⚠️ `fixed` and PORTALLED, measured from the button — never `absolute`. This
+ * table sits in an `overflow-x-auto` wrapper, and a scroll container clips BOTH
+ * axes, so an absolutely-positioned panel is cut off at the wrapper's edge and
+ * takes the row's height with it. Same fix as the timeline Dates popout (v1.5.0)
+ * and the assignee list (v1.6.0). Flips above the button when the window runs
+ * out below.
  */
-function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => void }) {
-  return (
+function AddTimePopover({
+  at,
+  taskId,
+  onClose,
+}: {
+  at: { left: number; top: number };
+  taskId: string;
+  onClose: () => void;
+}) {
+  return createPortal(
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full z-50 mt-1 flex w-72 flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-xl">
+      <div
+        className="fixed z-50 flex w-[27rem] flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-xl"
+        style={{ left: at.left, top: at.top }}
+      >
         <LogTimeForm
           taskId={taskId}
           layout="stacked"
@@ -34,8 +60,19 @@ function AddTimePopover({ taskId, onClose }: { taskId: string; onClose: () => vo
           onAdded={onClose}
         />
       </div>
-    </>
+    </>,
+    document.body,
   );
+}
+
+/** Where the panel should sit for a given trigger, kept on screen on both axes. */
+function addPopoverPos(btn: HTMLElement) {
+  const r = btn.getBoundingClientRect();
+  const below = window.innerHeight - r.bottom;
+  return {
+    left: Math.max(8, Math.min(r.right - ADD_W, window.innerWidth - ADD_W - 8)),
+    top: below < ADD_H + 12 ? Math.max(8, r.top - ADD_H - 4) : r.bottom + 4,
+  };
 }
 
 /** Figma link cell: link stays clickable; pencil (or empty cell) edits the URL in place. */
@@ -159,7 +196,9 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
   const { clients, sections, profiles, entrySums, entrySumsAll, currentUserId, openTask, updateTask, tags } =
     useData();
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
-  const [adding, setAdding] = useState<string | null>(null);
+  // The open panel's ANCHOR POSITION travels with the id: it is portalled to
+  // the body, so it can't inherit a position from the row it belongs to.
+  const [adding, setAdding] = useState<{ id: string; left: number; top: number } | null>(null);
   // members may edit tags + figma link only; name/budget/due are admin-only
   const isAdmin = useIsAdmin();
 
@@ -325,21 +364,37 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
               <span style={cell("loggedBy")}>
                 <LoggedByGroup userIds={stats.users.get(task.id) ?? []} profiles={profiles} />
               </span>
-              <span className="relative" style={cell("add")} onClick={(e) => e.stopPropagation()}>
+              <span style={cell("add")} onClick={(e) => e.stopPropagation()}>
                 <button
-                  onClick={() => setAdding((v) => (v === task.id ? null : task.id))}
+                  onClick={(e) => {
+                    // ⚠️ Read `currentTarget` HERE, not inside the updater.
+                    // React nulls it once the handler returns, and a state
+                    // updater runs later — `addPopoverPos(e.currentTarget)`
+                    // inside the callback threw on every click.
+                    const btn = e.currentTarget;
+                    setAdding((v) =>
+                      v?.id === task.id ? null : { id: task.id, ...addPopoverPos(btn) },
+                    );
+                  }}
                   className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted hover:border-brand hover:text-brand"
                 >
                   <Plus size={12} /> Add time
                 </button>
-                {adding === task.id && (
-                  <AddTimePopover taskId={task.id} onClose={() => setAdding(null)} />
-                )}
               </span>
             </div>
           );
         })}
       </div>
+
+      {/* Rendered ONCE, outside the scroller, since it is portalled and carries
+          its own viewport coordinates. */}
+      {adding && (
+        <AddTimePopover
+          at={adding}
+          taskId={adding.id}
+          onClose={() => setAdding(null)}
+        />
+      )}
     </div>
   );
 }

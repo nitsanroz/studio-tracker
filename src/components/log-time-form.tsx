@@ -94,7 +94,12 @@ export function LogTimeForm({
           />
         </div>
       )}
-      <div className="flex gap-2">
+      {/* ⚠️ `flex-wrap`. Duration + the member select + the date need ~388px,
+          and the select is sized by its LONGEST member name, so the row's width
+          depends on who works here. In the 288px log-time popover that pushed
+          the date clean out of the card. Wrapping degrades instead: the date
+          drops to its own line in a narrow host and stays inline in a wide one. */}
+      <div className="flex flex-wrap gap-2">
         <input
           required
           autoFocus={autoFocus && !!fixedTaskId}
