@@ -1593,14 +1593,14 @@ function TodayLine({ left, height }: { left: number; height: number }) {
           left: -(TODAY_CAP_W / 2) + 1,
           borderLeft: `${TODAY_CAP_W / 2}px solid transparent`,
           borderRight: `${TODAY_CAP_W / 2}px solid transparent`,
-          borderTop: `${TODAY_CAP_H}px solid var(--brand)`,
+          borderTop: `${TODAY_CAP_H}px solid var(--foreground)`,
         }}
       />
-      {/* 2px and SOLID: today is the one vertical you look for first, and it was
-          the palest thing on the chart. The milestones took the half-strength
-          brand it used to wear — they are named and capped with a flag, so they
-          do not need weight to be found. */}
-      <div className="w-0.5 bg-brand" style={{ height }} />
+      {/* BLACK, not brand. Today is the one vertical you look for first, and it
+          was competing with the milestones for the same blue — telling the two
+          apart meant reading their caps. Now they differ by HUE: today is the
+          fact, the milestones are the plan. */}
+      <div className="w-0.5 bg-foreground" style={{ height }} />
     </div>
   );
 }
