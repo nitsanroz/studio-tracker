@@ -35,13 +35,13 @@ import { ClientAvatar } from "./client-avatar";
 import { ClientInfoModal } from "./client-info-modal";
 import { ClientNotes } from "./client-notes";
 import { ClientTimeline, timelineHint, type Zoom } from "./client-timeline";
+import { NO_TYPE, ShowMenu } from "./show-menu";
 import {
   EditableDateCell,
   EditableNumberCell,
   EditableSelectCell,
   EditableTextCell,
 } from "./editable-cell";
-import { ClientReportButtons } from "./client-report-buttons";
 import { ShareGanttButton } from "./share-gantt-button";
 import { TaskBulkControls } from "./task-bulk-controls";
 import { useColWidths, ResizeHandle } from "./resizable";
@@ -1424,13 +1424,31 @@ function SelectionBar({
   );
 }
 
+/** The two tabs that list tasks — the only ones the Show settings apply to. */
+type TaskTab = "tasks" | "timeline";
+
 export function ClientView({ clientId }: { clientId: string }) {
   const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection } =
     useData();
   const isAdmin = useIsAdmin();
-  const [showDone, setShowDone] = useState(false);
-  /** Timeline only: also list the tasks that have no dates at all. */
-  const [showUndated, setShowUndated] = useState(false);
+  /**
+   * The three "what am I not seeing?" settings, held PER TAB.
+   *
+   * Undated is why: on the Timeline it is off by default (a bar needs an end
+   * date, so those rows are listed only when you ask for them), and on Tasks it
+   * is on (they are ordinary rows, and hiding them would blank most of the
+   * client's work the first time you opened it). One shared value cannot have
+   * two defaults, and whichever it picked would look like a bug on the other
+   * tab. Completed and the type filter follow suit, so the rule is one rule.
+   */
+  const [showBy, setShowBy] = useState<Record<TaskTab, { done: boolean; undated: boolean }>>({
+    tasks: { done: false, undated: true },
+    timeline: { done: false, undated: false },
+  });
+  const [hiddenTypesBy, setHiddenTypesBy] = useState<Record<TaskTab, Set<string>>>({
+    tasks: new Set(),
+    timeline: new Set(),
+  });
   const [draggingTask, setDraggingTask] = useState(false);
   // Collapsed-by-exception: sections are open unless their key is in here, so new
   // sections appear expanded. "" stands for the null "No section" group.
@@ -1445,6 +1463,41 @@ export function ClientView({ clientId }: { clientId: string }) {
    *  State rather than a ref: the portal has to re-render once the node exists. */
   const [tlToolbar, setTlToolbar] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
+  /** Overview has no task list, so it borrows the Tasks tab's settings. */
+  const showKey: TaskTab = tab === "timeline" ? "timeline" : "tasks";
+  const showDone = showBy[showKey].done;
+  const showUndated = showBy[showKey].undated;
+  const hiddenTypes = hiddenTypesBy[showKey];
+  const setShowDone = (v: boolean) =>
+    setShowBy((p) => ({ ...p, [showKey]: { ...p[showKey], done: v } }));
+  const setShowUndated = (v: boolean) =>
+    setShowBy((p) => ({ ...p, [showKey]: { ...p[showKey], undated: v } }));
+  const toggleType = (id: string) =>
+    setHiddenTypesBy((p) => {
+      const next = new Set(p[showKey]);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { ...p, [showKey]: next };
+    });
+  const clearTypes = () => setHiddenTypesBy((p) => ({ ...p, [showKey]: new Set() }));
+
+  /**
+   * Only the types this client's own work uses — a filter listing every type in
+   * the studio would be mostly rows that hide nothing. `NO_TYPE` stands for the
+   * tasks that have none, which are otherwise unfilterable and are usually the
+   * ones you want out of the way.
+   */
+  const filterableTypes = useMemo(() => {
+    const mine = tasks.filter((t) => t.clientId === clientId);
+    const used = new Set(mine.map((t) => t.typeId).filter(Boolean) as string[]);
+    const list = taskTypes
+      .filter((t) => used.has(t.id))
+      .map((t) => ({ id: t.id, name: t.name, color: t.color }));
+    if (mine.some((t) => !t.typeId)) {
+      list.push({ id: NO_TYPE, name: "No type", color: "#0b43ed" });
+    }
+    return list;
+  }, [tasks, clientId, taskTypes]);
   const [showInfo, setShowInfo] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
@@ -1515,13 +1568,17 @@ export function ClientView({ clientId }: { clientId: string }) {
     [taskTypes],
   );
 
-  const clientTasks = useMemo(() => {
-    const list = tasks
-      .filter((t) => t.clientId === clientId && (showDone || t.status !== "done"))
+  const { clientTasks, hiddenByShow } = useMemo(() => {
+    const mine = tasks.filter((t) => t.clientId === clientId && (showDone || t.status !== "done"));
+    // The Show menu's two filters. `NO_TYPE` is how a task with no type is
+    // named in the hidden set — `t.typeId ?? NO_TYPE` is the whole trick.
+    const list = mine
+      .filter((t) => showUndated || !!t.dueDate)
+      .filter((t) => !hiddenTypes.has(t.typeId ?? NO_TYPE))
       .sort((a, b) => a.position - b.position);
     if (sort) list.sort(makeComparator(sort, profiles, taskMinutes, typeName));
-    return list;
-  }, [tasks, clientId, showDone, sort, profiles, taskMinutes, typeName]);
+    return { clientTasks: list, hiddenByShow: mine.length - list.length };
+  }, [tasks, clientId, showDone, showUndated, hiddenTypes, sort, profiles, taskMinutes, typeName]);
 
   if (!client) return <div className="text-muted">Client not found.</div>;
 
@@ -1625,9 +1682,29 @@ export function ClientView({ clientId }: { clientId: string }) {
               below xl, so on a laptop the terms of the engagement were invisible.
               Stacked, it reads as a subtitle of the client and always shows. */}
           <span className="flex min-w-0 flex-col">
-            <h1 className="truncate text-2xl font-bold leading-tight tracking-tight" title={titleTooltip}>
-              {client.name}
-            </h1>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <h1 className="truncate text-2xl font-bold leading-tight tracking-tight" title={titleTooltip}>
+                {client.name}
+              </h1>
+              {/* Beside the name, unboxed: this edits the client's NAME, mark
+                  and billing note, so sitting in the toolbar among view controls
+                  put it next to things it has nothing to do with. Quiet until
+                  the header is hovered, like every other rename in the app. */}
+              {isAdmin && (
+                <button
+                  onClick={() => setShowInfo(true)}
+                  title="Edit client"
+                  aria-label={`Edit ${client.name}`}
+                  // Always visible, just unboxed and quiet. The rename pencils
+                  // on rows are hover-only because a table full of them would be
+                  // a wall of icons; there is one client name on this page, and
+                  // hiding its only edit control buys nothing.
+                  className="shrink-0 rounded p-0.5 text-faint transition-colors hover:text-brand"
+                >
+                  <Pencil size={15} />
+                </button>
+              )}
+            </span>
             {client.billingPeriodNote && (
               <span className="truncate text-xs text-muted" title={client.billingPeriodNote}>
                 {client.billingPeriodNote}
@@ -1635,67 +1712,27 @@ export function ClientView({ clientId }: { clientId: string }) {
             )}
           </span>
           <div className="ml-auto flex items-center gap-2">
-            {/* A toggle BUTTON, not a checkbox. Both tabs list tasks, so it
-                belongs to both, and it leads the cluster — but a bare checkbox
-                floating among pill buttons read as a form control that had
-                wandered into a toolbar. The pressed state carries the answer
-                now, which the checkbox needed its label to do. */}
+            {/* ONE control for what this view shows. Completed, undated and the
+                type filter were three things in three places — two pills here
+                and the Timeline's colour legend — so a task that had gone
+                missing meant checking three of them. */}
             {tab !== "overview" && (
-              <button
-                onClick={() => setShowDone(!showDone)}
-                aria-pressed={showDone}
-                title={showDone ? "Hide completed tasks" : "Show completed tasks"}
-                className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors ${
-                  showDone
-                    ? "border-brand bg-brand-soft text-brand-dark"
-                    : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
-                }`}
-              >
-                <CheckCircle2 size={14} />
-                Show completed
-              </button>
+              <ShowMenu
+                showDone={showDone}
+                onShowDone={setShowDone}
+                showUndated={showUndated}
+                onShowUndated={setShowUndated}
+                undatedLabel={tab === "timeline" ? "Undated (list to schedule)" : "Undated"}
+                types={filterableTypes}
+                hiddenTypes={hiddenTypes}
+                onToggleType={toggleType}
+                onClearTypes={clearTypes}
+              />
             )}
-            {/* Timeline only: the Tasks tab already lists undated work, so the
-                toggle would be a no-op there. */}
-            {tab === "timeline" && (
-              <button
-                onClick={() => setShowUndated(!showUndated)}
-                aria-pressed={showUndated}
-                title={
-                  showUndated
-                    ? "Hide tasks that have no dates"
-                    : "Show tasks that have no dates, so you can schedule them here"
-                }
-                className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors ${
-                  showUndated
-                    ? "border-brand bg-brand-soft text-brand-dark"
-                    : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
-                }`}
-              >
-                <CalendarOff size={14} />
-                Show undated
-              </button>
-            )}
-            {/* The report is about HOURS and money; the Timeline is about dates.
-                On the Timeline tab its two buttons were the wrong offer next to
-                the wrong view, so that tab swaps them for "Share" (below) — the
-                thing you actually want to hand a client from a schedule. */}
-            {tab !== "timeline" && <ClientReportButtons clientId={client.id} />}
-            {/* Icon only, and admin only: this edits the client RECORD (mark,
-                name, billing note, archive). Notes and links live on Overview,
-                where members can read them too. Archive lives in here rather
-                than beside it — two archive buttons on one screen is one too
-                many, and it belongs with renaming. */}
-            {isAdmin && (
-              <button
-                onClick={() => setShowInfo(true)}
-                title="Edit client"
-                aria-label="Edit client"
-                className="rounded-lg border border-border bg-surface p-1.5 text-muted hover:border-brand hover:text-brand"
-              >
-                <Pencil size={14} />
-              </button>
-            )}
+            {/* The client report's own buttons are gone from here: the
+                Client Reports page is where reports are built, published and
+                shared, and a second entry point on this page meant two places
+                that had to agree about what "the report" meant. */}
             {/* To the RIGHT of the pencil, and only on the Timeline: it shares
                 the schedule, so it belongs to that view — the same swap the
                 report buttons make in the other direction. */}
@@ -1784,6 +1821,8 @@ export function ClientView({ clientId }: { clientId: string }) {
           zoom={zoom}
           showDone={showDone}
           showUndated={showUndated}
+          hiddenTypes={hiddenTypes}
+          onToggleType={toggleType}
           toolbarSlot={tlToolbar}
         />
       )}
@@ -1942,6 +1981,14 @@ export function ClientView({ clientId }: { clientId: string }) {
                 }
               />
             ))}
+            {hiddenByShow > 0 && (
+              // Never quietly partial: the Timeline has always printed what it
+              // is not drawing, and now that this table filters too, it says so
+              // in the same voice.
+              <div className="px-3 py-2 text-xs text-faint">
+                {hiddenByShow} task{hiddenByShow === 1 ? "" : "s"} hidden by the Show filter.
+              </div>
+            )}
             {hiddenSections > 0 && (
               // Folding a finished section away silently would read as data loss.
               <button

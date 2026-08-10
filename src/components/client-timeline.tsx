@@ -51,6 +51,7 @@ import { taskHoursDone } from "@/lib/task-hours";
 import { Avatar, ContextMenu, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
+import { NO_TYPE } from "./show-menu";
 import type { Profile, Section, Task, TaskType } from "@/lib/types";
 
 /**
@@ -241,7 +242,18 @@ function TipRow({
  */
 const ROW_HOVER_SOLID =
   "group-hover/trow:bg-[color-mix(in_srgb,var(--color-background)_40%,var(--color-surface))]";
-const ROW_HOVER_SHEER = "group-hover/trow:bg-background/40";
+/**
+ * ⚠️ The chart side needs a DARK wash, not the pinned side's light one.
+ * `bg-background/40` over the chart canvas — which is itself `bg-background` —
+ * is the same colour, so the hover tint was invisible from the moment it
+ * reached the calendar. A wash of the foreground reads on both.
+ *
+ * Both of these are translucent on purpose: the rows paint OVER the grid layer,
+ * so an opaque tint blanks that row's day rules, week seams and weekend
+ * shading. Selecting five tasks used to erase the calendar underneath them.
+ */
+const ROW_HOVER_SHEER = "group-hover/trow:bg-foreground/[0.06]";
+const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
 
 /** Never shrink the chart below this, however little room the page leaves. */
 const CARD_MIN_H = 320;
@@ -399,6 +411,8 @@ export function ClientTimeline({
   zoom,
   showDone,
   showUndated,
+  hiddenTypes,
+  onToggleType,
   toolbarSlot,
 }: {
   clientId: string;
@@ -407,6 +421,10 @@ export function ClientTimeline({
   showDone: boolean;
   /** also list tasks with no dates at all, as rows with no bar */
   showUndated: boolean;
+  /** type ids the Show menu is holding back; `NO_TYPE` for the untyped ones */
+  hiddenTypes: Set<string>;
+  /** the legend's chips are a shortcut into the same filter */
+  onToggleType: (id: string) => void;
   /** where to render the legend + Columns button — the tab strip's right end */
   toolbarSlot: HTMLElement | null;
 }) {
@@ -575,6 +593,9 @@ export function ClientTimeline({
 
     const rows: Row[] = clientTasks
       .filter((t) => (t.dueDate || showUndated) && (showDone || t.status !== "done"))
+      // The Show menu's type filter. `NO_TYPE` is how an untyped task is named
+      // in the hidden set, so the two cases are one lookup.
+      .filter((t) => !hiddenTypes.has(t.typeId ?? NO_TYPE))
       .map((t) => {
         // An undated task has no geometry. It still needs a start/due to satisfy
         // the row shape, so it borrows today's date — nothing is ever drawn from
@@ -627,15 +648,41 @@ export function ClientTimeline({
       out.push({ section: key ? (byId.get(key) ?? null) : null, rows: list, start, due });
     }
     return out;
-  }, [clientTasks, sections, clientId, profiles, taskTypes, taskMinutes, showDone, showUndated, today]);
+  }, [clientTasks, sections, clientId, profiles, taskTypes, taskMinutes, showDone, showUndated, hiddenTypes, today]);
 
   const allRows = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
   const undated = clientTasks.filter((t) => !t.dueDate && (showDone || t.status !== "done")).length;
+  /** Held back by the type filter — counted so the chart is never quietly partial. */
+  const filteredOut = clientTasks.filter(
+    (t) =>
+      (t.dueDate || showUndated) &&
+      (showDone || t.status !== "done") &&
+      hiddenTypes.has(t.typeId ?? NO_TYPE),
+  ).length;
 
+  /**
+   * ⚠️ Derived from the UNFILTERED tasks, not from `allRows`.
+   *
+   * The legend's chips are also the filter's shortcut, so building it from the
+   * filtered rows would make a hidden type erase its own chip — you could turn
+   * a type off and have no way to turn it back on except the menu.
+   */
   const usedTypes = useMemo(() => {
-    const ids = new Set(allRows.map((r) => r.type?.id).filter(Boolean));
+    const shown = clientTasks.filter(
+      (t) => (t.dueDate || showUndated) && (showDone || t.status !== "done"),
+    );
+    const ids = new Set(shown.map((t) => t.typeId).filter(Boolean));
     return taskTypes.filter((t) => ids.has(t.id));
-  }, [allRows, taskTypes]);
+  }, [clientTasks, showDone, showUndated, taskTypes]);
+
+  /** Same reason: "No type" and "Deadline" must survive their own filter. */
+  const hasUntyped = useMemo(
+    () =>
+      clientTasks.some(
+        (t) => !t.typeId && (t.dueDate || showUndated) && (showDone || t.status !== "done"),
+      ),
+    [clientTasks, showDone, showUndated],
+  );
 
   /**
    * The window the chart spans. Padded a week either side so a bar never starts
@@ -895,12 +942,40 @@ export function ClientTimeline({
   */
   /** One flat list, so the stack can animate them with a single rule. */
   const legendItems = [
-    ...usedTypes.map((t) => ({ key: t.id, label: short(t.name), color: t.color, faint: false, diamond: false })),
-    ...(allRows.some((r) => !r.type)
-      ? [{ key: "__none", label: "No type", color: "#0b43ed", faint: false, diamond: false }]
+    ...usedTypes.map((t) => ({
+      key: t.id,
+      typeId: t.id,
+      label: short(t.name),
+      color: t.color,
+      faint: false,
+      diamond: false,
+      off: hiddenTypes.has(t.id),
+    })),
+    ...(hasUntyped
+      ? [
+          {
+            key: "__none",
+            typeId: NO_TYPE,
+            label: "No type",
+            color: "#0b43ed",
+            faint: false,
+            diamond: false,
+            off: hiddenTypes.has(NO_TYPE),
+          },
+        ]
       : []),
-    ...(allRows.some((r) => !r.hasStart)
-      ? [{ key: "__deadline", label: "Deadline", color: "", faint: true, diamond: true }]
+    ...(allRows.some((r) => !r.hasStart && !r.undated)
+      ? [
+          {
+            key: "__deadline",
+            typeId: null,
+            label: "Deadline",
+            color: "",
+            faint: true,
+            diamond: true,
+            off: false,
+          },
+        ]
       : []),
   ];
 
@@ -926,16 +1001,21 @@ export function ClientTimeline({
           title="Task types — hover to read"
         >
           {legendItems.map((it) => (
-            <span
+            <button
               key={it.key}
+              onClick={() => it.typeId && onToggleType(it.typeId)}
+              title={it.typeId ? (it.off ? `Show ${it.label}` : `Hide ${it.label}`) : it.label}
               // `ring-2 ring-background` is what makes the overlap read as a
               // stack rather than as swatches run together — and it is
               // `background`, not `surface`: this toolbar sits on the page, so a
               // #fff ring was a brighter stroke against the page's #f0f1fa
               // rather than the invisible gap it is supposed to be.
+              // A hidden type is drawn hollow, and stays legible folded: at rest
+              // this is a row of swatches, so an "off" state that only showed in
+              // the label would make a filtered chart look like a quiet one.
               className={`-ml-1 flex items-center transition-all duration-200 ease-out first:ml-0 group-hover/legend:ml-0 group-hover/legend:mr-3 ${
                 it.faint ? "text-faint" : ""
-              }`}
+              } ${it.off ? "opacity-45 saturate-0" : ""}`}
             >
               {it.diamond ? (
                 <span
@@ -952,7 +1032,7 @@ export function ClientTimeline({
               <span className="max-w-0 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover/legend:ml-1.5 group-hover/legend:max-w-24 group-hover/legend:opacity-100">
                 {it.label}
               </span>
-            </span>
+            </button>
           ))}
         </div>
       )}
@@ -1224,6 +1304,13 @@ export function ClientTimeline({
           {undated} {showDone ? "" : "open "}task{undated === 1 ? "" : "s"} with no dates
           {undated === 1 ? " is" : " are"}{" "}listed with no bar — set dates to place
           {undated === 1 ? " it" : " them"} on the chart.
+        </p>
+      )}
+
+      {filteredOut > 0 && (
+        <p className="text-xs text-faint">
+          {filteredOut} more {filteredOut === 1 ? "task is" : "tasks are"}{" "}hidden by the type
+          filter — clear it from &ldquo;Show&rdquo;, or click a dimmed swatch in the legend.
         </p>
       )}
 
@@ -2308,7 +2395,7 @@ function TimelineRow({
         // its target and is left to the bar's own drag.
         data-chart-bg=""
         className={`relative h-full shrink-0 ${
-          selected ? "bg-brand-soft" : ROW_HOVER_SHEER
+          selected ? ROW_SELECTED_SHEER : ROW_HOVER_SHEER
         }`}
         style={{ width: totalDays * pxPerDay }}
       >
