@@ -1596,9 +1596,11 @@ function TodayLine({ left, height }: { left: number; height: number }) {
           borderTop: `${TODAY_CAP_H}px solid var(--brand)`,
         }}
       />
-      {/* 2px, not 1: at a single pixel today was the faintest vertical in a
-          chart full of verticals, and it is the one you look for first. */}
-      <div className="w-0.5 bg-brand/50" style={{ height }} />
+      {/* 2px and SOLID: today is the one vertical you look for first, and it was
+          the palest thing on the chart. The milestones took the half-strength
+          brand it used to wear — they are named and capped with a flag, so they
+          do not need weight to be found. */}
+      <div className="w-0.5 bg-brand" style={{ height }} />
     </div>
   );
 }
@@ -1692,7 +1694,7 @@ function MarkLayer({
       */}
       <div className="absolute top-0 z-20" style={{ width: 1, height }}>
         {positioned.map(({ m, left }) => (
-          <div key={m.id} className="absolute top-0 w-0.5 bg-brand" style={{ left, height }} />
+          <div key={m.id} className="absolute top-0 w-0.5 bg-brand/50" style={{ left, height }} />
         ))}
       </div>
 
