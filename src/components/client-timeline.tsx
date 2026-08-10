@@ -1631,7 +1631,11 @@ function DatesCell({
 /** The blue plumb-line with a dot on the header, as in the reference. */
 function TodayLine({ left, height }: { left: number; height: number }) {
   return (
-    <div className="pointer-events-none absolute top-0 z-10" style={{ left }} title="Today">
+    // ⚠️ z-5 is a LAYER BETWEEN, and it has to be: above the rows (whose bottom
+    // borders would otherwise chop the line into 34px dashes, as they did to the
+    // milestones) but below the bars, which carry z-10 so the work reads over
+    // the date rather than under it.
+    <div className="pointer-events-none absolute top-0 z-[5]" style={{ left }} title="Today">
       {/* No cap here: the marker's head is the dated tag in the ruler, and its
           tail is the point. Two heads for one day was one too many. */}
       {/* BLACK, not brand. Today is the one vertical you look for first, and it
@@ -2207,7 +2211,7 @@ function SectionHeaderRow({
           </span>
         )}
         <span
-          className="absolute"
+          className="absolute z-10"
           style={{ left, width, top: SECTION_BAR_TOP }}
           onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
           onMouseLeave={() => setTip(null)}
@@ -2436,6 +2440,25 @@ function TimelineRow({
   const workLen = workDaysBetween(previewStart, previewDue, off);
   // A task with no type keeps the brand blue — untyped is normal, not degraded.
   const color = row.type?.color ?? "#0b43ed";
+
+  /**
+   * A bar's rings and lift, in ONE declaration — CSS allows only one
+   * `box-shadow`, so selection, the plain-mode outline and the drop shadow have
+   * to be composed rather than layered from different places.
+   *
+   * Selection REPLACES the plain outline rather than stacking with it: two
+   * inset rings on a 27px bar is a bullseye.
+   */
+  const barShadow = [
+    selected
+      ? "inset 0 0 0 2px var(--brand)"
+      : plain
+        ? "inset 0 0 0 1px var(--color-border-strong)"
+        : null,
+    BAR_SHADOW,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const typeDisplay = row.type ? (
     <span className="flex items-center gap-1.5 text-xs">
@@ -2796,7 +2819,7 @@ function TimelineRow({
               onOpen();
             }
           }}
-          className={`absolute top-1/2 -translate-y-1/2 overflow-hidden ${
+          className={`absolute top-1/2 z-10 -translate-y-1/2 overflow-hidden ${
             done ? "opacity-55" : ""
           } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
             drag ? "ring-2 ring-brand" : ""
@@ -2824,7 +2847,7 @@ function TimelineRow({
             // ⚠️ Both shadows go in ONE declaration. The drop shadow can't be a
             // class while the ring is inline: the inline `boxShadow` would win
             // and silently drop the class's.
-            boxShadow: plain ? `inset 0 0 0 1px var(--color-border-strong), ${BAR_SHADOW}` : BAR_SHADOW,
+            boxShadow: barShadow,
             backgroundColor: plain ? "var(--color-surface)" : `${color}52`,
           }}
         >
@@ -2926,7 +2949,7 @@ function TimelineRow({
               onOpen();
             }
           }}
-          className={`absolute top-1/2 -translate-y-1/2 rotate-45 rounded-[2px] ${
+          className={`absolute top-1/2 z-10 -translate-y-1/2 rotate-45 rounded-[2px] ${
             done ? "opacity-55" : ""
           } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
             drag ? "ring-2 ring-brand" : ""
@@ -2936,9 +2959,7 @@ function TimelineRow({
             width: DIAMOND,
             height: DIAMOND,
             backgroundColor: plain ? "var(--color-surface)" : over ? "var(--danger)" : color,
-            boxShadow: plain
-              ? `inset 0 0 0 1px var(--color-border-strong), ${BAR_SHADOW}`
-              : BAR_SHADOW,
+            boxShadow: barShadow,
           }}
         />
       )}
