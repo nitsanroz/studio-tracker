@@ -2156,7 +2156,6 @@ function BoardCard({ task, draggable }: { task: Task; draggable: boolean }) {
       } ${task.pending ? "opacity-50" : ""}`}
     >
       <span className="bidi-auto text-sm font-medium">{task.title}</span>
-      {task.tag && <TagBadge tag={task.tag} />}
       <div className="flex items-center justify-between">
         <BudgetBar doneMinutes={taskMinutes(task.id)} estimateHours={task.estimateHours} />
         <Avatar profile={assignee} size={22} />
