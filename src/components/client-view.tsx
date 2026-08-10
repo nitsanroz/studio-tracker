@@ -1825,7 +1825,6 @@ export function ClientView({ clientId }: { clientId: string }) {
           showDone={showDone}
           showUndated={showUndated}
           hiddenTypes={hiddenTypes}
-          onToggleType={toggleType}
           toolbarSlot={tlToolbar}
         />
       )}

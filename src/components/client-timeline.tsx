@@ -261,13 +261,6 @@ const CARD_MIN_H = 320;
 /** `main`'s own bottom padding (p-6), so the card stops clear of the edge. */
 const CARD_BOTTOM_GAP = 24;
 
-/** Longest legend label. Past this the chips start pushing each other around. */
-const LEGEND_MAX = 10;
-/** Cut to `LEGEND_MAX`, ellipsis included in the count so the width is fixed. */
-function short(name: string): string {
-  return name.length > LEGEND_MAX ? `${name.slice(0, LEGEND_MAX - 1)}…` : name;
-}
-
 /** The optional left-table columns, in order, with their widths. */
 const TL_COLS = [
   { key: "who", label: "Who", w: ASSIGNEE_W, title: "Assignee" },
@@ -418,7 +411,6 @@ export function ClientTimeline({
   showDone,
   showUndated,
   hiddenTypes,
-  onToggleType,
   toolbarSlot,
 }: {
   clientId: string;
@@ -429,8 +421,6 @@ export function ClientTimeline({
   showUndated: boolean;
   /** type ids the Show menu is holding back; `NO_TYPE` for the untyped ones */
   hiddenTypes: Set<string>;
-  /** the legend's chips are a shortcut into the same filter */
-  onToggleType: (id: string) => void;
   /** where to render the legend + Columns button — the tab strip's right end */
   toolbarSlot: HTMLElement | null;
 }) {
@@ -678,30 +668,6 @@ export function ClientTimeline({
       (showDone || t.status !== "done") &&
       hiddenTypes.has(t.typeId ?? NO_TYPE),
   ).length;
-
-  /**
-   * ⚠️ Derived from the UNFILTERED tasks, not from `allRows`.
-   *
-   * The legend's chips are also the filter's shortcut, so building it from the
-   * filtered rows would make a hidden type erase its own chip — you could turn
-   * a type off and have no way to turn it back on except the menu.
-   */
-  const usedTypes = useMemo(() => {
-    const shown = clientTasks.filter(
-      (t) => (t.dueDate || showUndated) && (showDone || t.status !== "done"),
-    );
-    const ids = new Set(shown.map((t) => t.typeId).filter(Boolean));
-    return taskTypes.filter((t) => ids.has(t.id));
-  }, [clientTasks, showDone, showUndated, taskTypes]);
-
-  /** Same reason: "No type" and "Deadline" must survive their own filter. */
-  const hasUntyped = useMemo(
-    () =>
-      clientTasks.some(
-        (t) => !t.typeId && (t.dueDate || showUndated) && (showDone || t.status !== "done"),
-      ),
-    [clientTasks, showDone, showUndated],
-  );
 
   /**
    * The window the chart spans. Padded a week either side so a bar never starts
@@ -952,109 +918,15 @@ export function ClientTimeline({
   }
 
   /*
-    The legend and the Columns button are rendered INTO the tab strip, through a
-    slot ClientView hands down. They belong to this panel and read its state, so
+    The Columns button is rendered INTO the tab strip, through a slot ClientView
+    hands down. They belong to this panel and read its state, so
     lifting them would mean lifting `hiddenCols` and the used-type set with them;
     a portal keeps the state here and only moves the pixels. Together with the
     how-to moving onto an (i) beside the client name, that is a whole row of
     chrome removed from above a chart that is already fighting for height.
   */
-  /** One flat list, so the stack can animate them with a single rule. */
-  const legendItems = [
-    ...usedTypes.map((t) => ({
-      key: t.id,
-      typeId: t.id,
-      label: short(t.name),
-      color: t.color,
-      faint: false,
-      diamond: false,
-      off: hiddenTypes.has(t.id),
-    })),
-    ...(hasUntyped
-      ? [
-          {
-            key: "__none",
-            typeId: NO_TYPE,
-            label: "No type",
-            color: "#0b43ed",
-            faint: false,
-            diamond: false,
-            off: hiddenTypes.has(NO_TYPE),
-          },
-        ]
-      : []),
-    ...(allRows.some((r) => !r.hasStart && !r.undated)
-      ? [
-          {
-            key: "__deadline",
-            typeId: null,
-            label: "Deadline",
-            color: "",
-            faint: true,
-            diamond: true,
-            off: false,
-          },
-        ]
-      : []),
-  ];
-
   const toolbar = (
     <>
-      {/*
-        A STACK that unfolds.
-
-        At rest this is a row of overlapping swatches — the colours, and nothing
-        else. Hover and each one slides apart and grows its label. That keeps the
-        toolbar honest at every width (the folded stack is ~40px, so it can never
-        reach the centred zoom control) while the names are still one gesture
-        away, and it means the legend costs almost nothing on a row whose whole
-        purpose was to stop costing a row.
-
-        Widths animate through `max-w`, the usual trick for a value CSS can't
-        transition from `auto`; the 24 (96px) just has to exceed the widest
-        label, which `short()` already caps at 10 characters.
-      */}
-      {(usedTypes.length > 0 || allRows.some((r) => !r.hasStart)) && (
-        <div
-          className="group/legend hidden min-w-0 flex-nowrap items-center justify-end overflow-hidden whitespace-nowrap text-[11px] text-muted lg:flex"
-          title="Task types — hover to read"
-        >
-          {legendItems.map((it) => (
-            <button
-              key={it.key}
-              onClick={() => it.typeId && onToggleType(it.typeId)}
-              title={it.typeId ? (it.off ? `Show ${it.label}` : `Hide ${it.label}`) : it.label}
-              // `ring-2 ring-background` is what makes the overlap read as a
-              // stack rather than as swatches run together — and it is
-              // `background`, not `surface`: this toolbar sits on the page, so a
-              // #fff ring was a brighter stroke against the page's #f0f1fa
-              // rather than the invisible gap it is supposed to be.
-              // A hidden type is drawn hollow, and stays legible folded: at rest
-              // this is a row of swatches, so an "off" state that only showed in
-              // the label would make a filtered chart look like a quiet one.
-              className={`-ml-1 flex items-center transition-all duration-200 ease-out first:ml-0 group-hover/legend:ml-0 group-hover/legend:mr-3 ${
-                it.faint ? "text-faint" : ""
-              } ${it.off ? "opacity-45 saturate-0" : ""}`}
-            >
-              {it.diamond ? (
-                <span
-                  className="size-2 rotate-45 border border-current ring-2 ring-background"
-                  aria-hidden
-                />
-              ) : (
-                <span
-                  className="size-2.5 rounded-sm ring-2 ring-background"
-                  style={{ backgroundColor: it.color }}
-                  aria-hidden
-                />
-              )}
-              <span className="max-w-0 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover/legend:ml-1.5 group-hover/legend:max-w-24 group-hover/legend:opacity-100">
-                {it.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
       <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
     </>
   );
