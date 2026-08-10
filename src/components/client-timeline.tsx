@@ -1024,6 +1024,7 @@ export function ClientTimeline({
                 canAddMark={isAdmin}
                 onHoverDay={setHoverDay}
                 hoverDay={hoverDay}
+                todayOffset={daysBetween(from, today)}
                 onAddMark={(dayOffset) => {
                   const date = toISO(shiftDays(from, dayOffset));
                   // Created empty and immediately put into its editor: the mark
@@ -1082,7 +1083,10 @@ export function ClientTimeline({
                     className="pointer-events-none absolute top-0 z-0 bg-foreground/[0.05]"
                     style={{
                       left: leftW,
-                      width: Math.min(daysBetween(from, today), totalDays) * pxPerDay,
+                      // …and the past ends where the line is, so the two still
+                      // read as one edge. Half of today shaded is simply true.
+                      width:
+                        Math.min(daysBetween(from, today) + 0.5, totalDays) * pxPerDay,
                       height: bodyH,
                     }}
                   />
@@ -1097,7 +1101,15 @@ export function ClientTimeline({
                     }}
                   />
                 )}
-                <TodayLine left={leftW + daysBetween(from, today) * pxPerDay} height={bodyH} />
+                {/* The MIDDLE of today's column, not its left edge.
+                    The date in the ruler is centred in its box, so a line at the
+                    day's start sat half a column off the chip that names it —
+                    and "we are inside this day" is truer than "this day begins
+                    here" for a marker that means now. */}
+                <TodayLine
+                  left={leftW + (daysBetween(from, today) + 0.5) * pxPerDay - 1}
+                  height={bodyH}
+                />
                 <MarkLayer
                   marks={marks}
                   from={from}
@@ -1883,6 +1895,7 @@ function TimelineHeader({
   onAddMark,
   onHoverDay,
   hoverDay,
+  todayOffset,
 }: {
   from: Date;
   totalDays: number;
@@ -1898,6 +1911,8 @@ function TimelineHeader({
   onHoverDay: (dayOffset: number | null) => void;
   /** …and back down, so the tick under the pointer lights up with it */
   hoverDay: number | null;
+  /** today, as a day offset from `from` — the ruler marks it */
+  todayOffset: number;
 }) {
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
@@ -1962,10 +1977,10 @@ function TimelineHeader({
             const nonWork = dayZoom && !isWorkDay(date, off);
             // The tick the pointer is over — by RANGE, not by index, so it also
             // works at week and month zoom where one tick covers many days.
-            const hovered =
-              hoverDay !== null &&
-              hoverDay >= Math.round(t.left / pxPerDay) &&
-              hoverDay < Math.round((t.left + t.width) / pxPerDay);
+            const first = Math.round(t.left / pxPerDay);
+            const last = Math.round((t.left + t.width) / pxPerDay);
+            const hovered = hoverDay !== null && hoverDay >= first && hoverDay < last;
+            const isToday = todayOffset >= first && todayOffset < last;
             return (
               <span
                 key={t.left}
@@ -1996,7 +2011,15 @@ function TimelineHeader({
                     : { left: t.left, width: t.width }
                 }
               >
-                {t.label}
+                {/* Today wears its date in a blue chip — the head of the marker,
+                    with the line below as its stem. A chip rather than the whole
+                    tick: the tick runs the full height of the ruler and would
+                    read as a bar rather than as a date. */}
+                {isToday ? (
+                  <span className="rounded-md bg-brand px-1.5 py-0.5 text-white">{t.label}</span>
+                ) : (
+                  t.label
+                )}
               </span>
             );
           })}
