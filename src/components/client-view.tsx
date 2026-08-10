@@ -386,6 +386,13 @@ let draggedTaskId: string | null = null;
  *  mistake one another's payloads. */
 const SECTION_DRAG_TYPE = "application/x-studio-section-id";
 let draggedSectionId: string | null = null;
+/**
+ * The card being dragged across the board. A module-level ref for the same
+ * reason as the two above: HTML5 drag events cross component boundaries and
+ * `dataTransfer` is unreadable during `dragover`, which is exactly when the
+ * drop target needs to know whether to accept.
+ */
+let draggedBoardId: string | null = null;
 
 type SortKey =
   | "title"
@@ -1433,7 +1440,7 @@ function SelectionBar({
 type TaskTab = "tasks" | "timeline";
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection } =
+  const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection, tags, updateTask } =
     useData();
   const isAdmin = useIsAdmin();
   /**
@@ -1469,6 +1476,8 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [tlToolbar, setTlToolbar] = useState<HTMLElement | null>(null);
   /** Timeline only: draw the bars plain instead of in their type's colour. */
   const [plainBars, setPlainBars] = useState(false);
+  /** Which board column the pointer is over, `null` being "No status". */
+  const [boardOver, setBoardOver] = useState<string | null | undefined>(undefined);
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
   /** Overview has no task list, so it borrows the Tasks tab's settings. */
   const showKey: TaskTab = tab === "timeline" ? "timeline" : "tasks";
@@ -1654,10 +1663,23 @@ export function ClientView({ clientId }: { clientId: string }) {
       }),
   };
 
-  const statuses: { key: Task["status"]; label: string }[] = [
-    { key: "todo", label: "To do" },
-    { key: "in_progress", label: "In progress" },
-    { key: "done", label: "Done" },
+  /**
+   * The board's columns are the studio's STATUSES — the `tags` table, which the
+   * UI has called Status since v0.99 while the code still says tag.
+   *
+   * They used to be `Task.status` (todo / in_progress / done), which was the
+   * wrong field twice over: nothing in the app ever writes `in_progress`, so
+   * that column could only ever drain; and the board had no drag, so it could
+   * not write anything at all. It showed a field you cannot edit while the
+   * field you CAN edit sat in a dropdown in a table cell.
+   *
+   * `null` leads, for tasks with no status yet — dragging OUT of that column is
+   * how a task gets one, and a board that hid untagged work would hide almost
+   * all of it today.
+   */
+  const boardColumns: { key: string | null; label: string }[] = [
+    { key: null, label: "No status" },
+    ...tags.map((t) => ({ key: t.name, label: t.name })),
   ];
 
   return (
@@ -2062,20 +2084,45 @@ export function ClientView({ clientId }: { clientId: string }) {
         </HiddenColsContext.Provider>
         </ColWidthsContext.Provider>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {statuses.map(({ key, label }) => {
-            const columnTasks = tasks.filter(
-              (t) => t.clientId === clientId && t.status === key,
-            );
+        // `clientTasks`, not `tasks`: the board used to read straight from the
+        // store and so ignored Show completed, Undated and the type filter
+        // entirely — the two views of one client disagreed about what they were
+        // showing. Auto-fit columns so five statuses don't squeeze to nothing.
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+          {boardColumns.map(({ key, label }) => {
+            const columnTasks = clientTasks.filter((t) => (t.tag ?? null) === key);
+            const isOver = boardOver === key;
             return (
-              <div key={key} className="rounded-xl border border-border bg-surface p-3">
+              <div
+                key={key ?? "__none"}
+                onDragOver={(e) => {
+                  if (!isAdmin || !draggedBoardId) return;
+                  e.preventDefault();
+                  setBoardOver(key);
+                }}
+                onDragLeave={() => setBoardOver((k) => (k === key ? undefined : k))}
+                onDrop={() => {
+                  setBoardOver(undefined);
+                  const id = draggedBoardId;
+                  draggedBoardId = null;
+                  if (!id) return;
+                  const moved = tasks.find((t) => t.id === id);
+                  // Dropping a card back where it started is not an edit, and
+                  // must not cost an undo step.
+                  if (!moved || (moved.tag ?? null) === key) return;
+                  updateTask(id, { tag: key });
+                }}
+                className={`rounded-xl border bg-surface p-3 transition-colors ${
+                  isOver ? "border-brand bg-brand-soft/40" : "border-border"
+                }`}
+              >
                 <div className="mb-2 text-sm font-semibold">
                   {label}
                   <span className="ml-2 text-xs font-normal text-faint">{columnTasks.length}</span>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex min-h-8 flex-col gap-2">
                   {columnTasks.map((t) => (
-                    <BoardCard key={t.id} task={t} />
+                    <BoardCard key={t.id} task={t} draggable={isAdmin} />
                   ))}
                 </div>
               </div>
@@ -2091,13 +2138,22 @@ export function ClientView({ clientId }: { clientId: string }) {
   );
 }
 
-function BoardCard({ task }: { task: Task }) {
+function BoardCard({ task, draggable }: { task: Task; draggable: boolean }) {
   const { profiles, openTask, taskMinutes } = useData();
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   return (
     <button
+      draggable={draggable}
+      onDragStart={() => {
+        draggedBoardId = task.id;
+      }}
+      onDragEnd={() => {
+        draggedBoardId = null;
+      }}
       onClick={() => openTask(task.id)}
-      className={`flex flex-col gap-2 rounded-lg border border-border bg-background p-3 text-left hover:border-brand ${task.pending ? "opacity-50" : ""}`}
+      className={`flex flex-col gap-2 rounded-lg border border-border bg-background p-3 text-left hover:border-brand ${
+        draggable ? "cursor-grab active:cursor-grabbing" : ""
+      } ${task.pending ? "opacity-50" : ""}`}
     >
       <span className="bidi-auto text-sm font-medium">{task.title}</span>
       {task.tag && <TagBadge tag={task.tag} />}
