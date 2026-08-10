@@ -226,6 +226,23 @@ function TipRow({
   );
 }
 
+/**
+ * The row hover tint, in two forms.
+ *
+ * ⚠️ The pinned blocks need an OPAQUE one. `bg-background/40` replaces
+ * `bg-surface` rather than layering over it — they are both background-colour
+ * utilities — so on hover the sticky column turned 40% transparent and the
+ * calendar scrolling underneath showed through the task's own name: grid lines
+ * struck through the text and weekend shading appeared behind it. `color-mix`
+ * gives the same colour as a solid.
+ *
+ * The chart area keeps the translucent one on purpose: it paints OVER the grid
+ * layer, and an opaque tint there would blank that row's shading and rules.
+ */
+const ROW_HOVER_SOLID =
+  "group-hover/trow:bg-[color-mix(in_srgb,var(--color-background)_40%,var(--color-surface))]";
+const ROW_HOVER_SHEER = "group-hover/trow:bg-background/40";
+
 /** Never shrink the chart below this, however little room the page leaves. */
 const CARD_MIN_H = 320;
 /** `main`'s own bottom padding (p-6), so the card stops clear of the edge. */
@@ -341,6 +358,15 @@ interface DragState {
   deltaDays: number;
   /** distinguishes a click (open the task) from a drag (re-schedule it) */
   moved: boolean;
+  /**
+   * Every task this drag moves, when it started on a bar that was part of a
+   * multi-selection. `null` for an ordinary one-bar drag.
+   *
+   * MOVE only. Dragging an edge stays single: resizing ten tasks by the same
+   * number of days is a different intent from moving them, and one nobody asked
+   * for — a 2-day task and a 3-week task do not want the same edge nudge.
+   */
+  group: string[] | null;
 }
 
 interface Row {
@@ -393,6 +419,7 @@ export function ClientTimeline({
     taskTypes,
     taskMinutes,
     updateTask,
+    updateTasksVaried,
     updateSection,
     openTask,
     reorderTimelineTasks,
@@ -406,6 +433,20 @@ export function ClientTimeline({
   const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
     null,
   );
+  /**
+   * Rubber-band selection. `null` when idle; otherwise the two corners, in the
+   * chart body's own coordinates (x measured from the left table's left edge,
+   * so a bar at `left` sits at `leftW + left`).
+   */
+  const [marquee, setMarquee] = useState<{
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+    add: boolean;
+  } | null>(null);
+  const marqueeRef = useRef<typeof marquee>(null);
+  const body = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const dragging = drag !== null;
@@ -663,6 +704,87 @@ export function ClientTimeline({
     0,
   );
 
+  /**
+   * Where every visible row sits in the body's coordinate space, and how far its
+   * bar runs. Derived from the SAME walk that produces `bodyH`, so a collapsed
+   * section counts for its header and nothing else — hit-testing against rows
+   * that aren't on screen would select things you can't see.
+   */
+  function rowBands() {
+    const bands: { id: string; top: number; bottom: number; left: number; right: number }[] = [];
+    let y = 0;
+    for (const g of groups) {
+      y += SECTION_H;
+      if (collapsed.has(g.section?.id ?? "")) continue;
+      for (const r of g.rows) {
+        const left = leftW + daysBetween(from, r.start) * pxPerDay;
+        const width = r.hasStart
+          ? Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay)
+          : DIAMOND;
+        bands.push({ id: r.task.id, top: y, bottom: y + ROW_H, left, right: left + width });
+        y += ROW_H;
+      }
+    }
+    return bands;
+  }
+
+  /**
+   * Press on empty calendar and drag a rectangle over the bars you want.
+   *
+   * It selects on the BAR, not the row: a rectangle drawn over August should
+   * take the tasks that run in August, not every task whose row it happens to
+   * cross on the way. Plain drag replaces the selection, shift adds to it.
+   */
+  function onBodyPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isAdmin) return;
+    if (!(e.target as HTMLElement).hasAttribute("data-chart-bg")) return;
+    const host = body.current;
+    if (!host) return;
+    const r = host.getBoundingClientRect();
+    const start = {
+      x0: e.clientX - r.left,
+      y0: e.clientY - r.top,
+      x1: e.clientX - r.left,
+      y1: e.clientY - r.top,
+      add: e.shiftKey,
+    };
+    marqueeRef.current = start;
+    setMarquee(start);
+
+    const move = (ev: PointerEvent) => {
+      const m = marqueeRef.current;
+      if (!m) return;
+      const box = host.getBoundingClientRect();
+      const next = { ...m, x1: ev.clientX - box.left, y1: ev.clientY - box.top };
+      marqueeRef.current = next;
+      setMarquee(next);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const m = marqueeRef.current;
+      marqueeRef.current = null;
+      setMarquee(null);
+      if (!m) return;
+      const x = [Math.min(m.x0, m.x1), Math.max(m.x0, m.x1)];
+      const y = [Math.min(m.y0, m.y1), Math.max(m.y0, m.y1)];
+      // A click with no drag clears the selection — the same gesture that means
+      // "nothing" on a desktop. Anything smaller than this is a slip, not a box.
+      const isClick = x[1] - x[0] < 4 && y[1] - y[0] < 4;
+      const hits = isClick
+        ? []
+        : rowBands()
+            .filter((b) => b.bottom > y[0] && b.top < y[1] && b.right > x[0] && b.left < x[1])
+            .map((b) => b.id);
+      setSelected((prev) => {
+        if (m.add) return new Set([...prev, ...hits]);
+        return new Set(hits);
+      });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
   // Open on today rather than on the far past — a client with 2019 history would
   // otherwise render scrolled to work that finished years ago.
   useEffect(() => {
@@ -711,6 +833,20 @@ export function ClientTimeline({
     if (!row) return;
     if (!d.moved || d.deltaDays === 0) {
       if (!d.moved) openTask(d.taskId);
+      return;
+    }
+    if (d.group && d.group.length > 1) {
+      // Each task keeps its OWN dates and is shifted by the same number of
+      // working days, so every patch differs — hence `updateTasksVaried` rather
+      // than `updateTasksBulk`, and one ⌘Z for the whole gesture.
+      const items = d.group
+        .map((id) => allRows.find((r) => r.task.id === id))
+        .filter((r): r is Row => !!r)
+        .flatMap((r) => {
+          const patch = plannedPatch(r, "move", d.deltaDays, offDates);
+          return patch ? [{ id: r.task.id, patch }] : [];
+        });
+      if (items.length) updateTasksVaried(items);
       return;
     }
     const patch = plannedPatch(row, d.mode, d.deltaDays, offDates);
@@ -888,7 +1024,22 @@ export function ClientTimeline({
                   on the left is `bg-surface`: the two tones are what separate
                   "the table" from "the calendar" now that the left rail is
                   pinned over the chart while you scroll. */}
-              <div className="relative bg-background">
+              <div
+                ref={body}
+                onPointerDown={onBodyPointerDown}
+                className={`relative bg-background ${marquee ? "select-none" : ""}`}
+              >
+                {marquee && (
+                  <div
+                    className="pointer-events-none absolute z-20 rounded-sm border border-brand bg-brand/10"
+                    style={{
+                      left: Math.min(marquee.x0, marquee.x1),
+                      top: Math.min(marquee.y0, marquee.y1),
+                      width: Math.abs(marquee.x1 - marquee.x0),
+                      height: Math.abs(marquee.y1 - marquee.y0),
+                    }}
+                  />
+                )}
                 {/* One layer for the whole grid — weak vertical rules on every
                     tick plus a wash over non-working days — drawn once behind
                     the rows rather than per row. */}
@@ -944,7 +1095,16 @@ export function ClientTimeline({
                             hidden={hiddenCols}
                             canEdit={isAdmin}
                             off={offDates}
-                            drag={drag?.taskId === row.task.id ? drag : null}
+                            // Every bar in the group previews the same shift —
+                            // dragging five tasks while four sit still would
+                            // read as a failed gesture, not a pending one.
+                            drag={
+                              drag &&
+                              (drag.taskId === row.task.id ||
+                                (drag.group?.includes(row.task.id) ?? false))
+                                ? drag
+                                : null
+                            }
                             dropTarget={dropBefore === row.task.id}
                             selected={selected.has(row.task.id)}
                             anySelected={selected.size > 0}
@@ -965,12 +1125,21 @@ export function ClientTimeline({
                               })
                             }
                             onDragStart={(mode, clientX) => {
+                              // Grabbing a bar that is IN the selection moves
+                              // the whole selection; grabbing one outside it
+                              // moves that bar alone and leaves the selection
+                              // untouched — the same rule every file manager
+                              // uses for dragging out of a multi-selection.
                               const next: DragState = {
                                 taskId: row.task.id,
                                 mode,
                                 startX: clientX,
                                 deltaDays: 0,
                                 moved: false,
+                                group:
+                                  mode === "move" && selected.size > 1 && selected.has(row.task.id)
+                                    ? [...selected]
+                                    : null,
                               };
                               dragRef.current = next;
                               setDrag(next);
@@ -1347,7 +1516,9 @@ function TodayLine({ left, height }: { left: number; height: number }) {
   return (
     <div className="pointer-events-none absolute top-0 z-10" style={{ left }} title="Today">
       <div className="absolute -left-[3px] -top-[3px] size-1.5 rounded-full bg-brand" />
-      <div className="w-px bg-brand/50" style={{ height }} />
+      {/* 2px, not 1: at a single pixel today was the faintest vertical in a
+          chart full of verticals, and it is the one you look for first. */}
+      <div className="w-0.5 bg-brand/50" style={{ height }} />
     </div>
   );
 }
@@ -1415,9 +1586,9 @@ function GridLayer({
           key={t.left}
           className={`absolute top-0 h-full border-l ${
             t.boundary
-              ? "border-foreground/15"
+              ? "border-foreground/[0.18]"
               : t.weekStart
-                ? "border-foreground/[0.07]"
+                ? "border-foreground/10"
                 : "border-border/40"
           }`}
           style={{ left: t.left }}
@@ -1490,10 +1661,10 @@ function TimelineHeader({
             return (
               <span
                 key={t.left}
-                className={`absolute top-0 flex h-full items-center truncate px-1 text-[10px] ${
+                className={`absolute top-0 flex h-full items-center truncate px-1 ${
                   t.boundary
-                    ? "border-l border-foreground/15 font-semibold text-foreground"
-                    : `tabular-nums ${nonWork ? "text-faint/60" : "text-muted"}`
+                    ? "border-l border-foreground/[0.18] text-[12px] font-semibold uppercase tracking-wide text-foreground"
+                    : `text-[10px] tabular-nums ${nonWork ? "text-faint/60" : "text-muted"}`
                 }`}
                 style={{ left: t.left, width: t.width }}
               >
@@ -1911,7 +2082,7 @@ function TimelineRow({
       {/* Only this block is sticky — see STICKY_W. */}
       <div
         className={`sticky left-0 z-20 flex h-full shrink-0 items-center ${
-          selected ? "bg-brand-soft" : "bg-surface group-hover/trow:bg-background/40"
+          selected ? "bg-brand-soft" : `bg-surface ${ROW_HOVER_SOLID}`
         }`}
         style={{ width: STICKY_W }}
       >
@@ -2025,7 +2196,7 @@ function TimelineRow({
       {/* The rest of the table scrolls away with the chart. */}
       <div
         className={`flex h-full shrink-0 items-center ${
-          selected ? "bg-brand-soft" : "bg-surface group-hover/trow:bg-background/40"
+          selected ? "bg-brand-soft" : `bg-surface ${ROW_HOVER_SOLID}`
         }`}
         style={{ width: leftW - STICKY_W }}
       >
@@ -2126,7 +2297,21 @@ function TimelineRow({
         )}
       </div>
 
-      <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
+      {/* The hover tint runs the FULL width of the row — it stopped where the
+          pinned columns ended, so following a row out to its bar meant tracking
+          an untinted gap. Translucent on purpose: the rows paint over the grid
+          layer, and an opaque tint would blank that row's weekend shading and
+          month rules. */}
+      <div
+        // The marquee starts from THIS element and no other: bars are its
+        // children, so a pointerdown that lands on one arrives with the bar as
+        // its target and is left to the bar's own drag.
+        data-chart-bg=""
+        className={`relative h-full shrink-0 ${
+          selected ? "bg-brand-soft" : ROW_HOVER_SHEER
+        }`}
+        style={{ width: totalDays * pxPerDay }}
+      >
       {/* Suppressed while dragging: the drag chip is already saying where this
           bar is going, and two panels following one pointer is one too many. */}
       {tip && !drag && (
@@ -2166,7 +2351,9 @@ function TimelineRow({
         inside the row: the chart is in a scroller that clips both axes, so a
         chip floating above the bar would be cut off on the top row.
       */}
-      {drag && !row.undated && (
+      {/* ONE chip, on the bar under the pointer. Five chips following a single
+          gesture is five times the readout and none of the clarity. */}
+      {drag?.taskId === task.id && !row.undated && (
         <span
           className="pointer-events-none absolute top-1/2 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
           style={

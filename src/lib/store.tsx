@@ -169,6 +169,8 @@ interface Store {
    * exactly one client, so the old id would strand the tasks).
    */
   updateTasksBulk: (taskIds: string[], patch: Partial<Task>) => void;
+  /** Per-task patches as ONE undo step — see the implementation's note. */
+  updateTasksVaried: (items: { id: string; patch: Partial<Task> }[]) => void;
   /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
   restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
@@ -888,6 +890,55 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .update(taskPatchToRow(patch, tagIdByName))
         .in("id", ids)
         .then(wrote("updateTasksBulk"));
+    },
+    [supabase, tagIdByName, tasks, record, wrote],
+  );
+
+  /**
+   * Per-task patches, ONE history entry — the varied sibling of
+   * `updateTasksBulk`, which applies the same patch to every id.
+   *
+   * Dragging a multi-selection across the Timeline needs this: each task keeps
+   * its own dates and is shifted by the same number of working days, so no two
+   * patches are alike. Looping `updateTask` would have written the same rows but
+   * left ten undo steps behind, and a gesture the user made once must come back
+   * with one ⌘Z. Writes are grouped by identical patch so a shift that happens
+   * to produce the same dates for several tasks is still one round trip.
+   */
+  const updateTasksVaried = useCallback(
+    (items: { id: string; patch: Partial<Task> }[]) => {
+      if (items.length === 0) return;
+      const byId = new Map(items.map((it) => [it.id, it.patch]));
+      const before = tasks
+        .filter((t) => byId.has(t.id))
+        .map((t) => ({ id: t.id, patch: inversePatch(t, byId.get(t.id)!) }));
+      record({
+        undo: () => methodsRef.current?.restoreTasksBulk(before),
+        redo: () => methodsRef.current?.updateTasksVaried(items),
+      });
+
+      setTasks((prev) => {
+        const next = prev.map((t) => {
+          const p = byId.get(t.id);
+          return p ? { ...t, ...p } : t;
+        });
+        return next;
+      });
+
+      const byPatch = new Map<string, { patch: Partial<Task>; ids: string[] }>();
+      for (const it of items) {
+        const key = JSON.stringify(it.patch);
+        const group = byPatch.get(key);
+        if (group) group.ids.push(it.id);
+        else byPatch.set(key, { patch: it.patch, ids: [it.id] });
+      }
+      for (const { patch, ids } of byPatch.values()) {
+        supabase
+          .from("tasks")
+          .update(taskPatchToRow(patch, tagIdByName))
+          .in("id", ids)
+          .then(wrote("updateTasksVaried"));
+      }
     },
     [supabase, tagIdByName, tasks, record, wrote],
   );
@@ -2468,6 +2519,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       openTask,
       updateTask,
       updateTasksBulk,
+      updateTasksVaried,
       restoreTasksBulk,
       addTask,
       addTaskNear,
@@ -2536,7 +2588,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 
