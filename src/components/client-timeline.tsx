@@ -314,8 +314,9 @@ function TimelineColumnsMenu({
         className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
       >
         <Columns3 size={14} />
+        Columns
         {hidden.size > 0 && (
-          <span className="text-xs tabular-nums">{TL_COLS.length - hidden.size}</span>
+          <span className="text-xs tabular-nums text-faint">{TL_COLS.length - hidden.size}</span>
         )}
       </button>
       {open && (
@@ -565,6 +566,15 @@ export function ClientTimeline({
   );
   /** The mark whose title is being typed — new ones start here, empty. */
   const [editingMark, setEditingMark] = useState<string | null>(null);
+  /**
+   * The day the pointer is over in the ruler, as an offset from `from`.
+   *
+   * Lifted to here rather than kept in the header because the highlight is a
+   * COLUMN, not a tick: you are aiming at a day in the chart, and a band that
+   * stopped at the bottom of the ruler would leave you guessing which row of
+   * bars it lines up with.
+   */
+  const [hoverDay, setHoverDay] = useState<number | null>(null);
 
   /**
    * Whole-studio days off from the weekly plan (`plan_day_states`: holidays and
@@ -991,6 +1001,7 @@ export function ClientTimeline({
                 hidden={hiddenCols}
                 shadow={shadow}
                 canAddMark={isAdmin}
+                onHoverDay={setHoverDay}
                 onAddMark={(dayOffset) => {
                   const date = toISO(shiftDays(from, dayOffset));
                   // Created empty and immediately put into its editor: the mark
@@ -1033,6 +1044,16 @@ export function ClientTimeline({
                   height={bodyH}
                   leftW={leftW}
                 />
+                {hoverDay !== null && hoverDay >= 0 && hoverDay < totalDays && (
+                  <div
+                    className="pointer-events-none absolute top-0 z-0 bg-brand/[0.07]"
+                    style={{
+                      left: leftW + hoverDay * pxPerDay,
+                      width: pxPerDay,
+                      height: bodyH,
+                    }}
+                  />
+                )}
                 <TodayLine left={leftW + daysBetween(from, today) * pxPerDay} height={bodyH} />
                 <MarkLayer
                   marks={marks}
@@ -1571,13 +1592,24 @@ function MarkLayer({
   onDelete: (id: string) => void;
 }) {
   const [drag, setDrag] = useState<{ id: string; startX: number; days: number } | null>(null);
+  /**
+   * Set when a drag actually moved, and read by the rename button's click.
+   *
+   * ⚠️ The drag deliberately does NOT `preventDefault` on pointerdown: that
+   * suppresses the click that follows, which is how the trash button came to do
+   * nothing at all. Letting the click through and suppressing it HERE keeps both
+   * gestures on the same element.
+   */
+  const movedRef = useRef(false);
 
   function startDrag(id: string, clientX: number) {
     let live = { id, startX: clientX, days: 0 };
+    movedRef.current = false;
     setDrag(live);
     const move = (e: PointerEvent) => {
       const days = Math.round((e.clientX - live.startX) / pxPerDay);
       if (days === live.days) return;
+      movedRef.current = true;
       live = { ...live, days };
       setDrag(live);
     };
@@ -1591,25 +1623,48 @@ function MarkLayer({
     window.addEventListener("pointerup", up);
   }
 
+  const positioned = marks.map((m) => ({
+    m,
+    left: (daysBetween(from, parseISO(m.onDate)) + (drag?.id === m.id ? drag.days : 0)) * pxPerDay,
+  }));
+
   return (
-    <div
-      className="pointer-events-none absolute top-0 z-0"
-      style={{ left: leftW, width: 1, height }}
-    >
-      {marks.map((m) => {
-        const shift = drag?.id === m.id ? drag.days : 0;
-        const left = (daysBetween(from, parseISO(m.onDate)) + shift) * pxPerDay;
+    /*
+      TWO layers, because the line and its label want opposite depths.
+      ⚠️ The root carries no z-index of its own: a positioned element WITH one
+      creates a stacking context, and the label could then never rise above the
+      bars no matter what it asked for — which is why the name field was being
+      covered by the section bar it sat on.
+    */
+    <div className="pointer-events-none absolute top-0" style={{ left: leftW, width: 1, height }}>
+      {/* The lines, UNDER the bars: a milestone marks the work, it doesn't cut
+          through it. */}
+      <div className="absolute top-0 z-0" style={{ width: 1, height }}>
+        {positioned.map(({ m, left }) => (
+          <div
+            key={m.id}
+            className="absolute top-0 w-0.5 bg-brand"
+            style={{ left, height }}
+          />
+        ))}
+      </div>
+
+      {/* The labels, ABOVE everything: they carry the name, the rename and the
+          delete, and a control you cannot see is not a control. */}
+      <div className="absolute top-0 z-30" style={{ width: 1, height }}>
+      {positioned.map(({ m, left }) => {
         const editing = editingId === m.id;
         return (
           <div key={m.id} className="absolute top-0" style={{ left }}>
-            <div className="w-0.5 bg-foreground/45" style={{ height }} />
             <div
-              className={`pointer-events-auto absolute -top-0.5 left-0 flex max-w-[220px] items-center gap-1 whitespace-nowrap rounded-md border border-border bg-surface px-1.5 py-0.5 text-[11px] font-semibold shadow-sm ${
-                canEdit ? "cursor-grab active:cursor-grabbing" : ""
+              className={`group/mark pointer-events-auto absolute -top-0.5 left-0 flex max-w-[220px] items-center gap-1 whitespace-nowrap rounded-md border border-brand bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-brand-dark shadow-sm ${
+                canEdit && !editing ? "cursor-grab active:cursor-grabbing" : ""
               }`}
               onPointerDown={(e) => {
                 if (!canEdit || editing) return;
-                e.preventDefault();
+                // NOT the trash: a pointerdown that starts a drag there would
+                // eat the click that deletes.
+                if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
                 startDrag(m.id, e.clientX);
               }}
             >
@@ -1633,12 +1688,20 @@ function MarkLayer({
                     else if (v !== m.title) onRename(m.id, v);
                     onEdit(null);
                   }}
-                  className="w-36 min-w-0 rounded border border-brand px-1 py-0 text-[11px] font-semibold outline-none"
+                  className="w-40 min-w-0 rounded border border-brand bg-surface px-1 py-0 text-[11px] font-semibold text-foreground outline-none"
                 />
               ) : (
                 <>
                   <button
-                    onClick={() => canEdit && onEdit(m.id)}
+                    onClick={() => {
+                      // A drag ends in a click on the thing you dragged. Renaming
+                      // on it would open the editor every time you moved a mark.
+                      if (movedRef.current) {
+                        movedRef.current = false;
+                        return;
+                      }
+                      if (canEdit) onEdit(m.id);
+                    }}
                     title={canEdit ? "Rename" : m.title}
                     className="min-w-0 truncate"
                   >
@@ -1646,10 +1709,11 @@ function MarkLayer({
                   </button>
                   {canEdit && (
                     <button
+                      data-no-drag=""
                       onClick={() => onDelete(m.id)}
                       title="Delete milestone"
                       aria-label={`Delete ${m.title || "milestone"}`}
-                      className="shrink-0 rounded p-0.5 text-faint hover:text-danger"
+                      className="shrink-0 rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover/mark:opacity-100"
                     >
                       <Trash2 size={11} />
                     </button>
@@ -1660,6 +1724,7 @@ function MarkLayer({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -1749,6 +1814,7 @@ function TimelineHeader({
   shadow,
   canAddMark,
   onAddMark,
+  onHoverDay,
 }: {
   from: Date;
   totalDays: number;
@@ -1760,6 +1826,8 @@ function TimelineHeader({
   canAddMark: boolean;
   /** day offset from `from` — the caller turns it into a date */
   onAddMark: (dayOffset: number) => void;
+  /** which day the pointer is over, so the whole column can light up */
+  onHoverDay: (dayOffset: number | null) => void;
 }) {
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
@@ -1801,9 +1869,14 @@ function TimelineHeader({
           </span>
         ))}
         <span
-          className={`group/ruler relative h-full flex-1 border-l border-border ${
+          className={`relative h-full flex-1 border-l border-border ${
             canAddMark ? "cursor-copy" : ""
           }`}
+          onMouseMove={(e) => {
+            const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            onHoverDay(Math.floor((e.clientX - box.left) / pxPerDay));
+          }}
+          onMouseLeave={() => onHoverDay(null)}
           onClick={(e) => {
             if (!canAddMark) return;
             const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1820,12 +1893,27 @@ function TimelineHeader({
             return (
               <span
                 key={t.left}
-                className={`absolute top-0 flex h-full items-center truncate px-1 ${
+                className={`absolute top-0 flex h-full items-center px-1 ${
                   t.boundary
-                    ? "border-l border-foreground/[0.18] text-[12px] font-semibold uppercase tracking-wide text-foreground"
-                    : `text-[10px] tabular-nums ${nonWork ? "text-faint/60" : "text-muted"}`
+                    ? // NOT truncated, and its width is a MINIMUM rather than a
+                      // cap: "SEP" needs about 30px and a day tick is 26, so
+                      // clipping it to its own box cut the month name to "SE".
+                      // It overflows into the next day's box, whose number is
+                      // centred and so leaves room at its left.
+                      "whitespace-nowrap border-l border-foreground/[0.18] text-[12px] font-semibold uppercase tracking-wide text-foreground"
+                    : `truncate text-[10px] tabular-nums ${
+                        // The number belongs to the whole day at day zoom, so it
+                        // sits in the middle of it. At week and month zoom the
+                        // label names the START of its span, and centring it
+                        // would point at the wrong date.
+                        dayZoom ? "justify-center" : ""
+                      } ${nonWork ? "text-faint/60" : "text-muted"}`
                 }`}
-                style={{ left: t.left, width: t.width }}
+                style={
+                  t.boundary
+                    ? { left: t.left, minWidth: t.width }
+                    : { left: t.left, width: t.width }
+                }
               >
                 {t.label}
               </span>

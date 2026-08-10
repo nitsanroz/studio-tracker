@@ -319,7 +319,10 @@ function ColumnsMenu({
         className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
       >
         <Columns3 size={14} />
-        {hidden.size > 0 && <span className="text-xs tabular-nums">{ALL_COLS.length - hidden.size}</span>}
+        Columns
+        {hidden.size > 0 && (
+          <span className="text-xs tabular-nums text-faint">{ALL_COLS.length - hidden.size}</span>
+        )}
       </button>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 flex w-44 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
