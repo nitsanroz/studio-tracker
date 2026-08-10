@@ -2088,7 +2088,12 @@ export function ClientView({ clientId }: { clientId: string }) {
         // store and so ignored Show completed, Undated and the type filter
         // entirely — the two views of one client disagreed about what they were
         // showing. Auto-fit columns so five statuses don't squeeze to nothing.
-        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+        // A ROW that scrolls, not a grid that wraps. Wrapped, a sixth status
+        // dropped onto a second line and the board stopped reading as columns
+        // at all. `1 0 220px`: grow to fill the width when there is room, never
+        // shrink below a readable card, and overflow into a scroll when there
+        // isn't. `pb-2` leaves the scrollbar somewhere to sit.
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {boardColumns.map(({ key, label }) => {
             const columnTasks = clientTasks.filter((t) => (t.tag ?? null) === key);
             const isOver = boardOver === key;
@@ -2112,6 +2117,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                   if (!moved || (moved.tag ?? null) === key) return;
                   updateTask(id, { tag: key });
                 }}
+                style={{ flex: "1 0 220px" }}
                 className={`rounded-xl border bg-surface p-3 transition-colors ${
                   isOver ? "border-brand bg-brand-soft/40" : "border-border"
                 }`}
