@@ -274,9 +274,8 @@ const SECTION_BAR_COLOR = "color-mix(in srgb, var(--foreground) 72%, transparent
  */
 const SECTION_BAR_TOP = SECTION_H - TIP_H - 3;
 
-/** The today marker's cap: a downward pennant, wide enough to spot at a glance. */
-const TODAY_CAP_W = 12;
-const TODAY_CAP_H = 9;
+/** Half-width and depth of the today tag's tail, in one number. */
+const TODAY_TAIL = 5;
 
 /**
  * The pinned ruler's height — one `h-6` row plus its bottom border. Milestone
@@ -1613,19 +1612,8 @@ function DatesCell({
 function TodayLine({ left, height }: { left: number; height: number }) {
   return (
     <div className="pointer-events-none absolute top-0 z-10" style={{ left }} title="Today">
-      {/* A pennant pointing AT the day, rather than a dot sitting on it. The CSS
-          border triangle: a 0×0 box whose coloured top border mitres into two
-          transparent sides, so the shape narrows to a point below. Centred on
-          the 2px line — half the triangle's width, less half the line's. */}
-      <div
-        className="absolute top-0"
-        style={{
-          left: -(TODAY_CAP_W / 2) + 1,
-          borderLeft: `${TODAY_CAP_W / 2}px solid transparent`,
-          borderRight: `${TODAY_CAP_W / 2}px solid transparent`,
-          borderTop: `${TODAY_CAP_H}px solid var(--foreground)`,
-        }}
-      />
+      {/* No cap here: the marker's head is the dated tag in the ruler, and its
+          tail is the point. Two heads for one day was one too many. */}
       {/* BLACK, not brand. Today is the one vertical you look for first, and it
           was competing with the milestones for the same blue — telling the two
           apart meant reading their caps. Now they differ by HUE: today is the
@@ -1998,6 +1986,10 @@ function TimelineHeader({
                   // feedback has to be.
                   hovered ? "rounded-t-sm bg-brand/10 font-semibold text-brand-dark" : ""
                 } ${
+                  // `truncate` sets overflow:hidden, which would cut the tag's
+                  // tail off at the ruler's edge. Today's tick lets it hang.
+                  isToday ? "overflow-visible" : ""
+                } ${
                   t.boundary
                     ? // NOT truncated, and its width is a MINIMUM rather than a
                       // cap: "SEP" needs about 30px and a day tick is 26, so
@@ -2019,14 +2011,23 @@ function TimelineHeader({
                     : { left: t.left, width: t.width }
                 }
               >
-                {/* Today wears its date in a black chip — the head of the
-                    marker, with the line below as its stem, in the same ink so
-                    the two read as one object. A chip rather than the whole
-                    tick: the tick runs the full height of the ruler and would
-                    read as a bar rather than as a date. */}
+                {/* Today is ONE object: a tag holding the date, a tail
+                    pointing down out of it, and the line continuing from the
+                    tail into the chart. The tail is why this lives in the ruler
+                    rather than the chart — the date and the pointer have to be
+                    the same piece, or they are two markers for one day. */}
                 {isToday ? (
-                  <span className="rounded-md bg-foreground px-1.5 py-0.5 text-white">
+                  <span className="relative rounded-md bg-foreground px-1.5 py-0.5 text-white">
                     {t.label}
+                    <span
+                      className="absolute left-1/2 top-full -translate-x-1/2"
+                      style={{
+                        borderLeft: `${TODAY_TAIL}px solid transparent`,
+                        borderRight: `${TODAY_TAIL}px solid transparent`,
+                        borderTop: `${TODAY_TAIL}px solid var(--foreground)`,
+                      }}
+                      aria-hidden
+                    />
                   </span>
                 ) : (
                   t.label
