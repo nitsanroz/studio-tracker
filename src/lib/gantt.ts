@@ -21,8 +21,11 @@ export const ROW_H = 34;
 /** 36, not 30: the bracket sits LOW in this row so the section's name has the
  *  space above it — see `SECTION_BAR_TOP` in the Timeline. */
 export const SECTION_H = 36;
-/** Bar height, tall enough for the task's name to sit inside it. */
-export const BAR_H = 20;
+/**
+ * Bar height. 27 in a 34px row, so a bar nearly fills its lane and the chart
+ * reads as a stack of bands rather than as ribbons floating in white.
+ */
+export const BAR_H = 27;
 /** Corner radius, ~1/4 of the height. A full pill stops a short bar reading as a span. */
 export const BAR_R = 4;
 /** A deadline diamond marks a point, so it can't scale with a span. */
