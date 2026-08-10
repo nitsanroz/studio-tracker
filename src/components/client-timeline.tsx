@@ -2172,10 +2172,14 @@ function SectionHeaderRow({
             it are the caption. */}
         {collapsed && (
           <span
-            className="pointer-events-none absolute whitespace-nowrap text-[12px] font-semibold"
+            // `leading-none` so the box is the glyphs and nothing else — with
+            // default leading the caption carried 6px of invisible padding and
+            // sat adrift of the bracket it names. Placed FROM the bracket, two
+            // pixels above it, rather than from the top of the row.
+            className="pointer-events-none absolute whitespace-nowrap text-[12px] font-semibold leading-none"
             style={{
               left: left + 1,
-              top: 2,
+              top: SECTION_BAR_TOP - 14,
               color: SECTION_BAR_COLOR,
             }}
           >
