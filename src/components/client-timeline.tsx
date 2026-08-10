@@ -226,6 +226,11 @@ function TipRow({
   );
 }
 
+/** Never shrink the chart below this, however little room the page leaves. */
+const CARD_MIN_H = 320;
+/** `main`'s own bottom padding (p-6), so the card stops clear of the edge. */
+const CARD_BOTTOM_GAP = 24;
+
 /** Longest legend label. Past this the chips start pushing each other around. */
 const LEGEND_MAX = 10;
 /** Cut to `LEGEND_MAX`, ellipsis included in the count so the width is fixed. */
@@ -432,6 +437,46 @@ export function ClientTimeline({
   const lastPicked = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const scrolledOnce = useRef(false);
+  /**
+   * The height the page actually leaves this card, measured — not `70vh`.
+   *
+   * `max-h-[min(70vh,640px)]` meant that on a 1000px window the chart sat in a
+   * 640px box with 1679px of rows inside it and 175px of empty window
+   * underneath, and on a 27" screen the waste was far worse. This is the same
+   * complaint v1.9.2 fixed on the public Gantt, and the same answer: a chart
+   * should take the room it is given.
+   *
+   * MEASURED rather than `h-dvh` + `flex-1` as on that page, because this card
+   * is one tab of three inside the app shell's `main`; making the shell a fixed
+   * height would change how Tasks and Overview scroll. Reading the card's own
+   * top offset costs one layout read and leaves every other page alone.
+   */
+  const root = useRef<HTMLDivElement>(null);
+  const [maxH, setMaxH] = useState<number | null>(null);
+  useEffect(() => {
+    const measure = () => {
+      const el = scroller.current;
+      if (!el) return;
+      // Viewport-relative top + the page's own bottom padding. Only correct at
+      // scrollTop 0, which is exactly when it matters: the point is that the
+      // card FITS, and a card that fits is one the document never scrolls past.
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      // …and whatever sits BELOW the card inside this panel — the "N tasks with
+      // no due date aren't shown" note. Subtracting only the page padding left
+      // the document 29px too tall, which is a scrollbar on a layout whose
+      // whole point is not to have one.
+      const trailing = root.current
+        ? root.current.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom
+        : 0;
+      setMaxH(
+        Math.max(CARD_MIN_H, window.innerHeight - top - trailing - CARD_BOTTOM_GAP),
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+    // `leftW` and `zoom` change the toolbar's height when the legend wraps.
+  }, [zoom, leftW]);
   /**
    * Whether anything is hidden behind the pinned header / pinned name column.
    *
@@ -780,7 +825,7 @@ export function ClientTimeline({
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={root} className="flex flex-col gap-3">
       {toolbarSlot && createPortal(toolbar, toolbarSlot)}
 
       {allRows.length === 0 ? (
@@ -801,7 +846,11 @@ export function ClientTimeline({
           <div
             ref={scroller}
             onScroll={onScroll}
+            // The class is the SERVER's answer, replaced by the measured one on
+            // mount — without it the first paint would be an unbounded box, and
+            // an unbounded box has nothing for the header to stick to.
             className="max-h-[min(70vh,640px)] overflow-auto"
+            style={maxH ? { maxHeight: maxH } : undefined}
           >
             <div className="relative" style={{ width: leftW + chartW }}>
               {/*
