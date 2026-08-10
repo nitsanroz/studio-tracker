@@ -18,7 +18,9 @@ export type Zoom = "day" | "week" | "month";
 export const PX_PER_DAY: Record<Zoom, number> = { day: 26, week: 9, month: 3 };
 
 export const ROW_H = 34;
-export const SECTION_H = 30;
+/** 36, not 30: the bracket sits LOW in this row so the section's name has the
+ *  space above it — see `SECTION_BAR_TOP` in the Timeline. */
+export const SECTION_H = 36;
 /** Bar height, tall enough for the task's name to sit inside it. */
 export const BAR_H = 20;
 /** Corner radius, ~1/4 of the height. A full pill stops a short bar reading as a span. */

@@ -265,6 +265,14 @@ const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
  * structure, not a category, so it is drawn as ink.
  */
 const SECTION_BAR_COLOR = "color-mix(in srgb, var(--foreground) 72%, transparent)";
+/**
+ * How far down its row the bracket sits.
+ *
+ * Low on purpose: centred, it split the row in two and left the section's name
+ * squeezed into 12px above it. Dropped to the bottom — its tips end 3px clear
+ * of the row's edge — the whole top of the row belongs to the name.
+ */
+const SECTION_BAR_TOP = SECTION_H - TIP_H - 3;
 
 /** The today marker's cap: a downward pennant, wide enough to spot at a glance. */
 const TODAY_CAP_W = 12;
@@ -2163,10 +2171,10 @@ function SectionHeaderRow({
             it are the caption. */}
         {collapsed && (
           <span
-            className="pointer-events-none absolute whitespace-nowrap text-[10px] font-semibold"
+            className="pointer-events-none absolute whitespace-nowrap text-[12px] font-semibold"
             style={{
               left: left + 1,
-              top: `calc(50% - ${SECTION_BAR_H / 2}px - 12px)`,
+              top: 2,
               color: SECTION_BAR_COLOR,
             }}
           >
@@ -2175,7 +2183,7 @@ function SectionHeaderRow({
         )}
         <span
           className="absolute"
-          style={{ left, width, top: `calc(50% - ${SECTION_BAR_H / 2}px)` }}
+          style={{ left, width, top: SECTION_BAR_TOP }}
           onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
           onMouseLeave={() => setTip(null)}
         >
