@@ -2011,12 +2011,15 @@ function TimelineHeader({
                     : { left: t.left, width: t.width }
                 }
               >
-                {/* Today wears its date in a blue chip — the head of the marker,
-                    with the line below as its stem. A chip rather than the whole
+                {/* Today wears its date in a black chip — the head of the
+                    marker, with the line below as its stem, in the same ink so
+                    the two read as one object. A chip rather than the whole
                     tick: the tick runs the full height of the ruler and would
                     read as a bar rather than as a date. */}
                 {isToday ? (
-                  <span className="rounded-md bg-brand px-1.5 py-0.5 text-white">{t.label}</span>
+                  <span className="rounded-md bg-foreground px-1.5 py-0.5 text-white">
+                    {t.label}
+                  </span>
                 ) : (
                   t.label
                 )}
