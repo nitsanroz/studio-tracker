@@ -31,8 +31,14 @@ export const DIAMOND = 11;
 export const BAR_LABEL_MIN_PX = 34;
 /** Per-day weekend/holiday shading is drawn up to this zoom; at 3px/day it's noise. */
 export const SHADE_MIN_PX_PER_DAY = 6;
-/** A section's summary bar: 30% of a task bar, so it reads as a bracket. */
-export const SECTION_BAR_H = Math.round(BAR_H * 0.3);
+/**
+ * A section's summary bar. 3px flat, not a ratio of the task bar.
+ *
+ * It was `BAR_H * 0.3` — 6px against a 20px bar — which still read as a bar of
+ * its own. A section is a bracket over its rows, and a bracket is a rule: at
+ * 3px the tips do the talking and the line just joins them.
+ */
+export const SECTION_BAR_H = 3;
 /** The section bracket's end tips: width, and depth from the top of its bar. */
 export const TIP_W = 6;
 export const TIP_H = SECTION_BAR_H + 4;
