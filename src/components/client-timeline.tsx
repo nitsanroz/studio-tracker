@@ -256,6 +256,12 @@ const ROW_HOVER_SOLID =
 const ROW_HOVER_SHEER = "group-hover/trow:bg-foreground/[0.06]";
 const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
 
+/**
+ * The pinned ruler's height — one `h-6` row plus its bottom border. Milestone
+ * labels stick just below it, so scrolling down never leaves a line unnamed.
+ */
+const RULER_H = 25;
+
 /** Never shrink the chart below this, however little room the page leaves. */
 const CARD_MIN_H = 320;
 /** `main`'s own bottom padding (p-6), so the card stops clear of the edge. */
@@ -311,13 +317,14 @@ function TimelineColumnsMenu({
         // Identical to the Tasks tab's Columns button, down to the padding and
         // the count: two buttons that do the same thing on two tabs of one page
         // had no business looking like different controls.
-        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
+        className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand"
       >
         <Columns3 size={14} />
         Columns
         {hidden.size > 0 && (
           <span className="text-xs tabular-nums text-faint">{TL_COLS.length - hidden.size}</span>
         )}
+        <ChevronDown size={13} className="text-faint" />
       </button>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
@@ -1637,15 +1644,17 @@ function MarkLayer({
       covered by the section bar it sat on.
     */
     <div className="pointer-events-none absolute top-0" style={{ left: leftW, width: 1, height }}>
-      {/* The lines, UNDER the bars: a milestone marks the work, it doesn't cut
-          through it. */}
-      <div className="absolute top-0 z-0" style={{ width: 1, height }}>
+      {/*
+        ONE line each, ABOVE the rows.
+        ⚠️ Under them it came out as a dashed column: every row carries
+        `border-b border-border`, and each of those borders painted across the
+        line, leaving a 1px gap every 34px. Nothing was wrong with the line — it
+        was being interrupted 40 times. Above the rows it crosses the bars, which
+        is the trade for a milestone reading as one continuous mark.
+      */}
+      <div className="absolute top-0 z-20" style={{ width: 1, height }}>
         {positioned.map(({ m, left }) => (
-          <div
-            key={m.id}
-            className="absolute top-0 w-0.5 bg-brand"
-            style={{ left, height }}
-          />
+          <div key={m.id} className="absolute top-0 w-0.5 bg-brand" style={{ left, height }} />
         ))}
       </div>
 
@@ -1655,11 +1664,19 @@ function MarkLayer({
       {positioned.map(({ m, left }) => {
         const editing = editingId === m.id;
         return (
-          <div key={m.id} className="absolute top-0" style={{ left }}>
+          // The wrapper is full height so the label has somewhere to travel:
+          // `sticky` needs a containing block taller than itself or it never
+          // moves. It rides down the chart under the ruler as you scroll, so a
+          // milestone 40 rows down still says what it is.
+          <div key={m.id} className="absolute top-0" style={{ left, height }}>
             <div
-              className={`group/mark pointer-events-auto absolute -top-0.5 left-0 flex max-w-[220px] items-center gap-1 whitespace-nowrap rounded-md border border-brand bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-brand-dark shadow-sm ${
+              // A FLAG: square where it meets its pole, rounded away from it,
+              // and offset by the line's own width so the line runs beside it
+              // rather than under it.
+              className={`group/mark pointer-events-auto sticky flex max-w-[220px] items-center gap-1 whitespace-nowrap rounded-r-md border border-l-0 border-brand bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-brand-dark shadow-sm ${
                 canEdit && !editing ? "cursor-grab active:cursor-grabbing" : ""
               }`}
+              style={{ top: RULER_H, marginLeft: 2 }}
               onPointerDown={(e) => {
                 if (!canEdit || editing) return;
                 // NOT the trash: a pointerdown that starts a drag there would

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Eye, Check } from "lucide-react";
+import { Check, ChevronDown, Eye } from "lucide-react";
 
 /**
  * Stands in for `typeId === null` in the filter, which needs a key.
@@ -96,6 +96,7 @@ export function ShowMenu({
             · {hiddenTypes.size} type{hiddenTypes.size === 1 ? "" : "s"} hidden
           </span>
         )}
+        <ChevronDown size={13} className={filtering ? "" : "text-faint"} />
       </button>
 
       {open && (

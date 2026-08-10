@@ -19,6 +19,7 @@ import {
   ArrowUpDown,
   CalendarOff,
   CheckCircle2,
+  ChevronDown,
   GripVertical,
   Columns3,
   Info,
@@ -316,13 +317,14 @@ function ColumnsMenu({
         onClick={() => setOpen((o) => !o)}
         title="Show or hide columns"
         aria-label="Show or hide columns"
-        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
+        className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand"
       >
         <Columns3 size={14} />
         Columns
         {hidden.size > 0 && (
           <span className="text-xs tabular-nums text-faint">{ALL_COLS.length - hidden.size}</span>
         )}
+        <ChevronDown size={13} className="text-faint" />
       </button>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 flex w-44 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
@@ -1675,7 +1677,16 @@ export function ClientView({ clientId }: { clientId: string }) {
         covers main's 24px padding so card corners don't peek out from beneath it.
         It must stay OUTSIDE the overflow-x-auto table wrapper below, or sticky dies.
       */}
-      <div className="sticky top-14 z-10 -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
+      {/*
+        ⚠️ `z-[31]`, not `z-10`.
+
+        This header is a stacking context (sticky + z-index), so the Show and
+        Columns menus inside it are capped at ITS depth however high their own
+        z-index goes — and the chart's ruler below is `sticky z-30`, which won.
+        Both dropdowns opened underneath the dates. 31 clears the ruler and
+        stays under the task drawer's overlay at z-40.
+      */}
+      <div className="sticky top-14 z-[31] -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
         <div className="flex flex-wrap items-center gap-2">
           {/* 40px against a 24px title: the mark is the client's identity on
               their own page, so it leads rather than annotates. */}
