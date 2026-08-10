@@ -274,6 +274,22 @@ const SECTION_BAR_COLOR = "color-mix(in srgb, var(--foreground) 72%, transparent
  */
 const SECTION_BAR_TOP = SECTION_H - TIP_H - 3;
 
+/**
+ * A bar's own shadow: soft, two layers, barely there.
+ *
+ * A tight 2px shadow at 18% drew a dark line under every bar — 57 of them on a
+ * chart like Anchor's, which reads as grime rather than as lift. A close, faint
+ * layer for contact and a wider, softer one for the glow does the same job
+ * without ever resolving into an edge.
+ *
+ * Enough to sit the bar ON the calendar rather than in it: the grid, the weekend
+ * shading and the past wash all live behind it.
+ */
+const BAR_SHADOW = [
+  "0 1px 2px color-mix(in srgb, var(--foreground) 6%, transparent)",
+  "0 2px 8px color-mix(in srgb, var(--foreground) 10%, transparent)",
+].join(", ");
+
 /** Half-width and depth of the today tag's tail, in one number. */
 const TODAY_TAIL = 5;
 
@@ -2804,9 +2820,11 @@ function TimelineRow({
             // printed, or handed to someone) without its colour axis. An inset
             // ring rather than a border — a border would eat 2px of a 27px bar
             // and shift the label inside it.
-            ...(plain
-              ? { boxShadow: "inset 0 0 0 1px var(--color-border-strong)" }
-              : {}),
+            //
+            // ⚠️ Both shadows go in ONE declaration. The drop shadow can't be a
+            // class while the ring is inline: the inline `boxShadow` would win
+            // and silently drop the class's.
+            boxShadow: plain ? `inset 0 0 0 1px var(--color-border-strong), ${BAR_SHADOW}` : BAR_SHADOW,
             backgroundColor: plain ? "var(--color-surface)" : `${color}52`,
           }}
         >
@@ -2918,7 +2936,9 @@ function TimelineRow({
             width: DIAMOND,
             height: DIAMOND,
             backgroundColor: plain ? "var(--color-surface)" : over ? "var(--danger)" : color,
-            ...(plain ? { boxShadow: "inset 0 0 0 1px var(--color-border-strong)" } : {}),
+            boxShadow: plain
+              ? `inset 0 0 0 1px var(--color-border-strong), ${BAR_SHADOW}`
+              : BAR_SHADOW,
           }}
         />
       )}
