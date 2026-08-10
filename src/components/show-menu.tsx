@@ -35,7 +35,6 @@ export function ShowMenu({
   onShowDone,
   showUndated,
   onShowUndated,
-  undatedLabel,
   types,
   hiddenTypes,
   onToggleType,
@@ -47,8 +46,6 @@ export function ShowMenu({
   onShowDone: (v: boolean) => void;
   showUndated: boolean;
   onShowUndated: (v: boolean) => void;
-  /** The Timeline lists undated work; the Tasks table hides it. Same switch. */
-  undatedLabel: string;
   types: ShowMenuType[];
   hiddenTypes: Set<string>;
   onToggleType: (id: string) => void;
@@ -106,25 +103,27 @@ export function ShowMenu({
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
-          <Toggle
-            className={row}
+          {/* The three view switches read as settings — an emoji to find the
+              row by and a switch to flip — while the types below stay
+              checkboxes, because those are a LIST you tick items out of. */}
+          <SwitchRow
+            emoji="✅"
+            label="Completed"
             checked={showDone}
             onChange={() => onShowDone(!showDone)}
-            label="Completed"
           />
-          <Toggle
-            className={row}
+          <SwitchRow
+            emoji="🗓️"
+            label="Undated"
             checked={showUndated}
             onChange={() => onShowUndated(!showUndated)}
-            label={undatedLabel}
           />
-
           {onPlainBars && (
-            <Toggle
-              className={row}
+            <SwitchRow
+              emoji="🎨"
+              label="Colour by type"
               checked={!plainBars}
               onChange={() => onPlainBars(!plainBars)}
-              label="Colour bars by type"
             />
           )}
 
@@ -158,6 +157,43 @@ export function ShowMenu({
         </div>
       )}
     </div>
+  );
+}
+
+/** An emoji to find the row by, its name, and a switch at the far end. */
+function SwitchRow({
+  emoji,
+  label,
+  checked,
+  onChange,
+}: {
+  emoji: string;
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      onClick={onChange}
+      aria-pressed={checked}
+      className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-background"
+    >
+      <span className="w-4 shrink-0 text-center text-[13px] leading-none" aria-hidden>
+        {emoji}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span
+        className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${
+          checked ? "bg-brand" : "bg-border-strong"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 size-3 rounded-full bg-white shadow-sm transition-all ${
+            checked ? "left-3.5" : "left-0.5"
+          }`}
+        />
+      </span>
+    </button>
   );
 }
 

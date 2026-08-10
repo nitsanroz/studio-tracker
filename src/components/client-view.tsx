@@ -1823,7 +1823,6 @@ export function ClientView({ clientId }: { clientId: string }) {
                 onShowDone={setShowDone}
                 showUndated={showUndated}
                 onShowUndated={setShowUndated}
-                undatedLabel={tab === "timeline" ? "Undated (list to schedule)" : "Undated"}
                 types={filterableTypes}
                 hiddenTypes={hiddenTypes}
                 onToggleType={toggleType}

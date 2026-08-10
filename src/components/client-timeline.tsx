@@ -1326,7 +1326,8 @@ export function ClientTimeline({
         <p className="text-xs text-faint">
           {undated} {showDone ? "" : "open "}task{undated === 1 ? "" : "s"} with no due date
           {undated === 1 ? " isn't" : " aren't"}{" "}shown — a bar needs an end date. Turn on
-          &ldquo;Show undated&rdquo; to list {undated === 1 ? "it" : "them"} and set dates here.
+          &ldquo;Undated&rdquo; in the Show menu to list {undated === 1 ? "it" : "them"} and set
+          dates here.
         </p>
       )}
       {undated > 0 && showUndated && (
@@ -2446,12 +2447,16 @@ function TimelineRow({
    * `box-shadow`, so selection, the plain-mode outline and the drop shadow have
    * to be composed rather than layered from different places.
    *
-   * Selection REPLACES the plain outline rather than stacking with it: two
-   * inset rings on a 27px bar is a bullseye.
+   * Selection REPLACES the plain outline rather than stacking with it — two
+   * inset rings on a 27px bar is a bullseye — and matches its weight, so the
+   * only thing that changes when you select a bar is the colour of its edge.
    */
   const barShadow = [
+    // 1px, matching the plain-mode outline it replaces: at 2px the ring was
+    // heavier than the bar it was drawn on, and a row of selected bars read as
+    // a row of buttons.
     selected
-      ? "inset 0 0 0 2px var(--brand)"
+      ? "inset 0 0 0 1px var(--brand)"
       : plain
         ? "inset 0 0 0 1px var(--color-border-strong)"
         : null,
