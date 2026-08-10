@@ -1009,6 +1009,7 @@ export function ClientTimeline({
                 shadow={shadow}
                 canAddMark={isAdmin}
                 onHoverDay={setHoverDay}
+                hoverDay={hoverDay}
                 onAddMark={(dayOffset) => {
                   const date = toISO(shiftDays(from, dayOffset));
                   // Created empty and immediately put into its editor: the mark
@@ -1832,6 +1833,7 @@ function TimelineHeader({
   canAddMark,
   onAddMark,
   onHoverDay,
+  hoverDay,
 }: {
   from: Date;
   totalDays: number;
@@ -1845,6 +1847,8 @@ function TimelineHeader({
   onAddMark: (dayOffset: number) => void;
   /** which day the pointer is over, so the whole column can light up */
   onHoverDay: (dayOffset: number | null) => void;
+  /** …and back down, so the tick under the pointer lights up with it */
+  hoverDay: number | null;
 }) {
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
@@ -1907,10 +1911,21 @@ function TimelineHeader({
           {ticks.map((t) => {
             const date = shiftDays(from, Math.round(t.left / pxPerDay));
             const nonWork = dayZoom && !isWorkDay(date, off);
+            // The tick the pointer is over — by RANGE, not by index, so it also
+            // works at week and month zoom where one tick covers many days.
+            const hovered =
+              hoverDay !== null &&
+              hoverDay >= Math.round(t.left / pxPerDay) &&
+              hoverDay < Math.round((t.left + t.width) / pxPerDay);
             return (
               <span
                 key={t.left}
                 className={`absolute top-0 flex h-full items-center px-1 ${
+                  // The date itself answers the hover too, not just the column
+                  // below it: the ruler is where you aim, so it is where the
+                  // feedback has to be.
+                  hovered ? "rounded-t-sm bg-brand/10 font-semibold text-brand-dark" : ""
+                } ${
                   t.boundary
                     ? // NOT truncated, and its width is a MINIMUM rather than a
                       // cap: "SEP" needs about 30px and a day tick is 26, so
