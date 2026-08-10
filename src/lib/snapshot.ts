@@ -296,3 +296,41 @@ export function mergeTimeEntries(
   const live = new Set(freshSums.map((e) => e.id));
   return [...fresh, ...prev.filter((e) => !inWindow.has(e.id) && live.has(e.id))];
 }
+
+/**
+ * Whether a refresh response that has just landed may be applied.
+ *
+ * ⚠️ This is the rule behind "I changed something and it jumped back", so it is
+ * worth stating plainly: a background refresh is a READ THAT WAS ISSUED IN THE
+ * PAST. Everything the user does while it is in the air — a drag, a rename, a
+ * logged hour — is newer than the rows coming back, and every one of the store's
+ * mutations is optimistic, so applying that response paints the pre-edit value
+ * over what the user is looking at. The edit then reappears at the next tick,
+ * which is why it reads as a flicker backwards rather than as lost work.
+ *
+ * The "is a write in flight?" test at the START of a refresh cannot catch this:
+ * the write is issued after that check has passed, and typically SETTLES before
+ * the response lands, so by apply time nothing looks busy. Only a monotonic
+ * count of writes issued, sampled before the fetch and compared after, can tell
+ * that the response is older than the screen.
+ *
+ * `stale` = a newer refresh or a boot superseded this one; drop it silently.
+ * `deferred` = the response is older than local state; drop it AND refetch.
+ */
+export function refreshVerdict(a: {
+  /** the generation this response was issued under */
+  mine: number;
+  /** the store's current generation */
+  generation: number;
+  /** `writeSeq` sampled before the fetch */
+  seenWrites: number;
+  /** `writeSeq` now */
+  writeSeq: number;
+  /** focus is in an input/textarea/select right now */
+  focused: boolean;
+}): "apply" | "stale" | "deferred" {
+  if (a.mine !== a.generation) return "stale";
+  if (a.writeSeq !== a.seenWrites) return "deferred";
+  if (a.focused) return "deferred";
+  return "apply";
+}

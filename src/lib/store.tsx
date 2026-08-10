@@ -36,6 +36,7 @@ import {
   fingerprint,
   mergeTasks,
   mergeTimeEntries,
+  refreshVerdict,
   type ColdSnapshot,
   type HotCtx,
   type HotSnapshot,
@@ -431,6 +432,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // setState and the server commit, or the user's own edit flickers backwards.
   const writes = useRef(0);
   const lastWriteAt = useRef(0);
+  /**
+   * Monotonic count of writes ISSUED — it never goes down, unlike `writes`.
+   *
+   * ⚠️ This is what closes the "my edit jumped back" race, and the reason the
+   * `writes` counter alone can't: a refresh that was ALREADY IN FLIGHT when the
+   * user edited something returns a snapshot read BEFORE that edit, and by the
+   * time it lands the write may well have settled — so every "is a write in
+   * flight?" test at apply time says no, and the pre-edit row is applied over
+   * the user's own change. Capturing this before the fetch and comparing after
+   * is the only way to see that the response is older than what's on screen.
+   */
+  const writeSeq = useRef(0);
   /** A rejected promise could leak the counter, so it also expires. */
   const writesBusy = useCallback(
     () => writes.current > 0 && Date.now() - lastWriteAt.current < WRITE_SETTLE_MS,
@@ -459,6 +472,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const wrote = useCallback(
     (label: string) => {
       writes.current++;
+      writeSeq.current++;
       lastWriteAt.current = Date.now();
       return ({ error }: { error: { message: string } | null }) => {
         writes.current = Math.max(0, writes.current - 1);
@@ -659,7 +673,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
    * for that task.
    */
   const loadTaskExtras = useCallback(
-    async (taskId: string) => {
+    async (taskId: string, opts: { refetch?: boolean } = {}) => {
+      // Same race as `refresh`, on the surface that's edited most: a background
+      // re-fetch of the open task's comments and hours can land after the user
+      // has logged or edited one, replacing their row with the pre-edit set.
+      // Only a REFETCH may bail — the first open has nothing to fall back on,
+      // so bailing there would leave the pane permanently empty.
+      const seenWrites = writeSeq.current;
+      const stale = () => opts.refetch && writeSeq.current !== seenWrites;
       const [detail, cm, entries, atts] = await Promise.all([
         supabase.from("tasks").select("id, brief").eq("id", taskId).single(),
         supabase.from("task_comments").select("*").eq("task_id", taskId).order("created_at"),
@@ -671,6 +692,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .order("date", { ascending: false }),
         supabase.from("attachments").select("*").eq("task_id", taskId).order("created_at"),
       ]);
+      if (stale()) return;
       if (atts.data) {
         const mapped = (atts.data as DbRow[]).map((a) => ({
           id: a.id as string,
@@ -741,6 +763,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       refreshInFlight.current = true;
       const mine = ++generation.current;
+      // Read BEFORE the fetch goes out, compared after it lands — see `writeSeq`.
+      const seenWrites = writeSeq.current;
       setRefreshing(true);
       try {
         const cold = opts.cold ? await fetchCold(supabase) : null;
@@ -748,14 +772,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
           tagNames: coldCtxRef.current.tagNames,
           projectClient: coldCtxRef.current.projectClient,
         });
-        // A newer refresh (or a boot) started while we were waiting — drop this
-        // response rather than overwrite fresher data with older data.
-        if (mine !== generation.current) return;
+        // Is this response still younger than what's on screen? See `refreshVerdict`
+        // — the start-of-refresh guards can't speak for the time the fetch was out.
+        const verdict = refreshVerdict({
+          mine,
+          generation: generation.current,
+          seenWrites,
+          writeSeq: writeSeq.current,
+          focused: focusInEditor(),
+        });
+        if (verdict === "stale") return;
+        if (verdict === "deferred") {
+          refreshQueued.current = true;
+          return;
+        }
         // An empty studio is never a real refresh result: it means the session
         // expired and RLS returned nothing. Applying it would blank the app.
         if (hot.tasks.length === 0 || (cold && cold.profiles.length === 0)) {
           throw new Error("refresh returned an empty studio — treating as auth, not data");
         }
+        // This response satisfied whatever earlier one was deferred, so the flag
+        // mustn't survive to fire a spurious refresh off the next unrelated write.
+        refreshQueued.current = false;
         if (cold) applyCold(cold);
         applyHot(hot);
 
@@ -775,7 +813,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const open = openTaskIdRef.current;
         if (open) {
           loadedTaskExtras.current.add(open);
-          void loadTaskExtras(open);
+          void loadTaskExtras(open, { refetch: true });
         }
         if (changed) console.debug("[refresh]", opts.reason ?? "", { cold: !!cold, changed });
       } catch (e) {
