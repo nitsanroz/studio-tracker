@@ -440,6 +440,7 @@ export function ClientTimeline({
   showDone,
   showUndated,
   hiddenTypes,
+  plainBars,
   toolbarSlot,
 }: {
   clientId: string;
@@ -450,6 +451,8 @@ export function ClientTimeline({
   showUndated: boolean;
   /** type ids the Show menu is holding back; `NO_TYPE` for the untyped ones */
   hiddenTypes: Set<string>;
+  /** draw every bar plain, rather than in its type's colour */
+  plainBars: boolean;
   /** where to render the legend + Columns button — the tab strip's right end */
   toolbarSlot: HTMLElement | null;
 }) {
@@ -1202,6 +1205,7 @@ export function ClientTimeline({
                             onSelect={(shiftKey, on) => toggleSelected(row.task.id, shiftKey, on)}
                             onRename={(title) => updateTask(row.task.id, { title })}
                             onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
+                            plain={plainBars}
                             taskTypes={taskTypes}
                             onSetType={(typeId) => updateTask(row.task.id, { typeId })}
                                 onSetBudget={(estimateHours) =>
@@ -2124,7 +2128,7 @@ function SectionHeaderRow({
             >
               {group.section?.name ?? "No section"}
             </button>
-            <span className="shrink-0 text-[11px] tabular-nums text-faint">
+            <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-[11px] tabular-nums text-faint">
               {group.rows.length}
             </span>
             {renameable && (
@@ -2342,6 +2346,7 @@ function TimelineRow({
   taskTypes,
   onSetType,
   onContextMenu,
+  plain,
 }: {
   row: Row;
   from: Date;
@@ -2375,6 +2380,8 @@ function TimelineRow({
   onSetType: (typeId: string | null) => void;
   /** right-click → "Add task above/below"; the chart owns the menu and the composer */
   onContextMenu?: (e: ReactMouseEvent, taskId: string) => void;
+  /** draw this bar plain — no type colour */
+  plain: boolean;
 }) {
   const { task } = row;
   const [renaming, setRenaming] = useState(false);
@@ -2793,7 +2800,14 @@ function TimelineRow({
             // 0x52 (32%), up from 0x3d (24%): the track now carries the task's
             // name, and at 24% a pale tint under dark text made the bar itself
             // disappear and left the name floating on the row background.
-            backgroundColor: `${color}52`,
+            // Plain mode: white with an outline, so the chart can be read (or
+            // printed, or handed to someone) without its colour axis. An inset
+            // ring rather than a border — a border would eat 2px of a 27px bar
+            // and shift the label inside it.
+            ...(plain
+              ? { boxShadow: "inset 0 0 0 1px var(--color-border-strong)" }
+              : {}),
+            backgroundColor: plain ? "var(--color-surface)" : `${color}52`,
           }}
         >
           {/*
@@ -2805,7 +2819,14 @@ function TimelineRow({
           */}
           <div
             className="absolute inset-y-0 left-0"
-            style={{ width: `${pct}%`, backgroundColor: over ? "var(--danger)" : color }}
+            style={{
+              width: `${pct}%`,
+              backgroundColor: plain
+                ? "color-mix(in srgb, var(--foreground) 18%, transparent)"
+                : over
+                  ? "var(--danger)"
+                  : color,
+            }}
           />
           {/*
             The name, in the bar. Reading this chart used to mean holding a row's
@@ -2896,7 +2917,8 @@ function TimelineRow({
             left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
             width: DIAMOND,
             height: DIAMOND,
-            backgroundColor: over ? "var(--danger)" : color,
+            backgroundColor: plain ? "var(--color-surface)" : over ? "var(--danger)" : color,
+            ...(plain ? { boxShadow: "inset 0 0 0 1px var(--color-border-strong)" } : {}),
           }}
         />
       )}

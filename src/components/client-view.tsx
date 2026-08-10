@@ -1467,6 +1467,8 @@ export function ClientView({ clientId }: { clientId: string }) {
   /** The tab strip's right end, which ClientTimeline portals its toolbar into.
    *  State rather than a ref: the portal has to re-render once the node exists. */
   const [tlToolbar, setTlToolbar] = useState<HTMLElement | null>(null);
+  /** Timeline only: draw the bars plain instead of in their type's colour. */
+  const [plainBars, setPlainBars] = useState(false);
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
   /** Overview has no task list, so it borrows the Tasks tab's settings. */
   const showKey: TaskTab = tab === "timeline" ? "timeline" : "tasks";
@@ -1826,6 +1828,8 @@ export function ClientView({ clientId }: { clientId: string }) {
                 hiddenTypes={hiddenTypes}
                 onToggleType={toggleType}
                 onClearTypes={clearTypes}
+                plainBars={tab === "timeline" ? plainBars : undefined}
+                onPlainBars={tab === "timeline" ? setPlainBars : undefined}
               />
             )}
           </div>
@@ -1839,6 +1843,7 @@ export function ClientView({ clientId }: { clientId: string }) {
           showDone={showDone}
           showUndated={showUndated}
           hiddenTypes={hiddenTypes}
+          plainBars={plainBars}
           toolbarSlot={tlToolbar}
         />
       )}

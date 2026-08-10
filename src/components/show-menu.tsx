@@ -40,6 +40,8 @@ export function ShowMenu({
   hiddenTypes,
   onToggleType,
   onClearTypes,
+  plainBars,
+  onPlainBars,
 }: {
   showDone: boolean;
   onShowDone: (v: boolean) => void;
@@ -51,6 +53,9 @@ export function ShowMenu({
   hiddenTypes: Set<string>;
   onToggleType: (id: string) => void;
   onClearTypes: () => void;
+  /** Timeline only — omitted on the Tasks tab, where bars don't exist. */
+  plainBars?: boolean;
+  onPlainBars?: (v: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -113,6 +118,15 @@ export function ShowMenu({
             onChange={() => onShowUndated(!showUndated)}
             label={undatedLabel}
           />
+
+          {onPlainBars && (
+            <Toggle
+              className={row}
+              checked={!plainBars}
+              onChange={() => onPlainBars(!plainBars)}
+              label="Colour bars by type"
+            />
+          )}
 
           {types.length > 0 && (
             <>
