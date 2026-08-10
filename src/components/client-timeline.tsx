@@ -1052,6 +1052,27 @@ export function ClientTimeline({
                   height={bodyH}
                   leftW={leftW}
                 />
+                {/*
+                  Time that has already gone. A wash from the start of the range
+                  up to the today line, which is where it ends — so the line
+                  reads as the edge of the past rather than as one more vertical
+                  in a chart full of them.
+
+                  Behind the rows and light — but not as light as it wants to
+                  be. 5% reads at a glance without competing with a bar; the
+                  weekend shading beneath it is 4.5%, so a past weekend simply
+                  comes out a little darker still, which is true.
+                */}
+                {daysBetween(from, today) > 0 && (
+                  <div
+                    className="pointer-events-none absolute top-0 z-0 bg-foreground/[0.05]"
+                    style={{
+                      left: leftW,
+                      width: Math.min(daysBetween(from, today), totalDays) * pxPerDay,
+                      height: bodyH,
+                    }}
+                  />
+                )}
                 {hoverDay !== null && hoverDay >= 0 && hoverDay < totalDays && (
                   <div
                     className="pointer-events-none absolute top-0 z-0 bg-brand/[0.07]"
