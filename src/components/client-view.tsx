@@ -1461,7 +1461,7 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [zoom, setZoom] = useState<Zoom>("day");
   /** The tab strip's right end, which ClientTimeline portals its toolbar into.
    *  State rather than a ref: the portal has to re-render once the node exists. */
-  const [tlToolbar, setTlToolbar] = useState<HTMLDivElement | null>(null);
+  const [tlToolbar, setTlToolbar] = useState<HTMLElement | null>(null);
   const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
   /** Overview has no task list, so it borrows the Tasks tab's settings. */
   const showKey: TaskTab = tab === "timeline" ? "timeline" : "tasks";
@@ -1711,46 +1711,17 @@ export function ClientView({ clientId }: { clientId: string }) {
               </span>
             )}
           </span>
+          {/* The header row is the client's IDENTITY and the one thing you hand
+              outward. Everything that shapes the view below — Show, Columns, the
+              layout switch — moved down onto the tab strip, so Tasks and
+              Timeline are laid out the same way instead of each keeping its
+              controls wherever they were first added.
+
+              The client report's own buttons are gone entirely: Client Reports
+              is where reports are built, published and shared, and a second
+              entry point here meant two places that had to agree. */}
           <div className="ml-auto flex items-center gap-2">
-            {/* ONE control for what this view shows. Completed, undated and the
-                type filter were three things in three places — two pills here
-                and the Timeline's colour legend — so a task that had gone
-                missing meant checking three of them. */}
-            {tab !== "overview" && (
-              <ShowMenu
-                showDone={showDone}
-                onShowDone={setShowDone}
-                showUndated={showUndated}
-                onShowUndated={setShowUndated}
-                undatedLabel={tab === "timeline" ? "Undated (list to schedule)" : "Undated"}
-                types={filterableTypes}
-                hiddenTypes={hiddenTypes}
-                onToggleType={toggleType}
-                onClearTypes={clearTypes}
-              />
-            )}
-            {/* The client report's own buttons are gone from here: the
-                Client Reports page is where reports are built, published and
-                shared, and a second entry point on this page meant two places
-                that had to agree about what "the report" meant. */}
-            {/* To the RIGHT of the pencil, and only on the Timeline: it shares
-                the schedule, so it belongs to that view — the same swap the
-                report buttons make in the other direction. */}
             {tab === "timeline" && <ShareGanttButton clientId={client.id} />}
-            {tab === "tasks" && (
-              <>
-                <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
-                {/* list/board is a view mode OF the tasks, not a peer of them, so it
-                    stays a segmented control rather than becoming a third tab */}
-                <Tabs
-                  value={view}
-                  onChange={setView}
-                  items={["list", "board"] as const}
-                  variant="segmented"
-                  ariaLabel="Layout"
-                />
-              </>
-            )}
           </div>
         </div>
         {/* The tab strip, with the Timeline's own zoom control CENTRED on the
@@ -1795,6 +1766,10 @@ export function ClientView({ clientId }: { clientId: string }) {
               ariaLabel="Client sections"
             />
           </div>
+          {/* The centre track holds whichever view-mode switch this tab has:
+              day/week/month on the Timeline, list/board on Tasks. Both are a
+              property OF the view rather than a peer of the tabs, so both are
+              segmented controls and both sit in the same place. */}
           <div className="flex justify-center">
             {tab === "timeline" && (
               <Tabs
@@ -1806,12 +1781,40 @@ export function ClientView({ clientId }: { clientId: string }) {
                 ariaLabel="Timeline zoom"
               />
             )}
+            {tab === "tasks" && (
+              <Tabs
+                value={view}
+                onChange={setView}
+                items={["list", "board"] as const}
+                variant="segmented"
+                size="sm"
+                ariaLabel="Layout"
+              />
+            )}
           </div>
           {/* The Timeline's legend and Columns button land here, by portal. They
               used to have a row of their own between the tabs and the chart;
               on the tab strip they cost nothing, because this line was already
               half empty. */}
-          <div ref={setTlToolbar} className="flex min-w-0 items-center justify-end gap-3" />
+          <div className="flex min-w-0 items-center justify-end gap-2">
+            {/* The Timeline portals its legend and Columns button into this
+                slot; Tasks renders its own Columns beside the same Show menu. */}
+            <span ref={setTlToolbar} className="flex min-w-0 items-center gap-3" />
+            {tab === "tasks" && <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />}
+            {tab !== "overview" && (
+              <ShowMenu
+                showDone={showDone}
+                onShowDone={setShowDone}
+                showUndated={showUndated}
+                onShowUndated={setShowUndated}
+                undatedLabel={tab === "timeline" ? "Undated (list to schedule)" : "Undated"}
+                types={filterableTypes}
+                hiddenTypes={hiddenTypes}
+                onToggleType={toggleType}
+                onClearTypes={clearTypes}
+              />
+            )}
+          </div>
         </div>
       </div>
 

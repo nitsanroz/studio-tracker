@@ -22,6 +22,7 @@ import {
   mapDevItem,
   mapEntrySum,
   mapLink,
+  mapTimelineMark,
   mapTaskType,
   mapPlanColumn,
   mapPlanEntry,
@@ -39,6 +40,7 @@ import type {
   DevItem,
   EntrySum,
   Link,
+  TimelineMark,
   PlanColumn,
   PlanEntry,
   Profile,
@@ -65,6 +67,8 @@ export interface ColdSnapshot {
   links: Link[];
   /** kinds of work, with their colours (0024) */
   taskTypes: TaskType[];
+  /** Timeline milestones (0026) */
+  timelineMarks: TimelineMark[];
   /** projects → client_id, needed by mapTask/mapSection on pre-0007 data */
   projectClient: Map<string, string>;
 }
@@ -87,7 +91,7 @@ export interface HotCtx {
 }
 
 export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
-  const [prof, cli, projLegacy, sec, tagsRes, cols, periods, days, linkRows, typeRows] =
+  const [prof, cli, projLegacy, sec, tagsRes, cols, periods, days, linkRows, markRows, typeRows] =
     await Promise.all([
     // "*" keeps boot working whether or not migration 0004 is applied
     fetchAll<DbRow>(sb, "profiles", "*"),
@@ -104,6 +108,9 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     // the whole table doesn't exist until 0022; an empty list simply means
     // "no links anywhere", which is exactly how the app renders it
     fetchAll<DbRow>(sb, "links", "*").catch(() => [] as DbRow[]),
+    // Same tolerance as links: before 0026 is applied this table does not exist,
+    // and "no milestones" is exactly how the chart should render then.
+    fetchAll<DbRow>(sb, "timeline_marks", "*").catch(() => [] as DbRow[]),
     // absent until 0024; an empty list simply means "no types defined"
     fetchAll<DbRow>(sb, "task_types", "*").catch(() => [] as DbRow[]),
   ]);
@@ -122,6 +129,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
       .sort((a: BillingPeriod, b: BillingPeriod) => a.dateFrom.localeCompare(b.dateFrom)),
     dayStates: days.map(mapDayState),
     links: linkRows.map(mapLink).sort((a: Link, b: Link) => a.position - b.position),
+    timelineMarks: markRows.map(mapTimelineMark),
     taskTypes: typeRows.map(mapTaskType).sort((a: TaskType, b: TaskType) => a.position - b.position),
     projectClient,
   };

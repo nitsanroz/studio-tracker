@@ -18,6 +18,7 @@ import {
   GripVertical,
   Maximize2,
   Pencil,
+  Trash2,
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
@@ -52,7 +53,7 @@ import { Avatar, ContextMenu, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
 import { NO_TYPE } from "./show-menu";
-import type { Profile, Section, Task, TaskType } from "@/lib/types";
+import type { Profile, Section, Task, TaskType, TimelineMark } from "@/lib/types";
 
 /**
  * A Gantt of the client's dated work, laid out like a real project timeline:
@@ -314,10 +315,15 @@ function TimelineColumnsMenu({
         onClick={() => setOpen((o) => !o)}
         title="Show or hide columns"
         aria-label="Show or hide columns"
-        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+        // Identical to the Tasks tab's Columns button, down to the padding and
+        // the count: two buttons that do the same thing on two tabs of one page
+        // had no business looking like different controls.
+        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
       >
-        <Columns3 size={13} />
-        Columns
+        <Columns3 size={14} />
+        {hidden.size > 0 && (
+          <span className="text-xs tabular-nums">{TL_COLS.length - hidden.size}</span>
+        )}
       </button>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
@@ -438,6 +444,10 @@ export function ClientTimeline({
     taskMinutes,
     updateTask,
     updateTasksVaried,
+    timelineMarks,
+    addTimelineMark,
+    updateTimelineMark,
+    deleteTimelineMark,
     updateSection,
     openTask,
     reorderTimelineTasks,
@@ -556,6 +566,15 @@ export function ClientTimeline({
 
   const client = clients.find((c) => c.id === clientId);
   const clientTasks = useMemo(() => tasks.filter((t) => t.clientId === clientId), [tasks, clientId]);
+  const marks = useMemo(
+    () =>
+      timelineMarks
+        .filter((m) => m.clientId === clientId)
+        .sort((a, b) => a.onDate.localeCompare(b.onDate)),
+    [timelineMarks, clientId],
+  );
+  /** The mark whose title is being typed — new ones start here, empty. */
+  const [editingMark, setEditingMark] = useState<string | null>(null);
 
   /**
    * Whole-studio days off from the weekly plan (`plan_day_states`: holidays and
@@ -1099,6 +1118,15 @@ export function ClientTimeline({
                 off={offDates}
                 hidden={hiddenCols}
                 shadow={shadow}
+                canAddMark={isAdmin}
+                onAddMark={(dayOffset) => {
+                  const date = toISO(shiftDays(from, dayOffset));
+                  // Created empty and immediately put into its editor: the mark
+                  // is the gesture's result, and asking for a name in a dialog
+                  // first would make placing one a two-step negotiation.
+                  addTimelineMark(clientId, date, "");
+                  setEditingMark(date);
+                }}
               />
               {/* The chart canvas is `bg-background` while every cell and title
                   on the left is `bg-surface`: the two tones are what separate
@@ -1134,6 +1162,33 @@ export function ClientTimeline({
                   leftW={leftW}
                 />
                 <TodayLine left={leftW + daysBetween(from, today) * pxPerDay} height={bodyH} />
+                <MarkLayer
+                  marks={marks}
+                  from={from}
+                  pxPerDay={pxPerDay}
+                  height={bodyH}
+                  leftW={leftW}
+                  canEdit={isAdmin}
+                  // A brand-new mark is keyed by its DATE, because it has no id
+                  // until the insert comes back; once it does, the id takes over.
+                  editingId={
+                    editingMark && marks.find((m) => m.id === editingMark)
+                      ? editingMark
+                      : (marks.find((m) => m.onDate === editingMark && !m.title)?.id ?? null)
+                  }
+                  onEdit={setEditingMark}
+                  onRename={(id, title) => updateTimelineMark(id, { title })}
+                  onMove={(id, days) => {
+                    const m = marks.find((x) => x.id === id);
+                    if (!m) return;
+                    // No working-day snapping: a launch can be a Friday.
+                    updateTimelineMark(id, { onDate: toISO(shiftDays(parseISO(m.onDate), days)) });
+                  }}
+                  onDelete={(id) => {
+                    deleteTimelineMark(id);
+                    setEditingMark(null);
+                  }}
+                />
 
                 {groups.map((g) => {
                   const key = g.section?.id ?? "";
@@ -1610,6 +1665,133 @@ function TodayLine({ left, height }: { left: number; height: number }) {
   );
 }
 
+
+/**
+ * A milestone: a vertical line across the whole chart with its name at the top.
+ *
+ * Drawn UNDER the bars (z-0 against their z-10) so it marks the work without
+ * cutting through it, and the label sits above everything so it stays readable
+ * where a bar happens to cross the line.
+ */
+function MarkLayer({
+  marks,
+  from,
+  pxPerDay,
+  height,
+  leftW,
+  canEdit,
+  editingId,
+  onEdit,
+  onRename,
+  onMove,
+  onDelete,
+}: {
+  marks: TimelineMark[];
+  from: Date;
+  pxPerDay: number;
+  height: number;
+  leftW: number;
+  canEdit: boolean;
+  editingId: string | null;
+  onEdit: (id: string | null) => void;
+  onRename: (id: string, title: string) => void;
+  onMove: (id: string, days: number) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [drag, setDrag] = useState<{ id: string; startX: number; days: number } | null>(null);
+
+  function startDrag(id: string, clientX: number) {
+    let live = { id, startX: clientX, days: 0 };
+    setDrag(live);
+    const move = (e: PointerEvent) => {
+      const days = Math.round((e.clientX - live.startX) / pxPerDay);
+      if (days === live.days) return;
+      live = { ...live, days };
+      setDrag(live);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setDrag(null);
+      if (live.days !== 0) onMove(live.id, live.days);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  return (
+    <div
+      className="pointer-events-none absolute top-0 z-0"
+      style={{ left: leftW, width: 1, height }}
+    >
+      {marks.map((m) => {
+        const shift = drag?.id === m.id ? drag.days : 0;
+        const left = (daysBetween(from, parseISO(m.onDate)) + shift) * pxPerDay;
+        const editing = editingId === m.id;
+        return (
+          <div key={m.id} className="absolute top-0" style={{ left }}>
+            <div className="w-0.5 bg-foreground/45" style={{ height }} />
+            <div
+              className={`pointer-events-auto absolute -top-0.5 left-0 flex max-w-[220px] items-center gap-1 whitespace-nowrap rounded-md border border-border bg-surface px-1.5 py-0.5 text-[11px] font-semibold shadow-sm ${
+                canEdit ? "cursor-grab active:cursor-grabbing" : ""
+              }`}
+              onPointerDown={(e) => {
+                if (!canEdit || editing) return;
+                e.preventDefault();
+                startDrag(m.id, e.clientX);
+              }}
+            >
+              {editing ? (
+                <input
+                  autoFocus
+                  defaultValue={m.title}
+                  placeholder="Name this milestone…"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") {
+                      // An empty name means the mark was never really made — a
+                      // nameless line on a client's plan is worse than no line.
+                      if (!m.title) onDelete(m.id);
+                      onEdit(null);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (!v && !m.title) onDelete(m.id);
+                    else if (v !== m.title) onRename(m.id, v);
+                    onEdit(null);
+                  }}
+                  className="w-36 min-w-0 rounded border border-brand px-1 py-0 text-[11px] font-semibold outline-none"
+                />
+              ) : (
+                <>
+                  <button
+                    onClick={() => canEdit && onEdit(m.id)}
+                    title={canEdit ? "Rename" : m.title}
+                    className="min-w-0 truncate"
+                  >
+                    {m.title || "Untitled"}
+                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => onDelete(m.id)}
+                      title="Delete milestone"
+                      aria-label={`Delete ${m.title || "milestone"}`}
+                      className="shrink-0 rounded p-0.5 text-faint hover:text-danger"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function GridLayer({
   from,
   totalDays,
@@ -1693,6 +1875,8 @@ function TimelineHeader({
   off,
   hidden,
   shadow,
+  canAddMark,
+  onAddMark,
 }: {
   from: Date;
   totalDays: number;
@@ -1701,6 +1885,9 @@ function TimelineHeader({
   off: Set<string>;
   hidden: Set<string>;
   shadow: { x: boolean; y: boolean };
+  canAddMark: boolean;
+  /** day offset from `from` — the caller turns it into a date */
+  onAddMark: (dayOffset: number) => void;
 }) {
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
@@ -1741,7 +1928,20 @@ function TimelineHeader({
             {c.label}
           </span>
         ))}
-        <span className="relative h-full flex-1 border-l border-border">
+        <span
+          className={`group/ruler relative h-full flex-1 border-l border-border ${
+            canAddMark ? "cursor-copy" : ""
+          }`}
+          onClick={(e) => {
+            if (!canAddMark) return;
+            const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            // The exact day under the pointer, at any zoom — at week zoom a tick
+            // covers seven days, so the tick's own start would be up to six days
+            // out from where the click landed.
+            onAddMark(Math.floor((e.clientX - box.left) / pxPerDay));
+          }}
+          title={canAddMark ? "Click to add a milestone on this day" : undefined}
+        >
           {ticks.map((t) => {
             const date = shiftDays(from, Math.round(t.left / pxPerDay));
             const nonWork = dayZoom && !isWorkDay(date, off);

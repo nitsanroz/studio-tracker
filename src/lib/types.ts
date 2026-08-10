@@ -97,6 +97,20 @@ export interface Link {
   position: number;
 }
 
+/**
+ * A milestone on a client's Timeline (0026) — "kickoff", "site publish".
+ *
+ * A point, not a span: no duration, no assignee, no hours. `onDate` is NOT
+ * snapped to a working day the way task dates are, because a launch or a
+ * client deadline can perfectly well fall on a Friday.
+ */
+export interface TimelineMark {
+  id: string;
+  clientId: string;
+  onDate: string;
+  title: string;
+}
+
 export interface Section {
   id: string;
   clientId: string;

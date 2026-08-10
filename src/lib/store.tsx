@@ -18,6 +18,7 @@ import {
   mapDayState,
   mapDevItem,
   mapLink,
+  mapTimelineMark,
   mapTaskType,
   mapPlanColumn,
   mapPlanEntry,
@@ -61,6 +62,7 @@ import type {
   TaskComment,
   TaskType,
   TimeEntry,
+  TimelineMark,
 } from "./types";
 
 export interface TaskRequest {
@@ -171,6 +173,10 @@ interface Store {
   updateTasksBulk: (taskIds: string[], patch: Partial<Task>) => void;
   /** Per-task patches as ONE undo step — see the implementation's note. */
   updateTasksVaried: (items: { id: string; patch: Partial<Task> }[]) => void;
+  timelineMarks: TimelineMark[];
+  addTimelineMark: (clientId: string, onDate: string, title: string) => void;
+  updateTimelineMark: (id: string, patch: { title?: string; onDate?: string }) => void;
+  deleteTimelineMark: (id: string) => void;
   /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
   restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
   addTask: (clientId: string, sectionId: string | null, title: string) => void;
@@ -350,6 +356,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
   const [dayStates, setDayStates] = useState<DayState[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
+  const [timelineMarks, setTimelineMarks] = useState<TimelineMark[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   /** tasks whose lazily-fetched `brief` has actually arrived — see loadTaskExtras */
   const [briefLoaded, setBriefLoaded] = useState<Set<string>>(new Set());
@@ -589,6 +596,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setBillingPeriods(c.billingPeriods);
     setDayStates(c.dayStates);
     setLinks(c.links);
+    setTimelineMarks(c.timelineMarks);
     setTaskTypes(c.taskTypes);
     // a hot-only refresh maps its tasks with these, so they must follow the cold half
     coldCtxRef.current = {
@@ -2339,6 +2347,77 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // `owner` is exactly one of taskId / clientId — the DB has a CHECK saying so,
   // and the two RLS policies differ (task links are member-writable like the
   // brief they sit under; client links are admin-only).
+  /**
+   * Timeline milestones. Creating one is NOT undoable, like everything else that
+   * creates a row here; renaming, moving and deleting are.
+   */
+  const addTimelineMark = useCallback(
+    (clientId: string, onDate: string, title: string) => {
+      supabase
+        .from("timeline_marks")
+        .insert({ client_id: clientId, on_date: onDate, title })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            noteWriteError("addTimelineMark", error);
+            return;
+          }
+          setTimelineMarks((prev) => [...prev, mapTimelineMark(data)]);
+        });
+    },
+    [supabase, noteWriteError],
+  );
+
+  const updateTimelineMark = useCallback(
+    (id: string, patch: { title?: string; onDate?: string }) => {
+      const before = timelineMarks.find((m) => m.id === id);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateTimelineMark(id, prev),
+          redo: () => methodsRef.current?.updateTimelineMark(id, patch),
+        });
+      }
+      setTimelineMarks((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+      const row: Record<string, unknown> = {};
+      if (patch.title !== undefined) row.title = patch.title;
+      if (patch.onDate !== undefined) row.on_date = patch.onDate;
+      supabase.from("timeline_marks").update(row).eq("id", id).then(wrote("updateTimelineMark"));
+    },
+    [supabase, timelineMarks, record, wrote],
+  );
+
+  const deleteTimelineMark = useCallback(
+    (id: string) => {
+      const gone = timelineMarks.find((m) => m.id === id);
+      // Re-inserted WITH ITS ORIGINAL ID, or the undo would create a different
+      // mark and a redo of the delete would miss it. Same rule as links.
+      if (gone) {
+        record({
+          undo: () => {
+            setTimelineMarks((prev) =>
+              prev.some((m) => m.id === gone.id) ? prev : [...prev, gone],
+            );
+            supabase
+              .from("timeline_marks")
+              .insert({
+                id: gone.id,
+                client_id: gone.clientId,
+                on_date: gone.onDate,
+                title: gone.title,
+              })
+              .then(wrote("restoreTimelineMark"));
+          },
+          redo: () => methodsRef.current?.deleteTimelineMark(id),
+        });
+      }
+      setTimelineMarks((prev) => prev.filter((m) => m.id !== id));
+      supabase.from("timeline_marks").delete().eq("id", id).then(wrote("deleteTimelineMark"));
+    },
+    [supabase, timelineMarks, record, wrote],
+  );
+
   const addLink = useCallback(
     (owner: { taskId: string } | { clientId: string }, title: string, url: string) => {
       const scope =
@@ -2513,6 +2592,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       billingPeriods,
       dayStates,
       links,
+      timelineMarks,
+      addTimelineMark,
+      updateTimelineMark,
+      deleteTimelineMark,
       taskTypes,
       briefLoaded: isBriefLoaded,
       devItems,
@@ -2587,7 +2670,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }),
     [
       loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
-      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, taskTypes, isBriefLoaded, devItems,
+      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
       openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );

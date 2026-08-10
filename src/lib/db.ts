@@ -21,6 +21,7 @@ import type {
   TaskComment,
   TaskType,
   TimeEntry,
+  TimelineMark,
 } from "./types";
 
 /** An untyped row as it comes back from Supabase (no generated types). */
@@ -164,6 +165,13 @@ export const mapClient = (r: any): Client => ({
   notes: r.notes ?? "", // column exists from migration 0022
   icon: r.icon ?? null, // columns exist from migration 0023
   iconUrl: r.icon_url ?? null,
+});
+
+export const mapTimelineMark = (r: any): TimelineMark => ({
+  id: r.id,
+  clientId: r.client_id,
+  onDate: r.on_date,
+  title: r.title ?? "",
 });
 
 export const mapLink = (r: any): Link => ({
