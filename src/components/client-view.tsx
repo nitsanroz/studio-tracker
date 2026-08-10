@@ -1437,7 +1437,7 @@ function SelectionBar({
 }
 
 /** The two tabs that list tasks — the only ones the Show settings apply to. */
-type TaskTab = "tasks" | "timeline";
+type TaskTab = "tasks" | "board" | "timeline";
 
 export function ClientView({ clientId }: { clientId: string }) {
   const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection, tags, updateTask } =
@@ -1455,17 +1455,18 @@ export function ClientView({ clientId }: { clientId: string }) {
    */
   const [showBy, setShowBy] = useState<Record<TaskTab, { done: boolean; undated: boolean }>>({
     tasks: { done: false, undated: true },
+    board: { done: false, undated: true },
     timeline: { done: false, undated: false },
   });
   const [hiddenTypesBy, setHiddenTypesBy] = useState<Record<TaskTab, Set<string>>>({
     tasks: new Set(),
+    board: new Set(),
     timeline: new Set(),
   });
   const [draggingTask, setDraggingTask] = useState(false);
   // Collapsed-by-exception: sections are open unless their key is in here, so new
   // sections appear expanded. "" stands for the null "No section" group.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<"list" | "board">("list");
   // Lifted out of ClientTimeline so the zoom control can live on the tab strip.
   // Day by default: at week zoom a one-day task is a 9px sliver and the weekend
   // shading is dropped entirely, so the calendar you land on says least about
@@ -1478,9 +1479,10 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [plainBars, setPlainBars] = useState(false);
   /** Which board column the pointer is over, `null` being "No status". */
   const [boardOver, setBoardOver] = useState<string | null | undefined>(undefined);
-  const [tab, setTab] = useState<"tasks" | "timeline" | "overview">("tasks");
+
+  const [tab, setTab] = useState<"tasks" | "board" | "timeline" | "overview">("tasks");
   /** Overview has no task list, so it borrows the Tasks tab's settings. */
-  const showKey: TaskTab = tab === "timeline" ? "timeline" : "tasks";
+  const showKey: TaskTab = tab === "timeline" ? "timeline" : tab === "board" ? "board" : "tasks";
   const showDone = showBy[showKey].done;
   const showUndated = showBy[showKey].undated;
   const hiddenTypes = hiddenTypesBy[showKey];
@@ -1496,6 +1498,30 @@ export function ClientView({ clientId }: { clientId: string }) {
       return { ...p, [showKey]: next };
     });
   const clearTypes = () => setHiddenTypesBy((p) => ({ ...p, [showKey]: new Set() }));
+
+  /**
+   * The board fills the window, so its horizontal scrollbar is ON SCREEN.
+   *
+   * Left to its content the rail was as tall as its tallest column — 117 cards
+   * for Anchor — which put the bar for scrolling to the last status thousands
+   * of pixels down the page. Same measured-height trick as the Timeline card,
+   * and for the same reason: this is one tab of four inside the app shell, so
+   * giving the shell a fixed height would change how the others scroll.
+   */
+  const boardRail = useRef<HTMLDivElement>(null);
+  const [boardH, setBoardH] = useState<number | null>(null);
+  useEffect(() => {
+    if (tab !== "board") return;
+    const measure = () => {
+      const el = boardRail.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setBoardH(Math.max(320, window.innerHeight - top - 24));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [tab]);
 
   /**
    * Only the types this client's own work uses — a filter listing every type in
@@ -1781,7 +1807,8 @@ export function ClientView({ clientId }: { clientId: string }) {
               value={tab}
               onChange={setTab}
               items={[
-                { value: "tasks" as const, label: "Tasks" },
+                { value: "tasks" as const, label: "Task list" },
+                { value: "board" as const, label: "Board" },
                 {
                   value: "timeline" as const,
                   label: "Timeline",
@@ -1804,10 +1831,10 @@ export function ClientView({ clientId }: { clientId: string }) {
               ariaLabel="Client sections"
             />
           </div>
-          {/* The centre track holds whichever view-mode switch this tab has:
-              day/week/month on the Timeline, list/board on Tasks. Both are a
-              property OF the view rather than a peer of the tabs, so both are
-              segmented controls and both sit in the same place. */}
+          {/* The centre track holds this tab's view-mode switch. Only the
+              Timeline has one now: list vs board used to live here, and became
+              two tabs of its own — they are different arrangements of the work,
+              which is what the tab strip is for, not a setting of one view. */}
           <div className="flex justify-center">
             {tab === "timeline" && (
               <Tabs
@@ -1817,16 +1844,6 @@ export function ClientView({ clientId }: { clientId: string }) {
                 variant="segmented"
                 size="sm"
                 ariaLabel="Timeline zoom"
-              />
-            )}
-            {tab === "tasks" && (
-              <Tabs
-                value={view}
-                onChange={setView}
-                items={["list", "board"] as const}
-                variant="segmented"
-                size="sm"
-                ariaLabel="Layout"
               />
             )}
           </div>
@@ -1891,9 +1908,13 @@ export function ClientView({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      <div className={`flex gap-4 ${tab === "tasks" ? "" : "hidden"}`}>
+      {/* Both task arrangements live in this block. It stays MOUNTED and
+          hidden rather than unmounting, as it always has — the table's column
+          widths, its selection and its collapsed sections are all local state
+          that a round trip through another tab would throw away. */}
+      <div className={`flex gap-4 ${tab === "tasks" || tab === "board" ? "" : "hidden"}`}>
         <div className="min-w-0 flex-1">
-      {view === "list" ? (
+      {tab === "tasks" ? (
         <ColWidthsContext.Provider value={widths}>
         <HiddenColsContext.Provider value={hiddenCols}>
         <SelectionContext.Provider value={isAdmin ? selectionValue : null}>
@@ -2093,7 +2114,11 @@ export function ClientView({ clientId }: { clientId: string }) {
         // at all. `1 0 220px`: grow to fill the width when there is room, never
         // shrink below a readable card, and overflow into a scroll when there
         // isn't. `pb-2` leaves the scrollbar somewhere to sit.
-        <div className="flex gap-4 overflow-x-auto pb-2">
+        <div
+          ref={boardRail}
+          style={{ height: boardH ?? undefined }}
+          className="flex gap-4 overflow-x-auto overflow-y-hidden pb-2"
+        >
           {boardColumns.map(({ key, label }) => {
             const columnTasks = clientTasks.filter((t) => (t.tag ?? null) === key);
             const isOver = boardOver === key;
@@ -2118,7 +2143,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                   updateTask(id, { tag: key });
                 }}
                 style={{ flex: "1 0 220px" }}
-                className={`rounded-xl border bg-surface p-3 transition-colors ${
+                className={`flex min-h-0 flex-col rounded-xl border bg-surface p-3 transition-colors ${
                   isOver ? "border-brand bg-brand-soft/40" : "border-border"
                 }`}
               >
@@ -2126,7 +2151,11 @@ export function ClientView({ clientId }: { clientId: string }) {
                   {label}
                   <span className="ml-2 text-xs font-normal text-faint">{columnTasks.length}</span>
                 </div>
-                <div className="flex min-h-8 flex-col gap-2">
+                {/* Each column scrolls on its own, so the rail's own scrollbar
+                    is only ever horizontal — and stays at the foot of the
+                    screen where you can reach it. `min-h-0` is what lets a flex
+                    child shrink below its content and actually scroll. */}
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                   {columnTasks.map((t) => (
                     <BoardCard key={t.id} task={t} draggable={isAdmin} />
                   ))}
