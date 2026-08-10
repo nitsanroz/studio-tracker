@@ -256,6 +256,10 @@ const ROW_HOVER_SOLID =
 const ROW_HOVER_SHEER = "group-hover/trow:bg-foreground/[0.06]";
 const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
 
+/** The today marker's cap: a downward pennant, wide enough to spot at a glance. */
+const TODAY_CAP_W = 12;
+const TODAY_CAP_H = 9;
+
 /**
  * The pinned ruler's height — one `h-6` row plus its bottom border. Milestone
  * labels stick just below it, so scrolling down never leaves a line unnamed.
@@ -1579,7 +1583,19 @@ function DatesCell({
 function TodayLine({ left, height }: { left: number; height: number }) {
   return (
     <div className="pointer-events-none absolute top-0 z-10" style={{ left }} title="Today">
-      <div className="absolute -left-[3px] -top-[3px] size-1.5 rounded-full bg-brand" />
+      {/* A pennant pointing AT the day, rather than a dot sitting on it. The CSS
+          border triangle: a 0×0 box whose coloured top border mitres into two
+          transparent sides, so the shape narrows to a point below. Centred on
+          the 2px line — half the triangle's width, less half the line's. */}
+      <div
+        className="absolute top-0"
+        style={{
+          left: -(TODAY_CAP_W / 2) + 1,
+          borderLeft: `${TODAY_CAP_W / 2}px solid transparent`,
+          borderRight: `${TODAY_CAP_W / 2}px solid transparent`,
+          borderTop: `${TODAY_CAP_H}px solid var(--brand)`,
+        }}
+      />
       {/* 2px, not 1: at a single pixel today was the faintest vertical in a
           chart full of verticals, and it is the one you look for first. */}
       <div className="w-0.5 bg-brand/50" style={{ height }} />
