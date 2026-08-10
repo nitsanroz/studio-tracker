@@ -256,6 +256,16 @@ const ROW_HOVER_SOLID =
 const ROW_HOVER_SHEER = "group-hover/trow:bg-foreground/[0.06]";
 const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
 
+/**
+ * The section bracket's colour.
+ *
+ * The client's own colour made every section on a client's chart the same
+ * bright hue — Anchor's magenta ran across the whole plan — competing with the
+ * type colours that actually distinguish one bar from another. A section is
+ * structure, not a category, so it is drawn as ink.
+ */
+const SECTION_BAR_COLOR = "color-mix(in srgb, var(--foreground) 72%, transparent)";
+
 /** The today marker's cap: a downward pennant, wide enough to spot at a glance. */
 const TODAY_CAP_W = 12;
 const TODAY_CAP_H = 9;
@@ -2121,6 +2131,22 @@ function SectionHeaderRow({
             </div>
           </HoverTip>
         )}
+        {/* Folded, the bracket is the ONLY thing left of a section in the chart —
+            and the name that explains it is off in the pinned column, which may
+            well be scrolled away. Expanded it needs no caption: the rows under
+            it are the caption. */}
+        {collapsed && (
+          <span
+            className="pointer-events-none absolute whitespace-nowrap text-[10px] font-semibold"
+            style={{
+              left: left + 1,
+              top: `calc(50% - ${SECTION_BAR_H / 2}px - 12px)`,
+              color: SECTION_BAR_COLOR,
+            }}
+          >
+            {group.section?.name ?? "No section"}
+          </span>
+        )}
         <span
           className="absolute"
           style={{ left, width, top: `calc(50% - ${SECTION_BAR_H / 2}px)` }}
@@ -2129,25 +2155,23 @@ function SectionHeaderRow({
         >
           <span
             className="absolute inset-x-0 top-0 rounded-[1px]"
-            style={{ height: SECTION_BAR_H, backgroundColor: color, opacity: 0.85 }}
+            style={{ height: SECTION_BAR_H, backgroundColor: SECTION_BAR_COLOR }}
           />
           {width >= TIP_MIN_W && (
             <>
               <span
                 className="absolute left-0 top-0"
                 style={{
-                  borderTop: `${TIP_H}px solid ${color}`,
+                  borderTop: `${TIP_H}px solid ${SECTION_BAR_COLOR}`,
                   borderRight: `${TIP_W}px solid transparent`,
-                  opacity: 0.85,
                 }}
               />
               <span
                 className="absolute top-0"
                 style={{
                   left: width - TIP_W,
-                  borderTop: `${TIP_H}px solid ${color}`,
+                  borderTop: `${TIP_H}px solid ${SECTION_BAR_COLOR}`,
                   borderLeft: `${TIP_W}px solid transparent`,
-                  opacity: 0.85,
                 }}
               />
             </>
