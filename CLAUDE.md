@@ -65,6 +65,41 @@ Custom task + time tracker for the **Studio&more** design studio (~8 active desi
 - Wordmark SVG at `public/brand/logo-1.svg` via CSS mask (`.brand-wordmark`).
 - **Gotcha:** Turbopack/lightningcss silently drops rules using `mask:` shorthand — use longhands.
 
+### Drawing product mockups (the "what's new" visuals, and anything like them)
+Eleven corrections from Nitsan produced these. He is a designer; **any
+approximation gets caught**, so treat a mockup as a claim about what the product
+looks like rather than as decoration.
+- ⚠️ **Draw at LIFE SIZE, then scale the whole thing down.** A phone is a real
+  375×812 screen using the app's own values (`h-14` header, `p-4`, 13px labels,
+  `rounded-2xl`); one transform shrinks it. **Proportions cannot be guessed one
+  element at a time** — a hand-sized canvas got every value wrong in a different
+  direction. The render height then IS the scale factor: check a real 13px label
+  doesn't land at 7px. `scripts/build-whatsnew-phone.mjs` is the worked example.
+- ⚠️ **Real assets.** Icons read out of `node_modules` (lucide) at the app's size
+  and stroke — and **scaling an icon scales its stroke, so divide the weight back
+  out**. Real photos, not silhouettes.
+- ⚠️ **Real text, never grey placeholder bars.** A rule can't be read as "254.5h"
+  or as a column renamed to STATUS, which is usually the point of the picture.
+- ⚠️ **Every surface keeps its own background and chrome** — rows floating on
+  colour lose the grid, the pinned column, the ruler. Draw the card, not the
+  contents.
+- ⚠️ **Show the gesture, not the outcome** (the marquee and its cursor, not
+  arrows implying a result).
+- ⚠️ **Crop a device; never crop a card.** A phone bleeding off the bottom reads
+  as a product shot; a table sliced at its edge reads as a fault. Watch both
+  causes: geometry outside the viewBox, and a clip path narrower than the art.
+- ⚠️ **Picture the AUDIENCE's screen with a colleague's data** — Nitsan is an
+  admin, the readers are designers, and role-gated chrome differs (their bottom
+  bar has four slots, not five).
+- ⚠️ **A CSS custom property in an SVG comment kills the whole file** — the two
+  hyphens in `var(--brand)` are illegal in an XML comment. Symptom: HTTP 200,
+  balanced tags, `naturalWidth 0`, alt text in place of the picture. Also: an SVG
+  loaded via `<img>` **cannot fetch external files**; inline images as data URIs.
+- He would rather have **real screenshots** generated automatically. Chrome 151
+  headless is on the machine; the blocker is auth, and the clean route is a
+  fixture page rendering the real components (not a minted session, which would
+  bake live client names into an image the whole studio sees).
+
 ## Related / out of scope
 - **Finance was split out (2026-07-13) into a separate product** at `~/Documents/Claude/finance-admin/` — page/nav/lib deleted here. The `finance_*` tables + migrations 0005/0006 remain in the shared DB, untouched.
 - Executive-team Asana boards ("Clients", "Studio") were **deleted from the DB** — that data lives in Asana only; never re-import.
