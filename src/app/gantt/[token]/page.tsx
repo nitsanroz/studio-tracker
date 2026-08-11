@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { PublicGanttView, type PublicGanttGroup, type PublicGanttTask } from "./public-gantt-view";
+import {
+  PublicGanttView,
+  type PublicGanttGroup,
+  type PublicGanttTask,
+} from "./public-gantt-view";
 
 /**
  * Public, token-gated client Gantt — LIVE, unlike `/report/[token]`.
@@ -50,7 +54,13 @@ export default async function PublicGanttPage({
   const clientName = client?.name ?? "Client";
   const clientColor = client?.color ?? "#0b43ed";
 
-  const [{ data: sections }, { data: tasks }, { data: types }, { data: days }] = await Promise.all([
+  const [
+    { data: sections },
+    { data: tasks },
+    { data: types },
+    { data: days },
+    { data: marks },
+  ] = await Promise.all([
     sb
       .from("sections")
       .select("id, name, position")
@@ -67,10 +77,21 @@ export default async function PublicGanttPage({
       .neq("status", "done"),
     sb.from("task_types").select("id, name, color"),
     sb.from("plan_day_states").select("date_from, date_to, label"),
+    // Milestones. `title` is fetched so an UNNAMED one can be dropped below —
+    // a nameless vertical line on a client's plan is worse than no line, and
+    // the studio's own chart creates marks empty and names them after.
+    sb
+      .from("timeline_marks")
+      .select("id, on_date, title")
+      .eq("client_id", link.client_id)
+      .order("on_date"),
   ]);
 
   const typeById = new Map(
-    (types ?? []).map((t) => [t.id as string, { name: t.name as string, color: t.color as string }]),
+    (types ?? []).map((t) => [
+      t.id as string,
+      { name: t.name as string, color: t.color as string },
+    ]),
   );
 
   const rows: PublicGanttTask[] = (tasks ?? []).map((t) => {
@@ -99,7 +120,8 @@ export default async function PublicGanttPage({
         </span>
         <h1 className="text-xl font-bold">{clientName}</h1>
         <p className="text-sm text-muted">
-          Nothing is scheduled yet. This page updates by itself as the plan changes — keep the link.
+          Nothing is scheduled yet. This page updates by itself as the plan
+          changes — keep the link.
         </p>
       </main>
     );
@@ -116,7 +138,9 @@ export default async function PublicGanttPage({
   const groups: PublicGanttGroup[] = [...byKey.entries()]
     .map(([key, list]) => ({
       key,
-      name: key ? ((sections ?? []).find((s) => s.id === key)?.name as string) : "No section",
+      name: key
+        ? ((sections ?? []).find((s) => s.id === key)?.name as string)
+        : "No section",
       rank: key ? (order.get(key) ?? 0) : Number.MAX_SAFE_INTEGER,
       // The SAME rule as the studio's Timeline, tiebreak for tiebreak:
       // hand-placed rows first in their placed order, never-dragged rows to the
@@ -124,7 +148,8 @@ export default async function PublicGanttPage({
       // page with a screenshot from the studio must not see a different order.
       tasks: list.sort(
         (a, b) =>
-          (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+          (a.order ?? Number.MAX_SAFE_INTEGER) -
+            (b.order ?? Number.MAX_SAFE_INTEGER) ||
           (a.startDate ?? a.dueDate).localeCompare(b.startDate ?? b.dueDate) ||
           a.title.localeCompare(b.title),
       ),
@@ -137,6 +162,17 @@ export default async function PublicGanttPage({
     label: d.label as string,
   }));
 
+  // Unnamed marks are dropped rather than shown as "Untitled" (which is what the
+  // studio's own chart calls them, because there it is a prompt to finish naming
+  // one). The client has no way to act on that, so it is only noise on their plan.
+  const milestones = (marks ?? [])
+    .filter((m) => ((m.title as string | null) ?? "").trim())
+    .map((m) => ({
+      id: m.id as string,
+      onDate: m.on_date as string,
+      title: (m.title as string).trim(),
+    }));
+
   return (
     <PublicGanttView
       clientName={clientName}
@@ -145,6 +181,7 @@ export default async function PublicGanttPage({
       clientIconUrl={client?.icon_url ?? null}
       groups={groups}
       offDays={offDays}
+      milestones={milestones}
     />
   );
 }

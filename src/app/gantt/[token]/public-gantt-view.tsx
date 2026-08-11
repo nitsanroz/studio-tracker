@@ -46,6 +46,16 @@ export interface PublicGanttGroup {
   tasks: PublicGanttTask[];
 }
 
+/** A named point in time — kickoff, launch — drawn as a line across the chart. */
+export interface PublicGanttMark {
+  id: string;
+  onDate: string;
+  title: string;
+}
+
+/** The ruler's height (`h-7`). The milestone flags stick directly under it. */
+const RULER_H = 28;
+
 /**
  * The pinned column is the task's name and its budget. There is no Dates column:
  * it repeated, in text, what the bar beside it already says in position and
@@ -66,7 +76,8 @@ const FALLBACK = "#0b43ed";
 function useStickyWidth() {
   const [nameW, setNameW] = useState(NAME_W);
   useEffect(() => {
-    const apply = () => setNameW(window.innerWidth < NARROW_PX ? NAME_W_NARROW : NAME_W);
+    const apply = () =>
+      setNameW(window.innerWidth < NARROW_PX ? NAME_W_NARROW : NAME_W);
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
@@ -92,6 +103,7 @@ export function PublicGanttView({
   clientIconUrl,
   groups,
   offDays,
+  milestones,
 }: {
   clientName: string;
   clientColor: string;
@@ -99,6 +111,7 @@ export function PublicGanttView({
   clientIconUrl: string | null;
   groups: PublicGanttGroup[];
   offDays: { from: string; to: string; label: string }[];
+  milestones: PublicGanttMark[];
 }) {
   const [zoom, setZoom] = useState<Zoom>("day");
   const STICKY_W = useStickyWidth();
@@ -109,7 +122,11 @@ export function PublicGanttView({
   }, []);
   const scroller = useRef<HTMLDivElement>(null);
   const centred = useRef(false);
-  const [tip, setTip] = useState<{ x: number; y: number; task: PublicGanttTask } | null>(null);
+  const [tip, setTip] = useState<{
+    x: number;
+    y: number;
+    task: PublicGanttTask;
+  } | null>(null);
   /** Section keys the reader has folded away. */
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const fold = (key: string) =>
@@ -130,7 +147,8 @@ export function PublicGanttView({
     for (const d of offDays) {
       const from = parseISO(d.from);
       const span = daysBetween(from, parseISO(d.to));
-      for (let i = 0; i <= Math.min(span, 400); i++) dates.add(toISO(shiftDays(from, i)));
+      for (let i = 0; i <= Math.min(span, 400); i++)
+        dates.add(toISO(shiftDays(from, i)));
     }
     return dates;
   }, [offDays]);
@@ -158,6 +176,10 @@ export function PublicGanttView({
   const { from, totalDays } = useMemo(() => {
     const marks: Date[] = [today];
     for (const r of all) marks.push(r.start, r.due);
+    // ⚠️ Milestone dates widen the window too. A launch is routinely set AFTER
+    // the last task's due date, and a chart sized to the tasks alone would put
+    // the one date the client most wants to see off the right-hand edge.
+    for (const m of milestones) marks.push(parseISO(m.onDate));
     let min = marks[0];
     let max = marks[0];
     for (const d of marks) {
@@ -172,13 +194,14 @@ export function PublicGanttView({
       from: start,
       totalDays: Math.max(daysBetween(start, end), zoom === "month" ? 365 : 91),
     };
-  }, [all, today, zoom]);
+  }, [all, today, zoom, milestones]);
 
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const bodyH = rows.reduce(
-    (h, g) => h + SECTION_H + (collapsed.has(g.key) ? 0 : g.rows.length * ROW_H),
+    (h, g) =>
+      h + SECTION_H + (collapsed.has(g.key) ? 0 : g.rows.length * ROW_H),
     0,
   );
   const todayLeft = daysBetween(from, today) * pxPerDay;
@@ -227,30 +250,34 @@ export function PublicGanttView({
           name, then zoom and wordmark at either end. */}
       <header className="flex flex-wrap items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
         <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
-        {clientIconUrl ? (
-          // `brightness(0)` paints every opaque pixel black while keeping the
-          // alpha, because these marks are drawn WHITE for the coloured tile
-          // they sit on inside the app — on this page there is no tile, so the
-          // logo was white on white and simply absent.
-          // eslint-disable-next-line @next/next/no-img-element -- Supabase storage URL, no loader configured
-          <img
-            src={clientIconUrl}
-            alt=""
-            className="size-10 shrink-0 object-contain"
-            style={{ filter: "brightness(0)" }}
-          />
-        ) : (
-          <span
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-bold text-white"
-            style={{ backgroundColor: clientColor }}
-          >
-            {clientIcon || clientName[0]}
+          {clientIconUrl ? (
+            // `brightness(0)` paints every opaque pixel black while keeping the
+            // alpha, because these marks are drawn WHITE for the coloured tile
+            // they sit on inside the app — on this page there is no tile, so the
+            // logo was white on white and simply absent.
+            // eslint-disable-next-line @next/next/no-img-element -- Supabase storage URL, no loader configured
+            <img
+              src={clientIconUrl}
+              alt=""
+              className="size-10 shrink-0 object-contain"
+              style={{ filter: "brightness(0)" }}
+            />
+          ) : (
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-base font-bold text-white"
+              style={{ backgroundColor: clientColor }}
+            >
+              {clientIcon || clientName[0]}
+            </span>
+          )}
+          <span className="flex min-w-0 flex-col">
+            <h1 className="truncate text-2xl font-bold leading-tight tracking-tight">
+              {clientName}
+            </h1>
+            <span className="text-xs text-muted">
+              Schedule · updates automatically
+            </span>
           </span>
-        )}
-        <span className="flex min-w-0 flex-col">
-          <h1 className="truncate text-2xl font-bold leading-tight tracking-tight">{clientName}</h1>
-          <span className="text-xs text-muted">Schedule · updates automatically</span>
-        </span>
         </div>
         <div className="mr-auto flex justify-center rounded-lg border border-border bg-surface p-0.5 sm:mr-0">
           {(["day", "week", "month"] as const).map((z) => (
@@ -258,7 +285,9 @@ export function PublicGanttView({
               key={z}
               onClick={() => setZoom(z)}
               className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
-                z === zoom ? "bg-brand-soft text-brand-dark" : "text-muted hover:text-foreground"
+                z === zoom
+                  ? "bg-brand-soft text-brand-dark"
+                  : "text-muted hover:text-foreground"
               }`}
             >
               {z}
@@ -302,7 +331,11 @@ export function PublicGanttView({
                         t.boundary
                           ? "border-l border-foreground/15 font-semibold text-foreground"
                           : `tabular-nums ${
-                              zoom === "day" && !isWorkDay(shiftDays(from, Math.round(t.left / pxPerDay)), off)
+                              zoom === "day" &&
+                              !isWorkDay(
+                                shiftDays(from, Math.round(t.left / pxPerDay)),
+                                off,
+                              )
                                 ? "text-faint/60"
                                 : "text-muted"
                             }`
@@ -350,11 +383,88 @@ export function PublicGanttView({
               )}
             </div>
 
+            {/* Milestones. Read-only here — no drag, no rename, no trash — but
+                the SAME line and the same flag the studio sees, because the two
+                charts are meant to be the same picture.
+                ⚠️ TWO layers, because the line and its label want opposite
+                depths, and the root carries NO z-index of its own: a positioned
+                element with one creates a stacking context the label could never
+                escape. Same trap the studio's chart hit (v1.10.0). */}
+            {milestones.length > 0 && (
+              <div
+                className="pointer-events-none absolute top-0"
+                style={{ left: STICKY_W, width: 1, height: RULER_H + bodyH }}
+              >
+                {/* Lines ABOVE the rows, not under them: every row carries a
+                    `border-b`, and each one painted across a line drawn beneath,
+                    leaving a 1px gap every 34px — the line came out dashed.
+                    ⚠️ But BELOW the pinned column's `z-20`, unlike the studio's
+                    chart, which puts marks at 20/30 and lets a flag ride over
+                    the task names when you scroll. Measured here: "brand begins"
+                    overlapped the name column by 50px. The studio can live with
+                    that; on the page a client reads it looks like a fault. */}
+                <div className="absolute top-0 z-[14]" style={{ width: 1 }}>
+                  {milestones.map((m) => {
+                    const left =
+                      daysBetween(from, parseISO(m.onDate)) * pxPerDay;
+                    if (left < 0 || left > chartW) return null;
+                    return (
+                      <div
+                        key={m.id}
+                        className="absolute w-0.5 bg-brand/50"
+                        style={{ left, top: RULER_H, height: bodyH }}
+                      />
+                    );
+                  })}
+                </div>
+                {/* The flags, above the bars but still under the pinned column
+                    and the ruler, and `sticky` so a milestone forty rows down
+                    still says what it is. Sticky needs a containing block taller
+                    than itself, hence the full-height wrapper per flag. */}
+                <div className="absolute top-0 z-[15]" style={{ width: 1 }}>
+                  {milestones.map((m) => {
+                    const left =
+                      daysBetween(from, parseISO(m.onDate)) * pxPerDay;
+                    if (left < 0 || left > chartW) return null;
+                    return (
+                      <div
+                        key={m.id}
+                        className="absolute"
+                        style={{ left, top: 0, height: RULER_H + bodyH }}
+                      >
+                        {/* Square where it meets its pole, rounded away from it,
+                            offset by the line's own width so the line runs
+                            beside the flag rather than under it. */}
+                        <div
+                          className="sticky flex max-w-[220px] items-center whitespace-nowrap rounded-r-md border border-l-0 border-brand bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-brand-dark shadow-sm"
+                          style={{ top: RULER_H, marginLeft: 2 }}
+                          // `hasStart: false` is how `dateRangeLabel` renders a
+                          // single day ("9 Aug") rather than a range of one.
+                          title={`${m.title} · ${dateRangeLabel(parseISO(m.onDate), parseISO(m.onDate), false)}`}
+                        >
+                          <span className="min-w-0 truncate">{m.title}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {rows.map((g) => {
-              const gStart = g.rows.reduce((a, r) => (r.start < a ? r.start : a), g.rows[0].start);
-              const gDue = g.rows.reduce((a, r) => (r.due > a ? r.due : a), g.rows[0].due);
+              const gStart = g.rows.reduce(
+                (a, r) => (r.start < a ? r.start : a),
+                g.rows[0].start,
+              );
+              const gDue = g.rows.reduce(
+                (a, r) => (r.due > a ? r.due : a),
+                g.rows[0].due,
+              );
               const gLeft = daysBetween(from, gStart) * pxPerDay;
-              const gWidth = Math.max(8, (daysBetween(gStart, gDue) + 1) * pxPerDay);
+              const gWidth = Math.max(
+                8,
+                (daysBetween(gStart, gDue) + 1) * pxPerDay,
+              );
               const isFolded = collapsed.has(g.key);
               return (
                 <div key={g.key || "none"}>
@@ -373,23 +483,40 @@ export function PublicGanttView({
                       style={{ width: STICKY_W }}
                     >
                       {isFolded ? (
-                        <ChevronRight size={14} className="shrink-0 text-muted" />
+                        <ChevronRight
+                          size={14}
+                          className="shrink-0 text-muted"
+                        />
                       ) : (
-                        <ChevronDown size={14} className="shrink-0 text-muted" />
+                        <ChevronDown
+                          size={14}
+                          className="shrink-0 text-muted"
+                        />
                       )}
                       <span className="bidi-auto truncate">{g.name}</span>
                       <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
                         {g.rows.length}
                       </span>
                     </button>
-                    <div className="relative h-full shrink-0" style={{ width: chartW }}>
+                    <div
+                      className="relative h-full shrink-0"
+                      style={{ width: chartW }}
+                    >
                       <span
                         className="absolute"
-                        style={{ left: gLeft, width: gWidth, top: `calc(50% - ${SECTION_BAR_H / 2}px)` }}
+                        style={{
+                          left: gLeft,
+                          width: gWidth,
+                          top: `calc(50% - ${SECTION_BAR_H / 2}px)`,
+                        }}
                       >
                         <span
                           className="absolute inset-x-0 top-0 rounded-[1px]"
-                          style={{ height: SECTION_BAR_H, backgroundColor: clientColor, opacity: 0.85 }}
+                          style={{
+                            height: SECTION_BAR_H,
+                            backgroundColor: clientColor,
+                            opacity: 0.85,
+                          }}
                         />
                         {gWidth >= TIP_MIN_W && (
                           <>
@@ -418,77 +545,95 @@ export function PublicGanttView({
 
                   {!isFolded &&
                     g.rows.map((r) => {
-                    const color = r.task.typeColor ?? FALLBACK;
-                    const left = daysBetween(from, r.start) * pxPerDay;
-                    const barW = Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay);
-                    return (
-                      <div
-                        key={r.task.id}
-                        className="relative flex border-b border-border last:border-b-0"
-                        style={{ height: ROW_H, width: STICKY_W + chartW }}
-                      >
-                        {/* `pl-8` lines the name up under its section's title,
-                            which the chevron has pushed in by that much. */}
+                      const color = r.task.typeColor ?? FALLBACK;
+                      const left = daysBetween(from, r.start) * pxPerDay;
+                      const barW = Math.max(
+                        10,
+                        (daysBetween(r.start, r.due) + 1) * pxPerDay,
+                      );
+                      return (
                         <div
-                          className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-surface pl-8 pr-3"
-                          style={{ width: STICKY_W }}
+                          key={r.task.id}
+                          className="relative flex border-b border-border last:border-b-0"
+                          style={{ height: ROW_H, width: STICKY_W + chartW }}
                         >
-                          <span
-                            className="bidi-auto min-w-0 flex-1 truncate text-xs"
-                            title={r.task.title}
+                          {/* `pl-8` lines the name up under its section's title,
+                            which the chevron has pushed in by that much. */}
+                          <div
+                            className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-surface pl-8 pr-3"
+                            style={{ width: STICKY_W }}
                           >
-                            {r.task.title}
-                          </span>
-                          {/* The budget, and only the budget: what was agreed,
-                              not what has been spent against it. */}
-                          <span
-                            className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
-                            style={{ width: BUDGET_W }}
-                          >
-                            {r.task.budgetHours != null ? `${r.task.budgetHours}h` : "–"}
-                          </span>
-                        </div>
-                        <div className="relative h-full shrink-0" style={{ width: chartW }}>
-                          {r.hasStart ? (
-                            <div
-                              onMouseEnter={(e) =>
-                                setTip({ x: e.clientX, y: e.clientY, task: r.task })
-                              }
-                              onMouseLeave={() => setTip(null)}
-                              className="absolute top-1/2 -translate-y-1/2 overflow-hidden"
-                              style={{
-                                left,
-                                width: barW,
-                                height: BAR_H,
-                                borderRadius: BAR_R,
-                                backgroundColor: `${color}52`,
-                              }}
+                            <span
+                              className="bidi-auto min-w-0 flex-1 truncate text-xs"
+                              title={r.task.title}
                             >
-                              {barW >= BAR_LABEL_MIN_PX && (
-                                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center truncate px-1.5 text-[11px] font-medium leading-none text-foreground">
-                                  {r.task.title}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div
-                              onMouseEnter={(e) =>
-                                setTip({ x: e.clientX, y: e.clientY, task: r.task })
-                              }
-                              onMouseLeave={() => setTip(null)}
-                              className="absolute top-1/2 -translate-y-1/2 rotate-45 rounded-[2px]"
-                              style={{
-                                left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
-                                width: DIAMOND,
-                                height: DIAMOND,
-                                backgroundColor: color,
-                              }}
-                            />
-                          )}
+                              {r.task.title}
+                            </span>
+                            {/* The budget, and only the budget: what was agreed,
+                              not what has been spent against it. */}
+                            <span
+                              className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
+                              style={{ width: BUDGET_W }}
+                            >
+                              {r.task.budgetHours != null
+                                ? `${r.task.budgetHours}h`
+                                : "–"}
+                            </span>
+                          </div>
+                          <div
+                            className="relative h-full shrink-0"
+                            style={{ width: chartW }}
+                          >
+                            {r.hasStart ? (
+                              <div
+                                onMouseEnter={(e) =>
+                                  setTip({
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                    task: r.task,
+                                  })
+                                }
+                                onMouseLeave={() => setTip(null)}
+                                className="absolute top-1/2 -translate-y-1/2 overflow-hidden"
+                                style={{
+                                  left,
+                                  width: barW,
+                                  height: BAR_H,
+                                  borderRadius: BAR_R,
+                                  backgroundColor: `${color}52`,
+                                }}
+                              >
+                                {barW >= BAR_LABEL_MIN_PX && (
+                                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center truncate px-1.5 text-[11px] font-medium leading-none text-foreground">
+                                    {r.task.title}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                onMouseEnter={(e) =>
+                                  setTip({
+                                    x: e.clientX,
+                                    y: e.clientY,
+                                    task: r.task,
+                                  })
+                                }
+                                onMouseLeave={() => setTip(null)}
+                                className="absolute top-1/2 -translate-y-1/2 rotate-45 rounded-[2px]"
+                                style={{
+                                  left:
+                                    left +
+                                    Math.max(0, pxPerDay / 2 - DIAMOND / 2),
+                                  width: DIAMOND,
+                                  height: DIAMOND,
+                                  backgroundColor: color,
+                                }}
+                              />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               );
             })}
@@ -497,7 +642,8 @@ export function PublicGanttView({
       </div>
 
       <p className="text-xs text-faint">
-        Open work only, and only what has a date. A diamond is a deadline with no start date yet.
+        Open work only, and only what has a date. A diamond is a deadline with
+        no start date yet.
       </p>
 
       {tip && <Tip x={tip.x} y={tip.y} task={tip.task} off={off} />}
@@ -528,15 +674,25 @@ function Tip({
     <div
       role="tooltip"
       className="pointer-events-none fixed z-50 w-[244px] overflow-hidden rounded-xl border border-border bg-surface text-[11px] leading-normal shadow-xl"
-      style={{ left, top: flip ? y - 12 : below, transform: flip ? "translateY(-100%)" : undefined }}
+      style={{
+        left,
+        top: flip ? y - 12 : below,
+        transform: flip ? "translateY(-100%)" : undefined,
+      }}
     >
       <div className="px-3 py-1.5" style={{ backgroundColor: `${color}29` }}>
-        <div className="text-[13px] font-semibold leading-tight text-foreground">{task.title}</div>
-        {task.typeName && <div className="leading-tight text-muted">{task.typeName}</div>}
+        <div className="text-[13px] font-semibold leading-tight text-foreground">
+          {task.title}
+        </div>
+        {task.typeName && (
+          <div className="leading-tight text-muted">{task.typeName}</div>
+        )}
       </div>
       <div className="flex flex-col gap-1 px-3 py-2.5">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="shrink-0 text-faint">{hasStart ? "Dates" : "Due"}</span>
+          <span className="shrink-0 text-faint">
+            {hasStart ? "Dates" : "Due"}
+          </span>
           <span className="truncate tabular-nums text-foreground">
             {dateRangeLabel(start, due, hasStart)}
           </span>
@@ -544,7 +700,9 @@ function Tip({
         {task.budgetHours != null && (
           <div className="flex items-baseline justify-between gap-3">
             <span className="shrink-0 text-faint">Budget</span>
-            <span className="truncate tabular-nums text-foreground">{task.budgetHours}h</span>
+            <span className="truncate tabular-nums text-foreground">
+              {task.budgetHours}h
+            </span>
           </div>
         )}
         {hasStart && (
