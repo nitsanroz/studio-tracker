@@ -48,31 +48,54 @@ export function WhatsNewModal({ suppressed = false }: { suppressed?: boolean }) 
   if (!open || !release) return null;
 
   return (
-    <Modal onClose={dismiss} width="sm" labelledBy="whats-new-title">
+    // ⚠️ `align="center"`. The default is `top-1/3`, which with a
+    // `-translate-y-1/2` card only works for short dialogs: this one is ~547px
+    // once it has a picture strip, so a third of an 812px phone put its top edge
+    // 3px ABOVE the viewport and clipped the heading. Centred it clears both
+    // edges with room to spare.
+    <Modal onClose={dismiss} width="sm" align="center" labelledBy="whats-new-title">
       <div className="flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
-            <Sparkles size={18} strokeWidth={1.75} aria-hidden />
+        {/* The date sits at the far end rather than under the heading: stacked,
+            it forced the title into the top half of its own row and left the
+            icon aligned to nothing. On one line the title can be `text-xl` and
+            sit dead centre against the icon, which is the only thing here that
+            needs to read as a headline. */}
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+            <Sparkles size={20} strokeWidth={1.75} aria-hidden />
           </span>
-          <div>
-            <h2 id="whats-new-title" className="text-lg font-semibold leading-tight">
-              {release.version} is out
-            </h2>
-            <p className="text-xs text-muted">{formatDate(release.date)}</p>
-          </div>
+          <h2 id="whats-new-title" className="min-w-0 flex-1 text-xl font-semibold leading-tight">
+            {release.version} is out
+          </h2>
+          <span className="shrink-0 self-center whitespace-nowrap text-xs text-muted">
+            {formatDate(release.date)}
+          </span>
         </div>
 
-        {release.image && (
-          // `h-auto` with a max: a release picture is whatever shape it is, and
-          // forcing one crops the very thing it was added to show.
-          <Image
-            src={release.image}
-            alt={release.imageAlt ?? ""}
-            width={640}
-            height={380}
-            className="max-h-[190px] w-full rounded-xl border border-border object-contain"
-            unoptimized
-          />
+        {release.images && release.images.length > 0 && (
+          // One picture fills the width; several become a swipeable strip, each
+          // at a fixed 260px so the next one peeks in at the edge — without that
+          // hint nobody discovers there is a second. `snap-x` makes a swipe land
+          // on a picture rather than between two.
+          <div
+            className={`-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 [scrollbar-width:none] ${
+              release.images.length === 1 ? "" : "pb-1"
+            }`}
+          >
+            {release.images.map((img) => (
+              <Image
+                key={img.src}
+                src={img.src}
+                alt={img.alt}
+                width={300}
+                height={190}
+                className={`h-[190px] shrink-0 snap-center rounded-xl border border-border bg-background object-cover ${
+                  release.images!.length === 1 ? "w-full" : "w-[260px]"
+                }`}
+                unoptimized
+              />
+            ))}
+          </div>
         )}
 
         <ul className="flex flex-col gap-3">

@@ -30,15 +30,17 @@ export interface Release {
   date: string;
   items: WhatsNewItem[];
   /**
-   * Optional picture of the new thing, e.g. "/whats-new/1.12.0.png".
-   * Drop the file in `public/whats-new/`. Keep it PHONE-SHAPED or wide and
-   * short — the panel caps it at 190px tall, so a tall desktop screenshot
-   * arrives unreadable. Omit it rather than ship a vague one; a screenshot that
-   * doesn't obviously show the thing is worse than the sentence alone.
+   * Pictures of the new thing. One is shown on its own; two or more become a
+   * horizontal strip you swipe through, so a release with several new surfaces
+   * doesn't have to pick one.
+   *
+   * Drop files in `public/whats-new/`. ⚠️ Draw them at **300×190 or the same
+   * ratio** — the panel gives each a fixed 190px-tall box, so a tall portrait
+   * screenshot arrives as a stamp. Show the RELEVANT CROP, not a whole screen.
+   * Omit rather than ship a vague one: a picture that doesn't obviously show
+   * the thing is worse than the sentence alone.
    */
-  image?: string;
-  /** Alt text for `image`. Required when there is one. */
-  imageAlt?: string;
+  images?: Array<{ src: string; alt: string }>;
 }
 
 /**
@@ -49,6 +51,16 @@ export const RELEASES: Release[] = [
   {
     version: "v1.12.0",
     date: "2026-08-11",
+    images: [
+      {
+        src: "/whats-new/1.12.0-bar.svg",
+        alt: "The task list on a phone, with the new bar along the bottom",
+      },
+      {
+        src: "/whats-new/1.12.0-logtime.svg",
+        alt: "The log-time sheet, with quick 30m, 1h and 2h buttons",
+      },
+    ],
     items: [
       {
         title: "The tracker works on your phone",
