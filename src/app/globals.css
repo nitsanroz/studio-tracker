@@ -175,6 +175,40 @@
   --color-warning: var(--warning);
   --font-sans: "Saans", var(--font-rubik), system-ui, sans-serif;
   --font-heading: "Saans", var(--font-rubik), system-ui, sans-serif;
+
+  /* The sidebar palette, reachable as utilities at last. These nine were the
+     only themed colours with no Tailwind bridge, so every consumer had to
+     write `style={{ backgroundColor: "var(--sb-bg)" }}` by hand — fine for the
+     three places in app-shell, unworkable for the mobile bottom bar and drawer,
+     which are sidebar-coloured chrome built out of many small elements. */
+  --color-sb-bg: var(--sb-bg);
+  --color-sb-fg: var(--sb-fg);
+  --color-sb-muted: var(--sb-muted);
+  --color-sb-border: var(--sb-border);
+  --color-sb-active-bg: var(--sb-active-bg);
+  --color-sb-active-fg: var(--sb-active-fg);
+  --color-sb-hover-bg: var(--sb-hover-bg);
+  --color-sb-logo-bg: var(--sb-logo-bg);
+  --color-sb-logo-fg: var(--sb-logo-fg);
+  --color-header-bg: var(--header-bg);
+
+  /* ⚠️ The three --shadow-* tokens are deliberately NOT bridged. Tailwind's
+     shadow namespace IS `--shadow-*`, so `--shadow-card: var(--shadow-card)`
+     inside @theme is a circular reference to itself. The hand-written
+     `.shadow-card` class below already does the job; don't "finish" this. */
+
+  /* Named sizes for the tightening pass. NOTHING consumes these yet — the
+     primitives below deliberately emit today's literal Tailwind classes, so a
+     converted call site is provably a no-op. These names exist so a screenshot
+     conversation and the code can point at the same thing. Values are measured
+     from what already ships: radius-control = rounded-md, radius-card =
+     rounded-2xl, and the three text sizes are task-panel.tsx's hierarchy,
+     which is currently the only one written down anywhere. */
+  --radius-control: 0.375rem;
+  --radius-card: 1rem;
+  --text-ui-label: 0.8125rem;
+  --text-ui-body: 0.875rem;
+  --text-ui-heading: 1rem;
 }
 
 body {
@@ -237,4 +271,27 @@ b,
 /* Hebrew/RTL: any user text container gets natural direction per content */
 .bidi-auto {
   unicode-bidi: plaintext;
+}
+
+/* ⚠️ iOS Safari ZOOMS THE WHOLE PAGE whenever a focused field is under 16px,
+   and then leaves it zoomed — so every tap afterwards lands off-target. Every
+   field in this app is `text-sm` (14px), across 45 near-identical input skins
+   in 13 files, so at first this looked like it needed an Input primitive and 45
+   edits before any mobile work could start.
+
+   It doesn't. This file is UNLAYERED and Tailwind v4 emits its utilities inside
+   `@layer utilities` — an unlayered rule beats a layered one whatever the
+   specificity — so these three selectors override `text-sm` at all 146 field
+   sites at once, and only below `md`. Nothing changes on desktop.
+
+   Checkbox and radio are excluded: they have no text, and sizing them is how
+   you get a 16px tick box. The alternative fix, `maximum-scale=1` on the
+   viewport meta, is deliberately NOT used — iOS honours it inconsistently and
+   it breaks WCAG 1.4.4 by disabling pinch-zoom for everyone. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

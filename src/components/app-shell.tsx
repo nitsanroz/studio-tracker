@@ -12,33 +12,54 @@ import {
   ChevronsRight,
   Inbox,
   LogOut,
+  Menu,
+  Plus,
   Receipt,
   Settings,
   SquareCheckBig,
   Users,
   UsersRound,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import { APP_VERSION } from "@/lib/version";
+import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 import { AboutModal } from "./about-modal";
+import { MobileLogTimeSheet } from "./mobile-log-time";
+import { DesktopOnlyCard, desktopOnlyEntry } from "./desktop-only";
+import { WhatsNewModal } from "./whats-new-modal";
 
-// admin-only sections render LAST, below a thin divider
+// admin-only sections render LAST, below a thin divider.
+//
+// `mobile: false` keeps a route out of the phone drawer. It is not a permission
+// and it is not a redirect — the route still exists and still resolves; it just
+// isn't offered where it can't be used. Every one of these has a matching entry
+// in `desktop-only.tsx`, which is what a pasted link lands on. KEEP THE TWO
+// LISTS IN AGREEMENT: hidden here with no entry there means a phone renders the
+// real, broken page.
 const NAV = [
-  { href: "/", label: "Home", Icon: House },
-  { href: "/plan", label: "Weekly Plan", Icon: CalendarDays },
-  { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig },
-  { href: "/feed", label: "Time Feed", Icon: History },
-  { href: "/settings", label: "Settings", Icon: Settings },
-  { href: "/clients", label: "Clients", Icon: Users, adminOnly: true },
-  { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true },
-  { href: "/client-reports", label: "Client Reports", Icon: Receipt, adminOnly: true },
-  { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true },
+  { href: "/", label: "Home", Icon: House, mobile: true },
+  { href: "/plan", label: "Weekly Plan", Icon: CalendarDays, mobile: false },
+  { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig, mobile: true },
+  { href: "/feed", label: "Time Feed", Icon: History, mobile: false },
+  { href: "/settings", label: "Settings", Icon: Settings, mobile: true },
+  { href: "/clients", label: "Clients", Icon: Users, adminOnly: true, mobile: false },
+  { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true, mobile: false },
+  {
+    href: "/client-reports",
+    label: "Client Reports",
+    Icon: Receipt,
+    adminOnly: true,
+    mobile: false,
+  },
+  { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true, mobile: true },
 ];
 
 /**
@@ -160,6 +181,239 @@ function SyncDot() {
   );
 }
 
+/* ── Mobile chrome ──────────────────────────────────────────────────────────
+   Two patterns, doing different jobs. A bottom bar alone can't hold nine nav
+   items; a drawer alone buries "log time" — the single most frequent phone
+   action in this app — two taps deep. So the bar carries the handful of things
+   done daily and the drawer carries the rest.
+
+   Both are `md:hidden` and the sidebar is `hidden md:flex`, so the two never
+   coexist and nothing above 768px is touched. */
+
+const BAR_ITEM =
+  "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium";
+
+function BarLink({
+  href,
+  label,
+  Icon,
+  active,
+  badge,
+}: {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  active: boolean;
+  badge?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={BAR_ITEM}
+      // ⚠️ NOT `--sb-active-fg`. That token is the ink for text sitting ON
+      // `--sb-active-bg` (the white pill the sidebar draws behind a selected
+      // row) — and under `electric` it is #0b43ed, the exact blue of `--sb-bg`.
+      // Used flat on the bar it painted the active item blue-on-blue and the
+      // whole slot vanished. On a bar with no pill the pair that always works is
+      // full-strength ink vs muted: `--sb-fg` is by definition legible on
+      // `--sb-bg` in all four themes, which is the property needed here.
+      style={{ color: active ? "var(--sb-fg)" : "var(--sb-muted)" }}
+    >
+      <span className="relative">
+        <Icon size={21} strokeWidth={1.75} />
+        {badge != null && badge > 0 && (
+          <span className="absolute -right-2 -top-1 flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+            {badge}
+          </span>
+        )}
+      </span>
+      {label}
+    </Link>
+  );
+}
+
+function MobileBar({
+  pathname,
+  isAdmin,
+  pendingIntake,
+  onMenu,
+  onLogTime,
+}: {
+  pathname: string;
+  isAdmin: boolean;
+  pendingIntake: number;
+  onMenu: () => void;
+  onLogTime: () => void;
+}) {
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+      style={{ backgroundColor: "var(--sb-bg)", borderColor: "var(--sb-border)" }}
+    >
+      <BarLink href="/" label="Home" Icon={House} active={pathname === "/"} />
+      <BarLink
+        href="/my-tasks"
+        label="Tasks"
+        Icon={SquareCheckBig}
+        active={pathname.startsWith("/my-tasks")}
+      />
+      {/* An ACTION, not a route — the middle slot is the reason this bar exists
+          rather than a drawer. It opens the log-time sheet wherever you are. */}
+      <button onClick={onLogTime} aria-label="Log time" className={BAR_ITEM}>
+        <span
+          className="flex size-9 items-center justify-center rounded-full"
+          style={{ backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }}
+        >
+          <Plus size={20} strokeWidth={2.25} />
+        </span>
+      </button>
+      {isAdmin && (
+        <BarLink
+          href="/intake-queue"
+          label="Inbox"
+          Icon={Inbox}
+          active={pathname.startsWith("/intake-queue")}
+          badge={pendingIntake}
+        />
+      )}
+      <button
+        onClick={onMenu}
+        aria-label="Open menu"
+        className={BAR_ITEM}
+        style={{ color: "var(--sb-muted)" }}
+      >
+        <Menu size={21} strokeWidth={1.75} />
+        Menu
+      </button>
+    </nav>
+  );
+}
+
+function MobileDrawer({
+  pathname,
+  isAdmin,
+  me,
+  pendingIntake,
+  onClose,
+  onAbout,
+}: {
+  pathname: string;
+  isAdmin: boolean;
+  me: Profile | null;
+  pendingIntake: number;
+  onClose: () => void;
+  onAbout: () => void;
+}) {
+  const items = NAV.filter((n) => n.mobile && (!n.adminOnly || isAdmin));
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col md:hidden"
+        style={{ backgroundColor: "var(--sb-bg)", color: "var(--sb-fg)" }}
+      >
+        <div className="flex items-center px-4 pb-3 pt-5">
+          <span className="text-[26px] leading-none" style={{ fontWeight: 700 }}>
+            &amp;more
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close menu"
+            className="ml-auto rounded-md p-1.5 opacity-70"
+            style={{ color: "var(--sb-fg)" }}
+          >
+            <X size={20} strokeWidth={2} />
+          </button>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
+          {items.map(({ href, label, Icon }) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onClose}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
+                style={
+                  active
+                    ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                    : { color: "var(--sb-muted)" }
+                }
+              >
+                <Icon size={20} strokeWidth={1.75} />
+                {label}
+              </Link>
+            );
+          })}
+          {isAdmin && (
+            <Link
+              href="/intake-queue"
+              onClick={onClose}
+              className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
+              style={
+                pathname.startsWith("/intake-queue")
+                  ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                  : { color: "var(--sb-muted)" }
+              }
+            >
+              <Inbox size={20} strokeWidth={1.75} />
+              Intake
+              {pendingIntake > 0 && (
+                <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
+                  {pendingIntake}
+                </span>
+              )}
+            </Link>
+          )}
+        </nav>
+
+        {/* The account block the desktop sidebar keeps at its foot. It is here
+            rather than in the header because a 375px header has room for the
+            wordmark, the sync dot and the bell, and nothing else. */}
+        <div
+          className="flex items-center gap-2.5 border-t px-4 py-3"
+          style={{ borderColor: "var(--sb-border)" }}
+        >
+          <Avatar profile={me} size={30} />
+          <div className="min-w-0 flex-1">
+            <div className="font-serif-accent truncate text-[15px]">{me?.name}</div>
+            <div className="text-xs capitalize" style={{ color: "var(--sb-muted)" }}>
+              {me?.role}
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              await createClient().auth.signOut();
+              window.location.href = "/login";
+            }}
+            aria-label="Sign out"
+            className="shrink-0 rounded-md p-2 opacity-70"
+            style={{ color: "var(--sb-muted)" }}
+          >
+            <LogOut size={18} strokeWidth={1.75} />
+          </button>
+        </div>
+        <button
+          onClick={() => {
+            onClose();
+            onAbout();
+          }}
+          className="px-4 pb-3 text-left text-[11px]"
+          style={{ color: "var(--sb-muted)" }}
+        >
+          About · {APP_VERSION}
+        </button>
+      </div>
+    </>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const {
@@ -183,12 +437,26 @@ function Shell({ children }: { children: ReactNode }) {
   // pattern as `theme` and the team page's layout.
   const [folded, setFolded] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
+  const isNarrow = useIsNarrow();
   useEffect(() => {
     setFolded(localStorage.getItem("sidebar.folded") === "1");
   }, []);
   useEffect(() => {
     localStorage.setItem("sidebar.folded", folded ? "1" : "0");
   }, [folded]);
+
+  // A drawer that survives navigation would cover the page it just opened.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  // ⚠️ JS, not `md:hidden`, and the comment in `use-is-narrow.ts` says why: these
+  // pages are 700–2,300 lines and the client one mounts a Gantt. Rendering that
+  // to hide it with CSS would cost the render anyway AND let its 1,846px grid
+  // widen the document before the class took effect.
+  const blocked = isNarrow ? desktopOnlyEntry(pathname) : null;
 
   if (loading) {
     return (
@@ -230,8 +498,12 @@ function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      {/* `hidden md:flex` — below 768px this rail would eat 52% of the screen
+          with no way to dismiss it (it folds only by a manual chevron, and that
+          state is remembered, so a phone could load straight into it). The
+          bottom bar and drawer take over there. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r transition-[width] duration-150 ${
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r transition-[width] duration-150 md:flex ${
           folded ? "w-16" : "w-52"
         }`}
         style={{
@@ -370,8 +642,10 @@ function Shell({ children }: { children: ReactNode }) {
         )}
       </aside>
 
+      {/* ⚠️ The margin is `md:`-prefixed on BOTH branches. Unprefixed it would
+          still indent the content by the width of a sidebar that isn't there. */}
       <div
-        className={`flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "ml-16" : "ml-52"}`}
+        className={`flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
       >
         {/* z-scale, and why the header is 30:
               sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
@@ -381,27 +655,65 @@ function Shell({ children }: { children: ReactNode }) {
             DOM) painted straight over the open search results. Every modal
             overlay is ≥40, so the task drawer still dims the header. */}
         <header
-          className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border px-6 backdrop-blur"
+          className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border px-4 backdrop-blur md:px-6"
           style={{ backgroundColor: "var(--header-bg)" }}
         >
-          <GlobalSearch />
+          {/* Below md the sidebar is gone, so the header carries the wordmark —
+              otherwise nothing on a phone says which app this is or gets you
+              home from a page whose own title has scrolled away. */}
+          <Link href="/" aria-label="Studio&more" className="text-[22px] leading-none md:hidden">
+            <span style={{ fontWeight: 700 }}>&amp;more</span>
+          </Link>
+          {/* Global search is desktop-only for now: it wants ~400px and a 375px
+              header already holds the wordmark, the sync dot and the bell. The
+              log-time sheet has its own task search, which is what the phone
+              scope actually needs. Worth revisiting if finding a task by name
+              turns out to be a thing people do on the move. */}
+          <div className="hidden min-w-0 flex-1 md:block">
+            <GlobalSearch />
+          </div>
           <div className="ml-auto flex items-center gap-2.5">
             <SyncDot />
             {isAdmin && (
               <NotificationsBell pendingIntake={pendingIntake} />
             )}
+            {/* The account chip moves into the drawer below md — see MobileDrawer. */}
             <Link
               href="/settings"
               title="Account & settings"
-              className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-surface py-1 pl-1 pr-2.5 transition-colors hover:border-border-strong"
+              className="hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-surface py-1 pl-1 pr-2.5 transition-colors hover:border-border-strong md:flex"
             >
               <Avatar profile={me} size={26} />
               <span className="text-sm font-medium">{me?.name.split(" ")[0]}</span>
             </Link>
           </div>
         </header>
-        <main className="min-w-0 flex-1 p-6">{children}</main>
+        {/* The bottom bar is `fixed`, so it covers whatever the page ends with
+            unless the page reserves its height. 3.5rem is the bar; the inset is
+            the home indicator; the extra 1rem keeps the last row off the edge. */}
+        <main className="min-w-0 flex-1 p-4 pb-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] md:p-6 md:pb-6">
+          {blocked ? <DesktopOnlyCard entry={blocked} /> : children}
+        </main>
       </div>
+
+      <MobileBar
+        pathname={pathname}
+        isAdmin={isAdmin}
+        pendingIntake={pendingIntake}
+        onMenu={() => setDrawerOpen(true)}
+        onLogTime={() => setLogTimeOpen(true)}
+      />
+      {drawerOpen && (
+        <MobileDrawer
+          pathname={pathname}
+          isAdmin={isAdmin}
+          me={me}
+          pendingIntake={pendingIntake}
+          onClose={() => setDrawerOpen(false)}
+          onAbout={() => setAboutOpen(true)}
+        />
+      )}
+      {logTimeOpen && <MobileLogTimeSheet onClose={() => setLogTimeOpen(false)} />}
 
       {viewingAs && (
         <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-foreground px-4 py-2 text-sm text-white shadow-lg">
@@ -464,6 +776,11 @@ function Shell({ children }: { children: ReactNode }) {
 
       <TaskPanel />
       {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
+      {/* ⚠️ Suppressed on /welcome. That page IS somebody's first sign-in — it
+          asks them to confirm their details and set a photo — and opening
+          "v1.12.0 is out" over the top of it announces a change to someone who
+          has never seen the thing it changed. It waits for their next visit. */}
+      <WhatsNewModal suppressed={pathname.startsWith("/welcome")} />
     </div>
   );
 }

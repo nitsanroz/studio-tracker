@@ -9,6 +9,7 @@ import { periodRange, rangeLabel, TEAM_RANGES, type PeriodKey } from "@/lib/peri
 import { toISODate } from "@/lib/format";
 import { formatHoursAvg, formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import { MemberPhoto } from "@/components/member-photo";
 import { Tabs } from "@/components/ui";
 import { PeriodStepper } from "@/components/period-stepper";
@@ -150,6 +151,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 export default function TeamPage() {
   const { profiles, tasks, entrySumsAll } = useData();
   const isAdmin = useIsAdmin();
+  const isNarrow = useIsNarrow();
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const memberEmails = useMemberEmails(isAdmin);
@@ -256,12 +258,15 @@ export default function TeamPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
-      <div className="flex items-end justify-between gap-2">
+      {/* Stacks below `sm`, same reason as the intake queue's header: a
+          no-wrap `justify-between` row made the subtitle and the checkbox
+          squeeze each other, and "Show archived" broke mid-phrase. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
         <div>
           <h1 className="font-serif-accent text-3xl">The team</h1>
           <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-muted">
+        <label className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-muted sm:min-h-0">
           <input
             type="checkbox"
             checked={showDeactivated}
@@ -354,7 +359,12 @@ export default function TeamPage() {
                 name={p.name}
                 src={p.photoUrl}
                 variant="avatar"
-                size={124}
+                // ⚠️ 124px sets the CARD's height, so on a phone — one card per
+                // row instead of two or three — it turned the roster into ten
+                // screens of scrolling. 64px still reads as a portrait and more
+                // than halves the card. A number, not a class, so it has to go
+                // through `useIsNarrow` rather than an `sm:` prefix.
+                size={isNarrow ? 64 : 124}
                 bleed={0.16}
                 // Former staff kept only for historical attribution get initials,
                 // never the shared cut-out — that placeholder is a photo of a real

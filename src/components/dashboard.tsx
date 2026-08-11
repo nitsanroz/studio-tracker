@@ -345,7 +345,10 @@ function MyWeek() {
           Weekly plan <ArrowRight size={12} />
         </Link>
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      {/* Five day-cards at 375px give each about 63px — a weekday label and an
+          hours figure do not fit, and the figure is the point. Below `sm` they
+          run as a scrollable row at a readable width instead of being squeezed. */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
         {days.map((day) => {
           const iso = toISODate(day);
           const entries = planEntries
@@ -355,7 +358,9 @@ function MyWeek() {
           return (
             <div
               key={iso}
-              className={`flex min-h-[132px] flex-col gap-1 rounded-xl border p-2.5 ${
+              // `w-32 shrink-0` only matters in the scrolling row below `sm`;
+              // in the grid above it the track width wins and these are inert.
+              className={`flex min-h-[132px] w-32 shrink-0 flex-col gap-1 rounded-xl border p-2.5 sm:w-auto ${
                 isToday ? "border-brand bg-brand text-white" : "border-border bg-background"
               }`}
             >
@@ -1294,7 +1299,12 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
           most — 8 columns here would leave each card too narrow to read */}
       {/* full-page width again (the client-trend pane merged into its neighbour),
           so the roster fits more designers per row instead of wrapping at four */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7">
+      {/* A LIST below `sm`, cards above it. Two columns of portrait cards on a
+          phone give each about 150px to spend on an avatar, a name, an hours
+          figure and a bar stacked vertically — four rows of chrome per person
+          and only two people per screen. Laid on their side the same four facts
+          take one row each, so the whole studio fits without scrolling. */}
+      <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-5 xl:grid-cols-7">
         {rows.map(({ p, min, pct, archived }) => (
           <Link
             key={p.id}
@@ -1306,19 +1316,22 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
             }
             // dashed border rather than a dimmed card: the hours are as real as
             // anyone else's, it's the person who is no longer on the roster
-            className={`flex flex-col items-center gap-1.5 rounded-xl border bg-background p-3 hover:border-brand ${
+            // Same four children in the same order — only the axis changes, so
+            // the desktop card is byte-identical above `sm`.
+            className={`flex items-center gap-3 rounded-xl border bg-background p-2.5 hover:border-brand sm:flex-col sm:gap-1.5 sm:p-3 ${
               archived ? "border-dashed border-border-strong" : "border-border"
             }`}
           >
             <Avatar profile={p} size={40} />
-            <span className="flex max-w-full items-center gap-1 truncate text-xs font-semibold">
+            <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-sm font-semibold sm:max-w-full sm:flex-none sm:text-xs">
               <span className="truncate">{p.name.split(" ")[0]}</span>
               {archived && <span className="shrink-0 font-normal text-faint">·&nbsp;past</span>}
             </span>
-            <span className="text-[10px] tabular-nums text-muted">
+            <span className="shrink-0 text-[11px] tabular-nums text-muted sm:text-[10px]">
               {formatHoursShort(min)} · {pct}%
             </span>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+            {/* A fixed 56px on the row; full width once it sits under the name. */}
+            <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-border sm:w-full">
               <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
             </div>
           </Link>
@@ -1542,19 +1555,45 @@ export function Dashboard() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* header row: greeting + display stats + page-wide filters (per Figma round-trip) */}
-      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
+      {/* Header: greeting + display stats + page-wide filters.
+          ⚠️ On a phone this used to spend ~440px of an 812px screen — more than
+          half the first screen — before a single figure: the greeting, the
+          tenure counter, the billable switch, the range pills, the period
+          stepper and the client select each took a row of their own, because one
+          `flex-wrap` row simply wrapped six items at 375px.
+          Now it is two rows: identity (tenure pulled up beside the name rather
+          than under it) and ONE horizontally-scrollable strip holding every
+          filter. Above `md` the `md:` classes restore the original wrap
+          behaviour exactly. */}
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-x-10">
         <div className="flex items-center gap-3">
           <MyAvatar />
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-muted" title={dateLabel}>
               {greeting}
             </p>
-            <h1 className="font-serif-accent text-[26px] leading-8">{firstName}</h1>
+            <h1 className="font-serif-accent truncate text-[26px] leading-8">{firstName}</h1>
           </div>
+          {/* `ml-auto` only below md — above it this block is a flex sibling of
+              the filters and pushing it right would strand the greeting. */}
+          {me?.startDate && (
+            <div className="ml-auto text-right md:hidden" title={`In the studio since ${me.startDate}`}>
+              <div className="font-serif-accent text-[22px] leading-7">
+                {tenureSince(me.startDate)
+                  .split(" ")
+                  .map((part) => (
+                    <span key={part} className="mr-1.5 last:mr-0">
+                      {part.slice(0, -1)}
+                      <span className="text-[13px]">{part.slice(-1)}</span>
+                    </span>
+                  ))}
+              </div>
+              <p className="text-[11px] text-muted">In the studio</p>
+            </div>
+          )}
         </div>
         {me?.startDate && (
-          <div title={`In the studio since ${me.startDate}`}>
+          <div className="hidden md:block" title={`In the studio since ${me.startDate}`}>
             <div className="font-serif-accent text-[30px] leading-9">
               {tenureSince(me.startDate)
                 .split(" ")
@@ -1576,13 +1615,22 @@ export function Dashboard() {
             <p className="text-xs text-muted">Tasks assigned</p>
           </div>
         )}
-        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        {/* Two lines below md: the billable switch and the client picker share
+            the first, and `PeriodStepper` — pushed last and given a full basis —
+            takes the second, where it scrolls itself.
+            ⚠️ `order-last basis-full` rather than reordering the JSX: the DOM
+            order (billable · stepper · client) is the DESKTOP order, and moving
+            the markup to group two of them would have changed how this row reads
+            at ≥768px. An earlier attempt wrapped the whole row in a scroller
+            instead, which broke /team — that page hosts the same stepper with no
+            scroller of its own. */}
+        <div className="flex flex-wrap items-center gap-2 md:ml-auto md:gap-1.5">
           {isAdmin && (
             <label
               title="Count only hours logged on billable tasks — every tile, graph and designer figure on this page follows it. The two billable-share readouts keep all hours as their denominator."
               // no pill: a bordered capsule read as one more range button sitting
               // among the range buttons. The switch itself carries the state.
-              className={`mr-2 flex cursor-pointer select-none items-center gap-2 text-sm font-medium ${
+              className={`mr-2 flex shrink-0 cursor-pointer select-none items-center gap-2 whitespace-nowrap text-sm font-medium ${
                 billableOnly ? "text-brand-dark" : "text-muted hover:text-foreground"
               }`}
             >
@@ -1614,6 +1662,7 @@ export function Dashboard() {
               disabled and dimmed rather than removed, so the row can't reflow
               under the cursor. */}
           <PeriodStepper
+            className="order-last basis-full md:order-none md:basis-auto"
             ranges={HOME_RANGES}
             value={rangeKey}
             offset={periodOffset}
@@ -1626,7 +1675,7 @@ export function Dashboard() {
           <select
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
-            className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+            className="shrink-0 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
           >
             <option value="">All clients</option>
             {clients
@@ -1670,17 +1719,39 @@ export function Dashboard() {
             <div className="lg:col-span-4">
               <WeekTimesheet />
             </div>
-            <div className="empty:hidden lg:col-span-2 lg:h-0 lg:min-h-full">
-              <Celebrations />
+            {/* ⚠️ The mobile gate goes on a WRAPPER, not on the pane's own div —
+                that div carries `empty:hidden`, and adding `hidden md:block`
+                beside it would let `md:block` win at desktop and leave an empty
+                box on the days nothing is coming up. `md:contents` makes this
+                wrapper vanish from layout above 768px, so the pane stays a
+                direct grid item and `lg:col-span-2` still applies.
+                Off on a phone at Nitsan's request — birthdays and holidays are
+                something you read at a desk, not the reason you opened the app
+                on the way home. The member hero keeps its `inline` variant. */}
+            <div className="hidden md:contents">
+              <div className="empty:hidden lg:col-span-2 lg:h-0 lg:min-h-full">
+                <Celebrations />
+              </div>
             </div>
           </div>
           {/* analytics 2×2 — hours over time / by client, then client-trend and the
               studio roster, which took the My-tasks slot (admins use /my-tasks) */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Kept on a phone: "hours over time" is a trend, and a trend is the
+                one chart shape that still reads at 343px — it already renders
+                through a `viewBox` at `width="100%"`, so it scales rather than
+                being cropped. */}
             <MyGraphs filter={filter} isAdmin={isAdmin} />
             {/* the split and the trend answer the same question, so they share a
-                pane with a tab rather than competing for two slots */}
-            <ClientBreakdown filter={filter} isAdmin={isAdmin} />
+                pane with a tab rather than competing for two slots.
+                ⚠️ Hidden below md: its donut is drawn at a literal 300×300 with a
+                legend beside it, so at 375px the legend has ~40px and the client
+                names become one character each. Reading a share is analysis, and
+                analysis is a desk job — the honest fix is to leave it out rather
+                than ship an unreadable one. */}
+            <div className="hidden md:block">
+              <ClientBreakdown filter={filter} isAdmin={isAdmin} />
+            </div>
           </div>
           {/* full width now that the pane beside it has gone — the roster fits
               more designers per row instead of wrapping at four */}
@@ -1702,7 +1773,10 @@ export function Dashboard() {
           {/* PeriodStat is gone from the member view — it repeated the "My hours"
               tile above, whose delta chip now carries the vs-last-period figure.
               That frees the row so both graphs sit side by side. */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Both charts are `md:` only on the member home — you chose to drop
+              them there. They are analysis of your own past hours; the phone
+              scope is logging time and seeing what's assigned. */}
+          <div className="hidden grid-cols-1 gap-4 md:grid lg:grid-cols-2">
             <MyGraphs filter={filter} isAdmin={false} />
             <ClientBreakdown filter={filter} isAdmin={false} />
           </div>

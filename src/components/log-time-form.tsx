@@ -19,6 +19,9 @@ import { parseDuration, toISODate } from "@/lib/format";
 import { TaskAutocomplete } from "./task-autocomplete";
 import type { TimeEntry } from "@/lib/types";
 
+/** Thumb-sized shortcuts for the durations the studio actually logs most. */
+const QUICK = ["30m", "1h", "2h"];
+
 export function LogTimeForm({
   taskId: fixedTaskId,
   userId: fixedUserId,
@@ -82,7 +85,14 @@ export function LogTimeForm({
   const stacked = layout === "stacked";
 
   return (
-    <form onSubmit={submit} className={stacked ? "flex flex-col gap-2" : "flex flex-wrap gap-2"}>
+    // ⚠️ The `row` layout stacks below `md`. It is shared by six surfaces, and
+    // on a phone a row that merely WRAPS puts the description beside a 160px
+    // date field and leaves it about 90px wide. Stacking is the only shape that
+    // works at 375px, and `md:` keeps every wide host pixel-identical.
+    <form
+      onSubmit={submit}
+      className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 md:flex-row md:flex-wrap"}
+    >
       {!fixedTaskId && (
         <div className={stacked ? "" : "min-w-48 flex-1"}>
           <TaskAutocomplete
@@ -109,6 +119,28 @@ export function LogTimeForm({
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
         />
+        {/* Phone only. Typing "1.5h" is fine with a keyboard and a nuisance with
+            a thumb, and these three cover most of what actually gets logged —
+            anything else still goes in the field, which takes 1.5, 1:30 and 90m
+            as before. They are `md:hidden` rather than everywhere because on
+            desktop they would be three more things to look past. */}
+        <div className="flex gap-1.5 md:hidden">
+          {QUICK.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => setDuration(q)}
+              aria-pressed={duration === q}
+              className={`min-h-11 rounded-md border px-3 text-sm ${
+                duration === q
+                  ? "border-brand bg-brand-soft text-brand-dark"
+                  : "border-border bg-surface text-muted"
+              }`}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
         {/* Admins log for whoever actually did the work, on whatever day they did
             it. Members get neither control — they can only log for themselves. */}
         {isAdmin && !fixedUserId && (
@@ -144,7 +176,10 @@ export function LogTimeForm({
       />
       <button
         disabled={!ready}
-        className={`rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black disabled:opacity-40 ${
+        // `min-h-11` (44px) below md — the resting height is ~34px, under the tap
+        // floor, and this is the one control on a log-time sheet that must not be
+        // missed. `md:min-h-0` hands the old height straight back on desktop.
+        className={`min-h-11 rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black disabled:opacity-40 md:min-h-0 ${
           stacked ? "self-end" : ""
         }`}
       >

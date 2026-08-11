@@ -36,7 +36,16 @@ export function PeriodStepper<K extends string>({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+    // ⚠️ SCROLLS ITSELF below md — it must not depend on its host doing it.
+    // Four range pills plus the stepper need ~500px, so at 375px this wrapped
+    // onto three rows on the home page, /reports AND /team. The first fix made
+    // it `flex-nowrap` and leaned on the home page's scrolling filter strip,
+    // which promptly pushed /team's document to 637px wide: the other two hosts
+    // have no scroller. Owning the overflow here fixes all three at once and
+    // can't be broken by a future caller.
+    <div
+      className={`-mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 ${className}`}
+    >
       {ranges.map((r) => (
         <button
           key={r}
@@ -44,7 +53,7 @@ export function PeriodStepper<K extends string>({
             onChange(r);
             onOffset(0); // a new unit with the old offset would mean a period nobody picked
           }}
-          className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${
             value === r
               ? "border-brand bg-brand-soft text-brand-dark"
               : "border-border bg-surface text-muted hover:border-border-strong"
@@ -57,7 +66,7 @@ export function PeriodStepper<K extends string>({
           the "Now" reset only appeared once you had already moved, so the row
           reflowed as you used it. Disabled + dimmed instead, so the controls stay
           where the hand left them. */}
-      <div className="flex items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           onClick={() => onOffset(offset - 1)}
           disabled={!canStep}

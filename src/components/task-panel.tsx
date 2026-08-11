@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskHoursDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
@@ -80,6 +81,23 @@ function QuietSelect({
   onChange: (v: string) => void;
   children: React.ReactNode;
 }) {
+  // ⚠️ These three rows — Assignee, Type, Status — are NOT inside the pane's
+  // `canEditFields` ternaries, because they are collaborative fields a member may
+  // change (see migrations 0022/0024), so they had no read-only branch to reuse.
+  // They are the only editors that survived the phone gate, and a native select
+  // on touch opens a full-screen wheel — the easiest thing in the pane to change
+  // by accident. Read-only here means rendering the CHOSEN LABEL as text.
+  const isNarrow = useIsNarrow();
+  if (isNarrow) {
+    const chosen = Children.toArray(children).find(
+      (c) => isValidElement<{ value?: string }>(c) && (c.props.value ?? "") === value,
+    );
+    const label =
+      isValidElement<{ children?: React.ReactNode }>(chosen) ? chosen.props.children : null;
+    return (
+      <span className="min-w-0 flex-1 truncate px-1.5 text-sm">{label || <span className="text-faint">—</span>}</span>
+    );
+  }
   return (
     <span className="relative flex min-w-0 flex-1 items-center">
       <select className={QUIET_SELECT} value={value} onChange={(e) => onChange(e.target.value)}>
@@ -400,6 +418,28 @@ export function TaskPanel() {
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAdmin = useIsAdmin();
+  const isNarrow = useIsNarrow();
+  /** Which of the three mobile tabs is showing. Ignored at ≥768px. */
+  const [tab, setTab] = useState<"details" | "time" | "talk">("details");
+
+  /**
+   * ⚠️ A PHONE READS; IT DOES NOT EDIT FIELDS. Every value here is editable and
+   * most of the editors are hover-revealed, inline, and anchored — a date popout
+   * that measures its cell, a select styled to look like text, a title that turns
+   * into an input. None of that survives a thumb, and re-doing eight editors for
+   * touch is a bigger job than the whole rest of the mobile work.
+   *
+   * So the phone gets the read-only rendering that ALREADY EXISTS for members —
+   * every one of these six had a non-admin branch, so this is a gate, not a new
+   * layout. Logging time and commenting stay live, because those are the two
+   * things people actually want to do away from a desk.
+   */
+  const canEditFields = isAdmin && !isNarrow;
+
+  /** Active tab shows; the others collapse. `contents` keeps the parent's flex
+   *  `gap-5` between siblings, so wrapping changes no desktop spacing at all. */
+  const paneOf = (id: "details" | "time" | "talk") =>
+    tab === id ? "contents" : "hidden md:contents";
 
   /**
    * Open whatever `?task=<id>` points at, once, on mount. Deliberately reads
@@ -474,7 +514,10 @@ export function TaskPanel() {
       {/* Full screen is the same panel widened to the viewport — not a second
           layout — so every control below behaves identically in both modes. */}
       <div
-        className={`fixed z-50 flex flex-col overflow-y-auto bg-surface shadow-2xl ${
+        // `h-dvh` alongside `inset-y-0`: on a phone `100vh` is the tall viewport
+        // the URL bar is hiding, so the last comment sat under the browser chrome
+        // and the composer was unreachable. Same fix as the public Gantt (v1.9.2).
+        className={`fixed z-50 flex h-dvh flex-col overflow-y-auto bg-surface shadow-2xl ${
           fullscreen
             ? "inset-0 w-full"
             : "inset-y-0 right-0 w-full max-w-xl border-l border-border"
@@ -483,7 +526,7 @@ export function TaskPanel() {
         {/* Toolbar */}
         <div className="sticky top-0 z-10 border-b border-border bg-surface px-6 py-3">
           <div className="flex items-center justify-between gap-3">
-            {isAdmin ? (
+            {canEditFields ? (
               <button
                 onClick={() =>
                   updateTask(task.id, {
@@ -522,11 +565,13 @@ export function TaskPanel() {
                 <Link2 size={16} />
               </button>
               {copied && <span className="text-xs text-success">Copied</span>}
+              {/* Full screen is meaningless on a phone — the pane already fills
+                  the screen, so the control would toggle nothing. */}
               <button
                 onClick={() => setFullscreen((f) => !f)}
                 title={fullscreen ? "Exit full screen" : "Full screen"}
                 aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-                className="rounded-md p-1.5 text-muted hover:bg-background hover:text-brand"
+                className="hidden rounded-md p-1.5 text-muted hover:bg-background hover:text-brand md:block"
               >
                 {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
@@ -553,7 +598,7 @@ export function TaskPanel() {
         >
           {/* The pane is now the ONLY place a task can be renamed — the client
               table's inline editor was removed in favour of click-to-open. */}
-          {isAdmin ? (
+          {canEditFields ? (
             <h2 className="text-[22px] font-semibold leading-tight">
               <EditableTextCell
                 value={task.title}
@@ -564,6 +609,46 @@ export function TaskPanel() {
             <h2 className="bidi-auto text-[22px] font-semibold leading-tight">{task.title}</h2>
           )}
 
+          {/* Phone-only tab strip. The pane is one long column on a laptop and
+              that is right there — you can see the brief and the discussion at
+              once. On a 375px screen the same column puts the thread four or
+              five screens down, and the thread is the half of a task people
+              actually come back to.
+              ⚠️ The three panes are wrapped in `contents`/`hidden md:contents`,
+              NOT rendered conditionally: `display: contents` makes the wrapper
+              vanish from layout, so at ≥768px the children remain direct flex
+              items of this column and the existing `gap-5` between sections is
+              untouched. Conditional rendering would also throw away the comment
+              draft and the scroll position on every tab switch. */}
+          <div
+            role="tablist"
+            aria-label="Task sections"
+            className="-mx-6 flex gap-5 border-b border-border px-6 md:hidden"
+          >
+            {(
+              [
+                ["details", "Details"],
+                ["time", `Time${entries.length ? ` · ${entries.length}` : ""}`],
+                ["talk", `Talk${comments.length ? ` · ${comments.length}` : ""}`],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`-mb-px min-h-11 border-b-2 text-sm ${
+                  tab === id
+                    ? "border-brand font-medium text-foreground"
+                    : "border-transparent text-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className={paneOf("details")}>
           {/*
             Meta rows, Asana-style label:value — in TWO columns above the Hours
             figure. Seven single-file rows pushed the brief and the discussion
@@ -590,7 +675,7 @@ export function TaskPanel() {
                 separate fields made you read both to learn one fact. */}
             <div className={META_ROW}>
               <span className={FIELD_LABEL}>Dates</span>
-              {isAdmin ? (
+              {canEditFields ? (
                 <DatesField task={task} onChange={(patch) => updateTask(task.id, patch)} />
               ) : (
                 <span className="px-1.5 py-1 tabular-nums">{dateRangeText(task)}</span>
@@ -607,7 +692,7 @@ export function TaskPanel() {
                 migration 0011's trigger makes section_id admin-only in the DB too. */}
             <div className={META_ROW}>
               <span className={FIELD_LABEL}>Section</span>
-              {isAdmin ? (
+              {canEditFields ? (
                 <QuietSelect
                   value={task.sectionId ?? ""}
                   onChange={(v) => updateTask(task.id, { sectionId: v || null })}
@@ -663,7 +748,7 @@ export function TaskPanel() {
             </div>
             <div className={META_ROW}>
               <span className={FIELD_LABEL}>Billable</span>
-              {isAdmin ? (
+              {canEditFields ? (
                 <button
                   onClick={() => updateTask(task.id, { billable: !task.billable })}
                   className={`rounded-full px-3 py-1 text-xs font-medium ${
@@ -698,7 +783,7 @@ export function TaskPanel() {
                   {formatHoursDecimal(doneMinutes)}
                 </span>
                 <span className="text-2xl text-faint">/</span>
-                {isAdmin ? (
+                {canEditFields ? (
                   <input
                     type="number"
                     min={0}
@@ -733,10 +818,15 @@ export function TaskPanel() {
             </div>
           </div>
 
-          {/* Figma link */}
-          <div>
+          {/* Figma link.
+              ⚠️ On a phone the whole section is dropped when there is no link:
+              its "empty" state is a full-width text input, and this pane is
+              read-only there — an editor you can focus but whose value you were
+              never meant to change is worse than an absent row. With a link it
+              still renders, because opening the file is reading, not editing. */}
+          <div className={!task.figmaUrl && isNarrow ? "hidden" : undefined}>
             <div className={`mb-1.5 ${SECTION_HEADING}`}>Figma</div>
-            {task.figmaUrl && !editingFigma ? (
+            {task.figmaUrl && (!editingFigma || isNarrow) ? (
               <span className="group/figma flex items-center gap-2">
                 <a
                   href={task.figmaUrl}
@@ -794,9 +884,12 @@ export function TaskPanel() {
           <div className="group/brief">
             <div className="mb-1 flex items-center gap-2">
               <span className={SECTION_HEADING}>Brief</span>
+              {/* Both edit affordances are `md:` only. A hover-revealed control
+                  has no resting state a thumb can find anyway, so on a phone
+                  these were invisible buttons that opened an editor by accident. */}
               <button
                 onClick={() => setEditingBrief(true)}
-                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-faint opacity-0 transition-opacity hover:bg-background hover:text-brand focus-visible:opacity-100 group-hover/brief:opacity-100"
+                className="hidden items-center gap-1 rounded px-1 py-0.5 text-xs text-faint opacity-0 transition-opacity hover:bg-background hover:text-brand focus-visible:opacity-100 group-hover/brief:opacity-100 md:flex"
                 title="Edit brief and links"
               >
                 <Pencil size={12} /> Edit
@@ -806,19 +899,33 @@ export function TaskPanel() {
                   left-aligned control in a stack of them. */}
               <button
                 onClick={() => linksRef.current?.startAdding()}
-                className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-muted hover:bg-background hover:text-brand"
+                className="ml-auto hidden items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-muted hover:bg-background hover:text-brand md:flex"
                 title="Add a titled link"
               >
                 + Add link
               </button>
             </div>
-            <button
-              onClick={() => setEditingBrief(true)}
-              title="Edit brief and links"
-              className="bidi-auto w-full whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm leading-relaxed hover:border-brand"
-            >
-              {task.brief || <span className="text-faint">No brief yet — click to write one.</span>}
-            </button>
+            {/* ⚠️ A DIV on a phone, not a disabled button. `BriefModal` is a
+                full-height textarea that saves on close — backdrop tap included —
+                so it must not be reachable from a read-only pane. Keeping the
+                `<button>` and dropping its handler would leave a focusable
+                control that does nothing, which is worse for a keyboard or
+                screen-reader user than plain text. */}
+            {isNarrow ? (
+              <div className="bidi-auto w-full whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed">
+                {task.brief || <span className="text-faint">No brief yet.</span>}
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingBrief(true)}
+                title="Edit brief and links"
+                className="bidi-auto w-full whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm leading-relaxed hover:border-brand"
+              >
+                {task.brief || (
+                  <span className="text-faint">No brief yet — click to write one.</span>
+                )}
+              </button>
+            )}
             {/* Links live with the brief because that's where they were being
                 pasted: a Google Doc URL in the middle of a paragraph. */}
             <div className="mt-2">
@@ -834,7 +941,9 @@ export function TaskPanel() {
 
           {/* Attachments */}
           <TaskAttachments taskId={task.id} />
+          </div>
 
+          <div className={paneOf("time")}>
           {/* Time */}
           <div>
             {/* The heading is "Time"; the total is a fact about it, so it rides
@@ -989,6 +1098,9 @@ export function TaskPanel() {
             </div>
           </div>
 
+          </div>
+
+          <div className={paneOf("talk")}>
           {/* Discussion — its own surface.
               Everything above is a form: label on the left, value on the right,
               all of it on the pane's own background. The thread is the one part
@@ -1100,10 +1212,11 @@ export function TaskPanel() {
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
               />
-              <button className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
+              <button className="min-h-11 rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark md:min-h-0">
                 Send
               </button>
             </form>
+          </div>
           </div>
 
           {task.tag && (

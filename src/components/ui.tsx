@@ -150,7 +150,7 @@ export function Tabs<T extends string>({
         ? `rounded-md font-medium transition-colors disabled:opacity-40 ${pad} ${
             active ? "bg-brand-soft text-brand-dark" : "text-muted hover:text-foreground"
           }`
-        : `-mb-px border-b-2 font-medium transition-colors disabled:opacity-40 ${
+        : `-mb-px shrink-0 border-b-2 font-medium transition-colors disabled:opacity-40 ${
             size === "sm" ? "px-1.5 pb-1.5 text-xs" : "px-1 pb-2 text-sm"
           } ${
             active
@@ -202,10 +202,18 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
-      className={`flex items-center gap-4 border-b border-border ${className}`}
+      // ⚠️ `overflow-x-auto` + `shrink-0` on the labels. This strip had neither
+      // wrap nor scroll, so at 375px Settings' five tabs simply ran off the
+      // right-hand edge with no way to reach the last two. Scrolling is the
+      // right degradation for tabs — wrapping them onto a second line moves the
+      // underline away from the content it belongs to. `whitespace-nowrap` keeps
+      // a two-word label ("Studio setup") on one line inside the scroller.
+      // `[scrollbar-width:none]` because a permanent scrollbar under a tab strip
+      // reads as a divider. This reaches all 8 Tabs call sites at once.
+      className={`flex items-center gap-4 overflow-x-auto whitespace-nowrap border-b border-border [scrollbar-width:none] ${className}`}
     >
       {buttons}
-      {right && <span className="ml-auto pb-1">{right}</span>}
+      {right && <span className="ml-auto shrink-0 pb-1">{right}</span>}
     </div>
   );
 }

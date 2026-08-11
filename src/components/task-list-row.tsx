@@ -4,9 +4,11 @@ import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { formatHoursDecimal, formatHoursShort, toISODate } from "@/lib/format";
+import { useIsNarrow } from "@/lib/use-is-narrow";
+import { formatDayMonth, formatHoursDecimal, formatHoursShort, toISODate } from "@/lib/format";
 import { Avatar, ClientChip, TagBadge } from "./ui";
 import { LogTimeForm } from "./log-time-form";
+import { MobileSheet } from "./mobile-sheet";
 import { taskHoursDone } from "@/lib/task-hours";
 import {
   EditableDateCell,
@@ -45,6 +47,29 @@ function AddTimePopover({
   taskId: string;
   onClose: () => void;
 }) {
+  const isNarrow = useIsNarrow();
+
+  // ⚠️ A phone gets a SHEET, not an anchored panel. The panel is 432px wide and
+  // a phone is 375px, so there is no position that fits; and anchoring to a row
+  // in a horizontally-scrolled table puts the panel wherever that row happened
+  // to be, which on a small screen is often off the edge. Pinning to the bottom
+  // sidesteps both, and puts the controls under the thumb rather than under the
+  // top of the screen. The task is already known here, so this stays ONE step —
+  // the two-step flow exists only for the bottom bar's "+", which has no task.
+  if (isNarrow) {
+    return (
+      <MobileSheet title="Add time" onClose={onClose}>
+        <LogTimeForm
+          taskId={taskId}
+          layout="stacked"
+          submitLabel="Add time"
+          autoFocus
+          onAdded={onClose}
+        />
+      </MobileSheet>
+    );
+  }
+
   return createPortal(
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -189,6 +214,111 @@ function LoggedByGroup({ userIds, profiles }: { userIds: string[]; profiles: Ret
 }
 
 /**
+ * The same tasks as cards, for a phone.
+ *
+ * The table has thirteen columns and its narrowest useful state is about 900px,
+ * so there is nothing to hide down to: unlike the client page — which sheds
+ * columns as it narrows — My Tasks has no column it can afford to lose. A card
+ * is a different arrangement of the same four facts, not a squeezed table.
+ *
+ * GROUPED BY CLIENT, in the order the page's own sort produced. Grouping by
+ * first appearance rather than re-sorting keeps whatever order the caller chose
+ * (due date, status) while still collecting a client's work together.
+ *
+ * ⚠️ No progress bar, deliberately — hours read as "6 / 12h" and a bar beside
+ * that says the same thing twice at the cost of a row's worth of height.
+ */
+function MobileTaskCards({
+  tasks,
+  clients,
+  stats,
+  todayIso,
+  onOpen,
+  onAdd,
+}: {
+  tasks: Task[];
+  clients: ReturnType<typeof useData>["clients"];
+  stats: { total: Map<string, number> };
+  todayIso: string;
+  onOpen: (id: string) => void;
+  onAdd: (id: string) => void;
+}) {
+  const groups = useMemo(() => {
+    const out: Array<{ clientId: string; tasks: Task[] }> = [];
+    for (const t of tasks) {
+      const g = out.find((x) => x.clientId === t.clientId);
+      if (g) g.tasks.push(t);
+      else out.push({ clientId: t.clientId, tasks: [t] });
+    }
+    return out;
+  }, [tasks]);
+
+  if (tasks.length === 0) {
+    return <p className="px-4 py-8 text-center text-sm text-muted">Nothing assigned right now.</p>;
+  }
+
+  return (
+    // No padding of its own — the page's `main` already has `p-4`, and the host
+    // card's chrome is `md:` only, so these cards sit directly on the page.
+    <div className="flex flex-col gap-4">
+      {groups.map((g) => {
+        const client = clients.find((c) => c.id === g.clientId);
+        return (
+          <div key={g.clientId} className="flex flex-col gap-2">
+            <div className="px-0.5">
+              {client && <ClientChip client={client} size="sm" />}
+            </div>
+            {g.tasks.map((task) => {
+              const total = taskHoursDone(task, (id) => stats.total.get(id) ?? 0);
+              const budget = task.estimateHours;
+              const overdue =
+                task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
+              return (
+                <div
+                  key={task.id}
+                  onClick={() => onOpen(task.id)}
+                  className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 shadow-card"
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="bidi-auto min-w-0 flex-1 text-sm font-medium leading-snug">
+                      {task.title}
+                    </span>
+                    {task.tag && <TagBadge tag={task.tag} />}
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-muted">
+                    <span>
+                      {formatHoursDecimal(total)}
+                      {budget ? ` / ${budget}h` : "h"}
+                    </span>
+                    {task.dueDate && (
+                      <span className={overdue ? "text-danger" : undefined}>
+                        {formatDayMonth(task.dueDate)}
+                      </span>
+                    )}
+                    {/* The one action worth a direct tap. `stopPropagation` or the
+                        card's own open-the-task click swallows it. */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAdd(task.id);
+                      }}
+                      className="-my-2 ml-auto flex min-h-11 items-center gap-1 px-1 text-xs font-medium text-brand"
+                    >
+                      <Plus size={15} strokeWidth={2} />
+                      Time
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * Task table with the full column set + drag-resizable columns.
  * Used by the My Tasks page AND the Home "My tasks" card.
  */
@@ -201,6 +331,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
   const [adding, setAdding] = useState<{ id: string; left: number; top: number } | null>(null);
   // members may edit tags + figma link only; name/budget/due are admin-only
   const isAdmin = useIsAdmin();
+  const isNarrow = useIsNarrow();
 
   // hours per task (total / mine) + who logged
   const stats = useMemo(() => {
@@ -227,6 +358,30 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
 
   const cell = (key: string) => ({ width: widths[key], flexShrink: 0 } as const);
   const todayIso = toISODate(new Date());
+
+  // ⚠️ JS, not `md:hidden`. Rendering both would build every row twice, and the
+  // table's own `min-w-fit` wrapper would widen the document to ~900px before
+  // the class hid it. Gating here also means `useColWidths`' stored widths are
+  // simply not consulted on a phone — the stored values stay untouched, so a
+  // carefully dragged desktop layout survives a phone visit.
+  if (isNarrow) {
+    return (
+      <>
+        <MobileTaskCards
+          tasks={tasks}
+          clients={clients}
+          stats={stats}
+          todayIso={todayIso}
+          onOpen={openTask}
+          onAdd={(id) => setAdding({ id, left: 0, top: 0 })}
+        />
+        {/* left/top are ignored on a phone — AddTimePopover renders a sheet. */}
+        {adding && (
+          <AddTimePopover at={adding} taskId={adding.id} onClose={() => setAdding(null)} />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">

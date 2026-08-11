@@ -14,6 +14,57 @@ export interface TaskMatch {
 }
 
 /**
+ * "Which open tasks match this text" — the rule, on its own.
+ *
+ * Extracted so the phone's task picker can share it. That picker CANNOT reuse
+ * `TaskAutocomplete` itself: its result list is `absolute`, and on mobile the
+ * host is a bottom sheet whose body is an `overflow-y-auto` scroller — ⚠️ a
+ * scroll container clips BOTH axes, so the list would be cut off at the sheet's
+ * edge. The phone renders the same matches as a plain inline list instead. Two
+ * copies of this filter would have been free to drift on the things that
+ * actually matter — archived clients, pending rows, and the done-task rule.
+ */
+export function useTaskMatches({
+  query,
+  clientId,
+  includeDone = false,
+  limit = 12,
+}: {
+  query: string;
+  clientId?: string | null;
+  includeDone?: boolean;
+  limit?: number;
+}): TaskMatch[] {
+  const { tasks, sections, clients } = useData();
+  return useMemo<TaskMatch[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (!q && !clientId) return [];
+    const sectionById = new Map(sections.map((s) => [s.id, s]));
+    const clientById = new Map(clients.map((c) => [c.id, c]));
+    const open: TaskMatch[] = [];
+    const done: TaskMatch[] = [];
+    for (const t of tasks) {
+      if (t.pending) continue;
+      const isDone = t.status === "done";
+      if (isDone && !includeDone) continue;
+      const client = clientById.get(t.clientId);
+      if (!client || client.archived) continue;
+      if (clientId && t.clientId !== clientId) continue;
+      const section = t.sectionId ? sectionById.get(t.sectionId)?.name : undefined;
+      if (q) {
+        const hay = `${t.title} ${section ?? ""} ${client.name}`.toLowerCase();
+        if (!hay.includes(q)) continue;
+      }
+      (isDone ? done : open).push({ task: t, client, section });
+      // the cap counts open matches only while there are still open ones to
+      // find — filling it with finished work would bury the live tasks
+      if (open.length >= limit) break;
+    }
+    return [...open, ...done].slice(0, limit);
+  }, [tasks, sections, clients, clientId, query, includeDone, limit]);
+}
+
+/**
  * One smart input over all open tasks (title + client + section).
  * Enter on a highlighted row picks the task; with `allowFreeText`, Enter
  * with nothing highlighted submits the raw text instead.
@@ -62,38 +113,12 @@ export function TaskAutocomplete({
    */
   onQueryEdited?: () => void;
 }) {
-  const { tasks, sections, clients } = useData();
   const [query, setQuery] = useState(initialQuery);
   const [highlight, setHighlight] = useState(allowFreeText ? -1 : 0);
   const [focused, setFocused] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
-  const results = useMemo<TaskMatch[]>(() => {
-    const q = query.trim().toLowerCase();
-    if (!q && !clientId) return [];
-    const sectionById = new Map(sections.map((s) => [s.id, s]));
-    const clientById = new Map(clients.map((c) => [c.id, c]));
-    const open: TaskMatch[] = [];
-    const done: TaskMatch[] = [];
-    for (const t of tasks) {
-      if (t.pending) continue;
-      const isDone = t.status === "done";
-      if (isDone && !includeDone) continue;
-      const client = clientById.get(t.clientId);
-      if (!client || client.archived) continue;
-      if (clientId && t.clientId !== clientId) continue;
-      const section = t.sectionId ? sectionById.get(t.sectionId)?.name : undefined;
-      if (q) {
-        const hay = `${t.title} ${section ?? ""} ${client.name}`.toLowerCase();
-        if (!hay.includes(q)) continue;
-      }
-      (isDone ? done : open).push({ task: t, client, section });
-      // the 12-row cap counts open matches only while there are still open ones
-      // to find — filling it with finished work would bury the live tasks
-      if (open.length >= 12) break;
-    }
-    return [...open, ...done].slice(0, 12);
-  }, [tasks, sections, clients, clientId, query, includeDone]);
+  const results = useTaskMatches({ query, clientId, includeDone });
 
   // reset highlight when inputs change
   useEffect(() => {

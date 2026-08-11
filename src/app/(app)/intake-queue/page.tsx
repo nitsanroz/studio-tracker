@@ -48,10 +48,21 @@ function CopyFormLinkButton() {
       <button
         onClick={copy}
         title="Copy the client intake form link — share it with clients"
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand"
+        className="flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand sm:h-8"
       >
         {copied ? <Check size={14} /> : <Link2 size={14} />}
-        {copied ? "Copied ✓" : "Copy form link"}
+        {/* "Copy" is dropped on a phone — the icon already says it, and the
+            shorter label is what keeps this pill on one line beside the
+            checkbox. Two spans rather than a JS breakpoint so there is no
+            hydration flash of the wrong wording. */}
+        {copied ? (
+          "Copied ✓"
+        ) : (
+          <>
+            <span className="sm:hidden">Form link</span>
+            <span className="hidden sm:inline">Copy form link</span>
+          </>
+        )}
       </button>
       {error && <span className="text-[11px] text-danger">{error}</span>}
     </div>
@@ -246,24 +257,47 @@ export default function IntakeQueuePage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl">Intake Queue</h1>
+      {/* ⚠️ This was one `justify-between` row with no wrap, so at 375px the
+          subtitle, the "Show handled" checkbox and the "Copy form link" button
+          squeezed each other and every label broke mid-phrase ("Show /
+          handled", "Copy / form link"), with the button's text spilling out of
+          its own pill.
+          The three are now flex SIBLINGS reordered by CSS rather than nested in
+          two groups, which is what lets the button ride beside the title on a
+          phone without rendering a second copy of it — it prefetches its URL on
+          mount, so two instances would mean two fetches.
+          Phone: `[title block ………… 🔗 Form link]` then the checkbox wraps
+          beneath, pushed right by `ml-auto`. Desktop: `sm:flex-nowrap` plus
+          `flex-1` on the title block restores the original single row, with the
+          checkbox and button back together on the right in their original
+          order (`sm:order-2` / `sm:order-3`). */}
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-2 sm:flex-nowrap">
+        <div className="min-w-0 flex-1">
+          {/* text-xl on a phone: at 2xl "Intake Queue" needs ~200px and the
+              button ~150px, which is 7px more than a 375px screen has — so the
+              title wrapped mid-name. One step down and both fit on the line. */}
+          <h1 className="text-xl sm:text-2xl">Intake Queue</h1>
           <p className="text-sm text-muted">
             {pending.length === 0
               ? "No submissions waiting — all clear."
               : `${pending.length} submission${pending.length === 1 ? "" : "s"} waiting for review.`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-muted">
-            <input
-              type="checkbox"
-              checked={showHandled}
-              onChange={(e) => setShowHandled(e.target.checked)}
-            />
-            Show handled
-          </label>
+        {/* ⚠️ `basis-full` below sm is what actually forces the wrap. Without it
+            `flex-wrap` never fired: the title block is `flex-1`, so flex shrank
+            IT to min-content instead — leaving all three on one line with
+            "Intake Queue" broken across two rows. A full basis takes the
+            checkbox out of that competition entirely. It sits left on its own
+            line, under the subtitle it qualifies. */}
+        <label className="order-3 flex min-h-11 shrink-0 basis-full items-center gap-1.5 whitespace-nowrap text-xs text-muted sm:order-2 sm:min-h-0 sm:basis-auto">
+          <input
+            type="checkbox"
+            checked={showHandled}
+            onChange={(e) => setShowHandled(e.target.checked)}
+          />
+          Show handled
+        </label>
+        <div className="order-2 shrink-0 sm:order-3">
           <CopyFormLinkButton />
         </div>
       </div>
