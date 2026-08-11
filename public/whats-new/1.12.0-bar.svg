@@ -1,12 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="200" height="400" role="img" aria-label="The home page on a phone: the greeting, the studio figures, and the new bar along the bottom">
-  <!-- The HOME page, not a task list: it is what opening the app on a phone
-       actually looks like, so it carries the news better than one screen deep.
-       Real figures and labels rather than grey rules, for the same reason the
-       desktop visuals do — a placeholder bar cannot be read as "254.5h".
-       Values match the live layout: two-line identity row with the tenure
-       counter pulled up beside the name, filter pills, then the 2x2 KPI tiles. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="200" height="400" role="img" aria-label="A designer's home page on a phone: the welcome panel, this week's hours, and the new bar along the bottom">
+  <!-- ⚠️ A DESIGNER's home, not an admin's. Nitsan is one of three admins; the
+       people this announcement is mostly for see the member layout — the blue
+       welcome panel with their portrait and this week's hours, not the studio
+       KPI tiles. Showing the admin home to eight designers would picture a
+       screen they never open. Nadav is a real designer on the roster.
+       Also note the bar has FOUR slots here: Inbox is admin-only.
+       Every string is laid out on its own line with measured gaps — the first
+       draft put the greeting and the tenure counter on one row and they
+       overlapped at this width. -->
   <defs>
     <clipPath id="homeScreen"><rect x="12" y="12" width="176" height="376" rx="22"/></clipPath>
+    <clipPath id="heroClip"><rect x="24" y="58" width="152" height="96" rx="12"/></clipPath>
   </defs>
 
   <rect x="4" y="4" width="192" height="392" rx="30" fill="#06112f"/>
@@ -19,80 +23,70 @@
     <circle cx="168" cy="31" r="9" fill="none" stroke="#e5e7eb"/>
     <path d="M164.6 32.4 a3.4 3.9 0 0 1 6.8 0 v1 h-6.8 z M166.6 34.8 a1.4 1.4 0 0 0 2.8 0" fill="none" stroke="#5c6478" stroke-width="1.1" stroke-linejoin="round"/>
 
-    <!-- identity row: greeting left, tenure right -->
-    <circle cx="36" cy="72" r="13" fill="#e24b4a"/>
-    <text x="36" y="76" font-family="system-ui, sans-serif" font-size="9" font-weight="600" fill="#ffffff" text-anchor="middle">NR</text>
-    <text x="55" y="67" font-family="system-ui, sans-serif" font-size="8" fill="#5c6478">Good morning</text>
-    <text x="55" y="81" font-family="Georgia, serif" font-style="italic" font-size="15" fill="#06112f">Nitsan</text>
-    <text x="176" y="70" font-family="Georgia, serif" font-style="italic" font-size="13" fill="#06112f" text-anchor="end">10y 2m 10d</text>
-    <text x="176" y="81" font-family="system-ui, sans-serif" font-size="7" fill="#5c6478" text-anchor="end">In the studio</text>
-
-    <!-- filter pills -->
-    <rect x="24" y="94" width="42" height="17" rx="8.5" fill="#ffffff" stroke="#e5e7eb"/>
-    <text x="45" y="106" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478" text-anchor="middle">This week</text>
-    <rect x="70" y="94" width="46" height="17" rx="8.5" fill="#e8edfd" stroke="#0b43ed"/>
-    <text x="93" y="106" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#1d32c8" text-anchor="middle">This month</text>
-    <rect x="120" y="94" width="40" height="17" rx="8.5" fill="#ffffff" stroke="#e5e7eb"/>
-    <text x="140" y="106" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478" text-anchor="middle">This year</text>
-
-    <!-- KPI tiles, 2 x 2 — the first brand-filled, as it is in the app -->
-    <rect x="24" y="122" width="76" height="62" rx="10" fill="#0b43ed"/>
-    <text x="34" y="139" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#b9c8f9" letter-spacing="0.5">STUDIO HOURS</text>
-    <text x="34" y="160" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#ffffff">254.5h</text>
-    <rect x="34" y="167" width="30" height="11" rx="5.5" fill="#ffffff" opacity="0.25"/>
-    <text x="49" y="175" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#ffffff" text-anchor="middle">▲ 9%</text>
-
-    <rect x="106" y="122" width="76" height="62" rx="10" fill="#ffffff"/>
-    <text x="116" y="139" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">BILLABLE</text>
-    <text x="116" y="160" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#06112f">50%</text>
-    <rect x="116" y="167" width="30" height="11" rx="5.5" fill="#fceceb"/>
-    <text x="131" y="175" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#dc2626" text-anchor="middle">▼ 2pp</text>
-
-    <rect x="24" y="190" width="76" height="58" rx="10" fill="#ffffff"/>
-    <text x="34" y="207" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">TASKS WORKED</text>
-    <text x="34" y="228" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#06112f">26</text>
-    <text x="34" y="240" font-family="system-ui, sans-serif" font-size="6.5" fill="#5c6478">this period</text>
-
-    <rect x="106" y="190" width="76" height="58" rx="10" fill="#ffffff"/>
-    <text x="116" y="207" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">AVG / DESIGNER</text>
-    <text x="116" y="228" font-family="Georgia, serif" font-style="italic" font-size="19" fill="#06112f">42.4h</text>
-    <text x="116" y="240" font-family="system-ui, sans-serif" font-size="6.5" fill="#5c6478">6 designers</text>
-
-    <!-- who logged this week, cut off by the fold -->
-    <rect x="24" y="254" width="158" height="82" rx="10" fill="#ffffff"/>
-    <text x="34" y="270" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#0b43ed">Time Feed →</text>
-    <g font-family="system-ui, sans-serif" font-size="7.5" fill="#98a0b3">
-      <text x="96" y="270">SUN 9</text>
-      <text x="130" y="270">MON 10</text>
+    <!-- the member welcome panel -->
+    <rect x="24" y="58" width="152" height="96" rx="12" fill="#0b43ed"/>
+    <g clip-path="url(#heroClip)">
+      <!-- cut-out portrait, head breaking the panel's top edge -->
+      <g opacity="0.28" fill="#ffffff">
+        <circle cx="148" cy="96" r="13"/>
+        <path d="M128 154 a20 22 0 0 1 40 0 z"/>
+      </g>
     </g>
-    <g font-family="system-ui, sans-serif" font-size="8" fill="#06112f">
-      <text x="46" y="290">Adaya</text><text x="98" y="290">8.5h</text><text x="134" y="290">8h</text>
-      <text x="46" y="310">Aki</text><text x="98" y="310">8h</text><text x="134" y="310">8h</text>
-      <text x="46" y="330">Dmitry</text><text x="98" y="330">8h</text><text x="134" y="330">5h</text>
-    </g>
-    <circle cx="36" cy="287" r="6" fill="#0b43ed"/>
-    <circle cx="36" cy="307" r="6" fill="#0b43ed"/>
-    <circle cx="36" cy="327" r="6" fill="#d4537e"/>
+    <text x="36" y="78" font-family="system-ui, sans-serif" font-size="7.5" fill="#b9c8f9">Monday, 10 Aug</text>
+    <text x="36" y="96" font-family="Georgia, serif" font-style="italic" font-size="16" fill="#ffffff">Hi Nadav</text>
+    <text x="36" y="112" font-family="system-ui, sans-serif" font-size="7.5" fill="#dde6fd">18.5h this week</text>
+    <rect x="36" y="122" width="58" height="18" rx="9" fill="#ffffff"/>
+    <text x="65" y="134" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#0b43ed" text-anchor="middle">+ Log time</text>
 
-    <!-- the new bar -->
+    <!-- this week's own figures -->
+    <rect x="24" y="164" width="74" height="48" rx="10" fill="#ffffff"/>
+    <text x="34" y="180" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">MY HOURS</text>
+    <text x="34" y="200" font-family="Georgia, serif" font-style="italic" font-size="17" fill="#06112f">18.5h</text>
+
+    <rect x="102" y="164" width="74" height="48" rx="10" fill="#ffffff"/>
+    <text x="112" y="180" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">BILLABLE</text>
+    <text x="112" y="200" font-family="Georgia, serif" font-style="italic" font-size="17" fill="#06112f">82%</text>
+
+    <!-- my week, scrolling sideways as it does on a phone -->
+    <text x="24" y="230" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478">My week</text>
+    <g>
+      <rect x="24" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
+      <text x="32" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">SUN</text>
+      <text x="32" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f">7h</text>
+
+      <rect x="68" y="238" width="40" height="46" rx="8" fill="#0b43ed"/>
+      <text x="76" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#b9c8f9">MON</text>
+      <text x="76" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">6.5h</text>
+
+      <rect x="112" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
+      <text x="120" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">TUE</text>
+      <text x="120" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f">5h</text>
+
+      <rect x="156" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
+      <text x="164" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">WED</text>
+      <text x="164" y="268" font-family="system-ui, sans-serif" font-size="11" fill="#98a0b3">–</text>
+    </g>
+
+    <!-- one task, cut by the fold -->
+    <text x="24" y="304" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478">My tasks · 3</text>
+    <rect x="24" y="312" width="152" height="34" rx="9" fill="#ffffff"/>
+    <text x="34" y="328" font-family="system-ui, sans-serif" font-size="8.5" font-weight="600" fill="#06112f">Home page — hero</text>
+    <text x="34" y="339" font-family="system-ui, sans-serif" font-size="7" fill="#98a0b3">Anchor · 6 / 12h</text>
+    <text x="164" y="333" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#0b43ed" text-anchor="end">+ Time</text>
+
+    <!-- the new bar: four slots, no Inbox for a designer -->
     <rect x="12" y="340" width="176" height="48" fill="#0b43ed"/>
     <g stroke-linecap="round" stroke-linejoin="round">
-      <path d="M27 360 l6.5-5.5 6.5 5.5 v7 h-13 z" fill="none" stroke="#ffffff" stroke-width="1.8"/>
-      <rect x="59" y="354" width="13" height="13" rx="2.2" fill="none" stroke="#b9c8f9" stroke-width="1.8"/>
-      <path d="M62.2 360.5 l2.6 2.6 4.3-5" fill="none" stroke="#b9c8f9" stroke-width="1.8"/>
-      <circle cx="100" cy="361" r="13" fill="#ffffff"/>
-      <path d="M100 354.5 v13 M93.5 361 h13" stroke="#0b43ed" stroke-width="2.4"/>
-      <path d="M124 355 h13 v11 h-13 z M124 362.4 h4.2 l1.4 2 h1.8 l1.4-2 h4.2" fill="none" stroke="#b9c8f9" stroke-width="1.7"/>
-      <path d="M155 356 h13 M155 361 h13 M155 366 h13" stroke="#b9c8f9" stroke-width="1.8"/>
+      <path d="M33 360 l6.5-5.5 6.5 5.5 v7 h-13 z" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+      <rect x="71" y="354" width="13" height="13" rx="2.2" fill="none" stroke="#b9c8f9" stroke-width="1.8"/>
+      <path d="M74.2 360.5 l2.6 2.6 4.3-5" fill="none" stroke="#b9c8f9" stroke-width="1.8"/>
+      <circle cx="116" cy="361" r="13" fill="#ffffff"/>
+      <path d="M116 354.5 v13 M109.5 361 h13" stroke="#0b43ed" stroke-width="2.4"/>
+      <path d="M150 356 h13 M150 361 h13 M150 366 h13" stroke="#b9c8f9" stroke-width="1.8"/>
     </g>
-    <g font-family="system-ui, sans-serif" font-size="6" fill="#ffffff">
-      <text x="33.5" y="379" text-anchor="middle">Home</text>
-    </g>
-    <g font-family="system-ui, sans-serif" font-size="6" fill="#b9c8f9">
-      <text x="65.5" y="379" text-anchor="middle">Tasks</text>
-      <text x="130.5" y="379" text-anchor="middle">Inbox</text>
-      <text x="161.5" y="379" text-anchor="middle">Menu</text>
-    </g>
+    <text x="39.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#ffffff" text-anchor="middle">Home</text>
+    <text x="77.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#b9c8f9" text-anchor="middle">Tasks</text>
+    <text x="156.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#b9c8f9" text-anchor="middle">Menu</text>
   </g>
 
   <rect x="82" y="20" width="36" height="10" rx="5" fill="#06112f"/>
