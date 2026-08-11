@@ -93,6 +93,11 @@ export const RELEASES: Release[] = [
         title: "Sections and groups can show their totals",
         body: "Turn on “Section totals” under Show to see each one's dates, working days, hours and budget. On by default on the Timeline.",
         audience: "admin",
+        image: {
+          src: "/whats-new/1.13.0-totals.svg",
+          shape: "element",
+          alt: "The Show menu open, with a new Section totals switch turned on beneath Completed, Undated and Colour by type",
+        },
       },
     ],
   },
