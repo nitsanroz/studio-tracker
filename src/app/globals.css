@@ -58,6 +58,12 @@
   --brand-dark: #1d32c8;
   --brand-deep: #012698;
   --brand-soft: #e8edfd;
+  /* A task GROUP's bar and rule on the Timeline (0027). Brand blue by default,
+     but a token rather than `--brand` directly because `--brand` is #0b43ed in
+     ALL FOUR themes — and on `night`'s #141519 surface that measures 2.64:1,
+     which a filled button with white text can carry but a 3px rule and an 11px
+     caption cannot. `night` lifts it to the brand palette's own light blue. */
+  --group-bar: #0b43ed;
   --aqua: #74f3ef;
 
   --background: #fafafa;
@@ -144,6 +150,8 @@
   --border-strong: #3f4048;
   --weekend: #101014;
   --brand-soft: #14204a;
+  /* 5.3:1 against this theme's surface, where #0b43ed manages 2.64. */
+  --group-bar: #6181e8;
   --sb-bg: #0e0f12;
   --sb-fg: #f4f4f5;
   --sb-muted: #8b8b94;

@@ -23,6 +23,7 @@ import {
   mapPlanColumn,
   mapPlanEntry,
   mapSection,
+  mapTaskGroup,
   mapTag,
   mapTask,
   mapTimeEntry,
@@ -61,6 +62,7 @@ import type {
   Tag,
   Task,
   TaskComment,
+  TaskGroup,
   TaskType,
   TimeEntry,
   TimelineMark,
@@ -132,6 +134,8 @@ interface Store {
   profiles: Profile[];
   clients: Client[];
   sections: Section[];
+  /** subject-level containers inside a section (0027); [] before the migration */
+  taskGroups: TaskGroup[];
   tags: Tag[];
   tasks: Task[];
   comments: TaskComment[];
@@ -180,7 +184,13 @@ interface Store {
   deleteTimelineMark: (id: string) => void;
   /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
   restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
-  addTask: (clientId: string, sectionId: string | null, title: string) => void;
+  /** `groupId` overrules `sectionId` when given — the group decides the section. */
+  addTask: (
+    clientId: string,
+    sectionId: string | null,
+    title: string,
+    groupId?: string | null,
+  ) => void;
   addTaskNear: (
     anchorTaskId: string,
     where: "before" | "after",
@@ -193,12 +203,42 @@ interface Store {
   deleteTasksBulk: (taskIds: string[]) => void;
   addSection: (clientId: string, name: string) => void;
   updateSection: (sectionId: string, patch: Partial<Pick<Section, "name">>) => void;
-  /** No-ops (with a visible write error) if the section still contains tasks. */
+  /** No-ops (with a visible write error) if the section still contains tasks or groups. */
   deleteSection: (sectionId: string) => void;
-  /** Move `movedId` before `beforeId` within its own section; null = to the end. */
+  /**
+   * Move `movedId` before `beforeId` within its own CONTAINER — the same section
+   * AND the same group; null = to the end.
+   */
   reorderTask: (movedId: string, beforeId: string | null) => void;
   /** Move a section before another within its own client; null = to the end. */
   reorderSection: (movedId: string, beforeId: string | null) => void;
+  /** Resolves with the created group so a caller can file tasks into it. */
+  addTaskGroup: (
+    clientId: string,
+    sectionId: string | null,
+    name: string,
+  ) => Promise<TaskGroup | null>;
+  updateTaskGroup: (groupId: string, patch: Partial<Pick<TaskGroup, "name">>) => void;
+  /**
+   * Create a group from an existing selection and file all of it in — the
+   * "gather these into a group" gesture.
+   *
+   * Resolves to null on success, or to a sentence explaining why not: every task
+   * has to already share ONE client and ONE section, because a group belongs to a
+   * single section and moving the tasks to make that true would be a second,
+   * unasked-for change.
+   */
+  groupTasksIntoNew: (taskIds: string[], name: string) => Promise<string | null>;
+  /**
+   * Remove a group. `withTasks` false (the default) DISSOLVES it — the tasks move
+   * up to the section — and true deletes them with it.
+   *
+   * ⚠️ `withTasks` CASCADES to time entries and is not undoable. The caller must
+   * confirm, and must refuse when any task carries logged hours.
+   */
+  deleteTaskGroup: (groupId: string, opts?: { withTasks?: boolean }) => void;
+  /** Move a group before another within its own section; null = to the end. */
+  reorderTaskGroup: (movedId: string, beforeId: string | null) => void;
   addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
   /** local-only; for values an API route already persisted with the service key */
@@ -283,6 +323,8 @@ interface Store {
    * "reload", neither of which applies here.
    */
   notice: string | null;
+  /** Say something neutral to the user — a refusal or an explanation, not an error. */
+  showNotice: (text: string) => void;
   dismissNotice: () => void;
   /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
   refreshing: boolean;
@@ -328,6 +370,41 @@ function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T
   return prev;
 }
 
+/**
+ * Keeps `groupId` and `sectionId` in agreement — the one thing migration 0027
+ * cannot express as a constraint. A composite FK would need
+ * `task_groups(section_id, id)` to be unique, which forbids the null-section
+ * case outright, so the rule lives here instead and every reader stays
+ * defensive about it.
+ *
+ * Filing a task INTO a group implies its section; moving a task to another
+ * SECTION takes it out of a group that lives elsewhere.
+ *
+ * ⚠️ Applied to the PATCH, before it is recorded — so `inversePatch` sees both
+ * keys and a single ⌘Z puts both back. Normalising after the fact would leave an
+ * undo step that restores the section and strands the group.
+ */
+function withGroupInvariant(
+  before: Task,
+  patch: Partial<Task>,
+  groups: TaskGroup[],
+): Partial<Task> {
+  if ("groupId" in patch) {
+    const g = patch.groupId ? groups.find((x) => x.id === patch.groupId) : null;
+    // The group is the more specific statement, so it decides the section — a
+    // `sectionId` already in the patch is overruled rather than trusted, since
+    // the two cannot both be right. An unknown id is left alone: the read paths
+    // treat it as ungrouped, which is the safe degradation.
+    if (g && g.sectionId !== before.sectionId) return { ...patch, sectionId: g.sectionId };
+    return patch;
+  }
+  if ("sectionId" in patch && before.groupId) {
+    const g = groups.find((x) => x.id === before.groupId);
+    if (!g || g.sectionId !== patch.sectionId) return { ...patch, groupId: null };
+  }
+  return patch;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB-boundary row mapper (return type is explicit)
 const mapTaskRequest = (r: any): TaskRequest => ({
   id: r.id,
@@ -354,6 +431,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
+  const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
   const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
   const [dayStates, setDayStates] = useState<DayState[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
@@ -417,6 +495,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const dismissNotice = useCallback(() => setNotice(null), []);
+  const showNotice = useCallback((text: string) => setNotice(text), []);
   /** Bumped by boot AND every refresh, so a slow response can tell it's stale. */
   const generation = useRef(0);
   const refreshInFlight = useRef(false);
@@ -605,6 +684,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setProfiles(c.profiles);
     setClients(c.clients);
     setSections(c.sections);
+    setTaskGroups(c.taskGroups);
     setTagRows(c.tags);
     setPlanColumns(c.planColumns);
     setBillingPeriods(c.billingPeriods);
@@ -861,8 +941,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ── mutations ─────────────────────────────────────────────────────────
   const updateTask = useCallback(
-    (taskId: string, patch: Partial<Task>) => {
+    (taskId: string, rawPatch: Partial<Task>) => {
       const before = tasks.find((t) => t.id === taskId);
+      // The group↔section invariant is normalised in ONE place, here, so no
+      // caller has to remember it — see `withGroupInvariant`.
+      const patch = before ? withGroupInvariant(before, rawPatch, taskGroups) : rawPatch;
       if (before) {
         const prev = inversePatch(before, patch);
         record({
@@ -877,7 +960,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", taskId)
         .then(wrote("updateTask"));
     },
-    [supabase, tagIdByName, tasks, record, wrote],
+    [supabase, tagIdByName, tasks, taskGroups, record, wrote],
   );
 
   /**
@@ -914,10 +997,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const updateTasksBulk = useCallback(
-    (taskIds: string[], patch: Partial<Task>) => {
+    (taskIds: string[], rawPatch: Partial<Task>) => {
       const ids = [...new Set(taskIds)];
       if (ids.length === 0) return;
       const idSet = new Set(ids);
+      // The group↔section invariant, in the one shape a UNIFORM patch can carry
+      // it: a batch moved to another section (or another client, which forces a
+      // section) cannot keep any of its groups, whatever they were, so clearing
+      // `groupId` for all of them is correct rather than merely conservative.
+      // Per-task normalisation would need `updateTasksVaried`, and there is no
+      // case where a bulk section move should preserve a group.
+      const patch: Partial<Task> =
+        ("sectionId" in rawPatch || "clientId" in rawPatch) && !("groupId" in rawPatch)
+          ? { ...rawPatch, groupId: null }
+          : rawPatch;
 
       // Each task can hold a different prior value, so the inverse is a list of
       // per-task patches rather than one shared patch — but it is recorded as a
@@ -990,14 +1083,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const addTask = useCallback(
-    (clientId: string, sectionId: string | null, title: string) => {
+    (clientId: string, sectionId: string | null, title: string, groupId?: string | null) => {
       const position =
         Math.max(0, ...tasks.filter((t) => t.clientId === clientId).map((t) => t.position)) + 1;
+      // The group decides the section, as everywhere else (see
+      // `withGroupInvariant`) — so an "Add task" row inside a group can pass the
+      // group alone and cannot file the task into the wrong section.
+      const group = groupId ? taskGroups.find((g) => g.id === groupId) : null;
       supabase
         .from("tasks")
         .insert({
           client_id: clientId,
-          section_id: sectionId,
+          section_id: group ? group.sectionId : sectionId,
+          group_id: groupId ?? null,
           title,
           billable: clients.find((c) => c.id === clientId)?.billable ?? true,
           position,
@@ -1012,13 +1110,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
         });
     },
-    [supabase, tasks, tagNameById, clients, noteWriteError],
+    [supabase, tasks, taskGroups, tagNameById, clients, noteWriteError],
   );
 
   /**
    * Create a task immediately before or after an existing one, in the same
-   * section — the right-click "Add task above/below" in the client table and the
-   * Timeline. `addTask` always appends, which is the whole reason this exists.
+   * CONTAINER — the same section and the same group — for the right-click "Add
+   * task above/below" in the client table and the Timeline. `addTask` always
+   * appends, which is the whole reason this exists.
    *
    * It slots into BOTH orderings — `position` (client table, per section) and
    * `timeline_position` (Timeline, per client; see 0023) — so the new row lands
@@ -1050,9 +1149,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!anchor) return;
 
       // Same comparator the client table renders with, so "after" means after
-      // the row the user actually right-clicked.
+      // the row the user actually right-clicked. Scoped to the anchor's GROUP as
+      // well as its section (0027) — a group's children densify among
+      // themselves, so an insert inside a group must not renumber the section's
+      // loose tasks and land in the wrong run.
       const siblings = tasks
-        .filter((t) => t.clientId === anchor.clientId && t.sectionId === anchor.sectionId)
+        .filter(
+          (t) =>
+            t.clientId === anchor.clientId &&
+            t.sectionId === anchor.sectionId &&
+            t.groupId === anchor.groupId,
+        )
         .sort((a, b) => a.position - b.position);
       const listAt = siblings.findIndex((t) => t.id === anchorTaskId) + (where === "after" ? 1 : 0);
 
@@ -1070,6 +1177,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .insert({
           client_id: anchor.clientId,
           section_id: anchor.sectionId,
+          group_id: anchor.groupId,
           title,
           billable: clients.find((c) => c.id === anchor.clientId)?.billable ?? true,
           position: listAt + 1,
@@ -1221,13 +1329,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, sections, record, wrote],
   );
 
-  /** Refuses if any task still points at the section — deleting one with tasks in it
-   *  would orphan them (the FK is ON DELETE SET NULL, so they'd silently reappear
-   *  under "No section" with no way to tell where they came from). */
+  /** Refuses if any task or GROUP still points at the section — deleting one with
+   *  contents would orphan them (the FK is ON DELETE SET NULL, so they'd silently
+   *  reappear under "No section" with no way to tell where they came from). An
+   *  empty group counts: it is a named thing somebody made, and 0027's FK would
+   *  quietly relocate it. */
   const deleteSection = useCallback(
     (sectionId: string) => {
       if (tasks.some((t) => t.sectionId === sectionId)) {
         noteWriteError("deleteSection", { message: "Section still has tasks" });
+        return;
+      }
+      if (taskGroups.some((g) => g.sectionId === sectionId)) {
+        noteWriteError("deleteSection", { message: "Section still has groups" });
         return;
       }
       setSections((prev) => prev.filter((s) => s.id !== sectionId));
@@ -1237,14 +1351,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", sectionId)
         .then(wrote("deleteSection"));
     },
-    [supabase, tasks, wrote, noteWriteError],
+    [supabase, tasks, taskGroups, wrote, noteWriteError],
   );
 
   /**
-   * Reorder tasks inside one section: `movedId` is placed before `beforeId`
+   * Reorder tasks inside one container: `movedId` is placed before `beforeId`
    * (or last when null). Positions are rewritten as a dense 1..n sequence for the
-   * section, which keeps them stable instead of drifting toward collisions the way
+   * container, which keeps them stable instead of drifting toward collisions the way
    * midpoint/fractional schemes do after enough moves.
+   *
+   * ⚠️ The container is the section AND the group (0027), not the section alone.
+   * A group's children have their own dense run, so reordering inside a group
+   * must not renumber the section's loose tasks — they are a separate run and
+   * rewriting both would shuffle rows the user never touched.
    */
   const reorderTask = useCallback(
     (movedId: string, beforeId: string | null) => {
@@ -1252,7 +1371,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!moved) return;
 
       const siblings = tasks
-        .filter((t) => t.clientId === moved.clientId && t.sectionId === moved.sectionId)
+        .filter(
+          (t) =>
+            t.clientId === moved.clientId &&
+            t.sectionId === moved.sectionId &&
+            t.groupId === moved.groupId,
+        )
         .sort((a, b) => a.position - b.position);
 
       const without = siblings.filter((t) => t.id !== movedId);
@@ -1353,6 +1477,189 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     },
     [supabase, sections, record, wrote],
+  );
+
+  // ── task groups (0027) ────────────────────────────────────────────────
+  // The same four methods as sections, deliberately in the same shapes: dense
+  // 1..n positions, one undo step per gesture, a `wrote()` tail on every write.
+  // A group differs from a section in exactly two places, both noted below —
+  // its position is scoped to a SECTION rather than a client, and deleting one
+  // dissolves it instead of refusing.
+
+  const addTaskGroup = useCallback(
+    async (clientId: string, sectionId: string | null, name: string) => {
+      const position =
+        Math.max(
+          0,
+          ...taskGroups
+            .filter((g) => g.clientId === clientId && g.sectionId === sectionId)
+            .map((g) => g.position),
+        ) + 1;
+      const { data, error } = await supabase
+        .from("task_groups")
+        .insert({ client_id: clientId, section_id: sectionId, name, position })
+        .select()
+        .single();
+      if (error) {
+        noteWriteError("addTaskGroup", error);
+        return null;
+      }
+      const created = mapTaskGroup(data);
+      setTaskGroups((prev) => [...prev, created]);
+      return created;
+    },
+    [supabase, taskGroups, noteWriteError],
+  );
+
+  /**
+   * Gather an existing selection into a brand-new group.
+   *
+   * Two steps on purpose, and they are undoable differently: creating the group
+   * is NOT in the history (nothing that creates is, by this app's convention),
+   * while the move is ONE `updateTasksBulk` step — so ⌘Z takes the tasks back out
+   * and leaves an empty group behind, which is visible and one click to remove.
+   * The alternative — folding both into one step — would have to un-create a row
+   * that other people may already be looking at.
+   */
+  const groupTasksIntoNew = useCallback(
+    async (taskIds: string[], name: string) => {
+      const ids = [...new Set(taskIds)];
+      const picked = tasks.filter((t) => ids.includes(t.id));
+      if (picked.length === 0) return "Nothing is selected.";
+
+      // ⚠️ A group belongs to exactly ONE section, so the selection must already
+      // agree on one. Silently re-sectioning the odd task out would be a second
+      // change nobody asked for, and on a client page it would move work between
+      // phases — so this refuses and says which axis disagrees.
+      const clientIds = new Set(picked.map((t) => t.clientId));
+      if (clientIds.size > 1) return "Those tasks belong to different clients.";
+      const sectionIds = new Set(picked.map((t) => t.sectionId ?? ""));
+      if (sectionIds.size > 1)
+        return "Those tasks are in different sections — a group lives inside one section. Move them into the same section first.";
+
+      const created = await methodsRef.current?.addTaskGroup(
+        picked[0].clientId,
+        picked[0].sectionId ?? null,
+        name,
+      );
+      if (!created) return "The group could not be created.";
+      methodsRef.current?.updateTasksBulk(ids, { groupId: created.id });
+      return null;
+    },
+    [tasks],
+  );
+
+  const updateTaskGroup = useCallback(
+    (groupId: string, patch: Partial<Pick<TaskGroup, "name">>) => {
+      const before = taskGroups.find((g) => g.id === groupId);
+      if (before) {
+        const prev = inversePatch(before, patch);
+        record({
+          undo: () => methodsRef.current?.updateTaskGroup(groupId, prev),
+          redo: () => methodsRef.current?.updateTaskGroup(groupId, patch),
+        });
+      }
+      setTaskGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, ...patch } : g)));
+      supabase
+        .from("task_groups")
+        .update(patch)
+        .eq("id", groupId)
+        .then(wrote("updateTaskGroup"));
+    },
+    [supabase, taskGroups, record, wrote],
+  );
+
+  /**
+   * Dissolve a group. Its tasks move up to the section and the row goes.
+   *
+   * ⚠️ Deliberately NOT `deleteSection`'s refuse-while-occupied rule. A section
+   * is where work lives and losing one strands its tasks under "No section" with
+   * nothing to say where they came from; a group is one level down, so its tasks
+   * have an obvious home and the FK would put them there anyway. Making the user
+   * empty a group by hand before removing it would be ceremony.
+   *
+   * NOT undoable, for the same reason `addTask` isn't: the inverse would have to
+   * re-create the row with its original id and re-file every task, and a group
+   * carries no data of its own worth that machinery. The tasks are all still
+   * there — re-create the group and drag them back.
+   */
+  const deleteTaskGroup = useCallback(
+    (groupId: string, opts?: { withTasks?: boolean }) => {
+      const members = tasks.filter((t) => t.groupId === groupId).map((t) => t.id);
+      setTaskGroups((prev) => prev.filter((g) => g.id !== groupId));
+      if (opts?.withTasks && members.length) {
+        // ⚠️ CASCADES to time entries, comments and attachments, and is NOT
+        // undoable — the same reason `deleteTask` isn't. The dialog that offers
+        // this is where the confirmation and the logged-hours refusal live.
+        methodsRef.current?.deleteTasksBulk(members);
+      } else if (members.length) {
+        // Dissolve: local state first, because the FK is ON DELETE SET NULL and
+        // the DB will clear `group_id` itself — but not until the delete lands,
+        // and until then every reader points at a group that has left the list.
+        const memberSet = new Set(members);
+        setTasks((prev) => prev.map((t) => (memberSet.has(t.id) ? { ...t, groupId: null } : t)));
+      }
+      supabase
+        .from("task_groups")
+        .delete()
+        .eq("id", groupId)
+        .then(wrote("deleteTaskGroup"));
+    },
+    [supabase, tasks, wrote],
+  );
+
+  /** Reorder groups inside one section, exactly as `reorderSection` does for a client. */
+  const reorderTaskGroup = useCallback(
+    (movedId: string, beforeId: string | null) => {
+      const moved = taskGroups.find((g) => g.id === movedId);
+      if (!moved || movedId === beforeId) return;
+
+      // Scoped to the SECTION, not the client: two sections' groups are two
+      // independent runs, and renumbering across them would reshuffle a section
+      // the user wasn't looking at.
+      const siblings = taskGroups
+        .filter((g) => g.clientId === moved.clientId && g.sectionId === moved.sectionId)
+        .sort((a, b) => a.position - b.position);
+      const without = siblings.filter((g) => g.id !== movedId);
+      const at = beforeId ? without.findIndex((g) => g.id === beforeId) : without.length;
+      if (at === -1) return;
+      const ordered = [...without.slice(0, at), moved, ...without.slice(at)];
+
+      const changed = ordered
+        .map((g, i) => ({ id: g.id, position: i + 1, was: g.position }))
+        .filter((r) => r.position !== r.was);
+      if (changed.length === 0) return;
+
+      const prevById = new Map(changed.map((r) => [r.id, r.was]));
+      record({
+        undo: () => {
+          setTaskGroups((prev) =>
+            prev.map((g) => (prevById.has(g.id) ? { ...g, position: prevById.get(g.id)! } : g)),
+          );
+          for (const [id, position] of prevById) {
+            supabase
+              .from("task_groups")
+              .update({ position })
+              .eq("id", id)
+              .then(wrote("reorderTaskGroup undo"));
+          }
+        },
+        redo: () => methodsRef.current?.reorderTaskGroup(movedId, beforeId),
+      });
+
+      const posById = new Map(changed.map((r) => [r.id, r.position]));
+      setTaskGroups((prev) =>
+        prev.map((g) => (posById.has(g.id) ? { ...g, position: posById.get(g.id)! } : g)),
+      );
+      for (const { id, position } of changed) {
+        supabase
+          .from("task_groups")
+          .update({ position })
+          .eq("id", id)
+          .then(wrote("reorderTaskGroup"));
+      }
+    },
+    [supabase, taskGroups, record, wrote],
   );
 
   const addClient = useCallback(
@@ -2615,6 +2922,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       profiles,
       clients,
       sections,
+      taskGroups,
       tags: tagRows,
       tasks,
       comments,
@@ -2651,6 +2959,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteSection,
       reorderTask,
       reorderSection,
+      addTaskGroup,
+      updateTaskGroup,
+      groupTasksIntoNew,
+      deleteTaskGroup,
+      reorderTaskGroup,
       addClient,
       patchProfileLocal,
       patchClientLocal,
@@ -2700,6 +3013,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       writeError,
       dismissWriteError,
       notice,
+      showNotice,
       dismissNotice,
       refreshing,
       lastSyncedAt,
@@ -2707,9 +3021,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       bootError,
     }),
     [
-      loading, profiles, clients, sections, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
+      loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

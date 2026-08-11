@@ -41,6 +41,8 @@ export function ShowMenu({
   onClearTypes,
   plainBars,
   onPlainBars,
+  summaries,
+  onSummaries,
 }: {
   showDone: boolean;
   onShowDone: (v: boolean) => void;
@@ -53,6 +55,9 @@ export function ShowMenu({
   /** Timeline only — omitted on the Tasks tab, where bars don't exist. */
   plainBars?: boolean;
   onPlainBars?: (v: boolean) => void;
+  /** Rolled-up dates and hours on section and group headers (0027). */
+  summaries?: boolean;
+  onSummaries?: (v: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -124,6 +129,17 @@ export function ShowMenu({
               label="Colour by type"
               checked={!plainBars}
               onChange={() => onPlainBars(!plainBars)}
+            />
+          )}
+          {onSummaries && (
+            // ⚠️ It must NOT light the trigger, unlike the type filter. The
+            // trigger reports what you AREN'T SEEING, and a summary being off
+            // hides nothing — every task is still on screen. See `filtering`.
+            <SwitchRow
+              emoji="🧮"
+              label="Section totals"
+              checked={summaries ?? false}
+              onChange={() => onSummaries(!summaries)}
             />
           )}
 

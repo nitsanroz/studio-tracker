@@ -73,6 +73,30 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
   {
+    version: "v1.13.0",
+    date: "2026-08-11",
+    items: [
+      {
+        // `admin`, not `all`: groups live on the client page, and /clients is
+        // admin-only. Telling eight designers about a screen they cannot open is
+        // exactly the noise that teaches people to dismiss this panel unread.
+        title: "Group tasks by subject",
+        body: "Inside a section, gather the tasks for one page or deliverable under a name you choose — then fold it away.",
+        audience: "admin",
+        image: {
+          src: "/whats-new/1.13.0-group.svg",
+          shape: "element",
+          alt: "A Website section holding a Home page group, its three tasks indented under it with the group's dates and hours totalled beside it",
+        },
+      },
+      {
+        title: "Sections and groups can show their totals",
+        body: "Turn on “Section totals” under Show to see each one's dates, working days, hours and budget. On by default on the Timeline.",
+        audience: "admin",
+      },
+    ],
+  },
+  {
     version: "v1.12.0",
     date: "2026-08-11",
     items: [

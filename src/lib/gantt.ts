@@ -22,10 +22,27 @@ export const ROW_H = 34;
  *  space above it — see `SECTION_BAR_TOP` in the Timeline. */
 export const SECTION_H = 36;
 /**
+ * A subject group's row (0027). Same height as a task's, because that is the
+ * claim it makes: a group draws a BAR across its children's span, not a bracket
+ * over them, so giving it a section's taller row would say it were a third kind
+ * of heading rather than a gathered task.
+ */
+export const GROUP_H = ROW_H;
+/**
  * Bar height. 27 in a 34px row, so a bar nearly fills its lane and the chart
  * reads as a stack of bands rather than as ribbons floating in white.
  */
 export const BAR_H = 27;
+/**
+ * A group's bar is drawn as a STACK: the main bar with layers peeking out behind
+ * its top edge, so it reads as several bars gathered rather than as one long
+ * task. `GROUP_LAYERS` shims of `GROUP_LAYER_STEP` each, inset from both ends so
+ * the stack tapers.
+ */
+export const GROUP_BAR_H = 19;
+export const GROUP_LAYERS = 2;
+export const GROUP_LAYER_STEP = 3;
+export const GROUP_LAYER_INSET = 5;
 /** Corner radius, ~1/4 of the height. A full pill stops a short bar reading as a span. */
 export const BAR_R = 4;
 /** A deadline diamond marks a point, so it can't scale with a span. */

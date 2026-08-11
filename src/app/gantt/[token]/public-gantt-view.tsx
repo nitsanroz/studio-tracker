@@ -7,6 +7,11 @@ import {
   BAR_LABEL_MIN_PX,
   BAR_R,
   DIAMOND,
+  GROUP_BAR_H,
+  GROUP_H,
+  GROUP_LAYER_INSET,
+  GROUP_LAYER_STEP,
+  GROUP_LAYERS,
   PX_PER_DAY,
   ROW_H,
   SECTION_BAR_H,
@@ -30,6 +35,8 @@ export interface PublicGanttTask {
   id: string;
   title: string;
   sectionId: string | null;
+  /** Its subject group within that section (0027), or null when loose. */
+  groupId: string | null;
   startDate: string | null;
   dueDate: string;
   typeName: string | null;
@@ -39,10 +46,20 @@ export interface PublicGanttTask {
   budgetHours: number | null;
 }
 
+/** A subject group and the tasks in it (0027). */
+export interface PublicGanttBlock {
+  id: string;
+  name: string;
+  tasks: PublicGanttTask[];
+}
+
 export interface PublicGanttGroup {
   key: string;
   name: string;
   rank: number;
+  /** Its subject groups, in position order. Rendered above the loose tasks. */
+  blocks: PublicGanttBlock[];
+  /** The section's LOOSE tasks — those not in one of its groups. */
   tasks: PublicGanttTask[];
 }
 
@@ -55,6 +72,28 @@ export interface PublicGanttMark {
 
 /** The ruler's height (`h-7`). The milestone flags stick directly under it. */
 const RULER_H = 28;
+
+/** How the reader's collapse set names a group, kept apart from section keys. */
+const blockKey = (groupId: string) => `g:${groupId}`;
+
+/**
+ * A container's budget: the sum of the budgets its tasks carry, or "–" when not
+ * one of them has one.
+ *
+ * ⚠️ BUDGET ONLY. There is deliberately no hours total anywhere on this page —
+ * the logged figures are never fetched (see the `select` in page.tsx), and a
+ * summary row is exactly where someone would later be tempted to add one.
+ */
+function sumBudget(rows: { task: PublicGanttTask }[]): string {
+  let total = 0;
+  let any = false;
+  for (const r of rows) {
+    if (r.task.budgetHours == null) continue;
+    total += r.task.budgetHours;
+    any = true;
+  }
+  return any ? `${Math.round(total * 100) / 100}h` : "–";
+}
 
 /**
  * The pinned column is the task's name and its budget. There is no Dates column:
@@ -154,24 +193,34 @@ export function PublicGanttView({
   }, [offDays]);
 
   /** Every row's resolved dates. A task with no start is a DEADLINE, not a one-day job. */
-  const rows = useMemo(
-    () =>
-      groups.map((g) => ({
-        ...g,
-        rows: g.tasks.map((t) => {
-          const due = parseISO(t.dueDate);
-          return {
-            task: t,
-            start: t.startDate ? parseISO(t.startDate) : due,
-            due,
-            hasStart: !!t.startDate,
-          };
-        }),
-      })),
-    [groups],
-  );
+  const rows = useMemo(() => {
+    const resolve = (t: PublicGanttTask) => {
+      const due = parseISO(t.dueDate);
+      return {
+        task: t,
+        start: t.startDate ? parseISO(t.startDate) : due,
+        due,
+        hasStart: !!t.startDate,
+      };
+    };
+    return groups.map((g) => ({
+      ...g,
+      // Every group here holds at least one dated task — the server drops the
+      // empty ones — so the span below always has something to measure.
+      blocks: g.blocks.map((b) => {
+        const list = b.tasks.map(resolve);
+        return {
+          ...b,
+          rows: list,
+          start: list.reduce((a, r) => (r.start < a ? r.start : a), list[0].start),
+          due: list.reduce((a, r) => (r.due > a ? r.due : a), list[0].due),
+        };
+      }),
+      rows: g.tasks.map(resolve),
+    }));
+  }, [groups]);
 
-  const all = rows.flatMap((g) => g.rows);
+  const all = rows.flatMap((g) => [...g.blocks.flatMap((b) => b.rows), ...g.rows]);
 
   const { from, totalDays } = useMemo(() => {
     const marks: Date[] = [today];
@@ -199,11 +248,15 @@ export function PublicGanttView({
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
-  const bodyH = rows.reduce(
-    (h, g) =>
-      h + SECTION_H + (collapsed.has(g.key) ? 0 : g.rows.length * ROW_H),
-    0,
-  );
+  const bodyH = rows.reduce((h, g) => {
+    let out = h + SECTION_H;
+    if (collapsed.has(g.key)) return out;
+    for (const b of g.blocks) {
+      // The group's own row always counts; its tasks only when unfolded.
+      out += GROUP_H + (collapsed.has(blockKey(b.id)) ? 0 : b.rows.length * ROW_H);
+    }
+    return out + g.rows.length * ROW_H;
+  }, 0);
   const todayLeft = daysBetween(from, today) * pxPerDay;
 
   /** Open on today rather than on the oldest thing anyone ever scheduled. */
@@ -212,6 +265,84 @@ export function PublicGanttView({
     if (!el || centred.current) return;
     centred.current = true;
     el.scrollLeft = Math.max(0, todayLeft - el.clientWidth / 3);
+  }
+
+  /**
+   * One task row, at whichever depth it sits — loose in a section, or inside a
+   * group. A function rather than two copies of the JSX: the bar, the diamond and
+   * the tooltip wiring are the same at both depths, and `pad` is the only thing
+   * that differs.
+   */
+  function taskRow(
+    r: { task: PublicGanttTask; start: Date; due: Date; hasStart: boolean },
+    pad: string,
+  ) {
+    const color = r.task.typeColor ?? FALLBACK;
+    const left = daysBetween(from, r.start) * pxPerDay;
+    const barW = Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay);
+    const hover = {
+      onMouseEnter: (e: React.MouseEvent) =>
+        setTip({ x: e.clientX, y: e.clientY, task: r.task }),
+      onMouseLeave: () => setTip(null),
+    };
+    return (
+      <div
+        key={r.task.id}
+        className="relative flex border-b border-border last:border-b-0"
+        style={{ height: ROW_H, width: STICKY_W + chartW }}
+      >
+        {/* `pad` lines the name up under the heading above it, which the chevron
+            has pushed in — one step for a section, two inside a group. */}
+        <div
+          className={`sticky left-0 z-20 flex h-full shrink-0 items-center pr-3 ${pad} bg-surface`}
+          style={{ width: STICKY_W }}
+        >
+          <span className="bidi-auto min-w-0 flex-1 truncate text-xs" title={r.task.title}>
+            {r.task.title}
+          </span>
+          {/* The budget, and only the budget: what was agreed, not what has been
+              spent against it. */}
+          <span
+            className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
+            style={{ width: BUDGET_W }}
+          >
+            {r.task.budgetHours != null ? `${r.task.budgetHours}h` : "–"}
+          </span>
+        </div>
+        <div className="relative h-full shrink-0" style={{ width: chartW }}>
+          {r.hasStart ? (
+            <div
+              {...hover}
+              className="absolute top-1/2 -translate-y-1/2 overflow-hidden"
+              style={{
+                left,
+                width: barW,
+                height: BAR_H,
+                borderRadius: BAR_R,
+                backgroundColor: `${color}52`,
+              }}
+            >
+              {barW >= BAR_LABEL_MIN_PX && (
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center truncate px-1.5 text-[11px] font-medium leading-none text-foreground">
+                  {r.task.title}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              {...hover}
+              className="absolute top-1/2 -translate-y-1/2 rotate-45 rounded-[2px]"
+              style={{
+                left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
+                width: DIAMOND,
+                height: DIAMOND,
+                backgroundColor: color,
+              }}
+            />
+          )}
+        </div>
+      </div>
+    );
   }
 
   const shade = pxPerDay >= SHADE_MIN_PX_PER_DAY;
@@ -452,14 +583,13 @@ export function PublicGanttView({
             )}
 
             {rows.map((g) => {
-              const gStart = g.rows.reduce(
-                (a, r) => (r.start < a ? r.start : a),
-                g.rows[0].start,
-              );
-              const gDue = g.rows.reduce(
-                (a, r) => (r.due > a ? r.due : a),
-                g.rows[0].due,
-              );
+              // ⚠️ Over the section's WHOLE contents, groups included — and no
+              // longer seeded from `g.rows[0]`, which a section holding only
+              // groups doesn't have. That read would have thrown the moment
+              // somebody put every task in one.
+              const own = [...g.blocks.flatMap((b) => b.rows), ...g.rows];
+              const gStart = own.reduce((a, r) => (r.start < a ? r.start : a), own[0].start);
+              const gDue = own.reduce((a, r) => (r.due > a ? r.due : a), own[0].due);
               const gLeft = daysBetween(from, gStart) * pxPerDay;
               const gWidth = Math.max(
                 8,
@@ -493,9 +623,21 @@ export function PublicGanttView({
                           className="shrink-0 text-muted"
                         />
                       )}
-                      <span className="bidi-auto truncate">{g.name}</span>
+                      <span className="bidi-auto min-w-0 flex-1 truncate">{g.name}</span>
                       <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
-                        {g.rows.length}
+                        {own.length}
+                      </span>
+                      {/* The rolled-up BUDGET, in the tasks' own column — the
+                          scope agreed for this whole workstream. ⚠️ Budget only,
+                          never hours logged: the page never receives those, and a
+                          container is where a total would be most tempting.
+                          A blank column beside rows that all carry a number reads
+                          as missing data, which is why this is here at all. */}
+                      <span
+                        className="shrink-0 pr-3 text-right text-[11px] font-normal tabular-nums text-muted"
+                        style={{ width: BUDGET_W }}
+                      >
+                        {sumBudget(own)}
                       </span>
                     </button>
                     <div
@@ -543,97 +685,110 @@ export function PublicGanttView({
                     </div>
                   </div>
 
+                  {/* Groups first, then the section's loose tasks — the same
+                      order the studio's Timeline uses, so the two charts are the
+                      same picture. */}
                   {!isFolded &&
-                    g.rows.map((r) => {
-                      const color = r.task.typeColor ?? FALLBACK;
-                      const left = daysBetween(from, r.start) * pxPerDay;
-                      const barW = Math.max(
-                        10,
-                        (daysBetween(r.start, r.due) + 1) * pxPerDay,
+                    g.blocks.map((b) => {
+                      const bFolded = collapsed.has(blockKey(b.id));
+                      const bLeft = daysBetween(from, b.start) * pxPerDay;
+                      const bWidth = Math.max(
+                        8,
+                        (daysBetween(b.start, b.due) + 1) * pxPerDay,
                       );
                       return (
-                        <div
-                          key={r.task.id}
-                          className="relative flex border-b border-border last:border-b-0"
-                          style={{ height: ROW_H, width: STICKY_W + chartW }}
-                        >
-                          {/* `pl-8` lines the name up under its section's title,
-                            which the chevron has pushed in by that much. */}
+                        <div key={b.id}>
                           <div
-                            className="sticky left-0 z-20 flex h-full shrink-0 items-center bg-surface pl-8 pr-3"
-                            style={{ width: STICKY_W }}
+                            className="relative flex border-b border-border"
+                            style={{ height: GROUP_H, width: STICKY_W + chartW }}
                           >
-                            <span
-                              className="bidi-auto min-w-0 flex-1 truncate text-xs"
-                              title={r.task.title}
+                            <button
+                              onClick={() => fold(blockKey(b.id))}
+                              aria-expanded={!bFolded}
+                              title={bFolded ? `Show ${b.name}` : `Hide ${b.name}`}
+                              className="sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-surface pl-7 pr-3 text-left text-[13px] font-semibold hover:text-brand"
+                              style={{ width: STICKY_W }}
                             >
-                              {r.task.title}
-                            </span>
-                            {/* The budget, and only the budget: what was agreed,
-                              not what has been spent against it. */}
-                            <span
-                              className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
-                              style={{ width: BUDGET_W }}
+                              {bFolded ? (
+                                <ChevronRight size={13} className="shrink-0 text-muted" />
+                              ) : (
+                                <ChevronDown size={13} className="shrink-0 text-muted" />
+                              )}
+                              <span className="bidi-auto min-w-0 flex-1 truncate">{b.name}</span>
+                              <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
+                                {b.rows.length}
+                              </span>
+                              <span
+                                className="shrink-0 pr-3 text-right text-[11px] font-normal tabular-nums text-muted"
+                                style={{ width: BUDGET_W }}
+                              >
+                                {sumBudget(b.rows)}
+                              </span>
+                            </button>
+                            <div
+                              className="relative h-full shrink-0"
+                              style={{ width: chartW }}
                             >
-                              {r.task.budgetHours != null
-                                ? `${r.task.budgetHours}h`
-                                : "–"}
-                            </span>
-                          </div>
-                          <div
-                            className="relative h-full shrink-0"
-                            style={{ width: chartW }}
-                          >
-                            {r.hasStart ? (
-                              <div
-                                onMouseEnter={(e) =>
-                                  setTip({
-                                    x: e.clientX,
-                                    y: e.clientY,
-                                    task: r.task,
-                                  })
-                                }
-                                onMouseLeave={() => setTip(null)}
-                                className="absolute top-1/2 -translate-y-1/2 overflow-hidden"
+                              {/* A BAR across the group's span, drawn as a stack
+                                  to say it gathers several tasks — not a
+                                  section's bracket, which is a claim about rows.
+                                  In the client's own colour, like the section
+                                  bracket above it: the type colours belong to the
+                                  task bars and the legend explains them, so a
+                                  container must not borrow one. */}
+                              <span
+                                className="absolute"
                                 style={{
-                                  left,
-                                  width: barW,
-                                  height: BAR_H,
-                                  borderRadius: BAR_R,
-                                  backgroundColor: `${color}52`,
+                                  left: bLeft,
+                                  width: bWidth,
+                                  top: Math.round((GROUP_H - GROUP_BAR_H) / 2),
                                 }}
                               >
-                                {barW >= BAR_LABEL_MIN_PX && (
-                                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center truncate px-1.5 text-[11px] font-medium leading-none text-foreground">
-                                    {r.task.title}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <div
-                                onMouseEnter={(e) =>
-                                  setTip({
-                                    x: e.clientX,
-                                    y: e.clientY,
-                                    task: r.task,
-                                  })
-                                }
-                                onMouseLeave={() => setTip(null)}
-                                className="absolute top-1/2 -translate-y-1/2 rotate-45 rounded-[2px]"
-                                style={{
-                                  left:
-                                    left +
-                                    Math.max(0, pxPerDay / 2 - DIAMOND / 2),
-                                  width: DIAMOND,
-                                  height: DIAMOND,
-                                  backgroundColor: color,
-                                }}
-                              />
-                            )}
+                                {Array.from({ length: GROUP_LAYERS }, (_, i) => {
+                                  const step = GROUP_LAYERS - i; // furthest first
+                                  const inset = GROUP_LAYER_INSET * step;
+                                  // No room to taper on a narrow bar; drawing one
+                                  // anyway leaves the layers wider than the bar.
+                                  if (bWidth - inset * 2 < 8) return null;
+                                  return (
+                                    <span
+                                      key={i}
+                                      className="absolute rounded-[3px]"
+                                      style={{
+                                        left: inset,
+                                        width: bWidth - inset * 2,
+                                        top: -GROUP_LAYER_STEP * step,
+                                        height: GROUP_BAR_H,
+                                        backgroundColor: clientColor,
+                                        opacity: 0.3 - i * 0.08,
+                                      }}
+                                    />
+                                  );
+                                })}
+                                <span
+                                  className="absolute inset-x-0 flex items-center overflow-hidden rounded-[3px] px-1.5"
+                                  style={{
+                                    top: 0,
+                                    height: GROUP_BAR_H,
+                                    backgroundColor: clientColor,
+                                    opacity: 0.85,
+                                  }}
+                                >
+                                  {bFolded && bWidth >= BAR_LABEL_MIN_PX && (
+                                    <span className="truncate text-[11px] font-semibold leading-none text-white">
+                                      {b.name}
+                                    </span>
+                                  )}
+                                </span>
+                              </span>
+                            </div>
                           </div>
+                          {!bFolded && b.rows.map((r) => taskRow(r, "pl-12"))}
                         </div>
                       );
                     })}
+
+                  {!isFolded && g.rows.map((r) => taskRow(r, "pl-8"))}
                 </div>
               );
             })}

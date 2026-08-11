@@ -126,12 +126,45 @@ export interface Section {
   closedOn?: string | null;
 }
 
+/**
+ * A subject-level container INSIDE a section (migration 0027) — the several
+ * tasks that belong to one webpage, gathered under "Home page".
+ *
+ * A section is a phase; a group is a subject. Client → Section → Group → Task,
+ * one level only: there is no parent group.
+ *
+ * ⚠️ **Nothing is ever logged against a group.** It is deliberately not a row in
+ * `tasks`, so it can hold no time entries, carries no budget of its own and
+ * cannot be assigned — every figure shown for a group is rolled up from its
+ * tasks by `rollupTasks` (`src/lib/task-rollup.ts`).
+ *
+ * ⚠️ **`sectionId` must agree with the `sectionId` of every task in it.** The
+ * store's `updateTask` maintains that; readers stay defensive and treat a task
+ * whose group sits in another section as ungrouped rather than hiding it.
+ */
+export interface TaskGroup {
+  id: string;
+  clientId: string;
+  /** null = the client's "No section" bucket, as for a task */
+  sectionId: string | null;
+  name: string;
+  /** Order among sibling groups in the same section. Groups precede loose tasks. */
+  position: number;
+}
+
 export type TaskStatus = "todo" | "in_progress" | "done";
 
 export interface Task {
   id: string;
   clientId: string;
   sectionId: string | null;
+  /**
+   * The subject group within `sectionId`, or null for a task sitting directly in
+   * the section (migration 0027). ⚠️ Must belong to the SAME section — see
+   * `TaskGroup`. Admin-only in the DB, like `sectionId` (0027 amends 0011's
+   * trigger to say so).
+   */
+  groupId: string | null;
   title: string;
   brief: string;
   figmaUrl: string | null;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Layers } from "lucide-react";
 import { useData } from "@/lib/store";
 
 /**
@@ -18,20 +19,48 @@ export function TaskBulkControls({
   ids,
   onDone,
   canSetDate = true,
+  canGroup = true,
 }: {
   ids: string[];
   /** clear the selection (and close the bar) after a change */
   onDone: () => void;
   /** due dates are admin-only in the DB (0011's trigger) */
   canSetDate?: boolean;
+  /** off where there is no section to hang a group off — see the Board */
+  canGroup?: boolean;
 }) {
-  const { tags, taskTypes, updateTasksBulk } = useData();
+  const { tags, taskTypes, updateTasksBulk, groupTasksIntoNew, showNotice } = useData();
 
   const control =
     "rounded-md border border-border bg-surface px-1.5 py-1 text-sm text-foreground outline-none focus:border-brand";
 
   return (
     <>
+      {/* Gather the selection into a NEW group (0027). Here rather than in each
+          selection bar because both bars select the same tasks, and the whole
+          point of this component is that they cannot drift.
+          ⚠️ The refusal path matters more than the happy one: a group belongs to
+          one section, so a selection spanning two cannot become a group, and the
+          store says which axis disagrees instead of quietly re-sectioning
+          anything. Shown through `showNotice`, not a write error — being told
+          "that isn't possible" is not a failure to save. */}
+      {canGroup && (
+        <button
+          onClick={() => {
+            const name = prompt("Name for the new group")?.trim();
+            if (!name) return;
+            void groupTasksIntoNew(ids, name).then((err) => {
+              if (err) showNotice(err);
+              else onDone();
+            });
+          }}
+          title="Gather the selected tasks into a new group"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-1 text-sm text-muted transition-colors hover:border-brand hover:text-brand"
+        >
+          <Layers size={13} />
+          Group…
+        </button>
+      )}
       <select
         value=""
         onChange={(e) => {

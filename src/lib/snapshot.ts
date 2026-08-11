@@ -30,6 +30,7 @@ import {
   mapSection,
   mapTag,
   mapTask,
+  mapTaskGroup,
   mapTimeEntry,
   type DbRow,
 } from "./db";
@@ -47,6 +48,7 @@ import type {
   Section,
   Tag,
   Task,
+  TaskGroup,
   TaskType,
   TimeEntry,
 } from "./types";
@@ -59,6 +61,8 @@ export interface ColdSnapshot {
   profiles: Profile[];
   clients: Client[];
   sections: Section[];
+  /** subject-level containers inside a section (0027) */
+  taskGroups: TaskGroup[];
   tags: Tag[];
   planColumns: PlanColumn[];
   billingPeriods: BillingPeriod[];
@@ -91,8 +95,20 @@ export interface HotCtx {
 }
 
 export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
-  const [prof, cli, projLegacy, sec, tagsRes, cols, periods, days, linkRows, markRows, typeRows] =
-    await Promise.all([
+  const [
+    prof,
+    cli,
+    projLegacy,
+    sec,
+    tagsRes,
+    cols,
+    periods,
+    days,
+    linkRows,
+    markRows,
+    typeRows,
+    groupRows,
+  ] = await Promise.all([
     // "*" keeps boot working whether or not migration 0004 is applied
     fetchAll<DbRow>(sb, "profiles", "*"),
     fetchAll<DbRow>(sb, "clients", "*"),
@@ -113,6 +129,10 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     fetchAll<DbRow>(sb, "timeline_marks", "*").catch(() => [] as DbRow[]),
     // absent until 0024; an empty list simply means "no types defined"
     fetchAll<DbRow>(sb, "task_types", "*").catch(() => [] as DbRow[]),
+    // absent until 0027. "No groups anywhere" is exactly how the client page
+    // rendered before this existed, so an empty list is the correct fallback —
+    // and `tasks.group_id` falls away on its own rung of the hot ladder.
+    fetchAll<DbRow>(sb, "task_groups", "*").catch(() => [] as DbRow[]),
   ]);
 
   const projectClient = new Map<string, string>(
@@ -122,6 +142,9 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     profiles: prof.map(mapProfile),
     clients: cli.map(mapClient),
     sections: sec.map((r) => mapSection(r, projectClient)),
+    taskGroups: groupRows
+      .map(mapTaskGroup)
+      .sort((a: TaskGroup, b: TaskGroup) => a.position - b.position),
     tags: ((tagsRes.data ?? []) as DbRow[]).map(mapTag),
     planColumns: cols.map(mapPlanColumn),
     billingPeriods: periods
@@ -153,10 +176,16 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
       const orderCol = "timeline_position";
       // 0024 adds the kind-of-work colour the Timeline paints with.
       const typeCol = "type_id";
+      // 0027 adds the subject group. Its own rung, like every column before it:
+      // a studio that hasn't run 0027 must keep type_id, timeline_position,
+      // start_date AND the legacy columns. Folding a new column into an existing
+      // rung is how the `legacy` flag gets dropped by accident.
+      const groupCol = "group_id";
       // Only step down when the column is genuinely absent (isMissingSchema);
       // anything else — a dropped connection, an RLS change — must surface
       // rather than quietly serve a reduced app. See DbError in db.ts.
       for (const select of [
+        `client_id, ${groupCol}, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0027
         `client_id, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0024
         `client_id, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0023
         `client_id, ${startCol}, ${legacyCols}, ${cols}`, // post-0007 + 0016 + 0022
@@ -254,7 +283,7 @@ export function fingerprint(h: HotSnapshot): string {
   const tasks = h.tasks
     .map(
       (t) =>
-        `${t.id}${t.title}${t.status}${t.assigneeId}${t.sectionId}${t.clientId}${t.dueDate}${t.estimateHours}${t.position}${t.billable}${t.tag}`,
+        `${t.id}${t.title}${t.status}${t.assigneeId}${t.sectionId}${t.groupId}${t.clientId}${t.dueDate}${t.estimateHours}${t.position}${t.billable}${t.tag}`,
     )
     .join("");
   const plan = h.planEntries

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import {
   PublicGanttView,
+  type PublicGanttBlock,
   type PublicGanttGroup,
   type PublicGanttTask,
 } from "./public-gantt-view";
@@ -56,6 +57,7 @@ export default async function PublicGanttPage({
 
   const [
     { data: sections },
+    { data: groupRows },
     { data: tasks },
     { data: types },
     { data: days },
@@ -66,11 +68,18 @@ export default async function PublicGanttPage({
       .select("id, name, position")
       .eq("client_id", link.client_id)
       .order("position"),
+    // Subject groups (0027). Names and structure only — a group holds no hours
+    // of its own, so there is nothing here that could leak one.
+    sb
+      .from("task_groups")
+      .select("id, name, section_id, position")
+      .eq("client_id", link.client_id)
+      .order("position"),
     // `status` IS read — only to EXCLUDE completed work, never sent onward.
     sb
       .from("tasks")
       .select(
-        "id, title, section_id, start_date, due_date, type_id, timeline_position, status, estimate_hours",
+        "id, title, section_id, group_id, start_date, due_date, type_id, timeline_position, status, estimate_hours",
       )
       .eq("client_id", link.client_id)
       .not("due_date", "is", null)
@@ -100,6 +109,7 @@ export default async function PublicGanttPage({
       id: t.id as string,
       title: t.title as string,
       sectionId: (t.section_id as string | null) ?? null,
+      groupId: (t.group_id as string | null) ?? null,
       startDate: (t.start_date as string | null) ?? null,
       dueDate: t.due_date as string,
       typeName: type?.name ?? null,
@@ -135,25 +145,43 @@ export default async function PublicGanttPage({
     const key = r.sectionId && order.has(r.sectionId) ? r.sectionId : "";
     (byKey.get(key) ?? byKey.set(key, []).get(key)!).push(r);
   }
+
+  // ⚠️ The SAME rule as the studio's Timeline, tiebreak for tiebreak: hand-placed
+  // rows first in their placed order, never-dragged rows to the bottom by START
+  // date (not due), then by title. A client comparing this page with a screenshot
+  // from the studio must not see a different order — which is why this is one
+  // comparator used at both depths rather than two that happen to agree today.
+  const byPlacement = (a: PublicGanttTask, b: PublicGanttTask) =>
+    (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+    (a.startDate ?? a.dueDate).localeCompare(b.startDate ?? b.dueDate) ||
+    a.title.localeCompare(b.title);
+
   const groups: PublicGanttGroup[] = [...byKey.entries()]
-    .map(([key, list]) => ({
-      key,
-      name: key
-        ? ((sections ?? []).find((s) => s.id === key)?.name as string)
-        : "No section",
-      rank: key ? (order.get(key) ?? 0) : Number.MAX_SAFE_INTEGER,
-      // The SAME rule as the studio's Timeline, tiebreak for tiebreak:
-      // hand-placed rows first in their placed order, never-dragged rows to the
-      // bottom by START date (not due), then by title. A client comparing this
-      // page with a screenshot from the studio must not see a different order.
-      tasks: list.sort(
-        (a, b) =>
-          (a.order ?? Number.MAX_SAFE_INTEGER) -
-            (b.order ?? Number.MAX_SAFE_INTEGER) ||
-          (a.startDate ?? a.dueDate).localeCompare(b.startDate ?? b.dueDate) ||
-          a.title.localeCompare(b.title),
-      ),
-    }))
+    .map(([key, list]) => {
+      // Groups in this section, in position order. Only those that actually hold
+      // a dated task appear — an empty group is studio scaffolding, and a client
+      // reading a plan has nothing to do with a heading over nothing.
+      const blocks: PublicGanttBlock[] = (groupRows ?? [])
+        .filter((g) => ((g.section_id as string | null) ?? "") === key)
+        .map((g) => ({
+          id: g.id as string,
+          name: g.name as string,
+          tasks: list.filter((t) => t.groupId === g.id).sort(byPlacement),
+        }))
+        .filter((b) => b.tasks.length > 0);
+      const inBlock = new Set(blocks.flatMap((b) => b.tasks.map((t) => t.id)));
+      return {
+        key,
+        name: key
+          ? ((sections ?? []).find((s) => s.id === key)?.name as string)
+          : "No section",
+        rank: key ? (order.get(key) ?? 0) : Number.MAX_SAFE_INTEGER,
+        blocks,
+        // Everything not taken by a group — including a task whose group sits in
+        // another section, which renders loose rather than disappearing.
+        tasks: list.filter((t) => !inBlock.has(t.id)).sort(byPlacement),
+      };
+    })
     .sort((a, b) => a.rank - b.rank);
 
   const offDays = (days ?? []).map((d) => ({

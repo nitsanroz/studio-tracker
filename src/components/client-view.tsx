@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -23,6 +24,7 @@ import {
   GripVertical,
   Columns3,
   Info,
+  Layers,
   Pencil,
   Plus,
   Trash2,
@@ -31,7 +33,9 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatDate, formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
-import { Avatar, BudgetBar, CollapseChevron, ContextMenu, Tabs, TagBadge } from "./ui";
+import { rollupTasks, sectionBudgetHours, type Rollup } from "@/lib/task-rollup";
+import { toISO } from "@/lib/gantt";
+import { Avatar, BudgetBar, CollapseChevron, ContextMenu, Modal, Tabs, TagBadge } from "./ui";
 import { ClientAvatar } from "./client-avatar";
 import { ClientInfoModal } from "./client-info-modal";
 import { ClientNotes } from "./client-notes";
@@ -47,7 +51,7 @@ import { ShareGanttButton } from "./share-gantt-button";
 import { TaskBulkControls } from "./task-bulk-controls";
 import { useColWidths, ResizeHandle } from "./resizable";
 import { HBar, LineChart } from "./charts";
-import type { Profile, Section, Task } from "@/lib/types";
+import type { Profile, Section, Task, TaskGroup } from "@/lib/types";
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -189,6 +193,10 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
 // Tasks): widening a resizable column scrolls the table sideways instead of
 // crushing the name to a single character.
 const COLS = "flex items-center gap-3 pl-9 pr-4";
+/** What `pl-9` in COLS is worth, so an indented row can add to it. */
+const BASE_PL = 36;
+/** One level of nesting — a group's rows, and the group's own contents. */
+const INDENT = 18;
 /** Applied to the leading cell (the tick, and the header's spacer) so both stay aligned. */
 const LEAD_TIGHT = "-mr-1.5";
 
@@ -497,10 +505,19 @@ function SortHeader({
 function TaskRow({
   task,
   reorderable = true,
+  indent = 0,
   onContextMenu,
 }: {
   task: Task;
   reorderable?: boolean;
+  /**
+   * Extra left padding, in px, for a row nested inside a group (0027).
+   *
+   * ⚠️ It shifts the CONTENT only — the checkbox and grip are absolutely
+   * positioned and stay where they are, so the selection column reads straight
+   * down the table whatever depth a row sits at.
+   */
+  indent?: number;
   /** right-click → "Add task above/below"; the section owns the menu and the composer */
   onContextMenu?: (e: ReactMouseEvent, task: Task) => void;
 }) {
@@ -537,12 +554,24 @@ function TaskRow({
 
   /** True when the in-flight drag is a sibling of this row, i.e. a reorder.
    *  Disabled while a column sort is on: position changes wouldn't be visible, so
-   *  the drop would look like it did nothing. Cross-section moves still work. */
+   *  the drop would look like it did nothing. Cross-container moves still work.
+   *
+   *  ⚠️ Sibling means the same GROUP as well as the same section (0027): a task
+   *  dragged out of a group onto a loose row is changing container, not
+   *  reordering, so this must decline and let the drop bubble to the group or
+   *  section that owns the destination. `reorderTask` densifies one container's
+   *  run, and treating a cross-container drop as a reorder would renumber the
+   *  wrong run. */
   function isSiblingDrag() {
     if (!reorderable) return false;
     if (!draggedTaskId || draggedTaskId === task.id) return false;
     const d = allTasks.find((t) => t.id === draggedTaskId);
-    return !!d && d.sectionId === task.sectionId && d.clientId === task.clientId;
+    return (
+      !!d &&
+      d.sectionId === task.sectionId &&
+      d.groupId === task.groupId &&
+      d.clientId === task.clientId
+    );
   }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const taskType = taskTypes.find((t) => t.id === task.typeId) ?? null;
@@ -598,6 +627,9 @@ function TaskRow({
         const id = e.dataTransfer.getData(TASK_DRAG_TYPE) || draggedTaskId;
         if (id) reorderTask(id, task.id);
       }}
+      // Inline, not an arbitrary-value class: `pl-9` lives in COLS and an inline
+      // style is the one thing guaranteed to win, whatever order Tailwind emits.
+      style={indent ? { paddingLeft: BASE_PL + indent } : undefined}
       // inset shadow rather than a border: a real border-top would shift the row 2px
       className={`${COLS} group relative h-10 cursor-pointer border-b border-border text-sm transition-colors ${
         checked ? "bg-brand-soft" : active ? "bg-brand-soft/50" : "hover:bg-background"
@@ -843,11 +875,13 @@ function InsertTaskRow({
   anchorId,
   where,
   copyDates,
+  indent = 0,
   onDone,
 }: {
   anchorId: string;
   where: "before" | "after";
   copyDates?: boolean;
+  indent?: number;
   onDone: () => void;
 }) {
   const { addTaskNear } = useData();
@@ -860,6 +894,7 @@ function InsertTaskRow({
 
   return (
     <form
+      style={indent ? { paddingLeft: BASE_PL + indent } : undefined}
       className={`${COLS} h-10 border-b border-border bg-brand-soft/40`}
       onSubmit={(e) => {
         e.preventDefault();
@@ -947,15 +982,28 @@ function TimelineHintDot({ text }: { text: string }) {
   );
 }
 
-function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: string | null }) {
+function AddTaskRow({
+  clientId,
+  sectionId,
+  groupId = null,
+  indent = 0,
+}: {
+  clientId: string;
+  sectionId: string | null;
+  /** Set inside a group, so the new task lands in it (and in its section). */
+  groupId?: string | null;
+  indent?: number;
+}) {
   const { addTask } = useData();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
+  const pad = indent ? { paddingLeft: BASE_PL + indent } : undefined;
 
   if (!editing) {
     return (
       <button
         onClick={() => setEditing(true)}
+        style={pad}
         className={`${COLS} h-9 w-full border-b border-border text-left text-sm text-faint hover:bg-background hover:text-muted`}
       >
         <span className="w-[17px]" />
@@ -965,10 +1013,11 @@ function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: stri
   }
   return (
     <form
+      style={pad}
       className={`${COLS} h-10 border-b border-border`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (title.trim()) addTask(clientId, sectionId, title.trim());
+        if (title.trim()) addTask(clientId, sectionId, title.trim(), groupId);
         setTitle("");
       }}
     >
@@ -978,7 +1027,7 @@ function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: stri
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => {
-          if (title.trim()) addTask(clientId, sectionId, title.trim());
+          if (title.trim()) addTask(clientId, sectionId, title.trim(), groupId);
           setTitle("");
           setEditing(false);
         }}
@@ -995,26 +1044,583 @@ function AddTaskRow({ clientId, sectionId }: { clientId: string; sectionId: stri
   );
 }
 
-function SectionGroup({
-  section,
+/**
+ * One CONTAINER's run of task rows, plus the right-click "Add task above/below"
+ * composer that belongs to it.
+ *
+ * Shared by a section's loose tasks and by every group's children (0027), because
+ * they are the same list at two depths — a second copy would drift the moment one
+ * of them gained a menu item. It owns the menu and composer state so each run
+ * opens its own, rather than one section-wide composer appearing in whichever
+ * container the user last right-clicked.
+ */
+function TaskRunRows({
+  tasks,
+  reorderable,
+  indent = 0,
+  onNewGroup,
+  onNewSection,
+}: {
+  tasks: Task[];
+  reorderable: boolean;
+  indent?: number;
+  /** Right-click → "New group…". Absent inside a group: no groups in groups. */
+  onNewGroup?: (seedTaskId: string) => void;
+  /** Right-click → "New section…". Absent inside a group, for the same reason. */
+  onNewSection?: () => void;
+}) {
+  const { groupTasksIntoNew, showNotice } = useData();
+  const sel = useSelection();
+  const [menu, setMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
+  const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
+    null,
+  );
+
+  /** The multi-selection, but only when the right-clicked row is part of it. */
+  const gatherable = (taskId: string) => {
+    const picked = sel?.selected;
+    if (!picked || picked.size < 2 || !picked.has(taskId)) return null;
+    return [...picked];
+  };
+
+  return (
+    <>
+      {tasks.map((t) => (
+        <Fragment key={t.id}>
+          {insert?.anchorId === t.id && insert.where === "before" && (
+            <InsertTaskRow
+              anchorId={t.id}
+              where="before"
+              indent={indent}
+              onDone={() => setInsert(null)}
+            />
+          )}
+          <TaskRow
+            task={t}
+            reorderable={reorderable}
+            indent={indent}
+            onContextMenu={(e, task) => {
+              e.preventDefault();
+              setMenu({ x: e.clientX, y: e.clientY, taskId: task.id });
+            }}
+          />
+          {insert?.anchorId === t.id && insert.where === "after" && (
+            <InsertTaskRow
+              anchorId={t.id}
+              where="after"
+              indent={indent}
+              onDone={() => setInsert(null)}
+            />
+          )}
+        </Fragment>
+      ))}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={[
+            {
+              label: "Add task above",
+              onClick: () => setInsert({ anchorId: menu.taskId, where: "before" }),
+            },
+            {
+              label: "Add task below",
+              onClick: () => setInsert({ anchorId: menu.taskId, where: "after" }),
+            },
+            // Whichever of these two is offered depends on what is selected: with
+            // a multi-selection under the pointer the useful command is "gather
+            // THESE", and with a single row it is "make me an empty one". Showing
+            // both every time would make the common case pick from four items.
+            ...(gatherable(menu.taskId)
+              ? [
+                  {
+                    label: `Group the ${gatherable(menu.taskId)!.length} selected tasks…`,
+                    onClick: () => {
+                      const ids = gatherable(menu.taskId)!;
+                      const name = prompt("Name for the new group")?.trim();
+                      if (!name) return;
+                      void groupTasksIntoNew(ids, name).then((err) => {
+                        if (err) showNotice(err);
+                        else sel?.setMany(ids, false);
+                      });
+                    },
+                  },
+                ]
+              : onNewGroup
+                ? [{ label: "New group…", onClick: () => onNewGroup(menu.taskId) }]
+                : []),
+            ...(onNewSection ? [{ label: "New section…", onClick: onNewSection }] : []),
+          ]}
+          onClose={() => setMenu(null)}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * A container's rolled-up figures, as a compact strip: dates · working days ·
+ * hours against budget.
+ *
+ * ⚠️ A STRIP here, not cells aligned to the columns — which is what the Timeline
+ * does. The difference is the two tables: the Timeline's left table IS these four
+ * figures, one per column, so they drop straight in. This header row has a
+ * `flex-1` name and no column grid of its own, so aligning would mean pinning
+ * every section name to a fixed width to make room for numbers that read
+ * perfectly well as a line. It sits where the recovered-hours note already sits.
+ */
+function SummaryStrip({
+  rolled,
+  budget,
+}: {
+  rolled: Rollup;
+  /** Sections may override with their own recovered figure — see sectionBudgetHours. */
+  budget: number | null;
+}) {
+  if (rolled.taskCount === 0) return null;
+  const parts: string[] = [];
+  if (rolled.start && rolled.due) {
+    parts.push(
+      `${formatDayMonth(toISO(rolled.start))} – ${formatDayMonth(toISO(rolled.due))}`,
+      `${rolled.workDays}d`,
+    );
+  }
+  const hours = formatHoursDecimal(rolled.doneMinutes);
+  parts.push(budget != null ? `${hours}/${budget}h` : `${hours}h`);
+
+  return (
+    <span
+      className="shrink-0 text-xs font-normal tabular-nums text-faint"
+      title={`${rolled.taskCount} task${rolled.taskCount === 1 ? "" : "s"}, ${rolled.doneCount} done · hours logged against budget${
+        rolled.datedCount < rolled.taskCount
+          ? ` · dates cover the ${rolled.datedCount} dated task${rolled.datedCount === 1 ? "" : "s"}`
+          : ""
+      }`}
+    >
+      {parts.join(" · ")}
+    </span>
+  );
+}
+
+/** Distinct from the task and section types, for the same reason those two are. */
+const GROUP_DRAG_TYPE = "application/x-studio-group-id";
+let draggedGroupId: string | null = null;
+
+/**
+ * A subject group inside a section (0027) — "Home page", holding the several
+ * tasks that make up one webpage.
+ *
+ * Chrome is the section header's, one step down: same chevron, pencil, count,
+ * grip and trash, at the task rows' size rather than the section's, indented one
+ * level, and carrying a `Layers` icon. ⚠️ The size step is the whole hierarchy
+ * here — globals.css collapses medium/semibold/bold onto one weight (570), so a
+ * group cannot be told apart from a section or a task by weight.
+ */
+function GroupRow({
+  group,
   tasks,
   clientId,
   reorderable,
   open,
   onToggle,
   onOpen,
+  summary,
+}: {
+  group: TaskGroup;
+  /** Its own tasks, already filtered and sorted by the caller. */
+  tasks: Task[];
+  clientId: string;
+  reorderable: boolean;
+  open: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
+  /** The rolled-up figures, when "summaries" is on. */
+  summary?: ReactNode;
+}) {
+  const { tasks: allTasks, updateTask, updateTaskGroup, reorderTaskGroup } = useData();
+  const isAdmin = useIsAdmin();
+  const sel = useSelection();
+  const [dragOver, setDragOver] = useState(false);
+  const [groupOver, setGroupOver] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  /** Same ref-not-state reason as TaskRow and SectionGroup. */
+  const armedRef = useRef(false);
+
+  // Tasks dropped anywhere on the group — header or rows — land in it.
+  const dropProps = isAdmin
+    ? {
+        onDragOver: (e: React.DragEvent) => {
+          // draggedTaskId, never dataTransfer.types: custom MIME types aren't
+          // reliably listed during dragover, which silently stopped drop targets
+          // from ever accepting (v0.99.26).
+          if (!draggedTaskId) return;
+          e.preventDefault();
+          e.stopPropagation(); // the section must not also light up
+          e.dataTransfer.dropEffect = "move" as const;
+          setDragOver(true);
+        },
+        onDragLeave: (e: React.DragEvent) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setDragOver(false);
+        },
+        onDrop: (e: React.DragEvent) => {
+          if (!draggedTaskId) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(false);
+          const id = e.dataTransfer.getData(TASK_DRAG_TYPE) || draggedTaskId;
+          if (!id) return;
+          const dragged = allTasks.find((t) => t.id === id);
+          if (!dragged || dragged.groupId === group.id) return; // no-op, no junk undo step
+          // `groupId` alone: the store sets the section from the group, so a task
+          // dragged in from another section can't end up in two places at once.
+          updateTask(id, { groupId: group.id });
+          onOpen();
+        },
+      }
+    : {};
+
+  /** Group reordering, kept apart from the task drags sharing this table. */
+  const groupDragProps = isAdmin
+    ? {
+        draggable: true,
+        onDragStart: (e: React.DragEvent) => {
+          if (!armedRef.current) {
+            e.preventDefault();
+            return;
+          }
+          armedRef.current = false;
+          draggedGroupId = group.id;
+          e.dataTransfer.setData(GROUP_DRAG_TYPE, group.id);
+          e.dataTransfer.setData("text/plain", group.id);
+          e.dataTransfer.effectAllowed = "move";
+        },
+        onDragEnd: () => {
+          draggedGroupId = null;
+          setGroupOver(false);
+        },
+        onDragOver: (e: React.DragEvent) => {
+          if (draggedTaskId || !draggedGroupId || draggedGroupId === group.id) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = "move" as const;
+          setGroupOver(true);
+        },
+        onDragLeave: () => setGroupOver(false),
+        onDrop: (e: React.DragEvent) => {
+          if (draggedTaskId || !draggedGroupId) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setGroupOver(false);
+          const moved = draggedGroupId;
+          draggedGroupId = null;
+          if (moved !== group.id) reorderTaskGroup(moved, group.id);
+        },
+      }
+    : {};
+
+  return (
+    <div {...dropProps} className={dragOver ? "rounded-lg ring-2 ring-brand ring-inset" : undefined}>
+      <div
+        {...groupDragProps}
+        style={{ paddingLeft: BASE_PL + INDENT }}
+        className={`${COLS} group relative border-b border-border py-1.5 text-left text-sm font-semibold hover:bg-background ${
+          groupOver ? "shadow-[inset_0_2px_0_0_var(--brand)]" : ""
+        }`}
+      >
+        {isAdmin && (
+          <span
+            className={`absolute left-1 top-0 flex h-full items-center transition-opacity ${
+              (sel?.selected.size ?? 0) > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
+            <SelectAllBox ids={tasks.map((t) => t.id)} title={`Select all in ${group.name}`} />
+          </span>
+        )}
+        {isAdmin && (
+          <span
+            onMouseDown={() => (armedRef.current = true)}
+            className="absolute left-[18px] top-0 flex h-full w-[18px] cursor-grab items-center justify-center text-faint opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+            title="Drag to reorder this group"
+          >
+            <GripVertical size={14} />
+          </span>
+        )}
+        <button
+          onClick={onToggle}
+          title={open ? "Collapse" : "Expand"}
+          className={`flex w-[17px] shrink-0 items-center justify-center ${LEAD_TIGHT}`}
+        >
+          <CollapseChevron open={open} />
+        </button>
+        {renaming ? (
+          <span className="min-w-32 flex-1">
+            <EditableTextCell
+              startEditing
+              value={group.name}
+              onCommit={(v) => {
+                if (v && v !== group.name) updateTaskGroup(group.id, { name: v });
+              }}
+              onExit={() => setRenaming(false)}
+            />
+          </span>
+        ) : (
+          <span className="flex min-w-32 flex-1 items-center gap-1.5">
+            {/* 14px, matching the section header's pencil and trash rather than
+                the app's 20px icon convention — at 20 it outweighs the name. */}
+            <Layers size={14} className="shrink-0 text-muted" aria-hidden />
+            <button onClick={onToggle} className="bidi-auto min-w-0 truncate text-left">
+              {group.name}
+            </button>
+            <span className="shrink-0 text-xs font-normal text-faint">{tasks.length}</span>
+            {isAdmin && (
+              <button
+                onClick={() => setRenaming(true)}
+                title="Rename group"
+                aria-label={`Rename ${group.name}`}
+                className="shrink-0 rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+          </span>
+        )}
+        {summary}
+        {isAdmin && (
+          // Always enabled, unlike a section's trash: there is a safe answer here
+          // (dissolve) whatever the group holds, so nothing has to be tidied up
+          // first — the dialog is what makes the two answers distinguishable.
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            title="Remove this group"
+            className="shrink-0 rounded p-0.5 text-faint hover:text-danger"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <>
+          <TaskRunRows tasks={tasks} reorderable={reorderable} indent={INDENT * 2} />
+          <AddTaskRow
+            clientId={clientId}
+            sectionId={group.sectionId}
+            groupId={group.id}
+            indent={INDENT * 2}
+          />
+        </>
+      )}
+      {confirmingDelete && (
+        <DeleteGroupModal group={group} onClose={() => setConfirmingDelete(false)} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Removing a group asks WHICH removal you meant, because the two are not close
+ * to each other: dissolving keeps the work and drops the heading, deleting takes
+ * the work with it.
+ *
+ * ⚠️ A `confirm()` cannot ask this. It has two buttons and both would have to be
+ * "yes" — the destructive reading is one mis-click away, and that reading
+ * CASCADES to time entries and is not undoable. Hence a real dialog where the
+ * safe option is the default and the destructive one is separately worded.
+ */
+function DeleteGroupModal({
+  group,
+  onClose,
+}: {
+  group: TaskGroup;
+  onClose: () => void;
+}) {
+  const { tasks, taskMinutes, deleteTaskGroup } = useData();
+  const members = tasks.filter((t) => t.groupId === group.id);
+  const minutes = members.reduce((sum, t) => sum + taskHoursDone(t, taskMinutes), 0);
+  // The same rule `deleteTasksBulk` follows for a selection: hours that have been
+  // logged cannot be got back, so deleting the work is simply not offered.
+  const blocked = minutes > 0;
+
+  return (
+    <Modal onClose={onClose} width="md" align="center" labelledBy="delete-group-title">
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 id="delete-group-title" className="text-lg font-semibold">
+            Remove “{group.name}”?
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {members.length === 0
+              ? "It has no tasks in it."
+              : `It holds ${members.length} task${members.length === 1 ? "" : "s"}${
+                  minutes > 0 ? ` with ${formatHoursShort(minutes)} logged against ${members.length === 1 ? "it" : "them"}` : ""
+                }.`}
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            deleteTaskGroup(group.id);
+            onClose();
+          }}
+          className="rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:border-brand hover:bg-brand-soft/40"
+        >
+          <span className="font-semibold">Remove the group only</span>
+          <span className="mt-0.5 block text-xs text-muted">
+            {members.length === 0
+              ? "Nothing else changes."
+              : `Its ${members.length === 1 ? "task moves" : "tasks move"} up into the section, keeping every hour and date.`}
+          </span>
+        </button>
+
+        {members.length > 0 && (
+          <button
+            disabled={blocked}
+            onClick={() => {
+              deleteTaskGroup(group.id, { withTasks: true });
+              onClose();
+            }}
+            className="rounded-lg border border-danger/40 px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:border-border disabled:text-muted disabled:hover:bg-transparent"
+          >
+            <span className="font-semibold">
+              Delete the group and its {members.length} task
+              {members.length === 1 ? "" : "s"}
+            </span>
+            <span className="mt-0.5 block text-xs">
+              {blocked
+                ? `Not possible — ${formatHoursShort(minutes)} has been logged against ${members.length === 1 ? "it" : "them"}, and deleting a task destroys its time entries for good. Move the work out first.`
+                : "Permanent. This also removes their comments and attachments, and cannot be undone."}
+            </span>
+          </button>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 text-sm text-muted hover:text-foreground"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** "+ Add group" at the foot of a section. Admin-only, like every section edit. */
+function AddGroupRow({
+  clientId,
+  sectionId,
+}: {
+  clientId: string;
+  sectionId: string | null;
+}) {
+  const { addTaskGroup } = useData();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const pad = { paddingLeft: BASE_PL + INDENT };
+
+  const commit = () => {
+    if (name.trim()) addTaskGroup(clientId, sectionId, name.trim());
+    setName("");
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        style={pad}
+        className={`${COLS} h-9 w-full border-b border-border text-left text-sm text-faint hover:bg-background hover:text-muted`}
+      >
+        <span className="w-[17px]" />
+        <Layers size={13} aria-hidden />
+        Add group…
+      </button>
+    );
+  }
+  return (
+    <form
+      style={pad}
+      className={`${COLS} h-10 border-b border-border`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        commit();
+      }}
+    >
+      <span className="w-[17px]" />
+      <Layers size={13} className="text-muted" aria-hidden />
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setName("");
+            setEditing(false);
+          }
+          // Enter handled EXPLICITLY rather than left to implicit form
+          // submission — this form has no submit button, which is the shape that
+          // silently did nothing in `InsertTaskRow` (v1.9.1). Belt and braces:
+          // `AddTaskRow` relies on the implicit path and appears to work, so this
+          // may be redundant, but it costs a line and cannot be wrong.
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        placeholder="Group name — Enter to add"
+        className="bidi-auto min-w-32 flex-1 bg-transparent text-sm outline-none"
+      />
+    </form>
+  );
+}
+
+function SectionGroup({
+  section,
+  tasks,
+  groups,
+  clientId,
+  reorderable,
+  open,
+  isGroupOpen,
+  onToggle,
+  onToggleGroup,
+  onOpen,
+  onOpenGroup,
+  onNewGroup,
+  onNewSection,
+  summary,
+  groupSummary,
 }: {
   section: Section | null;
+  /** Every task in this section, groups' children included. */
   tasks: Task[];
+  /** This section's groups, in position order (0027). */
+  groups: TaskGroup[];
   clientId: string;
   reorderable: boolean;
   /** Lifted to ClientView so the header chevron can collapse/expand every section. */
   open: boolean;
+  /** ClientView owns the namespacing of collapse keys, so it answers this. */
+  isGroupOpen: (groupId: string) => boolean;
   onToggle: () => void;
+  onToggleGroup: (groupId: string) => void;
   onOpen: () => void;
+  onOpenGroup: (groupId: string) => void;
+  /** Right-click → "New group…" in this section. */
+  onNewGroup: () => void;
+  /** Right-click → "New section…" on this client. */
+  onNewSection: () => void;
+  /** Rolled-up figures for the section, when "summaries" is on. */
+  summary?: ReactNode;
+  /** Same, per group — a render prop so the arithmetic stays in one place. */
+  groupSummary?: (group: TaskGroup, groupTasks: Task[]) => ReactNode;
 }) {
   const {
     tasks: allTasks,
+    taskGroups: allGroups,
     updateTask,
     updateSection,
     deleteSection,
@@ -1025,17 +1631,6 @@ function SectionGroup({
   const [dragOver, setDragOver] = useState(false);
   /** Insert line while another section is being dragged over this header. */
   const [sectionOver, setSectionOver] = useState(false);
-  /** Right-click menu on a task row, and the row it was opened from. */
-  const [menu, setMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
-  /** Where the inline "new task" field is currently open, if anywhere. */
-  const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
-    null,
-  );
-
-  const openRowMenu = (e: ReactMouseEvent, task: Task) => {
-    e.preventDefault();
-    setMenu({ x: e.clientX, y: e.clientY, taskId: task.id });
-  };
   /** The name is a plain heading until the pencil says otherwise. */
   const [renaming, setRenaming] = useState(false);
   /**
@@ -1049,7 +1644,12 @@ function SectionGroup({
   const sectionId = section?.id ?? null;
   // Against ALL tasks, not the `tasks` prop: that one is filtered by "Show
   // completed", so a section holding only done tasks would look safe to delete.
-  const sectionIsEmpty = section != null && !allTasks.some((t) => t.sectionId === section.id);
+  // Groups count too — `deleteSection` refuses while any remain, and an enabled
+  // trash that then fails with a write error is worse than a disabled one.
+  const sectionIsEmpty =
+    section != null &&
+    !allTasks.some((t) => t.sectionId === section.id) &&
+    !allGroups.some((g) => g.sectionId === section.id);
 
   // The whole group is the drop zone — header, rows and the add-row — so there's a
   // generous target rather than a thin line between sections.
@@ -1076,8 +1676,14 @@ function SectionGroup({
           if (!id) return;
           const dragged = allTasks.find((t) => t.id === id);
           // No-op when it's already here: saves a pointless write and a junk undo step.
-          if (!dragged || dragged.sectionId === sectionId) return;
-          updateTask(id, { sectionId });
+          // ⚠️ "Here" means loose in this section — a task dragged OUT of one of
+          // this section's groups has the same `sectionId` already, and testing
+          // that alone made dragging out of a group do nothing at all.
+          if (!dragged || (dragged.sectionId === sectionId && dragged.groupId === null)) return;
+          // `groupId: null` explicitly: dropping on the section is how a task
+          // leaves a group, and the store would otherwise only clear the group
+          // when the section actually changed.
+          updateTask(id, { sectionId, groupId: null });
           onOpen(); // reveal the task that just landed here
         },
       }
@@ -1231,6 +1837,7 @@ function SectionGroup({
             {section.estimateHours != null && ` / ${section.estimateHours}h budget`}
           </span>
         )}
+        {summary}
         {isAdmin && section && (
           <button
             onClick={() => {
@@ -1241,7 +1848,7 @@ function SectionGroup({
             title={
               sectionIsEmpty
                 ? "Delete this section"
-                : "Move or delete its tasks first — only an empty section can be removed"
+                : "Move or delete its tasks and groups first — only an empty section can be removed"
             }
             className="shrink-0 rounded p-0.5 text-faint hover:text-danger disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-faint"
           >
@@ -1251,40 +1858,42 @@ function SectionGroup({
       </div>
       {open && (
         <>
-          {tasks.map((t) => (
-            <Fragment key={t.id}>
-              {insert?.anchorId === t.id && insert.where === "before" && (
-                <InsertTaskRow
-                  anchorId={t.id}
-                  where="before"
-                  onDone={() => setInsert(null)}
-                />
-              )}
-              <TaskRow task={t} reorderable={reorderable} onContextMenu={openRowMenu} />
-              {insert?.anchorId === t.id && insert.where === "after" && (
-                <InsertTaskRow anchorId={t.id} where="after" onDone={() => setInsert(null)} />
-              )}
-            </Fragment>
-          ))}
+          {/* Groups first, then the section's loose tasks. Interleaving the two
+              would mean one shared position space across two tables, and a
+              reorder inside either would renumber rows it doesn't own. */}
+          {groups.map((g) => {
+            const own = tasks.filter((t) => t.groupId === g.id);
+            return (
+              <GroupRow
+                key={g.id}
+                group={g}
+                tasks={own}
+                clientId={clientId}
+                reorderable={reorderable}
+                open={isGroupOpen(g.id)}
+                onToggle={() => onToggleGroup(g.id)}
+                onOpen={() => onOpenGroup(g.id)}
+                summary={groupSummary?.(g, own)}
+              />
+            );
+          })}
+          {/* ⚠️ "Not in one of THIS section's groups", not "groupId === null".
+              A task pointing at a group that lives in another section breaks the
+              0027 invariant, and the rule everywhere is that such a task renders
+              LOOSE rather than disappearing — testing for null alone would drop
+              it from the table entirely. */}
+          <TaskRunRows
+            tasks={tasks.filter((t) => !t.groupId || !groups.some((g) => g.id === t.groupId))}
+            reorderable={reorderable}
+            onNewGroup={onNewGroup}
+            onNewSection={onNewSection}
+          />
+          {/* ⚠️ NOT wrapped in `isAdmin` — "Add task…" has never been admin-gated
+              (a designer may add work to a client), unlike creating a group,
+              which is structure and follows the section rules. */}
           <AddTaskRow clientId={clientId} sectionId={section?.id ?? null} />
+          {isAdmin && <AddGroupRow clientId={clientId} sectionId={section?.id ?? null} />}
         </>
-      )}
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={[
-            {
-              label: "Add task above",
-              onClick: () => setInsert({ anchorId: menu.taskId, where: "before" }),
-            },
-            {
-              label: "Add task below",
-              onClick: () => setInsert({ anchorId: menu.taskId, where: "after" }),
-            },
-          ]}
-          onClose={() => setMenu(null)}
-        />
       )}
     </div>
   );
@@ -1440,8 +2049,19 @@ function SelectionBar({
 type TaskTab = "tasks" | "board" | "timeline";
 
 export function ClientView({ clientId }: { clientId: string }) {
-  const { clients, sections, tasks, profiles, taskTypes, taskMinutes, addSection, tags, updateTask } =
-    useData();
+  const {
+    clients,
+    sections,
+    taskGroups,
+    tasks,
+    profiles,
+    taskTypes,
+    taskMinutes,
+    addSection,
+    addTaskGroup,
+    tags,
+    updateTask,
+  } = useData();
   const isAdmin = useIsAdmin();
   /**
    * The three "what am I not seeing?" settings, held PER TAB.
@@ -1453,10 +2073,16 @@ export function ClientView({ clientId }: { clientId: string }) {
    * two defaults, and whichever it picked would look like a bug on the other
    * tab. Completed and the type filter follow suit, so the rule is one rule.
    */
-  const [showBy, setShowBy] = useState<Record<TaskTab, { done: boolean; undated: boolean }>>({
-    tasks: { done: false, undated: true },
-    board: { done: false, undated: true },
-    timeline: { done: false, undated: false },
+  const [showBy, setShowBy] = useState<
+    Record<TaskTab, { done: boolean; undated: boolean; summaries: boolean }>
+  >({
+    // `summaries` follows the same per-tab rule and for the same reason: the
+    // Timeline's left table IS those four figures, and a folded group there is a
+    // bar with no numbers unless they are on — while the Tasks tab is already
+    // dense and its headers read fine without them.
+    tasks: { done: false, undated: true, summaries: false },
+    board: { done: false, undated: true, summaries: false },
+    timeline: { done: false, undated: false, summaries: true },
   });
   const [hiddenTypesBy, setHiddenTypesBy] = useState<Record<TaskTab, Set<string>>>({
     tasks: new Set(),
@@ -1466,6 +2092,11 @@ export function ClientView({ clientId }: { clientId: string }) {
   const [draggingTask, setDraggingTask] = useState(false);
   // Collapsed-by-exception: sections are open unless their key is in here, so new
   // sections appear expanded. "" stands for the null "No section" group.
+  //
+  // ⚠️ GROUPS live in this same set under a `g:` prefix (0027), so the header's
+  // collapse-all chevron and `allCollapsed` keep working without knowing which
+  // kind of thing a key names. Two tables' UUIDs could not realistically collide,
+  // but a namespace makes it impossible AND makes the keys readable in a debugger.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   // Lifted out of ClientTimeline so the zoom control can live on the tab strip.
   // Day by default: at week zoom a one-day task is a 9px sliver and the weekend
@@ -1485,11 +2116,14 @@ export function ClientView({ clientId }: { clientId: string }) {
   const showKey: TaskTab = tab === "timeline" ? "timeline" : tab === "board" ? "board" : "tasks";
   const showDone = showBy[showKey].done;
   const showUndated = showBy[showKey].undated;
+  const showSummaries = showBy[showKey].summaries;
   const hiddenTypes = hiddenTypesBy[showKey];
   const setShowDone = (v: boolean) =>
     setShowBy((p) => ({ ...p, [showKey]: { ...p[showKey], done: v } }));
   const setShowUndated = (v: boolean) =>
     setShowBy((p) => ({ ...p, [showKey]: { ...p[showKey], undated: v } }));
+  const setShowSummaries = (v: boolean) =>
+    setShowBy((p) => ({ ...p, [showKey]: { ...p[showKey], summaries: v } }));
   const toggleType = (id: string) =>
     setHiddenTypesBy((p) => {
       const next = new Set(p[showKey]);
@@ -1631,11 +2265,31 @@ export function ClientView({ clientId }: { clientId: string }) {
 
   const noSection = clientTasks.filter((t) => t.sectionId === null);
 
-  // Keys of the groups actually on screen, so "expand/collapse all" only reasons
+  /** This client's groups for one section key, in position order. */
+  const groupsIn = (sectionId: string | null) =>
+    taskGroups
+      .filter((g) => g.clientId === clientId && g.sectionId === sectionId)
+      .sort((a, b) => a.position - b.position);
+
+  /** How the collapse set names a group — see the `collapsed` comment. */
+  const gKey = (id: string) => `g:${id}`;
+
+  // Keys of the sections actually on screen, so "expand/collapse all" only reasons
   // about what's visible (the empty "No section" group appears only mid-drag).
-  const showNoSection = noSection.length > 0 || (isAdmin && draggingTask);
-  const groupKeys = [...(showNoSection ? [""] : []), ...clientSections.map((s) => s.id)];
-  const allCollapsed = groupKeys.length > 0 && groupKeys.every((k) => collapsed.has(k));
+  // A section holding nothing but GROUPS still shows, which is why the no-section
+  // bucket asks about groups as well as tasks.
+  const showNoSection =
+    noSection.length > 0 || groupsIn(null).length > 0 || (isAdmin && draggingTask);
+  const sectionKeys = [...(showNoSection ? [""] : []), ...clientSections.map((s) => s.id)];
+  // Groups are collapsible in their own right, so they belong in the all/none
+  // calculation too — otherwise "collapse all" would leave every group open
+  // inside its folded section and un-collapsing would look half-done.
+  const groupKeys = [
+    ...(showNoSection ? groupsIn(null) : []),
+    ...clientSections.flatMap((s) => groupsIn(s.id)),
+  ].map((g) => gKey(g.id));
+  const allKeys = [...sectionKeys, ...groupKeys];
+  const allCollapsed = allKeys.length > 0 && allKeys.every((k) => collapsed.has(k));
   const toggleGroup = (key: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -1643,15 +2297,65 @@ export function ClientView({ clientId }: { clientId: string }) {
       else next.add(key);
       return next;
     });
+  const reveal = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
 
-  // Display order across every group, so a shift-click range spans sections the
-  // same way it reads on screen.
+  /** Right-click → "New section…": a sibling of the section the row sits in. */
+  const promptNewSection = () => {
+    const name = prompt("Name for the new section")?.trim();
+    if (name) addSection(clientId, name);
+  };
+
+  /** Right-click → "New group…": name it, then it appears empty in that section. */
+  const promptNewGroup = (sectionId: string | null) => {
+    const name = prompt("Name for the new group")?.trim();
+    if (!name) return;
+    void addTaskGroup(clientId, sectionId, name);
+    reveal(sectionId ?? ""); // a group you just made must not land in a folded section
+  };
+
+  // ── the "Section totals" strips ───────────────────────────────────────
+  // Both go through `rollupTasks`, the one place these figures are computed, so
+  // the Tasks tab and the Timeline can never disagree about a group's hours.
+  // ⚠️ `dayStates` is NOT threaded in here: this table has no calendar, so the
+  // working-day count is the plain Sun–Thu one. The Timeline passes the studio's
+  // holidays, which is why a duration there can be a day shorter — and that is
+  // the number to trust, since it is the one drawn against a calendar.
+  const sectionSummary = (section: Section | null, list: Task[]) => {
+    if (!showSummaries) return undefined;
+    const rolled = rollupTasks(list, taskMinutes);
+    return <SummaryStrip rolled={rolled} budget={sectionBudgetHours(section, rolled)} />;
+  };
+  const groupSummaryStrip = (_group: TaskGroup, list: Task[]) => {
+    if (!showSummaries) return undefined;
+    const rolled = rollupTasks(list, taskMinutes);
+    // A group has no budget of its own — always the sum of its tasks.
+    return <SummaryStrip rolled={rolled} budget={rolled.estimateHours} />;
+  };
+
+  /** A section's tasks in the order they render: each group's, then the loose ones. */
+  const orderedIn = (sectionId: string | null, list: Task[]) => {
+    const gs = groupsIn(sectionId);
+    const inGroups = gs.flatMap((g) => list.filter((t) => t.groupId === g.id));
+    const loose = list.filter((t) => !t.groupId || !gs.some((g) => g.id === t.groupId));
+    return [...inGroups, ...loose];
+  };
+
+  // Display order across every section, so a shift-click range spans sections and
+  // groups the same way it reads on screen.
   const orderedIds = [
-    ...noSection.map((t) => t.id),
+    ...orderedIn(null, noSection),
     ...clientSections.flatMap((s) =>
-      clientTasks.filter((t) => t.sectionId === s.id).map((t) => t.id),
+      orderedIn(
+        s.id,
+        clientTasks.filter((t) => t.sectionId === s.id),
+      ),
     ),
-  ];
+  ].map((t) => t.id);
 
   const selectionValue: SelectionCtx = {
     selected,
@@ -1868,6 +2572,10 @@ export function ClientView({ clientId }: { clientId: string }) {
                 onClearTypes={clearTypes}
                 plainBars={tab === "timeline" ? plainBars : undefined}
                 onPlainBars={tab === "timeline" ? setPlainBars : undefined}
+                // Not on the Board: its cards are grouped by status, so there is
+                // no section or group header there to put a total on.
+                summaries={tab === "board" ? undefined : showSummaries}
+                onSummaries={tab === "board" ? undefined : setShowSummaries}
               />
             )}
           </div>
@@ -1882,6 +2590,7 @@ export function ClientView({ clientId }: { clientId: string }) {
           showUndated={showUndated}
           hiddenTypes={hiddenTypes}
           plainBars={plainBars}
+          showSummaries={showBy.timeline.summaries}
           toolbarSlot={tlToolbar}
         />
       )}
@@ -1949,9 +2658,9 @@ export function ClientView({ clientId }: { clientId: string }) {
                 </span>
               )}
               <button
-                onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(groupKeys))}
-                title={allCollapsed ? "Expand all sections" : "Collapse all sections"}
-                aria-label={allCollapsed ? "Expand all sections" : "Collapse all sections"}
+                onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(allKeys))}
+                title={allCollapsed ? "Expand everything" : "Collapse every section and group"}
+                aria-label={allCollapsed ? "Expand everything" : "Collapse every section and group"}
                 className={`flex w-[17px] shrink-0 items-center justify-center text-muted hover:text-brand ${LEAD_TIGHT}`}
               >
                 <CollapseChevron open={!allCollapsed} />
@@ -2019,11 +2728,19 @@ export function ClientView({ clientId }: { clientId: string }) {
               <SectionGroup
                 section={null}
                 tasks={noSection}
+                groups={groupsIn(null)}
                 clientId={clientId}
                 reorderable={sort === null}
                 open={!collapsed.has("")}
+                isGroupOpen={(id) => !collapsed.has(gKey(id))}
                 onToggle={() => toggleGroup("")}
-                onOpen={() => setCollapsed((p) => { const n = new Set(p); n.delete(""); return n; })}
+                onToggleGroup={(id) => toggleGroup(gKey(id))}
+                onOpen={() => reveal("")}
+                onOpenGroup={(id) => reveal(gKey(id))}
+                onNewGroup={() => promptNewGroup(null)}
+                onNewSection={promptNewSection}
+                summary={sectionSummary(null, noSection)}
+                groupSummary={groupSummaryStrip}
               />
             )}
             {clientSections.map((section) => (
@@ -2031,17 +2748,22 @@ export function ClientView({ clientId }: { clientId: string }) {
                 key={section.id}
                 section={section}
                 tasks={clientTasks.filter((t) => t.sectionId === section.id)}
+                groups={groupsIn(section.id)}
                 clientId={clientId}
                 reorderable={sort === null}
                 open={!collapsed.has(section.id)}
+                isGroupOpen={(id) => !collapsed.has(gKey(id))}
                 onToggle={() => toggleGroup(section.id)}
-                onOpen={() =>
-                  setCollapsed((p) => {
-                    const n = new Set(p);
-                    n.delete(section.id);
-                    return n;
-                  })
-                }
+                onToggleGroup={(id) => toggleGroup(gKey(id))}
+                onOpen={() => reveal(section.id)}
+                onOpenGroup={(id) => reveal(gKey(id))}
+                onNewGroup={() => promptNewGroup(section.id)}
+                onNewSection={promptNewSection}
+                summary={sectionSummary(
+                  section,
+                  clientTasks.filter((t) => t.sectionId === section.id),
+                )}
+                groupSummary={groupSummaryStrip}
               />
             ))}
             {hiddenByShow > 0 && (

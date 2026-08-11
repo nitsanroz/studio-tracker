@@ -394,6 +394,7 @@ export function TaskPanel() {
     openTask,
     tasks,
     sections,
+    taskGroups,
     clients,
     profiles,
     comments,
@@ -487,6 +488,11 @@ export function TaskPanel() {
   const section = sections.find((s) => s.id === task.sectionId);
   const clientSections = sections
     .filter((s) => s.clientId === task.clientId)
+    .sort((a, b) => a.position - b.position);
+  const taskGroup = taskGroups.find((g) => g.id === task.groupId) ?? null;
+  /** Groups of this task's OWN section — see the Group row for why. */
+  const clientGroups = taskGroups
+    .filter((g) => g.clientId === task.clientId && g.sectionId === (task.sectionId ?? null))
     .sort((a, b) => a.position - b.position);
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const taskComments = comments.filter((c) => c.taskId === task.id);
@@ -710,6 +716,40 @@ export function TaskPanel() {
                 </span>
               )}
             </div>
+            {/* Group (0027), the same reasoning one level down: dragging is fine
+                on the client table and hopeless from here, and a task opened from
+                the plan or the feed has no table to drag on at all.
+                ⚠️ The list is the groups of THIS TASK'S SECTION only. A group
+                belongs to one section, so offering another section's groups would
+                offer to move the task twice in one control — the store would
+                follow the group and silently re-section the task. Change the
+                section first; the row above is right there.
+                The row is hidden entirely when the section has no groups, rather
+                than showing an empty picker: most sections won't have any, and a
+                dead control on every task is worse than a row that appears when
+                there is something to choose. */}
+            {(clientGroups.length > 0 || task.groupId) && (
+              <div className={META_ROW}>
+                <span className={FIELD_LABEL}>Group</span>
+                {canEditFields ? (
+                  <QuietSelect
+                    value={task.groupId ?? ""}
+                    onChange={(v) => updateTask(task.id, { groupId: v || null })}
+                  >
+                    <option value="">No group</option>
+                    {clientGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </QuietSelect>
+                ) : (
+                  <span className="bidi-auto min-w-0 flex-1 truncate px-1.5 py-1">
+                    {taskGroup?.name ?? "—"}
+                  </span>
+                )}
+              </div>
+            )}
             {/* Type = the kind of work; Tag = where it is in the process. Two
                 axes on purpose (0024) — a task is a QA job AND awaiting approval.
                 The Timeline paints its bars with the type's colour. */}

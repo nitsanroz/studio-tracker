@@ -19,6 +19,7 @@ import type {
   Tag,
   Task,
   TaskComment,
+  TaskGroup,
   TaskType,
   TimeEntry,
   TimelineMark,
@@ -196,6 +197,15 @@ export const mapSection = (r: any, projectClientById?: Map<string, string>): Sec
   closedOn: r.closed_on ?? null,
 });
 
+/** migration 0027. No legacy shape to fall back on — the table is new. */
+export const mapTaskGroup = (r: any): TaskGroup => ({
+  id: r.id,
+  clientId: r.client_id,
+  sectionId: r.section_id ?? null,
+  name: r.name,
+  position: r.position ?? 0,
+});
+
 export const mapTask = (
   r: any,
   tagNameById: Map<string, string>,
@@ -204,6 +214,7 @@ export const mapTask = (
   id: r.id,
   clientId: r.client_id ?? projectClientById?.get(r.project_id) ?? "",
   sectionId: r.section_id,
+  groupId: r.group_id ?? null, // migration 0027
   title: r.title,
   brief: r.brief ?? "",
   figmaUrl: r.figma_url,
@@ -293,6 +304,7 @@ export function taskPatchToRow(
   if ("billable" in patch) row.billable = patch.billable;
   if ("estimateHours" in patch) row.estimate_hours = patch.estimateHours;
   if ("sectionId" in patch) row.section_id = patch.sectionId;
+  if ("groupId" in patch) row.group_id = patch.groupId; // migration 0027
   if ("position" in patch) row.position = patch.position;
   if ("pending" in patch) row.pending = patch.pending;
   return row;

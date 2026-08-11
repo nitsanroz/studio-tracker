@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -16,6 +17,7 @@ import {
   Circle,
   Columns3,
   GripVertical,
+  Layers,
   Maximize2,
   Pencil,
   Trash2,
@@ -29,6 +31,11 @@ import {
   BAR_R,
   DIAMOND,
   dateRangeLabel,
+  GROUP_BAR_H,
+  GROUP_H,
+  GROUP_LAYER_INSET,
+  GROUP_LAYER_STEP,
+  GROUP_LAYERS,
   daysBetween,
   isWorkDay,
   parseISO,
@@ -49,11 +56,12 @@ import {
 } from "@/lib/gantt";
 import { formatHoursDecimal, MONTH_NAMES_SHORT } from "@/lib/format";
 import { taskHoursDone } from "@/lib/task-hours";
+import { rollupTasks, sectionBudgetHours, type Rollup } from "@/lib/task-rollup";
 import { Avatar, ContextMenu, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
 import { TaskBulkControls } from "./task-bulk-controls";
 import { NO_TYPE } from "./show-menu";
-import type { Profile, Section, Task, TaskType, TimelineMark } from "@/lib/types";
+import type { Profile, Section, Task, TaskGroup, TaskType, TimelineMark } from "@/lib/types";
 
 /**
  * A Gantt of the client's dated work, laid out like a real project timeline:
@@ -266,6 +274,49 @@ const ROW_SELECTED_SHEER = "bg-brand/[0.12]";
  */
 const SECTION_BAR_COLOR = "color-mix(in srgb, var(--foreground) 72%, transparent)";
 /**
+ * A group's bar, and the shims stacked behind it — brand blue, at Nitsan's call
+ * (it read as black before, which put the heaviest mark on the chart on the one
+ * row that isn't work).
+ *
+ * ⚠️ Still NOT a task type's colour. A group has no type, and the type colours
+ * are the one key the legend explains, so a bar in one of them promises it means
+ * what the legend says. Brand blue belongs to the app rather than to any
+ * category, which is exactly the register a container wants.
+ *
+ * ⚠️ The shims are OPAQUE, not a faded copy — also his call. At 45%/35% they
+ * read as a rendering artefact behind the bar rather than as more bars; solid
+ * steps down toward the brand's own light tint read as a stack of cards.
+ */
+const GROUP_BAR_COLOR = "var(--group-bar)";
+/**
+ * The shims, FURTHEST first — solid colours stepping from the bar toward the
+ * row's own surface, so the stack tapers without ever going translucent.
+ *
+ * ⚠️ Mixed with `--surface`, not lightened with a fixed white: under `night`
+ * the surface is near-black, so the steps go darker there instead of lighter and
+ * the stack still reads. There is no `--brand-light` token; these are the mix.
+ */
+/**
+ * Where the OPEN group's rule sits in its row: low, so the name has the space
+ * above it — the same reasoning that made `SECTION_H` 36 rather than 30.
+ */
+const GROUP_LINE_TOP = 22;
+/**
+ * How far a group's task rows sit in from the section's own rows, so "inside a
+ * group" and "loose in the section" are told apart at a glance rather than by
+ * reading the heading above them.
+ *
+ * ⚠️ Only the group's CHILDREN move. A loose task and a group are siblings, so
+ * aligning them exactly would be more correct still — but that would re-indent
+ * every row on every client's chart for a feature most sections don't use, so
+ * the smaller change is the one that ships. Say the word.
+ */
+const TL_INDENT = 14;
+const GROUP_LAYER_COLORS = [
+  "color-mix(in srgb, var(--group-bar) 38%, var(--surface))",
+  "color-mix(in srgb, var(--group-bar) 62%, var(--surface))",
+];
+/**
  * How far down its row the bracket sits.
  *
  * Low on purpose: centred, it split the row in two and left the section's name
@@ -438,17 +489,53 @@ interface Row {
   type: TaskType | null;
 }
 
+/** A subject group and the rows inside it (0027). */
+interface Block {
+  group: TaskGroup;
+  rows: Row[];
+  /** The span its rows cover — what the stacked bar draws. */
+  start: Date;
+  due: Date;
+  /** True when not one of its rows is dated, so there is no bar to draw. */
+  undated: boolean;
+}
+
 interface Group {
   /** null = the tasks with no section */
   section: Section | null;
+  /** The section's LOOSE rows — its tasks that aren't in a group. */
   rows: Row[];
+  /** Its subject groups, in position order. Rendered above the loose rows. */
+  blocks: Block[];
   start: Date;
   due: Date;
+  /** Nothing in it is dated, so there is no bracket to draw. */
+  undated: boolean;
+}
+
+/** Every row in a section, groups' children included — for counts and windows. */
+function allRowsOf(g: Group): Row[] {
+  return [...g.blocks.flatMap((b) => b.rows), ...g.rows];
 }
 
 /** Module-scoped like the client table's drag: a ref would not survive the drop. */
 let draggedRowId: string | null = null;
-let draggedFromSection: string | null = null;
+/**
+ * The CONTAINER the dragged row came from — its section AND its group (0027).
+ * Reordering is confined to one container, so this has to name both: a row
+ * dragged out of a group onto a loose row is a container change, and
+ * `reorderTimelineTasks` would otherwise renumber a list the row isn't in.
+ */
+let draggedFromContainer: string | null = null;
+
+/** How a container is named in `draggedFromContainer` and the collapse set. */
+function containerKey(sectionId: string | null, groupId: string | null): string {
+  return `${sectionId ?? ""}|${groupId ?? ""}`;
+}
+/** How the collapse set names a group, kept apart from section keys. */
+function blockKey(groupId: string): string {
+  return `g:${groupId}`;
+}
 
 export function ClientTimeline({
   clientId,
@@ -457,6 +544,7 @@ export function ClientTimeline({
   showUndated,
   hiddenTypes,
   plainBars,
+  showSummaries,
   toolbarSlot,
 }: {
   clientId: string;
@@ -469,12 +557,15 @@ export function ClientTimeline({
   hiddenTypes: Set<string>;
   /** draw every bar plain, rather than in its type's colour */
   plainBars: boolean;
+  /** roll dates and hours up onto section and group header rows (0027) */
+  showSummaries: boolean;
   /** where to render the legend + Columns button — the tab strip's right end */
   toolbarSlot: HTMLElement | null;
 }) {
   const {
     tasks,
     sections,
+    taskGroups,
     clients,
     profiles,
     dayStates,
@@ -486,7 +577,12 @@ export function ClientTimeline({
     addTimelineMark,
     updateTimelineMark,
     deleteTimelineMark,
+    addSection,
     updateSection,
+    addTaskGroup,
+    updateTaskGroup,
+    groupTasksIntoNew,
+    showNotice,
     openTask,
     reorderTimelineTasks,
     addTaskNear,
@@ -691,32 +787,73 @@ export function ClientTimeline({
       else bucket.set(key, [r]);
     }
 
+    // Hand-placed rows first, in their placed order; never-dragged rows fall to
+    // the bottom by date rather than jumping into someone's ordering. Hoisted so
+    // a group's children and a section's loose rows sort by exactly one rule —
+    // two copies of this comparator would drift and the two depths would order
+    // differently for no visible reason.
+    const byPlacement = (a: Row, b: Row) =>
+      (a.task.timelinePosition ?? Number.MAX_SAFE_INTEGER) -
+        (b.task.timelinePosition ?? Number.MAX_SAFE_INTEGER) ||
+      a.start.getTime() - b.start.getTime() ||
+      a.task.title.localeCompare(b.task.title);
+
+    /** Min start / max due across dated rows; null when none of them is dated. */
+    const span = (list: Row[]): { start: Date; due: Date } | null => {
+      let start: Date | null = null;
+      let due: Date | null = null;
+      for (const r of list) {
+        if (r.undated) continue; // borrowed dates: nothing may be drawn from them
+        if (!start || r.start < start) start = r.start;
+        if (!due || r.due > due) due = r.due;
+      }
+      return start && due ? { start, due } : null;
+    };
+
     const ordered = [...byId.values()].sort((a, b) => a.position - b.position);
     const out: Group[] = [];
     for (const key of [...ordered.map((s) => s.id), ""]) {
       const list = bucket.get(key);
-      if (!list?.length) continue;
-      // Hand-placed rows first, in their placed order; never-dragged rows fall
-      // to the bottom by date rather than jumping into someone's ordering.
-      list.sort(
-        (a, b) =>
-          (a.task.timelinePosition ?? Number.MAX_SAFE_INTEGER) -
-            (b.task.timelinePosition ?? Number.MAX_SAFE_INTEGER) ||
-          a.start.getTime() - b.start.getTime() ||
-          a.task.title.localeCompare(b.task.title),
-      );
-      let start = list[0].start;
-      let due = list[0].due;
-      for (const r of list) {
-        if (r.start < start) start = r.start;
-        if (r.due > due) due = r.due;
-      }
-      out.push({ section: key ? (byId.get(key) ?? null) : null, rows: list, start, due });
+      const sectionGroups = taskGroups
+        .filter((g) => g.clientId === clientId && (g.sectionId ?? "") === key)
+        .sort((a, b) => a.position - b.position);
+      // A section with groups but no visible tasks still has to render — the
+      // groups are its structure, and an empty one you just made must not vanish.
+      if (!list?.length && !sectionGroups.length) continue;
+
+      const inThisSection = list ?? [];
+      const blocks: Block[] = sectionGroups.map((g) => {
+        const own = inThisSection.filter((r) => r.task.groupId === g.id).sort(byPlacement);
+        const s = span(own);
+        return {
+          group: g,
+          rows: own,
+          start: s?.start ?? today,
+          due: s?.due ?? today,
+          undated: !s,
+        };
+      });
+      // ⚠️ "not in one of THIS section's groups", not "groupId == null": a task
+      // pointing at a group that lives elsewhere breaks the 0027 invariant, and
+      // the rule everywhere is that it renders LOOSE rather than disappearing.
+      const loose = inThisSection
+        .filter((r) => !r.task.groupId || !sectionGroups.some((g) => g.id === r.task.groupId))
+        .sort(byPlacement);
+
+      const whole = span(inThisSection);
+      out.push({
+        section: key ? (byId.get(key) ?? null) : null,
+        rows: loose,
+        blocks,
+        start: whole?.start ?? today,
+        due: whole?.due ?? today,
+        undated: !whole,
+      });
     }
     return out;
-  }, [clientTasks, sections, clientId, profiles, taskTypes, taskMinutes, showDone, showUndated, hiddenTypes, today]);
+  }, [clientTasks, sections, taskGroups, clientId, profiles, taskTypes, taskMinutes, showDone, showUndated, hiddenTypes, today]);
 
-  const allRows = useMemo(() => groups.flatMap((g) => g.rows), [groups]);
+  const allRows = useMemo(() => groups.flatMap(allRowsOf), [groups]);
   const undated = clientTasks.filter((t) => !t.dueDate && (showDone || t.status !== "done")).length;
   /** Held back by the type filter — counted so the chart is never quietly partial. */
   const filteredOut = clientTasks.filter(
@@ -756,12 +893,24 @@ export function ClientTimeline({
     [profiles],
   );
 
-  /** Display order across every open group — the range a shift-click covers. */
+  /**
+   * Display order across every open section — the range a shift-click covers.
+   *
+   * ⚠️ It must match the RENDER order exactly, groups first then loose rows, or a
+   * shift-click range picks up rows the user didn't drag across. Same walk as
+   * `bodyH` and `rowBands`, which is why all three read alike.
+   */
   const orderedIds = useMemo(
     () =>
-      groups.flatMap((g) =>
-        collapsed.has(g.section?.id ?? "") ? [] : g.rows.map((r) => r.task.id),
-      ),
+      groups.flatMap((g) => {
+        if (collapsed.has(g.section?.id ?? "")) return [];
+        return [
+          ...g.blocks.flatMap((b) =>
+            collapsed.has(blockKey(b.group.id)) ? [] : b.rows.map((r) => r.task.id),
+          ),
+          ...g.rows.map((r) => r.task.id),
+        ];
+      }),
     [groups, collapsed],
   );
 
@@ -788,10 +937,15 @@ export function ClientTimeline({
   }
 
   /** Total content height, so the grid and the today line can span every row. */
-  const bodyH = groups.reduce(
-    (h, g) => h + SECTION_H + (collapsed.has(g.section?.id ?? "") ? 0 : g.rows.length * ROW_H),
-    0,
-  );
+  const bodyH = groups.reduce((h, g) => {
+    let out = h + SECTION_H;
+    if (collapsed.has(g.section?.id ?? "")) return out;
+    for (const b of g.blocks) {
+      // A group's own row always counts; its children only when unfolded.
+      out += GROUP_H + (collapsed.has(blockKey(b.group.id)) ? 0 : b.rows.length * ROW_H);
+    }
+    return out + g.rows.length * ROW_H;
+  }, 0);
 
   /**
    * Where every visible row sits in the body's coordinate space, and how far its
@@ -802,17 +956,27 @@ export function ClientTimeline({
   function rowBands() {
     const bands: { id: string; top: number; bottom: number; left: number; right: number }[] = [];
     let y = 0;
+    const band = (r: Row) => {
+      const left = leftW + daysBetween(from, r.start) * pxPerDay;
+      const width = r.hasStart
+        ? Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay)
+        : DIAMOND;
+      bands.push({ id: r.task.id, top: y, bottom: y + ROW_H, left, right: left + width });
+      y += ROW_H;
+    };
     for (const g of groups) {
       y += SECTION_H;
       if (collapsed.has(g.section?.id ?? "")) continue;
-      for (const r of g.rows) {
-        const left = leftW + daysBetween(from, r.start) * pxPerDay;
-        const width = r.hasStart
-          ? Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay)
-          : DIAMOND;
-        bands.push({ id: r.task.id, top: y, bottom: y + ROW_H, left, right: left + width });
-        y += ROW_H;
+      // ⚠️ Same walk, same order as `bodyH` and the render. A group's header row
+      // advances y but contributes NO band — the marquee must not select a
+      // container, and a folded group's children are off screen, so hit-testing
+      // them would select tasks the user cannot see.
+      for (const b of g.blocks) {
+        y += GROUP_H;
+        if (collapsed.has(blockKey(b.group.id))) continue;
+        for (const r of b.rows) band(r);
       }
+      for (const r of g.rows) band(r);
     }
     return bands;
   }
@@ -949,21 +1113,149 @@ export function ClientTimeline({
    * precisely so the Timeline's order can't reach into the Tasks tab's
    * grouping. Move a task between sections from the task pane.
    */
-  function dropRow(sectionKey: string, targetId: string | null) {
+  /**
+   * Reorder within ONE container — one section, and one group inside it.
+   *
+   * ⚠️ `rows` is the container's own run, not the section's whole list. Passing
+   * the section's rows for a drop inside a group would hand
+   * `reorderTimelineTasks` a list the moved row isn't in.
+   */
+  function dropRow(container: string, rows: Row[], targetId: string | null) {
     const movedId = draggedRowId;
-    const fromSection = draggedFromSection;
+    const fromContainer = draggedFromContainer;
     draggedRowId = null;
-    draggedFromSection = null;
+    draggedFromContainer = null;
     setDropBefore(null);
-    if (!movedId || movedId === targetId || fromSection !== sectionKey) return;
-    const group = groups.find((g) => (g.section?.id ?? "") === sectionKey);
-    if (!group) return;
-    const ids = group.rows.map((r) => r.task.id);
+    if (!movedId || movedId === targetId || fromContainer !== container) return;
+    const ids = rows.map((r) => r.task.id);
     const without = ids.filter((id) => id !== movedId);
     const at = targetId ? without.indexOf(targetId) : without.length;
     if (at === -1) return;
     reorderTimelineTasks([...without.slice(0, at), movedId, ...without.slice(at)]);
   }
+
+  /**
+   * One task row, wherever it sits — loose in a section or inside a group.
+   *
+   * A function rather than duplicated JSX at both depths: it carries eighteen
+   * handlers, and two copies would drift the first time one of them changed.
+   * `container` and `containerRows` are the only things that vary with depth, and
+   * both exist so a reorder can only ever renumber the run the row belongs to.
+   */
+  function timelineRow(row: Row, container: string, containerRows: Row[], indent = 0) {
+    return (
+      <Fragment key={row.task.id}>
+        {insert?.anchorId === row.task.id && insert.where === "before" && (
+          <TimelineInsertRow
+            anchorId={row.task.id}
+            where="before"
+            leftW={leftW}
+            width={leftW + totalDays * pxPerDay}
+            onDone={() => setInsert(null)}
+          />
+        )}
+        <TimelineRow
+          row={row}
+          from={from}
+          pxPerDay={pxPerDay}
+          totalDays={totalDays}
+          leftW={leftW}
+          hidden={hiddenCols}
+          canEdit={isAdmin}
+          indent={indent}
+          off={offDates}
+          // Every bar in the selection previews the same shift — dragging five
+          // tasks while four sit still would read as a failed gesture, not a
+          // pending one.
+          drag={
+            drag &&
+            (drag.taskId === row.task.id || (drag.group?.includes(row.task.id) ?? false))
+              ? drag
+              : null
+          }
+          dropTarget={dropBefore === row.task.id}
+          selected={selected.has(row.task.id)}
+          anySelected={selected.size > 0}
+          assignableProfiles={assignableProfiles}
+          onSelect={(shiftKey, on) => toggleSelected(row.task.id, shiftKey, on)}
+          onRename={(title) => updateTask(row.task.id, { title })}
+          onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
+          plain={plainBars}
+          taskTypes={taskTypes}
+          onSetType={(typeId) => updateTask(row.task.id, { typeId })}
+          onSetBudget={(estimateHours) => updateTask(row.task.id, { estimateHours })}
+          onSetDuration={(days) =>
+            updateTask(row.task.id, {
+              // n working days INCLUSIVE of the start, so the last day is
+              // start + (n-1) working days.
+              dueDate: toISO(addWorkDays(row.start, days - 1, offDates)),
+            })
+          }
+          onDragStart={(mode, clientX) => {
+            // Grabbing a bar that is IN the selection moves the whole selection;
+            // grabbing one outside it moves that bar alone and leaves the
+            // selection untouched — the same rule every file manager uses for
+            // dragging out of a multi-selection.
+            const next: DragState = {
+              taskId: row.task.id,
+              mode,
+              startX: clientX,
+              deltaDays: 0,
+              moved: false,
+              group:
+                mode === "move" && selected.size > 1 && selected.has(row.task.id)
+                  ? [...selected]
+                  : null,
+            };
+            dragRef.current = next;
+            setDrag(next);
+          }}
+          onRowDragStart={() => {
+            draggedRowId = row.task.id;
+            draggedFromContainer = container;
+          }}
+          onRowDragOver={() => setDropBefore(row.task.id)}
+          onRowDrop={() => dropRow(container, containerRows, row.task.id)}
+          onRowDragEnd={() => {
+            draggedRowId = null;
+            draggedFromContainer = null;
+            setDropBefore(null);
+          }}
+          onOpen={() => openTask(row.task.id)}
+          onSetDates={(startDate, dueDate) => updateTask(row.task.id, { startDate, dueDate })}
+          onContextMenu={
+            isAdmin
+              ? (e, taskId) => {
+                  e.preventDefault();
+                  setRowMenu({ x: e.clientX, y: e.clientY, taskId });
+                }
+              : undefined
+          }
+        />
+        {insert?.anchorId === row.task.id && insert.where === "after" && (
+          <TimelineInsertRow
+            anchorId={row.task.id}
+            where="after"
+            leftW={leftW}
+            width={leftW + totalDays * pxPerDay}
+            onDone={() => setInsert(null)}
+          />
+        )}
+      </Fragment>
+    );
+  }
+
+  /**
+   * The figures for a run of rows. Thin wrapper so every call site passes the
+   * same `taskMinutes` and the same non-working-day set — "12 working days" on a
+   * section header has to mean what it means on a bar's tooltip.
+   */
+  const rollupOf = (rows: Row[]) =>
+    rollupTasks(
+      rows.map((r) => r.task),
+      taskMinutes,
+      offDates,
+    );
 
   function toggleSection(key: string) {
     setCollapsed((prev) => {
@@ -1167,6 +1459,7 @@ export function ClientTimeline({
                 {groups.map((g) => {
                   const key = g.section?.id ?? "";
                   const isCollapsed = collapsed.has(key);
+                  const sectionId = g.section?.id ?? null;
                   return (
                     <div key={key || "none"}>
                       <SectionHeaderRow
@@ -1182,119 +1475,87 @@ export function ClientTimeline({
                         onRename={(name) =>
                           g.section && updateSection(g.section.id, { name })
                         }
+                        summary={
+                          showSummaries ? (
+                            <SummaryCells
+                              hidden={hiddenCols}
+                              rolled={rollupOf(allRowsOf(g))}
+                              // ⚠️ The section's OWN recovered budget wins over
+                              // the sum of its tasks — see sectionBudgetHours.
+                              budget={sectionBudgetHours(
+                                g.section,
+                                rollupOf(allRowsOf(g)),
+                              )}
+                              bg="bg-surface"
+                            />
+                          ) : undefined
+                        }
                       />
+                      {/* Groups first, then the section's loose rows — the same
+                          order as the Tasks tab, and the order `orderedIds`,
+                          `bodyH` and `rowBands` all walk in. */}
                       {!isCollapsed &&
-                        g.rows.map((row) => (
-                          <Fragment key={row.task.id}>
-                          {insert?.anchorId === row.task.id && insert.where === "before" && (
-                            <TimelineInsertRow
-                              anchorId={row.task.id}
-                              where="before"
-                              leftW={leftW}
-                              width={leftW + totalDays * pxPerDay}
-                              onDone={() => setInsert(null)}
-                            />
-                          )}
-                          <TimelineRow
-                            row={row}
-                            from={from}
-                            pxPerDay={pxPerDay}
-                            totalDays={totalDays}
-                            leftW={leftW}
-                            hidden={hiddenCols}
-                            canEdit={isAdmin}
-                            off={offDates}
-                            // Every bar in the group previews the same shift —
-                            // dragging five tasks while four sit still would
-                            // read as a failed gesture, not a pending one.
-                            drag={
-                              drag &&
-                              (drag.taskId === row.task.id ||
-                                (drag.group?.includes(row.task.id) ?? false))
-                                ? drag
-                                : null
-                            }
-                            dropTarget={dropBefore === row.task.id}
-                            selected={selected.has(row.task.id)}
-                            anySelected={selected.size > 0}
-                            assignableProfiles={assignableProfiles}
-                            onSelect={(shiftKey, on) => toggleSelected(row.task.id, shiftKey, on)}
-                            onRename={(title) => updateTask(row.task.id, { title })}
-                            onAssign={(assigneeId) => updateTask(row.task.id, { assigneeId })}
-                            plain={plainBars}
-                            taskTypes={taskTypes}
-                            onSetType={(typeId) => updateTask(row.task.id, { typeId })}
-                                onSetBudget={(estimateHours) =>
-                              updateTask(row.task.id, { estimateHours })
-                            }
-                            onSetDuration={(days) =>
-                              updateTask(row.task.id, {
-                                // n working days INCLUSIVE of the start, so the
-                                // last day is start + (n-1) working days.
-                                dueDate: toISO(addWorkDays(row.start, days - 1, offDates)),
-                              })
-                            }
-                            onDragStart={(mode, clientX) => {
-                              // Grabbing a bar that is IN the selection moves
-                              // the whole selection; grabbing one outside it
-                              // moves that bar alone and leaves the selection
-                              // untouched — the same rule every file manager
-                              // uses for dragging out of a multi-selection.
-                              const next: DragState = {
-                                taskId: row.task.id,
-                                mode,
-                                startX: clientX,
-                                deltaDays: 0,
-                                moved: false,
-                                group:
-                                  mode === "move" && selected.size > 1 && selected.has(row.task.id)
-                                    ? [...selected]
-                                    : null,
-                              };
-                              dragRef.current = next;
-                              setDrag(next);
-                            }}
-                            onRowDragStart={() => {
-                              draggedRowId = row.task.id;
-                              draggedFromSection = key;
-                            }}
-                            onRowDragOver={() => setDropBefore(row.task.id)}
-                            onRowDrop={() => dropRow(key, row.task.id)}
-                            onRowDragEnd={() => {
-                              draggedRowId = null;
-                              draggedFromSection = null;
-                              setDropBefore(null);
-                            }}
-                            onOpen={() => openTask(row.task.id)}
-                            onSetDates={(startDate, dueDate) =>
-                              updateTask(row.task.id, { startDate, dueDate })
-                            }
-                            onContextMenu={
-                              isAdmin
-                                ? (e, taskId) => {
-                                    e.preventDefault();
-                                    setRowMenu({ x: e.clientX, y: e.clientY, taskId });
+                        g.blocks.map((b) => {
+                          const bKey = blockKey(b.group.id);
+                          const bCollapsed = collapsed.has(bKey);
+                          return (
+                            <div key={b.group.id}>
+                              <GroupHeaderRow
+                                block={b}
+                                collapsed={bCollapsed}
+                                onToggle={() => toggleSection(bKey)}
+                                from={from}
+                                pxPerDay={pxPerDay}
+                                totalDays={totalDays}
+                                canEdit={isAdmin}
+                                leftW={leftW}
+                                onRename={(name) => updateTaskGroup(b.group.id, { name })}
+                                summary={
+                                  showSummaries ? (
+                                    <SummaryCells
+                                      hidden={hiddenCols}
+                                      rolled={rollupOf(b.rows)}
+                                      // A group has no budget of its own; it is
+                                      // always the sum of its tasks.
+                                      budget={rollupOf(b.rows).estimateHours}
+                                      bg="bg-surface"
+                                    />
+                                  ) : undefined
+                                }
+                              />
+                              {!bCollapsed &&
+                                b.rows.map((row) =>
+                                  timelineRow(
+                                    row,
+                                    containerKey(sectionId, b.group.id),
+                                    b.rows,
+                                    TL_INDENT,
+                                  ),
+                                )}
+                              {/* dropping below the last row appends to this group */}
+                              {!bCollapsed && (
+                                <div
+                                  className="h-0"
+                                  onDragOver={(e) => draggedRowId && e.preventDefault()}
+                                  onDrop={() =>
+                                    dropRow(containerKey(sectionId, b.group.id), b.rows, null)
                                   }
-                                : undefined
-                            }
-                          />
-                          {insert?.anchorId === row.task.id && insert.where === "after" && (
-                            <TimelineInsertRow
-                              anchorId={row.task.id}
-                              where="after"
-                              leftW={leftW}
-                              width={leftW + totalDays * pxPerDay}
-                              onDone={() => setInsert(null)}
-                            />
-                          )}
-                          </Fragment>
-                        ))}
+                                  style={{ marginTop: -1, height: 1 }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      {!isCollapsed &&
+                        g.rows.map((row) =>
+                          timelineRow(row, containerKey(sectionId, null), g.rows),
+                        )}
                       {/* dropping below the last row appends to this section */}
                       {!isCollapsed && (
                         <div
                           className="h-0"
                           onDragOver={(e) => draggedRowId && e.preventDefault()}
-                          onDrop={() => dropRow(key, null)}
+                          onDrop={() => dropRow(containerKey(sectionId, null), g.rows, null)}
                           style={{ marginTop: -1, height: 1 }}
                         />
                       )}
@@ -1357,6 +1618,48 @@ export function ClientTimeline({
             {
               label: "Add task below",
               onClick: () => setInsert({ anchorId: rowMenu.taskId, where: "after" }),
+            },
+            // Same rule as the Tasks tab: gather what is selected when the
+            // right-clicked bar is part of a selection, otherwise offer an empty
+            // group in that bar's own section.
+            ...(selected.size > 1 && selected.has(rowMenu.taskId)
+              ? [
+                  {
+                    label: `Group the ${selected.size} selected tasks…`,
+                    onClick: () => {
+                      const ids = [...selected];
+                      const name = prompt("Name for the new group")?.trim();
+                      if (!name) return;
+                      void groupTasksIntoNew(ids, name).then((err) => {
+                        if (err) showNotice(err);
+                        else setSelected(new Set());
+                      });
+                    },
+                  },
+                ]
+              : [
+                  {
+                    label: "New group…",
+                    onClick: () => {
+                      const task = tasks.find((t) => t.id === rowMenu.taskId);
+                      if (!task) return;
+                      const name = prompt("Name for the new group")?.trim();
+                      if (!name) return;
+                      void addTaskGroup(clientId, task.sectionId ?? null, name);
+                      setCollapsed((prev) => {
+                        const next = new Set(prev);
+                        next.delete(task.sectionId ?? "");
+                        return next;
+                      });
+                    },
+                  },
+                ]),
+            {
+              label: "New section…",
+              onClick: () => {
+                const name = prompt("Name for the new section")?.trim();
+                if (name) addSection(clientId, name);
+              },
             },
           ]}
           onClose={() => setRowMenu(null)}
@@ -2078,6 +2381,7 @@ function SectionHeaderRow({
   canEdit,
   leftW,
   onRename,
+  summary,
 }: {
   group: Group;
   collapsed: boolean;
@@ -2089,6 +2393,8 @@ function SectionHeaderRow({
   canEdit: boolean;
   leftW: number;
   onRename: (name: string) => void;
+  /** Rolled-up figures for the columns, when "Section totals" is on. */
+  summary?: ReactNode;
 }) {
   const left = daysBetween(from, group.start) * pxPerDay;
   const width = Math.max(8, (daysBetween(group.start, group.due) + 1) * pxPerDay);
@@ -2165,7 +2471,11 @@ function SectionHeaderRow({
           </>
         )}
       </div>
-      <div className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
+      {/* The summary's cells add up to exactly this filler's width — see
+          `SummaryCells`, which takes both from `TL_COLS`. */}
+      {summary ?? (
+        <div className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />
+      )}
       <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
         {/*
           The group's whole span, drawn as the reference's bracket rather than as
@@ -2195,7 +2505,7 @@ function SectionHeaderRow({
             and the name that explains it is off in the pinned column, which may
             well be scrolled away. Expanded it needs no caption: the rows under
             it are the caption. */}
-        {collapsed && (
+        {collapsed && !group.undated && (
           <span
             // `leading-none` so the box is the glyphs and nothing else — with
             // default leading the caption carried 6px of invisible padding and
@@ -2241,6 +2551,280 @@ function SectionHeaderRow({
             </>
           )}
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The rolled-up figures for a section or a group, in the left table's own
+ * columns — so a container and the tasks under it read down the SAME columns and
+ * the arithmetic can be checked by eye.
+ *
+ * `Who` and `Type` stay blank: a container has no assignee and no kind of work,
+ * and inventing "mixed" there would be a label pretending to be data.
+ *
+ * When summaries are off, the caller renders a plain filler instead and these
+ * cells never mount — which is why the widths are taken from `TL_COLS` rather
+ * than hard-coded: a hidden column has to disappear from both shapes identically
+ * or the header stops lining up with its rows.
+ */
+function SummaryCells({
+  hidden,
+  rolled,
+  budget,
+  bg,
+}: {
+  hidden: Set<string>;
+  rolled: Rollup;
+  /** Sections may override with their own recovered figure — see sectionBudgetHours. */
+  budget: number | null;
+  bg: string;
+}) {
+  const value = (key: TlCol): string => {
+    switch (key) {
+      case "dates":
+        return rolled.start && rolled.due
+          ? dateRangeLabel(rolled.start, rolled.due, true)
+          : "—";
+      case "duration":
+        return rolled.workDays && rolled.start ? `${rolled.workDays}d` : "—";
+      case "actual":
+        return rolled.doneMinutes ? formatHoursDecimal(rolled.doneMinutes) : "—";
+      case "budget":
+        return budget != null ? formatHoursDecimal(budget * 60) : "—";
+      default:
+        return "";
+    }
+  };
+
+  return (
+    <>
+      {TL_COLS.filter((c) => !hidden.has(c.key)).map((c) => (
+        <div
+          key={c.key}
+          className={`flex h-full shrink-0 items-center border-l border-border px-2 text-[11px] tabular-nums text-muted ${bg}`}
+          style={{ width: c.w }}
+        >
+          <span className="truncate">{value(c.key)}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/**
+ * A subject group's row (0027).
+ *
+ * ⚠️ It draws a BAR, not a section's bracket, and that difference is the whole
+ * design: a bracket says "everything under here falls between these dates", which
+ * is a claim about rows; a group is a thing in its own right — the several tasks
+ * that make up one webpage — so it gets a bar across its span, drawn as a STACK
+ * to say it is more than one.
+ *
+ * ⚠️ **Read-only.** No drag handles, no resize handles, no `cursor-grab`, and the
+ * bar is `pointer-events-none` so a marquee begun over it still reaches the rows
+ * beneath and a click falls through to nothing rather than half-opening
+ * something. Nitsan's call: a group's span is derived from its children, and its
+ * children are individually draggable (and movable together by marquee
+ * multi-drag), so a draggable container would be a second way to do the same
+ * thing with a less obvious result.
+ */
+function GroupHeaderRow({
+  block,
+  collapsed,
+  onToggle,
+  from,
+  pxPerDay,
+  totalDays,
+  canEdit,
+  leftW,
+  onRename,
+  summary,
+}: {
+  block: Block;
+  collapsed: boolean;
+  onToggle: () => void;
+  from: Date;
+  pxPerDay: number;
+  totalDays: number;
+  canEdit: boolean;
+  leftW: number;
+  onRename: (name: string) => void;
+  /** Rolled-up figures for the columns, when "summaries" is on. */
+  summary?: ReactNode;
+}) {
+  const left = daysBetween(from, block.start) * pxPerDay;
+  const width = Math.max(8, (daysBetween(block.start, block.due) + 1) * pxPerDay);
+  const [renaming, setRenaming] = useState(false);
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+  const top = Math.round((GROUP_H - GROUP_BAR_H) / 2);
+
+  return (
+    <div
+      className="relative flex border-b border-border"
+      style={{ height: GROUP_H, width: leftW + totalDays * pxPerDay }}
+    >
+      {/* ⚠️ STICKY_W, not leftW — the block the task rows pin. Pinning the whole
+          left table put an opaque 666px band on top of the first 666px of
+          calendar as soon as you scrolled sideways, swallowing the bar whole:
+          present in the DOM, correctly placed, invisible. Same trap
+          `SectionHeaderRow` hit. */}
+      <div
+        className="group/grp sticky left-0 z-20 flex h-full shrink-0 items-center gap-1.5 bg-surface pl-5 pr-2"
+        style={{ width: STICKY_W }}
+      >
+        <button
+          onClick={onToggle}
+          title={collapsed ? "Expand" : "Collapse"}
+          className="shrink-0 text-muted hover:text-brand"
+        >
+          {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+        </button>
+        {renaming ? (
+          <span className="min-w-0 flex-1 text-[13px] font-semibold">
+            <EditableTextCell
+              startEditing
+              value={block.group.name}
+              onCommit={(v) => {
+                if (v && v !== block.group.name) onRename(v);
+              }}
+              onExit={() => setRenaming(false)}
+              inputClassName="text-[13px] font-semibold"
+            />
+          </span>
+        ) : (
+          <>
+            {/* 13px against a section's 14 and a task's 12 — and the icon, since
+                globals.css collapses medium/semibold/bold onto one weight (570),
+                so one step of size is all the type can say on its own. */}
+            <Layers size={12} className="shrink-0 text-muted" aria-hidden />
+            <button
+              onClick={onToggle}
+              className="bidi-auto min-w-0 truncate text-left text-[13px] font-semibold hover:text-brand"
+            >
+              {block.group.name}
+            </button>
+            <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-[11px] tabular-nums text-faint">
+              {block.rows.length}
+            </span>
+            {canEdit && (
+              <button
+                onClick={() => setRenaming(true)}
+                title="Rename group"
+                aria-label="Rename group"
+                className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-brand group-hover/grp:opacity-100"
+              >
+                <Pencil size={11} />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      {summary ?? <div className="h-full shrink-0 bg-surface" style={{ width: leftW - STICKY_W }} />}
+      <div className="relative h-full shrink-0" style={{ width: totalDays * pxPerDay }}>
+        {tip && (
+          <HoverTip x={tip.x} y={tip.y}>
+            <TipHead title={block.group.name} subtitle="Group" color={GROUP_BAR_COLOR} />
+            <div className="flex flex-col gap-1 px-3 py-2.5">
+              <TipRow
+                label="Runs"
+                value={
+                  block.undated ? "no dates yet" : dateRangeLabel(block.start, block.due, true)
+                }
+              />
+              <TipRow label="Tasks" value={String(block.rows.length)} />
+            </div>
+          </HoverTip>
+        )}
+        {/* Nothing dated under it, so there is no span to claim. */}
+        {!block.undated && (
+          <span
+            className="absolute"
+            style={{ left, width, top: collapsed ? top : GROUP_LINE_TOP }}
+            onMouseEnter={(e) => setTip({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={() => setTip(null)}
+          >
+            {/*
+              TWO shapes for the two states, at Nitsan's direction, and the switch
+              is the point: what a group needs to say changes when you fold it.
+
+              OPEN — a thin brand-blue RULE with the name above it, and no end
+              tips. The rows are right there underneath, so the group only has to
+              bracket them; tips are the section's device and repeating them one
+              level down made two brackets of the same shape in different sizes.
+
+              FOLDED — the rows are gone, so the group has to stand in for them:
+              a real bar, with OPAQUE shims stacked behind its top edge to say it
+              is more than one task, and the name on it.
+
+              ⚠️ Elements, not `box-shadow`: CSS allows exactly ONE box-shadow
+              declaration per rule, which is why `barShadow` had to be composed.
+            */}
+            {collapsed ? (
+              <>
+                {Array.from({ length: GROUP_LAYERS }, (_, i) => {
+                  const step = GROUP_LAYERS - i; // furthest shim first
+                  const inset = GROUP_LAYER_INSET * step;
+                  // No room to taper on a narrow bar; drawing one anyway leaves
+                  // the shims wider than the bar they sit behind.
+                  if (width - inset * 2 < 8) return null;
+                  return (
+                    <span
+                      key={i}
+                      className="absolute rounded-[3px]"
+                      style={{
+                        left: inset,
+                        width: width - inset * 2,
+                        top: -GROUP_LAYER_STEP * step,
+                        height: GROUP_BAR_H,
+                        // Solid, NOT a faded copy of the bar — at 45%/35% opacity
+                        // these read as a rendering artefact rather than as more
+                        // bars. See GROUP_LAYER_COLORS.
+                        backgroundColor: GROUP_LAYER_COLORS[i],
+                      }}
+                    />
+                  );
+                })}
+                <span
+                  className="absolute inset-x-0 flex items-center overflow-hidden rounded-[3px] px-1.5"
+                  style={{ top: 0, height: GROUP_BAR_H, backgroundColor: GROUP_BAR_COLOR }}
+                >
+                  {/* ⚠️ Ink is `--surface`, NOT white — the label is punched OUT
+                      of the bar, showing the row's own background through it.
+                      `--group-bar` is DARK blue in the three light themes and
+                      LIGHT blue under `night` (see globals.css), so a fixed white
+                      would fall to 3.5:1 there. Punching it out means the pair
+                      inverts together: 6.9:1 light, 5.3:1 night. */}
+                  {width >= BAR_LABEL_MIN_PX && (
+                    <span
+                      className="truncate text-[11px] font-semibold leading-none"
+                      style={{ color: "var(--surface)" }}
+                    >
+                      {block.group.name}
+                    </span>
+                  )}
+                </span>
+              </>
+            ) : (
+              <>
+                {/* `leading-none` so the box is the glyphs and nothing else —
+                    with default leading the caption carries ~6px of invisible
+                    padding and sits adrift of the rule it names. */}
+                <span
+                  className="pointer-events-none absolute whitespace-nowrap text-[11px] font-semibold leading-none"
+                  style={{ left: 1, top: -13, color: GROUP_BAR_COLOR }}
+                >
+                  {block.group.name}
+                </span>
+                <span
+                  className="absolute inset-x-0 top-0 rounded-[1px]"
+                  style={{ height: SECTION_BAR_H, backgroundColor: GROUP_BAR_COLOR }}
+                />
+              </>
+            )}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -2346,6 +2930,7 @@ function TimelineRow({
   leftW,
   hidden,
   canEdit,
+  indent = 0,
   off,
   drag,
   dropTarget,
@@ -2376,6 +2961,8 @@ function TimelineRow({
   leftW: number;
   hidden: Set<string>;
   canEdit: boolean;
+  /** Left padding for a row nested inside a group (0027). */
+  indent?: number;
   off: Set<string>;
   drag: DragState | null;
   dropTarget: boolean;
@@ -2516,7 +3103,11 @@ function TimelineRow({
         className={`sticky left-0 z-20 flex h-full shrink-0 items-center ${
           selected ? "bg-brand-soft" : `bg-surface ${ROW_HOVER_SOLID}`
         }`}
-        style={{ width: STICKY_W }}
+        // ⚠️ Padding, not a margin: this block is `STICKY_W` wide and the width
+        // must not change, or the row stops lining up with the columns beside it.
+        // The grip and checkbox come with it, unlike the client table's rows,
+        // because here they sit INSIDE this block rather than in a gutter.
+        style={{ width: STICKY_W, paddingLeft: indent }}
       >
         <span
           draggable={canEdit}
