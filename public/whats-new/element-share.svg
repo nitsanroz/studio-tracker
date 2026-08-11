@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240" role="img" aria-label="The Share button on the Timeline, with the copied client link below it">
+  <defs>
+    <filter id="shShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#06112f" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- the button -->
+  <g filter="url(#shShadow)">
+    <rect x="76" y="30" width="180" height="52" rx="14" fill="#ffffff"/>
+    <g stroke="#0b43ed" stroke-width="2.2" fill="none" stroke-linecap="round">
+      <path d="M106 56 h5 a7 7 0 0 0 7-7 v-3"/>
+      <path d="M118 56 h5 a7 7 0 0 1 7 7 v3"/>
+    </g>
+    <text x="146" y="62" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#06112f">Share plan</text>
+  </g>
+
+  <!-- copied link pill -->
+  <g filter="url(#shShadow)">
+    <rect x="34" y="106" width="292" height="44" rx="12" fill="#ffffff"/>
+    <circle cx="60" cy="128" r="9" fill="#1d9e75"/>
+    <path d="M56 128 l3 3 5.5-6" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="78" y="126" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f">Link copied</text>
+    <text x="78" y="140" font-family="system-ui, sans-serif" font-size="10" fill="#98a0b3">tracker.studionmore.com/gantt/…</text>
+  </g>
+
+  <!-- what the client opens: a live plan, cropped -->
+  <g filter="url(#shShadow)">
+    <rect x="56" y="172" width="248" height="80" rx="12" fill="#ffffff"/>
+    <rect x="72" y="188" width="60" height="6" rx="3" fill="#06112f"/>
+    <g>
+      <rect x="72" y="206" width="96" height="14" rx="4" fill="#0b43ed" opacity="0.25"/>
+      <rect x="72" y="206" width="58" height="14" rx="4" fill="#0b43ed"/>
+      <rect x="112" y="228" width="130" height="14" rx="4" fill="#1d9e75" opacity="0.25"/>
+      <rect x="112" y="228" width="52" height="14" rx="4" fill="#1d9e75"/>
+    </g>
+    <rect x="196" y="186" width="94" height="10" rx="5" fill="#f0f1fa"/>
+  </g>
+</svg>

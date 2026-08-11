@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240" role="img" aria-label="A milestone marker on the timeline: a labelled line running down past the task bars">
+  <!-- Drawn to the real component values, not approximated:
+       bar 27h / radius 4 (BAR_H, BAR_R in lib/gantt.ts), the soft two-layer
+       BAR_SHADOW, and a mark label that is a white pill with a brand border,
+       NO left border, flush to a 2px brand/50 line (MarkLayer). -->
+  <defs>
+    <filter id="barSh" x="-20%" y="-40%" width="140%" height="220%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#06112f" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#06112f" flood-opacity="0.10"/>
+    </filter>
+    <filter id="cardSh" x="-20%" y="-40%" width="140%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#06112f" flood-opacity="0.05"/>
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#06112f" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <!-- ruler: the app prints month names in the tick row, 12px uppercase tracked -->
+  <g filter="url(#cardSh)">
+    <rect x="10" y="20" width="340" height="30" rx="8" fill="#ffffff"/>
+  </g>
+  <text x="26" y="40" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f" letter-spacing="0.7">AUG</text>
+  <g font-family="system-ui, sans-serif" font-size="11" fill="#98a0b3">
+    <text x="86" y="40">12</text>
+    <text x="140" y="40">13</text>
+    <text x="212" y="40">14</text>
+    <text x="268" y="40">15</text>
+    <text x="316" y="40">16</text>
+  </g>
+
+  <!-- the mark's line: 2px, brand at 50%, UNDER the bars -->
+  <rect x="184" y="50" width="2" height="176" fill="#0b43ed" opacity="0.5"/>
+
+  <!-- rows: 34 tall, bars 27 at radius 4 -->
+  <g filter="url(#barSh)">
+    <rect x="30" y="72" width="148" height="27" rx="4" fill="#0b43ed" opacity="0.24"/>
+    <rect x="30" y="72" width="94" height="27" rx="4" fill="#0b43ed"/>
+    <text x="42" y="90" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Hero section</text>
+  </g>
+  <g filter="url(#barSh)">
+    <rect x="118" y="122" width="180" height="27" rx="4" fill="#1d9e75" opacity="0.24"/>
+    <rect x="118" y="122" width="68" height="27" rx="4" fill="#1d9e75"/>
+    <text x="130" y="140" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Wireframe</text>
+  </g>
+  <g filter="url(#barSh)">
+    <rect x="58" y="172" width="126" height="27" rx="4" fill="#d4537e" opacity="0.24"/>
+    <rect x="58" y="172" width="102" height="27" rx="4" fill="#d4537e"/>
+    <text x="70" y="190" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Content</text>
+  </g>
+
+  <!-- the label: sits to the RIGHT of the line, flush, rounded on the right only -->
+  <g filter="url(#cardSh)">
+    <path d="M186 54 h96 a6 6 0 0 1 6 6 v10 a6 6 0 0 1 -6 6 h-96 z" fill="#ffffff"/>
+    <path d="M186 54 h96 a6 6 0 0 1 6 6 v10 a6 6 0 0 1 -6 6 h-96" fill="none" stroke="#0b43ed" stroke-width="1"/>
+  </g>
+  <text x="194" y="69" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#1d32c8">Client review</text>
+</svg>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareVersions, whatsNewSince, MAX_RELEASES, MAX_STEPS, RELEASES } from "./whats-new";
+import { compareVersions, whatsNewSince, MAX_STEPS, RELEASES } from "./whats-new";
 
 describe("compareVersions", () => {
   it("orders by each part, not by string", () => {
@@ -40,19 +40,35 @@ describe("whatsNewSince", () => {
     }
   });
 
-  it("caps both releases and steps, and accounts for every dropped item", () => {
+  it("caps the steps and accounts for every dropped item", () => {
     const got = whatsNewSince(null, true)!;
-    expect(got.releases.length).toBeLessThanOrEqual(MAX_RELEASES);
     expect(got.steps.length).toBeLessThanOrEqual(MAX_STEPS);
-    // `olderCount` has to cover BOTH caps — items lost to MAX_STEPS and items in
-    // releases lost to MAX_RELEASES. Counting only one of them was the bug this
-    // pins: "+ 1 earlier" while four items were actually hidden.
     const eligibleItems = RELEASES.reduce(
       (n, r) =>
         n + r.items.filter((i) => i.audience === "all" || i.audience === "admin").length,
       0,
     );
     expect(got.steps.length + got.olderCount).toBe(eligibleItems);
+  });
+
+  it("sorts by priority first, so a deprioritised item lands behind older ones", () => {
+    const got = whatsNewSince(null, true)!;
+    const prio = got.steps.map((s) => s.priority ?? 0);
+    expect([...prio].sort((a, b) => b - a)).toEqual(prio);
+    // The real case: mobile is the NEWEST release but must not lead, because the
+    // studio works on laptops and the week's desktop work is what they can use.
+    const firstMobile = got.steps.findIndex((s) => (s.priority ?? 0) < 0);
+    if (firstMobile !== -1) {
+      expect(compareVersions(got.steps[0].version, got.steps[firstMobile].version)).toBeLessThan(0);
+    }
+  });
+
+  it("keeps version order within one priority band", () => {
+    const got = whatsNewSince(null, true)!;
+    const band = got.steps.filter((s) => (s.priority ?? 0) === 0);
+    for (let i = 1; i < band.length; i++) {
+      expect(compareVersions(band[i - 1].version, band[i].version)).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it("gives every step the version and date it came from", () => {

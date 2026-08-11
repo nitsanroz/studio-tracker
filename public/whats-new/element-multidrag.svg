@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240" role="img" aria-label="Three selected timeline bars moving together, with the live date chip that follows the drag">
+  <!-- Real values: bar 27h / radius 4, the soft two-layer BAR_SHADOW, and the
+       selection ring is `inset 0 0 0 1px var(--brand)` — 1px, INSIDE the bar.
+       2px was explicitly rejected in v1.11.0 (a row of selected bars read as a
+       row of buttons), so it is drawn here as a 1px inset stroke. -->
+  <defs>
+    <filter id="mdBar" x="-20%" y="-40%" width="140%" height="220%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#06112f" flood-opacity="0.06"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#06112f" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <!-- where they were -->
+  <g opacity="0.28">
+    <rect x="20" y="46" width="130" height="27" rx="4" fill="#ffffff"/>
+    <rect x="20" y="104" width="174" height="27" rx="4" fill="#ffffff"/>
+    <rect x="20" y="162" width="102" height="27" rx="4" fill="#ffffff"/>
+  </g>
+
+  <!-- the shift -->
+  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8">
+    <path d="M156 59 h26 M175 53 l7 6 -7 6"/>
+    <path d="M200 117 h26 M219 111 l7 6 -7 6"/>
+    <path d="M128 175 h26 M147 169 l7 6 -7 6"/>
+  </g>
+
+  <!-- moved, each carrying the 1px inset brand ring -->
+  <g filter="url(#mdBar)">
+    <rect x="188" y="46" width="130" height="27" rx="4" fill="#0b43ed" opacity="0.24"/>
+    <rect x="188" y="46" width="82" height="27" rx="4" fill="#0b43ed"/>
+    <rect x="188.5" y="46.5" width="129" height="26" rx="3.5" fill="none" stroke="#0b43ed"/>
+    <text x="200" y="64" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Hero section</text>
+  </g>
+  <g filter="url(#mdBar)">
+    <rect x="232" y="104" width="174" height="27" rx="4" fill="#1d9e75" opacity="0.24"/>
+    <rect x="232" y="104" width="70" height="27" rx="4" fill="#1d9e75"/>
+    <rect x="232.5" y="104.5" width="173" height="26" rx="3.5" fill="none" stroke="#0b43ed"/>
+    <text x="244" y="122" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Wireframe</text>
+  </g>
+  <g filter="url(#mdBar)">
+    <rect x="160" y="162" width="102" height="27" rx="4" fill="#d4537e" opacity="0.24"/>
+    <rect x="160" y="162" width="78" height="27" rx="4" fill="#d4537e"/>
+    <rect x="160.5" y="162.5" width="101" height="26" rx="3.5" fill="none" stroke="#0b43ed"/>
+    <text x="172" y="180" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">Content</text>
+  </g>
+
+  <!-- the live date chip, in the app's dark-chip style -->
+  <g>
+    <rect x="140" y="204" width="132" height="26" rx="6" fill="#06112f"/>
+    <text x="154" y="221" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">+2 days · 18/8</text>
+  </g>
+</svg>

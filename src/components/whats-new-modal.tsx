@@ -24,29 +24,41 @@ import { Modal, ModalClose } from "./ui";
 
 const SEEN_KEY = "whatsnew.seen";
 
-/** The blue box. A step with no picture of its own falls back to the studio mark. */
+/**
+ * The blue box, and the two ways a picture sits in it.
+ *
+ * Both are OVERSIZED and cropped by the panel rather than fitted inside it —
+ * that is the whole difference between a product shot and a sticker floating in
+ * a coloured square. A `phone` runs off the bottom; an `element` runs off both
+ * sides, because a desktop view shrunk to fit 345px is a stamp nobody can read.
+ */
 function Visual({ step }: { step: Step }) {
+  const shape = step.image?.shape ?? "phone";
   return (
-    <div className="relative flex shrink-0 items-start justify-center overflow-hidden bg-brand md:w-[45%]">
+    <div
+      className={`relative flex shrink-0 overflow-hidden bg-brand md:w-[45%] ${
+        shape === "phone" ? "items-start justify-center" : "items-center justify-center"
+      }`}
+    >
       {step.image ? (
-        // Taller than its box and anchored to the top, so the panel CROPS the
-        // device — it runs off the bottom edge instead of floating inside a
-        // frame with air around it, which is what makes it read as a product
-        // shot rather than a sticker.
         <Image
           key={step.image.src}
           src={step.image.src}
           alt={step.image.alt}
-          width={200}
-          height={400}
-          className="mt-9 h-[460px] w-auto max-w-none drop-shadow-xl"
+          width={shape === "phone" ? 200 : 360}
+          height={shape === "phone" ? 400 : 240}
+          className={
+            shape === "phone"
+              ? "mt-9 h-[460px] w-auto max-w-none drop-shadow-xl"
+              : "w-[132%] max-w-none"
+          }
           unoptimized
         />
       ) : (
-        <span
-          className="brand-wordmark mt-32 w-40 bg-white/90"
-          aria-hidden
-        />
+        // Last resort. A step that reaches this has no picture, and a panel of
+        // wordmarks teaches people there is nothing here worth looking at —
+        // treat it as a prompt to draw one, not as a design.
+        <span className="brand-wordmark w-40 bg-white/90" aria-hidden />
       )}
     </div>
   );
@@ -194,9 +206,20 @@ export function WhatsNewModal({ suppressed = false }: { suppressed?: boolean }) 
             <span className="sr-only" aria-live="polite">
               Step {step + 1} of {news.steps.length}
             </span>
+            {/* ⚠️ Back is RENDERED THROUGHOUT and disabled on the first step,
+                rather than appearing once you've moved. Appearing would reflow
+                the row and slide Next out from under the cursor that just used
+                it — the same rule `PeriodStepper` follows for its arrows. */}
+            <button
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              className="ml-auto min-h-10 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
+            >
+              Back
+            </button>
             <button
               onClick={() => (last ? dismiss() : setStep((s) => s + 1))}
-              className="ml-auto min-h-10 rounded-lg bg-brand px-5 text-sm font-medium text-white hover:bg-brand-dark"
+              className="min-h-10 rounded-lg bg-brand px-5 text-sm font-medium text-white hover:bg-brand-dark"
             >
               {last ? "Got it" : "Next"}
             </button>
