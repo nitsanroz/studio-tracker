@@ -11,11 +11,13 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Inbox,
+  Info,
   LogOut,
   Menu,
   Plus,
   Receipt,
   Settings,
+  Sparkles,
   SquareCheckBig,
   Users,
   UsersRound,
@@ -437,6 +439,9 @@ function Shell({ children }: { children: ReactNode }) {
   // pattern as `theme` and the team page's layout.
   const [folded, setFolded] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  // Set by the sidebar's "Latest updates"; the modal clears it once it has read
+  // it, so the link works a second time.
+  const [newsOpen, setNewsOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logTimeOpen, setLogTimeOpen] = useState(false);
   const isNarrow = useIsNarrow();
@@ -592,45 +597,64 @@ function Shell({ children }: { children: ReactNode }) {
               />
             ))}
         </nav>
+        {/* ⚠️ No avatar, no name, no role. Nitsan's note: the signed-in person is
+            already named in the header's top-right menu, and repeating them at
+            the foot of every screen spent 60px of sidebar restating something
+            nobody was in doubt about. What's left is the two things you'd
+            actually come down here to DO.
+
+            Folded (w-16) has no room for words, so both fall back to their
+            icons with the label as a tooltip — the same trade `NavItem` makes. */}
+        {/* No rule above it. The nav ends where the list of items ends, and
+            these three read as three more items in the same column — a divider
+            was drawing a boundary between things that don't need separating. */}
         <div
-          className={`flex items-center border-t py-3 ${folded ? "flex-col gap-2 px-2" : "gap-2.5 px-4"}`}
-          style={{ borderColor: "var(--sb-border)" }}
+          className={`flex py-2 ${folded ? "flex-col items-center gap-1 px-2" : "flex-col px-2"}`}
         >
-          <Avatar profile={me} size={30} />
-          {!folded && (
-            <div className="min-w-0 flex-1">
-              <div className="font-serif-accent truncate text-[15px]">{me?.name}</div>
-              <div className="text-xs capitalize" style={{ color: "var(--sb-muted)" }}>
-                {me?.role}
-              </div>
-            </div>
-          )}
+          <button
+            onClick={() => setAboutOpen(true)}
+            title="About the tracker"
+            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
+              folded ? "size-9 justify-center" : "gap-2.5 px-2"
+            }`}
+            style={{ color: "var(--sb-muted)" }}
+          >
+            <Info size={17} strokeWidth={1.75} className="shrink-0" />
+            {!folded && "About"}
+          </button>
+          <button
+            onClick={() => setNewsOpen(true)}
+            title="Latest updates"
+            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
+              folded ? "size-9 justify-center" : "gap-2.5 px-2"
+            }`}
+            style={{ color: "var(--sb-muted)" }}
+          >
+            <Sparkles size={17} strokeWidth={1.75} className="shrink-0" />
+            {!folded && "Latest updates"}
+          </button>
           <button
             onClick={async () => {
               await createClient().auth.signOut();
               window.location.href = "/login";
             }}
-            title="Sign out"
-            aria-label="Sign out"
-            className="shrink-0 rounded-md p-1.5 opacity-70 transition-opacity hover:opacity-100"
+            title="Logout"
+            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
+              folded ? "size-9 justify-center" : "gap-2.5 px-2"
+            }`}
             style={{ color: "var(--sb-muted)" }}
           >
-            <LogOut size={17} strokeWidth={1.75} />
+            <LogOut size={17} strokeWidth={1.75} className="shrink-0" />
+            {!folded && "Logout"}
           </button>
         </div>
         {!folded && (
           <div className="flex items-center justify-end gap-2 px-4 pb-2 text-[10px]">
-            {/* The version was already here and is the natural place to ask what
-                this thing is — so it opens the panel rather than sitting beside
-                a second control competing for the same corner. */}
-            <button
-              onClick={() => setAboutOpen(true)}
-              title="About the tracker"
-              className="text-white/50 transition-colors hover:text-white/90 hover:underline"
-            >
-              About
-            </button>
-            <span className="text-white/30">·</span>
+            {/* "About" used to be a word here too. It has moved up into the
+                footer block with Latest updates and Logout, so what's left is
+                the version stamp — which still opens the same panel, because
+                the version number is the thing people click when they want to
+                know what this build is. */}
             <button
               onClick={() => setAboutOpen(true)}
               title="About the tracker"
@@ -783,7 +807,11 @@ function Shell({ children }: { children: ReactNode }) {
           asks them to confirm their details and set a photo — and opening
           "v1.12.0 is out" over the top of it announces a change to someone who
           has never seen the thing it changed. It waits for their next visit. */}
-      <WhatsNewModal suppressed={pathname.startsWith("/welcome")} />
+      <WhatsNewModal
+        suppressed={pathname.startsWith("/welcome")}
+        requestedOpen={newsOpen}
+        onRequestHandled={() => setNewsOpen(false)}
+      />
     </div>
   );
 }

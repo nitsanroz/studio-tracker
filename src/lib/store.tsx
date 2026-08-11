@@ -30,6 +30,7 @@ import {
   taskPatchToRow,
   type DbRow,
 } from "./db";
+import { assembleTaskBrief, readSubmission } from "./brief";
 import {
   fetchCold,
   fetchFull,
@@ -82,6 +83,17 @@ export interface TaskRequest {
   createdTaskId: string | null;
   createdAt: string;
   answers: Record<string, unknown> | null;
+  /**
+   * When an admin acknowledged it, and when the client was told (0028).
+   *
+   * ⚠️ Two stamps, not one. If Resend is down the request must still register
+   * as seen — otherwise a failed email leaves it looking untouched and the next
+   * admin acknowledges it all over again. `clientNotifiedAt` is the one that
+   * guarantees the client is never mailed twice.
+   */
+  seenAt: string | null;
+  seenBy: string | null;
+  clientNotifiedAt: string | null;
 }
 
 export interface ApproveRequestInput {
@@ -308,8 +320,11 @@ interface Store {
   updateDevItem: (id: string, patch: { text?: string; status?: DevStatus }) => void;
   deleteDevItem: (id: string) => void;
   taskRequests: TaskRequest[];
-  approveRequest: (requestId: string, input: ApproveRequestInput) => Promise<void>;
+  /** Resolves to the new task's id, so the caller can open its pane. */
+  approveRequest: (requestId: string, input: ApproveRequestInput) => Promise<string | null>;
   rejectRequest: (requestId: string) => void;
+  deleteRequest: (requestId: string) => void;
+  markRequestSeen: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
   taskMinutes: (taskId: string) => number;
   /** Undo/redo the last data actions (max 10). Also on cmd/ctrl+Z (+shift). */
   undo: () => void;
@@ -420,6 +435,12 @@ const mapTaskRequest = (r: any): TaskRequest => ({
   createdTaskId: r.created_task_id,
   createdAt: r.created_at,
   answers: r.answers ?? null,
+  // ?? null, not r.seen_at: before 0028 the columns don't exist and the row
+  // simply lacks the keys. The queue then reads as "nothing acknowledged yet",
+  // which is exactly right.
+  seenAt: r.seen_at ?? null,
+  seenBy: r.seen_by ?? null,
+  clientNotifiedAt: r.client_notified_at ?? null,
 });
 
 const StoreContext = createContext<Store | null>(null);
@@ -2861,16 +2882,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const approveRequest = useCallback(
-    async (requestId: string, input: ApproveRequestInput) => {
+    async (requestId: string, input: ApproveRequestInput): Promise<string | null> => {
       const request = taskRequests.find((r) => r.id === requestId);
-      if (!request) return;
+      if (!request) return null;
+
+      // What the client attached. Files and their own "+ Add link" rows become
+      // real `links` on the task below, so the brief copied across is assembled
+      // WITHOUT them — otherwise every Supabase storage URL lands in the text as
+      // well, which is the noise migration 0022 exists to remove.
+      const submission = readSubmission(request.answers);
+      const attachments = submission ? [...submission.files.map((f) => ({ title: f.name, url: f.url })), ...submission.links] : [];
+      const brief = submission ? assembleTaskBrief(submission.answers) : request.brief;
+
       const { data: task, error } = await supabase
         .from("tasks")
         .insert({
           client_id: input.clientId,
           section_id: input.sectionId,
           title: input.title,
-          brief: request.brief,
+          brief,
           status: "todo",
           assignee_id: input.assigneeId,
           due_date: input.dueDate,
@@ -2887,14 +2917,95 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .from("task_requests")
         .update({ status: "approved", created_task_id: task.id, client_id: input.clientId })
         .eq("id", requestId);
+      // The attachments, as titled links on the new task — the same rows the
+      // studio's own "+ Add link" writes, so they render and edit identically.
+      // ⚠️ Best-effort ON PURPOSE: the task exists and the request is approved
+      // by this point, and failing the whole approval because one link row
+      // wouldn't insert would leave the queue and the task list disagreeing.
+      // The URLs are still in the request's own brief if anything goes wrong.
+      if (attachments.length) {
+        const { data: rows, error: linkError } = await supabase
+          .from("links")
+          .insert(
+            attachments.map((a, i) => ({
+              task_id: task.id,
+              client_id: null,
+              title: a.title,
+              url: a.url,
+              position: i + 1,
+            })),
+          )
+          .select();
+        if (linkError) noteWriteError("approveRequest links", linkError);
+        else if (rows) setLinks((prev) => [...prev, ...rows.map(mapLink)]);
+      }
+
       setTasks((prev) => [...prev, mapTask(task, tagNameById)]);
       setTaskRequests((prev) =>
         prev.map((r) =>
           r.id === requestId ? { ...r, status: "approved" as const, createdTaskId: task.id } : r,
         ),
       );
+      return task.id as string;
     },
     [supabase, taskRequests, tagNameById, clients, noteWriteError],
+  );
+
+  /**
+   * Drop a submission for good. Admin-only by RLS (0001's "admin all"), and
+   * there is no undo — it is one row plus whatever the client typed into it.
+   *
+   * ⚠️ The uploaded FILES are left in the `intake` bucket. An approved request
+   * has already turned them into links on a live task, and deleting the request
+   * must not break those. A few orphaned objects behind a deleted submission is
+   * the cheaper mistake by a wide margin.
+   */
+  const deleteRequest = useCallback(
+    (requestId: string) => {
+      setTaskRequests((prev) => prev.filter((r) => r.id !== requestId));
+      supabase
+        .from("task_requests")
+        .delete()
+        .eq("id", requestId)
+        .then(wrote("deleteRequest"));
+    },
+    [supabase, wrote],
+  );
+
+  /**
+   * Tell the client a person has read their brief, and record that we did.
+   *
+   * Goes through an API route rather than writing here, for two reasons the
+   * browser can't satisfy: the Resend key is server-only, and the route is what
+   * enforces "mail the client at most once" by checking `client_notified_at`
+   * inside the same request that sets it.
+   */
+  const markRequestSeen = useCallback(
+    async (requestId: string): Promise<{ ok: boolean; error?: string }> => {
+      const res = await fetch("/api/intake/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      }).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as
+        | { seenAt?: string; clientNotifiedAt?: string | null; error?: string }
+        | null;
+      if (!res?.ok) return { ok: false, error: body?.error ?? "Couldn't send the confirmation." };
+      setTaskRequests((prev) =>
+        prev.map((r) =>
+          r.id === requestId
+            ? {
+                ...r,
+                seenAt: body?.seenAt ?? new Date().toISOString(),
+                seenBy: currentUserId,
+                clientNotifiedAt: body?.clientNotifiedAt ?? r.clientNotifiedAt,
+              }
+            : r,
+        ),
+      );
+      return { ok: true };
+    },
+    [currentUserId],
   );
 
   const rejectRequest = useCallback(
@@ -3007,6 +3118,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       taskRequests,
       approveRequest,
       rejectRequest,
+      deleteRequest,
+      markRequestSeen,
       taskMinutes,
       undo,
       redo,
@@ -3023,7 +3136,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

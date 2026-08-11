@@ -1,10 +1,101 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import { Check, Link2, MailCheck, Trash2 } from "lucide-react";
 import { useData, useIsAdmin, type TaskRequest } from "@/lib/store";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { formatDate } from "@/lib/format";
+
+/** "14:20" — the receipt's timestamp, on the day it matters most. */
+function timeOf(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Drops a submission for good.
+ *
+ * Hidden from members: `task_requests` is admin-only by RLS, so a member's
+ * click would fail at the database anyway — better it isn't offered.
+ */
+function DeleteRequestButton({ request }: { request: TaskRequest }) {
+  const { deleteRequest } = useData();
+  const isAdmin = useIsAdmin();
+  if (!isAdmin) return null;
+  return (
+    <button
+      onClick={() => {
+        if (
+          confirm(
+            `Delete this submission from ${request.submitterName || "the client"}?\n\n` +
+              `"${request.title}"\n\n` +
+              // Said plainly, because it's true and there is no undo here.
+              (request.createdTaskId
+                ? "The task it created stays — only this queue entry goes."
+                : "This can't be undone.")
+          )
+        ) {
+          deleteRequest(request.id);
+        }
+      }}
+      title="Delete this submission"
+      aria-label="Delete this submission"
+      className="shrink-0 rounded-md p-1.5 text-faint transition-colors hover:bg-danger/10 hover:text-danger"
+    >
+      <Trash2 size={15} />
+    </button>
+  );
+}
+
+/**
+ * "We've seen it" — the one-click receipt to the client.
+ *
+ * ⚠️ Deliberately a button and not an on-view side effect. Nitsan asked for the
+ * mail to go "once a request is seen by an admin", and firing it on render
+ * would mean opening this page to triage one submission quietly emails every
+ * other client waiting in the queue. One click keeps the moment the studio's
+ * to choose; the card then records it so nobody sends a second.
+ */
+function NotifyClientButton({ request }: { request: TaskRequest }) {
+  const { markRequestSeen } = useData();
+  const isAdmin = useIsAdmin();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isAdmin) return null;
+
+  if (request.clientNotifiedAt) {
+    return (
+      <span
+        className="flex items-center gap-1.5 text-xs text-muted"
+        title={`${request.submitterEmail} was told the studio has seen this brief`}
+      >
+        <MailCheck size={14} className="text-emerald-600" />
+        Client notified {timeOf(request.clientNotifiedAt)}
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          const r = await markRequestSeen(request.id);
+          if (!r.ok) setError(r.error ?? "Couldn't send it.");
+          setBusy(false);
+        }}
+        title={`Email ${request.submitterEmail}: someone at the studio has read this brief`}
+        className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+      >
+        <MailCheck size={13} />
+        {busy ? "Sending…" : "Tell client we've seen it"}
+      </button>
+      {error && <span className="text-[11px] text-danger">{error}</span>}
+    </div>
+  );
+}
 
 /** Copies the studio-wide intake form URL, so it can be pasted to a client. */
 function CopyFormLinkButton() {
@@ -95,14 +186,23 @@ function ReviewCard({ request }: { request: TaskRequest }) {
           approved
         </span>
         <span className="bidi-auto flex-1 truncate font-medium">{request.title}</span>
+        {request.clientNotifiedAt && (
+          <span
+            className="shrink-0 text-emerald-600"
+            title={`Client notified ${timeOf(request.clientNotifiedAt)}`}
+          >
+            <MailCheck size={14} aria-label="Client notified" />
+          </span>
+        )}
         {request.createdTaskId && (
           <button
             onClick={() => openTask(request.createdTaskId!)}
-            className="text-brand hover:underline"
+            className="shrink-0 text-brand hover:underline"
           >
             Open task →
           </button>
         )}
+        <DeleteRequestButton request={request} />
       </div>
     );
   }
@@ -111,6 +211,7 @@ function ReviewCard({ request }: { request: TaskRequest }) {
       <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-sm opacity-60">
         <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">rejected</span>
         <span className="bidi-auto flex-1 truncate">{request.title}</span>
+        <DeleteRequestButton request={request} />
       </div>
     );
   }
@@ -132,12 +233,15 @@ function ReviewCard({ request }: { request: TaskRequest }) {
             )}
           </p>
         </div>
-        <button
-          onClick={() => setShowBrief((s) => !s)}
-          className="shrink-0 rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-brand hover:text-brand"
-        >
-          {showBrief ? "Hide brief" : "Show brief"}
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => setShowBrief((s) => !s)}
+            className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+          >
+            {showBrief ? "Hide brief" : "Show brief"}
+          </button>
+          <DeleteRequestButton request={request} />
+        </div>
       </div>
 
       {showBrief && (
@@ -210,7 +314,13 @@ function ReviewCard({ request }: { request: TaskRequest }) {
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* `mr-auto`: the receipt is not part of the approve/reject decision —
+            it's something you do while still deciding, so it sits at the far
+            left rather than beside the two buttons that resolve the card. */}
+        <div className="mr-auto">
+          <NotifyClientButton request={request} />
+        </div>
         <button
           onClick={() => {
             if (confirm("Reject this submission?")) rejectRequest(request.id);
@@ -225,7 +335,7 @@ function ReviewCard({ request }: { request: TaskRequest }) {
             setBusy(true);
             setError(null);
             try {
-              await approveRequest(request.id, {
+              const taskId = await approveRequest(request.id, {
                 clientId,
                 sectionId: sectionId || null,
                 assigneeId: assigneeId || null,
@@ -233,6 +343,11 @@ function ReviewCard({ request }: { request: TaskRequest }) {
                 estimateHours: budget === "" ? null : Number(budget),
                 dueDate: dueDate || null,
               });
+              // Straight into the new task. Approving is the middle of a job,
+              // not the end of one — there's a type to set, a brief to skim and
+              // the client's files now sitting there as links. The pane is
+              // mounted app-wide, so it opens over the queue.
+              if (taskId) openTask(taskId);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Failed");
             } finally {

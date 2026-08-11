@@ -4,14 +4,22 @@ import {
   assembleEmailHtml,
   assembleTaskBrief,
   parseBudgetHours,
+  type BriefLink,
   type IntakeAnswers,
   type IntakeFile,
 } from "@/lib/brief";
+import { hostLabel, normalizeUrl } from "@/lib/links";
 import { classifyUpload } from "@/lib/uploads";
 
 // Anti-flood: max submissions accepted per intake link within the window.
 const RATE_LIMIT_WINDOW_MIN = 10;
 const RATE_LIMIT_MAX = 8;
+
+// Titled links the client added with "+ Add link" on the form. Same cap as
+// uploads — this is an unauthenticated endpoint, so every list it accepts needs
+// a ceiling that isn't "whatever was posted".
+const MAX_LINKS = 8;
+const MAX_LINK_TITLE = 120;
 
 // Public endpoint for the client intake form. Token-gated; all DB access via
 // the service key on the server (nothing is exposed to anonymous clients).
@@ -48,6 +56,37 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   return NextResponse.json({
     clientName: link.clients?.name ?? null,
   });
+}
+
+/**
+ * The client's own "+ Add link" rows, posted as one JSON field.
+ *
+ * ⚠️ Every URL goes through `normalizeUrl`, exactly as the studio's own link
+ * editor does — these become `href`s on an approved task where only the TITLE
+ * is rendered, so a `javascript:` URL under a friendly title is something no
+ * colleague could spot before clicking. Anything that isn't http/https/mailto
+ * is dropped rather than stored and filtered later.
+ */
+function parseLinks(raw: string): BriefLink[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: BriefLink[] = [];
+  for (const row of parsed.slice(0, MAX_LINKS)) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const url = normalizeUrl(typeof r.url === "string" ? r.url : "");
+    if (!url) continue;
+    const title = (typeof r.title === "string" ? r.title : "").trim().slice(0, MAX_LINK_TITLE);
+    // An untitled link still beats a lost one: "docs.google.com" is at least
+    // something a person can recognise.
+    out.push({ title: title || hostLabel(url), url });
+  }
+  return out;
 }
 
 /** Match "Company" text + email domain against client names. */
@@ -112,9 +151,15 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     notes: f("notes"),
     scheduleMeeting: f("scheduleMeeting"),
   };
+  // ⚠️ These three, and no more. The form asks for a dozen things and marks
+  // only these as required — a brief with gaps still tells the studio something,
+  // and `assembleTaskBrief` lists what's missing at the bottom so nothing is
+  // silently lost. A form that refuses to submit is a client who phones instead.
   if (!answers.name || !answers.email || !answers.taskName) {
     return NextResponse.json({ error: "Name, email and task name are required" }, { status: 400 });
   }
+
+  const links = parseLinks(String(form.get("links") ?? ""));
 
   // Files (≤10MB each, max 5)
   const files: IntakeFile[] = [];
@@ -134,7 +179,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
 
   const clientId = link.client_id ?? null;
   const suggested = clientId ?? (await suggestClient(sb, answers.company, answers.email));
-  const brief = assembleTaskBrief(answers, files);
+  // The SUBMISSION's brief lists files and links as text — the queue card and
+  // the notification email are the only places anyone can reach them until the
+  // request is approved. `approveRequest` rebuilds it without them, because by
+  // then they are real rows in `links`.
+  const brief = assembleTaskBrief(answers, { files, links });
 
   const { data: request, error } = await sb
     .from("task_requests")
@@ -148,7 +197,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
       brief,
       requested_due_date: answers.dueDate || null,
       client_approved_budget_hours: parseBudgetHours(answers.budgetRange),
-      answers: { ...answers, files },
+      answers: { ...answers, files, links },
       status: "pending",
     })
     .select("id")
@@ -179,7 +228,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
             from: process.env.INTAKE_FROM_EMAIL || "Studio&more Tracker <onboarding@resend.dev>",
             to: recipients,
             subject: `New task: ${answers.taskName} — ${answers.company || answers.name}`,
-            html: assembleEmailHtml(answers, files, `${origin}/intake-queue`),
+            html: assembleEmailHtml(answers, { files, links }, `${origin}/intake-queue`),
           }),
         });
       }

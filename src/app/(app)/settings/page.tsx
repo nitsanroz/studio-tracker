@@ -12,6 +12,12 @@ import { ClientMarkModal } from "@/components/client-mark-picker";
 import { MemberPictures } from "@/components/picture-editor";
 import { HrDetailsForm } from "@/components/hr-details-form";
 import { OccasionsSettings } from "@/components/occasions-settings";
+import {
+  renderSeenEmail,
+  SEEN_EMAIL_DEFAULT,
+  SEEN_EMAIL_PLACEHOLDERS,
+  type SeenEmailTemplate,
+} from "@/lib/brief";
 import type { Tag, TaskType } from "@/lib/types";
 
 function MyProfile() {
@@ -130,6 +136,155 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
           only affects new tasks.
         </p>
       )}
+    </section>
+  );
+}
+
+/**
+ * The wording of the one email that leaves the building.
+ *
+ * Everything else the tracker sends goes to the studio's own inboxes, where a
+ * clumsy sentence costs nothing. This one lands in a client's inbox under the
+ * studio's name, so the studio edits it here rather than asking for a deploy.
+ *
+ * Stored in `app_settings` (0003) — key/jsonb, admin-write by RLS, so it needs
+ * no schema of its own. `/api/intake/seen` reads it and falls back to
+ * SEEN_EMAIL_DEFAULT if it is missing or malformed.
+ */
+function ClientEmailSettings() {
+  const supabase = useMemo(() => createClient(), []);
+  const [tpl, setTpl] = useState<SeenEmailTemplate>(SEEN_EMAIL_DEFAULT);
+  const [saved, setSaved] = useState<SeenEmailTemplate>(SEEN_EMAIL_DEFAULT);
+  const [status, setStatus] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "intake_seen_email")
+      .maybeSingle()
+      .then(({ data }) => {
+        const v = data?.value as Partial<SeenEmailTemplate> | null;
+        if (v && typeof v === "object") {
+          const next = {
+            subject: typeof v.subject === "string" ? v.subject : SEEN_EMAIL_DEFAULT.subject,
+            body: typeof v.body === "string" ? v.body : SEEN_EMAIL_DEFAULT.body,
+          };
+          setTpl(next);
+          setSaved(next);
+        }
+        setLoaded(true);
+      });
+  }, [supabase]);
+
+  const dirty = tpl.subject !== saved.subject || tpl.body !== saved.body;
+
+  // What a client would actually receive, with the placeholders filled in from
+  // SEEN_EMAIL_PLACEHOLDERS' samples — a preview showing "{firstName}" would be
+  // no preview at all.
+  const preview = useMemo(() => {
+    const s = Object.fromEntries(SEEN_EMAIL_PLACEHOLDERS.map((p) => [p.token, p.sample]));
+    return renderSeenEmail(tpl, {
+      submitterName: s["{name}"],
+      taskName: s["{task}"],
+      company: s["{company}"],
+    });
+  }, [tpl]);
+
+  async function save() {
+    const value = { subject: tpl.subject.trim(), body: tpl.body.trim() };
+    const { error } = await supabase
+      .from("app_settings")
+      .upsert({ key: "intake_seen_email", value });
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+    setSaved(value);
+    setTpl(value);
+    setStatus("Saved ✓");
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <section className="rounded-xl border border-border bg-surface p-4">
+      <h2 className="mb-1 font-heading">Email to the client</h2>
+      <p className="mb-3 text-xs text-muted">
+        Sent when you press <span className="font-medium">Tell client we&apos;ve seen it</span> on a
+        submission in the Intake Queue. Nothing is sent automatically.
+      </p>
+
+      <div className="flex flex-col gap-3">
+        <div>
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">Subject</div>
+          <input
+            value={tpl.subject}
+            onChange={(e) => setTpl((t) => ({ ...t, subject: e.target.value }))}
+            className="w-full rounded-md border border-border-strong bg-surface px-2 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">Message</div>
+          <textarea
+            value={tpl.body}
+            onChange={(e) => setTpl((t) => ({ ...t, body: e.target.value }))}
+            rows={9}
+            className="w-full resize-y rounded-md border border-border-strong bg-surface px-2 py-1.5 text-sm leading-relaxed"
+          />
+          <p className="mt-1 text-xs text-faint">
+            Leave a blank line between paragraphs. These get filled in:{" "}
+            {SEEN_EMAIL_PLACEHOLDERS.map((p, i) => (
+              <span key={p.token}>
+                {i > 0 && ", "}
+                <code
+                  className="cursor-pointer rounded bg-background px-1 hover:text-brand"
+                  title={`${p.describes} — click to add`}
+                  onClick={() => setTpl((t) => ({ ...t, body: `${t.body}${p.token}` }))}
+                >
+                  {p.token}
+                </code>
+              </span>
+            ))}
+          </p>
+        </div>
+
+        <div>
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">
+            Preview — what the client sees
+          </div>
+          <div className="rounded-lg border border-border bg-background p-3">
+            <p className="mb-2 border-b border-border pb-2 text-sm font-medium">
+              {preview.subject}
+            </p>
+            {/* The renderer's own output, so the preview can't drift from the
+                mail. It is built here from escaped text — never from anything
+                a client typed. */}
+            <div
+              className="text-sm text-muted [&_p]:mb-2 last:[&_p]:mb-0"
+              dangerouslySetInnerHTML={{ __html: preview.html }}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={save}
+            disabled={!dirty}
+            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black disabled:opacity-40"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setTpl(SEEN_EMAIL_DEFAULT)}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-muted hover:border-brand hover:text-brand"
+          >
+            Reset to default
+          </button>
+          {status && <span className="text-xs text-muted">{status}</span>}
+        </div>
+      </div>
     </section>
   );
 }
@@ -535,7 +690,7 @@ function MyDetails() {
   );
 }
 
-type SettingsTab = "pictures" | "details" | "password" | "clients" | "studio";
+type SettingsTab = "pictures" | "details" | "password" | "clients" | "studio" | "intake";
 const TAB_KEY = "settings.tab";
 
 /**
@@ -553,6 +708,10 @@ const ACCOUNT_TABS = [
 const ADMIN_TABS = [
   { value: "clients" as const, label: "Clients" },
   { value: "studio" as const, label: "Studio setup" },
+  // Its own tab rather than two more cards under Studio setup: everything here
+  // is about the ONE surface clients see and the mail that goes back to them,
+  // which is a different job from the studio's task types and statuses.
+  { value: "intake" as const, label: "Intake form" },
 ];
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
@@ -640,8 +799,17 @@ export default function SettingsPage() {
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <TaskTypesSection />
           <TagsSection isAdmin={isAdmin} />
-          <IntakeSettings />
           <OccasionsSettings />
+        </div>
+      )}
+
+      {/* One column, not the two-up grid the Studio tab uses: the email editor
+          is several times taller than the form card, so side by side would put
+          a card and a column of empty space next to each other. */}
+      {tab === "intake" && isAdmin && (
+        <div className="flex max-w-[860px] flex-col gap-4">
+          <IntakeSettings />
+          <ClientEmailSettings />
         </div>
       )}
     </div>

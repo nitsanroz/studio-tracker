@@ -86,7 +86,26 @@ function Visual({ step }: { step: Step }) {
   );
 }
 
-export function WhatsNewModal({ suppressed = false }: { suppressed?: boolean }) {
+export function WhatsNewModal({
+  suppressed = false,
+  requestedOpen = false,
+  onRequestHandled,
+}: {
+  suppressed?: boolean;
+  /**
+   * Set by the sidebar's "Latest updates" link — the same panel, asked for
+   * rather than sprung.
+   *
+   * ⚠️ It ignores `whatsnew.seen` entirely and shows the recent list from
+   * scratch. Reusing the automatic path would mean the link did nothing at all
+   * for anyone already up to date, which is precisely who clicks a thing called
+   * "Latest updates". `suppressed` is not honoured either: that exists to keep
+   * the panel from ambushing someone mid-onboarding, and an explicit click is
+   * not an ambush.
+   */
+  requestedOpen?: boolean;
+  onRequestHandled?: () => void;
+}) {
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
   // ⚠️ Held in state, not derived on every render: it is computed FROM
@@ -103,6 +122,18 @@ export function WhatsNewModal({ suppressed = false }: { suppressed?: boolean }) 
     setNews(found);
     setOpen(true);
   }, [suppressed, isAdmin]);
+
+  useEffect(() => {
+    if (!requestedOpen) return;
+    onRequestHandled?.();
+    // `null` = "hasn't dismissed anything", which is the branch that returns the
+    // whole capped list. It cannot come back empty while RELEASES has entries.
+    const found = whatsNewSince(null, isAdmin);
+    if (!found) return;
+    setNews(found);
+    setStep(0); // a second open must start at the first point, not where you left off
+    setOpen(true);
+  }, [requestedOpen, isAdmin, onRequestHandled]);
 
   // ⚠️ Marked seen on DISMISS, not on open. If it were marked on open, a reload
   // mid-read would lose the note for good — and this is the one screen in the
