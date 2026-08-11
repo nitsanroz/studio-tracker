@@ -29,11 +29,13 @@ export interface WhatsNewItem {
    * interchangeable:
    *  · `phone` — draw **200×400** (1:2). Rendered taller than the panel and
    *    anchored top, so the device bleeds off the bottom edge.
-   *  · `element` — draw **360×240** (3:2) showing ONE control, close up, on a
-   *    transparent background. Rendered oversized so it bleeds off both sides.
-   *    ⚠️ Not a whole screen: a desktop view scaled into a 345px panel is a
-   *    stamp nobody can read. Draw the milestone marker, or the board column,
-   *    or the share button — the thing that changed, big.
+   *  · `element` — draw **360×240** (3:2) showing the ONE surface that changed,
+   *    close up, on a transparent background. Rendered whole, with a margin of
+   *    blue around it. ⚠️ Not a whole screen: a desktop view scaled into a 345px
+   *    panel is a stamp nobody can read. Draw the Timeline rows, or the board
+   *    columns, or the status table — cropped to the part that changed, big.
+   *    ⚠️ And give it REAL TEXT. Grey placeholder rules cannot be read as
+   *    "254.5h" or as a column renamed to STATUS, which is usually the point.
    *
    * An item with no picture falls back to the studio mark. That is a last
    * resort, not a default: a panel of wordmarks teaches people there is nothing

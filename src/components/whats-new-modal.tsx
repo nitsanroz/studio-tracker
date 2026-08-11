@@ -27,10 +27,13 @@ const SEEN_KEY = "whatsnew.seen";
 /**
  * The blue box, and the two ways a picture sits in it.
  *
- * Both are OVERSIZED and cropped by the panel rather than fitted inside it —
- * that is the whole difference between a product shot and a sticker floating in
- * a coloured square. A `phone` runs off the bottom; an `element` runs off both
- * sides, because a desktop view shrunk to fit 345px is a stamp nobody can read.
+ * A `phone` is oversized and anchored to the top, so the device runs off the
+ * bottom edge — a crop that is obviously deliberate, and the thing that makes it
+ * read as a product shot rather than a sticker in a coloured square.
+ *
+ * An `element` is CONTAINED, with a margin of blue around it. ⚠️ Don't bleed
+ * these: they are whole UI cards, and a table or a Timeline sliced down its edge
+ * reads as a rendering fault. Crop a device; never crop a card.
  */
 function Visual({ step }: { step: Step }) {
   const shape = step.image?.shape ?? "phone";
@@ -47,16 +50,20 @@ function Visual({ step }: { step: Step }) {
           alt={step.image.alt}
           width={shape === "phone" ? 200 : 360}
           height={shape === "phone" ? 400 : 240}
-          // ⚠️ 110%, not more. The element pictures became whole UI cards — a
-          // Timeline with its pinned task column, a board with its columns — and
-          // at 132% the panel cropped 44 units a side, which sliced the task
-          // names off the left edge. 110% crops 16: enough that the card bleeds
-          // rather than floating in a margin, not enough to eat content. Anything
-          // wider needs the artwork's content pulled inside x 44…316.
+          // ⚠️ Only the PHONE is cropped, and only at the bottom, where a device
+          // running off the edge is obviously deliberate.
+          //
+          // The element pictures are CONTAINED. They started as oversized bleeds
+          // copying the reference shots, but they had since become whole UI
+          // cards — a Timeline with its pinned column, a status table with its
+          // header — and a table sliced down its right-hand edge reads as a
+          // rendering fault, not as a crop. There is nothing in a card to spend
+          // a bleed on: the interest is the content, and the content has to be
+          // whole. 92% leaves a margin of blue so the card is plainly complete.
           className={
             shape === "phone"
               ? "mt-9 h-[460px] w-auto max-w-none drop-shadow-xl"
-              : "w-[110%] max-w-none"
+              : "w-[92%]"
           }
           unoptimized
         />
