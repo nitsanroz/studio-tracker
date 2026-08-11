@@ -27,8 +27,13 @@ export interface WhatsNewItem {
    *
    * `shape` decides how the blue panel treats it, and the two are NOT
    * interchangeable:
-   *  · `phone` — draw **200×400** (1:2). Rendered taller than the panel and
-   *    anchored top, so the device bleeds off the bottom edge.
+   *  · `phone` — a device shot. ⚠️ Draw it at **LIFE SIZE** — a 375×812 screen
+   *    with the app's own values (`h-14` header, `p-4` padding, 13px labels) —
+   *    and let the panel scale the whole thing down. Sizing elements by eye on
+   *    a small canvas gets every proportion wrong in a different direction.
+   *    `scripts/build-whatsnew-phone.mjs` does this and is the one to copy.
+   *    Rendered taller than the panel and anchored top, so the device bleeds
+   *    off the bottom edge.
    *  · `element` — draw **360×240** (3:2) showing the ONE surface that changed,
    *    close up, on a transparent background. Rendered whole, with a margin of
    *    blue around it. ⚠️ Not a whole screen: a desktop view scaled into a 345px

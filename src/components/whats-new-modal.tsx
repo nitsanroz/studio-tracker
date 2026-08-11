@@ -48,8 +48,11 @@ function Visual({ step }: { step: Step }) {
           key={step.image.src}
           src={step.image.src}
           alt={step.image.alt}
-          width={shape === "phone" ? 200 : 360}
-          height={shape === "phone" ? 400 : 240}
+          // The phone is drawn at a real 375×812 screen inside a 14px bezel, so
+          // its intrinsic box is 403×840. Give `next/image` the true numbers or
+          // it reserves the wrong aspect and the picture jumps on load.
+          width={shape === "phone" ? 403 : 360}
+          height={shape === "phone" ? 840 : 240}
           // ⚠️ Only the PHONE is cropped, and only at the bottom, where a device
           // running off the edge is obviously deliberate.
           //
@@ -60,9 +63,15 @@ function Visual({ step }: { step: Step }) {
           // rendering fault, not as a crop. There is nothing in a card to spend
           // a bleed on: the interest is the content, and the content has to be
           // whole. 92% leaves a margin of blue so the card is plainly complete.
+          // ⚠️ 620px, not 460. The artwork is life-size now (a 812px screen), so
+          // the render height IS the scale factor: at 460 it came out at 0.55
+          // and the app's own 13px labels landed at 7px — legible only if you
+          // already knew what they said. 620 puts it at 0.74. The panel shows
+          // the top ~two thirds and the device runs off the bottom, which is the
+          // intended crop.
           className={
             shape === "phone"
-              ? "mt-9 h-[460px] w-auto max-w-none drop-shadow-xl"
+              ? "mt-8 h-[620px] w-auto max-w-none drop-shadow-xl"
               : "w-[92%]"
           }
           unoptimized

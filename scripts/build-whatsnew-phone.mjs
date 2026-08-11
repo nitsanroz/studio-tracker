@@ -3,23 +3,28 @@
 //   node scripts/build-whatsnew-phone.mjs
 //   → public/whats-new/1.12.0-bar.svg
 //
-// It is generated rather than hand-drawn for two reasons, both of which cost a
-// round of review before this script existed:
+// ⚠️ DRAWN AT REAL PHONE DIMENSIONS — a 375×812 screen, with every value the
+// one the app actually uses: `h-14` header, `p-4` page padding, `text-xs`
+// labels, `rounded-2xl` cards, a 56px bottom bar. The panel then scales the
+// whole thing down as one piece.
 //
-//  1. ⚠️ THE ICONS ARE LUCIDE'S REAL GEOMETRY, read from `node_modules` at build
-//     time. Hand-approximated glyphs were visibly not the ones on screen — a
-//     freehand bell and bottom-bar set that "looked about right" read as a
-//     different app. Taking them from the same package the app renders means
-//     they cannot drift, and a lucide upgrade re-runs into the picture.
+// The first version was hand-laid-out on a 200×400 canvas with sizes picked by
+// eye, and everything was subtly wrong in a different direction: the portrait
+// came out too small, the text too large for its boxes, the paddings arbitrary.
+// Proportions cannot be guessed one element at a time — draw at life size and
+// let the transform do the shrinking.
 //
-//  2. ⚠️ THE PORTRAIT MUST BE INLINED as a data URI. An SVG loaded through an
-//     `<img>` tag — which is how the panel shows it — CANNOT fetch external
-//     files, so `href="/brand/team/cutout.png"` renders silently empty. The PNG
-//     is downscaled with `sips` first: the full cut-out is 371KB, which as
-//     base64 would be a ~495KB SVG for a picture shown at 40px wide.
+// Two things that are generated rather than authored, both of which cost a
+// round of review:
 //
-// Re-run it when the portrait changes, when lucide is upgraded, or when the
-// mobile home layout moves enough that this stops being a fair likeness.
+//  1. THE ICONS ARE LUCIDE'S REAL GEOMETRY, read from `node_modules` at build
+//     time. Hand-approximated glyphs were visibly not the ones on screen.
+//     Taking them from the same package the app renders means they cannot
+//     drift, and a lucide upgrade re-runs into the picture.
+//
+//  2. THE PORTRAIT IS INLINED as a data URI. An SVG loaded through an `<img>`
+//     tag — which is how the panel shows it — CANNOT fetch external files, so
+//     `href="/brand/team/cutout.png"` renders silently empty.
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -28,10 +33,27 @@ import { join } from "node:path";
 
 const OUT = "public/whats-new/1.12.0-bar.svg";
 const PORTRAIT = "public/brand/team/cutout.png";
-/** Wide enough for a 40px-wide render on a 2x screen, small enough to inline. */
-const PORTRAIT_PX = 96;
 
-/** Pull an icon's path data straight out of the installed lucide-react. */
+/* ── Life-size geometry ─────────────────────────────────────────────────── */
+
+const SCREEN = { w: 375, h: 812 };        // iPhone logical pixels
+const BEZEL = 14;                          // the black frame around the glass
+const RADIUS = 44;                         // the glass corner
+const DEV = { w: SCREEN.w + BEZEL * 2, h: SCREEN.h + BEZEL * 2 };
+const SX = BEZEL, SY = BEZEL;              // screen origin inside the device
+
+const PAD = 16;                            // `p-4` on main
+const HEADER_H = 56;                       // `h-14`
+const BAR_H = 56;                          // the mobile bottom bar
+const X = SX + PAD;                        // content left edge
+const CW = SCREEN.w - PAD * 2;             // content width, 343
+
+/** The portrait is sized off the hero's height, as it is in the real hero. */
+const HERO = { y: SY + HEADER_H + PAD, h: 176 };
+const PORTRAIT_PX = 220;                   // enough for a ~150px render at 2x
+
+/* ── Icons ──────────────────────────────────────────────────────────────── */
+
 function lucide(name) {
   const src = readFileSync(`node_modules/lucide-react/dist/esm/icons/${name}.mjs`, "utf8");
   const ds = [...src.matchAll(/d:\s*"([^"]+)"/g)].map((m) => m[1]);
@@ -41,8 +63,8 @@ function lucide(name) {
 
 /**
  * ⚠️ Scaling an icon scales its STROKE too, so the width is divided back out.
- * Without that, a 15px icon drawn from a 24px grid comes out at 1.1px and the
- * bar looks spidery next to the real thing.
+ * The app draws lucide at 20px / strokeWidth 1.75; without this a 24px icon
+ * comes out at 2.1px and the bar looks heavy next to the real thing.
  */
 function icon(name, x, y, size, stroke, weight = 1.75) {
   const s = size / 24;
@@ -60,89 +82,106 @@ function portrait() {
   return readFileSync(small).toString("base64");
 }
 
+/* ── Draw ───────────────────────────────────────────────────────────────── */
+
 const b64 = portrait();
+const sans = "system-ui, -apple-system, sans-serif";
+const serif = "Georgia, serif";
 
 /**
- * Where the portrait sits inside the welcome panel.
- *
- * ⚠️ It must fit WITHIN the hero, which spans x 24…176. An earlier version put
- * it at x=124 w=104 — running to x=228 — and the hero's clip path sliced the
- * person vertically down the middle, which read as a broken image rather than a
- * crop. The source is square (640×640) and `preserveAspectRatio="… meet"` fits
- * the whole figure inside the box instead of filling it, so nothing is cut.
- * Bottom-aligned to the hero's floor and clear of the text column, which ends
- * around x=100.
+ * The portrait, sized off the hero as the real one is (v0.99.20: scaled by the
+ * pane's HEIGHT, right edge inset a few px, head breaking the top).
+ * ⚠️ It must stay inside the hero's clip — x + w may not pass the hero's right
+ * edge, or the clip slices the person down the middle.
  */
-const P = { x: 112, y: 62, w: 64, h: 92 };
-if (P.x + P.w > 176) throw new Error(`portrait runs past the hero's right edge (${P.x + P.w} > 176)`);
+const P = { w: Math.round(HERO.h * 0.86), get x() { return X + CW - this.w - 6; }, get y() { return HERO.y + 10; } };
+if (P.x + P.w > X + CW) throw new Error("portrait runs past the hero's right edge");
 
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="200" height="400" role="img" aria-label="A designer's home page on a phone: the welcome panel with their photo, this week's hours, and the new bar along the bottom">
-  <!-- GENERATED by scripts/build-whatsnew-phone.mjs — edit that, not this. -->
+const barY = SY + SCREEN.h - BAR_H;
+const barIcon = (name, cx, colour) => icon(name, cx - 11, barY + 12, 22, colour);
+
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${DEV.w} ${DEV.h}" width="${DEV.w}" height="${DEV.h}" role="img" aria-label="A designer's home page on a phone: the welcome panel with their photo, this week's hours, and the new bar along the bottom">
+  <!-- GENERATED by scripts/build-whatsnew-phone.mjs — edit that, not this.
+       Drawn at a real 375x812 screen and scaled down as one piece, so every
+       proportion is the app's own rather than guessed per element. -->
   <defs>
-    <clipPath id="scr"><rect x="12" y="12" width="176" height="376" rx="22"/></clipPath>
-    <clipPath id="hero"><rect x="24" y="58" width="152" height="96" rx="12"/></clipPath>
+    <clipPath id="scr"><rect x="${SX}" y="${SY}" width="${SCREEN.w}" height="${SCREEN.h}" rx="${RADIUS}"/></clipPath>
+    <clipPath id="hero"><rect x="${X}" y="${HERO.y}" width="${CW}" height="${HERO.h}" rx="16"/></clipPath>
   </defs>
 
-  <rect x="4" y="4" width="192" height="392" rx="30" fill="#06112f"/>
-  <rect x="12" y="12" width="176" height="376" rx="22" fill="#f0f1fa"/>
+  <rect x="0" y="0" width="${DEV.w}" height="${DEV.h}" rx="${RADIUS + BEZEL}" fill="#06112f"/>
+  <rect x="${SX}" y="${SY}" width="${SCREEN.w}" height="${SCREEN.h}" rx="${RADIUS}" fill="#f0f1fa"/>
 
   <g clip-path="url(#scr)">
-    <rect x="12" y="12" width="176" height="38" fill="#ffffff"/>
-    <text x="26" y="37" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#06112f">&amp;more</text>
-    <rect x="156" y="21" width="20" height="20" rx="6" fill="#ffffff" stroke="#e5e7eb"/>
-    ${icon("bell", 160, 25, 12, "#5c6478")}
+    <!-- header: h-14, px-4 -->
+    <rect x="${SX}" y="${SY}" width="${SCREEN.w}" height="${HEADER_H}" fill="#ffffff"/>
+    <text x="${X}" y="${SY + 37}" font-family="${sans}" font-size="22" font-weight="700" fill="#06112f">&amp;more</text>
+    <rect x="${X + CW - 36}" y="${SY + 10}" width="36" height="36" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+    ${icon("bell", X + CW - 28, SY + 18, 20, "#5c6478")}
 
-    <rect x="24" y="58" width="152" height="96" rx="12" fill="#0b43ed"/>
+    <!-- the member welcome panel -->
+    <rect x="${X}" y="${HERO.y}" width="${CW}" height="${HERO.h}" rx="16" fill="#0b43ed"/>
     <g clip-path="url(#hero)">
-      <image href="data:image/png;base64,${b64}" x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" preserveAspectRatio="xMidYMax meet"/>
+      <image href="data:image/png;base64,${b64}" x="${P.x}" y="${P.y}" width="${P.w}" height="${HERO.h - 10}" preserveAspectRatio="xMidYMax meet"/>
     </g>
-    <text x="36" y="78" font-family="system-ui, sans-serif" font-size="7.5" fill="#b9c8f9">Monday, 10 Aug</text>
-    <text x="36" y="96" font-family="Georgia, serif" font-style="italic" font-size="16" fill="#ffffff">Hi Nadav</text>
-    <text x="36" y="112" font-family="system-ui, sans-serif" font-size="7.5" fill="#dde6fd">18.5h this week</text>
-    <rect x="36" y="122" width="58" height="18" rx="9" fill="#ffffff"/>
-    <text x="65" y="134" font-family="system-ui, sans-serif" font-size="8" font-weight="600" fill="#0b43ed" text-anchor="middle">+ Log time</text>
+    <text x="${X + 20}" y="${HERO.y + 34}" font-family="${sans}" font-size="13" fill="#b9c8f9">Monday, 10 Aug</text>
+    <text x="${X + 20}" y="${HERO.y + 70}" font-family="${serif}" font-style="italic" font-size="30" fill="#ffffff">Hi Nadav</text>
+    <text x="${X + 20}" y="${HERO.y + 96}" font-family="${sans}" font-size="13" fill="#dde6fd">18.5h this week · 82% billable</text>
+    <rect x="${X + 20}" y="${HERO.y + 114}" width="112" height="40" rx="20" fill="#ffffff"/>
+    <text x="${X + 76}" y="${HERO.y + 139}" font-family="${sans}" font-size="14" font-weight="600" fill="#0b43ed" text-anchor="middle">+ Log time</text>
 
-    <rect x="24" y="164" width="74" height="48" rx="10" fill="#ffffff"/>
-    <text x="34" y="180" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">MY HOURS</text>
-    <text x="34" y="200" font-family="Georgia, serif" font-style="italic" font-size="17" fill="#06112f">18.5h</text>
-    <rect x="102" y="164" width="74" height="48" rx="10" fill="#ffffff"/>
-    <text x="112" y="180" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3" letter-spacing="0.5">BILLABLE</text>
-    <text x="112" y="200" font-family="Georgia, serif" font-style="italic" font-size="17" fill="#06112f">82%</text>
+    <!-- this week's own figures: two cards, rounded-2xl -->
+    <rect x="${X}" y="${HERO.y + HERO.h + 14}" width="${(CW - 12) / 2}" height="92" rx="16" fill="#ffffff"/>
+    <text x="${X + 18}" y="${HERO.y + HERO.h + 44}" font-family="${sans}" font-size="11" font-weight="600" fill="#98a0b3" letter-spacing="0.6">MY HOURS</text>
+    <text x="${X + 18}" y="${HERO.y + HERO.h + 82}" font-family="${serif}" font-style="italic" font-size="32" fill="#06112f">18.5h</text>
+    <rect x="${X + (CW + 12) / 2}" y="${HERO.y + HERO.h + 14}" width="${(CW - 12) / 2}" height="92" rx="16" fill="#ffffff"/>
+    <text x="${X + (CW + 12) / 2 + 18}" y="${HERO.y + HERO.h + 44}" font-family="${sans}" font-size="11" font-weight="600" fill="#98a0b3" letter-spacing="0.6">BILLABLE</text>
+    <text x="${X + (CW + 12) / 2 + 18}" y="${HERO.y + HERO.h + 82}" font-family="${serif}" font-style="italic" font-size="32" fill="#06112f">82%</text>
 
-    <text x="24" y="230" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478">My week</text>
-    <rect x="24" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
-    <text x="32" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">SUN</text>
-    <text x="32" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f">7h</text>
-    <rect x="68" y="238" width="40" height="46" rx="8" fill="#0b43ed"/>
-    <text x="76" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#b9c8f9">MON</text>
-    <text x="76" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#ffffff">6.5h</text>
-    <rect x="112" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
-    <text x="120" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">TUE</text>
-    <text x="120" y="268" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#06112f">5h</text>
-    <rect x="156" y="238" width="40" height="46" rx="8" fill="#ffffff"/>
-    <text x="164" y="252" font-family="system-ui, sans-serif" font-size="6.5" font-weight="600" fill="#98a0b3">WED</text>
-    <text x="164" y="268" font-family="system-ui, sans-serif" font-size="11" fill="#98a0b3">–</text>
+    <!-- my week: w-32 cards that scroll sideways below sm -->
+    <text x="${X}" y="${HERO.y + HERO.h + 136}" font-family="${sans}" font-size="13" fill="#5c6478">My week</text>
+    ${[
+      ["SUN", "7h", false],
+      ["MON", "6.5h", true],
+      ["TUE", "5h", false],
+      ["WED", "–", false],
+    ]
+      .map(([d, h, today], i) => {
+        const cx = X + i * 136;
+        const y = HERO.y + HERO.h + 150;
+        return (
+          `<rect x="${cx}" y="${y}" width="128" height="132" rx="12" fill="${today ? "#0b43ed" : "#ffffff"}"/>` +
+          `<text x="${cx + 14}" y="${y + 26}" font-family="${sans}" font-size="11" font-weight="600" fill="${today ? "#b9c8f9" : "#98a0b3"}" letter-spacing="0.5">${d}</text>` +
+          `<text x="${cx + 14}" y="${y + 54}" font-family="${sans}" font-size="20" font-weight="600" fill="${today ? "#ffffff" : "#06112f"}">${h}</text>`
+        );
+      })
+      .join("\n    ")}
 
-    <text x="24" y="304" font-family="system-ui, sans-serif" font-size="7.5" fill="#5c6478">My tasks · 3</text>
-    <rect x="24" y="312" width="152" height="34" rx="9" fill="#ffffff"/>
-    <text x="34" y="328" font-family="system-ui, sans-serif" font-size="8.5" font-weight="600" fill="#06112f">Home page — hero</text>
-    <text x="34" y="339" font-family="system-ui, sans-serif" font-size="7" fill="#98a0b3">Anchor · 6 / 12h</text>
-    <text x="166" y="333" font-family="system-ui, sans-serif" font-size="7.5" font-weight="600" fill="#0b43ed" text-anchor="end">+ Time</text>
+    <!-- a task card, cut by the fold -->
+    <text x="${X}" y="${HERO.y + HERO.h + 322}" font-family="${sans}" font-size="13" fill="#5c6478">My tasks · 3</text>
+    <rect x="${X}" y="${HERO.y + HERO.h + 336}" width="${CW}" height="88" rx="12" fill="#ffffff"/>
+    <text x="${X + 18}" y="${HERO.y + HERO.h + 368}" font-family="${sans}" font-size="15" font-weight="600" fill="#06112f">Home page — hero</text>
+    <text x="${X + 18}" y="${HERO.y + HERO.h + 396}" font-family="${sans}" font-size="12" fill="#98a0b3">Anchor · 6 / 12h</text>
+    <text x="${X + CW - 18}" y="${HERO.y + HERO.h + 396}" font-family="${sans}" font-size="13" font-weight="600" fill="#0b43ed" text-anchor="end">+ Time</text>
 
-    <rect x="12" y="340" width="176" height="48" fill="#0b43ed"/>
-    ${icon("house", 33, 352, 15, "#ffffff")}
-    ${icon("square-check-big", 70, 352, 15, "#b9c8f9")}
-    <circle cx="116" cy="361" r="13" fill="#ffffff"/>
-    ${icon("plus", 109, 354, 14, "#0b43ed", 2.25)}
-    ${icon("menu", 149, 352, 15, "#b9c8f9")}
-    <text x="40.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#ffffff" text-anchor="middle">Home</text>
-    <text x="77.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#b9c8f9" text-anchor="middle">Tasks</text>
-    <text x="156.5" y="379" font-family="system-ui, sans-serif" font-size="6" fill="#b9c8f9" text-anchor="middle">Menu</text>
+    <!-- the new bar: four slots, no Inbox for a designer -->
+    <rect x="${SX}" y="${barY}" width="${SCREEN.w}" height="${BAR_H}" fill="#0b43ed"/>
+    ${barIcon("house", SX + SCREEN.w * 0.14, "#ffffff")}
+    ${barIcon("square-check-big", SX + SCREEN.w * 0.33, "#b9c8f9")}
+    <circle cx="${SX + SCREEN.w * 0.5}" cy="${barY + 24}" r="19" fill="#ffffff"/>
+    ${icon("plus", SX + SCREEN.w * 0.5 - 10, barY + 14, 20, "#0b43ed", 2.25)}
+    ${barIcon("menu", SX + SCREEN.w * 0.85, "#b9c8f9")}
+    <text x="${SX + SCREEN.w * 0.14}" y="${barY + 48}" font-family="${sans}" font-size="10" font-weight="500" fill="#ffffff" text-anchor="middle">Home</text>
+    <text x="${SX + SCREEN.w * 0.33}" y="${barY + 48}" font-family="${sans}" font-size="10" font-weight="500" fill="#b9c8f9" text-anchor="middle">Tasks</text>
+    <text x="${SX + SCREEN.w * 0.85}" y="${barY + 48}" font-family="${sans}" font-size="10" font-weight="500" fill="#b9c8f9" text-anchor="middle">Menu</text>
   </g>
 
-  <rect x="82" y="20" width="36" height="10" rx="5" fill="#06112f"/>
+  <!-- dynamic island -->
+  <rect x="${SX + SCREEN.w / 2 - 60}" y="${SY + 12}" width="120" height="34" rx="17" fill="#06112f"/>
 </svg>
 `;
 
 writeFileSync(OUT, svg);
-console.log(`${OUT} — ${Math.round(svg.length / 1024)}KB, portrait inlined at ${PORTRAIT_PX}px`);
+console.log(
+  `${OUT} — ${Math.round(svg.length / 1024)}KB, ${DEV.w}x${DEV.h} at life size, portrait ${P.w}px wide`,
+);
