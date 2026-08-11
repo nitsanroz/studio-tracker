@@ -30,6 +30,8 @@ import { Avatar, ClientChip, InfoDot, Tabs } from "./ui";
 import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
 import { PeriodStepper } from "./period-stepper";
 import { WeekTimesheet } from "./week-timesheet";
+import { MobileLogTimeSheet } from "./mobile-log-time";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { TimeEntry } from "@/lib/types";
 
 function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
@@ -325,15 +327,26 @@ function DayLog() {
 
 function MyWeek() {
   const { planColumns, planEntries, tasks, clients, currentUserId, openTask } = useData();
+  const narrow = useIsNarrow();
   const myColumn = planColumns.find((c) => c.profileId === currentUserId);
   const weekStart = startOfWeek(new Date());
+  const weekStartIso = toISODate(weekStart);
   const todayIso = toISODate(new Date());
 
-  const days = useMemo(
-    () => Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)), // Sun–Thu
+  // On a phone the days already behind you are dead weight in a pane that has to
+  // earn its screen — the week ahead is the only part you can still act on.
+  // ⚠️ The fallback matters: the studio week is Sun–Thu, so on a Friday or a
+  // Saturday EVERY card is in the past and filtering would leave an empty pane.
+  // Showing the whole week there is the honest reading of "nothing left".
+  const days = useMemo(() => {
+    const all = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Sun–Thu
+    if (!narrow) return all;
+    const ahead = all.filter((d) => toISODate(d) >= todayIso);
+    return ahead.length > 0 ? ahead : all;
+    // `weekStartIso` stands in for `weekStart`, whose Date identity changes on
+    // every render while the day it names does not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toISODate(weekStart)],
-  );
+  }, [weekStartIso, narrow, todayIso]);
 
   if (!myColumn) return null;
 
@@ -346,9 +359,12 @@ function MyWeek() {
         </Link>
       </div>
       {/* Five day-cards at 375px give each about 63px — a weekday label and an
-          hours figure do not fit, and the figure is the point. Below `sm` they
-          run as a scrollable row at a readable width instead of being squeezed. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+          hours figure do not fit, and the figure is the point. Below `md` they
+          run as a row at a readable width instead of being squeezed.
+          ⚠️ The breakpoint here must match `useIsNarrow` (768), NOT `sm`: the
+          card count varies below it, and `grid-cols-5` would lay two remaining
+          days out in fifths of the width. */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-5 md:overflow-visible md:px-0">
         {days.map((day) => {
           const iso = toISODate(day);
           const entries = planEntries
@@ -358,9 +374,12 @@ function MyWeek() {
           return (
             <div
               key={iso}
-              // `w-32 shrink-0` only matters in the scrolling row below `sm`;
-              // in the grid above it the track width wins and these are inert.
-              className={`flex min-h-[132px] w-32 shrink-0 flex-col gap-1 rounded-xl border p-2.5 sm:w-auto ${
+              // `w-32 shrink-0 grow` only matters in the row below `md`; in the
+              // grid above it the track width wins and these are inert. `grow`
+              // is what makes a short week (two days left) fill the width
+              // instead of leaving 200px of nothing — with all five the basis
+              // already exceeds the screen, so nothing grows and it scrolls.
+              className={`flex min-h-[132px] w-32 shrink-0 grow flex-col gap-1 rounded-xl border p-2.5 md:w-auto md:grow-0 ${
                 isToday ? "border-brand bg-brand text-white" : "border-border bg-background"
               }`}
             >
@@ -1346,10 +1365,13 @@ function MemberWelcome({
   me,
   filter,
   prevRange,
+  onLogTime,
 }: {
   me: { id: string; name: string; photoUrl: string | null };
   filter: HomeFilter;
   prevRange: { from: string; to: string } | null;
+  /** Phone-only: opens the log-time sheet, since `#log` has nothing to jump to. */
+  onLogTime: () => void;
 }) {
   const { entrySums, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
@@ -1408,18 +1430,23 @@ function MemberWelcome({
   const [adFig, adUnit] = splitHours(scoped.perDay, true);
 
   return (
-    <div className="grid items-stretch gap-4 lg:grid-cols-2">
+    <div className="grid items-stretch gap-2 lg:grid-cols-2 lg:gap-4">
       {/* mt-9 is the room the portrait's head needs above the panel. The hero can't
           clip (the head breaks out of the top), so the decorative disc gets its own
-          clipping layer instead of relying on overflow-hidden here. */}
+          clipping layer instead of relying on overflow-hidden here.
+          ⚠️ Below `sm` the portrait is not rendered at all, so that 36px was pure
+          gap on the screen with the least of it to spare. */}
       <div
-        className="relative mt-9 rounded-2xl bg-brand px-6 py-6 text-white"
+        className="relative rounded-2xl bg-brand px-6 py-6 text-white sm:mt-9"
         style={{ minHeight: 208, boxShadow: "var(--shadow-hero)" }}
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
           <div className="absolute -top-12 right-24 size-64 rounded-full bg-white/[0.06]" />
         </div>
-        <div className="relative z-10 pr-32">
+        {/* ⚠️ `pr-32` is the portrait's column, and the portrait is `hidden
+            sm:block` — so on a phone it was reserving 128px of a 295px line for
+            nothing, which is what wrapped the heading onto three lines. */}
+        <div className="relative z-10 sm:pr-32">
           <div className="text-[11px] uppercase tracking-[0.09em] text-white/70">This week</div>
           <h2 className="mt-2 font-heading text-[22px] leading-snug">
             You’ve logged {formatHoursShort(wk.min)} across {myActive.length} active task
@@ -1427,10 +1454,20 @@ function MemberWelcome({
             {dueThisWeek > 0 ? ` — ${dueThisWeek} due this week.` : "."}
           </h2>
           <Celebrations inline />
+          {/* Two buttons rather than a JS branch, so there is no hydration flash.
+              ⚠️ The anchor is desktop-only ON PURPOSE: `#log` is the "Log my
+              hours" pane, which a phone doesn't render, so the link would scroll
+              nowhere. There the same button opens the log-time sheet. */}
           <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              onClick={onLogTime}
+              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand hover:brightness-95 md:hidden"
+            >
+              + Log time
+            </button>
             <a
               href="#log"
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand hover:brightness-95"
+              className="hidden rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-brand hover:brightness-95 md:block"
             >
               + Log time
             </a>
@@ -1448,7 +1485,10 @@ function MemberWelcome({
         </div>
       </div>
 
-      <div className="mt-9 grid grid-cols-2 gap-4">
+      {/* mt-9 only earns its place at `lg`, where this is the column BESIDE the
+          hero and has to start level with it. Stacked under the hero it is just
+          a 36px hole between two panes. */}
+      <div className="mt-2 grid grid-cols-2 gap-4 lg:mt-9">
         <StatTile
           label="My hours"
           figure={hFig}
@@ -1475,6 +1515,10 @@ export function Dashboard() {
   const [periodOffset, setPeriodOffset] = useState(0);
   const [filterClient, setFilterClient] = useState("");
   const [billableOnly, setBillableOnly] = useState(false);
+  // The hero's phone CTA. The shell owns its own copy for the bottom bar's "+";
+  // the sheet is self-contained, so a second instance is simpler than threading
+  // a callback down through AppShell's children.
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const filter: HomeFilter = useMemo(() => {
     const b = periodBounds(rangeKey, periodOffset);
     return {
@@ -1554,7 +1598,10 @@ export function Dashboard() {
   );
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    // Half the gap on a phone. 16px between every pane is a desk measurement —
+    // on a 812px screen it is most of a stat tile's worth of nothing, and this
+    // page stacks six panes.
+    <div className="flex w-full flex-col gap-2 md:gap-4">
       {/* Header: greeting + display stats + page-wide filters.
           ⚠️ On a phone this used to spend ~440px of an 812px screen — more than
           half the first screen — before a single figure: the greeting, the
@@ -1564,8 +1611,12 @@ export function Dashboard() {
           Now it is two rows: identity (tenure pulled up beside the name rather
           than under it) and ONE horizontally-scrollable strip holding every
           filter. Above `md` the `md:` classes restore the original wrap
-          behaviour exactly. */}
-      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-x-10">
+          behaviour exactly.
+          Second pass (Nitsan, on the phone): the member's "Tasks assigned"
+          counter and the client select are both `md:` only now — the bottom bar
+          already carries Tasks, and picking a client to scope your own hours is
+          desk work. That leaves identity + the period stepper, two rows. */}
+      <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-x-10 md:gap-y-3">
         <div className="flex items-center gap-3">
           <MyAvatar />
           <div className="min-w-0">
@@ -1610,7 +1661,7 @@ export function Dashboard() {
         {/* admins don't triage their own assignments from here — the counter went
             with the My-tasks pane */}
         {!isAdmin && (
-          <div>
+          <div className="hidden md:block">
             <div className="font-serif-accent text-[30px] leading-9">{myTasks.length}</div>
             <p className="text-xs text-muted">Tasks assigned</p>
           </div>
@@ -1675,7 +1726,7 @@ export function Dashboard() {
           <select
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
-            className="shrink-0 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+            className="hidden shrink-0 rounded-md border border-border bg-surface px-2 py-1.5 text-sm md:block"
           >
             <option value="">All clients</option>
             {clients
@@ -1760,11 +1811,22 @@ export function Dashboard() {
       ) : (
         <>
           <ConfirmDetailsBanner />
-          {me && <MemberWelcome me={me} filter={filter} prevRange={prevRange} />}
+          {me && (
+            <MemberWelcome
+              me={me}
+              filter={filter}
+              prevRange={prevRange}
+              onLogTime={() => setLogTimeOpen(true)}
+            />
+          )}
           <MyWeek />
           {/* My tasks takes the slot beside "Log my hours" that Celebrations left
-              when it moved into the hero. */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              when it moved into the hero.
+              ⚠️ The whole row is `md:` only. Both panes are duplicates of the
+              bottom bar on a phone — "+" is the log-time flow and "Tasks" is the
+              full list — and two duplicated panes were the top of this page's
+              second screen. Nitsan's call. */}
+          <div className="hidden grid-cols-1 gap-4 md:grid lg:grid-cols-3">
             <div id="log" className="scroll-mt-20 lg:col-span-2">
               <DayLog />
             </div>
@@ -1780,6 +1842,7 @@ export function Dashboard() {
             <MyGraphs filter={filter} isAdmin={false} />
             <ClientBreakdown filter={filter} isAdmin={false} />
           </div>
+          {logTimeOpen && <MobileLogTimeSheet onClose={() => setLogTimeOpen(false)} />}
         </>
       )}
     </div>

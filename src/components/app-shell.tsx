@@ -660,8 +660,11 @@ function Shell({ children }: { children: ReactNode }) {
         >
           {/* Below md the sidebar is gone, so the header carries the wordmark —
               otherwise nothing on a phone says which app this is or gets you
-              home from a page whose own title has scrolled away. */}
-          <Link href="/" aria-label="Studio&more" className="text-[22px] leading-none md:hidden">
+              home from a page whose own title has scrolled away.
+              ⚠️ `text-brand`, not the inherited foreground: on a phone this is
+              the ONLY place the mark appears, and the mark is brand blue. It
+              read as Studio Black here because nothing set a colour. */}
+          <Link href="/" aria-label="Studio&more" className="text-[22px] leading-none text-brand md:hidden">
             <span style={{ fontWeight: 700 }}>&amp;more</span>
           </Link>
           {/* Global search is desktop-only for now: it wants ~400px and a 375px
