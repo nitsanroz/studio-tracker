@@ -149,13 +149,13 @@ export const RELEASES: Release[] = [
         },
       },
       {
-        title: "Move several bars at once",
-        body: "Select them, drag one, and the whole selection shifts by the same working days.",
+        title: "Select bars by dragging a box",
+        body: "Drag over empty calendar to pick several, then move them all by the same working days.",
         audience: "admin",
         image: {
           src: "/whats-new/element-multidrag.svg",
           shape: "element",
-          alt: "Three selected bars moving together, with a chip reading plus 2 days",
+          alt: "A box dragged across the Timeline selecting three task bars at once",
         },
       },
     ],

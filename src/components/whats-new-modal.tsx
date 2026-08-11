@@ -47,10 +47,16 @@ function Visual({ step }: { step: Step }) {
           alt={step.image.alt}
           width={shape === "phone" ? 200 : 360}
           height={shape === "phone" ? 400 : 240}
+          // ⚠️ 110%, not more. The element pictures became whole UI cards — a
+          // Timeline with its pinned task column, a board with its columns — and
+          // at 132% the panel cropped 44 units a side, which sliced the task
+          // names off the left edge. 110% crops 16: enough that the card bleeds
+          // rather than floating in a margin, not enough to eat content. Anything
+          // wider needs the artwork's content pulled inside x 44…316.
           className={
             shape === "phone"
               ? "mt-9 h-[460px] w-auto max-w-none drop-shadow-xl"
-              : "w-[132%] max-w-none"
+              : "w-[110%] max-w-none"
           }
           unoptimized
         />
