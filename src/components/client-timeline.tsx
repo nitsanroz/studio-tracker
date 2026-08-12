@@ -1320,7 +1320,7 @@ export function ClientTimeline({
                 over the borders instead of between them.
               */}
               {shadow.x && (
-                <div className="pointer-events-none absolute inset-y-0 left-0 z-40 w-full">
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-[24] w-full">
                   <div
                     className="sticky h-full w-2.5"
                     style={{
@@ -2046,7 +2046,7 @@ function MarkLayer({
 
       {/* The labels, ABOVE everything: they carry the name, the rename and the
           delete, and a control you cannot see is not a control. */}
-      <div className="absolute top-0 z-30" style={{ width: 1, height }}>
+      <div className="absolute top-0 z-[23]" style={{ width: 1, height }}>
       {positioned.map(({ m, left }) => {
         const editing = editingId === m.id;
         return (
@@ -2250,11 +2250,12 @@ function TimelineHeader({
       place of its date, in the emphasis weight, with a rule down its left edge
       that GridLayer continues through the rows. Nothing was lost and a row was.
 
-      z-30 over the rows' own sticky name block (z-20): scrolling down must not
-      slide task names over the column titles.
+      z-[22] over the rows' own sticky name block (z-20): scrolling down must not
+      slide task names over the column titles — and BELOW the client page's own
+      sticky header, which has to clear it. The scale is in client-view.tsx.
     */
     <div
-      className={`sticky top-0 z-30 border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}
+      className={`sticky top-0 z-[22] border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}
     >
       <div className="relative flex h-6 items-center">
         <span
@@ -3378,7 +3379,7 @@ function TimelineRow({
           gesture is five times the readout and none of the clarity. */}
       {drag?.taskId === task.id && !row.undated && (
         <span
-          className="pointer-events-none absolute top-1/2 z-30 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
+          className="pointer-events-none absolute top-1/2 z-[23] -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
           style={
             drag.mode === "start"
               ? { left: left - 6, transform: "translate(-100%, -50%)" }

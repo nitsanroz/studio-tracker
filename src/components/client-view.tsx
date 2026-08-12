@@ -2426,21 +2426,36 @@ export function ClientView({ clientId }: { clientId: string }) {
 
       {/*
         Name + actions on ONE line, pinned under the app header while you scroll a
-        long board. top-14 because the header is exactly h-14; z-10 keeps it under
-        the header (z-30) and over the table, which carries no z-index; -mx-6/px-6
-        covers main's 24px padding so card corners don't peek out from beneath it.
+        long board. top-14 because the header is exactly h-14; -mx-6/px-6 covers
+        main's 24px padding so card corners don't peek out from beneath it.
         It must stay OUTSIDE the overflow-x-auto table wrapper below, or sticky dies.
       */}
       {/*
-        ⚠️ `z-[31]`, not `z-10`.
+        ⚠️ THE IN-PAGE Z-SCALE, and why this number is `z-[25]` exactly.
 
-        This header is a stacking context (sticky + z-index), so the Show and
-        Columns menus inside it are capped at ITS depth however high their own
-        z-index goes — and the chart's ruler below is `sticky z-30`, which won.
-        Both dropdowns opened underneath the dates. 31 clears the ruler and
-        stays under the task drawer's overlay at z-40.
+        Two constraints pull in opposite directions, and satisfying one alone
+        breaks the other — both have now been shipped as bugs:
+
+          · This header is a stacking context (sticky + z-index), so the Show and
+            Columns menus inside it are capped at ITS depth however high their own
+            z-index goes. It must therefore beat the Timeline's ruler, or both
+            dropdowns open underneath the dates.
+          · The APP header is `sticky z-30` + `backdrop-blur` — also a stacking
+            context — so its search dropdown is capped at 30 no matter that it
+            asks for z-50. Anything on the page above 30 paints over the search
+            results. `z-[31]` did exactly that.
+
+        So the whole page must live BELOW 30, and the ruler below this:
+
+            app chrome (sidebar, header) ...... 30
+            this header ....................... 25   ← dropdowns ride at its depth
+            Timeline x-scroll shadow .......... 24
+            Timeline mark labels, drag chip ... 23
+            Timeline ruler .................... 22
+            Timeline sticky name column ....... 20
+            overlays and portalled popups ..... 40 / 50 / 70 (above everything)
       */}
-      <div className="sticky top-14 z-[31] -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
+      <div className="sticky top-14 z-[25] -mx-6 flex flex-col gap-2 bg-background px-6 pt-1">
         <div className="flex flex-wrap items-center gap-2">
           {/* 40px against a 24px title: the mark is the client's identity on
               their own page, so it leads rather than annotates. */}
