@@ -73,7 +73,11 @@ export function formatDayLabel(d: Date): { name: string; date: string } {
 }
 
 export function formatDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
+  // ⚠️ `.slice(0, 10)` FIRST. Given a full timestamp — which is what every
+  // `created_at` column holds — splitting on "-" made the day
+  // `11T17:48:52.724326+00:00`, so `Number()` returned NaN and the intake queue
+  // printed every submission as "NaN/8/26". Date-only strings are unaffected.
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   return `${d}/${m}/${String(y).slice(2)}`;
 }
 

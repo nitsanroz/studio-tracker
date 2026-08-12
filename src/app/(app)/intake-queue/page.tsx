@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Link2, MailCheck, Trash2 } from "lucide-react";
+import { Check, ExternalLink, Link2, MailCheck, Paperclip, Trash2, X } from "lucide-react";
 import { useData, useIsAdmin, type TaskRequest } from "@/lib/store";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { formatDate } from "@/lib/format";
+import { readSubmission } from "@/lib/brief";
+import { isSafeUrl } from "@/lib/links";
+import { kindById } from "@/lib/intake-fields";
 
 /** "14:20" — the receipt's timestamp, on the day it matters most. */
 function timeOf(iso: string): string {
@@ -162,9 +165,16 @@ function CopyFormLinkButton() {
   );
 }
 
-function ReviewCard({ request }: { request: TaskRequest }) {
-  const { clients, sections, profiles, approveRequest, rejectRequest, openTask } =
-    useData();
+function ReviewCard({
+  request,
+  selected,
+  onSelect,
+}: {
+  request: TaskRequest;
+  selected?: boolean;
+  onSelect?: (id: string) => void;
+}) {
+  const { clients, sections, profiles, approveRequest, rejectRequest, openTask } = useData();
   const [clientId, setClientId] = useState(request.clientId ?? request.suggestedClientId ?? "");
   const [sectionId, setSectionId] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
@@ -180,14 +190,48 @@ function ReviewCard({ request }: { request: TaskRequest }) {
     [sections, clientId],
   );
   const suggested = clients.find((c) => c.id === request.suggestedClientId);
+  const clientName = clients.find((c) => c.id === (request.clientId ?? request.suggestedClientId))
+    ?.name;
 
-  if (request.status === "approved") {
+  if (request.status !== "pending") {
+    const approved = request.status === "approved";
+    // ⚠️ A handled row used to show the title and nothing else — no client, no
+    // submitter, and no way back to the words the client actually sent. Once
+    // the brief is rewritten on the task, this row is the ONLY surviving record
+    // of the original, so it has to be able to show it.
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-sm">
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-          approved
-        </span>
-        <span className="bidi-auto flex-1 truncate font-medium">{request.title}</span>
+      // ⚠️ A DIV wrapping a button, not a button wrapping everything. The row
+      // holds a delete control, and `<button>` inside `<button>` is invalid
+      // HTML — the browser re-parents the inner one, which silently broke
+      // selection entirely until it was caught in the browser.
+      <div
+        className={`flex items-center gap-3 rounded-xl border bg-surface text-sm ${
+          selected ? "border-brand ring-1 ring-brand" : "border-border"
+        } ${approved ? "" : "opacity-60"}`}
+      >
+        <button
+          type="button"
+          onClick={() => onSelect?.(request.id)}
+          aria-pressed={selected}
+          aria-label={`Show the original submission for ${request.title}`}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-4 text-left hover:text-brand"
+        >
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+              approved ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {request.status}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="bidi-auto block truncate font-medium">{request.title}</span>
+            <span className="block truncate text-xs text-muted">
+              {[clientName, request.submitterName, formatDate(request.createdAt)]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </span>
+        </button>
         {request.clientNotifiedAt && (
           <span
             className="shrink-0 text-emerald-600"
@@ -196,24 +240,9 @@ function ReviewCard({ request }: { request: TaskRequest }) {
             <MailCheck size={14} aria-label="Client notified" />
           </span>
         )}
-        {request.createdTaskId && (
-          <button
-            onClick={() => openTask(request.createdTaskId!)}
-            className="shrink-0 text-brand hover:underline"
-          >
-            Open task →
-          </button>
-        )}
-        <DeleteRequestButton request={request} />
-      </div>
-    );
-  }
-  if (request.status === "rejected") {
-    return (
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 text-sm opacity-60">
-        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">rejected</span>
-        <span className="bidi-auto flex-1 truncate">{request.title}</span>
-        <DeleteRequestButton request={request} />
+        <span className="shrink-0 pr-4">
+          <DeleteRequestButton request={request} />
+        </span>
       </div>
     );
   }
@@ -389,15 +418,145 @@ function ReviewCard({ request }: { request: TaskRequest }) {
   );
 }
 
+
+/** ⚠️ Module scope, not defined inside `SubmissionPane` — a component created
+ *  during render is a new type on every render, which remounts its subtree. */
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="w-24 shrink-0 text-muted">{label}</span>
+      <span className="bidi-auto min-w-0 flex-1">{children}</span>
+    </div>
+  );
+}
+
+/**
+ * The submission exactly as it arrived, before anyone touched it.
+ *
+ * ⚠️ This is the ONLY surviving record of the client's own words once the task's
+ * brief has been rewritten by hand — `approveRequest` copies a cleaned brief
+ * onto the task, and every edit after that overwrites it. `task_requests.brief`
+ * is the submission copy, FILES and LINKS blocks included, so it is what the
+ * studio saw on the day.
+ */
+function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: () => void }) {
+  const { clients, openTask } = useData();
+  const client = clients.find((c) => c.id === (request.clientId ?? request.suggestedClientId));
+  const submission = readSubmission(request.answers);
+  const kinds = (submission?.answers.kinds ?? [])
+    .map((k) => kindById(k)?.label ?? k)
+    .filter(Boolean);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+      <div className="flex items-start gap-2">
+        <h2 className="bidi-auto min-w-0 flex-1 text-base font-medium">{request.title}</h2>
+        <button
+          onClick={onClose}
+          aria-label="Close details"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-faint hover:text-foreground"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Row label="Client">{client?.name ?? <span className="text-faint">—</span>}</Row>
+        <Row label="Submitted by">
+          {request.submitterName}
+          {request.submitterEmail && (
+            <>
+              {" "}
+              <a href={`mailto:${request.submitterEmail}`} className="text-brand hover:underline">
+                {request.submitterEmail}
+              </a>
+            </>
+          )}
+        </Row>
+        <Row label="Arrived">{formatDate(request.createdAt)}</Row>
+        {kinds.length > 0 && <Row label="Kind">{kinds.join(", ")}</Row>}
+        {request.seenAt && <Row label="Seen">{formatDate(request.seenAt)}</Row>}
+        {request.clientNotifiedAt && (
+          <Row label="Client told">{formatDate(request.clientNotifiedAt)}</Row>
+        )}
+      </div>
+
+      {request.createdTaskId && (
+        <button
+          onClick={() => openTask(request.createdTaskId!)}
+          className="w-fit text-sm text-brand hover:underline"
+        >
+          Open the task →
+        </button>
+      )}
+
+      <div>
+        <span className="mb-1 block text-xs uppercase tracking-wide text-faint">
+          As it arrived
+        </span>
+        {/* Plain pre-wrap, deliberately: this is a record, not something to
+            re-render prettily. It should read exactly as it did on the day. */}
+        <div className="bidi-auto max-h-[46vh] overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed">
+          {request.brief || <span className="text-faint">No brief was recorded.</span>}
+        </div>
+      </div>
+
+      {/* ⚠️ Rendered from `answers`, not scraped out of the brief text — the
+          URLs are client-supplied, so each is re-checked before it becomes a
+          clickable href, exactly as the studio's own link editor does. */}
+      {(submission?.files.length || submission?.links.length) ? (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs uppercase tracking-wide text-faint">Attached</span>
+          {submission.files.map((f, i) => (
+            <SafeLink key={`f${i}`} url={f.url} label={f.name} icon="file" />
+          ))}
+          {submission.links.map((l, i) => (
+            <SafeLink key={`l${i}`} url={l.url} label={l.title} icon="link" />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SafeLink({ url, label, icon }: { url: string; label: string; icon: "file" | "link" }) {
+  const Icon = icon === "file" ? Paperclip : Link2;
+  if (!isSafeUrl(url)) {
+    return (
+      <span className="truncate text-sm text-faint line-through" title="Unsafe link">
+        <Icon size={12} className="mr-1 inline" />
+        {label}
+      </span>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bidi-auto truncate text-sm text-brand hover:underline"
+    >
+      <Icon size={12} className="mr-1 inline" />
+      {label}
+      <ExternalLink size={11} className="ml-1 inline text-faint" />
+    </a>
+  );
+}
+
 export default function IntakeQueuePage() {
   const { taskRequests, clients } = useData();
   const [showHandled, setShowHandled] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const pending = taskRequests.filter((r) => r.status === "pending");
   const handled = taskRequests.filter((r) => r.status !== "pending");
+  // ⚠️ Resolved from the live list, not held as an object: a selected request
+  // that gets deleted must drop the pane rather than keep rendering a row that
+  // no longer exists.
+  const selected = handled.find((r) => r.id === selectedId) ?? null;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className={`flex flex-col gap-4 ${selected ? "max-w-6xl" : "max-w-3xl"}`}>
       {/* ⚠️ This was one `justify-between` row with no wrap, so at 375px the
           subtitle, the "Show handled" checkbox and the "Copy form link" button
           squeezed each other and every label broke mid-phrase ("Show /
@@ -449,11 +608,33 @@ export default function IntakeQueuePage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {pending.map((r) => (
-          <ReviewCard key={r.id} request={r} />
-        ))}
-        {showHandled && handled.map((r) => <ReviewCard key={r.id} request={r} />)}
+      {/* ⚠️ The pane is a SIBLING of the list, not an overlay. Below `lg` it
+          simply stacks underneath — the queue is admin-only and reviewed on a
+          laptop, and a stacked panel is honest on a phone where a fixed
+          side-rail would be unusable. Mobile gets its own pass. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          {pending.map((r) => (
+            <ReviewCard key={r.id} request={r} />
+          ))}
+          {showHandled &&
+            handled.map((r) => (
+              <ReviewCard
+                key={r.id}
+                request={r}
+                selected={r.id === selectedId}
+                onSelect={(id) => setSelectedId((cur) => (cur === id ? null : id))}
+              />
+            ))}
+          {showHandled && handled.length === 0 && (
+            <p className="text-sm text-faint">Nothing handled yet.</p>
+          )}
+        </div>
+        {selected && (
+          <aside className="lg:sticky lg:top-4 lg:w-96 lg:shrink-0">
+            <SubmissionPane request={selected} onClose={() => setSelectedId(null)} />
+          </aside>
+        )}
       </div>
     </div>
   );
