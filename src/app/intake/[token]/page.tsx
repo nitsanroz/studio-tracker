@@ -43,11 +43,22 @@ interface DraftLink {
   url: string;
 }
 interface DraftDeliverable {
+  /** Client-side only, for stable React keys and open/closed tracking. */
+  id: string;
   name: string;
   details: string;
   dimensions: string;
   format: string;
 }
+
+let deliverableSeq = 0;
+const newDeliverable = (): DraftDeliverable => ({
+  id: `d${++deliverableSeq}`,
+  name: "",
+  details: "",
+  dimensions: "",
+  format: "",
+});
 
 function loadContact(): Values | null {
   try {
@@ -178,12 +189,15 @@ function KindPicker({
             <label
               key={k.id}
               className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-3 ${
-                // ⚠️ `/5`, not `/10`. At 10% the hint measured exactly 4.5:1
-                // against the painted card — the AA floor, passing on a
-                // technicality, and Nitsan reported it as hard to read. The
-                // selected state is carried by the brand border and the tick
-                // anyway, so the fill can afford to be a whisper.
-                on ? "border-brand bg-brand/5" : "border-border-strong hover:border-brand"
+                // ⚠️ Both states sit on `bg-surface` — white — rather than
+                // letting the page's tinted background show through. That is
+                // also what finally fixed the hint's legibility: at `bg-brand/10`
+                // over the page tint it measured exactly 4.5:1, the AA floor,
+                // and read as muddy. The selected state is carried by the brand
+                // border and the tick, so its fill only has to be a whisper.
+                on
+                  ? "border-brand bg-surface ring-1 ring-brand"
+                  : "border-border-strong bg-surface hover:border-brand"
               }`}
             >
               <input
@@ -265,78 +279,147 @@ function DeliverableRows({
   items: DraftDeliverable[];
   onChange: (d: DraftDeliverable[]) => void;
 }) {
-  const set = (i: number, patch: Partial<DraftDeliverable>) =>
-    onChange(items.map((d, n) => (n === i ? { ...d, ...patch } : d)));
+  // ⚠️ Which rows are OPEN, tracked by id rather than by index — removing the
+  // first of three would otherwise silently re-open whichever row slid up into
+  // its place. Seeded from whatever exists at first render, which is the one
+  // row the parent starts with.
+  const [open, setOpen] = useState<string[]>(() => items.map((d) => d.id));
+
+  const set = (id: string, patch: Partial<DraftDeliverable>) =>
+    onChange(items.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+  const remove = (id: string) => {
+    onChange(items.filter((d) => d.id !== id));
+    setOpen((o) => o.filter((x) => x !== id));
+  };
+  const add = () => {
+    const d = newDeliverable();
+    onChange([...items, d]);
+    setOpen((o) => [...o, d.id]);
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <BlockHeader
-        title="Several deliverables?"
-        hint="Name each one — “Roll-up 1”, “Front”, “Homepage banner” — and we’ll keep them apart in the brief. Skip it if it’s a single deliverable."
+        title="Deliverables"
+        hint="Name each one — “Roll-up 1”, “Front”, “Homepage banner” — and we’ll keep them apart in the brief."
         action={
           items.length < 10 ? (
-            <button
-              type="button"
-              onClick={() => onChange([...items, { name: "", details: "", dimensions: "", format: "" }])}
-              className={addBtnCls}
-            >
+            <button type="button" onClick={add} className={addBtnCls}>
               <Plus size={14} />
-              Add
+              Add deliverable
             </button>
           ) : null
         }
       />
-      {items.map((d, i) => (
-        <div key={i} className="flex items-start gap-2 rounded-lg border border-border-strong p-2">
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <input
-              value={d.name}
-              onChange={(e) => set(i, { name: e.target.value })}
-              placeholder="Name — e.g. Roll-up 1"
-              aria-label={`Deliverable ${i + 1} name`}
-              className={inputCls}
-              maxLength={80}
-            />
-            {/* ⚠️ Its own size and format. A real set varies — the Partner
-                Event brief had Banner 1 at 79 × 47 inches and Banner 2 at
-                75 × 47 — and one shared dimensions field forces that difference
-                into prose, where it reads as description rather than a spec. */}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={d.dimensions}
-                onChange={(e) => set(i, { dimensions: e.target.value })}
-                placeholder="Its size, if different"
-                aria-label={`Deliverable ${i + 1} dimensions`}
-                className={`${inputCls} sm:flex-1`}
-                maxLength={120}
-              />
-              <input
-                value={d.format}
-                onChange={(e) => set(i, { format: e.target.value })}
-                placeholder="Its format, if different"
-                aria-label={`Deliverable ${i + 1} format`}
-                className={`${inputCls} sm:flex-1`}
-                maxLength={120}
-              />
+      {items.map((d, i) => {
+        const isOpen = open.includes(d.id);
+        const spec = [d.dimensions, d.format].filter(Boolean).join(" · ");
+        const empty = !d.name.trim() && !d.details.trim() && !spec;
+
+        // ⚠️ Confirmed rows collapse to a summary. Left as live inputs, a list
+        // of three deliverables is a wall of focused-looking boxes with no
+        // sense of which are finished — Nitsan's note. Editing is one click
+        // back, and nothing is lost by collapsing: the values are the same
+        // state either way.
+        if (!isOpen) {
+          return (
+            <div
+              key={d.id}
+              className="flex items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
+            >
+              <Check size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <span className="bidi-auto block text-base font-medium">
+                  {d.name.trim() || `Deliverable ${i + 1}`}
+                </span>
+                {spec && <span className="block text-sm text-muted">{spec}</span>}
+                {d.details.trim() && (
+                  <span className="bidi-auto block whitespace-pre-wrap text-sm text-muted">
+                    {d.details}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen((o) => [...o, d.id])}
+                className="shrink-0 text-sm text-brand underline"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => remove(d.id)}
+                aria-label={`Remove ${d.name.trim() || `deliverable ${i + 1}`}`}
+                className="flex size-6 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger"
+              >
+                <X size={16} />
+              </button>
             </div>
-            <textarea
-              value={d.details}
-              onChange={(e) => set(i, { details: e.target.value })}
-              placeholder="What’s on it?"
-              aria-label={`Deliverable ${i + 1} details`}
-              rows={2}
-              className={inputCls}
-            />
+          );
+        }
+
+        return (
+          <div key={d.id} className="flex items-start gap-2 rounded-lg border border-border-strong p-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <input
+                value={d.name}
+                onChange={(e) => set(d.id, { name: e.target.value })}
+                placeholder="Name — e.g. Roll-up 1"
+                aria-label={`Deliverable ${i + 1} name`}
+                className={inputCls}
+                maxLength={80}
+              />
+              {/* ⚠️ Its own size and format. A real set varies — the Partner
+                  Event brief had Banner 1 at 79 × 47 inches and Banner 2 at
+                  75 × 47 — and one shared dimensions field forces that
+                  difference into prose, where it reads as description rather
+                  than a spec. */}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={d.dimensions}
+                  onChange={(e) => set(d.id, { dimensions: e.target.value })}
+                  placeholder="Its size, if different"
+                  aria-label={`Deliverable ${i + 1} dimensions`}
+                  className={`${inputCls} sm:flex-1`}
+                  maxLength={120}
+                />
+                <input
+                  value={d.format}
+                  onChange={(e) => set(d.id, { format: e.target.value })}
+                  placeholder="Its format, if different"
+                  aria-label={`Deliverable ${i + 1} format`}
+                  className={`${inputCls} sm:flex-1`}
+                  maxLength={120}
+                />
+              </div>
+              <textarea
+                value={d.details}
+                onChange={(e) => set(d.id, { details: e.target.value })}
+                placeholder="What’s on it?"
+                aria-label={`Deliverable ${i + 1} details`}
+                rows={2}
+                className={inputCls}
+              />
+              <button
+                type="button"
+                onClick={() => setOpen((o) => o.filter((x) => x !== d.id))}
+                disabled={empty}
+                className="min-h-11 w-fit rounded-lg border border-brand px-4 text-base text-brand hover:bg-brand/5 disabled:opacity-40 sm:min-h-0 sm:py-2"
+              >
+                Done
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => remove(d.id)}
+              aria-label={`Remove deliverable ${i + 1}`}
+              className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
+            >
+              <X size={16} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onChange(items.filter((_, n) => n !== i))}
-            aria-label={`Remove deliverable ${i + 1}`}
-            className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -360,7 +443,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
               className={addBtnCls}
             >
               <Plus size={14} />
-              Add
+              Add link
             </button>
           ) : null
         }
@@ -414,20 +497,6 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
           </div>
         );
       })}
-      {links.length < 8 && (
-        <button
-          type="button"
-          onClick={() => onChange([...links, { title: "", url: "" }])}
-          className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1.5"
-        >
-          <Plus size={14} />
-          Add link
-        </button>
-      )}
-      <span className="text-sm text-muted">
-        <Link2 size={11} className="mr-1 inline" />A Drive folder, a WeTransfer, a reference — give
-        it a name so we know what we&apos;re opening.
-      </span>
     </div>
   );
 }
@@ -471,7 +540,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
           files.length < MAX_INTAKE_FILES ? (
             <button type="button" onClick={() => inputRef.current?.click()} className={addBtnCls}>
               <Plus size={14} />
-              Add
+              Add files
             </button>
           ) : null
         }
@@ -502,16 +571,6 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
           <span className="bidi-auto font-medium">{r.name}</span> — {r.reason}
         </span>
       ))}
-      {files.length < MAX_INTAKE_FILES && (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1.5"
-        >
-          <Plus size={14} />
-          {files.length ? "Add another file" : "Add files"}
-        </button>
-      )}
       <input
         ref={inputRef}
         type="file"
@@ -626,7 +685,9 @@ function Review({
   });
 
   const contentStep = steps.findIndex((st) => st.attachments);
-  const named = deliverables.filter((d) => d.name.trim() || d.details.trim());
+  const named = deliverables.filter(
+    (d) => d.name.trim() || d.details.trim() || d.dimensions.trim() || d.format.trim(),
+  );
   const realLinks = links.filter((l) => l.url.trim());
 
   return (
@@ -716,7 +777,11 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
   const [values, setValues] = useState<Values>({});
   const [kinds, setKinds] = useState<string[]>([]);
-  const [deliverables, setDeliverables] = useState<DraftDeliverable[]>([]);
+  // ⚠️ Starts with ONE row, already open. An empty block with only an "Add"
+  // button asks the client to opt in to describing the thing they came here to
+  // describe; an open form asks them to fill it. Rows with nothing in them are
+  // dropped at submit, so a client who ignores it costs nothing.
+  const [deliverables, setDeliverables] = useState<DraftDeliverable[]>(() => [newDeliverable()]);
   const [links, setLinks] = useState<DraftLink[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [remembered, setRemembered] = useState(false);
@@ -818,9 +883,21 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     // Rows with no URL are someone who clicked "Add link" and thought better of
     // it — dropped here rather than rejected with an error.
     body.set("links", JSON.stringify(links.filter((l) => l.url.trim())));
+    // ⚠️ `id` is a client-side key and must not be sent; and a row counts as
+    // real if ANY of its four fields was filled, not just the name — the always
+    // present first row is otherwise dropped when someone types only a size.
     body.set(
       "deliverables",
-      JSON.stringify(deliverables.filter((d) => d.name.trim() || d.details.trim())),
+      JSON.stringify(
+        deliverables
+          .filter((d) => d.name.trim() || d.details.trim() || d.dimensions.trim() || d.format.trim())
+          .map((d) => ({
+            name: d.name,
+            details: d.details,
+            dimensions: d.dimensions,
+            format: d.format,
+          })),
+      ),
     );
     for (const f of files) body.append("files", f);
 
