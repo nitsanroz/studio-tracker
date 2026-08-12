@@ -52,7 +52,9 @@ const NAV = [
   { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig, mobile: true },
   { href: "/feed", label: "Time Feed", Icon: History, mobile: false },
   { href: "/settings", label: "Settings", Icon: Settings, mobile: true },
-  { href: "/clients", label: "Clients", Icon: Users, adminOnly: true, mobile: false },
+  // `mobile: true` since v1.14.0 — `client-mobile.tsx` gives both /clients and
+  // /clients/[id] a phone build (task list only; no Timeline or Board).
+  { href: "/clients", label: "Clients", Icon: Users, adminOnly: true, mobile: true },
   { href: "/reports", label: "Reports", Icon: ChartPie, adminOnly: true, mobile: false },
   {
     href: "/client-reports",
@@ -255,12 +257,28 @@ function MobileBar({
       style={{ backgroundColor: "var(--sb-bg)", borderColor: "var(--sb-border)" }}
     >
       <BarLink href="/" label="Home" Icon={House} active={pathname === "/"} />
-      <BarLink
-        href="/my-tasks"
-        label="Tasks"
-        Icon={SquareCheckBig}
-        active={pathname.startsWith("/my-tasks")}
-      />
+      {/* ⚠️ An ADMIN gets Clients in this slot, not My Tasks. The bar has room
+          for two routes beside the ✚ and the menu, and they should be the two
+          you open most: an admin runs the studio's work through the client
+          pages, while their own task list is a smaller part of the day. A
+          designer, who has no /clients at all, keeps Tasks here. Whichever one
+          loses the slot is still one tap away in the drawer, which lists every
+          route. */}
+      {isAdmin ? (
+        <BarLink
+          href="/clients"
+          label="Clients"
+          Icon={Users}
+          active={pathname.startsWith("/clients")}
+        />
+      ) : (
+        <BarLink
+          href="/my-tasks"
+          label="Tasks"
+          Icon={SquareCheckBig}
+          active={pathname.startsWith("/my-tasks")}
+        />
+      )}
       {/* An ACTION, not a route — the middle slot is the reason this bar exists
           rather than a drawer. It opens the log-time sheet wherever you are. */}
       <button onClick={onLogTime} aria-label="Log time" className={BAR_ITEM}>
@@ -293,6 +311,50 @@ function MobileBar({
   );
 }
 
+/**
+ * A textual row at the foot of the sidebar or the drawer — About, Latest
+ * updates, Logout. One component for all five, because they differ only in
+ * icon, word and handler.
+ *
+ * `folded` is the desktop rail collapsed to 64px: no room for words, so it
+ * falls back to the icon with the label as a tooltip — the same trade
+ * `NavItem` makes. The drawer never folds and just omits the prop.
+ */
+function FootLink({
+  Icon,
+  label,
+  title,
+  folded = false,
+  onClick,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  /** longer hover text, when the label alone is too terse */
+  title?: string;
+  folded?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title ?? label}
+      className={`flex items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
+        folded ? "size-9 min-h-9 justify-center" : "min-h-11 gap-2.5 px-2 text-left"
+      }`}
+      style={{ color: "var(--sb-muted)" }}
+    >
+      <Icon size={17} strokeWidth={1.75} className="shrink-0" />
+      {!folded && label}
+    </button>
+  );
+}
+
+/** Ends the session and returns to the login screen. */
+async function signOut() {
+  await createClient().auth.signOut();
+  window.location.href = "/login";
+}
+
 function MobileDrawer({
   pathname,
   isAdmin,
@@ -300,6 +362,7 @@ function MobileDrawer({
   pendingIntake,
   onClose,
   onAbout,
+  onNews,
 }: {
   pathname: string;
   isAdmin: boolean;
@@ -307,6 +370,7 @@ function MobileDrawer({
   pendingIntake: number;
   onClose: () => void;
   onAbout: () => void;
+  onNews: () => void;
 }) {
   const items = NAV.filter((n) => n.mobile && (!n.adminOnly || isAdmin));
   return (
@@ -341,7 +405,12 @@ function MobileDrawer({
                 key={href}
                 href={href}
                 onClick={onClose}
-                className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
+                // 16px, not 14: the drawer is a full-screen menu with room to
+                // spare, and these are its primary targets. They were set at the
+                // desktop sidebar's size, which is a 208px rail — a different
+                // problem. The secondary rows below (About, Latest updates) stay
+                // at 13px, so the hierarchy is clearer than when both were `sm`.
+                className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
                 style={
                   active
                     ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
@@ -357,7 +426,7 @@ function MobileDrawer({
             <Link
               href="/intake-queue"
               onClick={onClose}
-              className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
+              className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
               style={
                 pathname.startsWith("/intake-queue")
                   ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
@@ -375,9 +444,55 @@ function MobileDrawer({
           )}
         </nav>
 
-        {/* The account block the desktop sidebar keeps at its foot. It is here
-            rather than in the header because a 375px header has room for the
-            wordmark, the sync dot and the bell, and nothing else. */}
+        {/* The same two textual rows the desktop sidebar has, in the same order
+            and with the same icons — a phone and a laptop shouldn't disagree
+            about what these are called or where they sit. (Logout is NOT
+            repeated here: on a phone it is the icon beside the name BELOW,
+            which is also the only place a phone names who is signed in.)
+
+            Both close the drawer first, or the panel they open appears behind
+            it. The version keeps its own quiet line and opens About too — it is
+            what people click when they want to know which build this is. */}
+        <div className="flex flex-col px-2 pb-1">
+          <FootLink
+            Icon={Info}
+            label="About"
+            title="About the tracker"
+            onClick={() => {
+              onClose();
+              onAbout();
+            }}
+          />
+          <FootLink
+            Icon={Sparkles}
+            label="Latest updates"
+            onClick={() => {
+              onClose();
+              onNews();
+            }}
+          />
+        </div>
+        <button
+          onClick={() => {
+            onClose();
+            onAbout();
+          }}
+          // Right-aligned and a step up in size: it is the only thing on its
+          // line, so left-aligned at 11px it read as a stray label under the
+          // links rather than as the build stamp the panel below it explains.
+          className="px-4 pb-3 text-right text-[13px]"
+          style={{ color: "var(--sb-muted)" }}
+        >
+          {APP_VERSION}
+        </button>
+
+        {/* ⚠️ LAST, below the links, and the account block STAYS on a phone even
+            though the desktop sidebar dropped it. Desktop could drop it because
+            the header names you top-right; a 375px header has room for the
+            wordmark, the sync dot and the bell and nothing else, so removing it
+            here would leave a phone naming the signed-in person nowhere at all
+            — and with no way to sign out. Sitting lowest, it reads as the base
+            of the drawer rather than as an item in the list above it. */}
         <div
           className="flex items-center gap-2.5 border-t px-4 py-3"
           style={{ borderColor: "var(--sb-border)" }}
@@ -390,10 +505,7 @@ function MobileDrawer({
             </div>
           </div>
           <button
-            onClick={async () => {
-              await createClient().auth.signOut();
-              window.location.href = "/login";
-            }}
+            onClick={signOut}
             aria-label="Sign out"
             className="shrink-0 rounded-md p-2 opacity-70"
             style={{ color: "var(--sb-muted)" }}
@@ -401,16 +513,6 @@ function MobileDrawer({
             <LogOut size={18} strokeWidth={1.75} />
           </button>
         </div>
-        <button
-          onClick={() => {
-            onClose();
-            onAbout();
-          }}
-          className="px-4 pb-3 text-left text-[11px]"
-          style={{ color: "var(--sb-muted)" }}
-        >
-          About · {APP_VERSION}
-        </button>
       </div>
     </>
   );
@@ -611,42 +713,9 @@ function Shell({ children }: { children: ReactNode }) {
         <div
           className={`flex py-2 ${folded ? "flex-col items-center gap-1 px-2" : "flex-col px-2"}`}
         >
-          <button
-            onClick={() => setAboutOpen(true)}
-            title="About the tracker"
-            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
-              folded ? "size-9 justify-center" : "gap-2.5 px-2"
-            }`}
-            style={{ color: "var(--sb-muted)" }}
-          >
-            <Info size={17} strokeWidth={1.75} className="shrink-0" />
-            {!folded && "About"}
-          </button>
-          <button
-            onClick={() => setNewsOpen(true)}
-            title="Latest updates"
-            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
-              folded ? "size-9 justify-center" : "gap-2.5 px-2"
-            }`}
-            style={{ color: "var(--sb-muted)" }}
-          >
-            <Sparkles size={17} strokeWidth={1.75} className="shrink-0" />
-            {!folded && "Latest updates"}
-          </button>
-          <button
-            onClick={async () => {
-              await createClient().auth.signOut();
-              window.location.href = "/login";
-            }}
-            title="Logout"
-            className={`flex min-h-9 items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
-              folded ? "size-9 justify-center" : "gap-2.5 px-2"
-            }`}
-            style={{ color: "var(--sb-muted)" }}
-          >
-            <LogOut size={17} strokeWidth={1.75} className="shrink-0" />
-            {!folded && "Logout"}
-          </button>
+          <FootLink Icon={Info} label="About" title="About the tracker" folded={folded} onClick={() => setAboutOpen(true)} />
+          <FootLink Icon={Sparkles} label="Latest updates" folded={folded} onClick={() => setNewsOpen(true)} />
+          <FootLink Icon={LogOut} label="Logout" folded={folded} onClick={signOut} />
         </div>
         {!folded && (
           <div className="flex items-center justify-end gap-2 px-4 pb-2 text-[10px]">
@@ -738,6 +807,7 @@ function Shell({ children }: { children: ReactNode }) {
           pendingIntake={pendingIntake}
           onClose={() => setDrawerOpen(false)}
           onAbout={() => setAboutOpen(true)}
+          onNews={() => setNewsOpen(true)}
         />
       )}
       {logTimeOpen && <MobileLogTimeSheet onClose={() => setLogTimeOpen(false)} />}

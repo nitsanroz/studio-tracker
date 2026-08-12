@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_VERSION } from "@/lib/version";
+import { useState } from "react";
 import {
   ABOUT,
   ACTUAL_SPEND,
@@ -35,9 +35,130 @@ import { InfoDot, Modal, ModalClose } from "./ui";
  * dots are for: prose that would sit under a section lives in the tooltip
  * instead. If you add something, take something out — and don't drop the type
  * below 11px to make room, which is what the first draft did.
+ *
+ * ⚠️ ON A PHONE IT IS TABBED, and that is the same rule kept rather than a
+ * different design. Everything below is drawn for a 5xl card; stacked into
+ * 375px it ran 1,039px tall inside an 812px viewport — and because the card is
+ * `fixed` and centred, the overflow went off BOTH ends, taking the ✕ with it and
+ * leaving nothing to scroll. One screen still holds one screenful; a phone just
+ * needs three of them. The tab strip is `md:hidden` and every pane is
+ * `md:block`, so a laptop renders exactly what it rendered before.
  */
 
 const HERO_FIGURE = "font-serif-accent leading-none";
+/** One size for all three hero figures — see the note where they're rendered. */
+const HERO_SIZE = "text-[26px] sm:text-[34px]";
+const HERO_LABEL = "mt-1 text-[11px] text-white/85 sm:text-[12px]";
+
+/**
+ * The mobile panes. Desktop ignores this entirely — every pane is `md:block`.
+ *
+ * Grouped by what a person is asking, not by component: the studio's own
+ * history, then how the thing was made, then who made it.
+ */
+const TABS = [
+  { id: "studio", label: "The studio" },
+  { id: "timeline", label: "Timeline" },
+  { id: "build", label: "Who built it" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
+/**
+ * The eight figures along the foot, as data.
+ *
+ * ⚠️ A LIST, not eight hand-written blocks. Each one is the same `<Stat>` in the
+ * same `<Pane>`, differing only in which tab it belongs to and what it says —
+ * written out longhand that was ~65 lines in which the only way to check the
+ * tab assignments was to read every wrapper. `tab` is the first field of each
+ * row for exactly that reason.
+ *
+ * ⚠️ Module scope, so it is built once rather than per render. Safe because
+ * every value comes from the generated `ABOUT` constant — nothing here reads
+ * component state. `formatTokens` is a hoisted function declaration.
+ */
+const STATS: {
+  tab: TabId;
+  value: string;
+  label: string;
+  align?: "left" | "right";
+  info: string;
+}[] = [
+  {
+    tab: "studio",
+    value: group(ABOUT.studio.entries),
+    label: "Time entries",
+    info: "Every logged block of work, each carrying a description — the tracker refuses an entry without one, which is why the history can still be read years later.",
+  },
+  {
+    tab: "studio",
+    value: group(ABOUT.studio.tasks),
+    label: "Tasks",
+    info: "Across every client, open and finished, including everything imported when the studio moved off Asana and Everhour.",
+  },
+  {
+    tab: "studio",
+    value: group(ABOUT.studio.clients),
+    label: "Clients",
+    info: "Live and archived. Most are archived — kept so their hours stay attached to a name instead of becoming an orphaned total.",
+  },
+  {
+    tab: "studio",
+    value: group(ABOUT.studio.people),
+    label: "People",
+    info: "Everyone who has logged studio hours. Former staff are kept as people without accounts, so a decade of work stays attributed to whoever did it.",
+  },
+  {
+    tab: "build",
+    value: group(ABOUT.build.lines),
+    label: "Lines of code",
+    info: `Across ${ABOUT.build.files} files — TypeScript, React, CSS and SQL. Excludes the committed data dumps, which are imported client history rather than anything anyone wrote.`,
+  },
+  {
+    tab: "build",
+    value: String(ABOUT.build.migrations),
+    label: "Migrations",
+    align: "right",
+    info: "Database schema changes, each applied by hand in the Supabase editor rather than automatically — a deliberate gate, since several protect columns the app must never let a member write.",
+  },
+  {
+    tab: "build",
+    value: group(ABOUT.effort.toolCalls),
+    label: "Tool calls",
+    align: "right",
+    info: "Reads, edits, searches, builds and browser checks — every action Claude took that wasn't writing prose.",
+  },
+  {
+    tab: "build",
+    value: formatTokens(ABOUT.effort.inputTokensM + ABOUT.effort.outputTokensM),
+    label: "Tokens",
+    align: "right",
+    info: `${formatTokens(ABOUT.effort.inputTokensM)} read and ${
+      ABOUT.effort.outputTokensM
+    }M written. The read figure dwarfs the written one because this codebase goes back through the model on every single turn — that is what stops a change in one file quietly contradicting another. Nearly all of it is served from cache at a tenth of the normal price, which is why ${formatTokens(
+      ABOUT.effort.inputTokensM,
+    )} costs what it does.`,
+  },
+];
+
+/** Shows its children when that tab is picked — and always, from `md` up. */
+function Pane({
+  tab,
+  active,
+  className = "",
+  children,
+}: {
+  tab: TabId;
+  active: TabId;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`${tab === active ? "block" : "hidden"} md:block ${className}`}>
+      {children}
+    </div>
+  );
+}
 
 /** Where a date sits along the rail, 0–100. */
 function railPosition(iso: string): number {
@@ -70,10 +191,35 @@ function BuildLog() {
         From an empty folder to daily use
       </SectionHeading>
 
+      {/* ⚠️ The rail is a PERCENTAGE layout with 128px captions. That is fine
+          across 900px and hopeless across 375: eight milestones inside five
+          days of each other printed on top of one another — "Report to freeze"
+          straight through "First commit". Below `md` the same milestones become
+          a plain vertical list, which is what a narrow column is actually good
+          at. The rail itself is `hidden md:block`; neither is a summary of the
+          other, they are the same eight facts turned ninety degrees. */}
+      <ol className="mt-3 flex flex-col gap-2 md:hidden">
+        {MILESTONES.map((m) => (
+          <li key={m.date + m.label} className="flex items-baseline gap-2.5">
+            <span
+              className={`mt-1 size-2 shrink-0 rounded-full ${
+                m.major ? "bg-brand ring-2 ring-brand-soft" : "border-2 border-brand bg-surface"
+              }`}
+            />
+            <span className="w-14 shrink-0 text-[13px] font-semibold text-brand">
+              {formatShort(m.date)}
+            </span>
+            <span className={`text-[12px] ${m.major ? "text-foreground" : "text-muted"}`}>
+              {m.label}
+            </span>
+          </li>
+        ))}
+      </ol>
+
       {/* The captions are two 11px lines sitting 16px clear of the rail, so they
           reach ~42px above and below it. The margins have to clear that AND
           leave the band some breathing room, or the rail crowds its own box. */}
-      <div className="relative mx-1 mb-14 mt-14 h-0.5 rounded-full bg-brand">
+      <div className="relative mx-1 mb-14 mt-14 hidden h-0.5 rounded-full bg-brand md:block">
         {/* Releases: thin marks above the rail, so they read as texture and never
             compete with the milestone dots sitting ON it. */}
         {releases.map((r) => (
@@ -274,14 +420,17 @@ function Ledger({
 }) {
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="flex items-center gap-1 text-[13px]">
+      {/* Wraps below `sm`: the totals run to "57h together · 26 working days ·
+          461 instructions across 8 sessions", which will not share a 375px line
+          with its own title. */}
+      <div className="mb-1.5 flex flex-col gap-x-3 sm:flex-row sm:items-baseline sm:justify-between">
+        <span className="flex min-w-0 items-center gap-1 text-[13px]">
           {title}
           <InfoDot title={title} side={side}>
             {info}
           </InfoDot>
         </span>
-        <span className="text-[11px] text-muted">{total}</span>
+        <span className="min-w-0 text-[11px] text-muted">{total}</span>
       </div>
       <div className="flex h-9 overflow-hidden rounded-lg">
         {segments.map((s) => (
@@ -358,6 +507,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
   const span = projectSpanDays();
   const loggedHours = studio.hours - studio.recoveredHours;
   const toV1 = daysBetween(build.firstCommit, "2026-07-29");
+  const [tab, setTab] = useState<TabId>("studio");
 
   return (
     <Modal
@@ -368,9 +518,15 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
       // `p-0!` — Modal's own `p-4` is a plain utility, so class order in the
       // stylesheet decides, not the order in this string, and a bare `p-0` loses.
       // The hero and the timeline band both have to reach the card's edges.
-      className="p-0!"
+      //
+      // ⚠️ `max-h` + `overflow-hidden` on a phone. The card is `fixed` and
+      // centred with `-translate-y-1/2`, so a card TALLER than the viewport
+      // overflows off the top as much as the bottom — which is how the ✕ ended
+      // up above the screen with no way to reach it. The cap keeps the card on
+      // screen; the tabs are what keep each pane inside the cap.
+      className="flex max-h-[92dvh] flex-col overflow-hidden p-0! md:block md:max-h-none"
     >
-      <div className="relative rounded-t-2xl bg-brand px-7 py-4 text-white">
+      <div className="relative shrink-0 rounded-t-2xl bg-brand px-4 py-4 text-white sm:px-7">
         <div className="absolute right-3 top-3 [&_button]:text-white/85 [&_button:hover]:bg-white/10 [&_button:hover]:text-white">
           <ModalClose onClose={onClose} />
         </div>
@@ -380,32 +536,42 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
             rather than as a third bar below, which cost 80px of height. */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <h2 id="about-title" className={`${HERO_FIGURE} text-xl`}>
+            <h2 id="about-title" className={`${HERO_FIGURE} text-2xl sm:text-3xl`}>
               Behind the tracker
             </h2>
+            {/* The version is deliberately NOT here any more. It sits in the
+                sidebar on the very control that opens this panel, so printing
+                it again two lines later was the same fact twice — and it was
+                the longer half of a subtitle that has one job. */}
             <p className="mt-1 text-[12px] text-white/85">
-              Studio&amp;more Tracker {APP_VERSION} — the studio&rsquo;s own
-              task and time tracker.
+              Studio&amp;more Tracker — the studio&rsquo;s own task and time tracker.
             </p>
 
-            <div className="mt-3.5 flex flex-wrap items-end gap-x-10 gap-y-3">
+            {/* ⚠️ A 3-column GRID below `sm`, not the wrapping flex row. With
+                `gap-x-10` the big figure took the first line to itself and the
+                other two wrapped under it, so the hero alone stood ~430px tall
+                and pushed every pane into a scroll. Three columns and a smaller
+                lead figure keep the same three facts in one band. */}
+            <div className="mt-3.5 grid grid-cols-3 items-end gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-10">
+              {/* All three at ONE size. The lead figure used to run 40px against
+                  the others' 24 — which read as "this number matters and those
+                  two are footnotes", when they are three facts of equal standing
+                  about the same thing. Equal size lets the DIGIT COUNT do the
+                  work: 87,577 is visibly the big one without being told to be. */}
               <div>
-                <div className={`${HERO_FIGURE} text-[40px]`}>
-                  {group(studio.hours)}
-                </div>
-                <div className="mt-1 text-[12px] text-white/85">
-                  hours of studio work, in one place
+                <div className={`${HERO_FIGURE} ${HERO_SIZE}`}>{group(studio.hours)}</div>
+                <div className={HERO_LABEL}>
+                  hours of studio work
+                  <span className="hidden sm:inline">, in one place</span>
                 </div>
               </div>
               <div>
-                <div className={`${HERO_FIGURE} text-2xl`}>{studio.years}</div>
-                <div className="mt-1 text-[12px] text-white/85">years covered</div>
+                <div className={`${HERO_FIGURE} ${HERO_SIZE}`}>{studio.years}</div>
+                <div className={HERO_LABEL}>years covered</div>
               </div>
               <div>
-                <div className={`${HERO_FIGURE} text-2xl`}>{span}</div>
-                <div className="mt-1 text-[12px] text-white/85">
-                  days to build it
-                </div>
+                <div className={`${HERO_FIGURE} ${HERO_SIZE}`}>{span}</div>
+                <div className={HERO_LABEL}>days to build it</div>
               </div>
             </div>
           </div>
@@ -433,7 +599,11 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                 </InfoDot>
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            {/* The chips are `hidden` below `sm` — two rows of them cost ~100px
+                of hero, and the (i) beside "Replaces 7 tools" already lists all
+                seven WITH what each became, which is the better version of the
+                same fact on a small screen. The count carries it alone. */}
+            <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
               {REPLACED.map((r) => (
                 <span
                   key={r.tool}
@@ -448,14 +618,59 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <BuildLog />
+      {/* The tab strip, phones only. Sits directly under the hero so it reads as
+          part of the card's chrome rather than as content. */}
+      <div
+        role="tablist"
+        aria-label="About sections"
+        className="flex shrink-0 border-b border-border px-2 md:hidden"
+      >
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`min-h-11 flex-1 border-b-2 px-1 text-[12px] transition-colors ${
+              tab === t.id
+                ? "border-brand text-brand"
+                : "border-transparent text-muted"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="space-y-5 px-7 pb-5 pt-5">
+      {/* ⚠️ `overflow-y-auto` below `md` is the SAFETY NET, not the plan — the
+          tabs are meant to make each pane fit. It exists because the figures are
+          generated: a longer milestone list or a fifth stat should degrade to a
+          short scroll, never to content trapped off-screen again. */}
+      <div className="min-h-0 flex-1 overflow-y-auto md:overflow-visible">
+      <Pane tab="timeline" active={tab}>
+        <BuildLog />
+      </Pane>
+
+      <div className="space-y-5 px-4 pb-5 pt-5 sm:px-7">
 
         {/* The bars don't need the full width — the donut takes the column beside
             them instead of a row of its own, which is the whole height saving. */}
-        <div className="grid gap-x-6 gap-y-3 lg:grid-cols-[1fr_17rem]">
-          <div className="space-y-4">
+        {/* ⚠️ `min-w-0` on the column. A grid item defaults to `min-width:auto`,
+            so it will NOT shrink below its own content — this column measured
+            408px inside a 375px card and pushed both ledger bars off the right
+            edge, which is why the labels looked clipped rather than truncated.
+            The `truncate` inside the bars only works once the bar itself fits. */}
+        {/* ⚠️ The CONTAINERS collapse too, not just the panes inside them. A
+            `grid` whose every child is hidden is still a grid: it keeps its own
+            padding and row gaps, which left ~80px of dead white under the
+            Timeline tab. */}
+        <div
+          className={`gap-x-6 gap-y-3 lg:grid-cols-[1fr_17rem] ${
+            tab === "timeline" ? "hidden md:grid" : "grid"
+          }`}
+        >
+          <div className="min-w-0 space-y-4">
+          <Pane tab="studio" active={tab}>
             <Ledger
               title="Where the studio's hours came from"
               total={`${group(studio.hours)} hours · ${studio.years} years`}
@@ -484,7 +699,9 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                 4,
               )} can be shown at all. Those years are marked in the data, so they never contaminate a per-person figure.`}
             />
+          </Pane>
 
+          <Pane tab="build" active={tab}>
             <Ledger
               title="Who built it"
               total={`${effort.wallClockHours}h together · ${effort.days} working days · ${group(
@@ -518,62 +735,25 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
                 effort.prompts,
               )} decisions, not of one brief. Measured from the session transcripts, with any gap over ${effort.idleThresholdMinutes} minutes treated as a break. Claude's share is time spent generating or running tools; Nitsan's is the time between a turn finishing and the next instruction — reading, checking the app, deciding. His figure is a floor: applying migrations by hand, verifying in the browser and gathering references all happened outside the session and aren't counted.`}
             />
+          </Pane>
           </div>
 
-          <div className="flex items-center lg:pl-2">
+          <Pane tab="build" active={tab} className="items-center lg:pl-2 md:flex">
             <ModelDonut />
-          </div>
+          </Pane>
         </div>
 
+        {/* ⚠️ Each Stat is wrapped individually rather than the row being split
+            in two. A `hidden` grid CHILD leaves the grid, so on a phone the four
+            that belong to the open tab reflow into two clean rows — while `md`
+            keeps every one of the eight in the single row it has always been. */}
         <section className="pt-1">
-          <div className="grid grid-cols-3 gap-x-5 gap-y-3 sm:grid-cols-4 lg:grid-cols-8">
-            <Stat
-              value={group(studio.entries)}
-              label="Time entries"
-              info="Every logged block of work, each carrying a description — the tracker refuses an entry without one, which is why the history can still be read years later."
-            />
-            <Stat
-              value={group(studio.tasks)}
-              label="Tasks"
-              info="Across every client, open and finished, including everything imported when the studio moved off Asana and Everhour."
-            />
-            <Stat
-              value={group(studio.clients)}
-              label="Clients"
-              info="Live and archived. Most are archived — kept so their hours stay attached to a name instead of becoming an orphaned total."
-            />
-            <Stat
-              value={group(studio.people)}
-              label="People"
-              info="Everyone who has logged studio hours. Former staff are kept as people without accounts, so a decade of work stays attributed to whoever did it."
-            />
-            <Stat
-              value={group(build.lines)}
-              label="Lines of code"
-              info={`Across ${build.files} files — TypeScript, React, CSS and SQL. Excludes the committed data dumps, which are imported client history rather than anything anyone wrote.`}
-            />
-            <Stat
-              value={String(build.migrations)}
-              label="Migrations"
-              align="right"
-              info="Database schema changes, each applied by hand in the Supabase editor rather than automatically — a deliberate gate, since several protect columns the app must never let a member write."
-            />
-            <Stat
-              value={group(effort.toolCalls)}
-              label="Tool calls"
-              align="right"
-              info="Reads, edits, searches, builds and browser checks — every action Claude took that wasn't writing prose."
-            />
-            <Stat
-              value={formatTokens(effort.inputTokensM + effort.outputTokensM)}
-              label="Tokens"
-              align="right"
-              info={`${formatTokens(effort.inputTokensM)} read and ${
-                effort.outputTokensM
-              }M written. The read figure dwarfs the written one because this codebase goes back through the model on every single turn — that is what stops a change in one file quietly contradicting another. Nearly all of it is served from cache at a tenth of the normal price, which is why ${formatTokens(
-                effort.inputTokensM,
-              )} costs what it does.`}
-            />
+          <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4 lg:grid-cols-8">
+            {STATS.map((s) => (
+              <Pane key={s.label} tab={s.tab} active={tab}>
+                <Stat value={s.value} label={s.label} align={s.align} info={s.info} />
+              </Pane>
+            ))}
           </div>
         </section>
 
@@ -585,6 +765,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           * Zero to production in {toV1} days; live for the team since 29 July. Figures generated{" "}
           {formatDay(ABOUT.generatedAt)}.
         </p>
+      </div>
       </div>
     </Modal>
   );

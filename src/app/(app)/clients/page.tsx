@@ -11,6 +11,8 @@ import { latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate"
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import { EditableTextCell } from "@/components/editable-cell";
 import { ClientAvatar } from "@/components/client-avatar";
+import { MobileClientsList } from "@/components/client-mobile";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -151,6 +153,7 @@ export default function ClientsPage() {
   const [creating, setCreating] = useState(false);
 
   const isAdmin = useIsAdmin();
+  const isNarrow = useIsNarrow();
 
   const taskClient = useMemo(
     () => new Map(tasks.map((t) => [t.id, t.clientId])),
@@ -220,6 +223,10 @@ export default function ClientsPage() {
   if (!isAdmin) {
     return <p className="text-sm text-muted">Clients are for admins only.</p>;
   }
+
+  // ⚠️ AFTER the admin gate and after the hooks, never before either: hooks
+  // can't be conditional, and a member must get the same refusal on a phone.
+  if (isNarrow) return <MobileClientsList />;
 
   return (
     <div className="mx-auto flex w-full max-w-[650px] flex-col gap-4">

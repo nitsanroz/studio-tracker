@@ -39,7 +39,9 @@ function DeleteRequestButton({ request }: { request: TaskRequest }) {
       }}
       title="Delete this submission"
       aria-label="Delete this submission"
-      className="shrink-0 rounded-md p-1.5 text-faint transition-colors hover:bg-danger/10 hover:text-danger"
+      // 44px on a phone — a 27px icon button is not a thumb target, and this
+      // one deletes something. Back to a tight icon once there is a pointer.
+      className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint transition-colors hover:bg-danger/10 hover:text-danger sm:size-7"
     >
       <Trash2 size={15} />
     </button>
@@ -87,7 +89,7 @@ function NotifyClientButton({ request }: { request: TaskRequest }) {
           setBusy(false);
         }}
         title={`Email ${request.submitterEmail}: someone at the studio has read this brief`}
-        className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+        className="flex min-h-11 items-center gap-1.5 rounded-full border border-border px-3 text-xs text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50 sm:min-h-0 sm:py-1"
       >
         <MailCheck size={13} />
         {busy ? "Sending…" : "Tell client we've seen it"}
@@ -218,8 +220,18 @@ function ReviewCard({ request }: { request: TaskRequest }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border-2 border-brand/30 bg-surface p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      {/* ⚠️ The title and the submitter line get the WHOLE width on a phone.
+          Sharing the row with "Show brief" and the delete left them ~230px, so
+          the title scrolled inside its own input and the sender's line broke
+          after almost every word — "No / Traffic" on two lines.
+
+          Two fixes, and both were needed. The block is `flex-1`, which it never
+          was: `min-w-0` alone lets it shrink but never claims the leftover
+          space, so the buttons took what they liked ON DESKTOP TOO — that is
+          why the title was clipped there as well. And below `sm` the controls
+          drop to their own right-aligned row instead of competing for this one. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0 flex-1">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -233,10 +245,20 @@ function ReviewCard({ request }: { request: TaskRequest }) {
             )}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {/* On a phone the receipt rides up here beside "Show brief" — they
+              are the same KIND of thing (something you do while reading the
+              submission, not something that resolves it), and it buys the card
+              back a whole 44px row. `flex-wrap` is the safety net: if a longer
+              client name ever makes the three too wide, it drops to its own
+              line rather than pushing the delete off the card.
+              From `sm` the footer instance takes over — see there. */}
+          <span className="sm:hidden">
+            <NotifyClientButton request={request} />
+          </span>
           <button
             onClick={() => setShowBrief((s) => !s)}
-            className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+            className="min-h-11 rounded-full border border-border px-3 text-xs text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1"
           >
             {showBrief ? "Hide brief" : "Show brief"}
           </button>
@@ -314,18 +336,22 @@ function ReviewCard({ request }: { request: TaskRequest }) {
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {/* `mr-auto`: the receipt is not part of the approve/reject decision —
-            it's something you do while still deciding, so it sits at the far
-            left rather than beside the two buttons that resolve the card. */}
-        <div className="mr-auto">
+      {/* The receipt sits at the far left here, pushed by `mr-auto`, because it
+          is not part of the approve/reject decision — it's something you do
+          while still deciding. ⚠️ `hidden sm:block`: on a phone this instance is
+          gone and the one up in the header row is shown instead, so the footer
+          is just the two buttons that RESOLVE the card. Two instances rather
+          than one moved by CSS because they live in different parents; only one
+          is ever rendered visibly, and the route enforces send-once regardless. */}
+      <div className="flex items-center justify-end gap-2">
+        <div className="mr-auto hidden sm:block">
           <NotifyClientButton request={request} />
         </div>
         <button
           onClick={() => {
             if (confirm("Reject this submission?")) rejectRequest(request.id);
           }}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted hover:border-danger hover:text-danger"
+          className="min-h-11 rounded-lg border border-border px-3 text-sm text-muted hover:border-danger hover:text-danger sm:min-h-0 sm:py-1.5"
         >
           Reject
         </button>
@@ -344,9 +370,9 @@ function ReviewCard({ request }: { request: TaskRequest }) {
                 dueDate: dueDate || null,
               });
               // Straight into the new task. Approving is the middle of a job,
-              // not the end of one — there's a type to set, a brief to skim and
-              // the client's files now sitting there as links. The pane is
-              // mounted app-wide, so it opens over the queue.
+              // not the end of one — there's a type to set, a brief to skim
+              // and the client's files now sitting there as links. The pane
+              // is mounted app-wide, so it opens over the queue.
               if (taskId) openTask(taskId);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Failed");
@@ -354,7 +380,7 @@ function ReviewCard({ request }: { request: TaskRequest }) {
               setBusy(false);
             }
           }}
-          className="rounded-lg bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+          className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40 sm:min-h-0 sm:py-1.5"
         >
           {busy ? "Approving…" : "Approve → create task"}
         </button>

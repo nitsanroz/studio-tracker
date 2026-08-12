@@ -29,24 +29,12 @@ type Entry = { label: string; why: string; toHref: string; toLabel: string };
  * drawer with no entry here renders its real (broken) page on a phone.
  */
 const DESKTOP_ONLY: Array<[string, Entry]> = [
-  [
-    "/clients/",
-    {
-      label: "Client page",
-      why: "The task table, board and Gantt all need width — the Gantt alone pins a 238px column before the calendar starts.",
-      toHref: "/my-tasks",
-      toLabel: "My tasks",
-    },
-  ],
-  [
-    "/clients",
-    {
-      label: "Clients",
-      why: "The client table hides columns as it narrows, and by phone width there is nothing useful left to show.",
-      toHref: "/my-tasks",
-      toLabel: "My tasks",
-    },
-  ],
+  // ⚠️ `/clients` and `/clients/[id]` were both here until v1.14.0 and are
+  // deliberately GONE, not commented out: `client-mobile.tsx` gives each of them
+  // a real phone build. The client page's phone build is the TASK LIST ONLY —
+  // its Timeline and Board tabs simply aren't offered there, which is a choice
+  // made inside that component rather than a route-level block, because the rest
+  // of the page is genuinely useful on a phone.
   [
     "/plan",
     {

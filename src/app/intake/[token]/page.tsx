@@ -91,26 +91,36 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
         const bad = l.url.trim().length > 3 && !normalizeUrl(l.url);
         return (
           <div key={i} className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <input
-                value={l.title}
-                onChange={(e) => set(i, { title: e.target.value })}
-                placeholder="What is it? e.g. Brand guidelines"
-                className={`${inputCls} sm:w-2/5`}
-                maxLength={120}
-              />
-              <input
-                value={l.url}
-                onChange={(e) => set(i, { url: e.target.value })}
-                placeholder="https://…"
-                inputMode="url"
-                className={`${inputCls} flex-1`}
-              />
+            {/* ⚠️ The two inputs STACK below `sm`. Side by side on a 375px
+                screen the title took 235px and `flex-1` left the URL field
+                **26px wide** — unusable, and this form is filled on a phone
+                more often than not. They only sit on one line once there is
+                room for both. */}
+            <div className="flex items-start gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  value={l.title}
+                  onChange={(e) => set(i, { title: e.target.value })}
+                  placeholder="What is it? e.g. Brand guidelines"
+                  className={`${inputCls} sm:w-2/5`}
+                  maxLength={120}
+                />
+                <input
+                  value={l.url}
+                  onChange={(e) => set(i, { url: e.target.value })}
+                  placeholder="https://…"
+                  inputMode="url"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  className={`${inputCls} sm:flex-1`}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => onChange(links.filter((_, n) => n !== i))}
                 aria-label="Remove this link"
-                className="shrink-0 rounded-md p-2 text-faint hover:text-danger"
+                // 44px on a phone; back to a tight icon once there's a mouse.
+                className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
               >
                 <X size={16} />
               </button>
@@ -127,7 +137,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
         <button
           type="button"
           onClick={() => onChange([...links, { title: "", url: "" }])}
-          className="flex w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm text-muted hover:border-brand hover:text-brand"
+          className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1.5"
         >
           <Plus size={14} />
           Add link
@@ -230,10 +240,13 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
 
   return (
-    <div className="min-h-screen bg-background py-10">
+    // ⚠️ `p-8` at 375px spends 64px of a 375px screen on white space, leaving
+    // the fields 311px. The padding and the page gutter both step down on a
+    // phone and back up once there's room.
+    <div className="min-h-screen bg-background px-3 py-6 sm:px-0 sm:py-10">
       <form
         onSubmit={handleSubmit}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-8"
+        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-8"
       >
         <span className="brand-wordmark w-44 bg-brand" />
         <div>
@@ -254,12 +267,14 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         </div>
 
         {remembered && (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted">
-            <span className="flex-1">Filled in from your last brief.</span>
+          // Wraps rather than squeezing: at 375px the sentence and the button
+          // together need more than the row has.
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted">
+            <span className="flex-1 whitespace-nowrap">Filled in from your last brief.</span>
             <button
               type="button"
               onClick={forgetMe}
-              className="font-medium text-brand hover:underline"
+              className="whitespace-nowrap font-medium text-brand hover:underline"
             >
               Not you? Start blank
             </button>
