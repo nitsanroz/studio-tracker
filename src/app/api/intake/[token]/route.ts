@@ -99,9 +99,15 @@ function parseDeliverables(raw: string): Deliverable[] {
   return parsed.slice(0, 10).flatMap((row) => {
     if (!row || typeof row !== "object") return [];
     const r = row as Record<string, unknown>;
-    const name = (typeof r.name === "string" ? r.name : "").trim().slice(0, 80);
-    const details = (typeof r.details === "string" ? r.details : "").trim().slice(0, 2000);
-    return name || details ? [{ name, details }] : [];
+    const g = (k: string, max: number) =>
+      (typeof r[k] === "string" ? (r[k] as string) : "").trim().slice(0, max);
+    const d = {
+      name: g("name", 80),
+      details: g("details", 2000),
+      dimensions: g("dimensions", 120),
+      format: g("format", 120),
+    };
+    return d.name || d.details || d.dimensions || d.format ? [d] : [];
   });
 }
 

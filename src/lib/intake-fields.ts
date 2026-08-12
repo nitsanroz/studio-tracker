@@ -128,6 +128,10 @@ export const ALWAYS_ASKS: (keyof IntakeAnswers)[] = [
   "budgetRange",
   "creativeBrief",
   "goal",
+  // ⚠️ Sits with the goal, not among the leftovers at the end. What to avoid is
+  // the other half of what to aim for, and a client who has just written the
+  // goal is the one holding the answer.
+  "thingsToAvoid",
   "displayedWhere",
   "targetAudience",
 ];
@@ -144,11 +148,7 @@ export const ALWAYS_ASKS: (keyof IntakeAnswers)[] = [
 export const TECH_ALWAYS: (keyof IntakeAnswers)[] = ["techNotes"];
 
 /** Asked of everyone, on the final optional step. */
-export const CLOSING_ASKS: (keyof IntakeAnswers)[] = [
-  "thingsToAvoid",
-  "notes",
-  "scheduleMeeting",
-];
+export const CLOSING_ASKS: (keyof IntakeAnswers)[] = ["notes", "scheduleMeeting"];
 
 export const WORK_KINDS: WorkKind[] = [
   {

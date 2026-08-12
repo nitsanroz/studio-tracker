@@ -25,6 +25,17 @@ import { fieldsAsked } from "./intake-fields";
 export interface Deliverable {
   name: string;
   details: string;
+  /**
+   * Its own size and format.
+   *
+   * ⚠️ Per-piece, because a set genuinely varies: the real "Partner Event"
+   * brief had Banner 1 at 79 × 47 inches and Banner 2 at 75 × 47. One
+   * dimensions field for the whole submission forces the client to bury that
+   * difference in prose, where it reads as description rather than as a spec.
+   * Optional: most briefs are one piece and answer it once, above.
+   */
+  dimensions?: string;
+  format?: string;
 }
 
 export interface IntakeAnswers {
@@ -193,9 +204,12 @@ const isNo = (s: string) => /^no$/i.test(val(s));
  * line that changes — which is the point of the client declaring it rather than
  * typing it into a paragraph.
  */
-function blocksForDeliverable(into: string[], name: string, details: string) {
-  if (!name) into.push(details);
-  else into.push(details ? `${name}\n${details}` : name);
+function blocksForDeliverable(into: string[], d: Deliverable) {
+  const name = val(d.name);
+  const spec = [said(d.dimensions ?? ""), said(d.format ?? "")].filter(Boolean).join(" · ");
+  const details = said(d.details ?? "");
+  const lines = [name, spec, details].filter(Boolean);
+  if (lines.length) into.push(lines.join("\n"));
 }
 
 function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
@@ -232,12 +246,7 @@ function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
   // Each declared piece is its own block: its name on one line, the client's
   // description under it. This is the structure clients were already typing
   // into the brief box by hand — now it arrives knowing what it is.
-  for (const d of a.deliverables ?? []) {
-    const name = val(d?.name);
-    const details = said(d?.details ?? "");
-    if (!name && !details) continue;
-    blocksForDeliverable(body, name, details);
-  }
+  for (const d of a.deliverables ?? []) if (d) blocksForDeliverable(body, d);
   put(body, "Content", a.content);
   put(body, "Things to avoid", a.thingsToAvoid);
   put(body, "Notes", a.notes);
@@ -355,9 +364,9 @@ export function readSubmission(
     return v.flatMap((row) => {
       if (!row || typeof row !== "object") return [];
       const r = row as Record<string, unknown>;
-      const name = typeof r.name === "string" ? r.name.trim() : "";
-      const details = typeof r.details === "string" ? r.details.trim() : "";
-      return name || details ? [{ name, details }] : [];
+      const g = (k: string) => (typeof r[k] === "string" ? (r[k] as string).trim() : "");
+      const d = { name: g("name"), details: g("details"), dimensions: g("dimensions"), format: g("format") };
+      return d.name || d.details || d.dimensions || d.format ? [d] : [];
     });
   };
   return {
