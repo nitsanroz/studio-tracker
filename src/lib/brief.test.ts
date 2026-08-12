@@ -181,6 +181,33 @@ describe("assembleTaskBrief", () => {
     expect(assembleTaskBrief(rollUps)).not.toContain("FILES");
   });
 
+  // The structured answer to the thing no heuristic could do: clients were
+  // already typing "Roll-up 1" as a bare line in the brief box, indistinguishable
+  // from "Notraffic logo" on the line below it.
+  it("gives each declared piece its own block, name above details", () => {
+    const out = assembleTaskBrief({
+      ...rollUps,
+      creativeBrief: "Two roll-ups for the entrance.",
+      deliverables: [
+        { name: "Roll-up 1", details: "Large event logo\nNo additional copy" },
+        { name: "Roll-up 2", details: "Main copy: WELCOME, PARTNERS." },
+      ],
+    });
+    expect(out).toContain(
+      "Creative direction: Two roll-ups for the entrance.\n\nRoll-up 1\nLarge event logo\nNo additional copy\n\nRoll-up 2\nMain copy: WELCOME, PARTNERS.",
+    );
+  });
+
+  it("copes with half-filled and empty pieces", () => {
+    const only = (d: { name: string; details: string }[]) =>
+      assembleTaskBrief({ ...rollUps, creativeBrief: "", deliverables: d });
+    expect(only([{ name: "Front", details: "" }])).toContain("Front");
+    expect(only([{ name: "", details: "Just a description" }])).toContain("Just a description");
+    // A row the client opened and abandoned must not print a blank block.
+    expect(only([{ name: "", details: "" }])).not.toMatch(/\n\n\n/);
+    expect(assembleTaskBrief({ ...rollUps, deliverables: undefined })).toBeTruthy();
+  });
+
   it("survives a submission with nothing in it at all", () => {
     const empty = Object.fromEntries(
       Object.keys(rollUps).map((k) => [k, ""]),

@@ -1,13 +1,19 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
-import { Link2, Paperclip, Plus, X } from "lucide-react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Link2, Paperclip, Plus, X } from "lucide-react";
 import { normalizeUrl } from "@/lib/links";
 import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, describeUpload, formatSize } from "@/lib/uploads";
+import {
+  CLOSING_ASKS,
+  FIELDS,
+  WORK_KINDS,
+  kindById,
+  type IntakeField,
+} from "@/lib/intake-fields";
 
 const inputCls =
   "w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm outline-none focus:border-brand bidi-auto";
-const labelCls = "flex flex-col gap-1 text-sm font-medium";
 
 /**
  * What this browser filled in last time — name, email, company only.
@@ -18,22 +24,25 @@ const labelCls = "flex flex-col gap-1 text-sm font-medium";
  * pasted into client emails, so that endpoint would hand anyone who guessed an
  * address the name and employer attached to it. Nothing here is worth that.
  *
- * Storing it on the client instead covers the case that actually recurs: the
- * same person at the same client submitting brief after brief from their own
- * laptop. It is their own data, in their own browser, and one click clears it.
- *
- * ⚠️ Never store the brief itself. A shared machine at the client's office
- * would leak one client's request into the next person's form.
+ * ⚠️ Never store the brief itself, and that constraint SURVIVES the move to a
+ * stepped form even though a draft-save is exactly what a wizard wants: a
+ * shared machine at the client's office would leak one client's request into
+ * the next person's form. Abandoning midway loses the answers, on purpose.
  */
 const CONTACT_KEY = "intake:contact";
+const CONTACT_FIELDS = ["name", "email", "company"] as const;
 
-interface Contact {
+type Values = Record<string, string>;
+interface DraftLink {
+  title: string;
+  url: string;
+}
+interface DraftDeliverable {
   name: string;
-  email: string;
-  company: string;
+  details: string;
 }
 
-function loadContact(): Contact | null {
+function loadContact(): Values | null {
   try {
     const raw = localStorage.getItem(CONTACT_KEY);
     if (!raw) return null;
@@ -46,38 +55,209 @@ function loadContact(): Contact | null {
   }
 }
 
-function Field({
-  label,
-  required,
-  children,
+/* ─────────────────────────────── one question ───────────────────────────── */
+
+function Question({
+  field,
+  value,
+  onChange,
+  invalid,
 }: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
+  field: IntakeField;
+  value: string;
+  onChange: (v: string) => void;
+  invalid?: string;
 }) {
+  const id = `f-${field.key}`;
+  const errId = `${id}-err`;
+  const common = {
+    id,
+    name: field.key,
+    value,
+    className: inputCls,
+    "aria-invalid": invalid ? true : undefined,
+    "aria-describedby": invalid ? errId : undefined,
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      onChange(e.target.value),
+  };
   return (
-    <label className={labelCls}>
-      <span>
-        {label} {required && <span className="text-danger">*</span>}
-      </span>
-      {children}
-    </label>
+    <div className="flex flex-col gap-1">
+      {/* An explicit htmlFor rather than a wrapping label: a wrapping label
+          around a <select> swallows clicks on some browsers, and the error
+          message needs an id to point at anyway. */}
+      <label htmlFor={id} className="text-sm font-medium">
+        {field.label}
+        {field.required && (
+          <span className="text-danger" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        )}
+      </label>
+      {field.type === "textarea" ? (
+        <textarea {...common} rows={field.rows ?? 3} placeholder={field.placeholder} />
+      ) : field.type === "select" ? (
+        <select {...common}>
+          <option value="">—</option>
+          {field.options?.map((o) => (
+            <option key={o}>{o}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          {...common}
+          type={field.type === "date" ? "date" : field.key === "email" ? "email" : "text"}
+          placeholder={field.placeholder}
+          autoComplete={
+            field.key === "name"
+              ? "name"
+              : field.key === "email"
+                ? "email"
+                : field.key === "company"
+                  ? "organization"
+                  : undefined
+          }
+        />
+      )}
+      {invalid && (
+        <span id={errId} className="text-xs text-danger">
+          {invalid}
+        </span>
+      )}
+    </div>
   );
 }
 
-interface DraftLink {
-  title: string;
-  url: string;
-}
+/* ──────────────────────────────── the kinds ─────────────────────────────── */
 
 /**
- * The client's own reference links — the counterpart of the studio's "+ Add
- * link" on a task brief (migration 0022).
- *
- * The same reasoning applies here as there: a Dropbox or Drive URL runs to a
- * couple of hundred unreadable characters, and pasting it into the Content box
- * turns the brief into noise. A title is what a designer needs to see.
+ * ⚠️ Native radios, not styled buttons. This is the one choice that decides
+ * what the rest of the form asks, so it has to work with a keyboard, arrow
+ * keys and a screen reader without any help from us.
  */
+function KindPicker({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  invalid?: string;
+}) {
+  return (
+    <fieldset aria-describedby={invalid ? "kind-err" : undefined}>
+      <legend className="mb-2 text-sm font-medium">
+        What kind of work is this?
+        <span className="text-danger" aria-hidden="true">
+          {" "}
+          *
+        </span>
+      </legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {WORK_KINDS.map((k) => (
+          <label
+            key={k.id}
+            className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 ${
+              value === k.id ? "border-brand bg-brand/5" : "border-border-strong hover:border-brand"
+            }`}
+          >
+            <input
+              type="radio"
+              name="kind"
+              value={k.id}
+              checked={value === k.id}
+              onChange={() => onChange(k.id)}
+              className="mt-1 shrink-0"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{k.label}</span>
+              <span className="block text-xs text-faint">{k.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      {invalid && (
+        <span id="kind-err" className="mt-1 block text-xs text-danger">
+          {invalid}
+        </span>
+      )}
+    </fieldset>
+  );
+}
+
+/* ───────────────────────────── the deliverables ─────────────────────────── */
+
+/**
+ * The named pieces inside one brief.
+ *
+ * ⚠️ This is the structured answer to something clients were already doing:
+ * typing "Roll-up 1" and "Banner 2" as bare lines inside the brief box, where
+ * nothing could tell them apart from the bullets beneath. Declared here, a name
+ * is data — so it can be emphasised in the brief with certainty rather than
+ * guessed at by a heuristic that would also embolden "Notraffic logo".
+ */
+function DeliverableRows({
+  items,
+  onChange,
+}: {
+  items: DraftDeliverable[];
+  onChange: (d: DraftDeliverable[]) => void;
+}) {
+  const set = (i: number, patch: Partial<DraftDeliverable>) =>
+    onChange(items.map((d, n) => (n === i ? { ...d, ...patch } : d)));
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Is this several pieces?</span>
+      <span className="-mt-1 text-xs text-faint">
+        Name each one — “Roll-up 1”, “Front”, “Homepage banner” — and we’ll keep them apart in the
+        brief. Skip it if it’s a single piece.
+      </span>
+      {items.map((d, i) => (
+        <div key={i} className="flex items-start gap-2 rounded-lg border border-border-strong p-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <input
+              value={d.name}
+              onChange={(e) => set(i, { name: e.target.value })}
+              placeholder="Name — e.g. Roll-up 1"
+              aria-label={`Piece ${i + 1} name`}
+              className={inputCls}
+              maxLength={80}
+            />
+            <textarea
+              value={d.details}
+              onChange={(e) => set(i, { details: e.target.value })}
+              placeholder="What’s on it?"
+              aria-label={`Piece ${i + 1} details`}
+              rows={2}
+              className={inputCls}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(items.filter((_, n) => n !== i))}
+            aria-label={`Remove piece ${i + 1}`}
+            className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+      {items.length < 10 && (
+        <button
+          type="button"
+          onClick={() => onChange([...items, { name: "", details: "" }])}
+          className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1.5"
+        >
+          <Plus size={14} />
+          {items.length ? "Add another piece" : "Add a piece"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────── links & files ──────────────────────────── */
+
 function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: DraftLink[]) => void }) {
   const set = (i: number, patch: Partial<DraftLink>) =>
     onChange(links.map((l, n) => (n === i ? { ...l, ...patch } : l)));
@@ -95,14 +275,14 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
             {/* ⚠️ The two inputs STACK below `sm`. Side by side on a 375px
                 screen the title took 235px and `flex-1` left the URL field
                 **26px wide** — unusable, and this form is filled on a phone
-                more often than not. They only sit on one line once there is
-                room for both. */}
+                more often than not. */}
             <div className="flex items-start gap-2">
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   value={l.title}
                   onChange={(e) => set(i, { title: e.target.value })}
                   placeholder="What is it? e.g. Brand guidelines"
+                  aria-label={`Link ${i + 1} title`}
                   className={`${inputCls} sm:w-2/5`}
                   maxLength={120}
                 />
@@ -110,6 +290,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
                   value={l.url}
                   onChange={(e) => set(i, { url: e.target.value })}
                   placeholder="https://…"
+                  aria-label={`Link ${i + 1} address`}
                   inputMode="url"
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -119,8 +300,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
               <button
                 type="button"
                 onClick={() => onChange(links.filter((_, n) => n !== i))}
-                aria-label="Remove this link"
-                // 44px on a phone; back to a tight icon once there's a mouse.
+                aria-label={`Remove link ${i + 1}`}
                 className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
               >
                 <X size={16} />
@@ -145,28 +325,19 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
         </button>
       )}
       <span className="text-xs text-faint">
-        <Link2 size={11} className="mr-1 inline" />
-        A Drive folder, a WeTransfer, a reference — give it a name so we know what we&apos;re
-        opening.
+        <Link2 size={11} className="mr-1 inline" />A Drive folder, a WeTransfer, a reference — give
+        it a name so we know what we&apos;re opening.
       </span>
     </div>
   );
 }
 
 /**
- * The files the client has attached, held in React state rather than left in
- * the `<input>`.
- *
- * ⚠️ This exists because a bare `<input type="file" multiple>` REPLACES its
- * selection on every pick. Choosing a file, then clicking again to add a
- * second, silently discards the first — and since nothing rendered the list,
- * there was no way to notice. That is why a form promising five files appeared
- * to take one. The input is now only a trigger; this array is the truth, and
- * `handleSubmit` copies it into the FormData by hand.
- *
- * Refusals are shown HERE, before submitting, rather than being dropped by the
- * route with no word to anyone. `describeUpload` is the same check the server
- * runs, so the two can't disagree.
+ * ⚠️ A bare `<input type="file" multiple>` REPLACES its selection on every
+ * pick, so choosing files one at a time silently discarded all but the last —
+ * which is why a form promising five files appeared to take one. The input is
+ * only a trigger; this array is the truth, and `handleSubmit` copies it into
+ * the FormData by hand.
  */
 function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,7 +364,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Any files you need to add?</span>
+      <span className="text-sm font-medium">Any files to add?</span>
       {files.map((f, i) => (
         <div
           key={`${f.name}-${f.size}-${i}`}
@@ -201,7 +372,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         >
           <Paperclip size={14} className="shrink-0 text-faint" />
           <span className="bidi-auto min-w-0 flex-1 truncate text-sm">{f.name}</span>
-          <span className="shrink-0 text-xs text-faint tabular-nums">{formatSize(f.size)}</span>
+          <span className="shrink-0 text-xs tabular-nums text-faint">{formatSize(f.size)}</span>
           <button
             type="button"
             onClick={() => {
@@ -209,7 +380,6 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
               setRefused([]);
             }}
             aria-label={`Remove ${f.name}`}
-            // 44px on a phone; back to a tight icon once there's a mouse.
             className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
           >
             <X size={16} />
@@ -217,7 +387,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         </div>
       ))}
       {refused.map((r, i) => (
-        <span key={i} className="text-xs text-danger">
+        <span key={i} className="text-xs text-danger" role="alert">
           <span className="bidi-auto font-medium">{r.name}</span> — {r.reason}
         </span>
       ))}
@@ -238,31 +408,89 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         className="hidden"
         onChange={(e) => {
           add(e.target.files);
-          // ⚠️ Without this, picking the SAME file again fires no `change` event
-          // — the value hasn't altered — so removing a file and re-adding it
-          // would appear to do nothing.
+          // ⚠️ Without this, picking the SAME file again fires no `change`
+          // event — the value hasn't altered — so removing a file and re-adding
+          // it would appear to do nothing.
           e.target.value = "";
         }}
       />
       <span className="text-xs text-faint">
-        Up to {MAX_INTAKE_FILES} files, {formatSize(MAX_INTAKE_BYTES)} each — for anything larger, add a
-        WeTransfer or Drive link below.
+        Up to {MAX_INTAKE_FILES} files, {formatSize(MAX_INTAKE_BYTES)} each — for anything larger,
+        add a link above.
       </span>
     </div>
   );
 }
+
+/* ──────────────────────────────── the steps ─────────────────────────────── */
+
+interface Step {
+  title: string;
+  /** Field keys rendered on this step, in order. */
+  fields: string[];
+  /** Extra blocks this step owns. */
+  kindPicker?: boolean;
+  deliverables?: boolean;
+  attachments?: boolean;
+}
+
+/**
+ * ⚠️ The steps are computed from the chosen kind, not fixed. That is the whole
+ * justification for stepping the form at all: splitting the same 21 questions
+ * across five screens would only add clicks. A "Logo or brand asset" skips the
+ * Details step entirely because it has nothing to ask there, and a "Document"
+ * never sees dimensions or animation.
+ */
+function stepsFor(kind: string): Step[] {
+  const k = kindById(kind);
+  const details = (k?.asks ?? []).filter((f) => f !== "content");
+  const steps: Step[] = [
+    { title: "About you", fields: [...CONTACT_FIELDS] },
+    { title: "What you need", kindPicker: true, fields: ["taskName", "dueDate", "budgetRange"] },
+  ];
+  if (details.length) steps.push({ title: "Details", fields: details });
+  steps.push({
+    title: "The brief",
+    fields: [
+      "creativeBrief",
+      "goal",
+      "displayedWhere",
+      "targetAudience",
+      ...((k?.asks ?? []).includes("content") ? ["content"] : []),
+    ],
+    deliverables: k?.deliverables,
+  });
+  steps.push({ title: "Anything else", fields: [...CLOSING_ASKS], attachments: true });
+  return steps;
+}
+
+/* ──────────────────────────────── the form ──────────────────────────────── */
 
 export default function IntakeFormPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const [clientName, setClientName] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "form" | "invalid" | "sending" | "done">("loading");
   const [error, setError] = useState<string | null>(null);
+
+  const [values, setValues] = useState<Values>({});
+  const [kind, setKind] = useState("");
+  const [deliverables, setDeliverables] = useState<DraftDeliverable[]>([]);
   const [links, setLinks] = useState<DraftLink[]>([]);
   const [files, setFiles] = useState<File[]>([]);
-
-  // The three remembered fields are controlled, so "Not you?" can empty them.
-  const [contact, setContact] = useState<Contact>({ name: "", email: "", company: "" });
   const [remembered, setRemembered] = useState(false);
+
+  const [step, setStep] = useState(0);
+  const [invalid, setInvalid] = useState<Record<string, string>>({});
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  const steps = useMemo(() => stepsFor(kind), [kind]);
+  const current = steps[Math.min(step, steps.length - 1)];
+  const isLast = step === steps.length - 1;
+
+  const set = (k: string, v: string) => {
+    setValues((prev) => ({ ...prev, [k]: v }));
+    setInvalid((prev) => (prev[k] ? { ...prev, [k]: "" } : prev));
+  };
 
   useEffect(() => {
     fetch(`/api/intake/${token}`)
@@ -272,7 +500,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         setClientName(j.clientName);
         // The link's own client wins for Company — that is the studio's record
         // of who this form belongs to, and it beats whatever was typed last time.
-        setContact({
+        setValues({
           name: saved?.name ?? "",
           email: saved?.email ?? "",
           company: j.clientName ?? saved?.company ?? "",
@@ -289,23 +517,70 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     } catch {
       /* storage may be unavailable; the fields still clear */
     }
-    setContact({ name: "", email: "", company: clientName ?? "" });
+    setValues((v) => ({ ...v, name: "", email: "", company: clientName ?? "" }));
     setRemembered(false);
   }
 
+  /** Validates the step being left. Returns true when it's safe to advance. */
+  function checkStep(): boolean {
+    const bad: Record<string, string> = {};
+    if (current.kindPicker && !kind) bad.kind = "Pick one so we only ask what's relevant.";
+    for (const key of current.fields) {
+      const field = FIELDS[key];
+      if (!field?.required) continue;
+      const v = (values[key] ?? "").trim();
+      if (!v) bad[key] = `${field.label} is needed.`;
+      else if (key === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v))
+        bad[key] = "That doesn't look like an email address.";
+    }
+    setInvalid(bad);
+    return Object.keys(bad).length === 0;
+  }
+
+  function go(to: number) {
+    setStep(to);
+  }
+
+  /**
+   * Move focus to the new step's heading.
+   *
+   * ⚠️ In an effect keyed on `step`, NOT in the click handler. Focusing inside
+   * `go()` — even wrapped in `requestAnimationFrame` — runs before React has
+   * committed the new step, and the focus lands nowhere: verified in the
+   * browser, where `document.activeElement` was still `<body>` after pressing
+   * Next. Without this a keyboard or screen-reader user presses Next and is
+   * left on a button that no longer describes anything, with nothing announcing
+   * that the page changed.
+   *
+   * ⚠️ Skipped on first render, or arriving at the form would rip focus away
+   * from wherever the browser put it.
+   */
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    headingRef.current?.focus();
+  }, [step]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!checkStep()) return;
     setState("sending");
     setError(null);
-    const body = new FormData(e.currentTarget);
+    const body = new FormData();
+    for (const [k, v] of Object.entries(values)) body.set(k, v);
+    body.set("kind", kind);
     // Rows with no URL are someone who clicked "Add link" and thought better of
     // it — dropped here rather than rejected with an error.
     body.set("links", JSON.stringify(links.filter((l) => l.url.trim())));
-    // ⚠️ The file input lives OUTSIDE this form's control now (it is a hidden
-    // trigger holding at most the last pick), so whatever `new FormData` just
-    // scraped out of it is wrong. Clear it and write the real list.
-    body.delete("files");
+    body.set(
+      "deliverables",
+      JSON.stringify(deliverables.filter((d) => d.name.trim() || d.details.trim())),
+    );
     for (const f of files) body.append("files", f);
+
     const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -314,7 +589,10 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       return;
     }
     try {
-      localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
+      localStorage.setItem(
+        CONTACT_KEY,
+        JSON.stringify({ name: values.name, email: values.email, company: values.company }),
+      );
     } catch {
       /* remembering is a convenience; never fail a submission over it */
     }
@@ -333,12 +611,14 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
   if (state === "done") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 text-center">
-          <span className="brand-wordmark mx-auto w-44 bg-brand" />
+      <div className="flex min-h-screen items-center justify-center px-5">
+        <div className="text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <Check size={24} />
+          </div>
           <h1 className="mt-4 text-xl">Thank you! 🎉</h1>
-          <p className="mt-2 text-sm text-muted">
-            Your task brief was received. The studio will review it and get back to you.
+          <p className="mt-1 text-sm text-muted">
+            Your brief is with the studio. We&apos;ll be in touch shortly.
           </p>
         </div>
       </div>
@@ -346,144 +626,139 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
 
   return (
-    // ⚠️ `p-8` at 375px spends 64px of a 375px screen on white space, leaving
-    // the fields 311px. The padding and the page gutter both step down on a
-    // phone and back up once there's room.
-    <div className="min-h-screen bg-background px-3 py-6 sm:px-0 sm:py-10">
-      <form
-        onSubmit={handleSubmit}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-border bg-surface p-5 sm:p-8"
-      >
-        <span className="brand-wordmark w-44 bg-brand" />
-        <div>
-          <h1 className="text-xl">New Task Brief</h1>
-          <p className="text-sm text-muted">
-            {clientName
-              ? `For ${clientName} — tell us what you need.`
-              : "Tell us what you need — the more detail, the better the result."}
-          </p>
-          {/* Only three fields are required now, so say so once rather than
-              letting people hunt for the asterisks. */}
-          <p className="mt-1 text-xs text-faint">
-            {/* ⚠️ The explicit {" "} matters: JSX strips the whitespace between
-                an element and a newline, so without it this read "Only *fields". */}
-            Only <span className="text-danger">*</span>{" "}
-            fields are required — anything you don&apos;t know yet, leave blank and we&apos;ll ask.
-          </p>
-        </div>
+    <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
+      <h1 className="text-xl">New Task Brief</h1>
+      <p className="mt-1 text-sm text-muted">
+        Tell us what you need — the more detail, the better the result.
+      </p>
 
-        {remembered && (
-          // Wraps rather than squeezing: at 375px the sentence and the button
-          // together need more than the row has.
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted">
-            <span className="flex-1 whitespace-nowrap">Filled in from your last brief.</span>
+      {/* Progress. An ordered list so it reads as "step 2 of 5" rather than as
+          decoration, with the current one marked for assistive tech. */}
+      <nav aria-label="Progress" className="mt-5">
+        <ol className="flex flex-wrap gap-1.5">
+          {steps.map((s, i) => (
+            <li key={s.title} className="flex-1">
+              <button
+                type="button"
+                // Going BACK is always allowed; going forward is not, or you
+                // could skip the required fields the next step depends on.
+                disabled={i > step}
+                onClick={() => i < step && go(i)}
+                aria-current={i === step ? "step" : undefined}
+                className={`h-1.5 w-full rounded-full transition-colors ${
+                  i <= step ? "bg-brand" : "bg-border-strong"
+                } ${i < step ? "cursor-pointer" : ""}`}
+              >
+                <span className="sr-only">
+                  {`Step ${i + 1} of ${steps.length}: ${s.title}`}
+                  {i === step ? " (current)" : ""}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 text-xs text-faint">
+          Step {step + 1} of {steps.length}
+        </p>
+      </nav>
+
+      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-5" noValidate>
+        {/* ⚠️ Labelled BY the heading rather than carrying its own `<legend>`.
+            An sr-only legend plus a visible <h2> saying the same words makes a
+            screen reader announce the step name twice. */}
+        <fieldset className="flex flex-col gap-4" aria-labelledby="step-title">
+          <h2 id="step-title" ref={headingRef} tabIndex={-1} className="text-lg outline-none">
+            {current.title}
+          </h2>
+
+          {step === 0 && (
+            <p className="-mt-2 text-xs text-faint">
+              Only fields marked * are required — anything you don&apos;t know yet, leave blank and
+              we&apos;ll ask.
+            </p>
+          )}
+
+          {current.kindPicker && (
+            <KindPicker
+              value={kind}
+              onChange={(v) => {
+                setKind(v);
+                setInvalid((p) => ({ ...p, kind: "" }));
+              }}
+              invalid={invalid.kind}
+            />
+          )}
+
+          {current.fields.map((key) =>
+            FIELDS[key] ? (
+              <Question
+                key={key}
+                field={FIELDS[key]}
+                value={values[key] ?? ""}
+                onChange={(v) => set(key, v)}
+                invalid={invalid[key]}
+              />
+            ) : null,
+          )}
+
+          {step === 0 && remembered && (
             <button
               type="button"
               onClick={forgetMe}
-              className="whitespace-nowrap font-medium text-brand hover:underline"
+              className="w-fit text-xs text-muted underline hover:text-brand"
             >
-              Not you? Start blank
+              Not you? Clear these details
             </button>
-          </div>
+          )}
+
+          {current.deliverables && (
+            <DeliverableRows items={deliverables} onChange={setDeliverables} />
+          )}
+
+          {current.attachments && (
+            <>
+              <LinkRows links={links} onChange={setLinks} />
+              <FileRows files={files} onChange={setFiles} />
+            </>
+          )}
+        </fieldset>
+
+        {/* ⚠️ role="alert" — a failed submit used to render silently, so a
+            screen-reader user got no indication at all that anything went
+            wrong. */}
+        {error && (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Name" required>
-            <input
-              name="name"
-              required
-              value={contact.name}
-              onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
-              autoComplete="name"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Email" required>
-            <input
-              name="email"
-              type="email"
-              required
-              value={contact.email}
-              onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
-              autoComplete="email"
-              className={inputCls}
-            />
-          </Field>
+        <div className="flex items-center gap-2">
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => go(step - 1)}
+              className="min-h-11 rounded-lg border border-border-strong px-4 text-sm hover:border-brand"
+            >
+              Back
+            </button>
+          )}
+          {isLast ? (
+            <button
+              disabled={state === "sending"}
+              className="min-h-11 flex-1 rounded-lg bg-brand px-4 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+            >
+              {state === "sending" ? "Sending…" : "Submit brief"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => checkStep() && go(step + 1)}
+              className="min-h-11 flex-1 rounded-lg bg-brand px-4 font-semibold text-white hover:bg-brand-dark"
+            >
+              Next
+            </button>
+          )}
         </div>
-        <Field label="Company">
-          <input
-            name="company"
-            value={contact.company}
-            onChange={(e) => setContact((c) => ({ ...c, company: e.target.value }))}
-            autoComplete="organization"
-            className={inputCls}
-          />
-        </Field>
-        <Field label="Task Name" required>
-          <input name="taskName" required className={inputCls} />
-        </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Dimensions / Technical Specifications">
-            <input name="dimensions" className={inputCls} placeholder="e.g. 1920×1080, A4 print…" />
-          </Field>
-          <Field label="Format">
-            <input name="format" className={inputCls} placeholder="e.g. PNG, Figma, PDF…" />
-          </Field>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Would it be animated?">
-            <select name="animated" className={inputCls} defaultValue="">
-              <option value="">—</option>
-              <option>Yes</option>
-              <option>No</option>
-              <option>Not sure yet</option>
-            </select>
-          </Field>
-          <Field label="Due Date">
-            <input name="dueDate" type="date" className={inputCls} />
-          </Field>
-        </div>
-        <Field label="Budget Range (hours)">
-          <input name="budgetRange" className={inputCls} placeholder="e.g. 5-8" />
-        </Field>
-        <Field label="Creative Brief">
-          <textarea name="creativeBrief" rows={4} className={inputCls} />
-        </Field>
-        <Field label="What's the goal of this deliverable?">
-          <textarea name="goal" rows={2} className={inputCls} />
-        </Field>
-        <Field label="Where would it be displayed?">
-          <textarea name="displayedWhere" rows={2} className={inputCls} />
-        </Field>
-        <Field label="What's the target audience?">
-          <textarea name="targetAudience" rows={2} className={inputCls} />
-        </Field>
-        <Field label="Things to avoid?">
-          <textarea name="thingsToAvoid" rows={2} className={inputCls} />
-        </Field>
-        <Field label="Content">
-          <textarea name="content" rows={3} className={inputCls} placeholder="Copy, texts…" />
-        </Field>
-        <FileRows files={files} onChange={setFiles} />
-        <LinkRows links={links} onChange={setLinks} />
-        <Field label="Notes">
-          <textarea name="notes" rows={2} className={inputCls} />
-        </Field>
-        <Field label="Do you need to schedule a meeting to discuss this task before we begin?">
-          <select name="scheduleMeeting" className={inputCls} defaultValue="">
-            <option value="">—</option>
-            <option>No</option>
-            <option>Yes</option>
-          </select>
-        </Field>
-
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button
-          disabled={state === "sending"}
-          className="rounded-lg bg-brand py-3 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-        >
-          {state === "sending" ? "Sending…" : "Submit brief"}
-        </button>
       </form>
     </div>
   );

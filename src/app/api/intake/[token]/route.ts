@@ -5,9 +5,11 @@ import {
   assembleTaskBrief,
   parseBudgetHours,
   type BriefLink,
+  type Deliverable,
   type IntakeAnswers,
   type IntakeFile,
 } from "@/lib/brief";
+import { kindById } from "@/lib/intake-fields";
 import { hostLabel, normalizeUrl } from "@/lib/links";
 import { MAX_INTAKE_FILES, describeUpload } from "@/lib/uploads";
 
@@ -55,6 +57,31 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   if (!link) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
   return NextResponse.json({
     clientName: link.clients?.name ?? null,
+  });
+}
+
+/**
+ * The client's named pieces, posted as one JSON field.
+ *
+ * ⚠️ Unlike the links, none of this is ever rendered as markup or an href — it
+ * goes into the brief as plain text — so the risk here is size, not injection.
+ * Bounded on both count and length, and every entry is re-checked rather than
+ * cast: the payload is whatever the browser sent.
+ */
+function parseDeliverables(raw: string): Deliverable[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw || "[]");
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.slice(0, 10).flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const r = row as Record<string, unknown>;
+    const name = (typeof r.name === "string" ? r.name : "").trim().slice(0, 80);
+    const details = (typeof r.details === "string" ? r.details : "").trim().slice(0, 2000);
+    return name || details ? [{ name, details }] : [];
   });
 }
 
@@ -150,11 +177,18 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     content: f("content"),
     notes: f("notes"),
     scheduleMeeting: f("scheduleMeeting"),
+    // ⚠️ Validated against the real list rather than trusted. This value decides
+    // which questions count as "asked" when the brief reports what wasn't
+    // answered, and it arrives from an unauthenticated form — an unknown id
+    // falls back to "" and `fieldsAsked` then treats the submission as having
+    // been asked everything, which is the safe direction.
+    kind: kindById(f("kind")) ? f("kind") : "",
+    deliverables: parseDeliverables(String(form.get("deliverables") ?? "")),
   };
-  // ⚠️ These three, and no more. The form asks for a dozen things and marks
-  // only these as required — a brief with gaps still tells the studio something,
-  // and `assembleTaskBrief` lists what's missing at the bottom so nothing is
-  // silently lost. A form that refuses to submit is a client who phones instead.
+  // ⚠️ These three, and no more. A brief with gaps still tells the studio
+  // something, and the notification email reports what went unanswered — the
+  // task brief deliberately does not. A form that refuses to submit is a client
+  // who phones instead.
   if (!answers.name || !answers.email || !answers.taskName) {
     return NextResponse.json({ error: "Name, email and task name are required" }, { status: 400 });
   }

@@ -6,11 +6,40 @@
 // MISSING INFORMATION — see `briefParts` for why three real hand-edited briefs
 // argued that out of existence.
 
+// ⚠️ `intake-fields` imports only a TYPE back from here, so this pair does not
+// form a runtime cycle — keep it that way.
+import { fieldsAsked } from "./intake-fields";
+
+/**
+ * One named piece of work inside a single brief — "Roll-up 1", "Banner 2",
+ * "Front".
+ *
+ * ⚠️ This exists because clients were already writing them, as bare lines
+ * inside the creative-brief textarea, and nothing could tell those lines apart
+ * from the bullet points under them: across three real briefs the headings were
+ * `Roll-up 1`, `Visual direction`, `Front`, while the lines beneath included
+ * `Notraffic logo` and `Full event agenda` — same length, same punctuation, no
+ * rule separates them. Declared as data, a name can be emphasised with
+ * certainty instead of guessed at.
+ */
+export interface Deliverable {
+  name: string;
+  details: string;
+}
+
 export interface IntakeAnswers {
   name: string;
   email: string;
   company: string;
   taskName: string;
+  /**
+   * Which `WORK_KINDS` entry the client picked — the thing that decided which
+   * questions they saw. Optional: every submission archived before the stepped
+   * form existed has none, and those were asked everything.
+   */
+  kind?: string;
+  /** Named pieces, when the client listed them. */
+  deliverables?: Deliverable[];
   dimensions: string;
   format: string;
   animated: string;
@@ -151,6 +180,19 @@ const isNo = (s: string) => /^no$/i.test(val(s));
  * the client's own free text exactly as typed. So: **emit only what was
  * answered, never what the task already knows, and never touch the wording.**
  */
+/**
+ * A declared piece, as its own block.
+ *
+ * ⚠️ The name is emitted plain for now. It is the thing that wants emphasis,
+ * and the moment the brief renderer understands `**bold**` this is the single
+ * line that changes — which is the point of the client declaring it rather than
+ * typing it into a paragraph.
+ */
+function blocksForDeliverable(into: string[], name: string, details: string) {
+  if (!name) into.push(details);
+  else into.push(details ? `${name}\n${details}` : name);
+}
+
 function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
   const specs: string[] = [];
   const body: string[] = [];
@@ -180,6 +222,15 @@ function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
   put(body, "Target audience", a.targetAudience);
   put(body, "Displayed at", a.displayedWhere);
   put(body, "Creative direction", a.creativeBrief);
+  // Each declared piece is its own block: its name on one line, the client's
+  // description under it. This is the structure clients were already typing
+  // into the brief box by hand — now it arrives knowing what it is.
+  for (const d of a.deliverables ?? []) {
+    const name = val(d?.name);
+    const details = said(d?.details ?? "");
+    if (!name && !details) continue;
+    blocksForDeliverable(body, name, details);
+  }
   put(body, "Content", a.content);
   put(body, "Things to avoid", a.thingsToAvoid);
   put(body, "Notes", a.notes);
@@ -189,8 +240,24 @@ function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
   return { specs, body };
 }
 
+/**
+ * What we asked and they didn't answer.
+ *
+ * ⚠️ It used to mean "every blank in a hardcoded list of 12", which is why the
+ * task brief listed a copywriting job as missing its dimensions and animation.
+ * It now intersects with the questions this submission was actually SHOWN —
+ * and `fieldsAsked` falls back to asking everything for a submission with no
+ * kind, which is precisely what those older submissions were asked.
+ *
+ * Kept for the notification email only: a heads-up legitimately wants to say
+ * what to chase, whereas the task brief never did — Nitsan deleted this block
+ * from all three of the briefs he hand-edited.
+ */
 function missingFields(a: IntakeAnswers): string[] {
-  return FIELD_LABELS.filter(([key]) => !val(a[key])).map(([, label]) => label);
+  const asked = new Set(fieldsAsked(a.kind ?? ""));
+  return FIELD_LABELS.filter(([key]) => asked.has(key) && !said(a[key] as string)).map(
+    ([, label]) => label,
+  );
 }
 
 /**
@@ -263,12 +330,28 @@ export function readSubmission(
       return url ? [{ title: title || url, url }] : [];
     });
   };
+  // ⚠️ Same defensiveness as `pairs`: this is a jsonb column, so its shape is
+  // whatever was written on the day. A row with no deliverables (every
+  // submission before the stepped form) yields [], never undefined-with-a-map.
+  const deliverables = (): Deliverable[] => {
+    const v = (answers as Record<string, unknown>).deliverables;
+    if (!Array.isArray(v)) return [];
+    return v.flatMap((row) => {
+      if (!row || typeof row !== "object") return [];
+      const r = row as Record<string, unknown>;
+      const name = typeof r.name === "string" ? r.name.trim() : "";
+      const details = typeof r.details === "string" ? r.details.trim() : "";
+      return name || details ? [{ name, details }] : [];
+    });
+  };
   return {
     answers: {
       name: str("name"),
       email: str("email"),
       company: str("company"),
       taskName: str("taskName"),
+      kind: str("kind"),
+      deliverables: deliverables(),
       dimensions: str("dimensions"),
       format: str("format"),
       animated: str("animated"),
