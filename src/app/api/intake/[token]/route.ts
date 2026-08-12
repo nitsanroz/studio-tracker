@@ -61,6 +61,26 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
 }
 
 /**
+ * The kinds of work the client ticked.
+ *
+ * ⚠️ Validated against the real list rather than trusted. These decide which
+ * questions count as "asked" when the notification reports what went
+ * unanswered, and they arrive from an unauthenticated form. Anything unknown is
+ * dropped, and an empty result makes `fieldsAsked` fall back to asking
+ * everything — the safe direction, since it can only over-report gaps.
+ */
+function parseKinds(raw: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw || "[]");
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  return [...new Set(parsed.filter((k): k is string => typeof k === "string" && !!kindById(k)))];
+}
+
+/**
  * The client's named pieces, posted as one JSON field.
  *
  * ⚠️ Unlike the links, none of this is ever rendered as markup or an href — it
@@ -182,7 +202,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     // answered, and it arrives from an unauthenticated form — an unknown id
     // falls back to "" and `fieldsAsked` then treats the submission as having
     // been asked everything, which is the safe direction.
-    kind: kindById(f("kind")) ? f("kind") : "",
+    kinds: parseKinds(String(form.get("kinds") ?? "")),
+    techNotes: f("techNotes"),
     deliverables: parseDeliverables(String(form.get("deliverables") ?? "")),
   };
   // ⚠️ These three, and no more. A brief with gaps still tells the studio

@@ -33,16 +33,21 @@ export interface IntakeAnswers {
   company: string;
   taskName: string;
   /**
-   * Which `WORK_KINDS` entry the client picked — the thing that decided which
-   * questions they saw. Optional: every submission archived before the stepped
-   * form existed has none, and those were asked everything.
+   * Which `WORK_KINDS` the client picked — what decided the questions they saw.
+   *
+   * ⚠️ A LIST. One task routinely holds pieces of different kinds (a roll-up
+   * and a social post for the same event), and the questions asked are the
+   * union. Optional: every submission archived before the stepped form has
+   * none, and those were asked everything.
    */
-  kind?: string;
+  kinds?: string[];
   /** Named pieces, when the client listed them. */
   deliverables?: Deliverable[];
   dimensions: string;
   format: string;
   animated: string;
+  /** The catch-all on the technical step — whatever the questions missed. */
+  techNotes?: string;
   dueDate: string; // yyyy-mm-dd or ""
   budgetRange: string;
   creativeBrief: string;
@@ -218,6 +223,8 @@ function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
     specs.push(`Animated: ${said(a.animated)}`);
   }
 
+  put(specs, "Technical notes", a.techNotes ?? "");
+
   put(body, "Goal", a.goal);
   put(body, "Target audience", a.targetAudience);
   put(body, "Displayed at", a.displayedWhere);
@@ -254,7 +261,7 @@ function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
  * from all three of the briefs he hand-edited.
  */
 function missingFields(a: IntakeAnswers): string[] {
-  const asked = new Set(fieldsAsked(a.kind ?? ""));
+  const asked = new Set(fieldsAsked(a.kinds ?? []));
   return FIELD_LABELS.filter(([key]) => asked.has(key) && !said(a[key] as string)).map(
     ([, label]) => label,
   );
@@ -330,6 +337,15 @@ export function readSubmission(
       return url ? [{ title: title || url, url }] : [];
     });
   };
+  // ⚠️ Accepts the old single `kind` string as well as the current list — the
+  // first submissions through the stepped form stored one, and a jsonb column
+  // keeps whatever was written on the day.
+  const kinds = (): string[] => {
+    const v = (answers as Record<string, unknown>).kinds;
+    if (Array.isArray(v)) return v.filter((k): k is string => typeof k === "string" && !!k);
+    const one = (answers as Record<string, unknown>).kind;
+    return typeof one === "string" && one ? [one] : [];
+  };
   // ⚠️ Same defensiveness as `pairs`: this is a jsonb column, so its shape is
   // whatever was written on the day. A row with no deliverables (every
   // submission before the stepped form) yields [], never undefined-with-a-map.
@@ -350,7 +366,8 @@ export function readSubmission(
       email: str("email"),
       company: str("company"),
       taskName: str("taskName"),
-      kind: str("kind"),
+      techNotes: str("techNotes"),
+      kinds: kinds(),
       deliverables: deliverables(),
       dimensions: str("dimensions"),
       format: str("format"),

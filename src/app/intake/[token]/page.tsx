@@ -7,13 +7,18 @@ import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, describeUpload, formatSize } from "
 import {
   CLOSING_ASKS,
   FIELDS,
+  TECH_ALWAYS,
   WORK_KINDS,
   kindById,
+  wantsDeliverables,
   type IntakeField,
 } from "@/lib/intake-fields";
 
+// ⚠️ `text-base`, not `text-sm`. This is a form filled by people outside the
+// studio, often on a phone — and iOS Safari ZOOMS the whole page when a focused
+// input's text is under 16px, which throws the layout around mid-answer.
 const inputCls =
-  "w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm outline-none focus:border-brand bidi-auto";
+  "w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-base outline-none focus:border-brand bidi-auto";
 
 /**
  * What this browser filled in last time — name, email, company only.
@@ -85,7 +90,7 @@ function Question({
       {/* An explicit htmlFor rather than a wrapping label: a wrapping label
           around a <select> swallows clicks on some browsers, and the error
           message needs an id to point at anyway. */}
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className="text-base font-medium">
         {field.label}
         {field.required && (
           <span className="text-danger" aria-hidden="true">
@@ -120,7 +125,7 @@ function Question({
         />
       )}
       {invalid && (
-        <span id={errId} className="text-xs text-danger">
+        <span id={errId} className="text-sm text-danger">
           {invalid}
         </span>
       )}
@@ -131,53 +136,78 @@ function Question({
 /* ──────────────────────────────── the kinds ─────────────────────────────── */
 
 /**
- * ⚠️ Native radios, not styled buttons. This is the one choice that decides
- * what the rest of the form asks, so it has to work with a keyboard, arrow
- * keys and a screen reader without any help from us.
+ * ⚠️ Native checkboxes, not styled buttons. This is the choice that decides what
+ * the rest of the form asks, so it has to work with a keyboard and a screen
+ * reader without any help from us.
+ *
+ * ⚠️ MULTI-select. One task routinely holds pieces of different kinds — a
+ * roll-up and a social post for the same event — and forcing one kind would
+ * mean the client picks the nearest and never gets asked about the rest.
+ * `fieldsAsked` takes the union.
+ *
+ * ⚠️ The icon is decorative and `aria-hidden`. It sits BESIDE the label, never
+ * instead of it: an emoji is a nice glance-target and a terrible only-signal.
  */
 function KindPicker({
   value,
   onChange,
   invalid,
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  value: string[];
+  onChange: (v: string[]) => void;
   invalid?: string;
 }) {
+  const toggle = (id: string) =>
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (
     <fieldset aria-describedby={invalid ? "kind-err" : undefined}>
-      <legend className="mb-2 text-sm font-medium">
+      <legend className="text-base font-medium">
         What kind of work is this?
         <span className="text-danger" aria-hidden="true">
           {" "}
           *
         </span>
       </legend>
+      <p className="mb-2.5 text-sm text-muted">Pick as many as apply.</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        {WORK_KINDS.map((k) => (
-          <label
-            key={k.id}
-            className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 ${
-              value === k.id ? "border-brand bg-brand/5" : "border-border-strong hover:border-brand"
-            }`}
-          >
-            <input
-              type="radio"
-              name="kind"
-              value={k.id}
-              checked={value === k.id}
-              onChange={() => onChange(k.id)}
-              className="mt-1 shrink-0"
-            />
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">{k.label}</span>
-              <span className="block text-xs text-faint">{k.hint}</span>
-            </span>
-          </label>
-        ))}
+        {WORK_KINDS.map((k) => {
+          const on = value.includes(k.id);
+          return (
+            <label
+              key={k.id}
+              className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-3 ${
+                // ⚠️ `/5`, not `/10`. At 10% the hint measured exactly 4.5:1
+                // against the painted card — the AA floor, passing on a
+                // technicality, and Nitsan reported it as hard to read. The
+                // selected state is carried by the brand border and the tick
+                // anyway, so the fill can afford to be a whisper.
+                on ? "border-brand bg-brand/5" : "border-border-strong hover:border-brand"
+              }`}
+            >
+              <input
+                type="checkbox"
+                name="kinds"
+                value={k.id}
+                checked={on}
+                onChange={() => toggle(k.id)}
+                className="mt-1 shrink-0"
+              />
+              <span aria-hidden="true" className="text-lg leading-none">
+                {k.icon}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-base font-medium">{k.label}</span>
+                {/* ⚠️ `text-muted`, not `text-faint`. The faint token is tuned
+                    for the app's plain surfaces and disappears against the
+                    tinted card of a selected option. */}
+                <span className="block text-sm text-muted">{k.hint}</span>
+              </span>
+            </label>
+          );
+        })}
       </div>
       {invalid && (
-        <span id="kind-err" className="mt-1 block text-xs text-danger">
+        <span id="kind-err" className="mt-1 block text-sm text-danger">
           {invalid}
         </span>
       )}
@@ -207,8 +237,8 @@ function DeliverableRows({
     onChange(items.map((d, n) => (n === i ? { ...d, ...patch } : d)));
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Is this several pieces?</span>
-      <span className="-mt-1 text-xs text-faint">
+      <span className="text-base font-medium">Is this several pieces?</span>
+      <span className="-mt-1 text-sm text-muted">
         Name each one — “Roll-up 1”, “Front”, “Homepage banner” — and we’ll keep them apart in the
         brief. Skip it if it’s a single piece.
       </span>
@@ -264,7 +294,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Links</span>
+      <span className="text-base font-medium">Links</span>
       {links.map((l, i) => {
         // Shown only once there's something to judge, and only as a hint — the
         // server re-checks every URL anyway, and nagging someone mid-typing is
@@ -307,7 +337,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
               </button>
             </div>
             {bad && (
-              <span className="text-xs text-danger">
+              <span className="text-sm text-danger">
                 That doesn&apos;t look like a web address — it should start with http:// or https://
               </span>
             )}
@@ -324,7 +354,7 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
           Add link
         </button>
       )}
-      <span className="text-xs text-faint">
+      <span className="text-sm text-muted">
         <Link2 size={11} className="mr-1 inline" />A Drive folder, a WeTransfer, a reference — give
         it a name so we know what we&apos;re opening.
       </span>
@@ -364,15 +394,15 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium">Any files to add?</span>
+      <span className="text-base font-medium">Any files to add?</span>
       {files.map((f, i) => (
         <div
           key={`${f.name}-${f.size}-${i}`}
           className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
         >
           <Paperclip size={14} className="shrink-0 text-faint" />
-          <span className="bidi-auto min-w-0 flex-1 truncate text-sm">{f.name}</span>
-          <span className="shrink-0 text-xs tabular-nums text-faint">{formatSize(f.size)}</span>
+          <span className="bidi-auto min-w-0 flex-1 truncate text-base">{f.name}</span>
+          <span className="shrink-0 text-sm tabular-nums text-muted">{formatSize(f.size)}</span>
           <button
             type="button"
             onClick={() => {
@@ -387,7 +417,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         </div>
       ))}
       {refused.map((r, i) => (
-        <span key={i} className="text-xs text-danger" role="alert">
+        <span key={i} className="text-sm text-danger" role="alert">
           <span className="bidi-auto font-medium">{r.name}</span> — {r.reason}
         </span>
       ))}
@@ -414,7 +444,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
           e.target.value = "";
         }}
       />
-      <span className="text-xs text-faint">
+      <span className="text-sm text-muted">
         Up to {MAX_INTAKE_FILES} files, {formatSize(MAX_INTAKE_BYTES)} each — for anything larger,
         add a link above.
       </span>
@@ -441,14 +471,19 @@ interface Step {
  * Details step entirely because it has nothing to ask there, and a "Document"
  * never sees dimensions or animation.
  */
-function stepsFor(kind: string): Step[] {
-  const k = kindById(kind);
-  const details = (k?.asks ?? []).filter((f) => f !== "content");
+function stepsFor(kinds: string[]): Step[] {
+  const picked = kinds.map(kindById).filter(Boolean);
+  // The UNION of what every chosen kind asks — a task holding a roll-up and a
+  // social post needs both sets.
+  const asks = [...new Set(picked.flatMap((k) => k!.asks))];
+  const details = asks.filter((f) => f !== "content");
   const steps: Step[] = [
     { title: "About you", fields: [...CONTACT_FIELDS] },
     { title: "What you need", kindPicker: true, fields: ["taskName", "dueDate", "budgetRange"] },
   ];
-  if (details.length) steps.push({ title: "Details", fields: details });
+  // ⚠️ `TECH_ALWAYS` means this step now always has something to ask, so it is
+  // never skipped — the catch-all comments box is the point of it.
+  steps.push({ title: "Technical details", fields: [...details, ...TECH_ALWAYS] });
   steps.push({
     title: "The brief",
     fields: [
@@ -456,11 +491,15 @@ function stepsFor(kind: string): Step[] {
       "goal",
       "displayedWhere",
       "targetAudience",
-      ...((k?.asks ?? []).includes("content") ? ["content"] : []),
+      ...(asks.includes("content") ? ["content"] : []),
     ],
-    deliverables: k?.deliverables,
+    deliverables: wantsDeliverables(kinds),
+    // Files and links sit HERE, under the copy they belong to, rather than on a
+    // later step: a client describing the content is exactly the person holding
+    // the reference they want to attach to it.
+    attachments: true,
   });
-  steps.push({ title: "Anything else", fields: [...CLOSING_ASKS], attachments: true });
+  steps.push({ title: "Anything else", fields: [...CLOSING_ASKS] });
   return steps;
 }
 
@@ -473,7 +512,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   const [error, setError] = useState<string | null>(null);
 
   const [values, setValues] = useState<Values>({});
-  const [kind, setKind] = useState("");
+  const [kinds, setKinds] = useState<string[]>([]);
   const [deliverables, setDeliverables] = useState<DraftDeliverable[]>([]);
   const [links, setLinks] = useState<DraftLink[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -483,7 +522,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   const [invalid, setInvalid] = useState<Record<string, string>>({});
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  const steps = useMemo(() => stepsFor(kind), [kind]);
+  const steps = useMemo(() => stepsFor(kinds), [kinds]);
   const current = steps[Math.min(step, steps.length - 1)];
   const isLast = step === steps.length - 1;
 
@@ -524,7 +563,8 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   /** Validates the step being left. Returns true when it's safe to advance. */
   function checkStep(): boolean {
     const bad: Record<string, string> = {};
-    if (current.kindPicker && !kind) bad.kind = "Pick one so we only ask what's relevant.";
+    if (current.kindPicker && !kinds.length)
+      bad.kind = "Pick at least one, so we only ask what's relevant.";
     for (const key of current.fields) {
       const field = FIELDS[key];
       if (!field?.required) continue;
@@ -571,7 +611,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     setError(null);
     const body = new FormData();
     for (const [k, v] of Object.entries(values)) body.set(k, v);
-    body.set("kind", kind);
+    body.set("kinds", JSON.stringify(kinds));
     // Rows with no URL are someone who clicked "Add link" and thought better of
     // it — dropped here rather than rejected with an error.
     body.set("links", JSON.stringify(links.filter((l) => l.url.trim())));
@@ -616,8 +656,8 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand/10 text-brand">
             <Check size={24} />
           </div>
-          <h1 className="mt-4 text-xl">Thank you! 🎉</h1>
-          <p className="mt-1 text-sm text-muted">
+          <h1 className="mt-4 text-2xl">Thank you! 🎉</h1>
+          <p className="mt-1 text-base text-muted">
             Your brief is with the studio. We&apos;ll be in touch shortly.
           </p>
         </div>
@@ -627,8 +667,13 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
-      <h1 className="text-xl">New Task Brief</h1>
-      <p className="mt-1 text-sm text-muted">
+      {/* The studio's mark, via the same `.brand-wordmark` mask the app shell
+          uses — one SVG, tinted by `bg-brand`, so it follows the theme instead
+          of shipping a second copy of the logo. Clients had no idea whose form
+          they were filling in. */}
+      <span className="brand-wordmark mb-6 block w-40 bg-brand" role="img" aria-label="Studio&more" />
+      <h1 className="text-2xl">New Task Brief</h1>
+      <p className="mt-1 text-base text-muted">
         Tell us what you need — the more detail, the better the result.
       </p>
 
@@ -657,8 +702,8 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             </li>
           ))}
         </ol>
-        <p className="mt-2 text-xs text-faint">
-          Step {step + 1} of {steps.length}
+        <p className="mt-2 text-sm text-muted">
+          Step {step + 1} of {steps.length}: {current.title}
         </p>
       </nav>
 
@@ -667,12 +712,12 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             An sr-only legend plus a visible <h2> saying the same words makes a
             screen reader announce the step name twice. */}
         <fieldset className="flex flex-col gap-4" aria-labelledby="step-title">
-          <h2 id="step-title" ref={headingRef} tabIndex={-1} className="text-lg outline-none">
+          <h2 id="step-title" ref={headingRef} tabIndex={-1} className="text-xl outline-none">
             {current.title}
           </h2>
 
           {step === 0 && (
-            <p className="-mt-2 text-xs text-faint">
+            <p className="-mt-2 text-sm text-muted">
               Only fields marked * are required — anything you don&apos;t know yet, leave blank and
               we&apos;ll ask.
             </p>
@@ -680,9 +725,9 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
           {current.kindPicker && (
             <KindPicker
-              value={kind}
+              value={kinds}
               onChange={(v) => {
-                setKind(v);
+                setKinds(v);
                 setInvalid((p) => ({ ...p, kind: "" }));
               }}
               invalid={invalid.kind}
@@ -705,7 +750,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             <button
               type="button"
               onClick={forgetMe}
-              className="w-fit text-xs text-muted underline hover:text-brand"
+              className="w-fit text-sm text-muted underline hover:text-brand"
             >
               Not you? Clear these details
             </button>
@@ -737,23 +782,35 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             <button
               type="button"
               onClick={() => go(step - 1)}
-              className="min-h-11 rounded-lg border border-border-strong px-4 text-sm hover:border-brand"
+              className="min-h-12 rounded-lg border border-border-strong px-4 text-base hover:border-brand"
             >
               Back
             </button>
           )}
+          {/* ⚠️ DISTINCT `key`s, and this is not cosmetic. Without them React
+              reuses the same DOM button when the step changes, so pressing Next
+              into the final step turned that very element into a submit button
+              mid-click — and the browser then applied the click's default
+              action to the button as it had just become, submitting a form the
+              client had only just arrived at. It looked like the form
+              "jumped to the success screen by itself after two seconds".
+              Separate keys force a new element, so the in-flight click belongs
+              to the old, discarded one. */}
           {isLast ? (
             <button
+              key="submit"
+              type="submit"
               disabled={state === "sending"}
-              className="min-h-11 flex-1 rounded-lg bg-brand px-4 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+              className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
             >
               {state === "sending" ? "Sending…" : "Submit brief"}
             </button>
           ) : (
             <button
+              key="next"
               type="button"
               onClick={() => checkStep() && go(step + 1)}
-              className="min-h-11 flex-1 rounded-lg bg-brand px-4 font-semibold text-white hover:bg-brand-dark"
+              className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark"
             >
               Next
             </button>

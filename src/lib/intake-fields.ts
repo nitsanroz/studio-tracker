@@ -56,6 +56,13 @@ export const FIELDS: Record<string, IntakeField> = {
     type: "select",
     options: ["Yes", "No", "Not sure yet"],
   },
+  techNotes: {
+    key: "techNotes",
+    label: "Anything else about the specs?",
+    type: "textarea",
+    rows: 2,
+    placeholder: "Print finish, file naming, where it has to fit — anything that doesn't fit above",
+  },
   creativeBrief: {
     key: "creativeBrief",
     label: "The brief",
@@ -106,6 +113,8 @@ export interface WorkKind {
   label: string;
   /** One line under the label, to make the choice obvious. */
   hint: string;
+  /** Carries the meaning at a glance; never the only signal (see the label). */
+  icon: string;
   /** Which of `FIELDS` this kind asks, beyond the always-asked ones. */
   asks: (keyof IntakeAnswers)[];
   /** Does this kind routinely arrive as several named pieces? */
@@ -123,6 +132,17 @@ export const ALWAYS_ASKS: (keyof IntakeAnswers)[] = [
   "targetAudience",
 ];
 
+/**
+ * Asked on the Technical details step whatever the kind.
+ *
+ * ⚠️ A deliberate catch-all. Nitsan's note: "always a comments field to fill
+ * what's not obvious where it goes". Every structured question is a guess about
+ * what a client needs to say, and this is the box for everything the guess
+ * missed — without it that material gets wedged into whichever field looks
+ * closest, where it reads as an answer to a question nobody asked.
+ */
+export const TECH_ALWAYS: (keyof IntakeAnswers)[] = ["techNotes"];
+
 /** Asked of everyone, on the final optional step. */
 export const CLOSING_ASKS: (keyof IntakeAnswers)[] = [
   "thingsToAvoid",
@@ -133,6 +153,7 @@ export const CLOSING_ASKS: (keyof IntakeAnswers)[] = [
 export const WORK_KINDS: WorkKind[] = [
   {
     id: "social",
+    icon: "💬",
     label: "Social post or banner",
     hint: "LinkedIn, Instagram, X — posts, headers, campaign sets",
     // `animated` survives here rather than being cut. It earned one useful
@@ -143,13 +164,15 @@ export const WORK_KINDS: WorkKind[] = [
   },
   {
     id: "website",
+    icon: "🖥️",
     label: "Website page or asset",
     hint: "A new page, a redesign, hero images, section graphics",
-    asks: ["format", "content"],
+    asks: ["format", "dimensions", "content"],
     deliverables: true,
   },
   {
     id: "event",
+    icon: "🎪",
     label: "Event, booth or signage",
     hint: "Booth graphics, roll-ups, banners, billboards, screens",
     asks: ["format", "dimensions", "animated", "content"],
@@ -157,18 +180,21 @@ export const WORK_KINDS: WorkKind[] = [
   },
   {
     id: "presentation",
+    icon: "📊",
     label: "Presentation or deck",
     hint: "Slides for a meeting, a template, a rebuild",
-    asks: ["format", "content"],
+    asks: ["format", "dimensions", "content"],
   },
   {
     id: "document",
+    icon: "📄",
     label: "Document",
     hint: "Whitepaper, case study, one-pager, report",
-    asks: ["format", "content"],
+    asks: ["format", "dimensions", "content"],
   },
   {
     id: "graphics",
+    icon: "📈",
     label: "Graphics or data visualisation",
     hint: "Charts, diagrams, benchmark graphs, illustrations",
     asks: ["format", "dimensions", "animated"],
@@ -176,6 +202,7 @@ export const WORK_KINDS: WorkKind[] = [
   },
   {
     id: "swag",
+    icon: "👕",
     label: "Swag or merchandise",
     hint: "T-shirts, socks, stickers, cards, printed giveaways",
     asks: ["format", "dimensions", "content"],
@@ -183,12 +210,14 @@ export const WORK_KINDS: WorkKind[] = [
   },
   {
     id: "logo",
+    icon: "✨",
     label: "Logo or brand asset",
     hint: "A new mark, an event logo, brand elements",
-    asks: ["format"],
+    asks: ["format", "dimensions"],
   },
   {
     id: "other",
+    icon: "🧩",
     label: "Something else",
     hint: "Not sure which of these fits — tell us in the brief",
     // The catch-all asks everything, since we know nothing about it.
@@ -209,8 +238,18 @@ export function kindById(id: string): WorkKind | undefined {
  * back to asking everything, which is exactly what those older submissions
  * were asked.
  */
-export function fieldsAsked(kindId: string): (keyof IntakeAnswers)[] {
-  const kind = kindById(kindId);
-  const asks = kind ? kind.asks : (kindById("other")!.asks as (keyof IntakeAnswers)[]);
-  return [...ALWAYS_ASKS, ...asks, ...CLOSING_ASKS];
+export function fieldsAsked(kindIds: string[] | string): (keyof IntakeAnswers)[] {
+  const ids = Array.isArray(kindIds) ? kindIds : [kindIds];
+  const kinds = ids.map(kindById).filter(Boolean) as WorkKind[];
+  // ⚠️ The UNION, not the intersection. One task can hold a roll-up and a
+  // social post, and a question relevant to either is relevant to the brief.
+  const asks = kinds.length
+    ? [...new Set(kinds.flatMap((k) => k.asks))]
+    : (kindById("other")!.asks as (keyof IntakeAnswers)[]);
+  return [...ALWAYS_ASKS, ...asks, ...TECH_ALWAYS, ...CLOSING_ASKS];
+}
+
+/** Do any of the chosen kinds routinely arrive as several named pieces? */
+export function wantsDeliverables(kindIds: string[]): boolean {
+  return kindIds.some((id) => kindById(id)?.deliverables);
 }
