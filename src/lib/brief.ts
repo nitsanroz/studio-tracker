@@ -90,13 +90,34 @@ const orNP = (s: string) => val(s) || "Not provided";
  * A written-out "nothing here" — the client typed something, but it carries no
  * more information than a blank box would.
  *
- * ⚠️ Deliberately NOT including "no". "No" can be a real answer ("Things to
- * avoid: no" is odd, but "Would it be animated: No" is meaningful), whereas
- * none of these ever is. Taken from a real submission whose Notes read "none"
- * and which Nitsan deleted by hand.
+ * ⚠️ Measured, not guessed. Across the studio's 49 archived submissions these
+ * account for **46 instances** — very nearly one per brief. `-` alone fills
+ * Dimensions 13 times, Notes 7, and Things-to-avoid 4; every one of them would
+ * otherwise print as a labelled line saying nothing.
+ *
+ * "no" is included on the same evidence (Notes reads "No" three times, meaning
+ * "no notes"). ⚠️ That is safe for the two questions where No IS an answer only
+ * because both `animated` and `scheduleMeeting` are separately suppressed on No
+ * anyway — if either ever needs to render a "No", this list must lose it.
  */
-const EMPTY_ANSWERS = /^(none|n\/?a|nothing|nope|[-–—.])$/i;
-const said = (s: string) => (EMPTY_ANSWERS.test(val(s)) ? "" : val(s));
+const EMPTY_ANSWERS = /^(no(ne)?|n\/?[ar]|nothing|nope|[-–—]+)$/i;
+
+/**
+ * ⚠️ Trailing punctuation and smileys are stripped BEFORE matching. The archive
+ * contains `none.`, `Nope.`, `None :)` and `--` — people are polite about
+ * saying nothing — and an unstripped match caught none of them. `N/R` (not
+ * relevant) sits alongside `N/A`, which is why the class is `[ar]`.
+ *
+ * It does not over-reach: `THE WORLD.`, `Thank you!` and `Welcome!` all survive
+ * the strip and are correctly kept.
+ */
+const said = (s: string) => {
+  const t = val(s)
+    .replace(/[:;]-?[)D]\s*$/, "")
+    .replace(/[.!]+\s*$/, "")
+    .trim();
+  return !t || EMPTY_ANSWERS.test(t) ? "" : val(s);
+};
 
 /**
  * ⚠️ Anchored at BOTH ends. `/^no/i` — which is what this file used to use —

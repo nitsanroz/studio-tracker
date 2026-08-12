@@ -111,13 +111,46 @@ describe("assembleTaskBrief", () => {
     );
   });
 
-  // A real submission's Notes read "none", and he deleted that line too.
+  // Measured across the studio's 49 archived submissions: these account for 46
+  // instances, very nearly one per brief. "-" alone fills Dimensions 13 times.
   it("treats a written-out nothing as blank", () => {
-    for (const nothing of ["none", "N/A", "n/a", "-", "—", "Nothing"]) {
+    // Every one of these appears in the studio's 49-submission archive.
+    const archive = ["none", "No", "N/A", "n/a", "NA", "N/R", "-", "--", "—", "Nothing", "nope"];
+    // People are polite about saying nothing, so punctuation and smileys strip.
+    for (const nothing of [...archive, "none.", "Nope.", "None :)", "N/A."]) {
       expect(assembleTaskBrief({ ...rollUps, notes: nothing })).not.toMatch(/Notes:/);
+      expect(assembleTaskBrief({ ...rollUps, dimensions: nothing })).not.toMatch(/Dimensions:/);
     }
-    // ...but "No" stays, because it can be a real answer.
-    expect(assembleTaskBrief({ ...rollUps, notes: "No" })).toContain("Notes: No");
+  });
+
+  // The strip must not eat real answers that happen to end in punctuation.
+  it("keeps short real answers, and preserves their wording exactly", () => {
+    for (const real of ["THE WORLD.", "Thank you!", "Welcome!", "1080X1080", "A4 paper", "1.5"]) {
+      expect(assembleTaskBrief({ ...rollUps, notes: real })).toContain(`Notes: ${real}`);
+    }
+  });
+
+  // Budgets in the archive are prose — "As much as it needs to take", "need a
+  // pricing on each bundle" — and `parseBudgetHours` reduces every one of those
+  // to nothing. Dropping the line would delete the client's actual instruction.
+  it("keeps a prose budget the Hours field cannot hold", () => {
+    expect(assembleTaskBrief({ ...rollUps, budgetRange: "As much as it needs to take" })).toContain(
+      "Budget: As much as it needs to take",
+    );
+  });
+
+  // ⚠️ "No" counts as nothing, which is only safe because both questions where
+  // No IS an answer suppress it anyway. This pins that they still behave.
+  it("still reads the two questions where No is a real answer", () => {
+    expect(assembleTaskBrief({ ...rollUps, animated: "No" })).not.toMatch(/Animated/);
+    expect(assembleTaskBrief({ ...rollUps, animated: "Yes" })).toContain("Animated: Yes");
+    expect(assembleTaskBrief({ ...rollUps, animated: "Not sure yet" })).toContain(
+      "Animated: Not sure yet",
+    );
+    expect(assembleTaskBrief({ ...rollUps, scheduleMeeting: "No" })).not.toMatch(/meeting/);
+    expect(assembleTaskBrief({ ...rollUps, scheduleMeeting: "Yes" })).toContain(
+      "asked to schedule a meeting",
+    );
   });
 
   it("keeps Budget, because the Hours field can only hold a number", () => {
