@@ -16,6 +16,7 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskHoursDone, taskLegacyMinutes } from "@/lib/task-hours";
+import { formatSize } from "@/lib/uploads";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
 import { EditableTextCell } from "./editable-cell";
 import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
@@ -214,12 +215,6 @@ function DatesField({
       )}
     </span>
   );
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function TaskAttachments({ taskId }: { taskId: string }) {

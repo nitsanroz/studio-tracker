@@ -9,7 +9,7 @@ import {
   type IntakeFile,
 } from "@/lib/brief";
 import { hostLabel, normalizeUrl } from "@/lib/links";
-import { classifyUpload } from "@/lib/uploads";
+import { MAX_INTAKE_FILES, describeUpload } from "@/lib/uploads";
 
 // Anti-flood: max submissions accepted per intake link within the window.
 const RATE_LIMIT_WINDOW_MIN = 10;
@@ -162,19 +162,38 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   const links = parseLinks(String(form.get("links") ?? ""));
 
   // Files (≤10MB each, max 5)
+  //
+  // ⚠️ Every branch here used to be a bare `continue`, so a refused or failed
+  // file vanished without a trace: the client was thanked, and the studio saw a
+  // brief that gave no hint an attachment was ever meant to exist. The form now
+  // runs the same `describeUpload` check before submitting, so anything landing
+  // in `dropped` is a storage failure or a client that bypassed the form — rare,
+  // and exactly the case worth recording rather than swallowing.
   const files: IntakeFile[] = [];
-  for (const file of form.getAll("files").slice(0, 5)) {
-    if (!(file instanceof File) || file.size === 0) continue;
-    if (file.size > 10 * 1024 * 1024) continue;
-    const cls = classifyUpload(file);
-    if (!cls.ok) continue; // reject disallowed / active-content types
+  const dropped: string[] = [];
+  const sent = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+  // ⚠️ Report the overflow rather than letting `slice` eat it. The cap is real,
+  // but a 6th file disappearing without a word is the same silence this whole
+  // change exists to end — and the form caps at 5 already, so anything landing
+  // here came from something that bypassed it.
+  for (const extra of sent.slice(MAX_INTAKE_FILES)) {
+    dropped.push(`${extra.name} — only ${MAX_INTAKE_FILES} files can be attached`);
+  }
+  for (const file of sent.slice(0, MAX_INTAKE_FILES)) {
+    const cls = describeUpload(file);
+    if (!cls.ok) {
+      dropped.push(`${file.name} — ${cls.reason}`);
+      continue;
+    }
     const safe = file.name.replace(/[^\w.\-]+/g, "_");
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
     const { error } = await sb.storage.from("intake").upload(path, file, { contentType: cls.contentType });
-    if (!error) {
-      const { data: pub } = sb.storage.from("intake").getPublicUrl(path);
-      files.push({ name: file.name, url: pub.publicUrl });
+    if (error) {
+      dropped.push(`${file.name} — upload failed (${error.message})`);
+      continue;
     }
+    const { data: pub } = sb.storage.from("intake").getPublicUrl(path);
+    files.push({ name: file.name, url: pub.publicUrl });
   }
 
   const clientId = link.client_id ?? null;
@@ -183,7 +202,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   // the notification email are the only places anyone can reach them until the
   // request is approved. `approveRequest` rebuilds it without them, because by
   // then they are real rows in `links`.
-  const brief = assembleTaskBrief(answers, { files, links });
+  const brief = assembleTaskBrief(answers, { files, links, dropped });
 
   const { data: request, error } = await sb
     .from("task_requests")
@@ -228,7 +247,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
             from: process.env.INTAKE_FROM_EMAIL || "Studio&more Tracker <onboarding@resend.dev>",
             to: recipients,
             subject: `New task: ${answers.taskName} — ${answers.company || answers.name}`,
-            html: assembleEmailHtml(answers, { files, links }, `${origin}/intake-queue`),
+            html: assembleEmailHtml(answers, { files, links, dropped }, `${origin}/intake-queue`),
           }),
         });
       }

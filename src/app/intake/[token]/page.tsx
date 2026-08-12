@@ -1,8 +1,9 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { Link2, Plus, X } from "lucide-react";
+import { use, useEffect, useRef, useState } from "react";
+import { Link2, Paperclip, Plus, X } from "lucide-react";
 import { normalizeUrl } from "@/lib/links";
+import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, describeUpload, formatSize } from "@/lib/uploads";
 
 const inputCls =
   "w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm outline-none focus:border-brand bidi-auto";
@@ -152,12 +153,112 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
   );
 }
 
+/**
+ * The files the client has attached, held in React state rather than left in
+ * the `<input>`.
+ *
+ * ⚠️ This exists because a bare `<input type="file" multiple>` REPLACES its
+ * selection on every pick. Choosing a file, then clicking again to add a
+ * second, silently discards the first — and since nothing rendered the list,
+ * there was no way to notice. That is why a form promising five files appeared
+ * to take one. The input is now only a trigger; this array is the truth, and
+ * `handleSubmit` copies it into the FormData by hand.
+ *
+ * Refusals are shown HERE, before submitting, rather than being dropped by the
+ * route with no word to anyone. `describeUpload` is the same check the server
+ * runs, so the two can't disagree.
+ */
+function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [refused, setRefused] = useState<{ name: string; reason: string }[]>([]);
+
+  function add(picked: FileList | null) {
+    if (!picked?.length) return;
+    const accepted: File[] = [];
+    const rejected: { name: string; reason: string }[] = [];
+    for (const file of picked) {
+      // Same file twice is a mis-click, not an instruction to attach it twice.
+      if (files.some((f) => f.name === file.name && f.size === file.size)) continue;
+      if (files.length + accepted.length >= MAX_INTAKE_FILES) {
+        rejected.push({ name: file.name, reason: `Only ${MAX_INTAKE_FILES} files can be attached.` });
+        continue;
+      }
+      const check = describeUpload(file);
+      if (check.ok) accepted.push(file);
+      else rejected.push({ name: file.name, reason: check.reason });
+    }
+    onChange([...files, ...accepted]);
+    setRefused(rejected);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Any files you need to add?</span>
+      {files.map((f, i) => (
+        <div
+          key={`${f.name}-${f.size}-${i}`}
+          className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
+        >
+          <Paperclip size={14} className="shrink-0 text-faint" />
+          <span className="bidi-auto min-w-0 flex-1 truncate text-sm">{f.name}</span>
+          <span className="shrink-0 text-xs text-faint tabular-nums">{formatSize(f.size)}</span>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(files.filter((_, n) => n !== i));
+              setRefused([]);
+            }}
+            aria-label={`Remove ${f.name}`}
+            // 44px on a phone; back to a tight icon once there's a mouse.
+            className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+      {refused.map((r, i) => (
+        <span key={i} className="text-xs text-danger">
+          <span className="bidi-auto font-medium">{r.name}</span> — {r.reason}
+        </span>
+      ))}
+      {files.length < MAX_INTAKE_FILES && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-1.5"
+        >
+          <Plus size={14} />
+          {files.length ? "Add another file" : "Add files"}
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          add(e.target.files);
+          // ⚠️ Without this, picking the SAME file again fires no `change` event
+          // — the value hasn't altered — so removing a file and re-adding it
+          // would appear to do nothing.
+          e.target.value = "";
+        }}
+      />
+      <span className="text-xs text-faint">
+        Up to {MAX_INTAKE_FILES} files, {formatSize(MAX_INTAKE_BYTES)} each — for anything larger, add a
+        WeTransfer or Drive link below.
+      </span>
+    </div>
+  );
+}
+
 export default function IntakeFormPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const [clientName, setClientName] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "form" | "invalid" | "sending" | "done">("loading");
   const [error, setError] = useState<string | null>(null);
   const [links, setLinks] = useState<DraftLink[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
 
   // The three remembered fields are controlled, so "Not you?" can empty them.
   const [contact, setContact] = useState<Contact>({ name: "", email: "", company: "" });
@@ -200,6 +301,11 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     // Rows with no URL are someone who clicked "Add link" and thought better of
     // it — dropped here rather than rejected with an error.
     body.set("links", JSON.stringify(links.filter((l) => l.url.trim())));
+    // ⚠️ The file input lives OUTSIDE this form's control now (it is a hidden
+    // trigger holding at most the last pick), so whatever `new FormData` just
+    // scraped out of it is wrong. Clear it and write the real list.
+    body.delete("files");
+    for (const f of files) body.append("files", f);
     const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -358,12 +464,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         <Field label="Content">
           <textarea name="content" rows={3} className={inputCls} placeholder="Copy, texts…" />
         </Field>
-        <Field label="Any files you need to add?">
-          <input name="files" type="file" multiple className="text-sm" />
-          <span className="text-xs text-faint">
-            Up to 5 files, 10MB each — for anything larger, add a WeTransfer or Drive link below.
-          </span>
-        </Field>
+        <FileRows files={files} onChange={setFiles} />
         <LinkRows links={links} onChange={setLinks} />
         <Field label="Notes">
           <textarea name="notes" rows={2} className={inputCls} />

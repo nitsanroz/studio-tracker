@@ -50,6 +50,18 @@ export interface BriefLink {
 export interface BriefAttachments {
   files: IntakeFile[];
   links: BriefLink[];
+  /**
+   * Files the client attached that never made it — each already phrased as
+   * "name — why". Normally empty: the form runs the same check before
+   * submitting, so this only fills on a storage failure or a client that
+   * bypassed the form.
+   *
+   * ⚠️ Recorded because the alternative is what used to happen — the file
+   * vanished, the client was thanked, and the brief gave no hint an attachment
+   * was ever meant to exist. A brief that says a file is missing is worth far
+   * more than one that silently omits it.
+   */
+  dropped?: string[];
 }
 
 const FIELD_LABELS: [keyof IntakeAnswers, string][] = [
@@ -122,6 +134,9 @@ export function assembleTaskBrief(a: IntakeAnswers, attach?: BriefAttachments): 
   if (attach?.links.length) {
     sections.push("", "LINKS", ...attach.links.map((l) => `• ${l.title}: ${l.url}`));
   }
+  if (attach?.dropped?.length) {
+    sections.push("", "FILES THAT DID NOT ARRIVE", ...attach.dropped.map((d) => `• ${d}`));
+  }
   return sections.join("\n");
 }
 
@@ -191,7 +206,7 @@ export function assembleEmailHtml(
   attach: BriefAttachments,
   reviewUrl: string,
 ): string {
-  const { files, links } = attach;
+  const { files, links, dropped } = attach;
   const missing = missingFields(a);
   const nl2br = (s: string) => escapeHtml(s).replace(/\n/g, "<br>");
   return `
@@ -213,6 +228,7 @@ ${nl2br(summaryText(a))}
 ${missing.length ? `<h3>Missing Information</h3><p>${missing.map(escapeHtml).join("<br>")}</p>` : ""}
 ${files.length ? `<h3>Files</h3><p>${files.map((f) => anchor(f.url, f.name)).join("<br>")}</p>` : ""}
 ${links.length ? `<h3>Links</h3><p>${links.map((l) => anchor(l.url, l.title)).join("<br>")}</p>` : ""}
+${dropped?.length ? `<h3 style="color:#b91c1c">Files that did not arrive</h3><p style="color:#b91c1c">${dropped.map(escapeHtml).join("<br>")}</p>` : ""}
 <p style="margin-top:20px"><a href="${escapeHtml(reviewUrl)}" style="background:#0b43ed;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Review in Studio&more</a></p>
 `;
 }
