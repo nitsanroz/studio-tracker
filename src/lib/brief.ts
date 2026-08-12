@@ -1,6 +1,10 @@
-// Turns intake-form answers into a design brief, following the studio's
-// established digest rules: never invent information, mark gaps as
-// "Not provided", budgets are hours unless stated otherwise.
+// Turns intake-form answers into a design brief.
+//
+// The rule is: never invent information, never repeat what the task itself
+// already shows, and never print a gap. An earlier version marked every
+// unanswered field "Not provided" and then listed them all again under
+// MISSING INFORMATION — see `briefParts` for why three real hand-edited briefs
+// argued that out of existence.
 
 export interface IntakeAnswers {
   name: string;
@@ -82,24 +86,86 @@ const FIELD_LABELS: [keyof IntakeAnswers, string][] = [
 const val = (s: string) => (s && s.trim() ? s.trim() : "");
 const orNP = (s: string) => val(s) || "Not provided";
 
-function summaryText(a: IntakeAnswers): string {
-  const parts: string[] = [];
-  parts.push(
-    `${val(a.company) || "A client"} requests "${val(a.taskName) || "a new task"}"` +
-      (val(a.format) ? ` — format: ${val(a.format)}` : "") +
-      (val(a.dimensions) ? ` (${val(a.dimensions)})` : "") +
-      (val(a.animated) ? `, animated: ${val(a.animated)}` : "") +
-      (val(a.dueDate) ? `, due ${val(a.dueDate)}` : "") +
-      ".",
-  );
-  if (val(a.goal)) parts.push(`Goal: ${val(a.goal)}`);
-  if (val(a.targetAudience)) parts.push(`Target audience: ${val(a.targetAudience)}`);
-  if (val(a.displayedWhere)) parts.push(`Displayed at: ${val(a.displayedWhere)}`);
-  if (val(a.creativeBrief)) parts.push(`Creative direction: ${val(a.creativeBrief)}`);
-  if (val(a.content)) parts.push(`Content: ${val(a.content)}`);
-  if (val(a.scheduleMeeting) && !/^no/i.test(val(a.scheduleMeeting)))
-    parts.push(`The client asked to schedule a meeting before work begins.`);
-  return parts.join("\n\n");
+/**
+ * A written-out "nothing here" — the client typed something, but it carries no
+ * more information than a blank box would.
+ *
+ * ⚠️ Deliberately NOT including "no". "No" can be a real answer ("Things to
+ * avoid: no" is odd, but "Would it be animated: No" is meaningful), whereas
+ * none of these ever is. Taken from a real submission whose Notes read "none"
+ * and which Nitsan deleted by hand.
+ */
+const EMPTY_ANSWERS = /^(none|n\/?a|nothing|nope|[-–—.])$/i;
+const said = (s: string) => (EMPTY_ANSWERS.test(val(s)) ? "" : val(s));
+
+/**
+ * ⚠️ Anchored at BOTH ends. `/^no/i` — which is what this file used to use —
+ * also matches **"Not sure yet"**, one of the three options the form offers for
+ * "Would it be animated?". A client who told us they don't know would have had
+ * that read as "no" and dropped, which is precisely the silent information loss
+ * this rewrite exists to stop.
+ */
+const isNo = (s: string) => /^no$/i.test(val(s));
+
+/**
+ * What the brief actually shows, in order, as `Label: value` pairs — the single
+ * source for both the plain-text brief and the HTML notification email, so the
+ * two cannot drift into different shapes.
+ *
+ * ⚠️ The whole ordering and inclusion policy here was DERIVED from three real
+ * before/after pairs (No Traffic: Banners, Roll ups, Name Tags), comparing the
+ * generated brief against the task Nitsan hand-edited it into. The deletions
+ * were the specification. In all three he removed:
+ *
+ *   - the `SUMMARY` heading and the `notraffic requests "X"` opening sentence —
+ *     the client is the Client chip and X is the task title, both already on the
+ *     task, and repeating them is the single biggest source of noise;
+ *   - `due …`, which is the Dates field;
+ *   - `animated: No` — all three were print jobs, and the absence of a property
+ *     nobody asked about is not information;
+ *   - every `Not provided` line, and the entire `MISSING INFORMATION` block;
+ *   - the `FILES`/`LINKS` URL dumps, which are real rows by then.
+ *
+ * And in all three he kept the answered labelled lines verbatim, in order, plus
+ * the client's own free text exactly as typed. So: **emit only what was
+ * answered, never what the task already knows, and never touch the wording.**
+ */
+function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
+  const specs: string[] = [];
+  const body: string[] = [];
+  const put = (into: string[], label: string, raw: string) => {
+    const v = said(raw);
+    if (v) into.push(`${label}: ${v}`);
+  };
+
+  // ⚠️ Format and Dimensions are SEPARATE lines and never combined. The old
+  // opener embedded the size in the format (`Print (85 × 200 cm)`) while
+  // TASK DESCRIPTION printed it again — and Nitsan resolved that duplicate
+  // three different ways across three briefs (deleted it, kept it, moved it).
+  // Two plain lines remove the decision.
+  put(specs, "Format", a.format);
+  put(specs, "Dimensions", a.dimensions);
+  // Budget stays, unlike the due date: the Hours field can only hold a number,
+  // so "5-8" or "8 if we reuse last year's" loses its nuance the moment it is
+  // parsed. The due date survives its field intact, so it goes.
+  put(specs, "Budget", a.budgetRange);
+  // Only when the answer is positive — same reasoning as the meeting request
+  // below, and the same anchored test.
+  if (said(a.animated) && !isNo(a.animated)) {
+    specs.push(`Animated: ${said(a.animated)}`);
+  }
+
+  put(body, "Goal", a.goal);
+  put(body, "Target audience", a.targetAudience);
+  put(body, "Displayed at", a.displayedWhere);
+  put(body, "Creative direction", a.creativeBrief);
+  put(body, "Content", a.content);
+  put(body, "Things to avoid", a.thingsToAvoid);
+  put(body, "Notes", a.notes);
+  if (said(a.scheduleMeeting) && !isNo(a.scheduleMeeting)) {
+    body.push("The client asked to schedule a meeting before work begins.");
+  }
+  return { specs, body };
 }
 
 function missingFields(a: IntakeAnswers): string[] {
@@ -112,32 +178,36 @@ function missingFields(a: IntakeAnswers): string[] {
  * `attach` omitted → no FILES/LINKS blocks. See `BriefAttachments`.
  */
 export function assembleTaskBrief(a: IntakeAnswers, attach?: BriefAttachments): string {
-  const missing = missingFields(a);
-  const sections = [
-    "SUMMARY",
-    summaryText(a),
-    "",
-    "TASK DESCRIPTION",
-    `Dimensions: ${orNP(a.dimensions)}`,
-    `Budget: ${val(a.budgetRange) ? `${val(a.budgetRange)} (hours unless otherwise specified)` : "Not provided"}`,
-    `Things to avoid: ${orNP(a.thingsToAvoid)}`,
-    `Notes: ${orNP(a.notes)}`,
-    "",
-    `Submitted by ${val(a.name)} <${val(a.email)}>${val(a.company) ? ` — ${val(a.company)}` : ""}`,
-  ];
-  if (missing.length) {
-    sections.push("", "MISSING INFORMATION", ...missing.map((m) => `• ${m}`));
-  }
+  const { specs, body } = briefParts(a);
+  // Blocks are joined by a blank line. The specs are short, so they sit tight
+  // together as one block; every body entry is its own, because a Creative
+  // direction routinely runs to several paragraphs of the client's own text and
+  // would otherwise run into the line after it.
+  const blocks: string[] = [];
+  if (specs.length) blocks.push(specs.join("\n"));
+  blocks.push(...body);
+
+  // ⚠️ No company suffix. It is the Client chip on the task, and it survived
+  // only one of the three hand-edits. The person and their address are what
+  // nobody can look up from the task itself.
+  const who = [val(a.name), val(a.email) && `<${val(a.email)}>`].filter(Boolean).join(" ");
+  if (who) blocks.push(`Submitted by ${who}`);
+
+  // Attachments are listed ONLY on the submission's own copy — see
+  // `BriefAttachments`. The approved task's brief omits them, because by then
+  // they are real rows.
   if (attach?.files.length) {
-    sections.push("", "FILES", ...attach.files.map((f) => `• ${f.name}: ${f.url}`));
+    blocks.push(["FILES", ...attach.files.map((f) => `• ${f.name}: ${f.url}`)].join("\n"));
   }
   if (attach?.links.length) {
-    sections.push("", "LINKS", ...attach.links.map((l) => `• ${l.title}: ${l.url}`));
+    blocks.push(["LINKS", ...attach.links.map((l) => `• ${l.title}: ${l.url}`)].join("\n"));
   }
   if (attach?.dropped?.length) {
-    sections.push("", "FILES THAT DID NOT ARRIVE", ...attach.dropped.map((d) => `• ${d}`));
+    blocks.push(
+      ["FILES THAT DID NOT ARRIVE", ...attach.dropped.map((d) => `• ${d}`)].join("\n"),
+    );
   }
-  return sections.join("\n");
+  return blocks.join("\n\n");
 }
 
 /**
@@ -209,23 +279,15 @@ export function assembleEmailHtml(
   const { files, links, dropped } = attach;
   const missing = missingFields(a);
   const nl2br = (s: string) => escapeHtml(s).replace(/\n/g, "<br>");
+  const { specs, body } = briefParts(a);
   return `
 <h2 style="margin:0 0 4px">New task submission — ${escapeHtml(orNP(a.company))}</h2>
 <p style="margin:0 0 16px;color:#5c6478">"${escapeHtml(orNP(a.taskName))}" from ${escapeHtml(orNP(a.name))} &lt;${escapeHtml(a.email)}&gt;</p>
 
-<h3>🧠 AI Summary</h3>
 <div style="background:#f3f4f6;padding:14px;border-radius:8px;line-height:1.5;">
-${nl2br(summaryText(a))}
+${[...specs, ...body].map((p) => `<p style="margin:0 0 12px">${nl2br(p)}</p>`).join("\n")}
 </div>
-
-<h3>📋 Task Description</h3>
-<p>
-<b>Dimensions:</b> ${nl2br(orNP(a.dimensions))}<br><br>
-<b>Budget:</b> ${nl2br(orNP(a.budgetRange))}<br><br>
-<b>Things to Avoid:</b> ${nl2br(orNP(a.thingsToAvoid))}<br><br>
-<b>Notes:</b> ${nl2br(orNP(a.notes))}
-</p>
-${missing.length ? `<h3>Missing Information</h3><p>${missing.map(escapeHtml).join("<br>")}</p>` : ""}
+${missing.length ? `<h3>Not answered</h3><p style="color:#5c6478">${missing.map(escapeHtml).join("<br>")}</p>` : ""}
 ${files.length ? `<h3>Files</h3><p>${files.map((f) => anchor(f.url, f.name)).join("<br>")}</p>` : ""}
 ${links.length ? `<h3>Links</h3><p>${links.map((l) => anchor(l.url, l.title)).join("<br>")}</p>` : ""}
 ${dropped?.length ? `<h3 style="color:#b91c1c">Files that did not arrive</h3><p style="color:#b91c1c">${dropped.map(escapeHtml).join("<br>")}</p>` : ""}

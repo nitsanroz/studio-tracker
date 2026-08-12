@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assembleTaskBrief,
   readSubmission,
   renderSeenEmail,
   SEEN_EMAIL_DEFAULT,
@@ -25,6 +26,135 @@ const answers: IntakeAnswers = {
   notes: "",
   scheduleMeeting: "No",
 };
+
+/**
+ * The real "Partner Event 2026 | Roll ups" submission from No Traffic, as it
+ * arrived. Its hand-edited task is what the expectations below encode — these
+ * tests exist so the derived format can't silently drift back.
+ */
+const rollUps: IntakeAnswers = {
+  name: "Dor Ronen",
+  email: "dor.ronen@notraffic.tech",
+  company: "notraffic",
+  taskName: "Partner Event 2026 | Roll ups",
+  format: "Print",
+  dimensions: "85 × 200 cm",
+  animated: "No",
+  dueDate: "2026-08-18",
+  budgetRange: "",
+  goal: "Give good vibes.",
+  targetAudience: "Our partners",
+  displayedWhere: "Across the venue.",
+  creativeBrief:
+    "Create two coordinated 85 × 200 cm roll-ups for the event entrance in Savannah.\n\nRoll-up 1\n\nLarge Partner Event 2026 logo",
+  content: "WELCOME, PARTNERS.",
+  thingsToAvoid: "this needs to be with bright colors - in opposed to last year's event.",
+  notes: "Attached reference.",
+  scheduleMeeting: "No",
+};
+
+describe("assembleTaskBrief", () => {
+  it("produces the shape Nitsan hand-edits these into", () => {
+    expect(assembleTaskBrief(rollUps)).toBe(
+      [
+        "Format: Print\nDimensions: 85 × 200 cm",
+        "Goal: Give good vibes.",
+        "Target audience: Our partners",
+        "Displayed at: Across the venue.",
+        "Creative direction: Create two coordinated 85 × 200 cm roll-ups for the event entrance in Savannah.\n\nRoll-up 1\n\nLarge Partner Event 2026 logo",
+        "Content: WELCOME, PARTNERS.",
+        "Things to avoid: this needs to be with bright colors - in opposed to last year's event.",
+        "Notes: Attached reference.",
+        "Submitted by Dor Ronen <dor.ronen@notraffic.tech>",
+      ].join("\n\n"),
+    );
+  });
+
+  // Each of these was deleted by hand in all THREE real examples.
+  it("drops everything the task itself already shows", () => {
+    const out = assembleTaskBrief(rollUps);
+    expect(out).not.toContain("SUMMARY");
+    expect(out).not.toContain("requests"); // `notraffic requests "Roll ups"`
+    expect(out).not.toContain("2026-08-18"); // the Dates field
+    expect(out).not.toContain("Partner Event 2026 | Roll ups"); // the task title
+    expect(out).not.toMatch(/— notraffic/); // the Client chip
+  });
+
+  it("drops animated when the answer is No, and keeps it when it isn't", () => {
+    // All three real briefs were print jobs answering No, and he deleted it
+    // every time — the absence of a property nobody asked about is not news.
+    expect(assembleTaskBrief(rollUps)).not.toMatch(/[Aa]nimated/);
+    expect(assembleTaskBrief({ ...rollUps, animated: "Yes" })).toContain("Animated: Yes");
+    expect(assembleTaskBrief({ ...rollUps, animated: "Not sure yet" })).toContain(
+      "Animated: Not sure yet",
+    );
+  });
+
+  it("never prints an unanswered field or a list of them", () => {
+    const bare = assembleTaskBrief({
+      ...rollUps,
+      goal: "",
+      targetAudience: "",
+      displayedWhere: "",
+      content: "",
+      thingsToAvoid: "",
+      notes: "",
+    });
+    expect(bare).not.toContain("Not provided");
+    expect(bare).not.toContain("MISSING INFORMATION");
+    expect(bare).toBe(
+      [
+        "Format: Print\nDimensions: 85 × 200 cm",
+        "Creative direction: Create two coordinated 85 × 200 cm roll-ups for the event entrance in Savannah.\n\nRoll-up 1\n\nLarge Partner Event 2026 logo",
+        "Submitted by Dor Ronen <dor.ronen@notraffic.tech>",
+      ].join("\n\n"),
+    );
+  });
+
+  // A real submission's Notes read "none", and he deleted that line too.
+  it("treats a written-out nothing as blank", () => {
+    for (const nothing of ["none", "N/A", "n/a", "-", "—", "Nothing"]) {
+      expect(assembleTaskBrief({ ...rollUps, notes: nothing })).not.toMatch(/Notes:/);
+    }
+    // ...but "No" stays, because it can be a real answer.
+    expect(assembleTaskBrief({ ...rollUps, notes: "No" })).toContain("Notes: No");
+  });
+
+  it("keeps Budget, because the Hours field can only hold a number", () => {
+    // The due date goes (its field survives it intact); a range like "5-8"
+    // does not survive `parseBudgetHours`, so the client's words stay.
+    expect(assembleTaskBrief({ ...rollUps, budgetRange: "5-8" })).toContain("Budget: 5-8");
+  });
+
+  it("never combines Format and Dimensions", () => {
+    const out = assembleTaskBrief(rollUps);
+    expect(out).toContain("Format: Print\nDimensions: 85 × 200 cm");
+    expect(out).not.toContain("Print (85 × 200 cm)");
+  });
+
+  it("leaves the client's own line breaks alone", () => {
+    // The deliverable structure clients type into the creative brief IS the
+    // brief; reflowing it would destroy the only structure in there.
+    expect(assembleTaskBrief(rollUps)).toContain("Savannah.\n\nRoll-up 1\n\nLarge");
+  });
+
+  it("lists attachments only on the submission's own copy", () => {
+    const attach = {
+      files: [{ name: "ref.png", url: "https://x/ref.png" }],
+      links: [{ title: "Drive", url: "https://drive.google.com/1" }],
+    };
+    expect(assembleTaskBrief(rollUps, attach)).toContain("FILES\n• ref.png: https://x/ref.png");
+    expect(assembleTaskBrief(rollUps, attach)).toContain("LINKS\n• Drive: https://drive.google.com/1");
+    expect(assembleTaskBrief(rollUps)).not.toContain("FILES");
+  });
+
+  it("survives a submission with nothing in it at all", () => {
+    const empty = Object.fromEntries(
+      Object.keys(rollUps).map((k) => [k, ""]),
+    ) as unknown as IntakeAnswers;
+    expect(assembleTaskBrief(empty)).toBe("");
+  });
+});
 
 describe("renderSeenEmail", () => {
   it("fills every placeholder", () => {
