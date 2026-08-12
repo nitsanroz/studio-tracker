@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { readSubmission } from "@/lib/brief";
 import { isSafeUrl } from "@/lib/links";
 import { kindById } from "@/lib/intake-fields";
+import { ClientChip } from "@/components/ui";
 
 /** "14:20" — the receipt's timestamp, on the day it matters most. */
 function timeOf(iso: string): string {
@@ -190,8 +191,7 @@ function ReviewCard({
     [sections, clientId],
   );
   const suggested = clients.find((c) => c.id === request.suggestedClientId);
-  const clientName = clients.find((c) => c.id === (request.clientId ?? request.suggestedClientId))
-    ?.name;
+  const client = clients.find((c) => c.id === (request.clientId ?? request.suggestedClientId));
 
   if (request.status !== "pending") {
     const approved = request.status === "approved";
@@ -223,12 +223,32 @@ function ReviewCard({
           >
             {request.status}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="bidi-auto block truncate font-medium">{request.title}</span>
-            <span className="block truncate text-xs text-muted">
-              {[clientName, request.submitterName, formatDate(request.createdAt)]
-                .filter(Boolean)
-                .join(" · ")}
+          {/* Title (with who sent it) on the left, then the client and the date
+              as their own columns — they are the two things you scan a handled
+              list BY, and stacked under the title they were a run-on line. They
+              collapse back under the title below `sm`, where three columns
+              would leave the title ~90px. */}
+          <span className="grid min-w-0 flex-1 gap-x-3 gap-y-0.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+            <span className="min-w-0">
+              <span className="bidi-auto block truncate font-medium">{request.title}</span>
+              {request.submitterName && (
+                <span className="bidi-auto block truncate text-xs text-muted">
+                  by {request.submitterName}
+                </span>
+              )}
+            </span>
+            {client ? (
+              // ⚠️ `link={false}` — this chip sits INSIDE the select button, and
+              // an anchor nested in a button is the same invalid nesting that
+              // silently broke row selection once already.
+              <span className="shrink-0">
+                <ClientChip client={client} size="sm" link={false} />
+              </span>
+            ) : (
+              <span />
+            )}
+            <span className="shrink-0 text-xs tabular-nums text-muted">
+              {formatDate(request.createdAt)}
             </span>
           </span>
         </button>
@@ -461,8 +481,10 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Row label="Client">{client?.name ?? <span className="text-faint">—</span>}</Row>
-        <Row label="Submitted by">
+        <Row label="Client">
+          {client ? <ClientChip client={client} size="sm" /> : <span className="text-faint">—</span>}
+        </Row>
+        <Row label="Sent by">
           {request.submitterName}
           {request.submitterEmail && (
             <>
@@ -556,7 +578,7 @@ export default function IntakeQueuePage() {
   const selected = handled.find((r) => r.id === selectedId) ?? null;
 
   return (
-    <div className={`flex flex-col gap-4 ${selected ? "max-w-6xl" : "max-w-3xl"}`}>
+    <div className={`flex flex-col gap-4 ${selected ? "max-w-7xl" : "max-w-3xl"}`}>
       {/* ⚠️ This was one `justify-between` row with no wrap, so at 375px the
           subtitle, the "Show handled" checkbox and the "Copy form link" button
           squeezed each other and every label broke mid-phrase ("Show /
@@ -583,21 +605,9 @@ export default function IntakeQueuePage() {
               : `${pending.length} submission${pending.length === 1 ? "" : "s"} waiting for review.`}
           </p>
         </div>
-        {/* ⚠️ `basis-full` below sm is what actually forces the wrap. Without it
-            `flex-wrap` never fired: the title block is `flex-1`, so flex shrank
-            IT to min-content instead — leaving all three on one line with
-            "Intake Queue" broken across two rows. A full basis takes the
-            checkbox out of that competition entirely. It sits left on its own
-            line, under the subtitle it qualifies. */}
-        <label className="order-3 flex min-h-11 shrink-0 basis-full items-center gap-1.5 whitespace-nowrap text-xs text-muted sm:order-2 sm:min-h-0 sm:basis-auto">
-          <input
-            type="checkbox"
-            checked={showHandled}
-            onChange={(e) => setShowHandled(e.target.checked)}
-          />
-          Show handled
-        </label>
-        <div className="order-2 shrink-0 sm:order-3">
+        {/* With the checkbox gone the header is two items again, so the
+            wrap-fighting that `basis-full` used to arbitrate no longer arises. */}
+        <div className="shrink-0">
           <CopyFormLinkButton />
         </div>
       </div>
@@ -607,6 +617,19 @@ export default function IntakeQueuePage() {
           New client submissions will appear here for review before becoming tasks.
         </div>
       )}
+
+      {/* ⚠️ Sits with the LIST, not up in the page header. It changes what the
+          list below contains, and a control that far from its effect reads as a
+          page-level setting — Nitsan moved it here for that reason. */}
+      <label className="flex min-h-11 w-fit items-center gap-1.5 whitespace-nowrap text-sm text-muted sm:min-h-0">
+        <input
+          type="checkbox"
+          checked={showHandled}
+          onChange={(e) => setShowHandled(e.target.checked)}
+        />
+        Show handled
+        {handled.length > 0 && <span className="text-faint">({handled.length})</span>}
+      </label>
 
       {/* ⚠️ The pane is a SIBLING of the list, not an overlay. Below `lg` it
           simply stacks underneath — the queue is admin-only and reviewed on a
@@ -631,7 +654,7 @@ export default function IntakeQueuePage() {
           )}
         </div>
         {selected && (
-          <aside className="lg:sticky lg:top-4 lg:w-96 lg:shrink-0">
+          <aside className="lg:sticky lg:top-4 lg:w-[22rem] lg:shrink-0 xl:w-[28rem] 2xl:w-[34rem]">
             <SubmissionPane request={selected} onClose={() => setSelectedId(null)} />
           </aside>
         )}
