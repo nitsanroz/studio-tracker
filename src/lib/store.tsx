@@ -467,6 +467,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [entrySumsAll, setEntrySums] = useState<EntrySum[]>([]);
+  /**
+   * The same list, readable synchronously. `applyHot` needs it (see there) and
+   * runs before any state it queued has committed, so state alone can't answer.
+   * Kept honest against local mutations by the mirroring effect below.
+   */
+  const entrySumsRef = useRef<EntrySum[]>([]);
   const [planColumns, setPlanColumns] = useState<PlanColumn[]>([]);
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -693,6 +699,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [entrySumsAll],
   );
 
+  // Local optimistic edits (log, edit, delete an entry; delete a task) write
+  // straight to state, so the ref has to follow them too — otherwise the next
+  // hot tick would merge the feed against a set that still describes the DB as
+  // it was before the user's own change.
+  useEffect(() => {
+    entrySumsRef.current = entrySumsAll;
+  }, [entrySumsAll]);
+
   // Task totals include the recovered history — that IS the task's real cost.
   const minutesByTask = useMemo(() => {
     const map = new Map<string, number>();
@@ -703,6 +717,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ── initial load ──────────────────────────────────────────────────────
   const applyCold = useCallback((c: ColdSnapshot) => {
     setProfiles(c.profiles);
+    setEntrySums(c.entrySums);
+    // applyHot reads this synchronously (see below), so it must be written here
+    // rather than derived from the state update, which hasn't committed yet.
+    entrySumsRef.current = c.entrySums;
     setClients(c.clients);
     setSections(c.sections);
     setTaskGroups(c.taskGroups);
@@ -722,10 +740,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const applyHot = useCallback((h: HotSnapshot) => {
     setTasks((prev) => mergeTasks(h.tasks, prev));
-    setTimeEntries((prev) => mergeTimeEntries(h.timeEntries, h.entrySums, prev));
-    // same commit as the 400-row window above, so the feed and the aggregates
-    // can never disagree about which entries exist
-    setEntrySums(h.entrySums);
+    // ⚠️ The sums come from the last COLD fetch, not from `h` — they left the hot
+    // tier so the app would stop pulling the whole `time_entries` table every
+    // 60s. They are only consulted to decide which OUT-OF-WINDOW rows still
+    // exist, and a stale set errs toward keeping a row, so up-to-10-minute-old
+    // sums are safe here. Read from the ref, not from state: applyCold and
+    // applyHot run in the same commit on boot and on a cold tick.
+    setTimeEntries((prev) => mergeTimeEntries(h.timeEntries, entrySumsRef.current, prev));
     setPlanEntries(h.planEntries);
     setTaskRequests(h.taskRequests.map(mapTaskRequest));
     setDevItems(h.devItems);
@@ -746,7 +767,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setCurrentUserId(uid);
       applyCold(snap);
       applyHot(snap);
-      fingerprintRef.current = fingerprint(snap);
+      fingerprintRef.current = fingerprint(snap, snap.entrySums);
       lastSyncedRef.current = Date.now();
       setLoading(false);
     })().catch((e) => {
@@ -898,7 +919,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (cold) applyCold(cold);
         applyHot(hot);
 
-        const next = fingerprint(hot);
+        // On a hot-only tick this passes the sums we already hold, so the entry
+        // half of the print doesn't read as "changed" simply because it wasn't
+        // re-fetched. applyCold has already updated the ref when `cold` is set.
+        const next = fingerprint(hot, entrySumsRef.current);
         const changed = fingerprintRef.current !== null && next !== fingerprintRef.current;
         fingerprintRef.current = next;
         // Someone else's change landed, so every undo step taken before it is now

@@ -59,6 +59,19 @@ type Sb = SupabaseClient<any, any, any>;
 /** Studio structure. Changes a few times a week. */
 export interface ColdSnapshot {
   profiles: Profile[];
+  /**
+   * Per-row time-entry totals for the WHOLE table — tens of thousands of rows,
+   * and by far the biggest payload the app fetches.
+   *
+   * ⚠️ It sits on the COLD tier deliberately (moved off the 60s hot tick on
+   * 2026-08-13): pulling ~10 years of history every minute, per open tab, was
+   * the single largest driver of Supabase egress. Nothing here needs
+   * minute-level freshness — the aggregates it feeds (client totals, task
+   * totals, dashboards, weekly timesheets) are the kind of figure you read, not
+   * the kind you drag. The recent-activity feed stays hot, and a member's own
+   * logged hours update optimistically on their own screen either way.
+   */
+  entrySums: EntrySum[];
   clients: Client[];
   sections: Section[];
   /** subject-level containers inside a section (0027) */
@@ -83,7 +96,6 @@ export interface HotSnapshot {
   planEntries: PlanEntry[];
   /** the recent-400 feed window */
   timeEntries: TimeEntry[];
-  entrySums: EntrySum[];
   taskRequests: DbRow[];
   devItems: DevItem[];
 }
@@ -108,6 +120,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     markRows,
     typeRows,
     groupRows,
+    sums,
   ] = await Promise.all([
     // "*" keeps boot working whether or not migration 0004 is applied
     fetchAll<DbRow>(sb, "profiles", "*"),
@@ -133,6 +146,33 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     // rendered before this existed, so an empty list is the correct fallback —
     // and `tasks.group_id` falls away on its own rung of the hot ladder.
     fetchAll<DbRow>(sb, "task_groups", "*").catch(() => [] as DbRow[]),
+    // ⚠️ Moved here from `fetchHot` character-for-character. The ladder below
+    // steps down ONE column at a time and ONLY on a genuinely missing column —
+    // see the file header. Do not simplify it because it now lives on the cold
+    // tier; the reason it exists is unchanged.
+    (async () => {
+      const cols = "id, task_id, user_id, date, minutes";
+      const notNull = "minutes";
+      // Degrade ONE column at a time. Collapsing straight to `cols` on any
+      // failure would drop `legacy` as well, and without that flag the
+      // ~4,000h of 2016–2022 backfill reads as ordinary logged time — it
+      // would land in days-worked, tenure, "my hours" and the feed timesheet,
+      // which is precisely what the flag exists to prevent.
+      for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
+        try {
+          return await fetchAll<DbRow>(sb, "time_entries", `${cols}${extra}`, (q) =>
+            q.not(notNull, "is", null),
+          );
+        } catch (e) {
+          // A missing column means the migration isn't applied — step down.
+          // Any other failure must NOT be read as "the column is gone",
+          // or a network blip drops the `legacy` flag and the backfill
+          // leaks into every personal figure on the site.
+          if (!isMissingSchema(e)) throw e;
+        }
+      }
+      throw new Error("time_entries: could not load with any known column set");
+    })(),
   ]);
 
   const projectClient = new Map<string, string>(
@@ -140,6 +180,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
   );
   return {
     profiles: prof.map(mapProfile),
+    entrySums: sums.map(mapEntrySum),
     clients: cli.map(mapClient),
     sections: sec.map((r) => mapSection(r, projectClient)),
     taskGroups: groupRows
@@ -159,7 +200,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
 }
 
 export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
-  const [pe, taskRows, sums, feed, requests, dev] = await Promise.all([
+  const [pe, taskRows, feed, requests, dev] = await Promise.all([
     fetchAll<DbRow>(sb, "plan_entries", "*"),
     (async () => {
       const cols =
@@ -201,29 +242,6 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
       }
       throw new Error("tasks: could not load with any known column set");
     })(),
-    (async () => {
-      const cols = "id, task_id, user_id, date, minutes";
-      const notNull = "minutes";
-      // Degrade ONE column at a time. Collapsing straight to `cols` on any
-      // failure would drop `legacy` as well, and without that flag the
-      // ~4,000h of 2016–2022 backfill reads as ordinary logged time — it
-      // would land in days-worked, tenure, "my hours" and the feed timesheet,
-      // which is precisely what the flag exists to prevent.
-      for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
-        try {
-          return await fetchAll<DbRow>(sb, "time_entries", `${cols}${extra}`, (q) =>
-            q.not(notNull, "is", null),
-          );
-        } catch (e) {
-          // A missing column means the migration isn't applied — step down.
-          // Any other failure must NOT be read as "the column is gone",
-          // or a network blip drops the `legacy` flag and the backfill
-          // leaks into every personal figure on the site.
-          if (!isMissingSchema(e)) throw e;
-        }
-      }
-      throw new Error("time_entries: could not load with any known column set");
-    })(),
     sb
       .from("time_entries")
       .select("*")
@@ -247,7 +265,6 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
     tasks: taskRows.map((r) => mapTask({ ...r, brief: undefined }, ctx.tagNames, ctx.projectClient)),
     planEntries: pe.map(mapPlanEntry),
     timeEntries: ((feed.data ?? []) as DbRow[]).map(mapTimeEntry),
-    entrySums: sums.map(mapEntrySum),
     taskRequests: (requests.data ?? []) as DbRow[],
     devItems: dev.map(mapDevItem).sort((a: DevItem, b: DevItem) => a.position - b.position),
   };
@@ -278,8 +295,15 @@ function hash(s: string): number {
  *
  * Time entries contribute their count and total only — there are tens of
  * thousands of them and this runs on every tick.
+ *
+ * ⚠️ `sums` is passed in rather than read off `h`, because it now arrives on the
+ * COLD tier: on a hot-only tick the caller passes the sums it already holds, so
+ * the entry half of the print stays constant instead of reading as "somebody
+ * else changed something" every minute. The 400-row feed window is folded in on
+ * every tick to keep recent time-entry activity — the only kind an undo step can
+ * target — detectable at the hot cadence.
  */
-export function fingerprint(h: HotSnapshot): string {
+export function fingerprint(h: HotSnapshot, sums: EntrySum[]): string {
   const tasks = h.tasks
     .map(
       (t) =>
@@ -289,12 +313,15 @@ export function fingerprint(h: HotSnapshot): string {
   const plan = h.planEntries
     .map((e) => `${e.id}${e.date}${e.columnId}${e.position}${e.text}${e.taskId}${e.absenceType}`)
     .join("");
-  const minutes = h.entrySums.reduce((a, e) => a + e.minutes, 0);
+  const minutes = sums.reduce((a, e) => a + e.minutes, 0);
+  const feed = h.timeEntries.reduce((a, e) => a + e.minutes, 0);
   return [
     hash(tasks),
     hash(plan),
-    h.entrySums.length,
+    sums.length,
     minutes,
+    h.timeEntries.length,
+    feed,
     h.devItems.length,
     h.taskRequests.length,
   ].join(":");
@@ -315,14 +342,20 @@ export function mergeTasks(fresh: Task[], prev: Task[]): Task[] {
  * for one task — those older rows live in the same list and must survive a
  * refresh. `entrySums` is the whole table, so it's the authority on what still
  * exists: an out-of-window row missing from it was deleted elsewhere.
+ *
+ * ⚠️ `sums` now comes from the COLD tier, so on a hot tick it is up to ~10
+ * minutes old. That is the safe direction: a stale-but-present row is KEPT
+ * (it disappears at the next cold tick), rather than an out-of-window row the
+ * user is looking at being dropped because this tick had no sums to vouch for
+ * it. Passing `[]` here would evict every out-of-window row on every tick.
  */
 export function mergeTimeEntries(
   fresh: TimeEntry[],
-  freshSums: EntrySum[],
+  sums: EntrySum[],
   prev: TimeEntry[],
 ): TimeEntry[] {
   const inWindow = new Set(fresh.map((e) => e.id));
-  const live = new Set(freshSums.map((e) => e.id));
+  const live = new Set(sums.map((e) => e.id));
   return [...fresh, ...prev.filter((e) => !inWindow.has(e.id) && live.has(e.id))];
 }
 
