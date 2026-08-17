@@ -18,3 +18,18 @@ export function loggableMembers(profiles: Profile[], meFirstId?: string | null):
       a.id === meFirstId ? -1 : b.id === meFirstId ? 1 : a.name.localeCompare(b.name),
     );
 }
+
+/**
+ * How many minutes a full working day is FOR THIS PERSON — the denominator of
+ * every "3h / 8h" readout.
+ *
+ * It is a person's weekly capacity over the studio's five working days, not a
+ * flat eight hours: a part-timer on 20h a week owes 4h, and telling them they
+ * are half way through a day when they have finished it is worse than showing
+ * no target at all. Lifted out of `DayLog`, which had it inline, because the
+ * phone's log-time sheet now shows the same figure and two expressions of one
+ * rule is how they come to disagree.
+ */
+export function dailyTargetMinutes(profile: Profile | null | undefined): number {
+  return profile?.capacityHoursWeek ? (profile.capacityHoursWeek / 5) * 60 : 8 * 60;
+}

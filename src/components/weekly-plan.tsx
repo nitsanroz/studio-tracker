@@ -25,7 +25,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { addDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
 import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
-import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
+import { TaskAutocomplete, useClientsByRecency, type TaskMatch } from "./task-autocomplete";
 import { ResizeHandle, useColWidths } from "./resizable";
 import type { AbsenceType, DevStatus, PlanEntry } from "@/lib/types";
 
@@ -270,32 +270,13 @@ function EntryModal({
   entry?: PlanEntry;
   onClose: () => void;
 }) {
-  const { clients, tasks, planEntries, entrySums, addPlanEntry, updatePlanEntry, deletePlanEntry } =
-    useData();
+  const { clients, addPlanEntry, updatePlanEntry, deletePlanEntry } = useData();
   const [clientId, setClientId] = useState<string>(entry?.clientId ?? "");
 
-  const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
-
-  // Active clients ordered by how much they appeared in tracked/planned work lately.
-  const recentClients = useMemo(() => {
-    const cutoff = toISODate(addDays(new Date(), -30));
-    const score = new Map<string, number>();
-    for (const e of entrySums) {
-      if (e.date < cutoff) continue;
-      const cid = taskClient.get(e.taskId);
-      if (cid) score.set(cid, (score.get(cid) ?? 0) + 1);
-    }
-    for (const pe of planEntries) {
-      if (!pe.date || pe.date < cutoff || !pe.clientId) continue;
-      score.set(pe.clientId, (score.get(pe.clientId) ?? 0) + 2);
-    }
-    return clients
-      .filter((c) => !c.archived)
-      .sort(
-        (a, b) =>
-          (score.get(b.id) ?? 0) - (score.get(a.id) ?? 0) || a.name.localeCompare(b.name),
-      );
-  }, [clients, entrySums, planEntries, taskClient]);
+  // Ordered by how much each client appeared in tracked/planned work lately —
+  // the same rule the task picker's own client menu uses, shared so the two
+  // can't disagree about which clients are current.
+  const recentClients = useClientsByRecency();
 
   const selectedClient = clients.find((c) => c.id === clientId);
 

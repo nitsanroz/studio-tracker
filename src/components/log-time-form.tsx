@@ -93,8 +93,10 @@ export function LogTimeForm({
       onSubmit={submit}
       className={stacked ? "flex flex-col gap-2" : "flex flex-col gap-2 md:flex-row md:flex-wrap"}
     >
+      {/* `min-w-64`, not 48: the picker now carries a client menu beside the
+          search box, and at 192px the two split into a pair of stubs. */}
       {!fixedTaskId && (
-        <div className={stacked ? "" : "min-w-48 flex-1"}>
+        <div className={stacked ? "" : "min-w-64 flex-1"}>
           <TaskAutocomplete
             key={pickerNonce}
             placeholder="Which task?"

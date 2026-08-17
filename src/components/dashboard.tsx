@@ -31,6 +31,8 @@ import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
 import { PeriodStepper } from "./period-stepper";
 import { WeekTimesheet } from "./week-timesheet";
 import { MobileLogTimeSheet } from "./mobile-log-time";
+import { MemberWeekHours } from "./member-week-hours";
+import { dailyTargetMinutes } from "@/lib/members";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { TimeEntry } from "@/lib/types";
 
@@ -162,7 +164,8 @@ function DayLog() {
 
   const dayMinutes = entries.reduce((s, e) => s + e.minutes, 0);
   const me = profiles.find((p) => p.id === currentUserId);
-  const targetMinutes = me?.capacityHoursWeek ? (me.capacityHoursWeek / 5) * 60 : 8 * 60;
+  // the same rule the phone's log-time sheet shows — see `dailyTargetMinutes`
+  const targetMinutes = dailyTargetMinutes(me);
   const pct = Math.min(100, (dayMinutes / targetMinutes) * 100);
 
   const minutes = parseDuration(duration);
@@ -374,22 +377,40 @@ function MyWeek() {
           return (
             <div
               key={iso}
-              // `w-32 shrink-0 grow` only matters in the row below `md`; in the
+              // `w-64 shrink-0 grow` only matters in the row below `md`; in the
               // grid above it the track width wins and these are inert. `grow`
               // is what makes a short week (two days left) fill the width
               // instead of leaving 200px of nothing — with all five the basis
               // already exceeds the screen, so nothing grows and it scrolls.
-              className={`flex min-h-[132px] w-32 shrink-0 grow flex-col gap-1 rounded-xl border p-2.5 md:w-auto md:grow-0 ${
+              //
+              // ⚠️ On a phone the card is 256px and the DAY sits beside its work
+              // rather than above it: the row below `md` shows only today onwards,
+              // so there are two or three cards holding a whole day's chips, and
+              // a 128px column wrapped every task title. Above `md` it is five
+              // cards in a grid and the stack is the only thing that fits.
+              className={`flex min-h-[132px] w-64 shrink-0 grow gap-2 rounded-xl border p-2.5 md:w-auto md:grow-0 md:flex-col md:gap-1 ${
                 isToday ? "border-brand bg-brand text-white" : "border-border bg-background"
               }`}
             >
-              <span
-                className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? "text-white/80" : "text-faint"}`}
-              >
-                {DAY_NAMES[day.getDay()].slice(0, 3)}
-              </span>
-              <span className="text-base font-bold leading-none">{day.getDate()}</span>
-              <div className="mt-1 flex flex-col gap-1">
+              {/* ⚠️ `md:contents` — at ≥768px this wrapper leaves the layout
+                  entirely, so the label and the date become direct children of
+                  the card's own `flex-col` again and the desktop card is
+                  byte-identical. Rendering it conditionally would be two card
+                  layouts to keep in step. */}
+              <div className="flex min-w-0 flex-1 flex-col md:contents">
+                <span
+                  className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? "text-white/80" : "text-faint"}`}
+                >
+                  {DAY_NAMES[day.getDay()].slice(0, 3)}
+                </span>
+                <span className="text-base font-bold leading-none">{day.getDate()}</span>
+              </div>
+              {/* ⚠️ The WORK column is the one given the width — `w-4/5` on it and
+                  `flex-1` on the day beside it, not the other way round. Sizing
+                  the day at 1/5 instead left the work 70% of the card, because
+                  the 20px of padding and the 8px gap come off the total before
+                  the fraction is taken. It starts at the TOP of that column. */}
+              <div className="flex w-4/5 shrink-0 flex-col gap-1 md:mt-1 md:w-auto">
                 {entries.length === 0 && (
                   <span className={`text-[11px] ${isToday ? "text-white/50" : "text-faint"}`}>—</span>
                 )}
@@ -1820,6 +1841,11 @@ export function Dashboard() {
             />
           )}
           <MyWeek />
+          {/* Phone only, and it is the other half of `MyWeek` there: that pane
+              shows the days AHEAD, this one what you actually logged on the days
+              already gone. On a laptop the Time Feed and "Log my hours" below
+              cover it; on a phone the Feed is desktop-only, so nothing did. */}
+          <MemberWeekHours />
           {/* My tasks takes the slot beside "Log my hours" that Celebrations left
               when it moved into the hero.
               ⚠️ The whole row is `md:` only. Both panes are duplicates of the
