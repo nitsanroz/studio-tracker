@@ -10,6 +10,7 @@ import {
   formatHours,
   formatHoursAvg,
   formatHoursShort,
+  greetingFor,
   parseDuration,
   startOfWeek,
   toISODate,
@@ -34,7 +35,7 @@ import { MobileLogTimeSheet } from "./mobile-log-time";
 import { MemberWeekHours } from "./member-week-hours";
 import { dailyTargetMinutes } from "@/lib/members";
 import { useIsNarrow } from "@/lib/use-is-narrow";
-import type { TimeEntry } from "@/lib/types";
+import type { Profile, TimeEntry } from "@/lib/types";
 
 function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
   const { tasks, clients, updateTimeEntry } = useData();
@@ -1388,29 +1389,22 @@ function MemberWelcome({
   prevRange,
   onLogTime,
 }: {
-  me: { id: string; name: string; photoUrl: string | null };
+  // ⚠️ The whole `Profile`, not the three fields the hero draws: the caller
+  // already found it in `profiles`, and `dailyTargetMinutes` needs its capacity.
+  // Narrowing here only meant looking the same object up a second time.
+  me: Profile;
   filter: HomeFilter;
   prevRange: { from: string; to: string } | null;
   /** Phone-only: opens the log-time sheet, since `#log` has nothing to jump to. */
   onLogTime: () => void;
 }) {
-  const { entrySums, tasks } = useData();
+  const { entrySums, timeEntries, tasks } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
-  // The hero copy stays week-scoped ("This week" is the point of it); the tiles
-  // beside it follow the page's period/client filter.
-  const wk = useMemo(() => {
-    const start = startOfWeek(new Date());
-    const from = toISODate(start);
-    const to = toISODate(addDays(start, 6));
-    let min = 0;
-    for (const e of entrySums) {
-      if (e.userId !== me.id || e.date < from || e.date > to) continue;
-      min += e.minutes;
-    }
-    return { min, from, to };
-  }, [entrySums, me.id]);
-
+  // ⚠️ The hero used to be week-scoped ("You've logged 21h across 6 active
+  // tasks — 1 due this week"). It reads TODAY now, deliberately: the week's
+  // figures are already on the tiles and in My week directly below, and the one
+  // number nothing else on this page shows is how the current day is going.
   const scoped = useMemo(() => {
     let min = 0;
     let bil = 0;
@@ -1439,13 +1433,29 @@ function MemberWelcome({
     };
   }, [entrySums, taskById, me.id, filter, prevRange]);
 
-  const myActive = useMemo(
-    () => tasks.filter((t) => t.assigneeId === me.id && t.status !== "done"),
-    [tasks, me.id],
-  );
-  const dueThisWeek = myActive.filter(
-    (t) => t.dueDate && t.dueDate >= wk.from && t.dueDate <= wk.to,
-  ).length;
+  /**
+   * Today's own hours, and the three things the hero can say about them.
+   *
+   * ⚠️ It reads `timeEntries` — the 60-second window — NOT `entrySums`, which has
+   * been on the cold tier since v1.18.2 and can be ten minutes behind. A line
+   * that reads "Nothing logged today" for ten minutes after you logged an hour is
+   * worse than no line, and the window always reaches back far enough for today.
+   * Your own writes patch both sets optimistically, so your own logging shows at
+   * once either way; this is about an hour logged on the phone reaching the
+   * laptop.
+   */
+  const todayLine = useMemo(() => {
+    const today = toISODate(new Date());
+    let min = 0;
+    for (const e of timeEntries) {
+      if (e.userId === me.id && e.date === today && !e.legacy) min += e.minutes;
+    }
+    const target = dailyTargetMinutes(me);
+    if (min <= 0) return "Nothing logged today";
+    // At or past the target the remaining figure is noise — say it's done.
+    if (min >= target) return `Day complete — ${formatHours(min)} logged`;
+    return `${formatHours(min)} of ${formatHours(target)} logged today`;
+  }, [timeEntries, me]);
 
   const [hFig, hUnit] = splitHours(scoped.min);
   const [adFig, adUnit] = splitHours(scoped.perDay, true);
@@ -1464,17 +1474,39 @@ function MemberWelcome({
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
           <div className="absolute -top-12 right-24 size-64 rounded-full bg-white/[0.06]" />
         </div>
-        {/* ⚠️ `pr-32` is the portrait's column, and the portrait is `hidden
-            sm:block` — so on a phone it was reserving 128px of a 295px line for
-            nothing, which is what wrapped the heading onto three lines. */}
-        <div className="relative z-10 sm:pr-32">
-          <div className="text-[11px] uppercase tracking-[0.09em] text-white/70">This week</div>
-          <h2 className="mt-2 font-heading text-[22px] leading-snug">
-            You’ve logged {formatHoursShort(wk.min)} across {myActive.length} active task
-            {myActive.length === 1 ? "" : "s"}
-            {dueThisWeek > 0 ? ` — ${dueThisWeek} due this week.` : "."}
+        {/* ⚠️ `sm:pr-[196px]` is the portrait's column — 176px of figure at
+            `right: 5`, plus air. The shipped value was `pr-32` (128px), which let
+            a line run ~50px ONTO the photograph: that is where the "1" of "1 due
+            this week" went in Nitsan's screenshot. Nothing is clipped (the text
+            block is `z-10`, above the figure) — it is simply unreadable over a
+            person. The portrait is `hidden sm:block`, so below `sm` the padding
+            has to be zero or it reserves a column for nothing. */}
+        <div className="relative z-10 sm:pr-[196px]">
+          {/* ⚠️ The greeting LIVES HERE now, and the page header's copy of it was
+              removed for members in the same change — this panel is the welcome,
+              and two "Good afternoon"s six inches apart is one too many.
+              The sentence that used to be here reported three figures the same
+              screen already carried: the week's hours (the My hours tile beside
+              this), the open-task count (the header's own counter and the My
+              tasks heading) and the due count (those tasks' own dates). What is
+              left is the one figure nothing else on the page shows — today
+              against your own day — which is also the one the button underneath
+              acts on. */}
+          <h2 className="font-serif-accent text-[34px] italic leading-tight">
+            {greetingFor(new Date())}, {me.name.split(" ")[0]}
           </h2>
-          <Celebrations inline />
+          <div className="mt-1.5 text-sm text-white/85">{todayLine}</div>
+          {/* ⚠️ Off on a phone, and the gate is a WRAPPER for the same reason the
+              admin pane's is (see below): `Celebrations` returns its own element
+              with `empty:hidden`, so `hidden md:block` on that element would win
+              at desktop and leave a gap on quiet days. `md:contents` makes this
+              wrapper leave the layout above 768px, so the hero's own vertical
+              rhythm is byte-identical there. Nitsan's call — a birthday two days
+              out is desk reading, and on 375px it was pushing the one button this
+              panel exists for further down the screen. */}
+          <div className="hidden md:contents">
+            <Celebrations inline />
+          </div>
           {/* Two buttons rather than a JS branch, so there is no hydration flash.
               ⚠️ The anchor is desktop-only ON PURPOSE: `#log` is the "Log my
               hours" pane, which a phone doesn't render, so the link would scroll
@@ -1492,6 +1524,18 @@ function MemberWelcome({
             >
               + Log time
             </a>
+            {/* "What am I meant to be doing today" — the plan, one tap from the
+                greeting. ⚠️ DESKTOP ONLY, and not for tidiness: `/plan` is one of
+                the six routes that render a "needs a bigger screen" card below
+                768px, so on a phone this button would promise the week and
+                deliver a refusal. Nothing is lost there — the My week pane sits
+                directly under this hero on a phone and shows today onwards. */}
+            <Link
+              href="/plan"
+              className="hidden rounded-xl border border-white/45 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 md:block"
+            >
+              Weekly plan
+            </Link>
           </div>
         </div>
         {/* Anchored top AND bottom with a negative top, so the figure is always the
@@ -1560,8 +1604,6 @@ export function Dashboard() {
   const firstName = me?.name.split(" ")[0] ?? "";
   const today = new Date();
   const dateLabel = `${DAY_NAMES[today.getDay()]}, ${today.getDate()}/${today.getMonth() + 1}`;
-  const hour = today.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const myTasks = useMemo(
     () =>
@@ -1641,8 +1683,14 @@ export function Dashboard() {
         <div className="flex items-center gap-3">
           <MyAvatar />
           <div className="min-w-0">
+            {/* ⚠️ Members get the DATE here, not the greeting — their hero says
+                "Good afternoon, Nadav" a few inches below, and the same phrase
+                twice on one screen reads as a bug. The date was already carried
+                by this line's `title`, so nothing new is being invented; it is
+                the one orienting fact the page never states out loud. Admins have
+                no hero, so theirs is unchanged. */}
             <p className="text-sm text-muted" title={dateLabel}>
-              {greeting}
+              {isAdmin ? greetingFor(today) : dateLabel}
             </p>
             <h1 className="font-serif-accent truncate text-[26px] leading-8">{firstName}</h1>
           </div>
@@ -1799,7 +1847,8 @@ export function Dashboard() {
                 direct grid item and `lg:col-span-2` still applies.
                 Off on a phone at Nitsan's request — birthdays and holidays are
                 something you read at a desk, not the reason you opened the app
-                on the way home. The member hero keeps its `inline` variant. */}
+                on the way home. The member hero's `inline` variant is gated the
+                same way, so no phone shows an occasion anywhere. */}
             <div className="hidden md:contents">
               <div className="empty:hidden lg:col-span-2 lg:h-0 lg:min-h-full">
                 <Celebrations />

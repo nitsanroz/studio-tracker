@@ -146,3 +146,16 @@ export function formatSignedPct(fraction: number | null, digits = 1): string {
   const s = (fraction * 100).toFixed(digits);
   return `${fraction >= 0 ? "+" : ""}${s}%`;
 }
+
+/**
+ * The time-of-day greeting, in ONE place: the home page's header greets an admin
+ * with it and the member hero greets a member. Two copies would eventually
+ * disagree about when the afternoon starts.
+ *
+ * ⚠️ Takes `now` rather than reading the clock, so the boundaries are testable —
+ * the same reason `period-math.ts` takes `now` as its last argument.
+ */
+export function greetingFor(now: Date): string {
+  const h = now.getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
