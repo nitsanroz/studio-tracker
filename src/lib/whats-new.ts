@@ -73,6 +73,46 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
   {
+    version: "v1.19.0",
+    date: "2026-08-17",
+    items: [
+      {
+        // `all`: this one reaches everybody, because everybody searches for a
+        // task — the log-time popup, the quick log on your home page, the search
+        // box at the top, and the picker on a phone.
+        title: "Narrow a task search to one client",
+        body: "Open any task search and the clients you've worked on lately sit across the top. Tap one and the list is just theirs.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.19.0-client-filter.svg",
+          shape: "element",
+          alt: "A task search open, its client chips across the top with the pointer on No Traffic, and three results below all called some form of Homepage — one each for DualBird, Anchor and No Traffic",
+        },
+      },
+      {
+        // `all`. ⚠️ I first made this `member`, on the grounds that the phone's
+        // log-time sheet is a designer's screen — wrong: the bar's middle "+" is
+        // rendered UNCONDITIONALLY (`app-shell.tsx`, aria-label "Log time", no
+        // text), so an admin has the same sheet. Searching the DOM for a button
+        // reading "+ Log time" is what produced the false negative. **Read the
+        // gate in the code, not the labels on a screenshot.**
+        title: "Your day adds up as you log it",
+        body: "Logging time on your phone now shows what today comes to against your 8 hours, and lists the entries so you can fix one.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.19.0-day-hours.svg",
+          shape: "phone",
+          alt: "The log-time sheet on a phone: under the form, Logged today reads 3h 30m of 8h over a part-filled bar, with the day's two entries listed beneath",
+        },
+      },
+      {
+        title: "See the week you've logged, on your phone",
+        body: "Your home page lists each day of this week with its hours — tap a day to see the entries, tap one to change it.",
+        audience: "member",
+      },
+    ],
+  },
+  {
     version: "v1.13.0",
     date: "2026-08-11",
     items: [
