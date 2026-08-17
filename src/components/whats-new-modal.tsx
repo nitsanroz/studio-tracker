@@ -51,8 +51,12 @@ function Visual({ step }: { step: Step }) {
           // The phone is drawn at a real 375×812 screen inside a 14px bezel, so
           // its intrinsic box is 403×840. Give `next/image` the true numbers or
           // it reserves the wrong aspect and the picture jumps on load.
-          width={shape === "phone" ? 403 : 360}
-          height={shape === "phone" ? 840 : 240}
+          // ⚠️ An item's own numbers win. Without that override a screenshot
+          // whose ratio isn't the assumed one is silently STRETCHED to fit these
+          // defaults — the browser derives the aspect from these attributes, not
+          // from the file, so nothing errors and the picture is just wrong.
+          width={step.image.width ?? (shape === "phone" ? 403 : 360)}
+          height={step.image.height ?? (shape === "phone" ? 840 : 240)}
           // ⚠️ Only the PHONE is cropped, and only at the bottom, where a device
           // running off the edge is obviously deliberate.
           //

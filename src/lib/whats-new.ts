@@ -46,7 +46,21 @@ export interface WhatsNewItem {
    * resort, not a default: a panel of wordmarks teaches people there is nothing
    * to look at.
    */
-  image?: { src: string; alt: string; shape?: "phone" | "element" };
+  /**
+   * ⚠️ `width`/`height` are the file's TRUE pixel box, and an `element` that is
+   * not 3:2 must give them. The panel otherwise hands `next/image` a hardcoded
+   * 360×240, and the browser takes the aspect ratio from those attributes rather
+   * than from the file — so a 4:3 screenshot is stretched to 3:2 without ever
+   * failing. A REAL SCREENSHOT is the case this exists for: a drawing can be made
+   * to fit, a capture of a pane cannot.
+   */
+  image?: {
+    src: string;
+    alt: string;
+    shape?: "phone" | "element";
+    width?: number;
+    height?: number;
+  };
   /**
    * Higher sorts first. Default 0, and **leave it there almost always** — the
    * natural order is newest release first, which is what people expect.
@@ -109,6 +123,20 @@ export const RELEASES: Release[] = [
         title: "See the week you've logged, on your phone",
         body: "Your home page lists each day of this week with its hours — tap a day to see the entries, tap one to change it.",
         audience: "member",
+        // ⚠️ A REAL SCREENSHOT, taken by Nitsan of the shipped pane — the first
+        // one in here, and the standard to aim for: nothing about it can drift
+        // from the app, which is the whole weakness of a drawing. Its `#f0f1fa`
+        // margin is the app's own page colour rather than transparency, so it
+        // reads as a piece of the product instead of a card floating on brand
+        // blue. ⚠️ The true 1206×927 MUST be declared: the panel's default
+        // 360×240 would stretch a 4:3 capture to 3:2 without erroring.
+        image: {
+          src: "/whats-new/1.19.0-week-hours.png",
+          shape: "element",
+          width: 1206,
+          height: 927,
+          alt: "The Hours I logged this week pane on a phone: 7h 30m for the week, Sunday the 16th open with two Anchor Branding entries of 4.5h and 3h, that day totalling 7h 30m of 8h on a filled bar, and Monday the 17th below it showing a dash for today",
+        },
       },
     ],
   },
