@@ -25,6 +25,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  assertOk,
   fetchAll,
   isMissingSchema,
   mapBillingPeriod,
@@ -286,8 +287,13 @@ export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
   // that would replace the feed (or the intake queue) with an empty list and call
   // it success, so they now throw. task_requests legitimately returns [] WITHOUT
   // an error for designers, which is why only a real error is a failure here.
-  if (feed.error) throw new Error(`time_entries feed: ${feed.error.message}`);
-  if (requests.error) throw new Error(`task_requests: ${requests.error.message}`);
+  //
+  // ⚠️ Via `assertOk`, not `new Error`, so the HTTP status survives — these are
+  // built directly rather than through `fetchAll`, and a plain Error would drop
+  // the 402 that `isServiceBlocked` looks for. Any of the queries in this
+  // Promise.all can be the one that rejects first, so they all have to carry it.
+  assertOk("time_entries feed", feed);
+  assertOk("task_requests", requests);
 
   return {
     planEntries: pe.map(mapPlanEntry),

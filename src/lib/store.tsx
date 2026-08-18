@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "./supabase/client";
 import {
+  isServiceBlocked,
   mapBillingPeriod,
   mapClient,
   mapComment,
@@ -366,6 +367,13 @@ interface Store {
   writeError: string | null;
   dismissWriteError: () => void;
   /**
+   * Supabase is refusing every request because the organization is over its
+   * egress quota (HTTP 402). Distinct from `writeError` — nothing the user did
+   * failed, and reloading will not help — and distinct from an ordinary refresh
+   * failure, which stays silent on purpose. See `isServiceBlocked`.
+   */
+  serviceBlocked: boolean;
+  /**
    * A neutral, informational message — currently only "that undo expired".
    * Deliberately NOT writeError: that banner is about failed saves and says
    * "reload", neither of which applies here.
@@ -567,6 +575,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // reload to resync with the server.
   const [writeError, setWriteError] = useState<string | null>(null);
   const dismissWriteError = useCallback(() => setWriteError(null), []);
+  /**
+   * Set when a fetch comes back 402, cleared by the next refresh that succeeds —
+   * so it is self-healing and cannot linger after the bill is paid. Deliberately
+   * NOT dismissible: an open tab showing stale figures is exactly the failure
+   * this exists to make visible, and a dismissed banner would restore it.
+   */
+  const [serviceBlocked, setServiceBlocked] = useState(false);
   /** Boot query failed outright — the app has no data, and must say so. */
   const [bootError, setBootError] = useState<string | null>(null);
   const noteWriteError = useCallback((label: string, error: { message: string }) => {
@@ -856,6 +871,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Without this the app renders as if the studio simply had no tasks,
       // clients or hours — an empty state is a claim about the data, and this
       // isn't one we can make. Surface it and offer a reload instead.
+      // Boot can't show a banner — there is no app yet — so the error screen has
+      // to say the true thing. Its default copy blames a dropped connection,
+      // which for a 402 would send someone to check their wifi for an hour.
+      if (isServiceBlocked(e)) setServiceBlocked(true);
       setBootError(
         e instanceof Error && e.message ? e.message : "The studio data couldn't be loaded.",
       );
@@ -1033,6 +1052,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (changed) epoch.current++;
         lastSyncedRef.current = Date.now();
         setLastSyncedAt(Date.now());
+        // Whatever was wrong has cleared, so retract the banner.
+        setServiceBlocked(false);
 
         // The open task's comments/attachments are lazily loaded and were being
         // memoised forever, so the most collaborative surface in the app was the
@@ -1047,6 +1068,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         // Soft failure by design: keep the data we have, say nothing to the user.
         // A background tick failing is not something they can act on.
+        //
+        // ⚠️ The ONE exception: a 402 means Supabase has cut the project off over
+        // its usage quota. That is persistent, actionable, and otherwise silent —
+        // this tab would go on showing stale figures indefinitely, and the next
+        // person to notice would be a client opening a broken report link.
+        if (isServiceBlocked(e)) setServiceBlocked(true);
         console.warn("[refresh] failed", e);
       } finally {
         refreshInFlight.current = false;
@@ -3311,6 +3338,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       redo,
       writeError,
       dismissWriteError,
+      serviceBlocked,
       notice,
       showNotice,
       dismissNotice,
@@ -3322,7 +3350,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

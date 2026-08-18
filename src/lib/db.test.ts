@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DbError, isMissingSchema } from "./db";
+import { DbError, isMissingSchema, isServiceBlocked } from "./db";
 
 describe("isMissingSchema", () => {
   it("recognises a missing column on a SELECT", () => {
@@ -36,5 +36,47 @@ describe("isMissingSchema", () => {
     expect(isMissingSchema(new DbError("tasks", "fetch failed"))).toBe(false);
     expect(isMissingSchema(new Error("fetch failed"))).toBe(false);
     expect(isMissingSchema(null)).toBe(false);
+  });
+});
+
+// `isServiceBlocked` decides whether a failure gets a BANNER or stays silent, so
+// its narrowness is the feature. A background refresh failing is normally a
+// dropped connection — nothing the user can act on — and promoting those to a
+// banner is how people learn to ignore banners. Only Supabase's 402 quota
+// refusal qualifies: persistent, actionable, and otherwise invisible.
+
+describe("isServiceBlocked", () => {
+  it("catches the 402 by status", () => {
+    expect(isServiceBlocked(new DbError("profiles", "Payment Required", undefined, 402))).toBe(true);
+  });
+
+  it("catches it by message when the status was lost on the way", () => {
+    // Paths that build a query directly used to throw a plain Error, so the
+    // message is the fallback. Observed verbatim from a forced 402 in the app.
+    expect(isServiceBlocked(new Error("profiles: Payment Required"))).toBe(true);
+  });
+
+  it("ignores an ordinary dropped connection", () => {
+    expect(isServiceBlocked(new Error("Failed to fetch"))).toBe(false);
+    expect(isServiceBlocked(new DbError("tasks", "network error"))).toBe(false);
+  });
+
+  it("ignores a missing column, which has its own ladder", () => {
+    // 42703 must keep degrading quietly through the column ladder — see
+    // snapshot.ts. A banner there would fire on any un-applied migration.
+    const missing = new DbError("tasks", "column does not exist", "42703", 400);
+    expect(isServiceBlocked(missing)).toBe(false);
+    expect(isMissingSchema(missing)).toBe(true);
+  });
+
+  it("ignores other HTTP failures — 401, 403, 500 are not quota refusals", () => {
+    for (const status of [400, 401, 403, 404, 429, 500, 503]) {
+      expect(isServiceBlocked(new DbError("tasks", "nope", undefined, status))).toBe(false);
+    }
+  });
+
+  it("ignores non-errors", () => {
+    expect(isServiceBlocked(null)).toBe(false);
+    expect(isServiceBlocked("Payment Required")).toBe(false);
   });
 });

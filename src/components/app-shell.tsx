@@ -530,6 +530,7 @@ function Shell({ children }: { children: ReactNode }) {
     updatedRequests,
     viewingAs,
     writeError,
+    serviceBlocked,
     dismissWriteError,
     notice,
     dismissNotice,
@@ -595,10 +596,30 @@ function Shell({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-border bg-surface p-8 shadow-card">
           <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
-          <h1 className="text-lg font-semibold">The studio data couldn&apos;t be loaded</h1>
+          <h1 className="text-lg font-semibold">
+            {serviceBlocked
+              ? "The studio has hit its database usage limit"
+              : "The studio data couldn't be loaded"}
+          </h1>
+          {/*
+            ⚠️ The default copy blames a dropped connection, which for a 402
+            would send someone to check their wifi for an hour. This screen
+            returns BEFORE the serviceBlocked banner further down ever renders,
+            so the boot path has to say the true thing itself.
+          */}
           <p className="text-sm text-muted">
-            Nothing was shown rather than showing an empty studio — the figures on the page would
-            all have read zero. This is usually a dropped connection.
+            {serviceBlocked ? (
+              <>
+                Supabase has paused the project because the organization is over its monthly
+                allowance, so every request is being refused. Retrying won&apos;t help until the
+                plan&apos;s usage is raised — and the public client report links are down too.
+              </>
+            ) : (
+              <>
+                Nothing was shown rather than showing an empty studio — the figures on the page
+                would all have read zero. This is usually a dropped connection.
+              </>
+            )}
           </p>
           <p className="rounded-lg bg-background px-3 py-2 font-mono text-[11px] text-faint">
             {bootError}
@@ -861,6 +882,47 @@ function Shell({ children }: { children: ReactNode }) {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/*
+        Supabase has cut the project off over its usage quota — every request is
+        a 402. Unlike the toasts below this is NOT dismissible and NOT a reload
+        prompt: reloading cannot fix it, and the whole reason it exists is that
+        the condition is otherwise INVISIBLE. A background refresh failing is
+        deliberately silent (normally it's a dropped connection), so without this
+        an open tab shows stale figures indefinitely and the next person to
+        notice is a client opening a broken report link.
+
+        Placed bottom-center and lifted clear of the phone's bottom nav rather
+        than as a bar at the top of the page: the app header is `sticky top-0`
+        and the client page pins its own header at `top-14`, so anything that
+        pushes the layout down would knock that alignment out — see the z-index
+        and sticky table in client-view.tsx.
+      */}
+      {serviceBlocked && (
+        <div
+          role="alert"
+          className="fixed bottom-20 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 flex-col gap-1 rounded-xl bg-danger px-4 py-3 text-sm text-white shadow-lg md:bottom-4"
+        >
+          <span className="font-semibold">
+            The studio can&apos;t reach its database — it has hit its monthly usage limit.
+          </span>
+          <span className="text-white/85">
+            What you see may be out of date, and saving will fail. Public client report links are
+            down too. Nothing you did caused this and reloading won&apos;t fix it.
+            {isAdmin ? " Usage has to be raised on the Supabase plan." : " Let an admin know."}
+          </span>
+          {isAdmin && (
+            <a
+              href="https://supabase.com/dashboard/org/fhybmalkjzbwypracsmx/usage"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 self-start rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold hover:bg-white/30"
+            >
+              Check usage &amp; billing →
+            </a>
+          )}
         </div>
       )}
 

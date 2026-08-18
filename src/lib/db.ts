@@ -40,10 +40,18 @@ export type DbRow = Record<string, unknown>;
  */
 export class DbError extends Error {
   readonly code?: string;
-  constructor(table: string, message: string, code?: string) {
+  /**
+   * The HTTP status, when there was one. Carried because the Postgres error
+   * `code` is undefined for failures that never reached Postgres — a 402 from
+   * Supabase's own quota enforcement being the one that matters. See
+   * `isServiceBlocked`.
+   */
+  readonly status?: number;
+  constructor(table: string, message: string, code?: string, status?: number) {
     super(`${table}: ${message}`);
     this.name = "DbError";
     this.code = code;
+    this.status = status;
   }
 }
 
@@ -70,6 +78,38 @@ const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204"]);
 /** True when the query failed because the schema lacks something, not because the request failed. */
 export function isMissingSchema(e: unknown): boolean {
   return e instanceof DbError && !!e.code && MISSING_SCHEMA_CODES.has(e.code);
+}
+
+/**
+ * Supabase has stopped serving the project because the organization is over its
+ * usage quota — every request returns **402 Payment Required**.
+ *
+ * ⚠️ Deliberately NARROW. A background refresh failing is normally a dropped
+ * connection: nothing the user can act on, which is why `refresh` swallows it
+ * and keeps the data already on screen. This one is different in both respects —
+ * it is persistent and it is actionable (billing) — and it is invisible without
+ * help: an open tab goes on showing stale figures indefinitely, and the first
+ * sign otherwise is a CLIENT finding a broken report link. So this, and only
+ * this, is promoted to a banner. Do not widen it to "any failure".
+ *
+ * The 402 has no Postgres `code` — it never reaches Postgres — so the status is
+ * the only reliable signal, with the message as a fallback for the paths that
+ * lose it.
+ */
+export function isServiceBlocked(e: unknown): boolean {
+  if (e instanceof DbError && e.status === 402) return true;
+  return e instanceof Error && /payment required/i.test(e.message);
+}
+
+/**
+ * Throw a `DbError` (carrying the status, so `isServiceBlocked` can see it) for
+ * a query built directly rather than through `fetchAll`.
+ */
+export function assertOk(
+  table: string,
+  res: { error: { message: string; code?: string } | null; status?: number },
+): void {
+  if (res.error) throw new DbError(table, res.error.message, res.error.code, res.status);
 }
 
 /**
@@ -126,8 +166,8 @@ export async function fetchAll<T>(
   for (let from = 0; ; from += PAGE) {
     let q = sb.from(table).select(columns).range(from, from + PAGE - 1);
     if (modify) q = modify(q);
-    const { data, error } = await q;
-    if (error) throw new DbError(table, error.message, error.code);
+    const { data, error, status } = await q;
+    if (error) throw new DbError(table, error.message, error.code, status);
     out.push(...((data ?? []) as T[]));
     if (!data || data.length < PAGE) break;
   }
