@@ -10,6 +10,7 @@ import {
   describeUploadSet,
   formatSize,
 } from "@/lib/uploads";
+import { createClient } from "@/lib/supabase/client";
 import {
   CLOSING_ASKS,
   FIELDS,
@@ -511,20 +512,89 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
  * ⚠️ A bare `<input type="file" multiple>` REPLACES its selection on every
  * pick, so choosing files one at a time silently discarded all but the last —
  * which is why a form promising five files appeared to take one. The input is
- * only a trigger; this array is the truth, and `handleSubmit` copies it into
- * the FormData by hand.
+ * only a trigger; this array is the truth.
+ *
+ * ⚠️ EACH FILE UPLOADS THE MOMENT IT IS PICKED, straight into the bucket with a
+ * signed URL, and the submission carries only its PATH. Two reasons, and the
+ * first is why a client lost a brief: posting the bytes through the API meant
+ * every attachment shared one 4.5MB request budget with the whole form, and a
+ * body over that is dropped by the platform before any code runs, so nothing
+ * could explain the failure (v1.19.2). The second is that uploading at SUBMIT
+ * would put a 25MB wait behind the one button the client has already pressed —
+ * here the transfer happens while they are still filling the form in, and the
+ * row says where it has got to.
  */
-function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) => void }) {
+type Attachment = {
+  /** Stable across re-renders; the file name is not (two picks can share one). */
+  key: string;
+  file: File;
+  state: "uploading" | "done" | "error";
+  /** Set once stored. This, not the bytes, is what the submission posts. */
+  path?: string;
+  error?: string;
+};
+
+/**
+ * ⚠️ The ANON client, on a page with no session — and that is fine: the write is
+ * authorized by the single-use token the server mints in ./upload, not by the
+ * key. Created once at module scope rather than per render, so a re-render
+ * mid-upload cannot swap the client out from under a transfer in flight.
+ */
+const supabase = createClient();
+
+function FileRows({
+  token,
+  files,
+  onChange,
+}: {
+  token: string;
+  files: Attachment[];
+  onChange: (f: Attachment[] | ((prev: Attachment[]) => Attachment[])) => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [refused, setRefused] = useState<{ name: string; reason: string }[]>([]);
 
+  /**
+   * ⚠️ Updates by KEY through the functional form, never by index into a
+   * captured array: an upload finishing is async, and by then the client may
+   * have removed a row or added two more, so an index would write the result
+   * onto whatever file happens to sit there now.
+   */
+  async function upload(item: Attachment) {
+    const fail = (reason: string) =>
+      onChange((prev) =>
+        prev.map((a) => (a.key === item.key ? { ...a, state: "error" as const, error: reason } : a)),
+      );
+    try {
+      const res = await fetch(`/api/intake/${token}/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: item.file.name, size: item.file.size }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) return fail(j.error ?? "Couldn't start the upload.");
+
+      const { error } = await supabase.storage
+        .from("intake")
+        .uploadToSignedUrl(j.path, j.token, item.file, { contentType: j.contentType });
+      if (error) return fail(`Upload failed — ${error.message}`);
+
+      onChange((prev) =>
+        prev.map((a) => (a.key === item.key ? { ...a, state: "done" as const, path: j.path } : a)),
+      );
+    } catch {
+      // Offline, or the tab lost the network mid-transfer.
+      fail("Upload failed — check your connection and try again.");
+    }
+  }
+
   function add(picked: FileList | null) {
     if (!picked?.length) return;
-    const accepted: File[] = [];
+    const accepted: Attachment[] = [];
     const rejected: { name: string; reason: string }[] = [];
     for (const file of picked) {
       // Same file twice is a mis-click, not an instruction to attach it twice.
-      if (files.some((f) => f.name === file.name && f.size === file.size)) continue;
+      if (files.some((a) => a.file.name === file.name && a.file.size === file.size)) continue;
       if (files.length + accepted.length >= MAX_INTAKE_FILES) {
         rejected.push({ name: file.name, reason: `Only ${MAX_INTAKE_FILES} files can be attached.` });
         continue;
@@ -534,21 +604,23 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         rejected.push({ name: file.name, reason: check.reason });
         continue;
       }
-      // ⚠️ The BUDGET is checked per file as it lands, against everything
-      // already attached. Checking only at submit would let someone pick five
-      // files and then be told the set is too big without being told which one
-      // broke it — and the whole point of refusing here is that the server
-      // never gets the chance to explain (an oversized body is dropped by the
-      // platform before the route runs).
-      const set = describeUploadSet([...files, ...accepted, file]);
+      // ⚠️ The BUDGET is weighed per file as it lands, against everything
+      // already attached — before the upload starts, so a file that cannot be
+      // part of the brief is never sent to storage in the first place.
+      const set = describeUploadSet([
+        ...files.map((a) => a.file),
+        ...accepted.map((a) => a.file),
+        file,
+      ]);
       if (!set.ok) {
         rejected.push({ name: file.name, reason: set.reason });
         continue;
       }
-      accepted.push(file);
+      accepted.push({ key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, file, state: "uploading" });
     }
     onChange([...files, ...accepted]);
     setRefused(rejected);
+    for (const item of accepted) void upload(item);
   }
 
   return (
@@ -565,21 +637,35 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
           ) : null
         }
       />
-      {files.map((f, i) => (
+      {files.map((a) => (
         <div
-          key={`${f.name}-${f.size}-${i}`}
+          key={a.key}
           className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
         >
           <Paperclip size={14} className="shrink-0 text-faint" />
-          <span className="bidi-auto min-w-0 flex-1 truncate text-base">{f.name}</span>
-          <span className="shrink-0 text-sm tabular-nums text-muted">{formatSize(f.size)}</span>
+          <span className="bidi-auto min-w-0 flex-1 truncate text-base">{a.file.name}</span>
+          {/* The state of the transfer, in the row it belongs to. "Sending…"
+              rather than a percentage: `uploadToSignedUrl` reports completion,
+              not progress, and a fake bar is worse than an honest word. */}
+          {a.state === "uploading" && <span className="shrink-0 text-sm text-muted">Sending…</span>}
+          {a.state === "error" && (
+            <span className="shrink-0 text-sm text-danger" role="alert">
+              {a.error}
+            </span>
+          )}
+          <span className="shrink-0 text-sm tabular-nums text-muted">{formatSize(a.file.size)}</span>
           <button
             type="button"
             onClick={() => {
-              onChange(files.filter((_, n) => n !== i));
+              // ⚠️ Removed by KEY. Filtering by index would drop the wrong row
+              // when an upload finishing has just re-ordered nothing but the
+              // array identity — and the stored object is deliberately left in
+              // the bucket: an orphan is much the cheaper mistake than deleting
+              // a file a second brief is about to reference.
+              onChange((prev) => prev.filter((x) => x.key !== a.key));
               setRefused([]);
             }}
-            aria-label={`Remove ${f.name}`}
+            aria-label={`Remove ${a.file.name}`}
             className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
           >
             <X size={16} />
@@ -685,7 +771,7 @@ function Review({
   kinds: string[];
   deliverables: DraftDeliverable[];
   links: DraftLink[];
-  files: File[];
+  files: Attachment[];
   steps: Step[];
   onEdit: (step: number) => void;
 }) {
@@ -765,11 +851,18 @@ function Review({
                   {l.title || l.url}
                 </span>
               ))}
-              {files.map((f, i) => (
-                <span key={`f${i}`} className="bidi-auto block truncate">
+              {files.map((a) => (
+                <span key={a.key} className="bidi-auto block truncate">
                   <Paperclip size={12} className="mr-1 inline" />
-                  {f.name}{" "}
-                  <span className="text-sm text-muted">{formatSize(f.size)}</span>
+                  {a.file.name}{" "}
+                  <span className="text-sm text-muted">{formatSize(a.file.size)}</span>
+                  {/* The review page is the last thing read before sending, so
+                      it has to show an attachment that is not actually going. */}
+                  {a.state !== "done" && (
+                    <span className={a.state === "error" ? "text-sm text-danger" : "text-sm text-muted"}>
+                      {a.state === "error" ? " — not uploaded" : " — sending…"}
+                    </span>
+                  )}
                 </span>
               ))}
             </dd>
@@ -803,7 +896,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   // dropped at submit, so a client who ignores it costs nothing.
   const [deliverables, setDeliverables] = useState<DraftDeliverable[]>(() => [newDeliverable()]);
   const [links, setLinks] = useState<DraftLink[]>([]);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<Attachment[]>([]);
   const [remembered, setRemembered] = useState(false);
 
   const [step, setStep] = useState(0);
@@ -895,13 +988,20 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!checkStep()) return;
-    // ⚠️ Belt and braces: `FileRows` already refuses a file that would break the
-    // budget, but this is the last point at which anything can be SAID about it.
-    // Past here the request is the platform's to accept or drop, and a dropped
-    // one comes back with no body to read a reason from.
-    const set = describeUploadSet(files);
-    if (!set.ok) {
-      setError(set.reason);
+    // ⚠️ Attachments are uploaded as they are picked, so submitting is only
+    // allowed once every one of them has LANDED. Posting mid-transfer would
+    // reference a path storage does not have yet, and the route would correctly
+    // record it as "the upload didn't finish" — a brief silently short an
+    // attachment, which is the failure this whole area exists to prevent.
+    if (files.some((a) => a.state === "uploading")) {
+      setError("Still sending your files — one moment.");
+      return;
+    }
+    const failed = files.filter((a) => a.state === "error");
+    if (failed.length) {
+      setError(
+        `Couldn't upload ${failed.map((a) => a.file.name).join(", ")} — remove ${failed.length === 1 ? "it" : "them"} or try again before sending.`,
+      );
       return;
     }
     setState("sending");
@@ -928,7 +1028,13 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           })),
       ),
     );
-    for (const f of files) body.append("files", f);
+    // ⚠️ PATHS, not bytes. The files are already in the bucket; sending them
+    // again is what put this request over the platform's 4.5MB body limit and
+    // lost a client's brief.
+    body.set(
+      "uploaded",
+      JSON.stringify(files.filter((a) => a.path).map((a) => ({ path: a.path, name: a.file.name }))),
+    );
 
     const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
     if (!res.ok) {
@@ -1094,7 +1200,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           {current.attachments && (
             <>
               <LinkRows links={links} onChange={setLinks} />
-              <FileRows files={files} onChange={setFiles} />
+              <FileRows token={token} files={files} onChange={setFiles} />
             </>
           )}
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_INTAKE_BYTES,
   MAX_INTAKE_TOTAL_BYTES,
+  STORED_CONTENT_TYPES,
   describeUploadSet,
   classifyImage,
   classifyUpload,
@@ -91,7 +92,10 @@ describe("describeUpload — the reason a client is shown", () => {
   });
 
   it("refuses anything over the cap, names the size, and points at the link field", () => {
-    const r = describeUpload(file("video.mp4", 24 * 1024 * 1024));
+    // ⚠️ Sized from the CAP, not a literal. This said 24MB against a 10MB cap
+    // and started passing the day the cap rose to 25MB — the rule under test is
+    // "over the limit is refused", which no fixed number can express.
+    const r = describeUpload(file("video.mp4", MAX_INTAKE_BYTES + 5 * 1024 * 1024));
     expect(r.ok).toBe(false);
     expect(r).toMatchObject({ reason: expect.stringContaining("WeTransfer") });
     // The client is told the actual size, not merely that it was too big.
@@ -100,7 +104,7 @@ describe("describeUpload — the reason a client is shown", () => {
     // request budget — the rule under test is "the message names the actual
     // cap", not what that cap happens to be.
     expect((r as { reason: string }).reason).toContain(
-      `That's 24 MB, over the ${formatSize(MAX_INTAKE_BYTES)} limit`,
+      `That's ${formatSize(MAX_INTAKE_BYTES + 5 * 1024 * 1024)}, over the ${formatSize(MAX_INTAKE_BYTES)} limit`,
     );
   });
 
@@ -144,56 +148,74 @@ describe("describeUpload — the reason a client is shown", () => {
   });
 });
 
-describe("describeUploadSet", () => {
+describe("the set that cost a client a brief", () => {
   const MB = 1024 * 1024;
-  const f = (name: string, size: number) => ({ name, size });
+  const file = (name: string, size: number) => ({ name, size }) as File;
 
-  // ⚠️ THE REAL SUBMISSION THAT WAS LOST, 2026-08-17. Three screenshots on the
-  // "Partner Event | Flags" brief: each one passed the per-file check, and
-  // together they made a request the platform dropped before the route ran, so
-  // the client got "Something went wrong" and nothing was ever recorded.
-  it("refuses the set that broke the Flags brief", () => {
+  /**
+   * ⚠️ THE REAL SUBMISSION, 2026-08-17. Three screenshots on "Partner Event |
+   * Flags" totalling 4.3MB. They were refused not by any rule the app chose but
+   * by the platform, which drops a request body over 4.5MB before the route
+   * runs — so the client saw "Something went wrong" and the brief was never
+   * recorded. v1.19.2 made the app say so honestly; v1.19.3 removed the request
+   * from the file path altogether, so these three now go through.
+   */
+  it("accepts all three files that were lost", () => {
+    for (const f of [
+      file("Screenshot 2026-08-17 at 22.35.58.png", 1.5 * MB),
+      file("exec-11e47c0e-953b-4882-90ab-4a290e80b9bc.png", 2.7 * MB),
+      file("WhatsApp Image 2026-08-04 at 20.15.09.jpeg", 105 * 1024),
+    ]) {
+      expect(describeUpload(f).ok).toBe(true);
+    }
+  });
+
+  // The thing Nitsan actually asked for: "not less than 10mb for sure".
+  it("takes a file well past the old 10MB ceiling", () => {
+    expect(describeUpload(file("poster.pdf", 20 * MB)).ok).toBe(true);
+    expect(MAX_INTAKE_BYTES).toBeGreaterThanOrEqual(10 * MB);
+  });
+
+  it("lets one file spend the whole brief budget, and no more", () => {
+    expect(describeUploadSet([file("one.pdf", MAX_INTAKE_TOTAL_BYTES)]).ok).toBe(true);
+    expect(describeUploadSet([file("one.pdf", MAX_INTAKE_TOTAL_BYTES + 1)]).ok).toBe(false);
+  });
+
+  // ⚠️ The cap is now a TOTAL, so it is the sum that must be refused — fifteen
+  // files each comfortably legal on their own are not.
+  it("refuses a set that only breaks the budget together, naming the biggest", () => {
     const r = describeUploadSet([
-      f("Screenshot 2026-08-17 at 22.35.58.png", 1.5 * MB),
-      f("exec-11e47c0e-953b-4882-90ab-4a290e80b9bc.png", 2.7 * MB),
-      f("WhatsApp Image 2026-08-04 at 20.15.09.jpeg", 105 * 1024),
+      file("small.png", 2 * MB),
+      file("huge.pdf", 25 * MB),
+      file("medium.png", 8 * MB),
     ]);
     expect(r.ok).toBe(false);
     if (r.ok) return;
-    // It must name the file to drop — "too large" across three attachments
-    // leaves the client guessing, which is the failure this replaces.
-    expect(r.reason).toContain("exec-11e47c0e");
-    expect(r.reason).toContain("4.3 MB");
+    expect(r.reason).toContain("huge.pdf");
+    expect(r.reason).toContain(formatSize(MAX_INTAKE_TOTAL_BYTES));
   });
 
-  // The same client's earlier brief, which went through fine. A fix that also
-  // refuses this one would have cost them briefs 1 and 2 as well.
-  it("accepts the 2.65MB set that did get through", () => {
-    expect(
-      describeUploadSet([
-        f("exec-9fbebd99.png", 2430 * 1024),
-        f("WhatsApp Image 2026-08-04 at 20.14.58.jpeg", 179 * 1024),
-        f("WhatsApp Image 2026-08-04 at 20.14.56.jpeg", 104 * 1024),
-      ]).ok,
-    ).toBe(true);
-  });
-
-  it("is exact at the boundary", () => {
-    expect(describeUploadSet([f("a.png", MAX_INTAKE_TOTAL_BYTES)]).ok).toBe(true);
-    expect(describeUploadSet([f("a.png", MAX_INTAKE_TOTAL_BYTES + 1)]).ok).toBe(false);
-  });
-
-  it("has nothing to complain about with no files", () => {
-    const r = describeUploadSet([]);
-    expect(r.ok).toBe(true);
-    expect(r.total).toBe(0);
-  });
-
-  // ⚠️ The per-file cap must not exceed the request budget. It used to be 10MB
-  // against a 4.5MB platform limit, so a 6MB file passed every check the app
-  // made and then failed 100% of the time with no explanation.
-  it("never promises a single file bigger than one request can carry", () => {
-    expect(MAX_INTAKE_BYTES).toBeLessThanOrEqual(MAX_INTAKE_TOTAL_BYTES);
+  /**
+   * ⚠️ These are the types the BUCKET is configured to allow, and that config is
+   * now the only thing standing between a direct browser upload and an
+   * `x.png` stored as `text/html` on a public bucket on our own domain. The
+   * route used to force the type on every upload and cannot any more.
+   * If this list changes, re-run scripts/configure-intake-bucket.mjs.
+   */
+  it("stores everything as one of eight safe types, none of them renderable markup", () => {
+    expect(STORED_CONTENT_TYPES).toEqual([
+      "application/octet-stream",
+      "application/pdf",
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "text/csv",
+      "text/plain",
+    ]);
+    for (const t of STORED_CONTENT_TYPES) {
+      expect(t).not.toMatch(/html|svg|xml|javascript/);
+    }
   });
 });
 

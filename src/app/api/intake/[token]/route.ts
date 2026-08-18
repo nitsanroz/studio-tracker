@@ -11,7 +11,13 @@ import {
 } from "@/lib/brief";
 import { kindById } from "@/lib/intake-fields";
 import { hostLabel, normalizeUrl } from "@/lib/links";
-import { MAX_INTAKE_FILES, describeUpload, describeUploadSet } from "@/lib/uploads";
+import {
+  MAX_INTAKE_BYTES,
+  MAX_INTAKE_FILES,
+  MAX_INTAKE_TOTAL_BYTES,
+  classifyUpload,
+  formatSize,
+} from "@/lib/uploads";
 
 // Anti-flood: max submissions accepted per intake link within the window.
 const RATE_LIMIT_WINDOW_MIN = 10;
@@ -142,6 +148,31 @@ function parseLinks(raw: string): BriefLink[] {
   return out;
 }
 
+/**
+ * The files the browser has ALREADY put in the bucket, posted as one JSON field
+ * of `{path, name}` — never the bytes. Bounded and re-checked like every other
+ * list this unauthenticated endpoint accepts; the path is verified against
+ * storage by the caller, since anything here is only a claim.
+ */
+function parseUploaded(raw: string): { path: string; name: string }[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw || "[]");
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: { path: string; name: string }[] = [];
+  for (const row of parsed.slice(0, MAX_INTAKE_FILES + 3)) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    const path = typeof r.path === "string" ? r.path.slice(0, 300) : "";
+    const name = (typeof r.name === "string" ? r.name : "").slice(0, 200);
+    if (path && name) out.push({ path, name });
+  }
+  return out;
+}
+
 /** Match "Company" text + email domain against client names. */
 async function suggestClient(sb: ReturnType<typeof admin>, company: string, email: string) {
   const { data: clients } = await sb.from("clients").select("id, name").eq("archived", false);
@@ -222,45 +253,72 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
 
   const links = parseLinks(String(form.get("links") ?? ""));
 
-  // Files (≤10MB each, max 5)
+  // Attachments.
   //
-  // ⚠️ Every branch here used to be a bare `continue`, so a refused or failed
-  // file vanished without a trace: the client was thanked, and the studio saw a
-  // brief that gave no hint an attachment was ever meant to exist. The form now
-  // runs the same `describeUpload` check before submitting, so anything landing
-  // in `dropped` is a storage failure or a client that bypassed the form — rare,
-  // and exactly the case worth recording rather than swallowing.
+  // ⚠️ THE BYTES NO LONGER COME THROUGH HERE. The browser uploads each file
+  // straight into the bucket with a signed URL from ./upload, and posts only the
+  // PATHS — because a Vercel function refuses a request body over 4.5MB, which
+  // silently cost a client a brief in v1.19.2. What arrives here is a claim, so
+  // every path is re-checked against storage before it becomes an attachment.
+  //
+  // ⚠️ Every rejection is RECORDED, never a bare `continue`. A refused file that
+  // vanishes leaves the client thanked and the studio reading a brief with no
+  // hint an attachment was ever meant to exist — the silence this whole area was
+  // rewritten to end.
   const files: IntakeFile[] = [];
   const dropped: string[] = [];
-  const sent = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-  // ⚠️ Report the overflow rather than letting `slice` eat it. The cap is real,
-  // but a 6th file disappearing without a word is the same silence this whole
-  // change exists to end — and the form caps at 5 already, so anything landing
-  // here came from something that bypassed it.
-  for (const extra of sent.slice(MAX_INTAKE_FILES)) {
+  const claimed = parseUploaded(String(form.get("uploaded") ?? ""));
+  let stored = 0;
+  for (const extra of claimed.slice(MAX_INTAKE_FILES)) {
     dropped.push(`${extra.name} — only ${MAX_INTAKE_FILES} files can be attached`);
   }
-  // ⚠️ The same budget the form enforces, re-checked here. A request this size
-  // normally never arrives — the platform drops anything over 4.5MB before this
-  // route runs — so reaching this branch means something bypassed the form. Say
-  // so in the brief rather than storing files the form would have refused.
-  const budget = describeUploadSet(sent.slice(0, MAX_INTAKE_FILES));
-  if (!budget.ok) dropped.push(budget.reason);
-  for (const file of budget.ok ? sent.slice(0, MAX_INTAKE_FILES) : []) {
-    const cls = describeUpload(file);
-    if (!cls.ok) {
-      dropped.push(`${file.name} — ${cls.reason}`);
+  for (const item of claimed.slice(0, MAX_INTAKE_FILES)) {
+    // ⚠️ The path must sit under THIS link's own prefix. Without it a submission
+    // could name any object in the bucket and attach another client's file to
+    // its own brief — the whole reason ./upload namespaces what it mints.
+    if (!item.path.startsWith(`${link.id}/`) || item.path.includes("..")) {
+      dropped.push(`${item.name} — upload could not be verified`);
       continue;
     }
-    const safe = file.name.replace(/[^\w.\-]+/g, "_");
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
-    const { error } = await sb.storage.from("intake").upload(path, file, { contentType: cls.contentType });
-    if (error) {
-      dropped.push(`${file.name} — upload failed (${error.message})`);
+    // The object as STORAGE has it, not as the browser described it: its real
+    // size and the type it was actually stored under.
+    const slash = item.path.lastIndexOf("/");
+    const { data: found } = await sb.storage
+      .from("intake")
+      .list(item.path.slice(0, slash), { search: item.path.slice(slash + 1), limit: 1 });
+    const object = found?.[0];
+    if (!object) {
+      dropped.push(`${item.name} — the upload didn't finish`);
       continue;
     }
-    const { data: pub } = sb.storage.from("intake").getPublicUrl(path);
-    files.push({ name: file.name, url: pub.publicUrl });
+    const size = Number(object.metadata?.size ?? 0);
+    const mime = String(object.metadata?.mimetype ?? "");
+    if (size > MAX_INTAKE_BYTES) {
+      dropped.push(`${item.name} — ${formatSize(size)}, over the ${formatSize(MAX_INTAKE_BYTES)} limit`);
+      continue;
+    }
+    // ⚠️ Belt and braces behind the bucket's own `allowed_mime_types`. The route
+    // used to FORCE a safe Content-Type on every upload; a browser writing
+    // directly picks its own, and an `x.png` stored as `text/html` on a public
+    // bucket on our domain is hosted XSS. The bucket refuses it first — this
+    // catches a bucket whose config drifted.
+    const expected = classifyUpload({ name: item.name } as File);
+    if (!expected.ok || mime !== expected.contentType) {
+      dropped.push(`${item.name} — unsupported file type`);
+      continue;
+    }
+    // ⚠️ The per-brief total, weighed on what STORAGE says these objects are —
+    // not on what the browser claimed when it asked for an upload URL. This is
+    // the check that actually binds the budget.
+    if (stored + size > MAX_INTAKE_TOTAL_BYTES) {
+      dropped.push(
+        `${item.name} — over the ${formatSize(MAX_INTAKE_TOTAL_BYTES)} total for one brief`,
+      );
+      continue;
+    }
+    stored += size;
+    const { data: pub } = sb.storage.from("intake").getPublicUrl(item.path);
+    files.push({ name: item.name, url: pub.publicUrl });
   }
 
   const clientId = link.client_id ?? null;
