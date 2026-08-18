@@ -407,22 +407,43 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     if (!existing || existing.edit_key !== editKey || existing.intake_link_id !== link.id) {
       return NextResponse.json({ error: "That brief can no longer be edited." }, { status: 404 });
     }
-    if (existing.status !== "pending") {
-      return NextResponse.json(
-        { error: "The studio has already picked this brief up — send it as a new one instead." },
-        { status: 409 },
-      );
-    }
+    /**
+     * ⚠️ AN APPROVED BRIEF MAY STILL BE EDITED, and this is the case the whole
+     * revision design exists for. Nitsan: "what happens if i get an update to a
+     * brief i already turned into a task, edited its text and refined it as i
+     * wish… i want to see what changed and deal with changes with carefulness
+     * not erasing edits i already made." So the client's change lands HERE, on
+     * the request row, and the task keeps the words the studio wrote. Applying
+     * any of it to the task is an explicit action in the queue.
+     *
+     * ⚠️ `seen_at`/`seen_by` are CLEARED, at Nitsan's request: a brief he had
+     * marked as read is not read any more once the client rewrites it. The
+     * queue's "needs review" test is `edited_at > acked_at`, so clearing these
+     * keeps the two readings of "handled" consistent rather than leaving a ✓ on
+     * something nobody has looked at.
+     *
+     * ⚠️ `answers_ack`, `acked_at`, `status`, `created_at` and
+     * `client_notified_at` are all deliberately untouched. `answers_ack` is the
+     * baseline the diff is measured from — overwriting it here would erase the
+     * very comparison the studio needs; and re-opening a status would undo the
+     * studio's own decision on the strength of a client's edit.
+     */
     const { error: upErr } = await sb
       .from("task_requests")
-      .update({ ...row, edited_at: new Date().toISOString() })
+      .update({ ...row, edited_at: new Date().toISOString(), seen_at: null, seen_by: null })
       .eq("id", editId);
     if (upErr) {
       console.error("intake edit failed", upErr);
       return NextResponse.json({ error: "Could not save your changes — please try again." }, { status: 500 });
     }
     await notify(sb, req, answers, { files, links, dropped }, true);
-    return NextResponse.json({ ok: true, id: editId, editKey });
+    return NextResponse.json({
+      ok: true,
+      id: editId,
+      editKey,
+      // Lets the form thank them differently for revising work already under way.
+      wasStarted: existing.status !== "pending",
+    });
   }
 
   // ⚠️ The key is minted below and returned exactly ONCE — it is never selected

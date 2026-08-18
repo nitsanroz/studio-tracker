@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, PencilLine, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import {
   addDays,
@@ -34,6 +34,7 @@ import { WeekTimesheet } from "./week-timesheet";
 import { MobileLogTimeSheet } from "./mobile-log-time";
 import { MemberWeekHours } from "./member-week-hours";
 import { dailyTargetMinutes } from "@/lib/members";
+import { needsReview } from "@/lib/brief-diff";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { Profile, TimeEntry } from "@/lib/types";
 
@@ -1115,6 +1116,40 @@ function StatTile({
 }
 
 /** Studio-wide KPI tiles for admins: hours, billable, active tasks, avg/designer. */
+/**
+ * "A client changed a brief you've already handled" — on the admin home, not
+ * only in the queue.
+ *
+ * ⚠️ Renders NOTHING when there is nothing to say (no empty state, no zero
+ * count). A permanent pane reporting "0 updates" is one nobody reads by the
+ * second week, which would defeat the point of putting it above the figures.
+ */
+function UpdatedBriefsAlert() {
+  const { taskRequests } = useData();
+  const updated = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
+  if (!updated.length) return null;
+  return (
+    <Link
+      href="/intake-queue"
+      className="flex items-start gap-3 rounded-2xl border-2 border-brand/40 bg-brand/5 px-4 py-3 hover:bg-brand/10"
+    >
+      <PencilLine size={18} className="mt-0.5 shrink-0 text-brand" />
+      <span className="min-w-0">
+        <span className="block text-base font-semibold">
+          {updated.length === 1
+            ? "A client changed a brief"
+            : `${updated.length} briefs were changed by clients`}
+        </span>
+        {/* Names them, so it is obvious at a glance whether this is the job
+            somebody is working on today. */}
+        <span className="bidi-auto block truncate text-sm text-muted">
+          {updated.map((r) => r.title).join(" · ")} — see what changed
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange: { from: string; to: string } | null }) {
   // entrySumsAll: "Studio hours" and "Billable" are studio-wide history and should
   // reach back to 2016 on "All time". The per-person figures below deliberately do
@@ -1832,6 +1867,13 @@ export function Dashboard() {
               lg:h-0 + lg:min-h-full on the last one means it FILLS the row's
               height without CONTRIBUTING to it — otherwise a long occasion list
               would stretch the whole row. */}
+          {/* ⚠️ ABOVE the figures, because it is the only thing here that can go
+              stale in a way that costs work: a client has changed a brief the
+              studio may already have drawn from. Nitsan asked to be told on the
+              dashboard, and a badge in the header is easy to walk past. It
+              disappears the moment the changes are read — see `needsReview`. */}
+          <UpdatedBriefsAlert />
+
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-6">
               <StatTiles filter={filter} prevRange={prevRange} />

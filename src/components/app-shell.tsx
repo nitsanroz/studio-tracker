@@ -31,6 +31,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
+import { needsReview } from "@/lib/brief-diff";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 import { AboutModal } from "./about-modal";
@@ -240,13 +241,14 @@ function BarLink({
 function MobileBar({
   pathname,
   isAdmin,
-  pendingIntake,
+  intakeBadge,
   onMenu,
   onLogTime,
 }: {
   pathname: string;
   isAdmin: boolean;
-  pendingIntake: number;
+  /** Everything waiting in the queue: new submissions PLUS unread client edits. */
+  intakeBadge: number;
   onMenu: () => void;
   onLogTime: () => void;
 }) {
@@ -295,7 +297,7 @@ function MobileBar({
           label="Inbox"
           Icon={Inbox}
           active={pathname.startsWith("/intake-queue")}
-          badge={pendingIntake}
+          badge={intakeBadge}
         />
       )}
       <button
@@ -359,7 +361,7 @@ function MobileDrawer({
   pathname,
   isAdmin,
   me,
-  pendingIntake,
+  intakeBadge,
   onClose,
   onAbout,
   onNews,
@@ -367,7 +369,8 @@ function MobileDrawer({
   pathname: string;
   isAdmin: boolean;
   me: Profile | null;
-  pendingIntake: number;
+  /** New submissions PLUS unread client edits — see AppShell. */
+  intakeBadge: number;
   onClose: () => void;
   onAbout: () => void;
   onNews: () => void;
@@ -435,9 +438,9 @@ function MobileDrawer({
             >
               <Inbox size={20} strokeWidth={1.75} />
               Intake
-              {pendingIntake > 0 && (
+              {intakeBadge > 0 && (
                 <span className="ml-auto flex size-5 items-center justify-center rounded-full bg-danger text-[11px] font-bold text-white">
-                  {pendingIntake}
+                  {intakeBadge}
                 </span>
               )}
             </Link>
@@ -535,6 +538,14 @@ function Shell({ children }: { children: ReactNode }) {
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
+  /**
+   * ⚠️ Counted across EVERY status, unlike `pendingIntake`. A client can revise a
+   * brief that is already an approved task (0030), and that revision is exactly
+   * the one that must not go unnoticed — the studio may have drawn from the old
+   * words already. `needsReview` stops counting it once an admin has read the
+   * changes, so the badge means "unread", not "ever edited".
+   */
+  const updatedIntake = taskRequests.filter(needsReview).length;
 
   // Read in an effect, never in the useState initialiser: the server renders
   // this too, and reading localStorage there is a hydration mismatch. Same
@@ -676,12 +687,16 @@ function Shell({ children }: { children: ReactNode }) {
               label="Intake"
               Icon={Inbox}
               folded={folded}
-              badge={pendingIntake}
+              badge={pendingIntake + updatedIntake}
               active={pathname.startsWith("/intake-queue")}
               activeStyle={
                 pathname.startsWith("/intake-queue")
                   ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
-                  : pendingIntake > 0
+                  // ⚠️ The aqua highlight fires for an unread client EDIT too, not
+                  // only for a new submission — a revision of an approved brief is
+                  // not pending, so the old test would have left the nav silent on
+                  // exactly the case that most needs a look.
+                  : pendingIntake + updatedIntake > 0
                     ? { backgroundColor: "var(--aqua)", color: "#06112f" }
                     : undefined
               }
@@ -771,7 +786,7 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2.5">
             <SyncDot />
             {isAdmin && (
-              <NotificationsBell pendingIntake={pendingIntake} />
+              <NotificationsBell pendingIntake={pendingIntake} updatedIntake={updatedIntake} />
             )}
             {/* The account chip moves into the drawer below md — see MobileDrawer. */}
             <Link
@@ -795,7 +810,7 @@ function Shell({ children }: { children: ReactNode }) {
       <MobileBar
         pathname={pathname}
         isAdmin={isAdmin}
-        pendingIntake={pendingIntake}
+        intakeBadge={pendingIntake + updatedIntake}
         onMenu={() => setDrawerOpen(true)}
         onLogTime={() => setLogTimeOpen(true)}
       />
@@ -804,7 +819,7 @@ function Shell({ children }: { children: ReactNode }) {
           pathname={pathname}
           isAdmin={isAdmin}
           me={me}
-          pendingIntake={pendingIntake}
+          intakeBadge={pendingIntake + updatedIntake}
           onClose={() => setDrawerOpen(false)}
           onAbout={() => setAboutOpen(true)}
           onNews={() => setNewsOpen(true)}

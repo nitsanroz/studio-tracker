@@ -15,6 +15,7 @@ import { OccasionsSettings } from "@/components/occasions-settings";
 import {
   renderSeenEmail,
   SEEN_EMAIL_DEFAULT,
+  SEEN_UPDATE_EMAIL_DEFAULT,
   SEEN_EMAIL_PLACEHOLDERS,
   type SeenEmailTemplate,
 } from "@/lib/brief";
@@ -151,10 +152,23 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
  * no schema of its own. `/api/intake/seen` reads it and falls back to
  * SEEN_EMAIL_DEFAULT if it is missing or malformed.
  */
-function ClientEmailSettings() {
+function ClientEmailSettings({
+  settingKey = "intake_seen_email",
+  fallback = SEEN_EMAIL_DEFAULT,
+  title = "Email to the client",
+  blurb,
+}: {
+  /** ⚠️ Two receipts share this editor: the first brief, and a later change to
+   *  one. Parameterised rather than copied, so the placeholder list, the escaping
+   *  and the save behaviour cannot drift between them. */
+  settingKey?: string;
+  fallback?: SeenEmailTemplate;
+  title?: string;
+  blurb?: React.ReactNode;
+} = {}) {
   const supabase = useMemo(() => createClient(), []);
-  const [tpl, setTpl] = useState<SeenEmailTemplate>(SEEN_EMAIL_DEFAULT);
-  const [saved, setSaved] = useState<SeenEmailTemplate>(SEEN_EMAIL_DEFAULT);
+  const [tpl, setTpl] = useState<SeenEmailTemplate>(fallback);
+  const [saved, setSaved] = useState<SeenEmailTemplate>(fallback);
   const [status, setStatus] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -162,21 +176,25 @@ function ClientEmailSettings() {
     supabase
       .from("app_settings")
       .select("value")
-      .eq("key", "intake_seen_email")
+      .eq("key", settingKey)
       .maybeSingle()
       .then(({ data }) => {
         const v = data?.value as Partial<SeenEmailTemplate> | null;
         if (v && typeof v === "object") {
           const next = {
-            subject: typeof v.subject === "string" ? v.subject : SEEN_EMAIL_DEFAULT.subject,
-            body: typeof v.body === "string" ? v.body : SEEN_EMAIL_DEFAULT.body,
+            subject: typeof v.subject === "string" ? v.subject : fallback.subject,
+            body: typeof v.body === "string" ? v.body : fallback.body,
           };
           setTpl(next);
           setSaved(next);
         }
         setLoaded(true);
       });
-  }, [supabase]);
+    // ⚠️ `settingKey` and `fallback` belong here now that the editor serves two
+    // templates — without them a change of key would keep showing the other
+    // one's saved text. Both are module constants at every call site, so the
+    // effect still runs exactly once per instance.
+  }, [supabase, settingKey, fallback]);
 
   const dirty = tpl.subject !== saved.subject || tpl.body !== saved.body;
 
@@ -196,7 +214,7 @@ function ClientEmailSettings() {
     const value = { subject: tpl.subject.trim(), body: tpl.body.trim() };
     const { error } = await supabase
       .from("app_settings")
-      .upsert({ key: "intake_seen_email", value });
+      .upsert({ key: settingKey, value });
     if (error) {
       setStatus(error.message);
       return;
@@ -210,10 +228,14 @@ function ClientEmailSettings() {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-1 font-heading">Email to the client</h2>
+      <h2 className="mb-1 font-heading">{title}</h2>
       <p className="mb-3 text-xs text-muted">
-        Sent when you press <span className="font-medium">Tell client we&apos;ve seen it</span> on a
-        submission in the Intake Queue. Nothing is sent automatically.
+        {blurb ?? (
+          <>
+            Sent when you press <span className="font-medium">Tell client we&apos;ve seen it</span>{" "}
+            on a submission in the Intake Queue. Nothing is sent automatically.
+          </>
+        )}
       </p>
 
       <div className="flex flex-col gap-3">
@@ -810,6 +832,22 @@ export default function SettingsPage() {
         <div className="flex max-w-[860px] flex-col gap-4">
           <IntakeSettings />
           <ClientEmailSettings />
+          {/* ⚠️ Its own wording, not the same message with a word changed: this
+              one reaches someone whose brief the studio may already be working
+              on, and "your brief reached us" would read as though nobody
+              noticed they had changed anything. */}
+          <ClientEmailSettings
+            settingKey="intake_seen_update_email"
+            fallback={SEEN_UPDATE_EMAIL_DEFAULT}
+            title="Email when a client updates a brief"
+            blurb={
+              <>
+                Sent instead of the message above when you press{" "}
+                <span className="font-medium">Tell client we&apos;ve seen it</span> on a brief the
+                client has changed since sending it.
+              </>
+            }
+          />
         </div>
       )}
     </div>

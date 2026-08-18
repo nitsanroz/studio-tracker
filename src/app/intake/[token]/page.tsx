@@ -993,6 +993,8 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
    * very same brief and must NOT become one.
    */
   const [editing, setEditing] = useState<{ id: string; key: string } | null>(null);
+  /** The brief being edited is already a task — the warning changes, not the flow. */
+  const [started, setStarted] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const steps = useMemo(() => stepsFor(kinds), [kinds]);
@@ -1060,12 +1062,11 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         files: { name: string; path: string; size: number }[];
         editable: boolean;
       };
-      if (asEdit && !j.editable) {
-        // The studio picked it up between the list being drawn and this click.
-        setState("choose");
-        setError("The studio has already started on that one — you can duplicate it instead.");
-        return;
-      }
+      // ⚠️ NO editable gate any more. A client may revise a brief the studio has
+      // already turned into a task — that is the point of the revision flow — and
+      // the task is never touched by it. `j.editable` is still returned and is
+      // what the banner below uses to warn that work is already under way.
+      setStarted(asEdit && !j.editable);
       const a = j.answers;
       const str = (k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
       // ⚠️ Only the fields the FORM owns. Anything the studio has since added to
@@ -1103,6 +1104,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         })),
       );
       setEditing(asEdit ? { id: brief.id, key: brief.key } : null);
+      if (!asEdit) setStarted(false);
       setChose(true);
       setStep(1);
       setState("form");
@@ -1256,6 +1258,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       setSent(loadSent(token));
     }
     setEditing(null);
+    setStarted(false);
     setState("done");
   }
 
@@ -1299,6 +1302,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           onClick={() => {
             setChose(true);
             setEditing(null);
+            setStarted(false);
             setState("form");
             go(1);
           }}
@@ -1331,6 +1335,12 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
                 >
                   Duplicate
                 </button>
+                {/* ⚠️ Always offered, whatever the studio has done with it. A
+                    client with one more file for a job already under way is the
+                    commonest revision there is, and the flow protects the task —
+                    so refusing here would send them to email instead. What has
+                    happened to the brief is explained once it is open, where
+                    there is room to say it properly. */}
                 <button
                   type="button"
                   onClick={() => reuse(b, true)}
@@ -1392,7 +1402,17 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           their next job as a revision of the last. */}
       {editing && (
         <div className="mb-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3 text-base">
-          You&apos;re editing a brief you already sent. Sending will replace it.{" "}
+          {started ? (
+            // ⚠️ Honest about what a late change can and cannot do. The studio may
+            // already have drawn something, so promising "sending will replace it"
+            // would be a lie — the change goes to them to look at.
+            <>
+              The studio has already started on this one. Your changes will be sent to them to
+              review, so add a note if something important has moved.{" "}
+            </>
+          ) : (
+            <>You&apos;re editing a brief you already sent. Sending will replace it. </>
+          )}
           <button
             type="button"
             onClick={() => setState("choose")}

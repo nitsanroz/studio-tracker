@@ -322,3 +322,41 @@ describe("readSubmission", () => {
     expect(got?.links).toEqual([]);
   });
 });
+
+describe("the receipt for a brief the client changed", () => {
+  const vars = { submitterName: "Dor Ronen", taskName: "Partner Event | Flags", company: "No Traffic" };
+
+  /**
+   * ⚠️ Nitsan's ask: "the email for 'tell a client weve seen it' should say we
+   * seen the update in that case." A client whose brief is already being worked
+   * on is waiting to hear that their CHANGE landed — "your brief reached us"
+   * reads as though nobody noticed it.
+   */
+  it("tells them their changes arrived, not their brief", () => {
+    const { subject, html } = renderSeenEmail(null, vars, "update");
+    expect(subject).toBe("We've got your update — Partner Event | Flags");
+    expect(html).toContain("your changes to Partner Event | Flags reached us");
+    expect(html).not.toContain("your brief — ");
+  });
+
+  it("still sends the first-brief wording by default", () => {
+    const { subject, html } = renderSeenEmail(null, vars);
+    expect(subject).toBe("We've got your brief — Partner Event | Flags");
+    expect(html).toContain("your brief");
+  });
+
+  // ⚠️ The fallback follows the KIND. An unset update template must not quietly
+  // send the new-brief wording — that is the exact message this exists to avoid.
+  it("falls back to the update default when only the other one is configured", () => {
+    const configuredForNew = { subject: "Got your brief — {task}", body: "Hi {firstName}, ta." };
+    const { subject } = renderSeenEmail(null, vars, "update");
+    expect(subject).not.toBe(configuredForNew.subject);
+    expect(subject).toContain("update");
+  });
+
+  it("escapes the client's own text in the update wording too", () => {
+    const { html } = renderSeenEmail(null, { ...vars, taskName: '<script>alert(1)</script>' }, "update");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+});

@@ -474,6 +474,28 @@ We'll come back to you shortly with next steps. No need to do anything in the me
 — {studio}`,
 };
 
+/**
+ * The same receipt, for a brief the client has CHANGED since sending it.
+ *
+ * ⚠️ A separate template rather than a clever placeholder, at Nitsan's request
+ * ("the email for 'tell a client weve seen it' should say we seen the update in
+ * that case"). The two messages are not one message with a word swapped: the
+ * first tells someone their brief arrived, and this one tells them a change they
+ * made to a brief the studio may already be working on has been picked up —
+ * which is the reassurance they are actually waiting for. Both are editable in
+ * Settings, and each falls back to its own default.
+ */
+export const SEEN_UPDATE_EMAIL_DEFAULT: SeenEmailTemplate = {
+  subject: "We've got your update — {task}",
+  body: `Hi {firstName},
+
+Just to let you know your changes to {task} reached us and someone at the studio has read them.
+
+If anything important has moved, tell us here and we'll take it from there.
+
+— {studio}`,
+};
+
 /** The placeholders, with what to show for each in the Settings preview. */
 export const SEEN_EMAIL_PLACEHOLDERS: { token: string; describes: string; sample: string }[] = [
   { token: "{firstName}", describes: "the sender's first name", sample: "Dana" },
@@ -517,10 +539,15 @@ function fillTokens(text: string, v: SeenEmailVars): string {
 export function renderSeenEmail(
   template: SeenEmailTemplate | null | undefined,
   vars: SeenEmailVars,
+  kind: "new" | "update" = "new",
 ): { subject: string; html: string } {
+  // ⚠️ The fallback follows the KIND of receipt, so an unset update template
+  // sends the update wording rather than quietly telling a client their brief
+  // "reached us" for a second time.
+  const fallback = kind === "update" ? SEEN_UPDATE_EMAIL_DEFAULT : SEEN_EMAIL_DEFAULT;
   const t = {
-    subject: template?.subject?.trim() || SEEN_EMAIL_DEFAULT.subject,
-    body: template?.body?.trim() || SEEN_EMAIL_DEFAULT.body,
+    subject: template?.subject?.trim() || fallback.subject,
+    body: template?.body?.trim() || fallback.body,
   };
   const subject = fillTokens(t.subject, vars)
     .replace(/[\r\n]+/g, " ")
@@ -534,7 +561,7 @@ export function renderSeenEmail(
     .map((p) => `<p style="margin:0 0 14px;line-height:1.6">${escapeHtml(p.trim()).replace(/\n/g, "<br>")}</p>`)
     .join("\n");
 
-  return { subject: subject || SEEN_EMAIL_DEFAULT.subject, html };
+  return { subject: subject || fallback.subject, html };
 }
 
 /** "6", "6h", "5-8 hours" → a number of hours (upper bound of a range) or null. */

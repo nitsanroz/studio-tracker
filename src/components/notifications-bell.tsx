@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Inbox } from "lucide-react";
+import { Bell, Check, Inbox, PencilLine } from "lucide-react";
 
 /**
  * Admin notification queue in the header. One place for things that are
@@ -19,7 +19,20 @@ interface Item {
   tone: "brand" | "danger";
 }
 
-export function NotificationsBell({ pendingIntake }: { pendingIntake: number }) {
+/**
+ * ⚠️ `updatedIntake` is counted SEPARATELY from `pendingIntake`, not folded into
+ * it, and the reason is the case Nitsan raised: a client can revise a brief that
+ * is ALREADY A TASK he has rewritten. Such a brief is not pending, so the
+ * pending count cannot see it — and it is the one that most needs saying out
+ * loud, because nothing else on screen would mention it.
+ */
+export function NotificationsBell({
+  pendingIntake,
+  updatedIntake = 0,
+}: {
+  pendingIntake: number;
+  updatedIntake?: number;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,9 +61,19 @@ export function NotificationsBell({ pendingIntake }: { pendingIntake: number }) 
       Icon: Inbox,
       tone: "brand",
     },
+    {
+      count: updatedIntake,
+      href: "/intake-queue",
+      label: `${updatedIntake} brief${updatedIntake === 1 ? "" : "s"} changed by the client`,
+      // Says the load-bearing part: a revision never rewrote the task, so
+      // whatever the studio has drawn or written is still there.
+      detail: "Read what changed — the task is untouched",
+      Icon: PencilLine,
+      tone: "brand",
+    },
   ] satisfies Item[]).filter((i) => i.count > 0);
 
-  const total = pendingIntake;
+  const total = pendingIntake + updatedIntake;
 
   return (
     <div className="relative" ref={ref}>

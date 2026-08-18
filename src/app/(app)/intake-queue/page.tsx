@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { readSubmission } from "@/lib/brief";
 import { isSafeUrl } from "@/lib/links";
 import { kindById } from "@/lib/intake-fields";
+import { diffBriefs, needsReview } from "@/lib/brief-diff";
 import { ClientChip } from "@/components/ui";
 
 /** "14:20" — the receipt's timestamp, on the day it matters most. */
@@ -21,6 +22,188 @@ function timeOf(iso: string): string {
  * Hidden from members: `task_requests` is admin-only by RLS, so a member's
  * click would fail at the database anyway — better it isn't offered.
  */
+/**
+ * What the client changed since the studio last looked — and the only place a
+ * revision can be acted on.
+ *
+ * ⚠️ THE TASK'S OWN TEXT IS NEVER WRITTEN FROM HERE. Nitsan's requirement:
+ * "maybe its an update to text i already refined and rewritten? i want to see
+ * what changed and deal with changes with carefulness not erasing edits i
+ * already made." So a changed answer is SHOWN, with a copy button, and stays
+ * the admin's to fold in by hand. The one thing offered as an action is a NEW
+ * FILE, because attaching one is additive — nothing anybody wrote is lost by it.
+ */
+function WhatChanged({ request }: { request: TaskRequest }) {
+  const { markRevisionReviewed, addLink, links, showNotice } = useData();
+  const [copied, setCopied] = useState<string | null>(null);
+  const diff = useMemo(() => diffBriefs(request.answers, request.answersAck), [request]);
+
+  /** Already on the task, so a file offered twice can't be added twice. */
+  const onTask = useMemo(
+    () => new Set(links.filter((l) => l.taskId === request.createdTaskId).map((l) => l.url)),
+    [links, request.createdTaskId],
+  );
+
+  async function copy(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      window.setTimeout(() => setCopied(null), 2000);
+    } catch {
+      // Safari on an insecure origin, or permission refused mid-gesture.
+      showNotice("Couldn't reach the clipboard — select the text and copy it.");
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border-2 border-brand/40 bg-brand/5 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className="font-heading text-sm">
+          The client changed this{request.editedAt ? ` on ${formatDate(request.editedAt.slice(0, 10))}` : ""}
+        </h4>
+        <button
+          type="button"
+          onClick={() => markRevisionReviewed(request.id)}
+          className="min-h-9 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand"
+        >
+          I&apos;ve read it
+        </button>
+      </div>
+
+      {/* ⚠️ An old brief has no snapshot to compare against, and an empty diff
+          would read as "nothing changed" — the one wrong conclusion here, since
+          it invites approving a revision unread. */}
+      {diff.noBaseline && (
+        <p className="mt-2 text-sm text-muted">
+          No earlier version was recorded for this brief, so everything below is shown as new. Read
+          the submission itself to be sure.
+        </p>
+      )}
+      {diff.empty && !diff.noBaseline && (
+        <p className="mt-2 text-sm text-muted">
+          They re-sent it without changing any answer — nothing to reconcile.
+        </p>
+      )}
+
+      {diff.fields.map((f) => (
+        <div key={f.key} className="mt-3 border-t border-brand/20 pt-3 first:border-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">{f.label}</span>
+            <button
+              type="button"
+              onClick={() => copy(f.now, f.key)}
+              className="shrink-0 text-sm text-brand hover:underline"
+            >
+              {copied === f.key ? "Copied" : "Copy new"}
+            </button>
+          </div>
+          {/* Old above, new below, and the old struck through: the shape says
+              which is which before a word is read. */}
+          <p className="bidi-auto mt-1 whitespace-pre-wrap text-sm text-muted line-through decoration-danger/40">
+            {f.was || "(blank)"}
+          </p>
+          <p className="bidi-auto mt-1 whitespace-pre-wrap text-base">{f.now || "(blank)"}</p>
+        </div>
+      ))}
+
+      {diff.deliverablesChanged && (
+        <div className="mt-3 border-t border-brand/20 pt-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Deliverables</span>
+          {diff.deliverablesWas.map((l, i) => (
+            <p key={`w${i}`} className="bidi-auto mt-1 text-sm text-muted line-through decoration-danger/40">
+              {l}
+            </p>
+          ))}
+          {diff.deliverablesNow.map((l, i) => (
+            <p key={`n${i}`} className="bidi-auto mt-1 text-base">
+              {l}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {(diff.addedFiles.length > 0 || diff.removedFiles.length > 0) && (
+        <div className="mt-3 border-t border-brand/20 pt-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Files</span>
+          {diff.addedFiles.map((f) => (
+            <div key={f.url} className="mt-1 flex items-center gap-2">
+              <span className="shrink-0 font-semibold text-emerald-600">+</span>
+              {isSafeUrl(f.url) ? (
+                <a
+                  href={f.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bidi-auto min-w-0 flex-1 truncate text-base text-brand hover:underline"
+                >
+                  {f.name}
+                </a>
+              ) : (
+                <span className="min-w-0 flex-1 truncate text-base line-through">{f.name}</span>
+              )}
+              {/* ⚠️ Only when the brief actually became a task, and only once.
+                  Adding a file is the single change safe to automate — it takes
+                  nothing away from what the studio already wrote. */}
+              {request.createdTaskId && isSafeUrl(f.url) && (
+                <button
+                  type="button"
+                  disabled={onTask.has(f.url)}
+                  onClick={() => addLink({ taskId: request.createdTaskId! }, f.name, f.url)}
+                  className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
+                >
+                  {onTask.has(f.url) ? "On the task" : "Add to the task"}
+                </button>
+              )}
+            </div>
+          ))}
+          {diff.removedFiles.map((f) => (
+            <div key={f.url} className="mt-1 flex items-center gap-2 text-muted">
+              <span className="shrink-0 font-semibold text-danger">−</span>
+              <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{f.name}</span>
+              {/* Deliberately no action: the client withdrawing a file says
+                  nothing about whether the studio should drop what it has. */}
+              <span className="shrink-0 text-sm">they removed this</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(diff.addedLinks.length > 0 || diff.removedLinks.length > 0) && (
+        <div className="mt-3 border-t border-brand/20 pt-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Links</span>
+          {diff.addedLinks.map((l) => (
+            <div key={l.url} className="mt-1 flex items-center gap-2">
+              <span className="shrink-0 font-semibold text-emerald-600">+</span>
+              <span className="bidi-auto min-w-0 flex-1 truncate text-base">{l.title || l.url}</span>
+              {request.createdTaskId && isSafeUrl(l.url) && (
+                <button
+                  type="button"
+                  disabled={onTask.has(l.url)}
+                  onClick={() => addLink({ taskId: request.createdTaskId! }, l.title || l.url, l.url)}
+                  className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
+                >
+                  {onTask.has(l.url) ? "On the task" : "Add to the task"}
+                </button>
+              )}
+            </div>
+          ))}
+          {diff.removedLinks.map((l) => (
+            <div key={l.url} className="mt-1 flex items-center gap-2 text-muted">
+              <span className="shrink-0 font-semibold text-danger">−</span>
+              <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{l.title || l.url}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {request.createdTaskId && (
+        <p className="mt-3 border-t border-brand/20 pt-3 text-sm text-muted">
+          This brief is already a task — nothing here changes it until you say so.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function DeleteRequestButton({ request }: { request: TaskRequest }) {
   const { deleteRequest } = useData();
   const isAdmin = useIsAdmin();
@@ -223,6 +406,16 @@ function ReviewCard({
           >
             {request.status}
           </span>
+          {/* ⚠️ A revision of an APPROVED brief is the case Nitsan was most
+              worried about — it is already a task he has rewritten — and this
+              list is normally COLLAPSED behind "Show handled", so without a
+              badge here the update would be invisible until someone went
+              looking. It also drives the count on the bell and the home page. */}
+          {needsReview(request) && (
+            <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">
+              updated
+            </span>
+          )}
           {/* Title (with who sent it) on the left, then the client and the date
               as their own columns — they are the two things you scan a handled
               list BY, and stacked under the title they were a run-on line. They
@@ -293,16 +486,13 @@ function ReviewCard({
               <> · suggested client: <span className="font-medium text-foreground">{suggested.name}</span></>
             )}
           </p>
-          {/* ⚠️ ON THE PENDING CARD, not only in the handled details pane — a
-              client can revise a brief ONLY while it is pending (0029), so an
-              indicator that appeared after approval would never once be seen at
-              the moment it matters. Loud on purpose: an admin who read this
-              yesterday, or who already pressed "we've seen it", is otherwise
-              working from words the client has since rewritten. */}
-          {request.editedAt && (
+          {/* ⚠️ `needsReview`, not `editedAt` — one rule for every status (see
+              brief-diff.ts). An edit the admin has already read must stop
+              shouting, or the badge becomes wallpaper and the next real revision
+              goes unnoticed. */}
+          {needsReview(request) && (
             <p className="mt-1 px-1 text-xs font-semibold text-brand">
-              ✎ The client edited this {formatDate(request.editedAt.slice(0, 10))} — re-read before
-              approving
+              ✎ Updated by the client — read the changes below before approving
             </p>
           )}
         </div>
@@ -332,6 +522,11 @@ function ReviewCard({
           {request.brief}
         </div>
       )}
+
+      {/* ⚠️ Above the approve controls, not below them. This is the thing to read
+          BEFORE deciding, and a panel under the buttons is one an admin scrolls
+          past on the way to clicking Approve. */}
+      {needsReview(request) && <WhatChanged request={request} />}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <select
@@ -526,6 +721,12 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
         )}
       </div>
 
+      {/* ⚠️ The diff belongs here too, and this is the case that matters most:
+          the brief is already a task somebody refined, so "what changed" is the
+          only safe way to take a late addition without overwriting their words.
+          Above "Open the task", so the changes are read before the task is. */}
+      {needsReview(request) && <WhatChanged request={request} />}
+
       {request.createdTaskId && (
         <button
           onClick={() => openTask(request.createdTaskId!)}
@@ -595,6 +796,8 @@ export default function IntakeQueuePage() {
 
   const pending = taskRequests.filter((r) => r.status === "pending");
   const handled = taskRequests.filter((r) => r.status !== "pending");
+  /** Handled briefs the client has since changed — see the button below. */
+  const revisedHandled = handled.filter(needsReview).length;
   // ⚠️ Resolved from the live list, not held as an object: a selected request
   // that gets deleted must drop the pane rather than keep rendering a row that
   // no longer exists.
@@ -653,6 +856,22 @@ export default function IntakeQueuePage() {
         Show handled
         {handled.length > 0 && <span className="text-faint">({handled.length})</span>}
       </label>
+
+      {/* ⚠️ A revised brief that is ALREADY A TASK hides inside a collapsed list,
+          which is the one place an update must not be able to hide — it is the
+          case where the studio has already drawn something. So the count is
+          stated outside the fold, and the button opens the list rather than
+          expecting anyone to find the checkbox. */}
+      {!showHandled && revisedHandled > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowHandled(true)}
+          className="w-fit rounded-lg border-2 border-brand/40 bg-brand/5 px-4 py-2 text-left text-sm font-medium text-brand hover:bg-brand/10"
+        >
+          ✎ {revisedHandled} handled {revisedHandled === 1 ? "brief has" : "briefs have"} been
+          updated by the client — show {revisedHandled === 1 ? "it" : "them"}
+        </button>
+      )}
 
       {/* ⚠️ The pane is a SIBLING of the list, not an overlay. Below `lg` it
           simply stacks underneath — the queue is admin-only and reviewed on a
