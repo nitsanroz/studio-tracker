@@ -11,7 +11,7 @@ import {
 } from "@/lib/brief";
 import { kindById } from "@/lib/intake-fields";
 import { hostLabel, normalizeUrl } from "@/lib/links";
-import { MAX_INTAKE_FILES, describeUpload } from "@/lib/uploads";
+import { MAX_INTAKE_FILES, describeUpload, describeUploadSet } from "@/lib/uploads";
 
 // Anti-flood: max submissions accepted per intake link within the window.
 const RATE_LIMIT_WINDOW_MIN = 10;
@@ -240,7 +240,13 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   for (const extra of sent.slice(MAX_INTAKE_FILES)) {
     dropped.push(`${extra.name} — only ${MAX_INTAKE_FILES} files can be attached`);
   }
-  for (const file of sent.slice(0, MAX_INTAKE_FILES)) {
+  // ⚠️ The same budget the form enforces, re-checked here. A request this size
+  // normally never arrives — the platform drops anything over 4.5MB before this
+  // route runs — so reaching this branch means something bypassed the form. Say
+  // so in the brief rather than storing files the form would have refused.
+  const budget = describeUploadSet(sent.slice(0, MAX_INTAKE_FILES));
+  if (!budget.ok) dropped.push(budget.reason);
+  for (const file of budget.ok ? sent.slice(0, MAX_INTAKE_FILES) : []) {
     const cls = describeUpload(file);
     if (!cls.ok) {
       dropped.push(`${file.name} — ${cls.reason}`);

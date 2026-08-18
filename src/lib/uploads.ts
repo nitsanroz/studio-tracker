@@ -48,12 +48,29 @@ const SAFE_TYPES: Record<string, string> = {
 };
 
 /**
- * Per-file ceiling on the public intake form, shared by the browser and the
- * route so the client is refused for exactly the reason the server would refuse
- * them. Other upload paths have their own, stricter caps (avatars 5MB, client
- * icons 2MB, task attachments 25MB) — those are studio-side and stay local.
+ * ⚠️ THE REAL CEILING IS THE WHOLE REQUEST, NOT THE FILE — and getting that
+ * wrong cost a client their brief.
+ *
+ * The intake form posts everything as ONE multipart request, and a Vercel
+ * serverless function REFUSES A BODY OVER 4.5MB before the route ever runs. No
+ * handler executes, so nothing returns the JSON `{error}` the form reads, and
+ * the client gets the bare "Something went wrong — please try again." with no
+ * idea what to change. That is what happened on 2026-08-17: three screenshots
+ * totalling 4.3MB (1.5 + 2.7 + 0.1), each one comfortably under the old 10MB
+ * per-file cap, adding up to a request the platform dropped on the floor. The
+ * same client's earlier brief carried 2.65MB and went through fine.
+ *
+ * So the budget below is the REQUEST budget, and it is what both the browser
+ * and the route enforce. 4MB against the platform's 4.5MB leaves room for the
+ * text fields (~18 of them, capped at 5000 chars) and multipart boundaries.
+ *
+ * ⚠️ The per-file cap is now the SAME number, deliberately. It used to be 10MB,
+ * which was a promise the platform could never keep: a 6MB file passed every
+ * check the app made and then failed 100% of the time, silently. One file may
+ * spend the whole budget; it may not exceed it.
  */
-export const MAX_INTAKE_BYTES = 10 * 1024 * 1024;
+export const MAX_INTAKE_TOTAL_BYTES = 4 * 1024 * 1024;
+export const MAX_INTAKE_BYTES = MAX_INTAKE_TOTAL_BYTES;
 
 /** How many files one intake submission may carry. Shared by form and route. */
 export const MAX_INTAKE_FILES = 5;
@@ -145,5 +162,38 @@ export function describeUpload(
   return {
     ok: false,
     reason: `.${ext} files aren't supported — images, PDF, ZIP, AI, PSD and Office files are.`,
+  };
+}
+
+/**
+ * The whole attachment SET against the request budget — the check that was
+ * missing when a client's 4.3MB of screenshots vanished into a platform 413.
+ *
+ * ⚠️ Called by the FORM before it posts, because after the post it is too late:
+ * an oversized body never reaches the route, so the server cannot explain
+ * itself. This is the one rule the browser has to enforce alone, which is also
+ * why it names the biggest file — "too large" without saying which one to drop
+ * leaves the client guessing at three attachments.
+ *
+ * `incoming` is checked as if already added, so the form can refuse a file at
+ * the moment it is picked rather than at submit.
+ */
+export function describeUploadSet(
+  files: { name: string; size: number }[],
+): { ok: true; total: number } | { ok: false; total: number; reason: string } {
+  const total = files.reduce((n, f) => n + f.size, 0);
+  if (total <= MAX_INTAKE_TOTAL_BYTES) return { ok: true, total };
+  // Biggest first: dropping it is the one action most likely to fix this in a
+  // single step, and with 5 files the client should not have to compare sizes.
+  const biggest = [...files].sort((a, b) => b.size - a.size)[0];
+  const over = formatSize(total);
+  const cap = formatSize(MAX_INTAKE_TOTAL_BYTES);
+  return {
+    ok: false,
+    total,
+    reason:
+      `Those files come to ${over} together, over the ${cap} limit for one brief` +
+      (biggest ? ` — try removing "${biggest.name}" (${formatSize(biggest.size)})` : "") +
+      ", or send them as a WeTransfer or Drive link instead.",
   };
 }

@@ -3,7 +3,13 @@
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Link2, Paperclip, Plus, X } from "lucide-react";
 import { normalizeUrl } from "@/lib/links";
-import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, describeUpload, formatSize } from "@/lib/uploads";
+import {
+  MAX_INTAKE_FILES,
+  MAX_INTAKE_TOTAL_BYTES,
+  describeUpload,
+  describeUploadSet,
+  formatSize,
+} from "@/lib/uploads";
 import {
   CLOSING_ASKS,
   FIELDS,
@@ -524,8 +530,22 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
         continue;
       }
       const check = describeUpload(file);
-      if (check.ok) accepted.push(file);
-      else rejected.push({ name: file.name, reason: check.reason });
+      if (!check.ok) {
+        rejected.push({ name: file.name, reason: check.reason });
+        continue;
+      }
+      // ⚠️ The BUDGET is checked per file as it lands, against everything
+      // already attached. Checking only at submit would let someone pick five
+      // files and then be told the set is too big without being told which one
+      // broke it — and the whole point of refusing here is that the server
+      // never gets the chance to explain (an oversized body is dropped by the
+      // platform before the route runs).
+      const set = describeUploadSet([...files, ...accepted, file]);
+      if (!set.ok) {
+        rejected.push({ name: file.name, reason: set.reason });
+        continue;
+      }
+      accepted.push(file);
     }
     onChange([...files, ...accepted]);
     setRefused(rejected);
@@ -535,7 +555,7 @@ function FileRows({ files, onChange }: { files: File[]; onChange: (f: File[]) =>
     <div className="flex flex-col gap-2">
       <BlockHeader
         title="Any files to add?"
-        hint={`Up to ${MAX_INTAKE_FILES} files, ${formatSize(MAX_INTAKE_BYTES)} each — for anything larger, add a link above.`}
+        hint={`Up to ${MAX_INTAKE_FILES} files, ${formatSize(MAX_INTAKE_TOTAL_BYTES)} in total — for anything larger, add a link above.`}
         action={
           files.length < MAX_INTAKE_FILES ? (
             <button type="button" onClick={() => inputRef.current?.click()} className={addBtnCls}>
@@ -875,6 +895,15 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!checkStep()) return;
+    // ⚠️ Belt and braces: `FileRows` already refuses a file that would break the
+    // budget, but this is the last point at which anything can be SAID about it.
+    // Past here the request is the platform's to accept or drop, and a dropped
+    // one comes back with no body to read a reason from.
+    const set = describeUploadSet(files);
+    if (!set.ok) {
+      setError(set.reason);
+      return;
+    }
     setState("sending");
     setError(null);
     const body = new FormData();
@@ -903,6 +932,19 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
     const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
     if (!res.ok) {
+      // ⚠️ 413 comes from the PLATFORM, not from the route — the function is
+      // never invoked, so there is no `{error}` to read and the old code fell
+      // through to "Something went wrong", which tells a client nothing they
+      // can act on. It cost one real brief on 2026-08-17. The check above should
+      // make this unreachable; it is here for the client running a stale copy of
+      // this page, who would otherwise get the same dead end.
+      if (res.status === 413) {
+        setError(
+          "Those attachments were too large to send together — remove the biggest one, or add it as a WeTransfer or Drive link instead.",
+        );
+        setState("form");
+        return;
+      }
       const j = await res.json().catch(() => ({}));
       setError(j.error ?? "Something went wrong — please try again.");
       setState("form");
