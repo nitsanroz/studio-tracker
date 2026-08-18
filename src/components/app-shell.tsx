@@ -31,7 +31,6 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
-import { needsReview } from "@/lib/brief-diff";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 import { AboutModal } from "./about-modal";
@@ -528,6 +527,7 @@ function Shell({ children }: { children: ReactNode }) {
     currentUserId,
     loading,
     taskRequests,
+    updatedRequests,
     viewingAs,
     writeError,
     dismissWriteError,
@@ -542,10 +542,10 @@ function Shell({ children }: { children: ReactNode }) {
    * ⚠️ Counted across EVERY status, unlike `pendingIntake`. A client can revise a
    * brief that is already an approved task (0030), and that revision is exactly
    * the one that must not go unnoticed — the studio may have drawn from the old
-   * words already. `needsReview` stops counting it once an admin has read the
+   * words already. The store stops counting one once an admin has read the
    * changes, so the badge means "unread", not "ever edited".
    */
-  const updatedIntake = taskRequests.filter(needsReview).length;
+  const updatedIntake = updatedRequests.length;
 
   // Read in an effect, never in the useState initialiser: the server renders
   // this too, and reading localStorage there is a hydration mismatch. Same

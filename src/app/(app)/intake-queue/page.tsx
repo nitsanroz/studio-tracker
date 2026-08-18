@@ -23,6 +23,74 @@ function timeOf(iso: string): string {
  * click would fail at the database anyway — better it isn't offered.
  */
 /**
+ * One added, or one removed, item in the what-changed panel.
+ *
+ * ⚠️ Files and links draw the SAME row and now do so through the same component.
+ * They were two copy-pasted blocks, and they had already drifted: a file checked
+ * `isSafeUrl` before rendering an anchor while a link never rendered as one at
+ * all, safe or not. One component makes that impossible rather than something a
+ * reader has to notice — and the "Add to the task" control exists once, so a
+ * change to it cannot land on files and miss links.
+ */
+function AddedItem({
+  url,
+  label,
+  onAdd,
+  already,
+}: {
+  url: string;
+  label: string;
+  /** Absent when the brief never became a task — then there is nothing to add to. */
+  onAdd?: () => void;
+  already: boolean;
+}) {
+  const safe = isSafeUrl(url);
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <span className="shrink-0 font-semibold text-emerald-600">+</span>
+      {safe ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bidi-auto min-w-0 flex-1 truncate text-base text-brand hover:underline"
+        >
+          {label}
+        </a>
+      ) : (
+        // Struck through rather than hidden: an admin should see that something
+        // arrived and that it is not safe to open.
+        <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{label}</span>
+      )}
+      {/* ⚠️ Adding a file or link is the ONE change safe to automate — it takes
+          nothing away from what the studio already wrote. Once only. */}
+      {onAdd && safe && (
+        <button
+          type="button"
+          disabled={already}
+          onClick={onAdd}
+          className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
+        >
+          {already ? "On the task" : "Add to the task"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RemovedItem({ label, note }: { label: string; note?: string }) {
+  return (
+    <div className="mt-1 flex items-center gap-2 text-muted">
+      <span className="shrink-0 font-semibold text-danger">−</span>
+      <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{label}</span>
+      {/* Deliberately no action anywhere on this row: the client withdrawing
+          something says nothing about whether the studio should drop what it has. */}
+      {note && <span className="shrink-0 text-sm">{note}</span>}
+    </div>
+  );
+}
+
+/**
  * What the client changed since the studio last looked — and the only place a
  * revision can be acted on.
  *
@@ -36,7 +104,13 @@ function timeOf(iso: string): string {
 function WhatChanged({ request }: { request: TaskRequest }) {
   const { markRevisionReviewed, addLink, links, showNotice } = useData();
   const [copied, setCopied] = useState<string | null>(null);
-  const diff = useMemo(() => diffBriefs(request.answers, request.answersAck), [request]);
+  // Keyed on the two fields it reads, not the whole request — the object gets a
+  // fresh identity on every 60-second refresh whatever changed, so a narrow key
+  // is the only one that can ever skip the work.
+  const diff = useMemo(
+    () => diffBriefs(request.answers, request.answersAck),
+    [request.answers, request.answersAck],
+  );
 
   /** Already on the task, so a file offered twice can't be added twice. */
   const onTask = useMemo(
@@ -126,43 +200,16 @@ function WhatChanged({ request }: { request: TaskRequest }) {
         <div className="mt-3 border-t border-brand/20 pt-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted">Files</span>
           {diff.addedFiles.map((f) => (
-            <div key={f.url} className="mt-1 flex items-center gap-2">
-              <span className="shrink-0 font-semibold text-emerald-600">+</span>
-              {isSafeUrl(f.url) ? (
-                <a
-                  href={f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bidi-auto min-w-0 flex-1 truncate text-base text-brand hover:underline"
-                >
-                  {f.name}
-                </a>
-              ) : (
-                <span className="min-w-0 flex-1 truncate text-base line-through">{f.name}</span>
-              )}
-              {/* ⚠️ Only when the brief actually became a task, and only once.
-                  Adding a file is the single change safe to automate — it takes
-                  nothing away from what the studio already wrote. */}
-              {request.createdTaskId && isSafeUrl(f.url) && (
-                <button
-                  type="button"
-                  disabled={onTask.has(f.url)}
-                  onClick={() => addLink({ taskId: request.createdTaskId! }, f.name, f.url)}
-                  className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
-                >
-                  {onTask.has(f.url) ? "On the task" : "Add to the task"}
-                </button>
-              )}
-            </div>
+            <AddedItem
+              key={f.url}
+              url={f.url}
+              label={f.name}
+              onAdd={request.createdTaskId ? () => addLink({ taskId: request.createdTaskId! }, f.name, f.url) : undefined}
+              already={onTask.has(f.url)}
+            />
           ))}
           {diff.removedFiles.map((f) => (
-            <div key={f.url} className="mt-1 flex items-center gap-2 text-muted">
-              <span className="shrink-0 font-semibold text-danger">−</span>
-              <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{f.name}</span>
-              {/* Deliberately no action: the client withdrawing a file says
-                  nothing about whether the studio should drop what it has. */}
-              <span className="shrink-0 text-sm">they removed this</span>
-            </div>
+            <RemovedItem key={f.url} label={f.name} note="they removed this" />
           ))}
         </div>
       )}
@@ -171,26 +218,20 @@ function WhatChanged({ request }: { request: TaskRequest }) {
         <div className="mt-3 border-t border-brand/20 pt-3">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted">Links</span>
           {diff.addedLinks.map((l) => (
-            <div key={l.url} className="mt-1 flex items-center gap-2">
-              <span className="shrink-0 font-semibold text-emerald-600">+</span>
-              <span className="bidi-auto min-w-0 flex-1 truncate text-base">{l.title || l.url}</span>
-              {request.createdTaskId && isSafeUrl(l.url) && (
-                <button
-                  type="button"
-                  disabled={onTask.has(l.url)}
-                  onClick={() => addLink({ taskId: request.createdTaskId! }, l.title || l.url, l.url)}
-                  className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
-                >
-                  {onTask.has(l.url) ? "On the task" : "Add to the task"}
-                </button>
-              )}
-            </div>
+            <AddedItem
+              key={l.url}
+              url={l.url}
+              label={l.title || l.url}
+              onAdd={
+                request.createdTaskId
+                  ? () => addLink({ taskId: request.createdTaskId! }, l.title || l.url, l.url)
+                  : undefined
+              }
+              already={onTask.has(l.url)}
+            />
           ))}
           {diff.removedLinks.map((l) => (
-            <div key={l.url} className="mt-1 flex items-center gap-2 text-muted">
-              <span className="shrink-0 font-semibold text-danger">−</span>
-              <span className="bidi-auto min-w-0 flex-1 truncate text-base line-through">{l.title || l.url}</span>
-            </div>
+            <RemovedItem key={l.url} label={l.title || l.url} />
           ))}
         </div>
       )}
@@ -790,14 +831,14 @@ function SafeLink({ url, label, icon }: { url: string; label: string; icon: "fil
 }
 
 export default function IntakeQueuePage() {
-  const { taskRequests, clients } = useData();
+  const { taskRequests, clients, updatedRequests } = useData();
   const [showHandled, setShowHandled] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const pending = taskRequests.filter((r) => r.status === "pending");
   const handled = taskRequests.filter((r) => r.status !== "pending");
   /** Handled briefs the client has since changed — see the button below. */
-  const revisedHandled = handled.filter(needsReview).length;
+  const revisedHandled = handled.filter((r) => updatedRequests.includes(r)).length;
   // ⚠️ Resolved from the live list, not held as an object: a selected request
   // that gets deleted must drop the pane rather than keep rendering a row that
   // no longer exists.

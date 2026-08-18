@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { DbError, isMissingSchema } from "@/lib/db";
+import { updateWithOptional } from "@/lib/db";
 import { needsReview } from "@/lib/brief-diff";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -26,37 +25,6 @@ import { renderSeenEmail, type SeenEmailTemplate } from "@/lib/brief";
  */
 
 export const dynamic = "force-dynamic";
-
-/**
- * Writes an acknowledgement, with the 0030 columns if the schema has them.
- *
- * ⚠️ `answers_ack`/`acked_at` are the baseline a later client revision is diffed
- * against, and they are worth having — but never at the cost of the write they
- * ride along with. A missing column on a WRITE comes back as **PGRST204**, not
- * the `42703` a SELECT raises, so a fallback keyed on the select code silently
- * never fires: that is exactly how every intake submission 500'd while 0029 was
- * pending (v1.19.4). One retry without the snapshot, and only for that error.
- */
-async function ackUpdate(
-  admin: SupabaseClient,
-  requestId: string,
-  fields: Record<string, unknown>,
-  answers: unknown,
-  now: string,
-) {
-  const { error } = await admin
-    .from("task_requests")
-    .update({ ...fields, answers_ack: answers ?? {}, acked_at: now })
-    .eq("id", requestId);
-  if (!error) return;
-  if (!isMissingSchema(new DbError("task_requests", error.message, error.code))) {
-    console.error("intake ack failed", error);
-    return;
-  }
-  if (!Object.keys(fields).length) return; // nothing left to write
-  const { error: retry } = await admin.from("task_requests").update(fields).eq("id", requestId);
-  if (retry) console.error("intake ack retry failed", retry);
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -137,14 +105,12 @@ export async function POST(req: NextRequest) {
    * `needsReview` is the same test the queue badge uses, so the email and the
    * screen can never disagree about whether this is an update.
    */
-  const isUpdate = unacknowledgedEdit;
-
   // The studio's own wording, edited in Settings. A missing or malformed row
   // falls through to the matching default rather than blocking the send.
   const { data: tpl } = await admin
     .from("app_settings")
     .select("value")
-    .eq("key", isUpdate ? "intake_seen_update_email" : "intake_seen_email")
+    .eq("key", unacknowledgedEdit ? "intake_seen_update_email" : "intake_seen_email")
     .maybeSingle();
   const template =
     tpl?.value && typeof tpl.value === "object" ? (tpl.value as SeenEmailTemplate) : null;
@@ -157,7 +123,7 @@ export async function POST(req: NextRequest) {
       taskName: String(request.title ?? ""),
       company: typeof answers.company === "string" ? answers.company : "",
     },
-    isUpdate ? "update" : "new",
+    unacknowledgedEdit ? "update" : "new",
   );
 
   const mail = await fetch("https://api.resend.com/emails", {
@@ -189,7 +155,15 @@ export async function POST(req: NextRequest) {
     // ⚠️ One rung down if 0030 isn't applied, or marking a brief seen would fail
     // outright. A missing column on a WRITE reports `PGRST204`, NOT the `42703`
     // a select raises — the trap that took the intake form down in v1.19.4.
-    await ackUpdate(admin, requestId, { seen_at: now, seen_by: user.id }, request.answers, now);
+    await updateWithOptional(
+      admin,
+      "task_requests",
+      { id: requestId },
+      { seen_at: now, seen_by: user.id },
+      // ⚠️ The baseline a later revision is diffed against (0030) — worth having,
+      // but never at the cost of the stamp it rides along with.
+      { answers_ack: request.answers ?? {}, acked_at: now },
+    );
     const detail = await mail?.text().catch(() => "");
     console.error("intake receipt email failed", mail?.status, detail);
     return NextResponse.json(
@@ -198,22 +172,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { error: stampError } = await admin
-    .from("task_requests")
-    .update({
-      seen_at: request.seen_at ?? now,
-      seen_by: user.id,
-      client_notified_at: now,
-    })
-    .eq("id", requestId);
+  // ⚠️ ONE round trip: the stamp and the 0030 baseline in a single update, with
+  // the baseline dropped and the stamp retried alone if that migration is
+  // pending. It was two calls, which cost an extra query on every receipt for no
+  // reason — the fallback is what has to be separate, not the write.
+  const { error: stampError } = await updateWithOptional(
+    admin,
+    "task_requests",
+    { id: requestId },
+    { seen_at: request.seen_at ?? now, seen_by: user.id, client_notified_at: now },
+    { answers_ack: request.answers ?? {}, acked_at: now },
+  );
   if (stampError) {
     // The client HAS been mailed at this point, so say so — a false "failed"
     // here is what would produce a second email on the retry.
     console.error("intake receipt stamp failed", stampError);
   }
-  // Best-effort baseline, separate from the stamp above so a missing 0030 can
-  // never cost the receipt itself.
-  await ackUpdate(admin, requestId, {}, request.answers, now);
 
   return NextResponse.json({ seenAt: request.seen_at ?? now, clientNotifiedAt: now });
 }

@@ -72,6 +72,48 @@ export function isMissingSchema(e: unknown): boolean {
   return e instanceof DbError && !!e.code && MISSING_SCHEMA_CODES.has(e.code);
 }
 
+/**
+ * An UPDATE whose optional columns may not exist yet — the write-side twin of
+ * the `fetchAll` + `isMissingSchema` ladder above.
+ *
+ * ⚠️ THIS EXISTS BECAUSE THE PATTERN WAS HAND-ROLLED FOUR TIMES IN TWO RELEASES
+ * and one of the four forgot the guard entirely. Every time a migration adds a
+ * column that something writes, the write has to survive the window before that
+ * SQL is run — and a missing column on a WRITE reports **PGRST204** from
+ * PostgREST, not the `42703` Postgres raises on a SELECT, so a fallback copied
+ * from the read path silently never fires. That is precisely how every intake
+ * submission came to 500 in v1.19.4.
+ *
+ * `required` is written whatever happens; `optional` is dropped and the write
+ * retried if — and only if — the schema is what refused it. Any other error is a
+ * real error and is returned untouched.
+ *
+ * ⚠️ Do NOT use this for a column that must be written. Silently dropping a
+ * value is right for a snapshot or a nice-to-have stamp and wrong for anything
+ * the app then relies on; PGRST204 is also what PostgREST returns for a few
+ * minutes while its schema cache is stale after a DDL change.
+ */
+export async function updateWithOptional(
+  sb: SupabaseClient,
+  table: string,
+  match: Record<string, unknown>,
+  required: Record<string, unknown>,
+  optional: Record<string, unknown>,
+): Promise<{ error: { message: string; code?: string } | null; degraded: boolean }> {
+  const first = await sb
+    .from(table)
+    .update({ ...required, ...optional })
+    .match(match);
+  if (!first.error) return { error: null, degraded: false };
+  if (!isMissingSchema(new DbError(table, first.error.message, first.error.code))) {
+    return { error: first.error, degraded: false };
+  }
+  // Nothing else to write — the whole point of the call was the optional part.
+  if (!Object.keys(required).length) return { error: null, degraded: true };
+  const retry = await sb.from(table).update(required).match(match);
+  return { error: retry.error ?? null, degraded: true };
+}
+
 /** Supabase caps selects at 1000 rows — page through everything. */
 export async function fetchAll<T>(
   sb: SupabaseClient,

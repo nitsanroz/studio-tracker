@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
 import {
   CLOSING_ASKS,
+  CONTACT_FIELDS,
   FIELDS,
   TECH_ALWAYS,
   WORK_KINDS,
@@ -43,7 +44,6 @@ const inputCls =
  * the next person's form. Abandoning midway loses the answers, on purpose.
  */
 const CONTACT_KEY = "intake:contact";
-const CONTACT_FIELDS = ["name", "email", "company"] as const;
 
 type Values = Record<string, string>;
 interface DraftLink {
@@ -992,9 +992,20 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
    * update — carried as state rather than derived, because a duplicate reads the
    * very same brief and must NOT become one.
    */
-  const [editing, setEditing] = useState<{ id: string; key: string } | null>(null);
-  /** The brief being edited is already a task — the warning changes, not the flow. */
-  const [started, setStarted] = useState(false);
+  /**
+   * The brief being EDITED, if any. Its presence turns the submission into an
+   * update — carried as state rather than derived, because a duplicate reads the
+   * very same brief and must NOT become one.
+   *
+   * ⚠️ `started` lives INSIDE it (the studio has already made this a task, so the
+   * warning changes but the flow does not). It was a second `useState`, which
+   * meant every place clearing `editing` had to remember to clear that too —
+   * three call sites doing it by hand, and only ever read inside `{editing && …}`
+   * anyway. One object cannot fall out of step with itself.
+   */
+  const [editing, setEditing] = useState<{ id: string; key: string; started: boolean } | null>(
+    null,
+  );
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const steps = useMemo(() => stepsFor(kinds), [kinds]);
@@ -1066,7 +1077,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       // already turned into a task — that is the point of the revision flow — and
       // the task is never touched by it. `j.editable` is still returned and is
       // what the banner below uses to warn that work is already under way.
-      setStarted(asEdit && !j.editable);
+      const alreadyATask = asEdit && !j.editable;
       const a = j.answers;
       const str = (k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
       // ⚠️ Only the fields the FORM owns. Anything the studio has since added to
@@ -1103,8 +1114,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           path: f.path,
         })),
       );
-      setEditing(asEdit ? { id: brief.id, key: brief.key } : null);
-      if (!asEdit) setStarted(false);
+      setEditing(asEdit ? { id: brief.id, key: brief.key, started: alreadyATask } : null);
       setChose(true);
       setStep(1);
       setState("form");
@@ -1258,7 +1268,6 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       setSent(loadSent(token));
     }
     setEditing(null);
-    setStarted(false);
     setState("done");
   }
 
@@ -1302,7 +1311,6 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           onClick={() => {
             setChose(true);
             setEditing(null);
-            setStarted(false);
             setState("form");
             go(1);
           }}
@@ -1402,7 +1410,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           their next job as a revision of the last. */}
       {editing && (
         <div className="mb-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3 text-base">
-          {started ? (
+          {editing.started ? (
             // ⚠️ Honest about what a late change can and cannot do. The studio may
             // already have drawn something, so promising "sending will replace it"
             // would be a lie — the change goes to them to look at.

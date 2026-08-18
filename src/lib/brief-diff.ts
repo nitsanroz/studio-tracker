@@ -1,4 +1,4 @@
-import { FIELDS } from "./intake-fields";
+import { CONTACT_FIELDS, FIELDS } from "./intake-fields";
 import type { BriefLink, Deliverable, IntakeFile } from "./brief";
 
 /**
@@ -95,10 +95,10 @@ export function diffBriefs(current: Answers | null, baseline: Answers | null): B
   // ⚠️ Driven by FIELDS, so a question added to the form appears here with no
   // further work — the same table the form, the brief and `missingFields` read.
   for (const key of Object.keys(FIELDS)) {
-    // Identity is answered on the details step and belongs to whoever is filling
-    // the form in now, not to the brief; reporting it as a change would flag
-    // every revision sent by a colleague.
-    if (key === "name" || key === "email" || key === "company") continue;
+    // ⚠️ Reads the shared list rather than naming the three fields again — the
+    // form's own first step is built from the same constant, so "which fields are
+    // the person, not the work" is stated once. See CONTACT_FIELDS.
+    if ((CONTACT_FIELDS as readonly string[]).includes(key)) continue;
     const a = str(was, key);
     const b = str(now, key);
     if (a !== b) fields.push({ key, label: FIELDS[key]?.label ?? key, was: a, now: b });

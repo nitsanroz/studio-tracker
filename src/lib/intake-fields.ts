@@ -122,6 +122,18 @@ export interface WorkKind {
 }
 
 /** Asked of everyone, whatever the kind. */
+/**
+ * The fields that identify the PERSON filling the form in, rather than describing
+ * the work.
+ *
+ * ⚠️ Two things need to agree about this, which is why it lives here and not in
+ * either of them: the form asks them on its first step, and `diffBriefs` must
+ * NEVER report them as changes — identity belongs to whoever is filling the form
+ * in now, so a colleague sending a revision would otherwise flag name and email
+ * on every single one.
+ */
+export const CONTACT_FIELDS = ["name", "email", "company"] as const;
+
 export const ALWAYS_ASKS: (keyof IntakeAnswers)[] = [
   "taskName",
   "dueDate",

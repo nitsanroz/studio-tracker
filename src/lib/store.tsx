@@ -28,11 +28,11 @@ import {
   mapTask,
   mapTimeEntry,
   taskPatchToRow,
-  DbError,
-  isMissingSchema,
+  updateWithOptional,
   type DbRow,
 } from "./db";
 import { assembleTaskBrief, readSubmission } from "./brief";
+import { needsReview } from "./brief-diff";
 import {
   fetchCold,
   fetchFull,
@@ -345,6 +345,16 @@ interface Store {
   rejectRequest: (requestId: string) => void;
   deleteRequest: (requestId: string) => void;
   markRequestSeen: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
+  /**
+   * Briefs a client has changed since the studio last acknowledged them.
+   *
+   * ⚠️ Derived ONCE here rather than by each consumer. The shell's badge, the
+   * home-page banner and the queue all ask the same question, and three copies of
+   * `taskRequests.filter(needsReview)` is how a badge comes to disagree with the
+   * list it points at — the same reason `task-rollup.ts` and `taskHoursDone` were
+   * extracted in earlier releases.
+   */
+  updatedRequests: TaskRequest[];
   /** "I've read the client's changes" — re-baselines the diff, nothing more. */
   markRevisionReviewed: (requestId: string) => void;
   taskMinutes: (taskId: string) => number;
@@ -2964,38 +2974,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         noteWriteError("approveRequest", error);
         throw new Error(error.message);
       }
-      await supabase
-        .from("task_requests")
-        // ⚠️ `answers_ack`/`acked_at` too (0030): approving IS acknowledging, and
-        // from here on the studio's own words live on the task — so a later
-        // client revision has to be measured against what was approved, not
-        // against the task text.
-        //
-        // ⚠️ WITH A FALLBACK, because the alternative is that an unapplied 0030
-        // breaks APPROVING — the queue's whole purpose. A missing column on a
-        // WRITE reports `PGRST204`, not the `42703` a select raises; that exact
-        // trap took the intake form down for a while in v1.19.4, so it is
-        // handled here rather than rediscovered.
-        .update({
-          status: "approved",
-          created_task_id: task.id,
-          client_id: input.clientId,
-          answers_ack: request.answers ?? {},
-          acked_at: new Date().toISOString(),
-        })
-        .eq("id", requestId)
-        .then(async ({ error: ackErr }) => {
-          if (!ackErr) return;
-          if (!isMissingSchema(new DbError("task_requests", ackErr.message, ackErr.code))) {
-            noteWriteError("approveRequest", ackErr);
-            return;
-          }
-          const { error: retry } = await supabase
-            .from("task_requests")
-            .update({ status: "approved", created_task_id: task.id, client_id: input.clientId })
-            .eq("id", requestId);
-          if (retry) noteWriteError("approveRequest", retry);
-        });
+      // ⚠️ `answers_ack`/`acked_at` ride along (0030): approving IS acknowledging,
+      // and from here on the studio's own words live on the task — so a later
+      // client revision has to be measured against what was approved, not
+      // against the task text. Optional, so an unapplied migration cannot break
+      // APPROVING, which is the queue's whole purpose.
+      const { error: approveErr } = await updateWithOptional(
+        supabase,
+        "task_requests",
+        { id: requestId },
+        { status: "approved", created_task_id: task.id, client_id: input.clientId },
+        { answers_ack: request.answers ?? {}, acked_at: new Date().toISOString() },
+      );
+      if (approveErr) noteWriteError("approveRequest", approveErr);
       // The attachments, as titled links on the new task — the same rows the
       // studio's own "+ Add link" writes, so they render and edit identically.
       // ⚠️ Best-effort ON PURPOSE: the task exists and the request is approved
@@ -3101,6 +3092,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
    * the brief or telling the client anything, and folding those together is how
    * an admin would end up approving a change they had only glanced at.
    */
+  const updatedRequests = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
+
   const markRevisionReviewed = useCallback(
     (requestId: string) => {
       const req = taskRequests.find((r) => r.id === requestId);
@@ -3109,13 +3102,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTaskRequests((prev) =>
         prev.map((r) => (r.id === requestId ? { ...r, answersAck: r.answers, ackedAt: now } : r)),
       );
-      supabase
-        .from("task_requests")
-        .update({ answers_ack: req.answers ?? {}, acked_at: now })
-        .eq("id", requestId)
-        .then(wrote("markRevisionReviewed"));
+      // ⚠️ Both columns are 0030's, so BOTH are optional here — this call had no
+      // schema guard at all until the cleanup pass caught it, which would have
+      // meant a red write-error banner on every click in the window before the
+      // migration ran. With nothing required, a pending migration makes this a
+      // no-op rather than a failure.
+      void updateWithOptional(
+        supabase,
+        "task_requests",
+        { id: requestId },
+        {},
+        { answers_ack: req.answers ?? {}, acked_at: now },
+      ).then(({ error }) => {
+        if (error) noteWriteError("markRevisionReviewed", error);
+      });
     },
-    [supabase, taskRequests, wrote],
+    // `wrote` is gone with the chained call it wrapped; `noteWriteError` replaces
+    // it and belongs here in its place.
+    [supabase, taskRequests, noteWriteError],
   );
 
   const rejectRequest = useCallback(
@@ -3231,6 +3235,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       deleteRequest,
       markRequestSeen,
       markRevisionReviewed,
+      updatedRequests,
       taskMinutes,
       undo,
       redo,
@@ -3247,7 +3252,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

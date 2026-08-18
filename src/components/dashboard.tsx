@@ -34,7 +34,6 @@ import { WeekTimesheet } from "./week-timesheet";
 import { MobileLogTimeSheet } from "./mobile-log-time";
 import { MemberWeekHours } from "./member-week-hours";
 import { dailyTargetMinutes } from "@/lib/members";
-import { needsReview } from "@/lib/brief-diff";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { Profile, TimeEntry } from "@/lib/types";
 
@@ -1125,8 +1124,7 @@ function StatTile({
  * second week, which would defeat the point of putting it above the figures.
  */
 function UpdatedBriefsAlert() {
-  const { taskRequests } = useData();
-  const updated = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
+  const { updatedRequests: updated } = useData();
   if (!updated.length) return null;
   return (
     <Link
