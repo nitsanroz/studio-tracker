@@ -433,36 +433,42 @@ function ReviewCard({
           selected ? "border-brand ring-1 ring-brand" : "border-border"
         } ${approved ? "" : "opacity-60"}`}
       >
+        {/* ⚠️ A COLUMN below `sm`. In a row the status pill and the "updated"
+            badge sit before the title as flex siblings, and at 375px that left
+            the title 131px — truncated — on the list you scan BY title. Stacked,
+            the pills take their own line and the title gets the full width. */}
         <button
           type="button"
           onClick={() => onSelect?.(request.id)}
           aria-pressed={selected}
           aria-label={`Show the original submission for ${request.title}`}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-4 text-left hover:text-brand"
+          className="flex min-w-0 flex-1 flex-col items-start gap-1 rounded-xl p-4 text-left hover:text-brand sm:flex-row sm:items-center sm:gap-3"
         >
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-              approved ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {request.status}
-          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                approved ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {request.status}
+            </span>
           {/* ⚠️ A revision of an APPROVED brief is the case Nitsan was most
               worried about — it is already a task he has rewritten — and this
               list is normally COLLAPSED behind "Show handled", so without a
               badge here the update would be invisible until someone went
               looking. It also drives the count on the bell and the home page. */}
-          {needsReview(request) && (
-            <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">
-              updated
-            </span>
-          )}
+            {needsReview(request) && (
+              <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">
+                updated
+              </span>
+            )}
+          </span>
           {/* Title (with who sent it) on the left, then the client and the date
               as their own columns — they are the two things you scan a handled
               list BY, and stacked under the title they were a run-on line. They
               collapse back under the title below `sm`, where three columns
               would leave the title ~90px. */}
-          <span className="grid min-w-0 flex-1 gap-x-3 gap-y-0.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+          <span className="grid w-full min-w-0 gap-x-3 gap-y-0.5 sm:w-auto sm:flex-1 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
             <span className="min-w-0">
               <span className="bidi-auto block truncate font-medium">{request.title}</span>
               {request.submitterName && (
@@ -515,10 +521,13 @@ function ReviewCard({
           drop to their own right-aligned row instead of competing for this one. */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
+          {/* ⚠️ 44px on a phone: this is the task's name, edited by tapping into
+              it, and it was a 31px-tall target on a card whose every other
+              control follows the 44px floor. */}
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="bidi-auto w-full rounded-md border border-transparent px-1 py-0.5 text-lg font-semibold hover:border-border focus:border-brand focus:outline-none"
+            className="bidi-auto min-h-11 w-full rounded-md border border-transparent px-1 py-0.5 text-lg font-semibold hover:border-border focus:border-brand focus:outline-none sm:min-h-0"
           />
           <p className="mt-0.5 px-1 text-xs text-muted">
             {request.submitterName} &lt;{request.submitterEmail}&gt; ·{" "}
@@ -569,14 +578,22 @@ function ReviewCard({
           past on the way to clicking Approve. */}
       {needsReview(request) && <WhatChanged request={request} />}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {/* ⚠️ ONE CONTROL PER ROW BELOW `sm`, not two. At 375px a two-up grid gave
+          each of these 150px, and a native `<select>` showing "Assignee
+          (optional)" or "Section (optional)" simply truncates its own label at
+          that width — so the three fields that decide where a job GOES were
+          unreadable on the screen where you decide it. Full width gives them
+          307px. Budget and the date keep sharing a row (a number and a date are
+          both short), via a wrapper that DISSOLVES at `sm` so the desktop grid
+          is byte-identical — the `contents` trick `MyWeek` uses. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <select
           value={clientId}
           onChange={(e) => {
             setClientId(e.target.value);
             setSectionId("");
           }}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
         >
           <option value="">Client…</option>
           {clients
@@ -592,7 +609,7 @@ function ReviewCard({
           value={sectionId}
           onChange={(e) => setSectionId(e.target.value)}
           disabled={!clientId}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm disabled:opacity-40"
+          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm disabled:opacity-40 sm:min-h-0"
         >
           <option value="">Section (optional)</option>
           {clientSections.map((s) => (
@@ -604,7 +621,7 @@ function ReviewCard({
         <select
           value={assigneeId}
           onChange={(e) => setAssigneeId(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
         >
           <option value="">Assignee (optional)</option>
           {profiles
@@ -615,21 +632,23 @@ function ReviewCard({
               </option>
             ))}
         </select>
-        <input
-          type="number"
-          min={0}
-          step={0.5}
-          placeholder="Budget (h)"
-          value={budget}
-          onChange={(e) => setBudget(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-        />
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-        />
+        <div className="grid grid-cols-2 gap-2 sm:contents">
+          <input
+            type="number"
+            min={0}
+            step={0.5}
+            placeholder="Budget (h)"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+          />
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+          />
+        </div>
       </div>
 
       {/* ⚠️ What the CLIENT asked for, shown only once the field no longer says
