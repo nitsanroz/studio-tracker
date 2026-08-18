@@ -11,6 +11,7 @@ import {
   formatSize,
 } from "@/lib/uploads";
 import { createClient } from "@/lib/supabase/client";
+import { formatDate } from "@/lib/format";
 import {
   CLOSING_ASKS,
   FIELDS,
@@ -66,6 +67,61 @@ const newDeliverable = (): DraftDeliverable => ({
   dimensions: "",
   format: "",
 });
+
+/**
+ * The briefs THIS BROWSER has submitted, so the client can duplicate or edit one.
+ *
+ * ⚠️ The unguessable `key` the server minted at submit is the ONLY authorisation,
+ * and this is the only place it exists. Deliberately not "every brief sent from
+ * this email address": the form is unauthenticated and its URL gets pasted into
+ * client emails, so an email→briefs lookup would hand anyone holding the link the
+ * brief text, name and employer behind any address they could guess. The cost is
+ * that the same person on a second device sees nothing — the same trade the
+ * contact memory above already makes, and the same reasoning that kept v1.14.0
+ * from adding an email→identity endpoint.
+ *
+ * ⚠️ Keyed per intake TOKEN. One machine at an agency may hold links for two
+ * clients, and one client's briefs must never be listed under another's form.
+ * ⚠️ Note what is NOT stored: none of the brief's own content. Storing the
+ * answers is exactly the shared-office leak the no-draft-save rule exists to
+ * prevent; an id and a key reveal nothing without the server.
+ */
+const SENT_KEY = (token: string) => `intake:sent:${token}`;
+const MAX_REMEMBERED = 20;
+
+interface SentBrief {
+  id: string;
+  key: string;
+  title: string;
+  at: string;
+}
+
+function loadSent(token: string): SentBrief[] {
+  try {
+    const raw = localStorage.getItem(SENT_KEY(token));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((r) => {
+      if (!r || typeof r !== "object") return [];
+      const o = r as Record<string, unknown>;
+      const str = (k: string) => (typeof o[k] === "string" ? (o[k] as string) : "");
+      return str("id") && str("key") ? [{ id: str("id"), key: str("key"), title: str("title"), at: str("at") }] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function rememberSent(token: string, brief: SentBrief) {
+  try {
+    // Newest first, and an EDIT replaces its own entry rather than adding one.
+    const next = [brief, ...loadSent(token).filter((b) => b.id !== brief.id)].slice(0, MAX_REMEMBERED);
+    localStorage.setItem(SENT_KEY(token), JSON.stringify(next));
+  } catch {
+    /* remembering is a convenience; never fail a submission over it */
+  }
+}
 
 function loadContact(): Values | null {
   try {
@@ -527,7 +583,16 @@ function LinkRows({ links, onChange }: { links: DraftLink[]; onChange: (l: Draft
 type Attachment = {
   /** Stable across re-renders; the file name is not (two picks can share one). */
   key: string;
-  file: File;
+  name: string;
+  size: number;
+  /**
+   * ⚠️ ABSENT for an attachment CARRIED OVER from a brief being duplicated or
+   * edited: that object is already in the bucket, so there is no `File` and
+   * nothing to upload. `name`/`size` therefore live on the attachment rather
+   * than being read off the file — which is also why `size` can be 0 on a brief
+   * submitted before v1.19.4, when the size was not recorded.
+   */
+  file?: File;
   state: "uploading" | "done" | "error";
   /** Set once stored. This, not the bytes, is what the submission posts. */
   path?: string;
@@ -569,14 +634,14 @@ function FileRows({
       const res = await fetch(`/api/intake/${token}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: item.file.name, size: item.file.size }),
+        body: JSON.stringify({ name: item.name, size: item.size }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) return fail(j.error ?? "Couldn't start the upload.");
 
       const { error } = await supabase.storage
         .from("intake")
-        .uploadToSignedUrl(j.path, j.token, item.file, { contentType: j.contentType });
+        .uploadToSignedUrl(j.path, j.token, item.file!, { contentType: j.contentType });
       if (error) return fail(`Upload failed — ${error.message}`);
 
       onChange((prev) =>
@@ -594,7 +659,7 @@ function FileRows({
     const rejected: { name: string; reason: string }[] = [];
     for (const file of picked) {
       // Same file twice is a mis-click, not an instruction to attach it twice.
-      if (files.some((a) => a.file.name === file.name && a.file.size === file.size)) continue;
+      if (files.some((a) => a.name === file.name && a.size === file.size)) continue;
       if (files.length + accepted.length >= MAX_INTAKE_FILES) {
         rejected.push({ name: file.name, reason: `Only ${MAX_INTAKE_FILES} files can be attached.` });
         continue;
@@ -608,15 +673,21 @@ function FileRows({
       // already attached — before the upload starts, so a file that cannot be
       // part of the brief is never sent to storage in the first place.
       const set = describeUploadSet([
-        ...files.map((a) => a.file),
-        ...accepted.map((a) => a.file),
-        file,
+        ...files,
+        ...accepted,
+        { name: file.name, size: file.size },
       ]);
       if (!set.ok) {
         rejected.push({ name: file.name, reason: set.reason });
         continue;
       }
-      accepted.push({ key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, file, state: "uploading" });
+      accepted.push({
+        key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name,
+        size: file.size,
+        file,
+        state: "uploading",
+      });
     }
     onChange([...files, ...accepted]);
     setRefused(rejected);
@@ -643,7 +714,7 @@ function FileRows({
           className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
         >
           <Paperclip size={14} className="shrink-0 text-faint" />
-          <span className="bidi-auto min-w-0 flex-1 truncate text-base">{a.file.name}</span>
+          <span className="bidi-auto min-w-0 flex-1 truncate text-base">{a.name}</span>
           {/* The state of the transfer, in the row it belongs to. "Sending…"
               rather than a percentage: `uploadToSignedUrl` reports completion,
               not progress, and a fake bar is worse than an honest word. */}
@@ -653,7 +724,7 @@ function FileRows({
               {a.error}
             </span>
           )}
-          <span className="shrink-0 text-sm tabular-nums text-muted">{formatSize(a.file.size)}</span>
+          <span className="shrink-0 text-sm tabular-nums text-muted">{formatSize(a.size)}</span>
           <button
             type="button"
             onClick={() => {
@@ -665,7 +736,7 @@ function FileRows({
               onChange((prev) => prev.filter((x) => x.key !== a.key));
               setRefused([]);
             }}
-            aria-label={`Remove ${a.file.name}`}
+            aria-label={`Remove ${a.name}`}
             className="flex size-11 shrink-0 items-center justify-center rounded-md text-faint hover:text-danger sm:size-9"
           >
             <X size={16} />
@@ -854,8 +925,8 @@ function Review({
               {files.map((a) => (
                 <span key={a.key} className="bidi-auto block truncate">
                   <Paperclip size={12} className="mr-1 inline" />
-                  {a.file.name}{" "}
-                  <span className="text-sm text-muted">{formatSize(a.file.size)}</span>
+                  {a.name}{" "}
+                  <span className="text-sm text-muted">{formatSize(a.size)}</span>
                   {/* The review page is the last thing read before sending, so
                       it has to show an attachment that is not actually going. */}
                   {a.state !== "done" && (
@@ -885,7 +956,15 @@ function Review({
 export default function IntakeFormPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const [clientName, setClientName] = useState<string | null>(null);
-  const [state, setState] = useState<"loading" | "form" | "invalid" | "sending" | "done">("loading");
+  /**
+   * ⚠️ `choose` is a SCREEN, not a step. Adding a conditional step would shift
+   * every index the step machine already reasons about — `stepsFor`, `checkStep`,
+   * the focus effect, the review step's Edit buttons — for a screen that is shown
+   * once and only to a returning client.
+   */
+  const [state, setState] = useState<
+    "loading" | "form" | "invalid" | "sending" | "done" | "choose"
+  >("loading");
   const [error, setError] = useState<string | null>(null);
 
   const [values, setValues] = useState<Values>({});
@@ -901,6 +980,19 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
   const [step, setStep] = useState(0);
   const [invalid, setInvalid] = useState<Record<string, string>>({});
+  /** Briefs this browser has sent through THIS link; empty for a first-timer. */
+  const [sent, setSent] = useState<SentBrief[]>([]);
+  /**
+   * Set once the chooser has been answered, so pressing Back to the details step
+   * and Next again does not ask the same question twice.
+   */
+  const [chose, setChose] = useState(false);
+  /**
+   * The brief being EDITED, if any. Its presence turns the submission into an
+   * update — carried as state rather than derived, because a duplicate reads the
+   * very same brief and must NOT become one.
+   */
+  const [editing, setEditing] = useState<{ id: string; key: string } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const steps = useMemo(() => stepsFor(kinds), [kinds]);
@@ -926,6 +1018,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           company: j.clientName ?? saved?.company ?? "",
         });
         setRemembered(Boolean(saved));
+        setSent(loadSent(token));
         setState("form");
       })
       .catch(() => setState("invalid"));
@@ -942,6 +1035,83 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
 
   /** Validates the step being left. Returns true when it's safe to advance. */
+  /**
+   * Fills the form from a brief the client already sent — for a duplicate or an
+   * edit. `asEdit` is the only difference between the two paths, and it decides
+   * whether the submission updates that brief or creates a new one.
+   *
+   * ⚠️ Attachments are carried over as PATHS to the very same storage objects,
+   * not re-uploaded: a duplicated brief costs nothing, and the sweep script
+   * counts an object referenced by two briefs as live. They arrive `done`, so
+   * the submit gate that waits for uploads passes straight through.
+   */
+  async function reuse(brief: SentBrief, asEdit: boolean) {
+    setError(null);
+    setState("loading");
+    try {
+      const res = await fetch(`/api/intake/${token}/briefs/${brief.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: brief.key }),
+      });
+      if (!res.ok) throw new Error("gone");
+      const j = (await res.json()) as {
+        answers: Record<string, unknown>;
+        files: { name: string; path: string; size: number }[];
+        editable: boolean;
+      };
+      if (asEdit && !j.editable) {
+        // The studio picked it up between the list being drawn and this click.
+        setState("choose");
+        setError("The studio has already started on that one — you can duplicate it instead.");
+        return;
+      }
+      const a = j.answers;
+      const str = (k: string) => (typeof a[k] === "string" ? (a[k] as string) : "");
+      // ⚠️ Only the fields the FORM owns. Anything the studio has since added to
+      // the row is not the client's to read back.
+      const next: Values = {};
+      for (const k of Object.keys(FIELDS)) next[k] = str(k);
+      // Name and email stay as typed on the details step just now — the person
+      // duplicating a colleague's brief is not that colleague.
+      next.name = values.name;
+      next.email = values.email;
+      next.company = values.company;
+      setValues(next);
+      setKinds(Array.isArray(a.kinds) ? (a.kinds as string[]).filter((k) => typeof k === "string") : []);
+      setLinks(
+        Array.isArray(a.links)
+          ? (a.links as { title?: string; url?: string }[]).map((l) => ({
+              title: l.title ?? "",
+              url: l.url ?? "",
+            }))
+          : [],
+      );
+      const ds = Array.isArray(a.deliverables) ? (a.deliverables as Record<string, string>[]) : [];
+      setDeliverables(
+        ds.length
+          ? ds.map((d) => ({ ...newDeliverable(), name: d.name ?? "", details: d.details ?? "", dimensions: d.dimensions ?? "", format: d.format ?? "" }))
+          : [newDeliverable()],
+      );
+      setFiles(
+        j.files.map((f, i) => ({
+          key: `carried-${brief.id}-${i}`,
+          name: f.name,
+          size: f.size,
+          state: "done" as const,
+          path: f.path,
+        })),
+      );
+      setEditing(asEdit ? { id: brief.id, key: brief.key } : null);
+      setChose(true);
+      setStep(1);
+      setState("form");
+    } catch {
+      setState("choose");
+      setError("That brief can't be opened any more — you can start a new one.");
+    }
+  }
+
   function checkStep(): boolean {
     const bad: Record<string, string> = {};
     if (current.kindPicker && !kinds.length)
@@ -1000,7 +1170,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     const failed = files.filter((a) => a.state === "error");
     if (failed.length) {
       setError(
-        `Couldn't upload ${failed.map((a) => a.file.name).join(", ")} — remove ${failed.length === 1 ? "it" : "them"} or try again before sending.`,
+        `Couldn't upload ${failed.map((a) => a.name).join(", ")} — remove ${failed.length === 1 ? "it" : "them"} or try again before sending.`,
       );
       return;
     }
@@ -1033,8 +1203,15 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     // lost a client's brief.
     body.set(
       "uploaded",
-      JSON.stringify(files.filter((a) => a.path).map((a) => ({ path: a.path, name: a.file.name }))),
+      JSON.stringify(files.filter((a) => a.path).map((a) => ({ path: a.path, name: a.name }))),
     );
+    // Turns the submission into an update of that brief. The server re-checks
+    // the key, the link and that it is still pending — this is a request, not a
+    // permission.
+    if (editing) {
+      body.set("editId", editing.id);
+      body.set("editKey", editing.key);
+    }
 
     const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
     if (!res.ok) {
@@ -1064,6 +1241,21 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
     } catch {
       /* remembering is a convenience; never fail a submission over it */
     }
+    // ⚠️ The key comes back exactly once, on the response to this submit, and is
+    // never readable again — so if it is not stored here the brief can never be
+    // edited. An edit returns the same id and key, and `rememberSent` replaces
+    // that entry rather than adding a second one.
+    const saved = (await res.json().catch(() => ({}))) as { id?: string; editKey?: string };
+    if (saved.id && saved.editKey) {
+      rememberSent(token, {
+        id: saved.id,
+        key: saved.editKey,
+        title: values.taskName ?? "",
+        at: new Date().toISOString(),
+      });
+      setSent(loadSent(token));
+    }
+    setEditing(null);
     setState("done");
   }
 
@@ -1077,6 +1269,91 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       </div>
     );
   }
+  /**
+   * The returning client's chooser: start fresh, copy one they sent, or change
+   * one the studio hasn't picked up yet.
+   *
+   * ⚠️ Every brief listed here was submitted FROM THIS BROWSER — the list comes
+   * from localStorage and the server only confirms the ones whose key matches.
+   * Someone opening a forwarded link sees this screen not at all.
+   */
+  if (state === "choose") {
+    return (
+      <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
+        <div className="mb-6 flex items-baseline justify-between gap-3">
+          <h1 className="text-2xl">Welcome back{values.name ? `, ${values.name.split(" ")[0]}` : ""}</h1>
+          <span className="brand-wordmark h-5 w-20 bg-brand" aria-label="Studio&more" />
+        </div>
+        <p className="text-base text-muted">
+          You&apos;ve sent {sent.length === 1 ? "a brief" : `${sent.length} briefs`} from this
+          device. Start something new, or pick one up.
+        </p>
+        {error && (
+          <p className="mt-3 text-base text-danger" role="alert">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setChose(true);
+            setEditing(null);
+            setState("form");
+            go(1);
+          }}
+          className="mt-6 flex min-h-14 w-full items-center gap-3 rounded-xl bg-brand px-5 text-base font-semibold text-white hover:bg-brand-dark"
+        >
+          <Plus size={18} />
+          Start a new brief
+        </button>
+
+        <ul className="mt-6 flex flex-col gap-2">
+          {sent.map((b) => (
+            <li
+              key={b.id}
+              className="rounded-xl border border-border-strong bg-surface p-4 sm:flex sm:items-center sm:gap-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="bidi-auto truncate text-base font-medium">{b.title || "Untitled brief"}</p>
+                <p className="text-sm text-muted">{b.at ? formatDate(b.at) : ""}</p>
+              </div>
+              {/* ⚠️ Two verbs, never one. "Duplicate" starts a new brief from
+                  this one — which is what a series like "Partner Event | Roll
+                  ups / Banners / Flags" actually needs — while "Edit" changes
+                  the brief the studio is holding. Collapsing them into "Re-use"
+                  would leave the client guessing which happened. */}
+              <div className="mt-3 flex gap-2 sm:mt-0">
+                <button
+                  type="button"
+                  onClick={() => reuse(b, false)}
+                  className="min-h-11 flex-1 rounded-lg border border-border-strong px-4 text-base hover:border-brand sm:flex-none"
+                >
+                  Duplicate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => reuse(b, true)}
+                  className="min-h-11 flex-1 rounded-lg border border-border-strong px-4 text-base hover:border-brand sm:flex-none"
+                >
+                  Edit
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          type="button"
+          onClick={() => setState("form")}
+          className="mt-6 text-base text-brand underline"
+        >
+          Back to my details
+        </button>
+      </div>
+    );
+  }
+
   if (state === "done") {
     return (
       <div className="flex min-h-screen items-center justify-center px-5">
@@ -1088,6 +1365,20 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           <p className="mt-1 text-base text-muted">
             Your brief is with the studio. We&apos;ll be in touch shortly.
           </p>
+          {/* A returning client is told the door is still open — this is the one
+              screen where they learn the form remembers them at all. */}
+          {sent.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setValues((prev) => ({ ...prev }));
+                setState("choose");
+              }}
+              className="mt-4 text-base text-brand underline"
+            >
+              Send another, or change one you&apos;ve sent
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1095,6 +1386,22 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
+      {/* ⚠️ Editing has to be VISIBLE for the whole form, not just on the button
+          at the end: everything on screen is a brief the studio is already
+          holding, and a client who thinks they are writing a new one would send
+          their next job as a revision of the last. */}
+      {editing && (
+        <div className="mb-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3 text-base">
+          You&apos;re editing a brief you already sent. Sending will replace it.{" "}
+          <button
+            type="button"
+            onClick={() => setState("choose")}
+            className="text-brand underline"
+          >
+            Pick a different one
+          </button>
+        </div>
+      )}
       {/* The mark alone, as TEXT — exactly how the app's own sidebar draws it
           when folded (`app-shell.tsx`), so there is one definition of the mark
           rather than a second copy in SVG. Right-aligned: it identifies the
@@ -1252,13 +1559,25 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
               disabled={state === "sending"}
               className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
             >
-              {state === "sending" ? "Sending…" : "Submit brief"}
+              {state === "sending" ? "Sending…" : editing ? "Save changes" : "Submit brief"}
             </button>
           ) : (
             <button
               key="next"
               type="button"
-              onClick={() => checkStep() && go(step + 1)}
+              onClick={() => {
+                if (!checkStep()) return;
+                // ⚠️ The chooser interrupts exactly ONCE, leaving the details
+                // step, and only for a browser that has sent something before.
+                // Asked any later it would mean discarding answers already
+                // typed; asked before the details it would greet a stranger
+                // with a list of briefs they cannot see.
+                if (step === 0 && !chose && sent.length > 0) {
+                  setState("choose");
+                  return;
+                }
+                go(step + 1);
+              }}
               className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark"
             >
               Next

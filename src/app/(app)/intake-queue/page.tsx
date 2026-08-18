@@ -293,6 +293,18 @@ function ReviewCard({
               <> · suggested client: <span className="font-medium text-foreground">{suggested.name}</span></>
             )}
           </p>
+          {/* ⚠️ ON THE PENDING CARD, not only in the handled details pane — a
+              client can revise a brief ONLY while it is pending (0029), so an
+              indicator that appeared after approval would never once be seen at
+              the moment it matters. Loud on purpose: an admin who read this
+              yesterday, or who already pressed "we've seen it", is otherwise
+              working from words the client has since rewritten. */}
+          {request.editedAt && (
+            <p className="mt-1 px-1 text-xs font-semibold text-brand">
+              ✎ The client edited this {formatDate(request.editedAt.slice(0, 10))} — re-read before
+              approving
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
           {/* On a phone the receipt rides up here beside "Show brief" — they
@@ -496,6 +508,17 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
           )}
         </Row>
         <Row label="Arrived">{formatDate(request.createdAt)}</Row>
+        {/* ⚠️ Loud, and above "Seen" on purpose: a client can revise a pending
+            brief (0029), so an admin who read it yesterday — or already pressed
+            "we've seen it" — must be told the words changed rather than working
+            from what they remember. */}
+        {request.editedAt && (
+          <Row label="Edited">
+            <span className="font-medium text-brand">
+              {formatDate(request.editedAt)} — the client changed this after sending it
+            </span>
+          </Row>
+        )}
         {kinds.length > 0 && <Row label="Kind">{kinds.join(", ")}</Row>}
         {request.seenAt && <Row label="Seen">{formatDate(request.seenAt)}</Row>}
         {request.clientNotifiedAt && (

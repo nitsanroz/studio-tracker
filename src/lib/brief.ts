@@ -74,6 +74,17 @@ export interface IntakeAnswers {
 export interface IntakeFile {
   name: string;
   url: string;
+  /**
+   * Bytes, as STORAGE reported them at submit.
+   *
+   * ⚠️ Optional because every brief submitted before v1.19.4 recorded only a
+   * name and a URL. It exists so DUPLICATING a brief can weigh the attachments
+   * it carries over against the per-brief budget — without it a duplicate would
+   * arrive with unknown sizes and the 30MB total could not be enforced. Treat a
+   * missing value as 0: those objects are already stored, and the budget is
+   * about what is being added.
+   */
+  size?: number;
 }
 
 /** A titled link the client added on the form with "+ Add link". */

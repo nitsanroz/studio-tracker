@@ -47,8 +47,25 @@ export class DbError extends Error {
   }
 }
 
-/** 42703 undefined_column · 42P01 undefined_table — i.e. a migration isn't applied. */
-const MISSING_SCHEMA_CODES = new Set(["42703", "42P01"]);
+/**
+ * A migration isn't applied: 42703 undefined_column · 42P01 undefined_table.
+ *
+ * ⚠️ PGRST204 is the same fact reported by a DIFFERENT LAYER, and leaving it out
+ * cost a broken intake form: Postgres raises 42703 when a SELECT names an unknown
+ * column, but on an INSERT or UPDATE **PostgREST** rejects the payload first with
+ * `PGRST204 "Could not find the 'x' column of 't' in the schema cache"` — so a
+ * write-side fallback keyed only on 42703 never fires, and every submission 500s
+ * until the SQL is run. Any code that writes a column a pending migration adds
+ * needs this one.
+ *
+ * ⚠️ It is also what PostgREST returns while its schema cache is STALE — for a
+ * few minutes after a `create table`/`add column`, a column that really does
+ * exist can report PGRST204 (see the v1.10.0 log entry). A caller treating this
+ * as "missing" therefore drops that value for those few minutes rather than
+ * failing. That is the right trade for an optional column and the wrong one for
+ * anything load-bearing: don't use this to skip something that must be written.
+ */
+const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204"]);
 
 /** True when the query failed because the schema lacks something, not because the request failed. */
 export function isMissingSchema(e: unknown): boolean {

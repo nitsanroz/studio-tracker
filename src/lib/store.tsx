@@ -94,6 +94,14 @@ export interface TaskRequest {
   seenAt: string | null;
   seenBy: string | null;
   clientNotifiedAt: string | null;
+  /**
+   * When the CLIENT last changed this brief after sending it (0029).
+   *
+   * ⚠️ The queue must surface it: an admin who has already read a brief — or
+   * already pressed "we've seen it" — would otherwise be working from text the
+   * client has since rewritten.
+   */
+  editedAt: string | null;
 }
 
 export interface ApproveRequestInput {
@@ -441,6 +449,9 @@ const mapTaskRequest = (r: any): TaskRequest => ({
   seenAt: r.seen_at ?? null,
   seenBy: r.seen_by ?? null,
   clientNotifiedAt: r.client_notified_at ?? null,
+  // Same `?? null` reasoning as above, for 0029: an unapplied migration leaves
+  // the key absent, which reads as "never edited".
+  editedAt: r.edited_at ?? null,
 });
 
 const StoreContext = createContext<Store | null>(null);

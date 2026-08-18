@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { DbError, isMissingSchema } from "@/lib/db";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import {
   assembleEmailHtml,
@@ -191,6 +192,49 @@ async function suggestClient(sb: ReturnType<typeof admin>, company: string, emai
   return best?.id ?? null;
 }
 
+/**
+ * Tells the studio a brief arrived. Best-effort by design — the queue is the
+ * record, and a mail server being down must not fail a client's submission.
+ *
+ * ⚠️ Shared by the new-brief and the EDIT path, with `updated` only changing the
+ * subject. An edit has to notify too: an admin may have read the original
+ * already, and a revision they never hear about is worse than no revision.
+ */
+async function notify(
+  sb: ReturnType<typeof admin>,
+  req: NextRequest,
+  answers: IntakeAnswers,
+  extras: { files: IntakeFile[]; links: BriefLink[]; dropped: string[] },
+  updated: boolean,
+) {
+  try {
+    if (!process.env.RESEND_API_KEY) return;
+    const { data: setting } = await sb
+      .from("app_settings")
+      .select("value")
+      .eq("key", "intake_notify_emails")
+      .maybeSingle();
+    const recipients: string[] = Array.isArray(setting?.value) ? setting.value : [];
+    if (!recipients.length) return;
+    const origin = req.nextUrl.origin;
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.INTAKE_FROM_EMAIL || "Studio&more Tracker <onboarding@resend.dev>",
+        to: recipients,
+        subject: `${updated ? "Updated brief" : "New task"}: ${answers.taskName} — ${answers.company || answers.name}`,
+        html: assembleEmailHtml(answers, extras, `${origin}/intake-queue`),
+      }),
+    });
+  } catch (e) {
+    console.error("intake email failed", e);
+  }
+}
+
 export async function POST(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
   const link = await resolveLink(token);
@@ -318,7 +362,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     }
     stored += size;
     const { data: pub } = sb.storage.from("intake").getPublicUrl(item.path);
-    files.push({ name: item.name, url: pub.publicUrl });
+    files.push({ name: item.name, url: pub.publicUrl, size });
   }
 
   const clientId = link.client_id ?? null;
@@ -329,57 +373,109 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   // then they are real rows in `links`.
   const brief = assembleTaskBrief(answers, { files, links, dropped });
 
-  const { data: request, error } = await sb
-    .from("task_requests")
-    .insert({
-      intake_link_id: link.id,
-      client_id: clientId,
-      suggested_client_id: suggested,
-      submitter_name: answers.name,
-      submitter_email: answers.email,
-      title: answers.taskName,
-      brief,
-      requested_due_date: answers.dueDate || null,
-      client_approved_budget_hours: parseBudgetHours(answers.budgetRange),
-      answers: { ...answers, files, links },
-      status: "pending",
-    })
-    .select("id")
-    .single();
-  if (error) {
-    console.error("intake submission failed", error);
-    return NextResponse.json({ error: "Could not submit — please try again." }, { status: 500 });
-  }
+  const row = {
+    submitter_name: answers.name,
+    submitter_email: answers.email,
+    title: answers.taskName,
+    brief,
+    requested_due_date: answers.dueDate || null,
+    client_approved_budget_hours: parseBudgetHours(answers.budgetRange),
+    answers: { ...answers, files, links },
+  };
 
-  // Email notification (best-effort; queue works even if mail fails)
-  try {
-    if (process.env.RESEND_API_KEY) {
-      const { data: setting } = await sb
-        .from("app_settings")
-        .select("value")
-        .eq("key", "intake_notify_emails")
-        .maybeSingle();
-      const recipients: string[] = Array.isArray(setting?.value) ? setting.value : [];
-      if (recipients.length) {
-        const origin = req.nextUrl.origin;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: process.env.INTAKE_FROM_EMAIL || "Studio&more Tracker <onboarding@resend.dev>",
-            to: recipients,
-            subject: `New task: ${answers.taskName} — ${answers.company || answers.name}`,
-            html: assembleEmailHtml(answers, { files, links, dropped }, `${origin}/intake-queue`),
-          }),
-        });
-      }
+  /**
+   * An EDIT of a brief this same browser submitted, rather than a new one.
+   *
+   * ⚠️ Four things are checked, and each one is load-bearing on a form anybody
+   * with the link can open: the key must match, the brief must belong to THIS
+   * intake link (a key minted through one client's link must not reach another's
+   * brief), the brief must still be `pending`, and `edited_at` is stamped so an
+   * admin who has already read it is not left with silently stale text.
+   *
+   * ⚠️ `created_at`, `status`, `seen_at` and `client_notified_at` are deliberately
+   * NOT touched. An edit is the client revising their own words, not a new
+   * submission and not an undo of the studio having handled it.
+   */
+  const editId = String(form.get("editId") ?? "").slice(0, 64);
+  const editKey = String(form.get("editKey") ?? "").slice(0, 128);
+  if (editId && editKey) {
+    const { data: existing } = await sb
+      .from("task_requests")
+      .select("id, status, intake_link_id, edit_key")
+      .eq("id", editId)
+      .maybeSingle();
+    if (!existing || existing.edit_key !== editKey || existing.intake_link_id !== link.id) {
+      return NextResponse.json({ error: "That brief can no longer be edited." }, { status: 404 });
     }
-  } catch (e) {
-    console.error("intake email failed", e);
+    if (existing.status !== "pending") {
+      return NextResponse.json(
+        { error: "The studio has already picked this brief up — send it as a new one instead." },
+        { status: 409 },
+      );
+    }
+    const { error: upErr } = await sb
+      .from("task_requests")
+      .update({ ...row, edited_at: new Date().toISOString() })
+      .eq("id", editId);
+    if (upErr) {
+      console.error("intake edit failed", upErr);
+      return NextResponse.json({ error: "Could not save your changes — please try again." }, { status: 500 });
+    }
+    await notify(sb, req, answers, { files, links, dropped }, true);
+    return NextResponse.json({ ok: true, id: editId, editKey });
   }
 
-  return NextResponse.json({ ok: true, id: request.id });
+  // ⚠️ The key is minted below and returned exactly ONCE — it is never selected
+  // back out to anyone. The client's own browser is the only place it lives,
+  // which is what makes editing safe without an account: there is no lookup by
+  // email address, so nothing can be enumerated by someone holding the link.
+  const base = {
+    ...row,
+    intake_link_id: link.id,
+    client_id: clientId,
+    suggested_client_id: suggested,
+    status: "pending",
+  };
+
+  /**
+   * ⚠️ ONE RUNG DOWN IF 0029 HASN'T BEEN APPLIED, and this matters more than it
+   * looks: without the fallback an unapplied migration makes `edit_key` an
+   * unknown column, the insert fails, and EVERY CLIENT SUBMISSION 500s — the
+   * form would be dead for the studio's clients until someone ran SQL. The same
+   * step-down the boot query uses (`isMissingSchema`, `42703`), and only for a
+   * missing column: any other failure is a real failure and must surface.
+   *
+   * The cost of the fallback is that a brief submitted in that window gets no
+   * edit key, so the client cannot edit THAT one. They can still duplicate it
+   * once the column exists... no: with no key it is not remembered at all, and
+   * it behaves exactly as every brief did before this feature. Correct, and
+   * invisible.
+   */
+  let request: { id: string } | null = null;
+  let key: string | null = crypto.randomUUID() + crypto.randomUUID().slice(0, 8);
+  {
+    const first = await sb
+      .from("task_requests")
+      .insert({ ...base, edit_key: key })
+      .select("id")
+      .single();
+    if (first.error && isMissingSchema(new DbError("task_requests", first.error.message, first.error.code))) {
+      key = null;
+      const retry = await sb.from("task_requests").insert(base).select("id").single();
+      if (retry.error) {
+        console.error("intake submission failed", retry.error);
+        return NextResponse.json({ error: "Could not submit — please try again." }, { status: 500 });
+      }
+      request = retry.data;
+    } else if (first.error) {
+      console.error("intake submission failed", first.error);
+      return NextResponse.json({ error: "Could not submit — please try again." }, { status: 500 });
+    } else {
+      request = first.data;
+    }
+  }
+
+  await notify(sb, req, answers, { files, links, dropped }, false);
+
+  return NextResponse.json({ ok: true, id: request.id, editKey: key });
 }
