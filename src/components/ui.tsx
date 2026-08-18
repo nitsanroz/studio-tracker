@@ -258,22 +258,58 @@ export function Modal({
   className?: string;
 }) {
   const card = useRef<HTMLDivElement>(null);
+
+  /**
+   * ⚠️ ON MOUNT ONLY — and this deps array is load-bearing.
+   *
+   * It used to be `[onClose]`, and that made every modal containing a text field
+   * unusable one keystroke at a time: a caller that declares its close handler in
+   * its component body (which `BriefModal` does, so it can save the draft on the
+   * way out) hands us a NEW function identity on every render, a keystroke
+   * re-renders, and the effect re-ran and pulled focus out of the field the person
+   * was typing in and onto the dialog. Reported as "after typing 1 letter the
+   * focus is going out of the text field".
+   *
+   * ⚠️ And it YIELDS to a child that already has focus, which is what makes
+   * `autoFocus` on an inner input work: React applies that during commit, this
+   * effect runs after it, so focusing unconditionally defeated it and every modal
+   * opened with focus on the card instead of its field.
+   *
+   * `preventScroll`, because a card taller than the viewport makes the browser
+   * scroll to reveal it — and on a COLD open (web fonts still loading) the content
+   * is briefly taller than it ends up, so a modal with its own scroller opened
+   * part-way down and stayed there. The card is fixed and centred, so there is
+   * never anything to scroll to.
+   */
   useEffect(() => {
-    // preventScroll, because a card taller than the viewport makes the browser
-    // scroll to reveal it — and on a COLD open (web fonts still loading) the
-    // content is briefly taller than it ends up, so a modal with its own
-    // scroller opened part-way down and stayed there. The card is fixed and
-    // centred, so there is never anything to scroll to.
-    card.current?.focus({ preventScroll: true });
+    const el = card.current;
+    if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
+  }, []);
+
+  /**
+   * Escape closes. ⚠️ Registered ONCE and reading the latest handler through a
+   * ref: re-registering a window listener is harmless in itself, but tying it to
+   * `onClose` is what dragged the focus call above into the same re-running
+   * effect. Keeping them apart means neither can break the other again.
+   */
+  const closeRef = useRef(onClose);
+  // Kept current in an effect, not during render — a ref written while rendering
+  // is a React violation the linter rightly flags. The gap between render and
+  // this effect cannot matter: Escape only arrives from a real keypress, which
+  // is always after paint.
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        closeRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
   const [overlayZ, cardZ] = layer === "raised" ? ["z-[60]", "z-[70]"] : ["z-40", "z-50"];
   return (
     <>

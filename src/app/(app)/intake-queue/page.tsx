@@ -632,6 +632,27 @@ function ReviewCard({
         />
       </div>
 
+      {/* ⚠️ What the CLIENT asked for, shown only once the field no longer says
+          it. That field is pre-filled from their date and then edited freely, so
+          the moment it is touched the original is gone from the screen — and the
+          brief text does not carry it either (v1.16.0 took the `due …` line out
+          on purpose). Nitsan: "was hard to check if the date is correct and
+          compare it to original client input." Silent when they match, so it is
+          a signal rather than another line on every card. */}
+      {request.requestedDueDate && request.requestedDueDate !== dueDate && (
+        <p className="-mt-1 text-xs text-muted">
+          The client asked for{" "}
+          <button
+            type="button"
+            onClick={() => setDueDate(request.requestedDueDate!)}
+            className="font-medium text-brand hover:underline"
+            title="Put that date back"
+          >
+            {formatDate(request.requestedDueDate)}
+          </button>
+        </p>
+      )}
+
       {error && <p className="text-sm text-danger">{error}</p>}
       {/* The receipt sits at the far left here, pushed by `mr-auto`, because it
           is not part of the approve/reject decision — it's something you do
@@ -756,6 +777,22 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
           </Row>
         )}
         {kinds.length > 0 && <Row label="Kind">{kinds.join(", ")}</Row>}
+        {/* ⚠️ THE CLIENT'S OWN DATE, and it had nowhere to live until now.
+            v1.16.0 deliberately took the `due …` line OUT of the brief text —
+            Nitsan deleted it by hand in all three sample briefs, because the task
+            it becomes has a Dates field of its own — but this pane has no such
+            field, so the one date the client asked for was invisible on the only
+            screen that records what they actually sent. `requested_due_date` is
+            never written by the studio (approval writes the task's `due_date`
+            instead), so it stays their input even after the date on the card is
+            changed. */}
+        <Row label="Wanted by">
+          {request.requestedDueDate ? (
+            formatDate(request.requestedDueDate)
+          ) : (
+            <span className="text-faint">no date given</span>
+          )}
+        </Row>
         {request.seenAt && <Row label="Seen">{formatDate(request.seenAt)}</Row>}
         {request.clientNotifiedAt && (
           <Row label="Client told">{formatDate(request.clientNotifiedAt)}</Row>
