@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fetchCold, fetchHot, fingerprint, refreshVerdict } from "./snapshot";
+import { fetchCold, fetchHot, fetchTasks, fingerprint, refreshVerdict } from "./snapshot";
 import type { HotSnapshot } from "./snapshot";
 import type { EntrySum } from "./types";
 
@@ -87,10 +87,39 @@ function recordingClient() {
 describe("refresh tiers", () => {
   it("a hot tick reads time_entries ONLY as the 400-row feed window", async () => {
     const { sb, calls } = recordingClient();
-    await fetchHot(sb, { tagNames: new Map(), projectClient: new Map() });
+    await fetchHot(sb);
     const te = calls.filter((c) => c.table === "time_entries");
     expect(te).toHaveLength(1);
     expect(te[0].limit).toBe(400);
+  });
+
+  it("a hot tick does not touch tasks at all", async () => {
+    // The other half of the egress fix, and the one a future edit is most
+    // likely to undo by folding the tasks query back into fetchHot: at ~2.5 MB
+    // it was 88% of what a 60-second tick cost.
+    const { sb, calls } = recordingClient();
+    await fetchHot(sb);
+    expect(calls.filter((c) => c.table === "tasks")).toHaveLength(0);
+    expect(calls.map((c) => c.table).sort()).toEqual([
+      "dev_items",
+      "plan_entries",
+      "task_requests",
+      "time_entries",
+    ]);
+  });
+
+  it("fetchTasks is the one that pages tasks, keeping the top rung's columns", async () => {
+    const { sb, calls } = recordingClient();
+    await fetchTasks(sb, { tagNames: new Map(), projectClient: new Map() });
+    const t = calls.filter((c) => c.table === "tasks");
+    expect(t).toHaveLength(1);
+    // Top rung of the ladder: every migration's column present. A silent drop
+    // to a lower rung would take real fields off every task in the studio.
+    for (const col of ["group_id", "type_id", "timeline_position", "start_date", "legacy_hours"]) {
+      expect(t[0].columns).toContain(col);
+    }
+    // `brief` is per-task detail, fetched lazily — never in the list query.
+    expect(t[0].columns).not.toContain("brief");
   });
 
   it("the whole table is paged on the cold tick, with the legacy flag intact", async () => {
@@ -106,14 +135,13 @@ describe("refresh tiers", () => {
   });
 });
 
-// ── fingerprint, now that the sums are passed in ──────────────────────────
+// ── fingerprint, now that tasks and sums are passed in ───────────────────
 // It answers one question: did somebody ELSE change something an undo step
 // could be sitting on? A false "yes" expires the user's undo history, so the
 // half that matters most is that a hot tick with unchanged data holds still.
 
 const hot = (over: Partial<HotSnapshot> = {}) =>
   ({
-    tasks: [],
     planEntries: [],
     timeEntries: [{ id: "e1", minutes: 60 }],
     taskRequests: [],
@@ -124,6 +152,12 @@ const hot = (over: Partial<HotSnapshot> = {}) =>
 const sums = (minutes: number[]) =>
   minutes.map((m, i) => ({ id: `s${i}`, minutes: m })) as unknown as EntrySum[];
 
+/** The cross-tier half of the print: what the last server response held. */
+const server = (entrySums: EntrySum[], tasks: unknown[] = []) =>
+  ({ entrySums, tasks }) as unknown as Parameters<typeof fingerprint>[1];
+
+const task = (id: string, title: string) => ({ id, title, status: "todo" });
+
 describe("fingerprint", () => {
   it("holds still across a hot tick that changed nothing", () => {
     // THE regression this guards. `entrySums` only arrives every ~10 minutes
@@ -131,16 +165,34 @@ describe("fingerprint", () => {
     // an absent one and report a change every single minute — silently clearing
     // the undo history of anyone with a tab open.
     const carried = sums([30, 45]);
-    expect(fingerprint(hot(), carried)).toBe(fingerprint(hot(), carried));
+    expect(fingerprint(hot(), server(carried))).toBe(fingerprint(hot(), server(carried)));
   });
 
   it("still notices a change in the entry totals when a cold tick brings them", () => {
-    expect(fingerprint(hot(), sums([30, 45]))).not.toBe(fingerprint(hot(), sums([30, 50])));
+    expect(fingerprint(hot(), server(sums([30, 45])))).not.toBe(
+      fingerprint(hot(), server(sums([30, 50]))),
+    );
   });
 
   it("notices a new entry with the same total", () => {
     // Count and sum are both in the print, so a split entry can't hide.
-    expect(fingerprint(hot(), sums([60]))).not.toBe(fingerprint(hot(), sums([30, 30])));
+    expect(fingerprint(hot(), server(sums([60])))).not.toBe(
+      fingerprint(hot(), server(sums([30, 30]))),
+    );
+  });
+
+  it("holds still on the two ticks in three that don't refetch tasks", () => {
+    // Same shape as the entries case above, for the tier added on 2026-08-18:
+    // tasks now arrive every 3rd tick, so a tick that didn't fetch them passes
+    // the previous list through and the print must not move.
+    const carried = server(sums([30]), [task("t1", "Homepage")]);
+    expect(fingerprint(hot(), carried)).toBe(fingerprint(hot(), carried));
+  });
+
+  it("still notices a colleague renaming a task when the tasks tick lands", () => {
+    expect(fingerprint(hot(), server(sums([30]), [task("t1", "Homepage")]))).not.toBe(
+      fingerprint(hot(), server(sums([30]), [task("t1", "Home page")])),
+    );
   });
 
   it("notices recent activity from the feed alone, at the hot cadence", () => {
@@ -154,6 +206,6 @@ describe("fingerprint", () => {
       ],
     } as Partial<HotSnapshot>);
     const carried = sums([30]);
-    expect(fingerprint(a, carried)).not.toBe(fingerprint(b, carried));
+    expect(fingerprint(a, server(carried))).not.toBe(fingerprint(b, server(carried)));
   });
 });

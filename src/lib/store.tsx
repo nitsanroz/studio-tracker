@@ -37,6 +37,7 @@ import {
   fetchCold,
   fetchFull,
   fetchHot,
+  fetchTasks,
   fingerprint,
   mergeTasks,
   mergeTimeEntries,
@@ -403,6 +404,18 @@ interface HistoryAction {
 const HOT_INTERVAL_MS = 60_000;
 /** Studio structure (people, clients, sections, tags) every 10th hot tick. */
 const COLD_EVERY_N_TICKS = 10;
+/**
+ * Every task in the studio, every 3rd hot tick.
+ *
+ * ⚠️ This is an EGRESS budget, not a guess. The tasks query is ~2.5 MB and was
+ * 88% of what a 60-second tick cost; the studio is at 200% of Supabase's 5 GB
+ * free allowance with restrictions due 12 Sep, and fitting the tier needs about
+ * 233 MB per working day against the ~440 MB measured after the entries moved
+ * to cold. Three minutes is the slowest cadence that still reads as "live" for
+ * a colleague's rename or reassignment; your OWN edits are optimistic and
+ * instant regardless, and the plan grid stays on the 60-second tier.
+ */
+const TASKS_EVERY_N_TICKS = 3;
 /** Don't refetch for an alt-tab. */
 const FOCUS_MIN_GAP_MS = 20_000;
 /** Coming back after this long is worth a full refresh, not just the hot half. */
@@ -510,6 +523,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
    * Kept honest against local mutations by the mirroring effect below.
    */
   const entrySumsRef = useRef<EntrySum[]>([]);
+  /**
+   * The last task list the SERVER sent, for `fingerprint` only — never for
+   * rendering, and deliberately not mirrored from `tasks` state: local
+   * optimistic edits must not read as a colleague's change and expire the undo
+   * history. Written by applyTasks, i.e. only when a fetch actually landed.
+   */
+  const serverTasksRef = useRef<Task[]>([]);
   const [planColumns, setPlanColumns] = useState<PlanColumn[]>([]);
   const [planEntries, setPlanEntries] = useState<PlanEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -566,7 +586,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refreshQueued = useRef(false);
   const fingerprintRef = useRef<string | null>(null);
   const lastSyncedRef = useRef<number | null>(null);
-  const refreshRef = useRef<((opts?: { cold?: boolean; reason?: string }) => void) | null>(null);
+  const refreshRef = useRef<
+    ((opts?: { cold?: boolean; tasks?: boolean; reason?: string }) => void) | null
+  >(null);
   /** What `fetchHot` needs from the cold half; kept in a ref so refresh() is stable. */
   const coldCtxRef = useRef<HotCtx>({ tagNames: new Map(), projectClient: new Map() });
   const openTaskIdRef = useRef<string | null>(null);
@@ -775,8 +797,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /**
+   * Tasks arrive on their own tier now (TASKS_EVERY_N_TICKS), so this runs on
+   * roughly one tick in three — and on every boot, manual refresh and
+   * return-from-away, which all go through the cold path.
+   *
+   * ⚠️ The rows are the COMPLETE task list every time, exactly as before, which
+   * is what makes this safe: `mergeTasks` replaces wholesale, so a partial
+   * fetch would make tasks disappear from every screen in the app.
+   */
+  const applyTasks = useCallback((fresh: Task[]) => {
+    setTasks((prev) => mergeTasks(fresh, prev));
+    // The un-merged server rows, for `fingerprint`. mergeTasks only re-attaches
+    // the lazily-loaded `brief`, which the print doesn't hash — so this is the
+    // same comparison the print made when tasks were fetched every tick, and it
+    // deliberately does NOT track local optimistic edits.
+    serverTasksRef.current = fresh;
+  }, []);
+
   const applyHot = useCallback((h: HotSnapshot) => {
-    setTasks((prev) => mergeTasks(h.tasks, prev));
     // ⚠️ The sums come from the last COLD fetch, not from `h` — they left the hot
     // tier so the app would stop pulling the whole `time_entries` table every
     // 60s. They are only consulted to decide which OUT-OF-WINDOW rows still
@@ -803,8 +842,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       generation.current++;
       setCurrentUserId(uid);
       applyCold(snap);
+      applyTasks(snap.tasks);
       applyHot(snap);
-      fingerprintRef.current = fingerprint(snap, snap.entrySums);
+      fingerprintRef.current = fingerprint(snap, {
+        tasks: snap.tasks,
+        entrySums: snap.entrySums,
+      });
       lastSyncedRef.current = Date.now();
       setLoading(false);
     })().catch((e) => {
@@ -821,7 +864,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [supabase, applyCold, applyHot]);
+  }, [supabase, applyCold, applyTasks, applyHot]);
 
   // ── lazy per-task detail (brief, comments, full entries) ─────────────
   /**
@@ -911,7 +954,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   //  · land while an optimistic write is in flight — it would overwrite the
   //    user's own edit with the pre-edit server row
   const refresh = useCallback(
-    async (opts: { cold?: boolean; reason?: string } = {}) => {
+    async (opts: { cold?: boolean; tasks?: boolean; reason?: string } = {}) => {
       if (refreshInFlight.current) return;
       // Defer rather than clobber: a fresh snapshot landing between an optimistic
       // setState and its server commit would flicker the edit backwards. The
@@ -927,10 +970,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setRefreshing(true);
       try {
         const cold = opts.cold ? await fetchCold(supabase) : null;
-        const hot = await fetchHot(supabase, {
-          tagNames: coldCtxRef.current.tagNames,
-          projectClient: coldCtxRef.current.projectClient,
-        });
+        // A cold refresh (boot, manual, back after 5+ minutes away) always takes
+        // the tasks too — those are the moments someone is asking for the truth.
+        const wantTasks = opts.tasks || opts.cold;
+        const [freshTasks, hot] = await Promise.all([
+          wantTasks
+            ? fetchTasks(supabase, {
+                tagNames: coldCtxRef.current.tagNames,
+                projectClient: coldCtxRef.current.projectClient,
+              })
+            : null,
+          fetchHot(supabase),
+        ]);
         // Is this response still younger than what's on screen? See `refreshVerdict`
         // — the start-of-refresh guards can't speak for the time the fetch was out.
         const verdict = refreshVerdict({
@@ -947,19 +998,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
         // An empty studio is never a real refresh result: it means the session
         // expired and RLS returned nothing. Applying it would blank the app.
-        if (hot.tasks.length === 0 || (cold && cold.profiles.length === 0)) {
+        //
+        // ⚠️ `tasks` used to be the canary and no longer arrives on every tick,
+        // so two ticks in three need a different one. The 400-row feed AND the
+        // plan being simultaneously empty cannot happen in a studio with ten
+        // years of history — but either alone can (a quiet planning week), which
+        // is why this is an AND.
+        const blank = freshTasks
+          ? freshTasks.length === 0
+          : hot.timeEntries.length === 0 && hot.planEntries.length === 0;
+        if (blank || (cold && cold.profiles.length === 0)) {
           throw new Error("refresh returned an empty studio — treating as auth, not data");
         }
         // This response satisfied whatever earlier one was deferred, so the flag
         // mustn't survive to fire a spurious refresh off the next unrelated write.
         refreshQueued.current = false;
         if (cold) applyCold(cold);
+        if (freshTasks) applyTasks(freshTasks);
         applyHot(hot);
 
-        // On a hot-only tick this passes the sums we already hold, so the entry
-        // half of the print doesn't read as "changed" simply because it wasn't
-        // re-fetched. applyCold has already updated the ref when `cold` is set.
-        const next = fingerprint(hot, entrySumsRef.current);
+        // Whatever wasn't refetched on this tick is passed through unchanged, so
+        // its half of the print holds still rather than reading as somebody
+        // else's edit. Both values are the last SERVER response, never local
+        // state — see fingerprint. applyCold/applyTasks have already updated
+        // their refs by here when this tick fetched them.
+        const next = fingerprint(hot, {
+          tasks: serverTasksRef.current,
+          entrySums: entrySumsRef.current,
+        });
         const changed = fingerprintRef.current !== null && next !== fingerprintRef.current;
         fingerprintRef.current = next;
         // Someone else's change landed, so every undo step taken before it is now
@@ -987,7 +1053,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setRefreshing(false);
       }
     },
-    [supabase, applyCold, applyHot, loadTaskExtras, writesBusy, focusInEditor],
+    [supabase, applyCold, applyTasks, applyHot, loadTaskExtras, writesBusy, focusInEditor],
   );
   useEffect(() => {
     refreshRef.current = refresh;
@@ -1003,7 +1069,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const id = setInterval(() => {
       if (document.hidden) return; // nothing to look at, nothing to fetch
       ticks++;
-      void refreshRef.current?.({ cold: ticks % COLD_EVERY_N_TICKS === 0, reason: "interval" });
+      void refreshRef.current?.({
+        cold: ticks % COLD_EVERY_N_TICKS === 0,
+        tasks: ticks % TASKS_EVERY_N_TICKS === 0,
+        reason: "interval",
+      });
     }, HOT_INTERVAL_MS);
     const onFocus = () => {
       if (document.hidden) return;

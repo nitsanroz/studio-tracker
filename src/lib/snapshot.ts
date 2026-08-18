@@ -1,10 +1,21 @@
 // The studio's data as one fetchable snapshot, so the store can load it on boot
 // AND re-load it in the background without two copies of the query drifting apart.
 //
-// Split into HOT (changes minute to minute, refreshed often) and COLD (the studio's
-// structure — people, clients, sections, tags — refreshed rarely), because a hot
-// tick every minute over the full boot set is a lot of full-table reads for data
-// that changes a few times a week.
+// THREE tiers now, each set by what it costs against how fresh it must be. The
+// boot set was one query per tick, and this app has no `updated_at` anywhere, so
+// every poll is a full-table read — which is how the studio reached 200% of
+// Supabase's 5 GB egress allowance.
+//
+//   HOT   (60s)   plan entries, the 400-row activity feed, intake, dev items.
+//                 Small, and the plan is dragged while colleagues watch.
+//   TASKS (~3min) every task in the studio. ~2.5 MB, and it WAS hot — 88% of
+//                 what a tick cost after the entries moved off. See fetchTasks.
+//   COLD  (~10min) studio structure (people, clients, sections, tags) plus the
+//                 whole time_entries table. See ColdSnapshot.entrySums.
+//
+// ⚠️ Anything moved off the hot tier stops arriving on every tick, so any code
+// that read it from the hot snapshot has to be re-pointed at what the store
+// already holds — see `fingerprint` and `mergeTimeEntries` for the two that bit.
 //
 // ⚠️ The two column-degradation ladders below were moved here character-for-character
 // from the boot query and must stay that way. They step down ONLY on a genuinely
@@ -92,7 +103,6 @@ export interface ColdSnapshot {
 
 /** Work in flight. Changes minute to minute. */
 export interface HotSnapshot {
-  tasks: Task[];
   planEntries: PlanEntry[];
   /** the recent-400 feed window */
   timeEntries: TimeEntry[];
@@ -100,7 +110,7 @@ export interface HotSnapshot {
   devItems: DevItem[];
 }
 
-/** What `fetchHot` needs from the cold half to map its rows. */
+/** What `fetchTasks` needs from the cold half to map its rows. */
 export interface HotCtx {
   tagNames: Map<string, string>;
   projectClient: Map<string, string>;
@@ -199,49 +209,67 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
   };
 }
 
-export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
-  const [pe, taskRows, feed, requests, dev] = await Promise.all([
+/**
+ * Every task in the studio, mapped. ~4,700 rows and ~2.5 MB — the biggest thing
+ * the app fetches after `time_entries`.
+ *
+ * ⚠️ Its OWN tier, on `TASKS_EVERY_N_TICKS` (moved off every-tick on 2026-08-18).
+ * Measured egress after the entrySums move: this one query was 88% of what a
+ * 60-second tick cost, and the studio is at 200% of the 5 GB free tier with
+ * restrictions due 12 Sep. The rows and the mapping are UNCHANGED — only the
+ * cadence — deliberately: 47% of tasks belong to archived clients and 82% are
+ * done, so fetching only the live subset would be a bigger cut, but `tasks` is
+ * read by ~30 files and the store would have to union two sets. A union that is
+ * subtly wrong makes rows VANISH from the UI; a slower fetch cannot.
+ */
+export async function fetchTasks(sb: Sb, ctx: HotCtx): Promise<Task[]> {
+  const cols =
+    "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
+  // 0016 adds the recovered pre-Everhour history columns
+  const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
+  // 0022 adds the timeline's left edge. Its own rung, so a studio that
+  // hasn't run 0022 yet keeps the legacy columns — dropping those is the
+  // expensive mistake this ladder exists to avoid.
+  const startCol = "start_date";
+  // 0023 adds the Timeline's row order. Its own rung again, for the same
+  // reason: each new column must be able to fall away without taking the
+  // rungs below it with it.
+  const orderCol = "timeline_position";
+  // 0024 adds the kind-of-work colour the Timeline paints with.
+  const typeCol = "type_id";
+  // 0027 adds the subject group. Its own rung, like every column before it:
+  // a studio that hasn't run 0027 must keep type_id, timeline_position,
+  // start_date AND the legacy columns. Folding a new column into an existing
+  // rung is how the `legacy` flag gets dropped by accident.
+  const groupCol = "group_id";
+  // Only step down when the column is genuinely absent (isMissingSchema);
+  // anything else — a dropped connection, an RLS change — must surface
+  // rather than quietly serve a reduced app. See DbError in db.ts.
+  for (const select of [
+    `client_id, ${groupCol}, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0027
+    `client_id, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0024
+    `client_id, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0023
+    `client_id, ${startCol}, ${legacyCols}, ${cols}`, // post-0007 + 0016 + 0022
+    `client_id, ${legacyCols}, ${cols}`, // post-0007 + post-0016
+    `client_id, ${cols}`, // post-0007
+    cols, // pre-0007
+  ]) {
+    try {
+      const rows = await fetchAll<DbRow>(sb, "tasks", select);
+      // `brief` is deliberately NOT selected — it's per-task detail, fetched
+      // lazily by loadTaskExtras — so it is blanked here and mergeTasks in the
+      // store re-attaches whatever the open task had already loaded.
+      return rows.map((r) => mapTask({ ...r, brief: undefined }, ctx.tagNames, ctx.projectClient));
+    } catch (e) {
+      if (!isMissingSchema(e)) throw e;
+    }
+  }
+  throw new Error("tasks: could not load with any known column set");
+}
+
+export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
+  const [pe, feed, requests, dev] = await Promise.all([
     fetchAll<DbRow>(sb, "plan_entries", "*"),
-    (async () => {
-      const cols =
-        "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
-      // 0016 adds the recovered pre-Everhour history columns
-      const legacyCols = "legacy_hours, legacy_title, activity_from, activity_to";
-      // 0022 adds the timeline's left edge. Its own rung, so a studio that
-      // hasn't run 0022 yet keeps the legacy columns — dropping those is the
-      // expensive mistake this ladder exists to avoid.
-      const startCol = "start_date";
-      // 0023 adds the Timeline's row order. Its own rung again, for the same
-      // reason: each new column must be able to fall away without taking the
-      // rungs below it with it.
-      const orderCol = "timeline_position";
-      // 0024 adds the kind-of-work colour the Timeline paints with.
-      const typeCol = "type_id";
-      // 0027 adds the subject group. Its own rung, like every column before it:
-      // a studio that hasn't run 0027 must keep type_id, timeline_position,
-      // start_date AND the legacy columns. Folding a new column into an existing
-      // rung is how the `legacy` flag gets dropped by accident.
-      const groupCol = "group_id";
-      // Only step down when the column is genuinely absent (isMissingSchema);
-      // anything else — a dropped connection, an RLS change — must surface
-      // rather than quietly serve a reduced app. See DbError in db.ts.
-      for (const select of [
-        `client_id, ${groupCol}, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0027
-        `client_id, ${typeCol}, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0024
-        `client_id, ${orderCol}, ${startCol}, ${legacyCols}, ${cols}`, // + 0023
-        `client_id, ${startCol}, ${legacyCols}, ${cols}`, // post-0007 + 0016 + 0022
-        `client_id, ${legacyCols}, ${cols}`, // post-0007 + post-0016
-        `client_id, ${cols}`, // post-0007
-        cols, // pre-0007
-      ]) {
-        try {
-          return await fetchAll<DbRow>(sb, "tasks", select);
-        } catch (e) {
-          if (!isMissingSchema(e)) throw e;
-        }
-      }
-      throw new Error("tasks: could not load with any known column set");
-    })(),
     sb
       .from("time_entries")
       .select("*")
@@ -262,7 +290,6 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
   if (requests.error) throw new Error(`task_requests: ${requests.error.message}`);
 
   return {
-    tasks: taskRows.map((r) => mapTask({ ...r, brief: undefined }, ctx.tagNames, ctx.projectClient)),
     planEntries: pe.map(mapPlanEntry),
     timeEntries: ((feed.data ?? []) as DbRow[]).map(mapTimeEntry),
     taskRequests: (requests.data ?? []) as DbRow[],
@@ -270,13 +297,16 @@ export async function fetchHot(sb: Sb, ctx: HotCtx): Promise<HotSnapshot> {
   };
 }
 
-export async function fetchFull(sb: Sb): Promise<ColdSnapshot & HotSnapshot> {
+export async function fetchFull(
+  sb: Sb,
+): Promise<ColdSnapshot & HotSnapshot & { tasks: Task[] }> {
   const cold = await fetchCold(sb);
-  const hot = await fetchHot(sb, {
+  const ctx: HotCtx = {
     tagNames: new Map(cold.tags.map((t) => [t.id, t.name])),
     projectClient: cold.projectClient,
-  });
-  return { ...cold, ...hot };
+  };
+  const [tasks, hot] = await Promise.all([fetchTasks(sb, ctx), fetchHot(sb)]);
+  return { ...cold, ...hot, tasks };
 }
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -296,15 +326,25 @@ function hash(s: string): number {
  * Time entries contribute their count and total only — there are tens of
  * thousands of them and this runs on every tick.
  *
- * ⚠️ `sums` is passed in rather than read off `h`, because it now arrives on the
- * COLD tier: on a hot-only tick the caller passes the sums it already holds, so
- * the entry half of the print stays constant instead of reading as "somebody
- * else changed something" every minute. The 400-row feed window is folded in on
- * every tick to keep recent time-entry activity — the only kind an undo step can
- * target — detectable at the hot cadence.
+ * ⚠️ `tasks` and `entrySums` are passed in rather than read off `h`, because
+ * neither arrives on every tick any more — entries are cold (~10 min) and tasks
+ * have their own tier (~3 min). On a tick that didn't refetch them the caller
+ * passes what it already holds, so their half of the print stays CONSTANT
+ * instead of reading as "somebody else changed something" every minute, which
+ * would expire the undo history of anyone with a tab open.
+ *
+ * ⚠️ Both must come from the last SERVER response, never from local state — a
+ * user's own optimistic edit is not somebody else's change.
+ *
+ * The 400-row feed window is folded in on every tick, so recent time-entry
+ * activity — the only kind an undo step can target — stays detectable at the
+ * hot cadence.
  */
-export function fingerprint(h: HotSnapshot, sums: EntrySum[]): string {
-  const tasks = h.tasks
+export function fingerprint(
+  h: HotSnapshot,
+  server: { tasks: Task[]; entrySums: EntrySum[] },
+): string {
+  const tasks = server.tasks
     .map(
       (t) =>
         `${t.id}${t.title}${t.status}${t.assigneeId}${t.sectionId}${t.groupId}${t.clientId}${t.dueDate}${t.estimateHours}${t.position}${t.billable}${t.tag}`,
@@ -313,12 +353,12 @@ export function fingerprint(h: HotSnapshot, sums: EntrySum[]): string {
   const plan = h.planEntries
     .map((e) => `${e.id}${e.date}${e.columnId}${e.position}${e.text}${e.taskId}${e.absenceType}`)
     .join("");
-  const minutes = sums.reduce((a, e) => a + e.minutes, 0);
+  const minutes = server.entrySums.reduce((a, e) => a + e.minutes, 0);
   const feed = h.timeEntries.reduce((a, e) => a + e.minutes, 0);
   return [
     hash(tasks),
     hash(plan),
-    sums.length,
+    server.entrySums.length,
     minutes,
     h.timeEntries.length,
     feed,
