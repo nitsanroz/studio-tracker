@@ -11,17 +11,23 @@ import { kindById } from "@/lib/intake-fields";
 import { diffBriefs, needsReview } from "@/lib/brief-diff";
 import { ClientChip } from "@/components/ui";
 
+/**
+ * The pending card's form controls — five of them, all the same shape.
+ *
+ * ⚠️ `min-h-11 … sm:min-h-0` is the load-bearing half: on a phone every control
+ * on this card is a 44px target (the floor the page has followed since v1.15.0),
+ * and above `sm` it reverts to the tight desktop sizing. It was written out five
+ * times, which is five places to forget it — the same reason `inputCls` exists in
+ * the client-facing form and `QUIET_FIELD` in the task pane.
+ */
+const CARD_CONTROL =
+  "min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0";
+
 /** "14:20" — the receipt's timestamp, on the day it matters most. */
 function timeOf(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/**
- * Drops a submission for good.
- *
- * Hidden from members: `task_requests` is admin-only by RLS, so a member's
- * click would fail at the database anyway — better it isn't offered.
- */
 /**
  * One added, or one removed, item in the what-changed panel.
  *
@@ -245,6 +251,12 @@ function WhatChanged({ request }: { request: TaskRequest }) {
   );
 }
 
+/**
+ * Drops a submission for good.
+ *
+ * Hidden from members: `task_requests` is admin-only by RLS, so a member's
+ * click would fail at the database anyway — better it isn't offered.
+ */
 function DeleteRequestButton({ request }: { request: TaskRequest }) {
   const { deleteRequest } = useData();
   const isAdmin = useIsAdmin();
@@ -452,11 +464,11 @@ function ReviewCard({
             >
               {request.status}
             </span>
-          {/* ⚠️ A revision of an APPROVED brief is the case Nitsan was most
-              worried about — it is already a task he has rewritten — and this
-              list is normally COLLAPSED behind "Show handled", so without a
-              badge here the update would be invisible until someone went
-              looking. It also drives the count on the bell and the home page. */}
+            {/* ⚠️ A revision of an APPROVED brief is the case Nitsan was most
+                worried about — it is already a task he has rewritten — and this
+                list is normally COLLAPSED behind "Show handled", so without a
+                badge here the update would be invisible until someone went
+                looking. It also drives the count on the bell and the home page. */}
             {needsReview(request) && (
               <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">
                 updated
@@ -593,7 +605,7 @@ function ReviewCard({
             setClientId(e.target.value);
             setSectionId("");
           }}
-          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+          className={CARD_CONTROL}
         >
           <option value="">Client…</option>
           {clients
@@ -609,7 +621,7 @@ function ReviewCard({
           value={sectionId}
           onChange={(e) => setSectionId(e.target.value)}
           disabled={!clientId}
-          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm disabled:opacity-40 sm:min-h-0"
+          className={`${CARD_CONTROL} disabled:opacity-40`}
         >
           <option value="">Section (optional)</option>
           {clientSections.map((s) => (
@@ -621,7 +633,7 @@ function ReviewCard({
         <select
           value={assigneeId}
           onChange={(e) => setAssigneeId(e.target.value)}
-          className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+          className={CARD_CONTROL}
         >
           <option value="">Assignee (optional)</option>
           {profiles
@@ -640,13 +652,13 @@ function ReviewCard({
             placeholder="Budget (h)"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
-            className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+            className={CARD_CONTROL}
           />
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0"
+            className={CARD_CONTROL}
           />
         </div>
       </div>
