@@ -642,10 +642,15 @@ function ReviewCard({
       {request.requestedDueDate && request.requestedDueDate !== dueDate && (
         <p className="-mt-1 text-xs text-muted">
           The client asked for{" "}
+          {/* ⚠️ `py-3.5 -my-3.5` below `sm`: this is a real control on a phone and
+              it was a 16px-tall tap target, against the 44px floor the rest of
+              this page follows (v1.15.0). Padding grows the hit area, the
+              negative margin takes it back out of the layout, so the line still
+              reads as one sentence rather than a button in a paragraph. */}
           <button
             type="button"
             onClick={() => setDueDate(request.requestedDueDate!)}
-            className="font-medium text-brand hover:underline"
+            className="inline-block px-1 py-3.5 -my-3.5 font-medium text-brand hover:underline sm:p-0 sm:m-0"
             title="Put that date back"
           >
             {formatDate(request.requestedDueDate)}
