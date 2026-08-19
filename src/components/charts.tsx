@@ -771,15 +771,18 @@ export function MultiLineChart({
 }
 
 /**
- * Small column chart. Values in minutes.
- * Each bar shows its value — inside the bar (white, upper part) when the bar
- * is tall enough, otherwise just above it.
+ * Small column chart. Values in minutes. Every bar prints its value ABOVE itself
+ * (see the note on the label below) and the axis label underneath.
  */
 export function MiniColumns({
   points,
 }: {
-  /** `title` overrides the hover text when the axis label is abbreviated */
-  points: { label: string; minutes: number; title?: string }[];
+  /**
+   * `id` is the React key: callers abbreviate `label` down to what the axis can fit,
+   * which makes it ambiguous (two "Jan"s over 12 months) and unfit to key on.
+   * `title` overrides the hover text when the label is abbreviated that way.
+   */
+  points: { id: string; label: string; minutes: number; title?: string }[];
 }) {
   const max = Math.max(...points.map((p) => p.minutes), 1);
   return (
@@ -787,7 +790,7 @@ export function MiniColumns({
       {points.map((p) => {
         const pct = Math.max(2, (p.minutes / max) * 100);
         return (
-          <div key={p.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+          <div key={p.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
             {/* pt-3.5 is the headroom the value label sits in, so it can hang above
                 even the full-height bar */}
             <div className="flex h-20 w-full items-end pt-3.5">

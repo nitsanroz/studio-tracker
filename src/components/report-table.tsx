@@ -12,6 +12,8 @@ export function columnKey(i: number): string {
 }
 
 const fmtH = (m: number) => (m > 0 ? formatHoursShort(m) : "–");
+/** estimates are stored in HOURS, and read to one decimal */
+const fmtEst = (h: number) => (h > 0 ? `${Math.round(h * 10) / 10}h` : "–");
 
 type ReportTask = ReportSnapshot["sections"][number]["tasks"][number];
 
@@ -46,7 +48,6 @@ export function ReportTable({
   foldedSections,
   onToggleSection,
   selectable = false,
-  showSectionTotals = false,
 }: {
   snapshot: ReportSnapshot;
   hiddenColumns: string[];
@@ -78,8 +79,6 @@ export function ReportTable({
   onToggleSection?: (name: string) => void;
   /** click / drag hour cells and show what they add up to */
   selectable?: boolean;
-  /** a subtotal row per section */
-  showSectionTotals?: boolean;
 }) {
   const [editingCol, setEditingCol] = useState<number | null>(null);
   const hiddenCols = new Set(hiddenColumns);
@@ -103,24 +102,32 @@ export function ReportTable({
   // The LATEST period by end date -- not the one today falls inside. A published
   // report is frozen, and a "today" rule would make the same link total a different
   // period next month with nobody republishing it.
-  const latestIndex = (() => {
-    let last = -1;
-    snapshot.periods.forEach((p, j) => {
-      if (last < 0 || p.to.localeCompare(snapshot.periods[last].to) > 0) last = j;
-    });
-    return last;
-  })();
+  // `>` rather than localeCompare: these are YYYY-MM-DD, where the two agree.
+  const latestIndex = snapshot.periods.reduce(
+    (best, p, j, all) => (best < 0 || p.to > all[best].to ? j : best),
+    -1,
+  );
   const latestPeriod = latestIndex >= 0 ? snapshot.periods[latestIndex] : undefined;
 
+  // Which week buckets fall inside the latest period, worked out ONCE. Scanning
+  // every week the client has ever logged is loop-invariant, and `latestMinutes` is
+  // asked for the same task three times per render (row cell, section subtotal,
+  // grand total) -- hence the cache too.
+  const latestWeeks = latestPeriod
+    ? (snapshot.weeks ?? []).flatMap((w, i) =>
+        w.to >= latestPeriod.from && w.from <= latestPeriod.to ? [i] : [],
+      )
+    : [];
+  const latestCache = new Map<string, number>();
   /** minutes a task logged inside the latest period */
   const latestMinutes = (t: ReportTask) => {
     if (!latestPeriod) return 0;
     if (!useWeeks) return t.periodMinutes[latestIndex] ?? 0;
-    return (snapshot.weeks ?? []).reduce(
-      (sum, w, i) =>
-        w.to >= latestPeriod.from && w.from <= latestPeriod.to ? sum + (t.weekMinutes?.[i] ?? 0) : sum,
-      0,
-    );
+    const hit = latestCache.get(t.id);
+    if (hit !== undefined) return hit;
+    const sum = latestWeeks.reduce((a, i) => a + (t.weekMinutes?.[i] ?? 0), 0);
+    latestCache.set(t.id, sum);
+    return sum;
   };
 
   const visiblePeriods = cols.filter(
@@ -151,20 +158,32 @@ export function ReportTable({
     }
   }
   const showPeriodRow = snapshot.periods.length > 0 && groups.some((g) => g.periodIndex >= 0);
-  const leadingCols =
-    (showSectionTotals ? 1 : 2) + (showCol("estimate") ? 1 : 0) + (showCol("total") ? 1 : 0);
+  // The two hideable lead columns. Named once and used everywhere below -- `showCol`
+  // is left to the `w:`/`p:` week keys.
+  const showEst = showCol("estimate");
+  const showTot = showCol("total");
+  const leadingCols = 1 + (showEst ? 1 : 0) + (showTot ? 1 : 0);
 
   const colCls = (key: string) =>
     editable && hiddenCols.has(key) ? "opacity-35" : "";
   const rowCls = (id: string) =>
     editable && hiddenTasks.has(id) ? "opacity-35" : "";
 
+  // `rowVisible` is not free -- with `hideEmptyRows` on it scans the visible columns
+  // per task -- so the filter runs ONCE here and both the totals and the rendered
+  // section groups read this one result.
+  const sectionRows = snapshot.sections
+    .map((sec) => ({ sec, rows: sec.tasks.filter(rowVisible) }))
+    .filter((g) => g.rows.length > 0);
+
   // totals across visible tasks only
-  const visibleTasks = snapshot.sections.flatMap((s) => s.tasks.filter(rowVisible));
+  const visibleTasks = sectionRows.flatMap((g) => g.rows);
   const totalEstimate = visibleTasks.reduce((s, t) => s + (t.estimateHours ?? 0), 0);
   const totalMinutes = visibleTasks.reduce((s, t) => s + t.totalMinutes, 0);
-  const periodTotals = cols.map((_, i) =>
-    visibleTasks.reduce((s, t) => s + minutesAt(t, i), 0),
+  // Keyed by column index over the VISIBLE columns only: the footer reads nothing
+  // else, and with the period filter on that is a handful out of every week logged.
+  const periodTotals = new Map(
+    visiblePeriods.map((p) => [p.index, visibleTasks.reduce((s, t) => s + minutesAt(t, p.index), 0)]),
   );
 
   // "Period" (green) = hours inside the latest billing period, like the Excel
@@ -180,27 +199,22 @@ export function ReportTable({
     "client-report-lead",
     // task 340, not 260: dropping the Section column freed 140px, and the task name
     // is what that width was being spent on reading
-    { section: 140, task: 340, estimate: 76, total: 76 },
+    { task: 340, estimate: 76, total: 76 },
     // 72 rather than 56: at 56 the task name is left ~27px of box after the padding
     // and the eye toggle, which is two characters and an ellipsis. Still under the
     // 76 default of the two number columns, so none of them is forced to move.
     { min: 72, max: 520 },
   );
-  const showEst = showCol("estimate");
-  const showTot = showCol("total");
-  // With a section heading row above each group, a Section COLUMN is empty on every
-  // task row — the name already has a line of its own, so the column is dropped and
-  // the task names indent under it instead.
-  const showSection = !showSectionTotals;
-  const secW = showSection ? widths.section : 0;
+  // With a section heading row above each group, a Section COLUMN would be empty on
+  // every task row — the name already has a line of its own — so there is no Section
+  // column at all and the task names indent under the heading instead.
   const leadOffset = {
-    section: 0,
-    task: secW,
-    estimate: secW + widths.task,
-    total: secW + widths.task + (showEst ? widths.estimate : 0),
+    task: 0,
+    estimate: widths.task,
+    total: widths.task + (showEst ? widths.estimate : 0),
   };
   const leadWidth =
-    secW + widths.task + (showEst ? widths.estimate : 0) + (showTot ? widths.total : 0);
+    widths.task + (showEst ? widths.estimate : 0) + (showTot ? widths.total : 0);
   const lastPinned = showTot ? "total" : showEst ? "estimate" : "task";
   type Lead = keyof typeof leadOffset;
   const pinStyle = (col: Lead): React.CSSProperties => ({
@@ -241,14 +255,16 @@ export function ReportTable({
     to.scrollLeft = from.scrollLeft;
   };
 
-  // ── sections, and the cell grid selection sits on ──────────────────────────
-  const sectionRows = snapshot.sections
-    .map((sec) => ({ sec, rows: sec.tasks.filter(rowVisible) }))
-    .filter((g) => g.rows.length > 0);
+  // ── the cell grid selection sits on ───────────────────────────────────────
   // Only unfolded rows are addressable, so folding renumbers the grid. Selection
   // is cleared on any fold change (below) rather than remapped -- a selection that
   // silently changed which cells it covers would report the wrong total.
   const gridRows = sectionRows.flatMap((g) => (folded.has(g.sec.name) ? [] : g.rows));
+  // Built once: the row loop used to find its grid index with `gridRows.indexOf(t)`,
+  // which is a linear scan per row (quadratic overall) AND silently depends on the
+  // pipeline preserving object identity -- one stray `.map()` would make every index
+  // -1 with no type error. Keyed on the id instead, which is the actual identity.
+  const gridIndex = new Map(gridRows.map((t, i) => [t.id, i]));
 
   // The selection carries the signature of the layout it was made against. Folding
   // a section or changing a filter renumbers the grid, so instead of clearing the
@@ -325,7 +341,6 @@ export function ReportTable({
             setSel((s) => (s ? { ...s, r1: r, c1: c } : s));
             setBubble({ x: e.clientX, y: e.clientY });
           },
-          className: "",
         }
       : {};
 
@@ -357,7 +372,7 @@ export function ReportTable({
               <th
                 colSpan={leadingCols}
                 className="sticky left-0 z-20 bg-surface"
-                style={{ left: 0, width: leadWidth, minWidth: leadWidth }}
+                style={{ width: leadWidth, minWidth: leadWidth }}
               />
               {groups.map((g, gi) => (
                 <th
@@ -402,16 +417,6 @@ export function ReportTable({
             </tr>
           )}
           <tr className="group/thead border-b border-border text-xs font-medium uppercase tracking-wide text-faint">
-            {showSection && (
-              <th
-                style={pinStyle("section")}
-                className={`${pinCls("section", "bg-surface", "z-20")} relative px-2 py-2 text-left`}
-                title="Board section the tasks belong to"
-              >
-                Section
-                <ResizeHandle onMouseDown={startResize("section")} />
-              </th>
-            )}
             <th
               style={pinStyle("task")}
               className={`${pinCls("task", "bg-surface", "z-20")} relative px-2 py-2 text-left`}
@@ -420,7 +425,7 @@ export function ReportTable({
               Task
               <ResizeHandle onMouseDown={startResize("task")} />
             </th>
-            {showCol("estimate") && (
+            {showEst && (
               <th
                 style={pinStyle("estimate")}
                 className={`${pinCls("estimate", "bg-surface", "z-20")} relative ${num} ${colCls("estimate")}`}
@@ -433,7 +438,7 @@ export function ReportTable({
                 )}
               </th>
             )}
-            {showCol("total") && (
+            {showTot && (
               <th
                 style={pinStyle("total")}
                 className={`${pinCls("total", "bg-surface", "z-20")} relative ${num} ${colCls("total")}`}
@@ -533,76 +538,59 @@ export function ReportTable({
             const secPeriod = g.rows.reduce((a, t) => a + latestMinutes(t), 0);
             return (
               <Fragment key={g.sec.name}>
-                {showSectionTotals && (
-                  <tr className="border-t-2 border-t-border bg-background text-xs font-bold">
-                    <td
-                      colSpan={showSection ? 2 : 1}
-                      className="sticky left-0 z-10 bg-background px-2 py-1.5 text-left"
-                      style={{ left: 0, width: secW + widths.task, minWidth: secW + widths.task }}
-                    >
-                      {onToggleSection ? (
-                        <button
-                          onClick={() => onToggleSection(g.sec.name)}
-                          className="flex max-w-full items-center gap-1 text-left hover:text-brand"
-                          title={isFolded ? "Unfold this section" : "Fold this section"}
-                        >
-                          {isFolded ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-                          <span className="bidi-auto min-w-0 truncate" title={g.sec.name}>
-                            {g.sec.name}
-                          </span>
-                          <span className="shrink-0 font-normal text-faint">{g.rows.length}</span>
-                        </button>
-                      ) : (
-                        <span className="bidi-auto block truncate" title={g.sec.name}>
+                <tr className="border-t-2 border-t-border bg-background text-xs font-bold">
+                  <td
+                    className="sticky left-0 z-10 bg-background px-2 py-1.5 text-left"
+                    style={{ width: widths.task, minWidth: widths.task }}
+                  >
+                    {onToggleSection ? (
+                      <button
+                        onClick={() => onToggleSection(g.sec.name)}
+                        className="flex max-w-full items-center gap-1 text-left hover:text-brand"
+                        title={isFolded ? "Unfold this section" : "Fold this section"}
+                      >
+                        {isFolded ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                        <span className="bidi-auto min-w-0 truncate" title={g.sec.name}>
                           {g.sec.name}
                         </span>
-                      )}
+                        <span className="shrink-0 font-normal text-faint">{g.rows.length}</span>
+                      </button>
+                    ) : (
+                      <span className="bidi-auto block truncate" title={g.sec.name}>
+                        {g.sec.name}
+                      </span>
+                    )}
+                  </td>
+                  {showEst && (
+                    <td
+                      style={pinStyle("estimate")}
+                      className={`${pinCls("estimate", "bg-background")} ${num} ${colCls("estimate")}`}
+                    >
+                      {fmtEst(secEstimate)}
                     </td>
-                    {showCol("estimate") && (
-                      <td
-                        style={pinStyle("estimate")}
-                        className={`${pinCls("estimate", "bg-background")} ${num} ${colCls("estimate")}`}
-                      >
-                        {secEstimate > 0 ? `${Math.round(secEstimate * 10) / 10}h` : "–"}
-                      </td>
-                    )}
-                    {showCol("total") && (
-                      <td
-                        style={pinStyle("total")}
-                        className={`${pinCls("total", "bg-background")} ${num} ${colCls("total")}`}
-                      >
-                        {fmtH(secTotal)}
-                      </td>
-                    )}
-                    {visiblePeriods.map((p) => (
-                      <td key={p.key} className={`${num} ${colCls(p.key)} ${divCls(p.index)}`}>
-                        {fmtH(g.rows.reduce((a, t) => a + minutesAt(t, p.index), 0))}
-                      </td>
-                    ))}
-                    {latestPeriod && (
-                      <td className={`${num} bg-green-100 text-green-900`}>{fmtH(secPeriod)}</td>
-                    )}
-                  </tr>
-                )}
+                  )}
+                  {showTot && (
+                    <td
+                      style={pinStyle("total")}
+                      className={`${pinCls("total", "bg-background")} ${num} ${colCls("total")}`}
+                    >
+                      {fmtH(secTotal)}
+                    </td>
+                  )}
+                  {visiblePeriods.map((p) => (
+                    <td key={p.key} className={`${num} ${colCls(p.key)} ${divCls(p.index)}`}>
+                      {fmtH(g.rows.reduce((a, t) => a + minutesAt(t, p.index), 0))}
+                    </td>
+                  ))}
+                  {latestPeriod && (
+                    <td className={`${num} bg-green-100 text-green-900`}>{fmtH(secPeriod)}</td>
+                  )}
+                </tr>
                 {!isFolded &&
-                  g.rows.map((t, ri) => {
-                    const r = gridRows.indexOf(t);
+                  g.rows.map((t) => {
+                    const r = gridIndex.get(t.id) ?? -1;
                     return (
-                      <tr
-                        key={t.id}
-                        className={`border-border/60 ${
-                          ri === 0 && !showSectionTotals ? "border-t-2 border-t-border" : "border-t"
-                        } ${rowCls(t.id)}`}
-                      >
-                        {showSection && (
-                          <td
-                            style={pinStyle("section")}
-                            className={`${pinCls("section", "bg-surface")} bidi-auto truncate px-2 py-1.5 text-left text-xs font-bold`}
-                            title={ri === 0 ? g.sec.name : undefined}
-                          >
-                            {ri === 0 ? g.sec.name : ""}
-                          </td>
-                        )}
+                      <tr key={t.id} className={`border-t border-border/60 ${rowCls(t.id)}`}>
                         {/* ⚠️ The ellipsis must live on the NAME, not on the cell. A `truncate`
                             cell holding an inline-block <button> cannot break it, so the
                             browser replaces the whole button with the ellipsis and a long
@@ -611,9 +599,7 @@ export function ReportTable({
                             the full name back on hover. */}
                         <td
                           style={pinStyle("task")}
-                          className={`${pinCls("task", "bg-surface")} py-1.5 pr-2 text-left ${
-                            showSectionTotals ? "pl-7" : "pl-2"
-                          }`}
+                          className={`${pinCls("task", "bg-surface")} py-1.5 pl-7 pr-2 text-left`}
                         >
                           <span className="flex items-center gap-1.5">
                             {editable && (
@@ -644,7 +630,7 @@ export function ReportTable({
                             )}
                           </span>
                         </td>
-                        {showCol("estimate") && (
+                        {showEst && (
                           <td
                             style={pinStyle("estimate")}
                             className={`${pinCls("estimate", "bg-surface")} ${num} text-muted ${colCls("estimate")}`}
@@ -676,7 +662,7 @@ export function ReportTable({
                             )}
                           </td>
                         )}
-                        {showCol("total") && (
+                        {showTot && (
                           <td
                             style={pinStyle("total")}
                             className={`${pinCls("total", "bg-surface")} ${num} font-semibold ${colCls("total")}`}
@@ -718,30 +704,22 @@ export function ReportTable({
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-foreground/20 font-semibold">
-            {showSection && (
-              <td
-                style={pinStyle("section")}
-                className={`${pinCls("section", "bg-surface")} px-2 py-2 text-left text-xs uppercase tracking-wide`}
-              >
-                Total
-              </td>
-            )}
             <td
               style={pinStyle("task")}
               className={`${pinCls("task", "bg-surface")} px-2 py-2 text-left text-xs uppercase tracking-wide`}
             >
-              {showSection ? "" : "Total"}
+              Total
             </td>
-            {showCol("estimate") && (
+            {showEst && (
               <td
                 style={pinStyle("estimate")}
                 className={`${pinCls("estimate", "bg-surface")} ${num}`}
                 title="Sum of visible task estimates"
               >
-                {totalEstimate > 0 ? `${Math.round(totalEstimate * 10) / 10}h` : "–"}
+                {fmtEst(totalEstimate)}
               </td>
             )}
-            {showCol("total") && (
+            {showTot && (
               <td
                 style={pinStyle("total")}
                 className={`${pinCls("total", "bg-surface")} ${num}`}
@@ -752,7 +730,7 @@ export function ReportTable({
             )}
             {visiblePeriods.map((p) => (
               <td key={p.key} className={`${num} ${divCls(p.index)}`}>
-                {fmtH(periodTotals[p.index])}
+                {fmtH(periodTotals.get(p.index) ?? 0)}
               </td>
             ))}
             {latestPeriod && (
@@ -788,6 +766,51 @@ export function ReportTable({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * A view-filter pill, shared by the studio toolbar and the client report.
+ *
+ * `dim` marks a filter that is set but currently overridden by "Show all", so the
+ * setting it will return to stays legible instead of looking off. `touch` gives the
+ * pill a 44px minimum target below `sm` — the client report is opened on phones.
+ *
+ * Lives here rather than in `ui.tsx` because both toolbars already import this
+ * module, and `ui.tsx` pulls the data store into the public report's bundle.
+ */
+export function ViewToggle({
+  on,
+  dim = false,
+  touch = false,
+  onClick,
+  title,
+  children,
+}: {
+  on: boolean;
+  dim?: boolean;
+  touch?: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-pressed={on}
+      className={`rounded-full border font-medium ${
+        touch ? "min-h-11 px-3 py-1 text-xs sm:min-h-0" : "px-2.5 py-1 text-[11px]"
+      } ${
+        on
+          ? "border-brand bg-brand text-white"
+          : dim
+            ? "border-dashed border-border text-faint hover:text-muted"
+            : "border-border text-muted hover:bg-background hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

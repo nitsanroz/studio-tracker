@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DbError, isMissingSchema, isServiceBlocked } from "./db";
+import { DbError, canonicalReportLink, isMissingSchema, isServiceBlocked } from "./db";
+import type { ReportLink } from "./types";
 
 describe("isMissingSchema", () => {
   it("recognises a missing column on a SELECT", () => {
@@ -78,5 +79,49 @@ describe("isServiceBlocked", () => {
   it("ignores non-errors", () => {
     expect(isServiceBlocked(null)).toBe(false);
     expect(isServiceBlocked("Payment Required")).toBe(false);
+  });
+});
+
+describe("canonicalReportLink", () => {
+  const link = (over: Partial<ReportLink>): ReportLink =>
+    ({
+      id: "x",
+      clientId: "c",
+      token: "t",
+      preset: null,
+      dateFrom: null,
+      dateTo: null,
+      active: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      snapshot: null,
+      publishedAt: null,
+      hiddenColumns: [],
+      hiddenTaskIds: [],
+      customWeeks: null,
+      viewFlags: null,
+      ...over,
+    }) as ReportLink;
+
+  it("returns null for no links", () => {
+    expect(canonicalReportLink([])).toBeNull();
+  });
+
+  it("prefers a published link over a NEWER unpublished one", () => {
+    const published = link({ id: "old", createdAt: "2026-01-01T00:00:00Z", publishedAt: "2026-02-01T00:00:00Z" });
+    const newer = link({ id: "new", createdAt: "2026-06-01T00:00:00Z" });
+    expect(canonicalReportLink([newer, published])?.id).toBe("old");
+    expect(canonicalReportLink([published, newer])?.id).toBe("old");
+  });
+
+  it("falls back to the OLDEST when none is published", () => {
+    const a = link({ id: "old", createdAt: "2026-01-01T00:00:00Z" });
+    const b = link({ id: "new", createdAt: "2026-06-01T00:00:00Z" });
+    expect(canonicalReportLink([b, a])?.id).toBe("old");
+  });
+
+  it("prefers the oldest published when two are published", () => {
+    const a = link({ id: "first", createdAt: "2026-01-01T00:00:00Z", publishedAt: "2026-03-01T00:00:00Z" });
+    const b = link({ id: "second", createdAt: "2026-02-01T00:00:00Z", publishedAt: "2026-02-01T00:00:00Z" });
+    expect(canonicalReportLink([b, a])?.id).toBe("first");
   });
 });

@@ -300,7 +300,17 @@ export interface ReportLink {
    * data behind them is still sent. Anything that must not be seen belongs in the
    * hidden lists, which the server strips from the payload entirely.
    */
-  viewFlags: { periodOnly: boolean; hideEmptyRows: boolean } | null;
+  viewFlags: ReportViewFlags | null;
+}
+
+/**
+ * The filter defaults a publish carries. One shape, named once: the DB column, the
+ * `ReportLink` field and the public view's prop all reference this, so adding a
+ * third filter is a single edit the compiler then chases to every reader.
+ */
+export interface ReportViewFlags {
+  periodOnly: boolean;
+  hideEmptyRows: boolean;
 }
 
 /** Frozen, admin-approved report payload rendered by /report/[token]. */

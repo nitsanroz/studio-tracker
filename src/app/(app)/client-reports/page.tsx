@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
+import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import {
   addDays,
   formatDate,
@@ -25,61 +25,14 @@ import {
 } from "@/lib/format";
 import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
 import { MiniColumns } from "@/components/charts";
-import { ReportTable } from "@/components/report-table";
+import { ReportTable, ViewToggle } from "@/components/report-table";
+import { toggleIn } from "@/lib/toggle";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
 import type { Client, ReportLink } from "@/lib/types";
 
-/**
- * A view filter pill. `dim` marks a filter that is set but currently overridden by
- * "Show all", so the setting it will return to stays legible instead of looking off.
- */
-function ViewToggle({
-  on,
-  dim = false,
-  onClick,
-  title,
-  children,
-}: {
-  on: boolean;
-  dim?: boolean;
-  onClick: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-pressed={on}
-      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-        on
-          ? "border-brand bg-brand text-white"
-          : dim
-            ? "border-dashed border-border text-faint hover:text-muted"
-            : "border-border text-muted hover:bg-background hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-/**
- * Which of two active links for one client the app should use.
- *
- * ⚠️ NEWEST WINS IS WRONG HERE, and that was the rule until now. A report URL is
- * permanent and gets pasted into a client's email, so if a duplicate is created
- * later the app must not silently start publishing to it — the client would keep
- * opening the old token and never see another update. So: a link that has been
- * PUBLISHED wins (only that one can be in a client's hands), and otherwise the
- * OLDEST wins, being the one that has had the most chance to be shared.
- */
-function preferLink(candidate: ReportLink, current: ReportLink): boolean {
-  const pubC = !!candidate.publishedAt;
-  const pubK = !!current.publishedAt;
-  if (pubC !== pubK) return pubC;
-  return candidate.createdAt < current.createdAt;
-}
+/** "Show all" hands the table an empty fold list; a module constant so the identity
+    is stable across renders rather than a fresh [] each time. */
+const EMPTY_FOLDS: string[] = [];
 
 /** iso date + n days → iso date */
 function addDaysIso(iso: string, n: number): string {
@@ -139,13 +92,13 @@ function PaymentPeriods({ client }: { client: Client }) {
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .slice(-12)
-      .map(([key, minutes]) => ({
-        label: MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1],
+      .map(([key, minutes]) => {
+        const mon = MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1];
         // the axis reads as months, so the year lives in the hover instead — with 12
-        // buckets one month name can appear twice and the label alone is ambiguous
-        title: `${MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`,
-        minutes,
-      }));
+        // buckets one month name can appear twice and the label alone is ambiguous,
+        // which is also why `id` carries the YYYY-MM the chart keys on
+        return { id: key, label: mon, title: `${mon} ${key.slice(0, 4)}`, minutes };
+      });
   }, [clientEntries]);
 
   function addPeriod() {
@@ -338,6 +291,14 @@ function PublishWorkspace() {
   const [hideEmptyRows, setHideEmptyRows] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [foldedSections, setFoldedSections] = useState<string[]>([]);
+  // "Show all" SUSPENDS the filters rather than clearing them, so the studio gets its
+  // view back when it switches off. That rule was spelled out at each of the eight
+  // places that needed it; here it is once, and the pills and the table cannot
+  // disagree about what is currently on screen. `periodOnly`/`hideEmptyRows` stay the
+  // studio's actual setting -- which is what a publish records.
+  const effPeriodOnly = periodOnly && !showAll;
+  const effHideEmpty = hideEmptyRows && !showAll;
+  const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -347,11 +308,17 @@ function PublishWorkspace() {
   useEffect(() => {
     fetchAll<Record<string, unknown>>(supabase, "report_links", "*", (q) => q.eq("active", true))
       .then((rows) => {
-        const map = new Map<string, ReportLink>();
+        const byClient = new Map<string, ReportLink[]>();
         for (const r of rows) {
           const link = mapReportLink(r);
-          const cur = map.get(link.clientId);
-          if (!cur || preferLink(link, cur)) map.set(link.clientId, link);
+          const list = byClient.get(link.clientId);
+          if (list) list.push(link);
+          else byClient.set(link.clientId, [link]);
+        }
+        const map = new Map<string, ReportLink>();
+        for (const [clientId, list] of byClient) {
+          const link = canonicalReportLink(list);
+          if (link) map.set(clientId, link);
         }
         setLinks(map);
       })
@@ -512,9 +479,11 @@ function PublishWorkspace() {
       q.eq("client_id", clientId).eq("active", true),
     ).catch(() => [] as Record<string, unknown>[]);
     if (found.length) {
-      const link = found.map(mapReportLink).reduce((a, b) => (preferLink(b, a) ? b : a));
-      setLinks((prev) => new Map(prev).set(clientId, link));
-      return link;
+      const link = canonicalReportLink(found.map(mapReportLink));
+      if (link) {
+        setLinks((prev) => new Map(prev).set(clientId, link));
+        return link;
+      }
     }
     const { data, error } = await supabase
       .from("report_links")
@@ -532,10 +501,18 @@ function PublishWorkspace() {
 
   async function publish() {
     if (!selectedClient || !preview) return;
+    // ⚠️ The tab is opened NOW, blank, and pointed at the report further down once the
+    // write has landed. It cannot be opened at the end instead: by then the awaits
+    // below have spent the click's "transient activation", so `window.open` counts as
+    // an unsolicited popup and Safari blocks it outright. Blank-then-navigate is the
+    // one shape that survives. It is closed again on any path that does not publish,
+    // so a failure never leaves a stray tab behind.
+    const tab = window.open("about:blank", "_blank");
     setPublishing(true);
     const link = await ensureLink(selectedClient.id);
     if (!link) {
       setPublishing(false);
+      tab?.close();
       return;
     }
     const publishedAt = new Date().toISOString();
@@ -559,6 +536,7 @@ function PublishWorkspace() {
     if (error) {
       console.error("publish failed", error.message);
       showToast("Publish failed — check console");
+      tab?.close();
       return;
     }
     const updated = {
@@ -570,11 +548,25 @@ function PublishWorkspace() {
       viewFlags: degraded ? null : { periodOnly, hideEmptyRows },
     };
     setLinks((prev) => new Map(prev).set(selectedClient.id, updated));
-    await navigator.clipboard.writeText(`${window.location.origin}/report/${link.token}`);
+    const url = `${window.location.origin}/report/${link.token}`;
+    // Every publish opens what was just published, so the thing the client will see
+    // gets looked at by someone before they see it. `tab` is the blank one from the
+    // top; the fallback covers a browser that blocked even that.
+    //
+    // ⚠️ Point the tab BEFORE copying. Opening the tab moves focus, and
+    // `clipboard.writeText` rejects on an unfocused document -- awaiting it first
+    // would strand the tab on about:blank and swallow the toast. The copy is a
+    // convenience, so a refusal only changes what the toast claims.
+    if (tab) tab.location.replace(url);
+    else window.open(url, "_blank");
+    const copied = await navigator.clipboard.writeText(url).then(
+      () => true,
+      () => false,
+    );
     showToast(
       degraded
-        ? "Published — link copied. The view filters weren't saved: migration 0031 hasn't been run."
-        : "Report published — link copied to clipboard",
+        ? `Published & opened${copied ? " — link copied" : ""}. The view filters weren't saved: migration 0031 hasn't been run.`
+        : `Report published — opened in a new tab${copied ? ", link copied" : ""}`,
     );
   }
 
@@ -626,7 +618,7 @@ function PublishWorkspace() {
               onClick={publish}
               disabled={publishing}
               className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-              title="Freeze the current preview and publish it to the client link"
+              title="Freeze the current preview, publish it to the client link, and open that link in a new tab so you can check what the client will see"
             >
               <Send size={14} />
               {publishing ? "Publishing…" : "Publish"}
@@ -737,7 +729,7 @@ function PublishWorkspace() {
           <div className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-3">
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
               <ViewToggle
-                on={periodOnly && !showAll}
+                on={effPeriodOnly}
                 dim={showAll}
                 onClick={() => setPeriodOnly((v) => !v)}
                 title="Show only the week columns of the latest payment period"
@@ -745,7 +737,7 @@ function PublishWorkspace() {
                 Latest period only
               </ViewToggle>
               <ViewToggle
-                on={hideEmptyRows && !showAll}
+                on={effHideEmpty}
                 dim={showAll}
                 onClick={() => setHideEmptyRows((v) => !v)}
                 title="Hide tasks with no hours in the columns currently shown"
@@ -785,27 +777,14 @@ function PublishWorkspace() {
               editable
               periodsEditable
               selectable
-              showSectionTotals
-              periodOnly={periodOnly && !showAll}
-              hideEmptyRows={hideEmptyRows && !showAll}
-              foldedSections={showAll ? [] : foldedSections}
-              onToggleSection={(name) =>
-                setFoldedSections((prev) =>
-                  prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-                )
-              }
+              periodOnly={effPeriodOnly}
+              hideEmptyRows={effHideEmpty}
+              foldedSections={effFolded}
+              onToggleSection={(name) => setFoldedSections((prev) => toggleIn(prev, name))}
               onOpenTask={openTask}
               onEditEstimate={(taskId, hours) => updateTask(taskId, { estimateHours: hours })}
-              onToggleColumn={(key) =>
-                setHiddenColumns((prev) =>
-                  prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-                )
-              }
-              onToggleTask={(id) =>
-                setHiddenTaskIds((prev) =>
-                  prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id],
-                )
-              }
+              onToggleColumn={(key) => setHiddenColumns((prev) => toggleIn(prev, key))}
+              onToggleTask={(id) => setHiddenTaskIds((prev) => toggleIn(prev, id))}
               onAddBoundary={handleAddBoundary}
               onMoveBoundary={handleMoveBoundary}
               onTogglePeriodHidden={(keys, hide) =>

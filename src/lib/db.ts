@@ -229,6 +229,30 @@ export const mapReportLink = (r: any): ReportLink => ({
   viewFlags: r.view_flags ?? null,
 });
 
+/**
+ * Which of a client's active report links is THE link — the one the app must
+ * publish to and hand out.
+ *
+ * ⚠️ NEWEST WINS IS WRONG HERE. A report URL is permanent and gets pasted into a
+ * client's email, so if a duplicate is ever created the app must not silently
+ * start publishing to it — the client would keep opening the old token and never
+ * see another update. So: a link that has been PUBLISHED wins (only that one can
+ * be in a client's hands), and otherwise the OLDEST wins, being the one that has
+ * had the most chance to be shared.
+ *
+ * Lives here, next to `mapReportLink`, because more than one surface resolves a
+ * client's link and "newest active row" is the obvious wrong re-derivation.
+ */
+export function canonicalReportLink(links: ReportLink[]): ReportLink | null {
+  return links.reduce<ReportLink | null>((best, link) => {
+    if (!best) return link;
+    const pubNew = !!link.publishedAt;
+    const pubBest = !!best.publishedAt;
+    if (pubNew !== pubBest) return pubNew ? link : best;
+    return link.createdAt < best.createdAt ? link : best;
+  }, null);
+}
+
 export const mapBillingPeriod = (r: any): BillingPeriod => ({
   id: r.id,
   clientId: r.client_id,

@@ -2,8 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
-import { ReportTable, columnKey } from "@/components/report-table";
-import type { ReportSnapshot } from "@/lib/types";
+import { ReportTable, ViewToggle, columnKey } from "@/components/report-table";
+import { toggleIn } from "@/lib/toggle";
+import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
+
+function ReportTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 text-[11px] text-muted">{sub}</div>}
+    </div>
+  );
+}
 
 /**
  * Client-facing snapshot view. The snapshot arrives already sanitized by the
@@ -17,43 +28,6 @@ import type { ReportSnapshot } from "@/lib/types";
  * client can switch them off, because the data behind them was deliberately sent.
  * Anything that must not be seen belongs in the hidden lists above, not here.
  */
-function ViewToggle({
-  on,
-  onClick,
-  title,
-  children,
-}: {
-  on: boolean;
-  onClick: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      aria-pressed={on}
-      className={`min-h-11 rounded-full border px-3 py-1 text-xs font-medium sm:min-h-0 ${
-        on
-          ? "border-brand bg-brand text-white"
-          : "border-border text-muted hover:bg-background hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ReportTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-muted">{sub}</div>}
-    </div>
-  );
-}
-
 export function PublicReportView({
   clientName,
   clientColor,
@@ -67,7 +41,7 @@ export function PublicReportView({
   snapshot: ReportSnapshot;
   publishedAt: string | null;
   hiddenColumns: string[];
-  viewFlags: { periodOnly: boolean; hideEmptyRows: boolean } | null;
+  viewFlags: ReportViewFlags | null;
 }) {
   const [periodOnly, setPeriodOnly] = useState(viewFlags?.periodOnly ?? false);
   const [hideEmptyRows, setHideEmptyRows] = useState(viewFlags?.hideEmptyRows ?? false);
@@ -131,6 +105,7 @@ export function PublicReportView({
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-card lg:col-span-3">
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
             <ViewToggle
+              touch
               on={!periodOnly}
               onClick={() => setPeriodOnly((v) => !v)}
               title={
@@ -142,6 +117,7 @@ export function PublicReportView({
               {periodOnly ? "Show all periods" : "All periods"}
             </ViewToggle>
             <ViewToggle
+              touch
               on={hideEmptyRows}
               onClick={() => setHideEmptyRows((v) => !v)}
               title="Hide tasks with no hours in the columns shown"
@@ -161,15 +137,10 @@ export function PublicReportView({
             snapshot={snapshot}
             hiddenColumns={hiddenColumns}
             hiddenTaskIds={[]}
-            showSectionTotals
             periodOnly={periodOnly}
             hideEmptyRows={hideEmptyRows}
             foldedSections={foldedSections}
-            onToggleSection={(name) =>
-              setFoldedSections((prev) =>
-                prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
-              )
-            }
+            onToggleSection={(name) => setFoldedSections((prev) => toggleIn(prev, name))}
           />
         </div>
 

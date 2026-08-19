@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import type { ReportSnapshot } from "@/lib/types";
+import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 import { sanitizeSnapshot } from "@/lib/report-sanitize";
 import { PublicReportView } from "./public-report-view";
 
@@ -70,9 +70,7 @@ export default async function PublicReportPage({
       snapshot={snapshot}
       publishedAt={link.published_at}
       hiddenColumns={leadingHidden}
-      viewFlags={
-        (link.view_flags as { periodOnly: boolean; hideEmptyRows: boolean } | null) ?? null
-      }
+      viewFlags={(link.view_flags as ReportViewFlags | null) ?? null}
     />
   );
 }

@@ -1,26 +1,29 @@
 "use client";
 
 import { createClient } from "./supabase/client";
+import { canonicalReportLink, mapReportLink } from "./db";
 
 /**
- * Returns the URL of the client's latest active report link, creating a
- * rolling "This month" link if none exists. Admin-only (RLS enforced).
+ * Returns the URL of the client's report link, creating a rolling "This month"
+ * link if none exists. Admin-only (RLS enforced).
+ *
+ * ⚠️ Resolves through `canonicalReportLink`, NOT "newest active row". This button
+ * hands a client a permanent URL, so it has to agree with what Publish writes to —
+ * picking differently is how a client ends up holding a token the studio stopped
+ * publishing to. See the rule's own comment in `db.ts`.
  */
 export async function ensureClientReportLink(
   clientId: string,
   userId: string,
 ): Promise<string | null> {
   const supabase = createClient();
-  const { data: existing } = await supabase
+  const { data: rows } = await supabase
     .from("report_links")
-    .select("token")
+    .select("*")
     .eq("client_id", clientId)
-    .eq("active", true)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .eq("active", true);
 
-  let token = existing?.token as string | undefined;
+  let token = canonicalReportLink((rows ?? []).map(mapReportLink))?.token;
   if (!token) {
     const { data: created, error } = await supabase
       .from("report_links")
