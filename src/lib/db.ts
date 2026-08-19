@@ -226,6 +226,7 @@ export const mapReportLink = (r: any): ReportLink => ({
   hiddenColumns: r.hidden_columns ?? [],
   hiddenTaskIds: r.hidden_task_ids ?? [],
   customWeeks: r.custom_weeks ?? null,
+  viewFlags: r.view_flags ?? null,
 });
 
 export const mapBillingPeriod = (r: any): BillingPeriod => ({

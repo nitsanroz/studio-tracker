@@ -775,27 +775,33 @@ export function MultiLineChart({
  * Each bar shows its value — inside the bar (white, upper part) when the bar
  * is tall enough, otherwise just above it.
  */
-export function MiniColumns({ points }: { points: { label: string; minutes: number }[] }) {
+export function MiniColumns({
+  points,
+}: {
+  /** `title` overrides the hover text when the axis label is abbreviated */
+  points: { label: string; minutes: number; title?: string }[];
+}) {
   const max = Math.max(...points.map((p) => p.minutes), 1);
   return (
     <div className="flex items-end gap-1">
       {points.map((p) => {
         const pct = Math.max(2, (p.minutes / max) * 100);
-        const inside = pct >= 45;
         return (
           <div key={p.label} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            {/* pt-3.5 is the headroom the value label sits in, so it can hang above
+                even the full-height bar */}
             <div className="flex h-20 w-full items-end pt-3.5">
               <div
                 className="relative w-full rounded-t bg-brand/80 hover:bg-brand"
                 style={{ height: `${pct}%` }}
-                title={`${p.label}: ${formatHoursShort(p.minutes)}`}
+                title={`${p.title ?? p.label}: ${formatHoursShort(p.minutes)}`}
               >
+                {/* ⚠️ ALWAYS above the bar, never inside it. A tall bar used to take the
+                    figure inside its top, where a 9px number in ~24px of column has no
+                    room to breathe -- and it read as a different kind of value from the
+                    ones printed above the short bars. */}
                 {p.minutes > 0 && (
-                  <span
-                    className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium tabular-nums ${
-                      inside ? "top-0.5 text-white" : "-top-3.5 text-muted"
-                    }`}
-                  >
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium tabular-nums text-muted">
                     {formatHoursShort(p.minutes)}
                   </span>
                 )}

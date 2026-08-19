@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
-import { fetchAll, mapReportLink } from "@/lib/db";
+import { fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import {
   addDays,
   formatDate,
@@ -28,6 +28,58 @@ import { MiniColumns } from "@/components/charts";
 import { ReportTable } from "@/components/report-table";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
 import type { Client, ReportLink } from "@/lib/types";
+
+/**
+ * A view filter pill. `dim` marks a filter that is set but currently overridden by
+ * "Show all", so the setting it will return to stays legible instead of looking off.
+ */
+function ViewToggle({
+  on,
+  dim = false,
+  onClick,
+  title,
+  children,
+}: {
+  on: boolean;
+  dim?: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-pressed={on}
+      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+        on
+          ? "border-brand bg-brand text-white"
+          : dim
+            ? "border-dashed border-border text-faint hover:text-muted"
+            : "border-border text-muted hover:bg-background hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Which of two active links for one client the app should use.
+ *
+ * ⚠️ NEWEST WINS IS WRONG HERE, and that was the rule until now. A report URL is
+ * permanent and gets pasted into a client's email, so if a duplicate is created
+ * later the app must not silently start publishing to it — the client would keep
+ * opening the old token and never see another update. So: a link that has been
+ * PUBLISHED wins (only that one can be in a client's hands), and otherwise the
+ * OLDEST wins, being the one that has had the most chance to be shared.
+ */
+function preferLink(candidate: ReportLink, current: ReportLink): boolean {
+  const pubC = !!candidate.publishedAt;
+  const pubK = !!current.publishedAt;
+  if (pubC !== pubK) return pubC;
+  return candidate.createdAt < current.createdAt;
+}
 
 /** iso date + n days → iso date */
 function addDaysIso(iso: string, n: number): string {
@@ -88,7 +140,10 @@ function PaymentPeriods({ client }: { client: Client }) {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .slice(-12)
       .map(([key, minutes]) => ({
-        label: `${MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1]} ${key.slice(2, 4)}`,
+        label: MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1],
+        // the axis reads as months, so the year lives in the hover instead — with 12
+        // buckets one month name can appear twice and the label alone is ambiguous
+        title: `${MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`,
         minutes,
       }));
   }, [clientEntries]);
@@ -202,7 +257,9 @@ function PaymentPeriods({ client }: { client: Client }) {
         </button>
       </div>
 
-      <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[360px]">
+      {/* 504 = 360 + 40%. The payment-period table beside this is `flex-1`, so it
+          simply yields the difference — one number moves both panes. */}
+      <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[504px]">
         <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
           <div className="grid grid-cols-3 gap-2">
             <div title="Hours logged on billable tasks in the current payment period">
@@ -274,6 +331,13 @@ function PublishWorkspace() {
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
+  // View-only filters. Deliberately NOT hiddenColumns/hiddenTaskIds: those are the
+  // published state that decides what the client sees, so folding the table down to
+  // one period here must never leak into the next publish.
+  const [periodOnly, setPeriodOnly] = useState(false);
+  const [hideEmptyRows, setHideEmptyRows] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [foldedSections, setFoldedSections] = useState<string[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -286,9 +350,8 @@ function PublishWorkspace() {
         const map = new Map<string, ReportLink>();
         for (const r of rows) {
           const link = mapReportLink(r);
-          // keep the most recently created active link per client
           const cur = map.get(link.clientId);
-          if (!cur || link.createdAt > cur.createdAt) map.set(link.clientId, link);
+          if (!cur || preferLink(link, cur)) map.set(link.clientId, link);
         }
         setLinks(map);
       })
@@ -327,6 +390,10 @@ function PublishWorkspace() {
     setHiddenColumns(link?.hiddenColumns ?? []);
     setHiddenTaskIds(link?.hiddenTaskIds ?? []);
     setCustomWeeks(link?.customWeeks ?? null);
+    setFoldedSections([]); // section names are per client
+    setPeriodOnly(link?.viewFlags?.periodOnly ?? false);
+    setHideEmptyRows(link?.viewFlags?.hideEmptyRows ?? false);
+    setShowAll(false);
   }, [selectedClient?.id, links]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // show the tab-strip arrows only when it actually overflows
@@ -437,6 +504,18 @@ function PublishWorkspace() {
   async function ensureLink(clientId: string): Promise<ReportLink | null> {
     const existing = links.get(clientId);
     if (existing) return existing;
+    // ⚠️ Ask the DATABASE before minting one. The map is filled by an effect, so a
+    // Copy-link or Publish pressed before it resolves used to insert a SECOND link
+    // for a client that already had one -- which is how Blazepod and No Traffic
+    // ended up with two. A duplicate is how a client's permanent URL goes stale.
+    const found = await fetchAll<Record<string, unknown>>(supabase, "report_links", "*", (q) =>
+      q.eq("client_id", clientId).eq("active", true),
+    ).catch(() => [] as Record<string, unknown>[]);
+    if (found.length) {
+      const link = found.map(mapReportLink).reduce((a, b) => (preferLink(b, a) ? b : a));
+      setLinks((prev) => new Map(prev).set(clientId, link));
+      return link;
+    }
     const { data, error } = await supabase
       .from("report_links")
       .insert({ client_id: clientId, created_by: currentUserId })
@@ -460,25 +539,43 @@ function PublishWorkspace() {
       return;
     }
     const publishedAt = new Date().toISOString();
-    const { error } = await supabase
-      .from("report_links")
-      .update({
+    // ⚠️ `view_flags` needs migration 0031, and a missing column on a WRITE reports
+    // PGRST204 — so publishing would FAIL outright until that SQL is run, taking the
+    // one button this page exists for with it. The filters step down instead: the
+    // report publishes, and the client simply sees the unfiltered grid.
+    const { error, degraded } = await updateWithOptional(
+      supabase,
+      "report_links",
+      { id: link.id },
+      {
         snapshot: preview,
         published_at: publishedAt,
         hidden_columns: hiddenColumns,
         hidden_task_ids: hiddenTaskIds,
-      })
-      .eq("id", link.id);
+      },
+      { view_flags: { periodOnly, hideEmptyRows } },
+    );
     setPublishing(false);
     if (error) {
       console.error("publish failed", error.message);
       showToast("Publish failed — check console");
       return;
     }
-    const updated = { ...link, snapshot: preview, publishedAt, hiddenColumns, hiddenTaskIds };
+    const updated = {
+      ...link,
+      snapshot: preview,
+      publishedAt,
+      hiddenColumns,
+      hiddenTaskIds,
+      viewFlags: degraded ? null : { periodOnly, hideEmptyRows },
+    };
     setLinks((prev) => new Map(prev).set(selectedClient.id, updated));
     await navigator.clipboard.writeText(`${window.location.origin}/report/${link.token}`);
-    showToast("Report published — link copied to clipboard");
+    showToast(
+      degraded
+        ? "Published — link copied. The view filters weren't saved: migration 0031 hasn't been run."
+        : "Report published — link copied to clipboard",
+    );
   }
 
   async function copyLink() {
@@ -538,8 +635,20 @@ function PublishWorkspace() {
         )}
       </div>
 
-      {/* tabs — one line, scrollable with arrows when it overflows */}
-      <div className="flex items-center gap-1">
+      {/*
+        The tab strip IS the top of the panel below it, so a folder tab reads as
+        attached to its own client's pane. Three parts make that work:
+          · `-mb-3` cancels the page's `gap-3`, so the panel butts against the rail
+          · the rail carries the left/right/top border and NO bottom one, and the
+            panel carries no TOP one — so the only thing dividing them is the
+            background change, which the active tab (bg-surface, like the panel)
+            interrupts. No 1px overlap trick, nothing for the scroller to clip.
+          · `pt-1.5` on the scroller gives the hide badge back the 4px it hangs above
+            the tab, plus 2px of slack so a later nudge cannot silently re-clip it;
+            `overflow-x: auto` computes overflow-y to auto too, which was cutting
+            the top off the black ✕.
+      */}
+      <div className="-mb-3 flex items-center gap-1 rounded-t-2xl border border-b-0 border-border bg-background px-2 pt-2">
         {tabsOverflow && (
           <button
             onClick={() => tabsRef.current?.scrollBy({ left: -260, behavior: "smooth" })}
@@ -551,7 +660,7 @@ function PublishWorkspace() {
         )}
         <div
           ref={tabsRef}
-          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]"
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pt-1.5 [scrollbar-width:none]"
         >
           {visibleTabs.map((c) => (
             <span key={c.id} className="group relative shrink-0">
@@ -578,39 +687,39 @@ function PublishWorkspace() {
               </button>
             </span>
           ))}
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setMoreOpen((o) => !o)}
-              className="rounded-lg px-2 py-1.5 text-muted hover:bg-background"
-              title="More clients"
-            >
-              <MoreHorizontal size={16} />
-            </button>
-            {moreOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
-                <div className="absolute right-0 top-full z-40 max-h-72 w-56 overflow-y-auto rounded-2xl border border-border bg-surface shadow-card p-1 shadow-xl">
-                  {clients
-                    .filter((c) => !c.archived && (hiddenTabs.includes(c.id) || !candidates.some((x) => x.id === c.id)))
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => {
-                          persistHiddenTabs(hiddenTabs.filter((id) => id !== c.id));
-                          setSelected(c.id);
-                          setMoreOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-background"
-                      >
-                        <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
-                        {c.name}
-                      </button>
-                    ))}
-                </div>
-              </>
-            )}
-          </div>
+        </div>
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setMoreOpen((o) => !o)}
+            className="rounded-lg px-2 py-1.5 text-muted hover:bg-background"
+            title="More clients"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
+              <div className="absolute right-0 top-full z-40 max-h-72 w-56 overflow-y-auto rounded-2xl border border-border bg-surface shadow-card p-1 shadow-xl">
+                {clients
+                  .filter((c) => !c.archived && (hiddenTabs.includes(c.id) || !candidates.some((x) => x.id === c.id)))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        persistHiddenTabs(hiddenTabs.filter((id) => id !== c.id));
+                        setSelected(c.id);
+                        setMoreOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-background"
+                    >
+                      <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+                      {c.name}
+                    </button>
+                  ))}
+              </div>
+            </>
+          )}
         </div>
         {tabsOverflow && (
           <button
@@ -625,11 +734,49 @@ function PublishWorkspace() {
 
       {selectedClient && preview ? (
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl border border-border bg-surface shadow-card p-3">
+          <div className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              <ViewToggle
+                on={periodOnly && !showAll}
+                dim={showAll}
+                onClick={() => setPeriodOnly((v) => !v)}
+                title="Show only the week columns of the latest payment period"
+              >
+                Latest period only
+              </ViewToggle>
+              <ViewToggle
+                on={hideEmptyRows && !showAll}
+                dim={showAll}
+                onClick={() => setHideEmptyRows((v) => !v)}
+                title="Hide tasks with no hours in the columns currently shown"
+              >
+                Only rows with hours
+              </ViewToggle>
+              <ViewToggle
+                on={showAll}
+                onClick={() => setShowAll((v) => !v)}
+                title="Temporarily show every row, column and section — turning it off restores the filters you had"
+              >
+                Show all
+              </ViewToggle>
+              {foldedSections.length > 0 && !showAll && (
+                <button
+                  onClick={() => setFoldedSections([])}
+                  className="rounded-full px-2.5 py-1 text-[11px] text-muted hover:bg-background hover:text-foreground"
+                >
+                  Unfold {foldedSections.length} section
+                  {foldedSections.length > 1 ? "s" : ""}
+                </button>
+              )}
+              <span className="ml-auto text-[11px] text-faint">
+                These only change your view — the eye icons are what the client sees
+              </span>
+            </div>
             <p className="mb-2 text-[11px] text-faint">
               Preview — eye toggles hide rows/columns from the client&apos;s view, + between column
               titles ends a payment period there, drag a divider to move it, click column dates to
-              edit them. Publishing freezes this exact data.
+              edit them. Click or drag the hour cells to total them. Publishing freezes this exact
+              data.
             </p>
             <ReportTable
               snapshot={preview}
@@ -637,6 +784,16 @@ function PublishWorkspace() {
               hiddenTaskIds={hiddenTaskIds}
               editable
               periodsEditable
+              selectable
+              showSectionTotals
+              periodOnly={periodOnly && !showAll}
+              hideEmptyRows={hideEmptyRows && !showAll}
+              foldedSections={showAll ? [] : foldedSections}
+              onToggleSection={(name) =>
+                setFoldedSections((prev) =>
+                  prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+                )
+              }
               onOpenTask={openTask}
               onEditEstimate={(taskId, hours) => updateTask(taskId, { estimateHours: hours })}
               onToggleColumn={(key) =>
@@ -663,7 +820,7 @@ function PublishWorkspace() {
           <PaymentPeriods client={selectedClient} />
         </div>
       ) : (
-        <p className="rounded-2xl border border-border bg-surface shadow-card p-6 text-center text-sm text-faint">
+        <p className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-6 text-center text-sm text-faint">
           No clients with recent activity. Use ⋯ to pick one.
         </p>
       )}

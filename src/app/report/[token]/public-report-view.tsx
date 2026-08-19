@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
 import { ReportTable, columnKey } from "@/components/report-table";
 import type { ReportSnapshot } from "@/lib/types";
@@ -8,10 +8,42 @@ import type { ReportSnapshot } from "@/lib/types";
 /**
  * Client-facing snapshot view. The snapshot arrives already sanitized by the
  * server (see page.tsx `sanitizeSnapshot`) — admin-hidden tasks and columns are
- * gone from the data entirely, so there is no reveal/toggle here: the client
+ * gone from the data entirely, so there is no reveal/toggle for those: the client
  * physically cannot see hidden rows/columns. `hiddenColumns` only ever carries
  * the leading estimate/total columns, whose values were already nulled.
+ *
+ * ⚠️ `viewFlags` is a DIFFERENT thing and the difference matters. Those are the
+ * filters the studio had on when it published — how the report opens — and the
+ * client can switch them off, because the data behind them was deliberately sent.
+ * Anything that must not be seen belongs in the hidden lists above, not here.
  */
+function ViewToggle({
+  on,
+  onClick,
+  title,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-pressed={on}
+      className={`min-h-11 rounded-full border px-3 py-1 text-xs font-medium sm:min-h-0 ${
+        on
+          ? "border-brand bg-brand text-white"
+          : "border-border text-muted hover:bg-background hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function ReportTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
@@ -28,13 +60,18 @@ export function PublicReportView({
   snapshot,
   publishedAt,
   hiddenColumns,
+  viewFlags,
 }: {
   clientName: string;
   clientColor: string;
   snapshot: ReportSnapshot;
   publishedAt: string | null;
   hiddenColumns: string[];
+  viewFlags: { periodOnly: boolean; hideEmptyRows: boolean } | null;
 }) {
+  const [periodOnly, setPeriodOnly] = useState(viewFlags?.periodOnly ?? false);
+  const [hideEmptyRows, setHideEmptyRows] = useState(viewFlags?.hideEmptyRows ?? false);
+  const [foldedSections, setFoldedSections] = useState<string[]>([]);
   const lastUpdated = publishedAt
     ? new Date(publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : null;
@@ -92,7 +129,48 @@ export function PublicReportView({
 
       <div className="grid items-start gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-card lg:col-span-3">
-          <ReportTable snapshot={snapshot} hiddenColumns={hiddenColumns} hiddenTaskIds={[]} />
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <ViewToggle
+              on={!periodOnly}
+              onClick={() => setPeriodOnly((v) => !v)}
+              title={
+                periodOnly
+                  ? "Show every period, not just the latest"
+                  : "Show only the latest payment period"
+              }
+            >
+              {periodOnly ? "Show all periods" : "All periods"}
+            </ViewToggle>
+            <ViewToggle
+              on={hideEmptyRows}
+              onClick={() => setHideEmptyRows((v) => !v)}
+              title="Hide tasks with no hours in the columns shown"
+            >
+              Only rows with hours
+            </ViewToggle>
+            {foldedSections.length > 0 && (
+              <button
+                onClick={() => setFoldedSections([])}
+                className="min-h-11 rounded-full px-2.5 py-1 text-xs text-muted hover:bg-background hover:text-foreground sm:min-h-0"
+              >
+                Unfold {foldedSections.length} section{foldedSections.length > 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
+          <ReportTable
+            snapshot={snapshot}
+            hiddenColumns={hiddenColumns}
+            hiddenTaskIds={[]}
+            showSectionTotals
+            periodOnly={periodOnly}
+            hideEmptyRows={hideEmptyRows}
+            foldedSections={foldedSections}
+            onToggleSection={(name) =>
+              setFoldedSections((prev) =>
+                prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+              )
+            }
+          />
         </div>
 
         <aside className="flex flex-col gap-3">

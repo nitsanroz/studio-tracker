@@ -293,6 +293,14 @@ export interface ReportLink {
   hiddenTaskIds: string[];
   /** admin-edited column date ranges; null = auto week buckets */
   customWeeks: { label: string; from: string; to: string }[] | null;
+  /**
+   * How the table was filtered when it was published, so the client opens on the
+   * same view the studio approved. Unlike `hiddenColumns`/`hiddenTaskIds` these are
+   * DEFAULTS, not censorship: the client has buttons to switch them off, and the
+   * data behind them is still sent. Anything that must not be seen belongs in the
+   * hidden lists, which the server strips from the payload entirely.
+   */
+  viewFlags: { periodOnly: boolean; hideEmptyRows: boolean } | null;
 }
 
 /** Frozen, admin-approved report payload rendered by /report/[token]. */

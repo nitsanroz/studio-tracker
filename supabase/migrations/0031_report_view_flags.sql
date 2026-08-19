@@ -1,0 +1,15 @@
+-- ── 0031: how a client report was FILTERED when it was published ─────────────
+--
+-- `hidden_columns` / `hidden_task_ids` are censorship: the server strips those
+-- rows and columns out of the payload before the client's browser ever sees them
+-- (report/[token]/page.tsx → sanitizeSnapshot).
+--
+-- These flags are the opposite, and the difference is the whole reason they are a
+-- separate column rather than more entries in those lists. They record the view
+-- the studio approved -- "latest period only", "only rows with hours" -- so the
+-- client's report OPENS the way it was published, while leaving them free to
+-- switch either filter off. The data behind them is deliberately still sent.
+--
+-- Null means "published before this existed": both filters read as off, which is
+-- exactly how every existing report already behaves.
+alter table report_links add column if not exists view_flags jsonb;

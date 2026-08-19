@@ -26,7 +26,11 @@ export default async function PublicReportPage({
 
   const { data: link } = await sb
     .from("report_links")
-    .select("active, snapshot, published_at, hidden_columns, hidden_task_ids, clients(name, color)")
+    // ⚠️ `*`, not a column list, because `view_flags` needs migration 0031 and a
+    // missing column NAMED in a select fails the whole query -- which here means
+    // notFound() on every client's report link until that SQL is run. With `*` the
+    // key is simply absent and both filters read as off.
+    .select("*, clients(name, color)")
     .eq("token", token)
     .maybeSingle();
   if (!link || !link.active) notFound();
@@ -66,6 +70,9 @@ export default async function PublicReportPage({
       snapshot={snapshot}
       publishedAt={link.published_at}
       hiddenColumns={leadingHidden}
+      viewFlags={
+        (link.view_flags as { periodOnly: boolean; hideEmptyRows: boolean } | null) ?? null
+      }
     />
   );
 }
