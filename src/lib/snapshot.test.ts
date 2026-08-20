@@ -209,3 +209,68 @@ describe("fingerprint", () => {
     expect(fingerprint(a, server(carried))).not.toBe(fingerprint(b, server(carried)));
   });
 });
+
+// ── an optional table may only be blanked by a MISSING table ─────────────
+// `links`, `timeline_marks`, `task_types`, `task_groups`, `client_billing_periods`
+// and `plan_day_states` are each fetched tolerantly, because the migration that
+// creates them may not have been run yet. That tolerance was a bare
+// `.catch(() => [])` until v1.21.1, and an empty list is INDISTINGUISHABLE FROM
+// THE TRUTH here — it renders as "no links anywhere", with no banner and nothing
+// in the console. So one timed-out query, one 401 during a token refresh, or the
+// 402 Supabase returns over quota silently took every link in the app off the
+// screen until a later cold refresh happened to succeed. Reported 20 Aug 2026 as
+// a link that would not stay put.
+
+/** Like `recordingClient`, but one table answers with an error. */
+function failingClient(failTable: string, error: { message: string; code?: string }) {
+  /* eslint-disable @typescript-eslint/no-explicit-any -- test double for the DB boundary */
+  const select = (table: string) => {
+    const chain: any = {
+      range: () => chain,
+      not: () => chain,
+      order: () => chain,
+      limit: () => chain,
+      then: (resolve: (r: any) => void) =>
+        resolve(table === failTable ? { data: null, error } : { data: [], error: null }),
+    };
+    return chain;
+  };
+  const sb: any = { from: (table: string) => ({ select: () => select(table) }) };
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+  return sb;
+}
+
+describe("optional tables in the cold snapshot", () => {
+  it("reads a table the migration hasn't created yet as no rows", async () => {
+    // 42P01 = undefined_table. This is the ONLY thing an empty list may mean.
+    const snap = await fetchCold(failingClient("links", { message: "no such table", code: "42P01" }));
+    expect(snap.links).toEqual([]);
+  });
+
+  it("REFUSES to read a failed links query as an empty studio", async () => {
+    // No code at all — a timeout, a dropped connection, a 402 over quota. The
+    // boot path turns this into an error screen and the refresh path keeps the
+    // data already on screen; both beat inventing "no links anywhere".
+    await expect(fetchCold(failingClient("links", { message: "Payment Required" }))).rejects.toThrow();
+  });
+
+  it("refuses on a permission error too, rather than blanking the table", async () => {
+    // 42501 = insufficient_privilege. Genuinely broken grants must be visible,
+    // not rendered as a studio that never saved a link.
+    await expect(
+      fetchCold(failingClient("links", { message: "permission denied for table links", code: "42501" })),
+    ).rejects.toThrow();
+  });
+
+  it("applies the same rule to every other optional table", async () => {
+    for (const table of [
+      "timeline_marks",
+      "task_types",
+      "task_groups",
+      "client_billing_periods",
+      "plan_day_states",
+    ]) {
+      await expect(fetchCold(failingClient(table, { message: "boom" }))).rejects.toThrow();
+    }
+  });
+});

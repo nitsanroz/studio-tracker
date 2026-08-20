@@ -117,6 +117,29 @@ export interface HotCtx {
   projectClient: Map<string, string>;
 }
 
+/**
+ * A table an unapplied migration may not have created yet.
+ *
+ * ⚠️ ONLY A MISSING TABLE OR COLUMN MAY BE READ AS "NO ROWS". Every other
+ * failure has to propagate, because the fallback here is INDISTINGUISHABLE FROM
+ * THE TRUTH: an empty list renders as "no links anywhere", with no banner and
+ * nothing in the console, and the app looks like a studio that never pasted a
+ * Google Doc at one. A timeout, a 500, a 401 while the token refreshes, or the
+ * 402 that comes back when the project is over quota would each blank every
+ * link in the app until the next cold refresh happened to succeed.
+ *
+ * ⚠️ This was a bare `.catch(() => [])` on four tables until v1.21.1 — and the
+ * `time_entries` ladder below has spelled out the same reasoning since 0016
+ * ("Any other failure must NOT be read as 'the column is gone'"). It simply
+ * never reached these. If you add a fifth optional table, use this.
+ */
+function optionalTable<T>(p: Promise<T[]>): Promise<T[]> {
+  return p.catch((e) => {
+    if (isMissingSchema(e)) return [] as T[];
+    throw e;
+  });
+}
+
 export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
   const [
     prof,
@@ -143,20 +166,21 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     sb.from("tags").select("*").order("position"),
     fetchAll<DbRow>(sb, "plan_columns", "*"),
     // pre-0007 these tables don't exist; RLS hides them from designers
-    fetchAll<DbRow>(sb, "client_billing_periods", "*").catch(() => [] as DbRow[]),
-    fetchAll<DbRow>(sb, "plan_day_states", "*").catch(() => [] as DbRow[]),
-    // the whole table doesn't exist until 0022; an empty list simply means
-    // "no links anywhere", which is exactly how the app renders it
-    fetchAll<DbRow>(sb, "links", "*").catch(() => [] as DbRow[]),
+    optionalTable(fetchAll<DbRow>(sb, "client_billing_periods", "*")),
+    optionalTable(fetchAll<DbRow>(sb, "plan_day_states", "*")),
+    // the whole table doesn't exist until 0022. ⚠️ An empty list here means
+    // "no links anywhere" and is indistinguishable from the truth — see
+    // `optionalTable` for why only a MISSING TABLE may produce it.
+    optionalTable(fetchAll<DbRow>(sb, "links", "*")),
     // Same tolerance as links: before 0026 is applied this table does not exist,
     // and "no milestones" is exactly how the chart should render then.
-    fetchAll<DbRow>(sb, "timeline_marks", "*").catch(() => [] as DbRow[]),
+    optionalTable(fetchAll<DbRow>(sb, "timeline_marks", "*")),
     // absent until 0024; an empty list simply means "no types defined"
-    fetchAll<DbRow>(sb, "task_types", "*").catch(() => [] as DbRow[]),
+    optionalTable(fetchAll<DbRow>(sb, "task_types", "*")),
     // absent until 0027. "No groups anywhere" is exactly how the client page
     // rendered before this existed, so an empty list is the correct fallback —
     // and `tasks.group_id` falls away on its own rung of the hot ladder.
-    fetchAll<DbRow>(sb, "task_groups", "*").catch(() => [] as DbRow[]),
+    optionalTable(fetchAll<DbRow>(sb, "task_groups", "*")),
     // ⚠️ Moved here from `fetchHot` character-for-character. The ladder below
     // steps down ONE column at a time and ONLY on a genuinely missing column —
     // see the file header. Do not simplify it because it now lives on the cold

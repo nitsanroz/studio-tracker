@@ -1,6 +1,6 @@
 "use client";
 
-import { useImperativeHandle, useState, type Ref } from "react";
+import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import { ExternalLink, Link2, Pencil, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
@@ -21,6 +21,17 @@ import type { Link as RefLink } from "@/lib/types";
 export interface LinksEditorHandle {
   /** open the add form — for callers that host their own "+ Add link" control */
   startAdding: () => void;
+  /**
+   * Commit whatever is typed into the open add/edit form, if it amounts to a
+   * usable link. For hosts that save on the way out — see the ⚠️ note on
+   * `LinkForm.commit`, and `BriefModal.close`, which is why this exists.
+   */
+  commitPending: () => void;
+}
+
+/** What `LinksEditor` needs from the one form that may be open. */
+interface LinkFormHandle {
+  commit: () => void;
 }
 
 export function LinksEditor({
@@ -40,8 +51,23 @@ export function LinksEditor({
   const { links, addLink, updateLink, deleteLink } = useData();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  /**
+   * The one form that may be open. Add and edit are mutually exclusive below
+   * precisely so this can be a single ref: `commitPending` has to reach whatever
+   * is on screen, and two of them would mean guessing which.
+   */
+  const formRef = useRef<LinkFormHandle | null>(null);
 
-  useImperativeHandle(ref, () => ({ startAdding: () => setAdding(true) }), []);
+  const openAdd = () => {
+    setEditingId(null);
+    setAdding(true);
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({ startAdding: openAdd, commitPending: () => formRef.current?.commit() }),
+    [],
+  );
 
   const mine = links
     .filter((l) => ("taskId" in owner ? l.taskId === owner.taskId : l.clientId === owner.clientId))
@@ -55,6 +81,7 @@ export function LinksEditor({
             editingId === l.id ? (
               <LinkForm
                 key={l.id}
+                ref={formRef}
                 initial={l}
                 submitLabel="Save"
                 onCancel={() => setEditingId(null)}
@@ -68,7 +95,10 @@ export function LinksEditor({
                 key={l.id}
                 link={l}
                 canEdit={canEdit}
-                onEdit={() => setEditingId(l.id)}
+                onEdit={() => {
+                  setAdding(false);
+                  setEditingId(l.id);
+                }}
                 onRemove={() => deleteLink(l.id)}
               />
             ),
@@ -82,6 +112,7 @@ export function LinksEditor({
         (adding ? (
           <div className="rounded-lg border border-border">
             <LinkForm
+              ref={formRef}
               submitLabel="Add link"
               autoFocus
               onCancel={() => setAdding(false)}
@@ -94,7 +125,7 @@ export function LinksEditor({
         ) : (
           showAddButton && (
             <button
-              onClick={() => setAdding(true)}
+              onClick={openAdd}
               className="flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm text-muted hover:bg-background hover:text-brand"
             >
               <Link2 size={14} /> Add link
@@ -171,29 +202,68 @@ function LinkForm({
   autoFocus = false,
   onSubmit,
   onCancel,
+  ref,
 }: {
   initial?: RefLink;
   submitLabel: string;
   autoFocus?: boolean;
   onSubmit: (title: string, url: string) => void;
   onCancel: () => void;
+  ref?: Ref<LinkFormHandle>;
 }) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
   const [error, setError] = useState<string | null>(null);
+  /**
+   * ⚠️ Commit ONCE per form, whoever asks — and two things can ask. Escape
+   * closes this form here, and if that keydown still reaches the `window`
+   * listener `Modal` registers it also closes the host modal, whose own close
+   * handler calls `commitPending()`. Without this guard those two paths insert
+   * the same link twice.
+   */
+  const done = useRef(false);
 
-  function submit() {
+  /**
+   * ⚠️ `silent` is the on-the-way-out call (`commit`), and it must never block
+   * anything: there is no form left to show a message in. An unusable URL there
+   * is someone who typed a title and changed their mind — nothing storable, and
+   * `url` is NOT NULL, so there is no half-row to keep either.
+   */
+  function submit(opts: { silent?: boolean } = {}) {
+    if (done.current) return;
     const normalized = normalizeUrl(url);
     if (!normalized) {
-      setError("That doesn't look like a web address.");
+      if (!opts.silent) setError("That doesn't look like a web address.");
       return;
     }
+    done.current = true;
     // An untitled link still needs something to click, so fall back to the host.
     onSubmit(title.trim() || hostLabel(normalized), normalized);
   }
 
+  // No deps array on purpose: `submit` closes over `title`/`url`, and a `[]`
+  // handle would commit whatever was typed on the FIRST render — i.e. nothing.
+  useImperativeHandle(ref, () => ({ commit: () => submit({ silent: true }) }));
+
   return (
-    <div className="flex flex-col gap-1.5 p-2">
+    <div
+      className="flex flex-col gap-1.5 p-2"
+      onKeyDown={(e) => {
+        if (e.key !== "Escape") return;
+        // Escape here means "done with this little form", not "throw away the
+        // whole brief modal" — `Modal` listens on `window`, so the native event
+        // has to be stopped before it gets there. ⚠️ Measured rather than
+        // assumed: React's root container in this app is `document` (App Router
+        // hydrates the whole document), which sits BELOW `window` on the bubble
+        // path, so React's synthetic `stopPropagation` really does shield that
+        // listener. It still SAVES either way — the same rule the brief textarea
+        // follows, and `done` above is what keeps the belt-and-braces path from
+        // inserting twice if a future React ever attaches somewhere else.
+        e.stopPropagation();
+        submit({ silent: true });
+        onCancel();
+      }}
+    >
       <input
         autoFocus={autoFocus}
         value={title}
@@ -216,7 +286,7 @@ function LinkForm({
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex items-center gap-2">
         <button
-          onClick={submit}
+          onClick={() => submit()}
           className="rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark"
         >
           {submitLabel}

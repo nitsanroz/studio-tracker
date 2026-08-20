@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useData } from "@/lib/store";
 import { Modal, ModalClose } from "./ui";
-import { LinksEditor } from "./links-editor";
+import { LinksEditor, type LinksEditorHandle } from "./links-editor";
 import type { Task } from "@/lib/types";
 
 /**
@@ -23,14 +23,46 @@ export function BriefModal({ task, onClose }: { task: Task; onClose: () => void 
   const { updateTask, briefLoaded } = useData();
   const loaded = briefLoaded(task.id);
   const [draft, setDraft] = useState(task.brief);
+  const linksRef = useRef<LinksEditorHandle>(null);
+
+  /**
+   * ⚠️ ADOPT THE BRIEF WHEN THE LAZY FETCH LANDS — ONCE.
+   *
+   * `task.brief` is "" for every task until `loadTaskExtras` runs, because the
+   * snapshot query doesn't select the column. Seeding `draft` from it at mount
+   * is therefore a race: open this modal in the beat before that fetch returns
+   * and `draft` was "" FOREVER, because nothing re-seeded it. The `loaded` gate
+   * below hides the textarea until the brief arrives — and then showed it EMPTY,
+   * over a task with a brief. Closing from there wrote that empty string over
+   * real text.
+   *
+   * Once, and only on the false→true edge: after that `task.brief` can change
+   * again from a background refetch of someone else's edit, and adopting THAT
+   * would wipe out what the person here is in the middle of typing. Nothing can
+   * have been typed before the edge, since the textarea wasn't rendered yet.
+   */
+  const seeded = useRef(loaded);
+  useEffect(() => {
+    if (seeded.current || !loaded) return;
+    seeded.current = true;
+    setDraft(task.brief);
+  }, [loaded, task.brief]);
 
   /**
    * Saves on the way out — including Escape and clicking the backdrop, both of
    * which Modal routes here. Losing a paragraph someone just typed because they
    * hit the wrong key is worse than saving an edit they meant to abandon, and
    * Cmd-Z still undoes the write.
+   *
+   * ⚠️ AND THAT PROMISE COVERS THE LINK FORM BELOW, which it did not until
+   * v1.21.1. The footer says "Saves when you close" and it meant the textarea
+   * only: a title and a URL someone had typed into the links editor were thrown
+   * away by Escape, a backdrop click, ⌘↵ and the Done button alike — silently,
+   * with no row to show for it and nothing in the console. Reported 20 Aug 2026
+   * after two Anchor briefs lost their Google Doc link this way.
    */
   function close() {
+    linksRef.current?.commitPending();
     if (loaded && draft !== task.brief) updateTask(task.id, { brief: draft });
     onClose();
   }
@@ -72,6 +104,7 @@ export function BriefModal({ task, onClose }: { task: Task; onClose: () => void 
       <div className="mt-4">
         <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-faint">Links</div>
         <LinksEditor
+          ref={linksRef}
           owner={{ taskId: task.id }}
           canEdit
           emptyHint="No links yet — add a Google Doc, a Dropbox folder, a reference."

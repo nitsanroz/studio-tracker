@@ -645,9 +645,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
    * flight so a refresh defers, surfaces failures exactly as before, and runs a
    * deferred refresh once the write settles.
    *
-   * Inserts deliberately don't use this: a new row can't be clobbered — if the
-   * refresh lands first the row simply isn't in the snapshot yet and the insert
-   * callback appends it; if it lands after, the row is already there.
+   * Inserts use `counting` instead — same bookkeeping, different callback shape.
    */
   const wrote = useCallback(
     (label: string) => {
@@ -666,6 +664,57 @@ export function DataProvider({ children }: { children: ReactNode }) {
     },
     [noteWriteError],
   );
+
+  /**
+   * The same in-flight bookkeeping as `wrote`, for an INSERT — wrapped around
+   * the built query rather than attached to its callback, because an insert
+   * appends its row IN the callback and every call site reads `data` there.
+   * Usage is one line: `counting(sb.from(x).insert(…).select().single()).then(…)`.
+   *
+   * ⚠️ INSERTS USED TO DO NONE OF THIS, on the reasoning that "a new row can't
+   * be clobbered — if the refresh lands first the row isn't in the snapshot yet
+   * and the callback appends it; if it lands after, the row is already there."
+   * That covers two orderings out of three. A refresh ISSUED BEFORE the insert
+   * and LANDING AFTER the callback carries a list that predates the row, and
+   * every apply path REPLACES wholesale (`setLinks(c.links)`, `setPlanEntries`,
+   * `setClients`, …) — so the row is dropped from the screen while sitting
+   * perfectly safely in the database, until the next cold refresh happens to
+   * bring it back. Reported 20 Aug 2026 as "I added a link and my colleague
+   * couldn't see it"; a return to a backgrounded tab fires a cold refresh, and
+   * the thing you came back to do is the thing that gets erased.
+   *
+   * Counting the insert in `writeSeq` is what lets `refreshVerdict` call that
+   * response what it is: older than the screen. It is the exact race the ⚠️ note
+   * on `refreshVerdict` describes for updates — "a background refresh is a READ
+   * THAT WAS ISSUED IN THE PAST" — and inserts were simply exempted from it.
+   *
+   * The queued refresh runs on settle either way: on success it brings the row
+   * plus whatever else changed, and on failure it brings server truth, which is
+   * what a caller that just failed to write most needs.
+   */
+  const counting = useCallback(<T,>(query: PromiseLike<T>): Promise<T> => {
+    writes.current++;
+    writeSeq.current++;
+    lastWriteAt.current = Date.now();
+    const settle = () => {
+      writes.current = Math.max(0, writes.current - 1);
+      lastWriteAt.current = Date.now();
+      if (refreshQueued.current && writes.current === 0) {
+        refreshQueued.current = false;
+        void refreshRef.current?.({ reason: "after-insert" });
+      }
+    };
+    return Promise.resolve(query).then(
+      (v) => {
+        settle();
+        return v;
+      },
+      (e) => {
+        settle();
+        throw e;
+      },
+    );
+  }, []);
 
   // ── undo / redo history (last 10 data actions) ────────────────────────
   const historyRef = useRef<{ past: HistoryAction[]; future: HistoryAction[] }>({ past: [], future: [] });
@@ -1269,18 +1318,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // `withGroupInvariant`) — so an "Add task" row inside a group can pass the
       // group alone and cannot file the task into the wrong section.
       const group = groupId ? taskGroups.find((g) => g.id === groupId) : null;
-      supabase
-        .from("tasks")
-        .insert({
-          client_id: clientId,
-          section_id: group ? group.sectionId : sectionId,
-          group_id: groupId ?? null,
-          title,
-          billable: clients.find((c) => c.id === clientId)?.billable ?? true,
-          position,
-        })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("tasks")
+          .insert({
+            client_id: clientId,
+            section_id: group ? group.sectionId : sectionId,
+            group_id: groupId ?? null,
+            title,
+            billable: clients.find((c) => c.id === clientId)?.billable ?? true,
+            position,
+          })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addTask", error);
@@ -1289,7 +1340,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTasks((prev) => [...prev, mapTask(data, tagNameById)]);
         });
     },
-    [supabase, tasks, taskGroups, tagNameById, clients, noteWriteError],
+    [supabase, tasks, taskGroups, tagNameById, clients, noteWriteError, counting],
   );
 
   /**
@@ -1351,22 +1402,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const tlIndex = placed.findIndex((t) => t.id === anchorTaskId);
       const tlAt = tlIndex === -1 ? -1 : tlIndex + (where === "after" ? 1 : 0);
 
-      supabase
-        .from("tasks")
-        .insert({
-          client_id: anchor.clientId,
-          section_id: anchor.sectionId,
-          group_id: anchor.groupId,
-          title,
-          billable: clients.find((c) => c.id === anchor.clientId)?.billable ?? true,
-          position: listAt + 1,
-          ...(tlAt === -1 ? {} : { timeline_position: tlAt + 1 }),
-          ...(opts?.copyDates
-            ? { start_date: anchor.startDate ?? null, due_date: anchor.dueDate ?? null }
-            : {}),
-        })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("tasks")
+          .insert({
+            client_id: anchor.clientId,
+            section_id: anchor.sectionId,
+            group_id: anchor.groupId,
+            title,
+            billable: clients.find((c) => c.id === anchor.clientId)?.billable ?? true,
+            position: listAt + 1,
+            ...(tlAt === -1 ? {} : { timeline_position: tlAt + 1 }),
+            ...(opts?.copyDates
+              ? { start_date: anchor.startDate ?? null, due_date: anchor.dueDate ?? null }
+              : {}),
+          })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addTaskNear", error);
@@ -1421,18 +1474,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         });
     },
-    [supabase, tasks, clients, tagNameById, noteWriteError, wrote],
+    [supabase, tasks, clients, tagNameById, noteWriteError, wrote, counting],
   );
 
   const addSection = useCallback(
     (clientId: string, name: string) => {
       const position =
         Math.max(0, ...sections.filter((s) => s.clientId === clientId).map((s) => s.position)) + 1;
-      supabase
-        .from("sections")
-        .insert({ client_id: clientId, name, position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("sections")
+          .insert({ client_id: clientId, name, position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addSection", error);
@@ -1441,7 +1496,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setSections((prev) => [...prev, mapSection(data)]);
         });
     },
-    [supabase, sections, noteWriteError],
+    [supabase, sections, noteWriteError, counting],
   );
 
   /**
@@ -1674,11 +1729,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .filter((g) => g.clientId === clientId && g.sectionId === sectionId)
             .map((g) => g.position),
         ) + 1;
-      const { data, error } = await supabase
-        .from("task_groups")
-        .insert({ client_id: clientId, section_id: sectionId, name, position })
-        .select()
-        .single();
+      const { data, error } = await counting(
+        supabase
+          .from("task_groups")
+          .insert({ client_id: clientId, section_id: sectionId, name, position })
+          .select()
+          .single(),
+      );
       if (error) {
         noteWriteError("addTaskGroup", error);
         return null;
@@ -1687,7 +1744,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTaskGroups((prev) => [...prev, created]);
       return created;
     },
-    [supabase, taskGroups, noteWriteError],
+    [supabase, taskGroups, noteWriteError, counting],
   );
 
   /**
@@ -1843,11 +1900,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addClient = useCallback(
     async (name: string, color: string, billingPeriodNote?: string): Promise<Client | null> => {
-      const { data, error } = await supabase
-        .from("clients")
-        .insert({ name, color, billing_period_note: billingPeriodNote ?? "" })
-        .select()
-        .single();
+      const { data, error } = await counting(
+        supabase
+          .from("clients")
+          .insert({ name, color, billing_period_note: billingPeriodNote ?? "" })
+          .select()
+          .single(),
+      );
       if (error) {
         noteWriteError("addClient", error);
         return null;
@@ -1856,7 +1915,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setClients((prev) => [...prev, client]);
       return client;
     },
-    [supabase, noteWriteError],
+    [supabase, noteWriteError, counting],
   );
 
   const patchProfileLocal = useCallback((profileId: string, patch: Partial<Profile>) => {
@@ -1915,11 +1974,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addTaskType = useCallback(
     (name: string, color: string) => {
       const position = Math.max(0, ...taskTypes.map((t) => t.position)) + 1;
-      supabase
-        .from("task_types")
-        .insert({ name, color, position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("task_types")
+          .insert({ name, color, position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addTaskType", error);
@@ -1928,7 +1989,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTaskTypes((prev) => [...prev, mapTaskType(data)]);
         });
     },
-    [supabase, taskTypes, noteWriteError],
+    [supabase, taskTypes, noteWriteError, counting],
   );
 
   const updateTaskType = useCallback(
@@ -1959,11 +2020,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addTag = useCallback(
     (name: string, color: string) => {
       const position = Math.max(0, ...tagRows.map((_, i) => i + 1)) + 1;
-      supabase
-        .from("tags")
-        .insert({ name, color, position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("tags")
+          .insert({ name, color, position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addTag", error);
@@ -1972,7 +2035,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTagRows((prev) => [...prev, mapTag(data)]);
         });
     },
-    [supabase, tagRows, noteWriteError],
+    [supabase, tagRows, noteWriteError, counting],
   );
 
   const updateTag = useCallback(
@@ -2105,20 +2168,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .filter((e) => e.columnId === input.columnId && e.date === input.date)
             .map((e) => e.position),
         ) + 1;
-      supabase
-        .from("plan_entries")
-        .insert({
-          date: input.date,
-          column_id: input.columnId,
-          position,
-          type: input.type,
-          task_id: input.taskId ?? null,
-          text: input.text ?? "",
-          client_id: input.clientId ?? null,
-          absence_type: input.absenceType ?? null,
-        })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("plan_entries")
+          .insert({
+            date: input.date,
+            column_id: input.columnId,
+            position,
+            type: input.type,
+            task_id: input.taskId ?? null,
+            text: input.text ?? "",
+            client_id: input.clientId ?? null,
+            absence_type: input.absenceType ?? null,
+          })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addPlanEntry", error);
@@ -2150,7 +2215,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
     },
-    [supabase, planEntries, record, asOneStep, restorePlanEntry, noteWriteError, plannedTaskToReopen],
+    [supabase, planEntries, record, asOneStep, restorePlanEntry, noteWriteError, plannedTaskToReopen, counting],
   );
 
   const updatePlanEntry = useCallback(
@@ -2297,11 +2362,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     (name: string) => {
       const memberCols = planColumns.filter((c) => c.type !== "waiting_list");
       const position = Math.max(0, ...memberCols.map((c) => c.position)) + 1;
-      supabase
-        .from("plan_columns")
-        .insert({ name, type: "member", position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("plan_columns")
+          .insert({ name, type: "member", position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addPlanColumn", error);
@@ -2310,7 +2377,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setPlanColumns((prev) => [...prev, mapPlanColumn(data)]);
         });
     },
-    [supabase, planColumns, noteWriteError],
+    [supabase, planColumns, noteWriteError, counting],
   );
 
   const updatePlanColumn = useCallback(
@@ -2384,11 +2451,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       };
       setComments((prev) => [...prev, optimistic]);
-      supabase
-        .from("task_comments")
-        .insert({ task_id: taskId, user_id: currentUserId, body })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("task_comments")
+          .insert({ task_id: taskId, user_id: currentUserId, body })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addComment", error);
@@ -2397,7 +2466,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setComments((prev) => prev.map((c) => (c.id === optimistic.id ? mapComment(data) : c)));
         });
     },
-    [supabase, currentUserId, noteWriteError],
+    [supabase, currentUserId, noteWriteError, counting],
   );
 
   /**
@@ -2502,18 +2571,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       date?: string,
       userId?: string,
     ): Promise<TimeEntry | null> => {
-      const { data, error } = await supabase
-        .from("time_entries")
-        .insert({
-          task_id: taskId,
-          // admins may log hours for another member (e.g. from the timesheet day popup)
-          user_id: userId ?? currentUserId,
-          date: date ?? toISODate(new Date()),
-          minutes,
-          description,
-        })
-        .select()
-        .single();
+      const { data, error } = await counting(
+        supabase
+          .from("time_entries")
+          .insert({
+            task_id: taskId,
+            // admins may log hours for another member (e.g. from the timesheet day popup)
+            user_id: userId ?? currentUserId,
+            date: date ?? toISODate(new Date()),
+            minutes,
+            description,
+          })
+          .select()
+          .single(),
+      );
       if (error) {
         noteWriteError("addTimeEntry", error);
         return null;
@@ -2526,7 +2597,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       });
       return entry;
     },
-    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError],
+    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError, counting],
   );
 
   /**
@@ -2660,19 +2731,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     (input: Omit<BillingPeriod, "id" | "position" | "paid">) => {
       const position =
         Math.max(0, ...billingPeriods.filter((p) => p.clientId === input.clientId).map((p) => p.position)) + 1;
-      supabase
-        .from("client_billing_periods")
-        .insert({
-          client_id: input.clientId,
-          label: input.label,
-          date_from: input.dateFrom,
-          date_to: input.dateTo,
-          hour_cap: input.hourCap,
-          advance_hours: input.advanceHours,
-          position,
-        })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("client_billing_periods")
+          .insert({
+            client_id: input.clientId,
+            label: input.label,
+            date_from: input.dateFrom,
+            date_to: input.dateTo,
+            hour_cap: input.hourCap,
+            advance_hours: input.advanceHours,
+            position,
+          })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addBillingPeriod", error);
@@ -2688,7 +2761,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
     },
-    [supabase, billingPeriods, record, restoreBillingPeriod, noteWriteError],
+    [supabase, billingPeriods, record, restoreBillingPeriod, noteWriteError, counting],
   );
 
   const updateBillingPeriod = useCallback(
@@ -2739,11 +2812,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const addDayState = useCallback(
     (dateFrom: string, dateTo: string, label: string) => {
-      supabase
-        .from("plan_day_states")
-        .insert({ date_from: dateFrom, date_to: dateTo, label, created_by: currentUserId })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("plan_day_states")
+          .insert({ date_from: dateFrom, date_to: dateTo, label, created_by: currentUserId })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addDayState", error);
@@ -2752,7 +2827,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setDayStates((prev) => [...prev, mapDayState(data)]);
         });
     },
-    [supabase, currentUserId, noteWriteError],
+    [supabase, currentUserId, noteWriteError, counting],
   );
 
   const deleteDayState = useCallback(
@@ -2770,11 +2845,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addDevItem = useCallback(
     (text: string) => {
       const position = Math.max(0, ...devItems.map((d) => d.position)) + 1;
-      supabase
-        .from("dev_items")
-        .insert({ text, position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("dev_items")
+          .insert({ text, position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addDevItem", error);
@@ -2783,7 +2860,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setDevItems((prev) => [...prev, mapDevItem(data)]);
         });
     },
-    [supabase, devItems, noteWriteError],
+    [supabase, devItems, noteWriteError, counting],
   );
 
   const updateDevItem = useCallback(
@@ -2877,11 +2954,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
    */
   const addTimelineMark = useCallback(
     (clientId: string, onDate: string, title: string) => {
-      supabase
-        .from("timeline_marks")
-        .insert({ client_id: clientId, on_date: onDate, title })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("timeline_marks")
+          .insert({ client_id: clientId, on_date: onDate, title })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addTimelineMark", error);
@@ -2890,7 +2969,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setTimelineMarks((prev) => [...prev, mapTimelineMark(data)]);
         });
     },
-    [supabase, noteWriteError],
+    [supabase, noteWriteError, counting],
   );
 
   const updateTimelineMark = useCallback(
@@ -2952,11 +3031,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         "taskId" in owner ? l.taskId === owner.taskId : l.clientId === owner.clientId,
       );
       const position = Math.max(0, ...siblings.map((l) => l.position)) + 1;
-      supabase
-        .from("links")
-        .insert({ ...scope, title, url, position })
-        .select()
-        .single()
+      counting(
+        supabase
+          .from("links")
+          .insert({ ...scope, title, url, position })
+          .select()
+          .single(),
+      )
         .then(({ data, error }) => {
           if (error) {
             noteWriteError("addLink", error);
@@ -2965,7 +3046,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setLinks((prev) => [...prev, mapLink(data)]);
         });
     },
-    [supabase, links, noteWriteError],
+    [supabase, links, noteWriteError, counting],
   );
 
   const updateLink = useCallback(
@@ -3052,21 +3133,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const attachments = submission ? [...submission.files.map((f) => ({ title: f.name, url: f.url })), ...submission.links] : [];
       const brief = submission ? assembleTaskBrief(submission.answers) : request.brief;
 
-      const { data: task, error } = await supabase
-        .from("tasks")
-        .insert({
-          client_id: input.clientId,
-          section_id: input.sectionId,
-          title: input.title,
-          brief,
-          status: "todo",
-          assignee_id: input.assigneeId,
-          due_date: input.dueDate,
-          billable: clients.find((c) => c.id === input.clientId)?.billable ?? true,
-          estimate_hours: input.estimateHours,
-        })
-        .select()
-        .single();
+      const { data: task, error } = await counting(
+        supabase
+          .from("tasks")
+          .insert({
+            client_id: input.clientId,
+            section_id: input.sectionId,
+            title: input.title,
+            brief,
+            status: "todo",
+            assignee_id: input.assigneeId,
+            due_date: input.dueDate,
+            billable: clients.find((c) => c.id === input.clientId)?.billable ?? true,
+            estimate_hours: input.estimateHours,
+          })
+          .select()
+          .single(),
+      );
       if (error) {
         noteWriteError("approveRequest", error);
         throw new Error(error.message);
@@ -3091,18 +3174,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // wouldn't insert would leave the queue and the task list disagreeing.
       // The URLs are still in the request's own brief if anything goes wrong.
       if (attachments.length) {
-        const { data: rows, error: linkError } = await supabase
-          .from("links")
-          .insert(
-            attachments.map((a, i) => ({
-              task_id: task.id,
-              client_id: null,
-              title: a.title,
-              url: a.url,
-              position: i + 1,
-            })),
-          )
-          .select();
+        const { data: rows, error: linkError } = await counting(
+          supabase
+            .from("links")
+            .insert(
+              attachments.map((a, i) => ({
+                task_id: task.id,
+                client_id: null,
+                title: a.title,
+                url: a.url,
+                position: i + 1,
+              })),
+            )
+            .select(),
+        );
         if (linkError) noteWriteError("approveRequest links", linkError);
         else if (rows) setLinks((prev) => [...prev, ...rows.map(mapLink)]);
       }
@@ -3115,7 +3200,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       );
       return task.id as string;
     },
-    [supabase, taskRequests, tagNameById, clients, noteWriteError],
+    [supabase, taskRequests, tagNameById, clients, noteWriteError, counting],
   );
 
   /**

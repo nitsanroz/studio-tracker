@@ -506,12 +506,20 @@ export function TaskPanel() {
   const overBudget = task.estimateHours != null && doneMinutes / 60 > task.estimateHours;
   const activeProfiles = profiles.filter((p) => p.active);
 
+  /**
+   * ⚠️ Closing the pane commits a link left typed into the inline form below —
+   * "+ Add link" opens it, and until v1.21.1 clicking the backdrop or the ✕ just
+   * unmounted it and threw the contents away. Same rule, and same reason, as
+   * `BriefModal.close`.
+   */
+  function closePane() {
+    linksRef.current?.commitPending();
+    openTask(null);
+  }
+
   return (
     <>
-      <div
-        className="fixed inset-0 z-40 bg-black/20"
-        onClick={() => openTask(null)}
-      />
+      <div className="fixed inset-0 z-40 bg-black/20" onClick={closePane} />
       {/* Full screen is the same panel widened to the viewport — not a second
           layout — so every control below behaves identically in both modes. */}
       <div
@@ -577,7 +585,7 @@ export function TaskPanel() {
                 {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
               <button
-                onClick={() => openTask(null)}
+                onClick={closePane}
                 title="Close"
                 className="rounded-md px-2 py-1 text-muted hover:bg-background"
               >
