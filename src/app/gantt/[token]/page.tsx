@@ -15,11 +15,16 @@ import {
  * the current one; so it re-reads on every request.
  *
  * ⚠️ The narrowing happens HERE, in the `select`, not in the view. LOGGED
- * hours, status and assignees are never fetched, so they cannot leak through a
- * prop, a serialised payload or a future edit to the component. What the client
- * gets is: section names, task names, dates, the type colour, and the BUDGET —
- * budget is the scope that was agreed, which the client already knows; what
- * they must not see is how much of it has been spent.
+ * hours, status, assignees AND THE BUDGET are never fetched, so they cannot
+ * leak through a prop, a serialised payload or a future edit to the component.
+ * What the client gets is: section names, task names, dates and the type
+ * colour. Nothing about hours in either direction.
+ *
+ * ⚠️ `estimate_hours` used to be selected and shown as a Budget column, on the
+ * argument that the agreed scope is something the client already knows. Nitsan
+ * dropped it (2026-08-19): a schedule answers WHEN, and putting a number of
+ * hours beside every row invites the one question the chart cannot answer —
+ * how many of them are gone. Removed from the QUERY, not just the view.
  */
 export const dynamic = "force-dynamic";
 
@@ -79,7 +84,7 @@ export default async function PublicGanttPage({
     sb
       .from("tasks")
       .select(
-        "id, title, section_id, group_id, start_date, due_date, type_id, timeline_position, status, estimate_hours",
+        "id, title, section_id, group_id, start_date, due_date, type_id, timeline_position, status",
       )
       .eq("client_id", link.client_id)
       .not("due_date", "is", null)
@@ -115,7 +120,6 @@ export default async function PublicGanttPage({
       typeName: type?.name ?? null,
       typeColor: type?.color ?? null,
       order: (t.timeline_position as number | null) ?? null,
-      budgetHours: (t.estimate_hours as number | null) ?? null,
     };
   });
 

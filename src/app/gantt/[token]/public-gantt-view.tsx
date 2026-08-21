@@ -42,8 +42,6 @@ export interface PublicGanttTask {
   typeName: string | null;
   typeColor: string | null;
   order: number | null;
-  /** Budgeted hours — the agreed scope, never the hours spent against it. */
-  budgetHours: number | null;
 }
 
 /** A subject group and the tasks in it (0027). */
@@ -77,25 +75,6 @@ const RULER_H = 28;
 const blockKey = (groupId: string) => `g:${groupId}`;
 
 /**
- * A container's budget: the sum of the budgets its tasks carry, or "–" when not
- * one of them has one.
- *
- * ⚠️ BUDGET ONLY. There is deliberately no hours total anywhere on this page —
- * the logged figures are never fetched (see the `select` in page.tsx), and a
- * summary row is exactly where someone would later be tempted to add one.
- */
-function sumBudget(rows: { task: PublicGanttTask }[]): string {
-  let total = 0;
-  let any = false;
-  for (const r of rows) {
-    if (r.task.budgetHours == null) continue;
-    total += r.task.budgetHours;
-    any = true;
-  }
-  return any ? `${Math.round(total * 100) / 100}h` : "–";
-}
-
-/**
  * The pinned column is the task's name and its budget. There is no Dates column:
  * it repeated, in text, what the bar beside it already says in position and
  * length, and it was the widest thing competing with the chart for a screen the
@@ -108,8 +87,9 @@ const NAME_W = 260;
  *  every screen, and it scrolls. */
 const NAME_W_NARROW = 150;
 const NARROW_PX = 640;
-const BUDGET_W = 56;
 const FALLBACK = "#0b43ed";
+/** The tail under today's date chip, pointing down at its line. */
+const TODAY_TAIL = 5;
 
 /** Server-rendered wide, corrected on mount — the width is a browser fact. */
 function useStickyWidth() {
@@ -121,7 +101,7 @@ function useStickyWidth() {
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
   }, []);
-  return nameW + BUDGET_W;
+  return nameW;
 }
 
 /**
@@ -130,10 +110,10 @@ function useStickyWidth() {
  * Same geometry as the studio's Timeline — `@/lib/gantt` is the single source
  * for both, so a bar cannot land on a different day here — and deliberately
  * less of everything else. There are no LOGGED hours, no status, no assignees
- * and no controls beyond the zoom: the page never receives those fields (see
+ * and no hours in either direction: the page never receives those fields (see
  * the `select` in page.tsx), so there is nothing to hide, only nothing to show.
- * The budget IS shown — it is the scope the client agreed to, and it says
- * nothing about how much of it has been used.
+ * The controls it DOES have are the zoom and the type filter — both are ways of
+ * reading the same plan, neither reveals anything the payload does not carry.
  */
 export function PublicGanttView({
   clientName,
@@ -160,12 +140,39 @@ export function PublicGanttView({
     if (window.innerWidth < NARROW_PX) setZoom("week");
   }, []);
   const scroller = useRef<HTMLDivElement>(null);
+  /**
+   * Seams, ported from the studio's own chart so the two read alike. The
+   * calendar scrolls sideways UNDER the pinned name column and the rows scroll
+   * up under the ruler, with nothing to say so. Each edge stays silent until
+   * there is actually something behind it, which makes the shadow information
+   * rather than decoration. Only a boundary CROSSING re-renders.
+   */
+  const [shadow, setShadow] = useState({ x: false, y: false });
+  function onScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const x = el.scrollLeft > 0;
+    const y = el.scrollTop > 0;
+    setShadow((s) => (s.x === x && s.y === y ? s : { x, y }));
+  }
   const centred = useRef(false);
   const [tip, setTip] = useState<{
     x: number;
     y: number;
     task: PublicGanttTask;
   } | null>(null);
+  /**
+   * Type names the reader has switched OFF. Held as the hidden set rather than
+   * the shown one so the default — nothing hidden — needs no seeding from the
+   * data, and a type appearing in a later republish is visible without asking.
+   */
+  const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
+  /**
+   * Colour the bars by type, or draw them plain. The studio's own chart has the
+   * same switch (`plainBars`, "🎨 Colour by type" in its Show menu) — same
+   * default, same plain rendering, so the two charts cannot disagree about what
+   * a plain bar looks like.
+   */
+  const [colourTypes, setColourTypes] = useState(true);
   /** Section keys the reader has folded away. */
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const fold = (key: string) =>
@@ -175,6 +182,44 @@ export function PublicGanttView({
       else next.add(key);
       return next;
     });
+
+  /**
+   * The types actually in THIS plan, first-seen order, each with its colour —
+   * the legend and the filter are the same control, because a colour key you
+   * cannot act on and a filter with no colours are both half a thing.
+   * ⚠️ Untyped tasks get a real chip ("Other"). Without one they would be
+   * unfilterable, and switching every named type off would leave a chart still
+   * showing rows with nothing on screen explaining why.
+   */
+  const types = useMemo(() => {
+    const seen = new Map<string, { key: string; label: string; color: string }>();
+    for (const g of groups)
+      for (const t of [...g.blocks.flatMap((b) => b.tasks), ...g.tasks]) {
+        const key = t.typeName ?? "";
+        if (!seen.has(key))
+          seen.set(key, {
+            key,
+            label: t.typeName ?? "Other",
+            color: t.typeColor ?? FALLBACK,
+          });
+      }
+    return [...seen.values()];
+  }, [groups]);
+
+  /** The plan with switched-off types dropped, containers that empty out included. */
+  const shown = useMemo(() => {
+    if (!hiddenTypes.size) return groups;
+    const keep = (t: PublicGanttTask) => !hiddenTypes.has(t.typeName ?? "");
+    return groups
+      .map((g) => ({
+        ...g,
+        tasks: g.tasks.filter(keep),
+        blocks: g.blocks
+          .map((b) => ({ ...b, tasks: b.tasks.filter(keep) }))
+          .filter((b) => b.tasks.length > 0),
+      }))
+      .filter((g) => g.tasks.length > 0 || g.blocks.length > 0);
+  }, [groups, hiddenTypes]);
 
   const today = useMemo(() => {
     const n = new Date();
@@ -203,7 +248,7 @@ export function PublicGanttView({
         hasStart: !!t.startDate,
       };
     };
-    return groups.map((g) => ({
+    return shown.map((g) => ({
       ...g,
       // Every group here holds at least one dated task — the server drops the
       // empty ones — so the span below always has something to measure.
@@ -218,7 +263,7 @@ export function PublicGanttView({
       }),
       rows: g.tasks.map(resolve),
     }));
-  }, [groups]);
+  }, [shown]);
 
   const all = rows.flatMap((g) => [...g.blocks.flatMap((b) => b.rows), ...g.rows]);
 
@@ -300,14 +345,6 @@ export function PublicGanttView({
           <span className="bidi-auto min-w-0 flex-1 truncate text-xs" title={r.task.title}>
             {r.task.title}
           </span>
-          {/* The budget, and only the budget: what was agreed, not what has been
-              spent against it. */}
-          <span
-            className="shrink-0 pr-3 text-right text-[11px] tabular-nums text-muted"
-            style={{ width: BUDGET_W }}
-          >
-            {r.task.budgetHours != null ? `${r.task.budgetHours}h` : "–"}
-          </span>
         </div>
         <div className="relative h-full shrink-0" style={{ width: chartW }}>
           {r.hasStart ? (
@@ -319,7 +356,10 @@ export function PublicGanttView({
                 width: barW,
                 height: BAR_H,
                 borderRadius: BAR_R,
-                backgroundColor: `${color}52`,
+                backgroundColor: colourTypes ? `${color}52` : "var(--color-surface)",
+                boxShadow: colourTypes
+                  ? undefined
+                  : "inset 0 0 0 1px var(--color-border-strong)",
               }}
             >
               {barW >= BAR_LABEL_MIN_PX && (
@@ -336,7 +376,10 @@ export function PublicGanttView({
                 left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
                 width: DIAMOND,
                 height: DIAMOND,
-                backgroundColor: color,
+                backgroundColor: colourTypes ? color : "var(--color-surface)",
+                boxShadow: colourTypes
+                  ? undefined
+                  : "inset 0 0 0 1px var(--color-border-strong)",
               }}
             />
           )}
@@ -425,13 +468,36 @@ export function PublicGanttView({
             </button>
           ))}
         </div>
-        {/* Whose plan this is. The mask + `bg-brand` is how every other public
-            page (intake, password reset) draws the wordmark. */}
-        <span
-          className="brand-wordmark w-24 shrink-0 justify-self-end bg-brand sm:w-28"
-          role="img"
-          aria-label="Studio&more"
-        />
+        {/* Colour switch then wordmark, both in the header's right-hand track.
+            The switch belongs up here rather than beside the chips below: it
+            governs how the CHART IS DRAWN, the same kind of setting as the zoom,
+            while the chips are about which work is on screen.
+            The mask + `bg-brand` is how every other public page (intake,
+            password reset) draws the wordmark. */}
+        <div className="flex items-center gap-3 justify-self-end">
+          <button
+            onClick={() => setColourTypes((v) => !v)}
+            aria-pressed={colourTypes}
+            title={
+              colourTypes
+                ? "Draw the bars plain, without type colours"
+                : "Colour the bars by type of work"
+            }
+            className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors sm:min-h-0 ${
+              colourTypes
+                ? "border-brand bg-brand-soft text-brand-dark"
+                : "border-border bg-surface text-muted hover:text-foreground"
+            }`}
+          >
+            <span aria-hidden>🎨</span>
+            Color types
+          </button>
+          <span
+            className="brand-wordmark w-24 shrink-0 bg-brand sm:w-28"
+            role="img"
+            aria-label="Studio&more"
+          />
+        </div>
       </header>
 
       {/* The card TAKES the height the header and footer leave, rather than
@@ -440,22 +506,50 @@ export function PublicGanttView({
           what lets a flex child shrink below its content so its own scroller
           absorbs the overflow. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface">
-        <div ref={onScrollerReady} className="min-h-0 flex-1 overflow-auto">
+        <div
+          ref={onScrollerReady}
+          onScroll={onScroll}
+          className="min-h-0 flex-1 overflow-auto"
+        >
           <div className="relative" style={{ width: STICKY_W + chartW }}>
+            {/* ⚠️ ONE full-height gradient stuck at the pinned column's edge, NOT a
+                box-shadow per row: on the studio's chart the per-row version came
+                out broken by every row border it crossed. z-[24] puts it over the
+                rows and under the pinned column (z-20 cells sit in their own
+                stacking contexts) and the ruler. */}
+            {shadow.x && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-[24] w-full">
+                <div
+                  className="sticky h-full w-2.5"
+                  style={{
+                    left: STICKY_W,
+                    background:
+                      "linear-gradient(to right, rgba(0,0,0,0.075), rgba(0,0,0,0))",
+                  }}
+                />
+              </div>
+            )}
             {/* header */}
-            <div className="sticky top-0 z-30 border-b border-border bg-surface">
+            <div
+              className={`sticky top-0 z-30 border-b border-border bg-surface ${
+                // the negative spread confines it to the bottom edge; without it
+                // the shadow smears sideways across the column titles too
+                shadow.y ? "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]" : ""
+              }`}
+            >
               <div className="relative flex h-7 items-center">
                 <span
                   className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface pl-3 text-[10px] font-medium uppercase tracking-wide text-faint"
                   style={{ width: STICKY_W }}
                 >
                   <span className="flex-1">Task</span>
-                  <span className="pr-3 text-right" style={{ width: BUDGET_W }}>
-                    Budget
-                  </span>
                 </span>
                 <span className="relative h-full flex-1 border-l border-border">
-                  {ticks.map((t) => (
+                  {ticks.map((t) => {
+                    const isToday =
+                      zoom === "day" &&
+                      Math.round(t.left / pxPerDay) === daysBetween(from, today);
+                    return (
                     <span
                       key={t.left}
                       className={`absolute top-0 flex h-full items-center truncate px-1 text-[10px] ${
@@ -473,9 +567,31 @@ export function PublicGanttView({
                       }`}
                       style={{ left: t.left, width: t.width }}
                     >
-                      {t.label}
+                      {/* Today is ONE object, as on the studio's chart: a tag
+                          holding the date, a tail pointing down out of it, and
+                          the line continuing from the tail into the chart. The
+                          tail is why it lives in the RULER rather than the
+                          chart — the date and the pointer have to be the same
+                          piece, or they read as two markers for one day. */}
+                      {isToday ? (
+                        <span className="relative rounded-md bg-foreground px-1.5 py-0.5 text-white">
+                          {t.label}
+                          <span
+                            className="absolute left-1/2 top-full -translate-x-1/2"
+                            style={{
+                              borderLeft: `${TODAY_TAIL}px solid transparent`,
+                              borderRight: `${TODAY_TAIL}px solid transparent`,
+                              borderTop: `${TODAY_TAIL}px solid var(--foreground)`,
+                            }}
+                            aria-hidden
+                          />
+                        </span>
+                      ) : (
+                        t.label
+                      )}
                     </span>
-                  ))}
+                    );
+                  })}
                 </span>
               </div>
             </div>
@@ -486,6 +602,18 @@ export function PublicGanttView({
               style={{ left: STICKY_W, width: chartW, height: bodyH }}
               aria-hidden
             >
+              {/* Time that has already gone: a wash from the start of the range up
+                  to the today line, which is where it ENDS — so that line reads
+                  as the edge of the past rather than as one more vertical in a
+                  chart full of them. 5% reads at a glance without competing with
+                  a bar, and the weekend shading beneath is 4.5%, so a past
+                  weekend comes out a little darker still, which is true. */}
+              {todayLeft > 0 && (
+                <div
+                  className="absolute top-0 z-0 h-full bg-foreground/[0.05]"
+                  style={{ left: 0, width: Math.min(todayLeft, chartW) }}
+                />
+              )}
               {offCols.map((left) => (
                 <div
                   key={left}
@@ -506,9 +634,13 @@ export function PublicGanttView({
                   style={{ left: t.left }}
                 />
               ))}
+              {/* ⚠️ BLACK, not brand blue — the studio's chart made this change in
+                  v1.11.0 for a reason that applies here identically: with a type
+                  colour on every bar, a blue vertical reads as one more category
+                  rather than as today. */}
               {todayLeft >= 0 && todayLeft <= chartW && (
                 <div
-                  className="absolute top-0 h-full border-l-2 border-brand/70"
+                  className="absolute top-0 h-full border-l-2 border-foreground"
                   style={{ left: todayLeft }}
                 />
               )}
@@ -627,18 +759,6 @@ export function PublicGanttView({
                       <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
                         {own.length}
                       </span>
-                      {/* The rolled-up BUDGET, in the tasks' own column — the
-                          scope agreed for this whole workstream. ⚠️ Budget only,
-                          never hours logged: the page never receives those, and a
-                          container is where a total would be most tempting.
-                          A blank column beside rows that all carry a number reads
-                          as missing data, which is why this is here at all. */}
-                      <span
-                        className="shrink-0 pr-3 text-right text-[11px] font-normal tabular-nums text-muted"
-                        style={{ width: BUDGET_W }}
-                      >
-                        {sumBudget(own)}
-                      </span>
                     </button>
                     <div
                       className="relative h-full shrink-0"
@@ -718,12 +838,6 @@ export function PublicGanttView({
                               <span className="shrink-0 text-[11px] font-normal tabular-nums text-faint">
                                 {b.rows.length}
                               </span>
-                              <span
-                                className="shrink-0 pr-3 text-right text-[11px] font-normal tabular-nums text-muted"
-                                style={{ width: BUDGET_W }}
-                              >
-                                {sumBudget(b.rows)}
-                              </span>
                             </button>
                             <div
                               className="relative h-full shrink-0"
@@ -796,10 +910,95 @@ export function PublicGanttView({
         </div>
       </div>
 
-      <p className="text-xs text-faint">
-        Open work only, and only what has a date. A diamond is a deadline with
-        no start date yet.
-      </p>
+      {/* One row under the chart: the footnote keeps the left, the type filter
+          takes the right. Below the table rather than above it, per Nitsan — the
+          chart is what the client came for, and a row of controls between the
+          header and the plan pushes the plan down for a filter most readers will
+          never touch. A colour key also makes more sense AFTER the thing it
+          explains. */}
+      <div className="flex flex-wrap-reverse items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-xs text-faint">
+          {shown.length === 0 ? (
+            // Switching every type off is allowed — refusing the last one would be
+            // a control that silently stops working. But a blank chart has to say
+            // why, or it reads as "there is no work" rather than "you hid it".
+            <>Every type is switched off — turn one back on to see the plan.</>
+          ) : (
+            <>
+              Open work only, and only what has a date. A diamond is a deadline
+              with no start date yet.
+            </>
+          )}
+        </p>
+        {/* The colour key AND the filter, one control. Laid out SPREAD rather than
+            folded into a menu: on the studio's own chart these live behind a "Show"
+            dropdown, which is right there because that page has a dozen controls
+            competing — here there are two, the reader is a client seeing this once
+            a week, and a filter they have to discover inside a menu is one they
+            will not use. Right-aligned under the header, so it reads as belonging
+            to the chart's top edge; wraps on a phone.
+            Only rendered past ONE type: a single-type plan needs neither a key
+            (every bar is that colour) nor a filter (the only thing to switch off
+            is everything).
+            ⚠️ No "Show all" reset, per Nitsan — with every chip on screen carrying
+            its own state, the way back is the chip you switched off, and a reset
+            that only appears once you have used the control is one more thing to
+            read for a reader who is here for the dates. */}
+        {types.length > 1 && (
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+              {/* Leftmost, per Nitsan — a reset belongs before the things it resets,
+                and it only exists once there is something to undo. */}
+            {hiddenTypes.size > 0 && (
+              <button
+                onClick={() => setHiddenTypes(new Set())}
+                className="min-h-11 rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-foreground sm:min-h-0"
+              >
+                Show all
+              </button>
+            )}
+            {types.map((t) => {
+              const on = !hiddenTypes.has(t.key);
+              return (
+                <button
+                  key={t.key}
+                  onClick={() =>
+                    setHiddenTypes((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(t.key)) next.delete(t.key);
+                      else next.add(t.key);
+                      return next;
+                    })
+                  }
+                  aria-pressed={on}
+                  title={on ? `Hide ${t.label}` : `Show ${t.label}`}
+                  className={`flex min-h-11 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:min-h-0 ${
+                    on
+                      ? "border-border bg-surface text-foreground"
+                      : "border-dashed border-border bg-transparent text-faint"
+                  }`}
+                >
+                  {/* Filled when shown, hollow when hidden — the swatch carries the
+                      state as well as the colour, so the chip reads at a glance.
+                      ⚠️ Only while the chart is actually USING the colours: with
+                      "Color types" off, a coloured key beside plain bars claims a
+                      mapping the chart is not making. The chip stays either way,
+                      because it is still the filter; it loses only its swatch. */}
+                  {colourTypes && (
+                    <span
+                      className="size-2.5 shrink-0 rounded-full border-2"
+                      style={{
+                        borderColor: t.color,
+                        backgroundColor: on ? t.color : "transparent",
+                      }}
+                    />
+                  )}
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {tip && <Tip x={tip.x} y={tip.y} task={tip.task} off={off} />}
     </main>
@@ -852,14 +1051,6 @@ function Tip({
             {dateRangeLabel(start, due, hasStart)}
           </span>
         </div>
-        {task.budgetHours != null && (
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="shrink-0 text-faint">Budget</span>
-            <span className="truncate tabular-nums text-foreground">
-              {task.budgetHours}h
-            </span>
-          </div>
-        )}
         {hasStart && (
           <div className="flex items-baseline justify-between gap-3">
             <span className="shrink-0 text-faint">Duration</span>
