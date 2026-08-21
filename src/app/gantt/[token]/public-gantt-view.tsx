@@ -168,7 +168,7 @@ export function PublicGanttView({
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
   /**
    * Colour the bars by type, or draw them plain. The studio's own chart has the
-   * same switch (`plainBars`, "🎨 Colour by type" in its Show menu) — same
+   * same switch (`plainBars`, "🎨 Color by type" in its Show menu) — same
    * default, same plain rendering, so the two charts cannot disagree about what
    * a plain bar looks like.
    */
@@ -444,7 +444,7 @@ export function PublicGanttView({
               {clientIcon || clientName[0]}
             </span>
           )}
-          <span className="flex min-w-0 flex-col">
+          <span className="flex min-w-0 flex-1 flex-col">
             <h1 className="truncate text-2xl font-bold leading-tight tracking-tight">
               {clientName}
             </h1>
@@ -452,8 +452,28 @@ export function PublicGanttView({
               Schedule · updates automatically
             </span>
           </span>
+          {/* ⚠️ A SECOND instance of the wordmark, phone-only, and the duplication is
+              deliberate. On a phone the header has to be two rows — name+mark, then
+              zoom+switch — because zoom (154px) + switch (112px) + mark (96px) will
+              not fit 343px on one line. Moving the single mark into the name row
+              instead would mean one DOM order serving both a 2-column mobile grid
+              and the desktop 3-track row that CENTRES the zoom, and the zoom loses
+              its centring. It is a CSS-mask span: no image, no request. */}
+          {/* ⚠️ The show/hide goes on a WRAPPER, never on `.brand-wordmark` itself:
+              that class sets `display: inline-block` in globals.css, which is
+              UNLAYERED, and Tailwind emits `hidden`/`sm:block` inside
+              `@layer utilities` — so an unlayered rule wins whatever the
+              specificity and the mark simply refuses to hide. Same precedence
+              trap as the 16px form-field rule. */}
+          <span className="shrink-0 sm:hidden">
+            <span
+              className="brand-wordmark w-20 bg-brand"
+              role="img"
+              aria-label="Studio&more"
+            />
+          </span>
         </div>
-        <div className="mr-auto flex justify-center rounded-lg border border-border bg-surface p-0.5 sm:mr-0">
+        <div className="flex shrink-0 justify-center rounded-lg border border-border bg-surface p-0.5">
           {(["day", "week", "month"] as const).map((z) => (
             <button
               key={z}
@@ -474,7 +494,7 @@ export function PublicGanttView({
             while the chips are about which work is on screen.
             The mask + `bg-brand` is how every other public page (intake,
             password reset) draws the wordmark. */}
-        <div className="flex items-center gap-3 justify-self-end">
+        <div className="ml-auto flex items-center gap-3 sm:ml-0 sm:justify-self-end">
           <button
             onClick={() => setColourTypes((v) => !v)}
             aria-pressed={colourTypes}
@@ -490,13 +510,15 @@ export function PublicGanttView({
             }`}
           >
             <span aria-hidden>🎨</span>
-            Color types
+            Color by type
           </button>
-          <span
-            className="brand-wordmark w-24 shrink-0 bg-brand sm:w-28"
-            role="img"
-            aria-label="Studio&more"
-          />
+          <span className="hidden shrink-0 sm:block">
+            <span
+              className="brand-wordmark w-24 bg-brand sm:w-28"
+              role="img"
+              aria-label="Studio&more"
+            />
+          </span>
         </div>
       </header>
 
@@ -945,13 +967,18 @@ export function PublicGanttView({
             that only appears once you have used the control is one more thing to
             read for a reader who is here for the dates. */}
         {types.length > 1 && (
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
+          // ⚠️ ONE ROW THAT SCROLLS on a phone, not three wrapped ones: seven chips
+          // wrapped cost 144px of an 812px screen, which is chart the client came
+          // for. `-mx-4 px-4` lets it bleed to the screen edges so a swipe has
+          // somewhere to go and the row does not look clipped mid-chip; from `sm`
+          // it wraps as before, where there is width to spare.
+          <div className="-mx-4 flex max-w-full items-center gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:justify-end sm:overflow-visible sm:px-0">
               {/* Leftmost, per Nitsan — a reset belongs before the things it resets,
                 and it only exists once there is something to undo. */}
             {hiddenTypes.size > 0 && (
               <button
                 onClick={() => setHiddenTypes(new Set())}
-                className="min-h-11 rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-foreground sm:min-h-0"
+                className="min-h-11 shrink-0 rounded-full px-2 py-1 text-xs font-medium text-muted hover:text-foreground sm:min-h-0"
               >
                 Show all
               </button>
@@ -971,10 +998,10 @@ export function PublicGanttView({
                   }
                   aria-pressed={on}
                   title={on ? `Hide ${t.label}` : `Show ${t.label}`}
-                  className={`flex min-h-11 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:min-h-0 ${
+                  className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:min-h-0 ${
                     on
-                      ? "border-border bg-surface text-foreground"
-                      : "border-dashed border-border bg-transparent text-faint"
+                      ? "border-border bg-surface text-foreground hover:border-border-strong hover:bg-background"
+                      : "border-dashed border-border bg-transparent text-faint hover:border-solid hover:text-muted"
                   }`}
                 >
                   {/* Filled when shown, hollow when hidden — the swatch carries the

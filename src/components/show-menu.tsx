@@ -126,7 +126,7 @@ export function ShowMenu({
           {onPlainBars && (
             <SwitchRow
               emoji="🎨"
-              label="Colour by type"
+              label="Color by type"
               checked={!plainBars}
               onChange={() => onPlainBars(!plainBars)}
             />
