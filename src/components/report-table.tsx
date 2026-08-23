@@ -237,19 +237,42 @@ export function ReportTable({
   // a spacer as wide as the table, with the two scroll positions kept in step.
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const proxyRef = useRef<HTMLDivElement | null>(null);
-  const [box, setBox] = useState({ scroll: 0, client: 0 });
+  /**
+   * ⚠️ THE MEASUREMENT IS WRITTEN STRAIGHT TO THE DOM, NOT INTO STATE, and that is
+   * the whole point of this shape.
+   *
+   * It used to be `useState` fed by the observer. A Performance capture of the
+   * client-reports page on DualBird showed the consequence:
+   *   flushPassiveEffects → … → flushSyncWorkAcrossRoots_impl → renderRootSync →
+   *   ReportTable → (effects run again) → …
+   * i.e. a passive effect setting state, React flushing that synchronously, the
+   * effects running again, forever — inside ONE long task, which is why the page
+   * wedged with no console error while the dev server sat idle. The deep
+   * `commitLayoutEffects` recursion in that capture is React walking this table's
+   * ~4,200 cell fibers on every turn of the loop.
+   *
+   * A width that only ever becomes a style has no business being state: nothing
+   * else reads it and no render depends on it. Writing it to the node cannot
+   * schedule a render, so the loop is impossible by construction rather than
+   * merely guarded against.
+   */
+  const spacerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // ResizeObserver delivers an initial callback on observe, so measuring lives
-    // entirely in the callback rather than being called straight from the effect.
-    const ro = new ResizeObserver(() =>
-      setBox({ scroll: el.scrollWidth, client: el.clientWidth }),
-    );
+    const apply = () => {
+      if (spacerRef.current) spacerRef.current.style.width = `${el.scrollWidth}px`;
+    };
+    apply();
+    // ⚠️ Observe the TABLE as well as the scroller. The scroller's own box does not
+    // change when its CONTENT gets wider, so switching from a client with 58 columns
+    // to one with 238 left the proxy bar sized for the old one — it scrolled a
+    // quarter of the table and stopped.
+    const ro = new ResizeObserver(apply);
     ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
     return () => ro.disconnect();
   }, []);
-  const overflowing = box.scroll > box.client + 1;
   const mirror = (from: HTMLDivElement | null, to: HTMLDivElement | null) => {
     if (!from || !to || to.scrollLeft === from.scrollLeft) return;
     to.scrollLeft = from.scrollLeft;
@@ -740,16 +763,17 @@ export function ReportTable({
         </tfoot>
       </table>
       </div>
-      {overflowing && (
-        <div
-          ref={proxyRef}
-          onScroll={() => mirror(proxyRef.current, scrollRef.current)}
-          className="sticky bottom-0 z-30 overflow-x-auto"
-          title="Scroll the table sideways"
-        >
-          <div style={{ width: box.scroll, height: 1 }} />
-        </div>
-      )}
+      {/* Always rendered, and its spacer is sized by the effect above rather than by
+          a render. With nothing to scroll the spacer matches the strip, so no thumb
+          is drawn and the strip is invisible. */}
+      <div
+        ref={proxyRef}
+        onScroll={() => mirror(proxyRef.current, scrollRef.current)}
+        className="sticky bottom-0 z-30 overflow-x-auto"
+        title="Scroll the table sideways"
+      >
+        <div ref={spacerRef} style={{ width: "100%", height: 1 }} />
+      </div>
       {/* Fixed, and a sibling of the scroll box rather than a child: an absolutely
           positioned bubble inside `overflow-x-auto` is clipped, which is exactly the
           bug the client tab menu had. pointer-events-none so it never eats a drag. */}
