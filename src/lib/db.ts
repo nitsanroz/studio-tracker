@@ -154,7 +154,26 @@ export async function updateWithOptional(
   return { error: retry.error ?? null, degraded: true };
 }
 
-/** Supabase caps selects at 1000 rows — page through everything. */
+/**
+ * Supabase caps selects at 1000 rows — page through everything.
+ *
+ * ⚠️ THE `order("id")` IS LOAD-BEARING, NOT TIDINESS. PostgREST adds no implicit
+ * ORDER BY, and Postgres gives no stable row order for LIMIT/OFFSET without one —
+ * so page 2, being a SEPARATE query, could return a row page 1 had already
+ * returned, or skip one entirely, whenever the heap moved in between: a
+ * concurrent insert or update, a HOT update relocating a tuple, autovacuum.
+ * `time_entries` is ~24,000 rows over 25 pages, refetched on every cold tick
+ * while designers are logging into that same table, so a skipped row meant
+ * hours silently missing from `entrySums` — client report totals, the KPI tiles,
+ * every per-person figure — and a duplicated row meant hours counted twice, with
+ * nothing surfacing either. `id` is the primary key, so the sort is total and
+ * the paging is stable.
+ *
+ * ⚠️ Applied BEFORE `modify`, so a caller that wants its own ordering can add it
+ * and take precedence (PostgREST honours the first `order` as primary). Nothing
+ * downstream may rely on the id order: every caller that cares sorts its own
+ * result, which is why adding this changes no rendered order.
+ */
 export async function fetchAll<T>(
   sb: SupabaseClient,
   table: string,
@@ -164,7 +183,11 @@ export async function fetchAll<T>(
   const out: T[] = [];
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
-    let q = sb.from(table).select(columns).range(from, from + PAGE - 1);
+    let q = sb
+      .from(table)
+      .select(columns)
+      .order("id")
+      .range(from, from + PAGE - 1);
     if (modify) q = modify(q);
     const { data, error, status } = await q;
     if (error) throw new DbError(table, error.message, error.code, status);

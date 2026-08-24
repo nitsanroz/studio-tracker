@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DbError, canonicalReportLink, isMissingSchema, isServiceBlocked } from "./db";
+import { DbError, canonicalReportLink, fetchAll, isMissingSchema, isServiceBlocked } from "./db";
 import type { ReportLink } from "./types";
 
 describe("isMissingSchema", () => {
@@ -123,5 +123,72 @@ describe("canonicalReportLink", () => {
     const a = link({ id: "first", createdAt: "2026-01-01T00:00:00Z", publishedAt: "2026-03-01T00:00:00Z" });
     const b = link({ id: "second", createdAt: "2026-02-01T00:00:00Z", publishedAt: "2026-02-01T00:00:00Z" });
     expect(canonicalReportLink([b, a])?.id).toBe("first");
+  });
+});
+
+/**
+ * ⚠️ `fetchAll` PAGED WITH NO ORDER BY. PostgREST adds no implicit one and
+ * Postgres gives no stable order for LIMIT/OFFSET without it, so page 2 — a
+ * separate query — could repeat a row from page 1 or skip one whenever the heap
+ * moved in between. `time_entries` is ~24,000 rows over 25 pages, refetched
+ * while designers log hours into it: a skipped row is hours silently missing
+ * from every client report and per-person figure.
+ */
+describe("fetchAll paging", () => {
+  /** Records the query chain and serves `total` rows named by index. */
+  function stub(total: number) {
+    const calls: { ordered: string[]; ranges: [number, number][] } = { ordered: [], ranges: [] };
+    const sb = {
+      from: () => ({
+        select: () => {
+          const chain: Record<string, unknown> = {};
+          chain.order = (col: string) => {
+            calls.ordered.push(col);
+            return chain;
+          };
+          chain.range = (a: number, b: number) => {
+            calls.ranges.push([a, b]);
+            const rows = [];
+            for (let i = a; i <= b && i < total; i++) rows.push({ id: `r${i}` });
+            return Promise.resolve({ data: rows, error: null, status: 200 });
+          };
+          return chain;
+        },
+      }),
+    };
+    return { sb, calls };
+  }
+
+  it("orders by a stable unique key on every page", async () => {
+    const { sb, calls } = stub(2500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await fetchAll(sb as any, "time_entries", "*");
+    expect(calls.ordered).toEqual(["id", "id", "id"]);
+  });
+
+  it("returns every row exactly once across pages", async () => {
+    const { sb } = stub(2500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll<{ id: string }>(sb as any, "time_entries", "*");
+    expect(rows.length).toBe(2500);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(2500);
+  });
+
+  it("stops after a short page rather than asking for another", async () => {
+    const { sb, calls } = stub(1500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await fetchAll(sb as any, "tasks", "*");
+    expect(calls.ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+  });
+
+  it("needs no extra request when the total is an exact multiple", async () => {
+    const { sb, calls } = stub(1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll(sb as any, "tasks", "*");
+    expect(rows.length).toBe(1000);
+    expect(calls.ranges.length).toBe(2); // second page comes back empty and ends it
   });
 });

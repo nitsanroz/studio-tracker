@@ -424,6 +424,13 @@ const COLD_EVERY_N_TICKS = 10;
  * instant regardless, and the plan grid stays on the 60-second tier.
  */
 const TASKS_EVERY_N_TICKS = 3;
+/**
+ * How long focus in a field may hold a background refresh off.
+ *
+ * Long enough that ordinary typing is never interrupted, short enough that a
+ * cursor left in a box cannot freeze the studio's data. See the ⚠️ in `refresh`.
+ */
+const FOCUS_MAX_STALE_MS = 5 * 60_000;
 /** Don't refetch for an alt-tab. */
 const FOCUS_MIN_GAP_MS = 20_000;
 /** Coming back after this long is worth a full refresh, not just the hot half. */
@@ -1024,10 +1031,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(
     async (opts: { cold?: boolean; tasks?: boolean; reason?: string } = {}) => {
       if (refreshInFlight.current) return;
-      // Defer rather than clobber: a fresh snapshot landing between an optimistic
-      // setState and its server commit would flicker the edit backwards. The
-      // write tail re-runs this, and the next tick retries anyway.
-      if (writesBusy() || focusInEditor()) {
+      /**
+       * Defer rather than clobber: a fresh snapshot landing between an optimistic
+       * setState and its server commit would flicker the edit backwards. The
+       * write tail re-runs this, and the next tick retries anyway.
+       *
+       * ⚠️ THE FOCUS HALF IS BOUNDED, BECAUSE IT USED TO BE ABLE TO STOP THE APP
+       * REFRESHING FOR EVER. `refreshQueued` is drained only when a WRITE settles
+       * (see `wrote`/`counting`), and a focus-only deferral has no write to settle
+       * — so a cursor left in a field suppressed every tick indefinitely, with no
+       * upper bound and nothing on screen saying so. Clicking the header search
+       * box and walking away was enough: tasks, the plan, the feed and the hours
+       * all frozen at that moment, a colleague's edits never arriving, and the
+       * only trace the sync dot's "Updated …" quietly ceasing to advance — the
+       * same invisible staleness v1.19.12 built a banner for.
+       *
+       * So focus may hold a refresh off, but only while the data on screen is
+       * still fresh. Past `FOCUS_MAX_STALE_MS` the refresh goes ahead: stale data
+       * nobody is warned about is the worse failure. The race the focus test was
+       * guarding against is covered either way — `refreshVerdict` compares
+       * `writeSeq` from before the fetch against now, so an edit made while the
+       * fetch was out still defers the response.
+       */
+      const staleFor = Date.now() - (lastSyncedRef.current ?? 0);
+      const focusBlocking = focusInEditor() && staleFor < FOCUS_MAX_STALE_MS;
+      if (writesBusy() || focusBlocking) {
         refreshQueued.current = true;
         return;
       }
@@ -1057,7 +1085,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           generation: generation.current,
           seenWrites,
           writeSeq: writeSeq.current,
-          focused: focusInEditor(),
+          // The same bounded rule as the pre-fetch guard — re-read here because
+          // focus can have moved while the fetch was out. Unbounded, this branch
+          // would drop the response of the very refresh the cap just allowed.
+          focused: focusInEditor() && Date.now() - (lastSyncedRef.current ?? 0) < FOCUS_MAX_STALE_MS,
         });
         if (verdict === "stale") return;
         if (verdict === "deferred") {

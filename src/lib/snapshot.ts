@@ -304,7 +304,12 @@ export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
       .limit(400),
     // Returns [] for designers (RLS: admins only)
     sb.from("task_requests").select("*").order("created_at", { ascending: false }),
-    fetchAll<DbRow>(sb, "dev_items", "*").catch(() => [] as DbRow[]),
+    // ⚠️ `optionalTable`, not a bare `.catch(() => [])`. This one was missed by
+    // the v1.21.1 sweep that fixed the six tables in `fetchCold`: swallowing
+    // every failure renders as a client with nothing in development, which is
+    // indistinguishable from the truth — including the 402 the project returns
+    // over quota, the exact case `isServiceBlocked` exists to surface.
+    optionalTable(fetchAll<DbRow>(sb, "dev_items", "*")),
   ]);
 
   // These two used to swallow their errors via `?? []`. On a background refresh

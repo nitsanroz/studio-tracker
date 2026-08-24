@@ -274,3 +274,29 @@ describe("optional tables in the cold snapshot", () => {
     }
   });
 });
+
+/**
+ * ⚠️ `dev_items` kept a bare `.catch(() => [])` after the v1.21.1 sweep fixed the
+ * six tables in `fetchCold`. Swallowing every failure renders as a client with
+ * nothing in development — indistinguishable from the truth, no banner, nothing
+ * in the console — including the 402 the project returns over quota, which is the
+ * one failure `isServiceBlocked` exists to surface.
+ */
+describe("dev_items in the hot snapshot", () => {
+  it("reads a table the migration hasn't created yet as no rows", async () => {
+    const snap = await fetchHot(failingClient("dev_items", { message: "no such table", code: "42P01" }));
+    expect(snap.devItems).toEqual([]);
+  });
+
+  it("REFUSES to read a quota refusal as an empty dev list", async () => {
+    await expect(
+      fetchHot(failingClient("dev_items", { message: "Payment Required" })),
+    ).rejects.toThrow();
+  });
+
+  it("REFUSES to read a permission error as an empty dev list", async () => {
+    await expect(
+      fetchHot(failingClient("dev_items", { message: "permission denied", code: "42501" })),
+    ).rejects.toThrow();
+  });
+});
