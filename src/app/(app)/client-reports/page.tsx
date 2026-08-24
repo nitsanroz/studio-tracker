@@ -330,7 +330,10 @@ function PublishWorkspace() {
   // candidate tabs: recent activity or an existing link
   const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
   const candidates = useMemo(() => {
-    const cutoff = toISODate(new Date(Date.now() - 90 * 86400000));
+    // Calendar days, not 90×24h of milliseconds: the ms form is an hour short across
+    // a clocks-back transition, so the cutoff landed on the wrong DAY and a client
+    // whose only recent activity sat on the boundary appeared a day early or late.
+    const cutoff = toISODate(shiftDays(new Date(), -90));
     const activeIds = new Set<string>();
     for (const e of entrySumsAll) {
       if (e.date >= cutoff) {
