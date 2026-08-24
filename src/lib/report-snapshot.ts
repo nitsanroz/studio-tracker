@@ -143,7 +143,18 @@ export function buildReportSnapshot(
   };
 
   for (const s of clientSections) pushBlock(s.name, bySection.get(s.id) ?? []);
-  pushBlock("Other", bySection.get(null) ?? []);
+  // ⚠️ "Other" takes the null-section tasks AND any whose sectionId matched no
+  // section of this client. Without that second part such a task is in no block at
+  // all, so its hours are counted into `totalByTask` and then never rendered — the
+  // report silently UNDER-reports billable work with no error. Both routes there
+  // are currently closed (sections are `on delete set null`, and a cross-client
+  // move carries a target section), so this is a guard against bad data, not a
+  // known bug. Silent hour loss is worth one line to make impossible.
+  const known = new Set(clientSections.map((s) => s.id));
+  const orphans = [...bySection.entries()]
+    .filter(([key]) => key !== null && !known.has(key))
+    .flatMap(([, list]) => list);
+  pushBlock("Other", [...(bySection.get(null) ?? []), ...orphans]);
 
   return {
     clientName: client.name,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildWeeks } from "./report-snapshot";
-import type { EntrySum } from "./types";
+import { buildReportSnapshot, buildWeeks } from "./report-snapshot";
+import type { BillingPeriod, Client, EntrySum, Section, Task } from "./types";
 
 const e = (date: string, minutes = 60): EntrySum =>
   ({ taskId: "t", userId: "u", date, minutes }) as EntrySum;
@@ -98,5 +98,65 @@ describe("buildWeeks across a DST change", () => {
       "2025-10-26..2025-11-01",
       "2025-11-02..2025-11-08",
     ]);
+  });
+});
+
+/**
+ * `buildReportSnapshot` had NO tests. These pin the two ways hours can silently
+ * stop adding up: a task whose section is not one of the client's (the row used to
+ * vanish while its minutes stayed in the totals), and the appended-week path.
+ */
+describe("buildReportSnapshot", () => {
+  const client = { id: "c1", name: "Acme", color: "#000" } as Client;
+  const task = (id: string, sectionId: string | null): Task =>
+    ({ id, clientId: "c1", title: id, billable: true, pending: false, sectionId, position: 0,
+       estimateHours: null }) as unknown as Task;
+  const section = (id: string, name: string): Section =>
+    ({ id, clientId: "c1", name, position: 0 }) as unknown as Section;
+  const sum = (taskId: string, date: string, minutes: number): EntrySum =>
+    ({ taskId, userId: "u", date, minutes }) as EntrySum;
+  const periods: BillingPeriod[] = [];
+
+  it("keeps a task whose section belongs to no client section, under Other", () => {
+    const snap = buildReportSnapshot(
+      client,
+      [section("s1", "Design")],
+      [task("t1", "s1"), task("t2", "s-gone")],
+      [sum("t1", "2026-08-03", 60), sum("t2", "2026-08-03", 120)],
+      periods,
+    );
+    const rows = snap.sections.flatMap((s) => s.tasks.map((t) => t.id));
+    expect(rows).toContain("t2"); // used to be dropped entirely
+    const other = snap.sections.find((s) => s.name === "Other");
+    expect(other?.tasks.map((t) => t.id)).toEqual(["t2"]);
+    // and the hours it holds are the hours it was given
+    expect(other?.tasks[0].totalMinutes).toBe(120);
+  });
+
+  it("never reports fewer hours than were logged", () => {
+    const snap = buildReportSnapshot(
+      client,
+      [section("s1", "Design")],
+      [task("t1", "s1"), task("t2", "s-gone"), task("t3", null)],
+      [sum("t1", "2026-08-03", 60), sum("t2", "2026-08-03", 120), sum("t3", "2026-08-04", 30)],
+      periods,
+    );
+    const reported = snap.sections
+      .flatMap((s) => s.tasks)
+      .reduce((n, t) => n + t.totalMinutes, 0);
+    expect(reported).toBe(210);
+  });
+
+  it("appends the weeks after a stored column list instead of freezing on it", () => {
+    const snap = buildReportSnapshot(
+      client,
+      [section("s1", "Design")],
+      [task("t1", "s1")],
+      [sum("t1", "2026-07-20", 60), sum("t1", "2026-08-03", 90)],
+      periods,
+      [{ label: "stored", from: "2026-07-19", to: "2026-07-25" }],
+    );
+    expect(snap.weeks?.map((w) => w.from)).toEqual(["2026-07-19", "2026-08-02"]);
+    expect(snap.sections[0].tasks[0].weekMinutes).toEqual([60, 90]);
   });
 });

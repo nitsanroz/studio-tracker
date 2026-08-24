@@ -29,7 +29,7 @@ import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
-import type { Client, ReportLink } from "@/lib/types";
+import type { BillingPeriod, Client, ReportLink } from "@/lib/types";
 
 /** "Show all" hands the table an empty fold list; a module constant so the identity
     is stable across renders rather than a fresh [] each time. */
@@ -70,6 +70,26 @@ function PaymentPeriods({ client }: { client: Client }) {
 
   const minutesIn = (from: string, to: string) =>
     clientEntries.reduce((s, e) => (e.date >= from && e.date <= to ? s + e.minutes : s), 0);
+
+  /**
+   * ⚠️ REJECT A DATE THAT WOULD OVERLAP A NEIGHBOUR OR INVERT THE PERIOD.
+   * `buildReportSnapshot` adds an entry's minutes to EVERY period containing its
+   * date, so two overlapping periods bill the same hours twice — in the per-period
+   * totals `hourCap`/`advanceHours` are read against. These two cells committed
+   * anything the picker returned, unchecked. (Measured 2026-08-24: no client's
+   * periods actually overlap, so this closes the door rather than repairing data.)
+   */
+  const commitPeriodDate = (p: BillingPeriod, key: "dateFrom" | "dateTo", v: string) => {
+    const from = key === "dateFrom" ? v : p.dateFrom;
+    const to = key === "dateTo" ? v : p.dateTo;
+    if (from > to) return;
+    const i = periods.findIndex((x) => x.id === p.id);
+    const before = periods[i - 1];
+    const after = periods[i + 1];
+    if (before && from <= before.dateTo) return;
+    if (after && to >= after.dateFrom) return;
+    updateBillingPeriod(p.id, { [key]: v });
+  };
 
   const current = periods.find((p) => todayIso >= p.dateFrom && todayIso <= p.dateTo);
   const currentMinutes = current ? minutesIn(current.dateFrom, current.dateTo) : 0;
@@ -157,7 +177,7 @@ function PaymentPeriods({ client }: { client: Client }) {
                 <span className="w-[5.5rem]">
                   <EditableDateCell
                     value={p.dateFrom}
-                    onCommit={(v) => v && updateBillingPeriod(p.id, { dateFrom: v })}
+                    onCommit={(v) => v && commitPeriodDate(p, "dateFrom", v)}
                     format={formatDate}
                   />
                 </span>
@@ -165,7 +185,7 @@ function PaymentPeriods({ client }: { client: Client }) {
                 <span className="w-[5.5rem]">
                   <EditableDateCell
                     value={p.dateTo}
-                    onCommit={(v) => v && updateBillingPeriod(p.id, { dateTo: v })}
+                    onCommit={(v) => v && commitPeriodDate(p, "dateTo", v)}
                     format={formatDate}
                   />
                 </span>
@@ -450,8 +470,20 @@ function PublishWorkspace() {
   /** change a column's date range; persisted per client on its report link */
   async function handleEditColumnDates(colIndex: number, patch: { from: string; to: string }) {
     if (!preview?.weeks || !selectedClient) return;
+    // ⚠️ NORMALISE AND CLAMP, because `buildReportSnapshot` adds an entry's minutes
+    // to EVERY column whose range contains its date. An overlap therefore counts the
+    // same hours twice and the week cells stop summing to the row's Total — on a
+    // report a client reads. Visitt had a column edited to 2–25 Jul that swallowed
+    // three whole weeks, 57h double-counted. An inverted pair matches nothing and
+    // shows a dash for ever, so swap it rather than store it.
+    const [rawFrom, rawTo] = patch.from <= patch.to ? [patch.from, patch.to] : [patch.to, patch.from];
+    const prev = preview.weeks[colIndex - 1];
+    const following = preview.weeks[colIndex + 1];
+    const from = prev && rawFrom <= prev.to ? shiftDaysIso(prev.to, 1) : rawFrom;
+    const to = following && rawTo >= following.from ? shiftDaysIso(following.from, -1) : rawTo;
+    if (from > to) return; // clamped to nothing: neighbours leave no room, so refuse
     const next = preview.weeks.map((w, i) =>
-      i === colIndex ? { from: patch.from, to: patch.to, label: shortRangeLabel(patch.from, patch.to) } : w,
+      i === colIndex ? { from, to, label: shortRangeLabel(from, to) } : w,
     );
     setCustomWeeks(next);
     const link = await ensureLink(selectedClient.id);
@@ -492,6 +524,22 @@ function PublishWorkspace() {
       .select()
       .single();
     if (error) {
+      // ⚠️ 23505 = the one-active-link-per-client unique index (0032) fired, which
+      // means a CONCURRENT caller inserted first. The check above cannot prevent
+      // this: it awaits between reading and writing, so two callers both read an
+      // empty result and both insert. Visitt got two links 89ms apart that way,
+      // two days AFTER that check shipped. Losing the race is not an error — the
+      // link we wanted now exists, so adopt it.
+      if (error.code === "23505") {
+        const raced = await fetchAll<Record<string, unknown>>(supabase, "report_links", "*", (q) =>
+          q.eq("client_id", clientId).eq("active", true),
+        ).catch(() => [] as Record<string, unknown>[]);
+        const link = canonicalReportLink(raced.map(mapReportLink));
+        if (link) {
+          setLinks((prev) => new Map(prev).set(clientId, link));
+          return link;
+        }
+      }
       console.error("create link failed", error.message);
       return null;
     }
