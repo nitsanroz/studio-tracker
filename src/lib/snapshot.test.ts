@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { fetchCold, fetchHot, fetchTasks, fingerprint, refreshVerdict } from "./snapshot";
+import {
+  fetchCold,
+  fetchHot,
+  fetchTasks,
+  fingerprint,
+  historyEpochShouldMove,
+  refreshVerdict,
+} from "./snapshot";
 import type { HotSnapshot } from "./snapshot";
 import type { EntrySum } from "./types";
 
@@ -298,5 +305,28 @@ describe("dev_items in the hot snapshot", () => {
     await expect(
       fetchHot(failingClient("dev_items", { message: "permission denied", code: "42501" })),
     ).rejects.toThrow();
+  });
+});
+
+/**
+ * ⚠️ THE UNDO HISTORY USED TO BE DESTROYED BY THE USER'S OWN EDIT. The
+ * fingerprint is computed from the SERVER response, so a local change alters it
+ * the moment it comes back — the epoch was bumped, and the next ⌘Z wiped the
+ * history claiming "Someone else changed the studio data since then" when nobody
+ * had. Every mutation reaches the print, so undo lasted under a minute.
+ */
+describe("historyEpochShouldMove", () => {
+  it("moves when the data changed and we wrote nothing", () => {
+    // the only case that is definitively somebody else
+    expect(historyEpochShouldMove({ printChanged: true, wroteSincePrint: false })).toBe(true);
+  });
+
+  it("does NOT move for a change we caused ourselves", () => {
+    expect(historyEpochShouldMove({ printChanged: true, wroteSincePrint: true })).toBe(false);
+  });
+
+  it("does not move on a quiet tick", () => {
+    expect(historyEpochShouldMove({ printChanged: false, wroteSincePrint: false })).toBe(false);
+    expect(historyEpochShouldMove({ printChanged: false, wroteSincePrint: true })).toBe(false);
   });
 });

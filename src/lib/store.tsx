@@ -42,6 +42,7 @@ import {
   fingerprint,
   mergeTasks,
   mergeTimeEntries,
+  historyEpochShouldMove,
   refreshVerdict,
   type ColdSnapshot,
   type HotCtx,
@@ -327,7 +328,8 @@ interface Store {
    * column being changed, and Postgres reuses it as the check on the new row.
    */
   updateTimeEntry: (entryId: string, patch: TimeEntryPatch) => void;
-  deleteTimeEntry: (entryId: string) => void;
+  /** `known` lets a caller holding the full row keep undo working for an entry outside the feed window. */
+  deleteTimeEntry: (entryId: string, known?: TimeEntry) => void;
   moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
   addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position" | "paid">) => void;
   updateBillingPeriod: (id: string, patch: Partial<BillingPeriod>) => void;
@@ -459,7 +461,7 @@ function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T
  * keys and a single ⌘Z puts both back. Normalising after the fact would leave an
  * undo step that restores the section and strands the group.
  */
-function withGroupInvariant(
+export function withGroupInvariant(
   before: Task,
   patch: Partial<Task>,
   groups: TaskGroup[],
@@ -470,7 +472,18 @@ function withGroupInvariant(
     // `sectionId` already in the patch is overruled rather than trusted, since
     // the two cannot both be right. An unknown id is left alone: the read paths
     // treat it as ungrouped, which is the safe degradation.
-    if (g && g.sectionId !== before.sectionId) return { ...patch, sectionId: g.sectionId };
+    //
+    // ⚠️ COMPARED AGAINST THE SECTION THE PATCH IS ASKING FOR, not just the one
+    // the task is leaving. Reading only `before.sectionId` meant a patch naming a
+    // group AND a conflicting section passed through untouched whenever the
+    // group already sat in the task's current section — storing the task in a
+    // group that lives somewhere else, which is the exact state this function
+    // exists to make impossible. No caller does that today; every reader
+    // tolerates it by rendering the task loose, so a future one would break the
+    // invariant silently and the symptom would be a task quietly falling out of
+    // its group.
+    const wanted = "sectionId" in patch ? (patch.sectionId ?? null) : before.sectionId;
+    if (g && g.sectionId !== wanted) return { ...patch, sectionId: g.sectionId };
     return patch;
   }
   if ("sectionId" in patch && before.groupId) {
@@ -607,6 +620,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const refreshInFlight = useRef(false);
   const refreshQueued = useRef(false);
   const fingerprintRef = useRef<string | null>(null);
+  /**
+   * `writeSeq` as it stood when `fingerprintRef` was last set.
+   *
+   * ⚠️ WITHOUT THIS, A USER'S OWN EDIT EXPIRED THEIR OWN UNDO HISTORY. The print
+   * is computed from the SERVER response, so once a local write comes back it
+   * differs from the stored print — `changed` went true, the epoch was bumped,
+   * and the next ⌘Z wiped the history claiming "Someone else changed the studio
+   * data since then" when nobody had. Every mutation reaches the print one way
+   * or another, so undo was usable only until the first tick that observed your
+   * own change.
+   */
+  const printWriteSeqRef = useRef(0);
   const lastSyncedRef = useRef<number | null>(null);
   const refreshRef = useRef<
     ((opts?: { cold?: boolean; tasks?: boolean; reason?: string }) => void) | null
@@ -919,6 +944,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         tasks: snap.tasks,
         entrySums: snap.entrySums,
       });
+      // Baseline the write counter with the print it belongs to — see the ⚠️ on
+      // `printWriteSeqRef`. Boot is the one place both are set from scratch.
+      printWriteSeqRef.current = writeSeq.current;
       lastSyncedRef.current = Date.now();
       setLoading(false);
     })().catch((e) => {
@@ -1126,10 +1154,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
           entrySums: entrySumsRef.current,
         });
         const changed = fingerprintRef.current !== null && next !== fingerprintRef.current;
+        /**
+         * Did WE write anything since this print was taken? If not, a difference
+         * can only be somebody else's edit and every undo step is now built on
+         * stale values, so the epoch moves and `expired` retires them.
+         *
+         * ⚠️ If we did write, the difference is explained by our own change and
+         * must NOT retire our own history — that was the bug. The print is still
+         * re-baselined, so the next quiet tick compares against current truth.
+         *
+         * ⚠️ RESIDUAL, stated because it is a real trade and not a fix: if a
+         * colleague's change lands in the SAME tick as one of ours, this cannot
+         * tell the two apart and the epoch stays put, so an undo of our step is
+         * still offered and could revert theirs. Narrow (one tick, both writing)
+         * and strictly better than the alternative, which was the guard firing
+         * on every single edit and so protecting nothing while breaking undo.
+         */
+        const wroteSincePrint = writeSeq.current !== printWriteSeqRef.current;
         fingerprintRef.current = next;
-        // Someone else's change landed, so every undo step taken before it is now
-        // built on values that are no longer current — see `undo`.
-        if (changed) epoch.current++;
+        printWriteSeqRef.current = writeSeq.current;
+        if (historyEpochShouldMove({ printChanged: changed, wroteSincePrint })) epoch.current++;
         lastSyncedRef.current = Date.now();
         setLastSyncedAt(Date.now());
         // Whatever was wrong has cleared, so retract the banner.
@@ -1266,10 +1310,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // `groupId` for all of them is correct rather than merely conservative.
       // Per-task normalisation would need `updateTasksVaried`, and there is no
       // case where a bulk section move should preserve a group.
+      // ⚠️ The `groupId` the caller named is checked too, rather than trusted:
+      // skipping this whenever the patch happened to mention `groupId` let a
+      // cross-section move keep a group belonging to the section it left.
+      const movesSection = "sectionId" in rawPatch || "clientId" in rawPatch;
+      const namedGroupFits =
+        "groupId" in rawPatch &&
+        (rawPatch.groupId == null ||
+          taskGroups.some(
+            (g) =>
+              g.id === rawPatch.groupId &&
+              g.sectionId === ("sectionId" in rawPatch ? (rawPatch.sectionId ?? null) : g.sectionId),
+          ));
       const patch: Partial<Task> =
-        ("sectionId" in rawPatch || "clientId" in rawPatch) && !("groupId" in rawPatch)
-          ? { ...rawPatch, groupId: null }
-          : rawPatch;
+        movesSection && !namedGroupFits ? { ...rawPatch, groupId: null } : rawPatch;
 
       // Each task can hold a different prior value, so the inverse is a list of
       // per-task patches rather than one shared patch — but it is recorded as a
@@ -1289,7 +1343,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .in("id", ids)
         .then(wrote("updateTasksBulk"));
     },
-    [supabase, tagIdByName, tasks, record, wrote],
+    [supabase, tagIdByName, tasks, taskGroups, record, wrote],
   );
 
   /**
@@ -2711,15 +2765,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
   );
 
   const deleteTimeEntry = useCallback(
-    (entryId: string) => {
-      const full = timeEntries.find((e) => e.id === entryId);
-      const slim = entrySumsAll.find((e) => e.id === entryId);
-      const before: TimeEntry | undefined =
-        full ?? (slim ? { ...slim, description: "", movedFromTaskId: null } : undefined);
+    (entryId: string, known?: TimeEntry) => {
+      /**
+       * ⚠️ AN UNDO IS ONLY OFFERED WHEN THE WHOLE ROW IS IN HAND.
+       *
+       * This used to fall back to the slim `entrySumsAll` row with
+       * `description: ""` and `movedFromTaskId: null` hardcoded — and
+       * `restoreTimeEntry` faithfully writes back whatever it is given, so ⌘Z
+       * put the entry back with its description ERASED, in an app where a
+       * description is mandatory on every entry. The typed text was gone from
+       * the database with nothing said.
+       *
+       * `timeEntries` holds only the newest 400 rows plus whatever `openTask`
+       * loaded, while the three day surfaces render from `loadDayEntries`, which
+       * returns its rows to the caller WITHOUT merging them into store state —
+       * so deleting an entry older than the feed window hit that path every
+       * time. Those callers pass the row they already hold as `known`; when
+       * neither is available the delete still happens and no undo is recorded,
+       * because no undo is better than one that silently rewrites the entry.
+       */
+      const before = timeEntries.find((e) => e.id === entryId) ?? known;
       if (before) {
         record({
           undo: () => restoreTimeEntry(before),
-          redo: () => methodsRef.current?.deleteTimeEntry(entryId),
+          redo: () => methodsRef.current?.deleteTimeEntry(entryId, before),
         });
       }
       setTimeEntries((prev) => prev.filter((e) => e.id !== entryId));
@@ -2730,7 +2799,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq("id", entryId)
         .then(wrote("deleteTimeEntry"));
     },
-    [supabase, timeEntries, entrySumsAll, record, restoreTimeEntry, wrote],
+    [supabase, timeEntries, record, restoreTimeEntry, wrote],
   );
 
   /** Re-insert a deleted billing period with its original id (undo support). */

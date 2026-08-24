@@ -71,7 +71,8 @@ export function EntryEditRow({
         </button>
       )}
       <button
-        onClick={() => deleteTimeEntry(entry.id)}
+        // the row is passed so an entry outside the feed window keeps its undo
+        onClick={() => deleteTimeEntry(entry.id, entry)}
         title="Delete this time log"
         className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-danger group-hover:opacity-100"
       >

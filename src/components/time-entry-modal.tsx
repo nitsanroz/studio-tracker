@@ -83,7 +83,7 @@ export function TimeEntryModal({
 
   function remove() {
     if (!confirm("Delete this time entry? Its hours come off the task total.")) return;
-    deleteTimeEntry(entry!.id);
+    deleteTimeEntry(entry!.id, entry!);
     onDeleted?.();
     onClose();
   }

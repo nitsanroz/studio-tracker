@@ -471,3 +471,28 @@ export function refreshVerdict(a: {
   if (a.focused) return "deferred";
   return "apply";
 }
+
+/**
+ * Whether a refresh that brought a DIFFERENT fingerprint should retire the undo
+ * history — i.e. whether the change can only have come from somebody else.
+ *
+ * ⚠️ THE `wroteSincePrint` HALF IS THE WHOLE POINT. The print is computed from
+ * the SERVER response, so a user's own edit changes it as soon as it comes back.
+ * Without this test the epoch was bumped by every local change, and the next ⌘Z
+ * wiped the history reporting "Someone else changed the studio data since then"
+ * when nobody had — so undo only worked until the first tick that observed your
+ * own edit, which is under a minute.
+ *
+ * ⚠️ Residual, deliberate: a colleague writing in the SAME tick as us is
+ * indistinguishable here, so the history survives and an undo could revert
+ * them. One tick wide, and strictly better than a guard that fired on every
+ * edit and so protected nothing while breaking the feature.
+ */
+export function historyEpochShouldMove(a: {
+  /** the print differs from the one stored at the last apply */
+  printChanged: boolean;
+  /** we issued at least one write since that print was taken */
+  wroteSincePrint: boolean;
+}): boolean {
+  return a.printChanged && !a.wroteSincePrint;
+}

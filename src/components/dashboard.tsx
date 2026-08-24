@@ -244,7 +244,9 @@ function DayLog() {
             onDelete={(id) => {
               // remove from the local fetch snapshot too, or the row reappears
               setLoaded((prev) => prev.filter((x) => x.id !== id));
-              deleteTimeEntry(id);
+              // Pass the row: this day may be older than the store's 400-row
+              // feed window, and without it the delete has no undo.
+              deleteTimeEntry(id, e);
             }}
           />
         ))}
