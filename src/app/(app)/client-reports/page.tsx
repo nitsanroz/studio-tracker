@@ -16,10 +16,11 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import {
-  addDays,
   formatDate,
-  formatFeedDate,
   formatHoursShort,
+  parseISO,
+  shortRangeLabel,
+  shiftDays,
   toISODate,
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
@@ -34,14 +35,11 @@ import type { Client, ReportLink } from "@/lib/types";
     is stable across renders rather than a fresh [] each time. */
 const EMPTY_FOLDS: string[] = [];
 
-/** iso date + n days → iso date */
-function addDaysIso(iso: string, n: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  return toISODate(addDays(new Date(y, m - 1, d), n));
+/** iso date + n CALENDAR days → iso date. */
+function shiftDaysIso(iso: string, n: number): string {
+  return toISODate(shiftDays(parseISO(iso), n));
 }
 
-const shortDate = (iso: string) => formatFeedDate(iso).split(" ").slice(0, 2).join(" ");
-const periodLabel = (from: string, to: string) => `${shortDate(from)} – ${shortDate(to)}`;
 
 // ── payment periods pane (below the report table) + info pane + graph ──────
 
@@ -105,13 +103,13 @@ function PaymentPeriods({ client }: { client: Client }) {
     const last = periods[periods.length - 1];
     const now = new Date();
     const from = last
-      ? addDaysIso(last.dateTo, 1)
+      ? shiftDaysIso(last.dateTo, 1)
       : toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
     const [y, m, d] = from.split("-").map(Number);
     const to = toISODate(new Date(y, m, d - 1)); // one month, inclusive
     addBillingPeriod({
       clientId: client.id,
-      label: periodLabel(from, to),
+      label: shortRangeLabel(from, to),
       dateFrom: from,
       dateTo: to,
       hourCap: null,
@@ -414,8 +412,8 @@ function PublishWorkspace() {
       // split: the existing period now ends at the boundary, a new one covers the rest
       addBillingPeriod({
         clientId: selectedClient.id,
-        label: periodLabel(addDaysIso(boundary, 1), containing.dateTo),
-        dateFrom: addDaysIso(boundary, 1),
+        label: shortRangeLabel(shiftDaysIso(boundary, 1), containing.dateTo),
+        dateFrom: shiftDaysIso(boundary, 1),
         dateTo: containing.dateTo,
         hourCap: null,
         advanceHours: null,
@@ -423,10 +421,10 @@ function PublishWorkspace() {
       updateBillingPeriod(containing.id, { dateTo: boundary });
     } else {
       const prevEnd = [...clientPeriods].reverse().find((p) => p.dateTo < boundary)?.dateTo;
-      const from = prevEnd ? addDaysIso(prevEnd, 1) : (preview.weeks[0]?.from ?? boundary);
+      const from = prevEnd ? shiftDaysIso(prevEnd, 1) : (preview.weeks[0]?.from ?? boundary);
       addBillingPeriod({
         clientId: selectedClient.id,
-        label: periodLabel(from, boundary),
+        label: shortRangeLabel(from, boundary),
         dateFrom: from,
         dateTo: boundary,
         hourCap: null,
@@ -443,14 +441,14 @@ function PublishWorkspace() {
     if (!p || !col || col.to <= p.dateFrom) return;
     updateBillingPeriod(p.id, { dateTo: col.to });
     const next = clientPeriods[periodIndex + 1];
-    if (next) updateBillingPeriod(next.id, { dateFrom: addDaysIso(col.to, 1) });
+    if (next) updateBillingPeriod(next.id, { dateFrom: shiftDaysIso(col.to, 1) });
   }
 
   /** change a column's date range; persisted per client on its report link */
   async function handleEditColumnDates(colIndex: number, patch: { from: string; to: string }) {
     if (!preview?.weeks || !selectedClient) return;
     const next = preview.weeks.map((w, i) =>
-      i === colIndex ? { from: patch.from, to: patch.to, label: periodLabel(patch.from, patch.to) } : w,
+      i === colIndex ? { from: patch.from, to: patch.to, label: shortRangeLabel(patch.from, patch.to) } : w,
     );
     setCustomWeeks(next);
     const link = await ensureLink(selectedClient.id);

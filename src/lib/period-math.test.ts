@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { toISODate } from "./format";
 import {
   bucketProjection,
   bucketize,
@@ -256,5 +257,29 @@ describe("bucketProjection", () => {
   it("does not project a past year or the last day of this one", () => {
     expect(bucketProjection("year", "2025", at(2026, 7, 1))).toBeNull();
     expect(bucketProjection("year", "2026", at(2026, 12, 31))).toBeNull();
+  });
+});
+
+/**
+ * ⚠️ THE REGRESSION: `periodBounds("This week")` used the ms-based `addDays`, so
+ * across Israel's clocks-back Sunday (26 Oct 2025) `addDays(start, 6)` landed at
+ * 23:00 on the FRIDAY. The week then ended 31 Oct instead of 1 Nov, and every
+ * KPI, chart and comparison reading "this week" silently DROPPED Saturday's hours.
+ * The suite pins TZ=Asia/Jerusalem; under TZ=UTC there is no transition to cross.
+ */
+describe("periodBounds across a clocks-back transition", () => {
+  it("keeps the week Sun–Sat, so Saturday's hours are not dropped", () => {
+    const b = periodBounds("This week", 0, at(2025, 10, 28))!;
+    expect(toISODate(b.start)).toBe("2025-10-26");
+    expect(toISODate(b.end)).toBe("2025-11-01"); // was 2025-10-31
+    expect(daysBetween(b.start, b.end)).toBe(6);
+  });
+
+  it("still spans exactly 7 days when stepping back over the boundary", () => {
+    for (const offset of [0, -1, -2, -3]) {
+      const b = periodBounds("This week", offset, at(2025, 11, 5))!;
+      expect(b.start.getDay()).toBe(0);
+      expect(daysBetween(b.start, b.end)).toBe(6);
+    }
   });
 });

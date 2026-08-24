@@ -15,7 +15,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useData } from "@/lib/store";
-import { addDays, DAY_NAMES, formatHours, formatHoursDecimal, startOfWeek, toISODate } from "@/lib/format";
+import { shiftDays, DAY_NAMES, formatHours, formatHoursDecimal, startOfWeek, toISODate } from "@/lib/format";
 import { TimeEntryModal } from "./time-entry-modal";
 import { DayTotalBar, LoggedEntryRow, useDayEntries } from "./logged-day";
 import { dailyTargetMinutes } from "@/lib/members";
@@ -35,7 +35,7 @@ export function MemberWeekHours() {
   /** Sun–Thu, up to and including today — the days that can already hold hours. */
   const days = useMemo(
     () =>
-      Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)).filter(
+      Array.from({ length: 5 }, (_, i) => shiftDays(weekStart, i)).filter(
         (d) => toISODate(d) <= todayIso,
       ),
     // `weekStartIso` stands in for `weekStart`, whose Date identity changes every

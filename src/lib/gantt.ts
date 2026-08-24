@@ -10,7 +10,14 @@
  * silent invitation for the two to drift a day apart.
  */
 
-import { MONTH_NAMES_SHORT } from "./format";
+import { MONTH_NAMES_SHORT, parseISO, shiftDays } from "./format";
+
+/**
+ * Re-exported so the Gantt's callers keep importing their date helpers from here.
+ * They live in `format.ts` now, because they are the app's only date arithmetic —
+ * the ms-based `addDays` that used to sit beside them has been deleted.
+ */
+export { parseISO, shiftDays };
 
 export type Zoom = "day" | "week" | "month";
 
@@ -66,16 +73,6 @@ export const TIP_H = SECTION_BAR_H + 4;
 export const TIP_MIN_W = TIP_W * 2 + 2;
 /** "Jan 2027" at 10px semibold plus the tick's px-1. A week tick is 63px. */
 const YEAR_LABEL_MIN_PX = 56;
-
-export function parseISO(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-/** DST-safe: builds the date by parts rather than adding 86,400,000 ms. */
-export function shiftDays(d: Date, days: number): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
-}
 
 export function daysBetween(a: Date, b: Date): number {
   // Math.round absorbs the ±1h a DST boundary puts into the difference.

@@ -7,7 +7,7 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapTimeEntry } from "@/lib/db";
 import {
-  addDays,
+  shiftDays,
   formatFeedDate,
   formatHours,
   formatHoursShort,
@@ -276,7 +276,7 @@ function FeedPageContent() {
 
   // ── timesheet data (from entrySums — always complete) ────────────────────
   const weekFrom = toISODate(weekStart);
-  const weekTo = toISODate(addDays(weekStart, 6));
+  const weekTo = toISODate(shiftDays(weekStart, 6));
 
   const sheet = useMemo(() => {
     if (view !== "timesheet") return null;
@@ -291,7 +291,7 @@ function FeedPageContent() {
       return d === 5 || d === 6;
     });
     const dayCount = hasFriSat ? 7 : 5;
-    const days = Array.from({ length: dayCount }, (_, i) => toISODate(addDays(weekStart, i)));
+    const days = Array.from({ length: dayCount }, (_, i) => toISODate(shiftDays(weekStart, i)));
 
     // rows = designers (one line per member with hours this week) + their tasks
     const rowMap = new Map<
@@ -322,7 +322,7 @@ function FeedPageContent() {
     return { days, rows, dayTotals, weekTotal };
   }, [view, entrySums, weekFrom, weekTo, weekStart, effectiveMemberFilter, clientFilter, taskClient, profiles]);
 
-  const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${addDays(weekStart, 4).getDate()}/${addDays(weekStart, 4).getMonth() + 1}`;
+  const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${shiftDays(weekStart, 4).getDate()}/${shiftDays(weekStart, 4).getMonth() + 1}`;
 
   // full entries for the visible week — powers the hour-cell description tooltips
   const [weekEntries, setWeekEntries] = useState<TimeEntry[]>([]);
@@ -593,7 +593,7 @@ function FeedPageContent() {
         <>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setWeekStart((w) => addDays(w, -7))}
+              onClick={() => setWeekStart((w) => shiftDays(w, -7))}
               className="rounded-md border border-border bg-surface p-1.5 text-muted hover:text-foreground"
               title="Previous week"
             >
@@ -601,7 +601,7 @@ function FeedPageContent() {
             </button>
             <span className="min-w-28 text-center text-sm font-medium tabular-nums">{weekLabel}</span>
             <button
-              onClick={() => setWeekStart((w) => addDays(w, 7))}
+              onClick={() => setWeekStart((w) => shiftDays(w, 7))}
               className="rounded-md border border-border bg-surface p-1.5 text-muted hover:text-foreground"
               title="Next week"
             >

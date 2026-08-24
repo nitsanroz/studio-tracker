@@ -257,11 +257,20 @@ export function ReportTable({
    * merely guarded against.
    */
   const spacerRef = useRef<HTMLDivElement | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    // Skip the write when the width has not actually changed. Observing the table
+    // with the default content-box means every HEIGHT-only change is delivered too
+    // — folding a section on a 238-column client would otherwise re-write an
+    // identical width and dirty layout for ~57,000 cells for no visual change.
+    let applied = -1;
     const apply = () => {
-      if (spacerRef.current) spacerRef.current.style.width = `${el.scrollWidth}px`;
+      const width = el.scrollWidth;
+      if (width === applied || !spacerRef.current) return;
+      applied = width;
+      spacerRef.current.style.width = `${width}px`;
     };
     apply();
     // ⚠️ Observe the TABLE as well as the scroller. The scroller's own box does not
@@ -270,7 +279,10 @@ export function ReportTable({
     // quarter of the table and stopped.
     const ro = new ResizeObserver(apply);
     ro.observe(el);
-    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    // By ref, not `el.firstElementChild`: a positional lookup un-observes the table
+    // the moment anything else is added inside the scroller, with no type error —
+    // which is the bug on the line above, back again and silent.
+    if (tableRef.current) ro.observe(tableRef.current);
     return () => ro.disconnect();
   }, []);
   const mirror = (from: HTMLDivElement | null, to: HTMLDivElement | null) => {
@@ -388,7 +400,7 @@ export function ReportTable({
         onScroll={() => mirror(scrollRef.current, proxyRef.current)}
         className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-      <table className="w-full border-collapse text-sm">
+      <table ref={tableRef} className="w-full border-collapse text-sm">
         <thead>
           {showPeriodRow && (
             <tr className="text-[10px] font-semibold text-foreground">
@@ -763,16 +775,16 @@ export function ReportTable({
         </tfoot>
       </table>
       </div>
-      {/* Always rendered, and its spacer is sized by the effect above rather than by
-          a render. With nothing to scroll the spacer matches the strip, so no thumb
-          is drawn and the strip is invisible. */}
+      {/* Always rendered, and its spacer's width is set ONLY by the effect above,
+          never by a render. With nothing to scroll the spacer matches the strip, so
+          no thumb is drawn and the strip is invisible. */}
       <div
         ref={proxyRef}
         onScroll={() => mirror(proxyRef.current, scrollRef.current)}
         className="sticky bottom-0 z-30 overflow-x-auto"
         title="Scroll the table sideways"
       >
-        <div ref={spacerRef} style={{ width: "100%", height: 1 }} />
+        <div ref={spacerRef} style={{ height: 1 }} />
       </div>
       {/* Fixed, and a sibling of the scroll box rather than a child: an absolutely
           positioned bubble inside `overflow-x-auto` is clipped, which is exactly the

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Inbox, Pencil, PencilLine, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import {
-  addDays,
+  shiftDays,
   formatFeedDate,
   formatHours,
   formatHoursAvg,
@@ -187,7 +187,7 @@ function DayLog() {
 
   function shiftDay(delta: number) {
     const [y, m, d] = dateIso.split("-").map(Number);
-    setDateIso(toISODate(addDays(new Date(y, m - 1, d), delta)));
+    setDateIso(toISODate(shiftDays(new Date(y, m - 1, d), delta)));
   }
 
   function save() {
@@ -343,7 +343,7 @@ function MyWeek() {
   // Saturday EVERY card is in the past and filtering would leave an empty pane.
   // Showing the whole week there is the honest reading of "nothing left".
   const days = useMemo(() => {
-    const all = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)); // Sun–Thu
+    const all = Array.from({ length: 5 }, (_, i) => shiftDays(weekStart, i)); // Sun–Thu
     if (!narrow) return all;
     const ahead = all.filter((d) => toISODate(d) >= todayIso);
     return ahead.length > 0 ? ahead : all;

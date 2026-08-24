@@ -7,7 +7,7 @@
 // log records two boundary bugs here that were caught by eye rather than by a
 // test: the `<` vs `<=` on the period end, and the last-bucket projection.
 
-import { addDays, startOfWeek, toISODate } from "./format";
+import { shiftDays, startOfWeek, toISODate } from "./format";
 
 export const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 export type HomeRange = (typeof HOME_RANGES)[number];
@@ -61,8 +61,8 @@ export function periodBounds(
 ): { start: Date; end: Date } | null {
   switch (rangeKey) {
     case "This week": {
-      const start = addDays(startOfWeek(now), offset * 7);
-      return { start, end: addDays(start, 6) };
+      const start = shiftDays(startOfWeek(now), offset * 7);
+      return { start, end: shiftDays(start, 6) };
     }
     case "This month":
       return {
@@ -145,7 +145,7 @@ export function comparablePrevRange(
   // comparing a part-day against a whole previous period reads as a collapse
   const ongoing = today >= sel.start && today <= sel.end;
   if (ongoing) {
-    const candidate = addDays(prev.start, daysBetween(sel.start, today));
+    const candidate = shiftDays(prev.start, daysBetween(sel.start, today));
     if (candidate < prevEnd) prevEnd = candidate;
   }
   return { from: toISODate(prev.start), to: toISODate(prevEnd) };

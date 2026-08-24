@@ -30,7 +30,6 @@ export function formatHoursAvg(minutes: number): string {
   return `${formatHoursDecimal(minutes, 1)}h`;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function toISODate(d: Date): string {
   const y = d.getFullYear();
@@ -46,8 +45,37 @@ export function startOfWeek(d: Date): Date {
   return copy;
 }
 
-export function addDays(d: Date, days: number): Date {
-  return new Date(d.getTime() + days * DAY_MS);
+/**
+ * Shift by whole CALENDAR days.
+ *
+ * ⚠️ THERE USED TO BE AN `addDays` HERE, `getTime() + days * DAY_MS`, AND IT IS
+ * GONE ON PURPOSE — DO NOT REINTRODUCE IT. Millisecond arithmetic is an hour
+ * short whenever the span crosses a clocks-back transition (Israel, late
+ * October), so `addDays(sunday, 6)` landed at 23:00 on the FRIDAY and
+ * `toISODate` then reported the wrong DAY. That produced, in the shipped app:
+ * a "This week" that dropped Saturday's hours, billing periods written with
+ * `dateFrom` equal to the previous period's `dateTo` (overlapping periods and
+ * double-counted hours), a duplicated day row and React key in the weekly plan,
+ * and a Time Feed that paged onto a Saturday and stayed a day off from then on.
+ * It also froze the client-reports tab for two hours via an infinite loop.
+ *
+ * All 24 call sites were date-semantic — every one fed `toISODate`, `getDate()`,
+ * or a day-keyed loop, and none needed millisecond precision. Building the date
+ * from its parts is correct across every transition, so there is no reason for
+ * the ms-based version to exist.
+ */
+export function shiftDays(d: Date, days: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+}
+
+/**
+ * "yyyy-mm-dd" → a LOCAL Date, without the UTC shift `new Date(iso)` applies.
+ * `slice(0, 10)` so a full timestamp (`…-11T17:48:52Z`) parses as its date rather
+ * than yielding NaN — the open-coded copies of this pattern did not have it.
+ */
+export function parseISO(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function isWeekend(d: Date): boolean {
@@ -117,6 +145,31 @@ export function formatFeedDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   return `${d} ${MONTH_NAMES_SHORT[m - 1]} ${DAY_NAMES[dt.getDay()].slice(0, 3)}`;
+}
+
+/**
+ * "6 Jun" — the day and month without the weekday.
+ *
+ * Formats directly rather than taking the first two tokens of `formatFeedDate`,
+ * which is what the two open-coded copies of this did: that spelling silently
+ * depends on `formatFeedDate` emitting exactly three space-separated parts.
+ */
+export function shortDate(iso: string): string {
+  const [, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return `${d} ${MONTH_NAMES_SHORT[m - 1]}`;
+}
+
+/**
+ * "6 Jun – 12 Jun". One spelling, because the client-reports page labels its week
+ * COLUMNS and its billing PERIODS with it — two copies drift into two conventions
+ * on the same screen.
+ *
+ * NOT `rangeLabel`: `period-math.ts` already exports that for something else
+ * entirely (naming a period selector — "Last week"), and `gantt.ts` has
+ * `dateRangeLabel` for a pair of Dates.
+ */
+export function shortRangeLabel(from: string, to: string): string {
+  return `${shortDate(from)} – ${shortDate(to)}`;
 }
 
 // ── Money & percentages (Finance) ────────────────────────────────────────────

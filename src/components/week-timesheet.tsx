@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useData } from "@/lib/store";
-import { addDays, formatHoursShort, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
+import { shiftDays, formatHoursShort, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
 import { Avatar } from "./ui";
 import { UserDayDetails } from "./user-day-details";
 
@@ -34,9 +34,9 @@ export function WeekTimesheet() {
   // Sun–Thu is the studio's week. Fri/Sat are appended only when somebody
   // actually logged then, so weekend hours are never silently invisible.
   const days = useMemo(() => {
-    const base = Array.from({ length: 5 }, (_, i) => toISODate(addDays(weekStart, i)));
+    const base = Array.from({ length: 5 }, (_, i) => toISODate(shiftDays(weekStart, i)));
     const extra = [5, 6]
-      .map((i) => toISODate(addDays(weekStart, i)))
+      .map((i) => toISODate(shiftDays(weekStart, i)))
       .filter((iso) => entrySums.some((e) => e.date === iso && e.minutes > 0));
     return [...base, ...extra];
   }, [weekStart, entrySums]);

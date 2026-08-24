@@ -1,4 +1,4 @@
-import { formatFeedDate, startOfWeek, toISODate } from "./format";
+import { parseISO, shortRangeLabel, shiftDays, startOfWeek, toISODate } from "./format";
 import type {
   BillingPeriod,
   Client,
@@ -8,28 +8,6 @@ import type {
   Task,
 } from "./types";
 
-/** "yyyy-mm-dd" → a local Date, without the UTC shift `new Date(iso)` applies. */
-function fromISO(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-/**
- * Shift a date by whole CALENDAR days.
- *
- * ⚠️ NOT `format.ts`'s `addDays`, WHICH IS MILLISECOND-BASED AND WEDGED THIS PAGE.
- * `getTime() + days * DAY_MS` is an hour short whenever the span crosses a clocks-
- * back transition (Israel, late October), so `addDays(sunday, 6)` lands at 23:00 on
- * FRIDAY and `toISODate` reports the wrong day. This walk re-derives its cursor from
- * that string each turn, so it produced the same Friday forever: an infinite loop
- * that froze the whole tab — but only for a client whose hours span a DST change,
- * which is why Anchor was fine, DualBird and Blazepod were not, and August-only
- * unit tests passed.
- */
-function shiftDays(d: Date, days: number): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
-}
-
 /**
  * Sun–Sat week buckets covering the given entries; only weeks that HAVE hours.
  *
@@ -37,6 +15,14 @@ function shiftDays(d: Date, days: number): Date {
  * to a hand-edited column list cannot overlap the column it follows. Only the
  * FIRST bucket can be partial that way; every later one lands on Sun–Sat again,
  * because the cursor moves to the day after a week's end.
+ *
+ * ⚠️ THE CURSOR IS A `Date`, ADVANCED WITH THE CALENDAR-BASED `shiftDays`, AND IS
+ * NEVER RE-DERIVED FROM A STRING. The version that froze this page for two hours
+ * did the round trip every turn using the ms-based `addDays`, which is an hour
+ * short across a clocks-back transition: `addDays(sunday, 6)` landed at 23:00 on
+ * the FRIDAY, `to + 1` gave Saturday, and the next turn recomputed the same
+ * Friday — so the walk never advanced. Only a client whose hours span late
+ * October hit it, which is why Anchor was fine and DualBird and Blazepod hung.
  */
 export function buildWeeks(
   entries: EntrySum[],
@@ -47,17 +33,31 @@ export function buildWeeks(
   const dates = pool.map((e) => e.date).sort();
   const last = dates[dates.length - 1];
   const weeks: { label: string; from: string; to: string }[] = [];
-  const hasHours = (from: string, to: string) =>
-    pool.some((e) => e.date >= from && e.date <= to);
-  const short = (iso: string) => formatFeedDate(iso).split(" ").slice(0, 2).join(" ");
 
-  let from = after
-    ? toISODate(shiftDays(fromISO(after), 1))
-    : toISODate(startOfWeek(fromISO(dates[0])));
-  while (from <= last) {
-    const to = toISODate(shiftDays(startOfWeek(fromISO(from)), 6));
-    if (hasHours(from, to)) weeks.push({ label: `${short(from)} – ${short(to)}`, from, to });
-    from = toISODate(shiftDays(fromISO(to), 1));
+  let cur = after ? shiftDays(parseISO(after), 1) : startOfWeek(parseISO(dates[0]));
+  // `dates` is sorted and `from` only moves forward, so one pointer answers "does
+  // this week hold hours?" for every bucket in a single pass. It used to be a
+  // `pool.some(...)` rescan per week — 238 columns × several thousand entries.
+  let i = 0;
+  while (toISODate(cur) <= last) {
+    const from = toISODate(cur);
+    // `startOfWeek` matters only on the first turn, when `after` can drop the
+    // cursor mid-week; from then on `cur` is already a Sunday by construction.
+    const end = shiftDays(startOfWeek(cur), 6);
+    const to = toISODate(end);
+    while (i < dates.length && dates[i] < from) i++;
+    if (i < dates.length && dates[i] <= to) {
+      weeks.push({ label: shortRangeLabel(from, to), from, to });
+    }
+    cur = shiftDays(end, 1);
+    // ⚠️ The cursor MUST move forward. It is correct that it does — `shiftDays` is
+    // calendar-based — but this loop once ran forever on a date-arithmetic bug and
+    // froze the whole tab for two hours with no console error and an idle CPU. A
+    // thrown error surfaces in an error boundary and names itself; a freeze cannot
+    // be diagnosed from the outside at all.
+    if (toISODate(cur) <= from) {
+      throw new Error(`buildWeeks: cursor failed to advance past ${from}`);
+    }
   }
   return weeks;
 }
@@ -94,15 +94,12 @@ export function buildReportSnapshot(
    * Now the stored list keeps its edits and the weeks after its last column are
    * appended automatically, which also means the next date edit persists them.
    */
-  const weeks = customWeeks?.length
-    ? [
-        ...customWeeks,
-        ...buildWeeks(
-          clientEntries,
-          customWeeks.reduce((max, w) => (w.to > max ? w.to : max), customWeeks[0].to),
-        ),
-      ]
-    : buildWeeks(clientEntries);
+  // `reduce` rather than `at(-1)`, because a hand-edited list need not have stayed
+  // chronological. `""` seeds it: every ISO date sorts above it.
+  const lastStored = customWeeks?.length
+    ? customWeeks.reduce((max, w) => (w.to > max ? w.to : max), "")
+    : undefined;
+  const weeks = [...(customWeeks ?? []), ...buildWeeks(clientEntries, lastStored)];
 
   for (const e of clientEntries) {
     totalByTask.set(e.taskId, (totalByTask.get(e.taskId) ?? 0) + e.minutes);

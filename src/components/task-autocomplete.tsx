@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CornerDownLeft, Pencil, X } from "lucide-react";
 import { useData } from "@/lib/store";
-import { addDays, toISODate } from "@/lib/format";
+import { shiftDays, toISODate } from "@/lib/format";
 import { ClientChip } from "./ui";
 import type { Client, Task } from "@/lib/types";
 
@@ -47,7 +47,7 @@ export function useClientsByRecency(): Client[] {
   const taskClient = useMemo(() => new Map(tasks.map((t) => [t.id, t.clientId])), [tasks]);
 
   return useMemo(() => {
-    const cutoff = toISODate(addDays(new Date(), -RECENT_DAYS));
+    const cutoff = toISODate(shiftDays(new Date(), -RECENT_DAYS));
     const score = new Map<string, number>();
     for (const e of entrySums) {
       if (e.date < cutoff) continue;

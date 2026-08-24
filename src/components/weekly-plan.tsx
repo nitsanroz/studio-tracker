@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { addDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
+import { shiftDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
 import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
 import { TaskAutocomplete, useClientsByRecency, type TaskMatch } from "./task-autocomplete";
 import { ResizeHandle, useColWidths } from "./resizable";
@@ -813,8 +813,8 @@ const MONTH_NAMES = [
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
     useData();
-  const [rangeStart, setRangeStart] = useState(() => addDays(startOfWeek(new Date()), -14));
-  const [rangeEnd, setRangeEnd] = useState(() => addDays(startOfWeek(new Date()), 27));
+  const [rangeStart, setRangeStart] = useState(() => shiftDays(startOfWeek(new Date()), -14));
+  const [rangeEnd, setRangeEnd] = useState(() => shiftDays(startOfWeek(new Date()), 27));
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   // one piece of state for both jobs: `entry` present = editing what is there,
   // absent = adding to the cell
@@ -906,7 +906,7 @@ export function WeeklyPlan() {
 
   const days = useMemo(() => {
     const out: Date[] = [];
-    for (let d = rangeStart; d <= rangeEnd; d = addDays(d, 1)) out.push(d);
+    for (let d = rangeStart; d <= rangeEnd; d = shiftDays(d, 1)) out.push(d);
     return out;
   }, [rangeStart, rangeEnd]);
 
@@ -938,11 +938,11 @@ export function WeeklyPlan() {
     const iso = toISODate(target);
     let changed = false;
     if (target < rangeStart) {
-      setRangeStart(addDays(startOfWeek(target), -7));
+      setRangeStart(shiftDays(startOfWeek(target), -7));
       changed = true;
     }
     if (target > rangeEnd) {
-      setRangeEnd(addDays(startOfWeek(target), 27));
+      setRangeEnd(shiftDays(startOfWeek(target), 27));
       changed = true;
     }
     // Unfold the month we jump into
@@ -963,7 +963,7 @@ export function WeeklyPlan() {
 
   function shift(days: number) {
     const anchor = middleVisibleDate() ?? new Date();
-    jumpTo(addDays(anchor, days));
+    jumpTo(shiftDays(anchor, days));
   }
 
   function middleVisibleDate(): Date | null {
@@ -1058,7 +1058,7 @@ export function WeeklyPlan() {
               <tr>
                 <th className="sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint">
                   <button
-                    onClick={() => setRangeStart((s) => addDays(s, -28))}
+                    onClick={() => setRangeStart((s) => shiftDays(s, -28))}
                     className="rounded px-1 text-brand hover:underline"
                     title="Load 4 earlier weeks"
                   >
@@ -1184,7 +1184,7 @@ export function WeeklyPlan() {
               <tr>
                 <td colSpan={gridCols.length + 1} className="p-2">
                   <button
-                    onClick={() => setRangeEnd((e) => addDays(e, 28))}
+                    onClick={() => setRangeEnd((e) => shiftDays(e, 28))}
                     className="w-full rounded-md border border-dashed border-border-strong py-1.5 text-xs text-muted hover:border-brand hover:text-brand"
                   >
                     ↓ load 4 more weeks

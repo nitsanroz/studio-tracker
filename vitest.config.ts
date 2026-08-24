@@ -13,5 +13,10 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",
+    // ⚠️ PINNED, because the DST regression tests in report-snapshot.test.ts are
+    // inert without it: under TZ=UTC there is no clocks-back transition to cross,
+    // so the walk that froze the client-reports tab passes every assertion. The
+    // studio runs on Israel time and every date in the app is local to it.
+    env: { TZ: "Asia/Jerusalem" },
   },
 });
