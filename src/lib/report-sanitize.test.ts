@@ -111,3 +111,71 @@ describe("sanitizeSnapshot", () => {
     expect(leadingHidden).toEqual(["total"]);
   });
 });
+
+/**
+ * ⚠️ The sanitizer used to `{ ...snap }` and pass each period through whole, so
+ * anything in the stored jsonb reached the client. `link.snapshot` is cast, not
+ * checked, so TypeScript could not see it — and the doc promises the client
+ * "never receives hidden data in any form". These pin the allow-list so a field
+ * added to a snapshot or a period cannot reach a client by accident.
+ */
+describe("sanitizeSnapshot ships only known fields", () => {
+  it("drops a top-level key the sanitizer does not name", () => {
+    const dirty = { ...snap(), internalNote: "do not send", costPerHour: 400 };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { snapshot } = sanitizeSnapshot(dirty as any, [], []);
+    expect("internalNote" in snapshot).toBe(false);
+    expect("costPerHour" in snapshot).toBe(false);
+    // and the fields it DOES name still arrive
+    expect(snapshot.clientName).toBe(snap().clientName);
+    expect(snapshot.periods.length).toBe(snap().periods.length);
+  });
+
+  it("drops an unknown key on a period", () => {
+    const b = snap();
+    const dirty = {
+      ...b,
+      periods: b.periods.map((p) => ({ ...p, paid: true, invoiceNote: "chase this" })),
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { snapshot } = sanitizeSnapshot(dirty as any, [], []);
+    for (const p of snapshot.periods) {
+      expect("paid" in p).toBe(false);
+      expect("invoiceNote" in p).toBe(false);
+      expect(p.label).toBeTypeOf("string");
+    }
+  });
+
+  it("drops an unknown key on a week column", () => {
+    const b = snap();
+    const dirty = {
+      ...b,
+      weeks: [{ label: "w1", from: "2026-01-01", to: "2026-01-07", internal: 1 }],
+      sections: b.sections.map((sec) => ({
+        ...sec,
+        tasks: sec.tasks.map((t) => ({ ...t, weekMinutes: [60] })),
+      })),
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { snapshot } = sanitizeSnapshot(dirty as any, [], []);
+    for (const w of snapshot.weeks ?? []) expect("internal" in w).toBe(false);
+  });
+
+  it("drops an unknown key on a task", () => {
+    const b = snap();
+    const dirty = {
+      ...b,
+      sections: b.sections.map((sec) => ({
+        ...sec,
+        tasks: sec.tasks.map((t) => ({ ...t, assigneeId: "u1", rate: 350 })),
+      })),
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { snapshot } = sanitizeSnapshot(dirty as any, [], []);
+    for (const sec of snapshot.sections)
+      for (const t of sec.tasks) {
+        expect("assigneeId" in t).toBe(false);
+        expect("rate" in t).toBe(false);
+      }
+  });
+});

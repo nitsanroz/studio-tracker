@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
-import { ReportTable, ViewToggle, columnKey } from "@/components/report-table";
+import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 
@@ -59,9 +59,22 @@ export function PublicReportView({
     }));
   }, [snapshot]);
 
-  const visiblePeriods = periodSummary.filter((_, i) => !hiddenColumns.includes(columnKey(i)));
-  const delivered = visiblePeriods.reduce((s, p) => s + p.minutes, 0);
-  const current = visiblePeriods.at(-1) ?? null;
+  /**
+   * ⚠️ NO PERIOD FILTER HERE, AND THAT IS THE POINT: hidden period columns are
+   * already GONE from `snapshot.periods`, removed server-side by
+   * `sanitizeSnapshot` before this component ever runs.
+   *
+   * This used to filter on `hiddenColumns.includes(columnKey(i))`, which could
+   * never match — `hiddenColumns` on this page only ever holds "estimate" and/or
+   * "total" (the two leading columns, whose values are nulled rather than
+   * dropped), while `columnKey` returns `p:{i}`. So it kept every element and
+   * merely read as though the view were enforcing the rule. Anyone trusting that
+   * could move period-hiding into the client, or drop the server-side filtering
+   * believing this covered it, and either would ship hidden columns to the
+   * browser. The enforcement is server-side, full stop.
+   */
+  const delivered = periodSummary.reduce((s, p) => s + p.minutes, 0);
+  const current = periodSummary.at(-1) ?? null;
   const remaining =
     current?.hourCap != null ? Math.max(0, current.hourCap * 60 - current.minutes) : null;
 
@@ -90,7 +103,7 @@ export function PublicReportView({
         />
       </header>
 
-      {visiblePeriods.length > 0 && (
+      {periodSummary.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <ReportTile label="Delivered to date" value={formatHoursShort(delivered)} />
           {current && (
@@ -153,8 +166,8 @@ export function PublicReportView({
               <p className="text-sm text-faint">No payment periods defined.</p>
             )}
             <div className="flex flex-col gap-2">
+              {/* No filter: hidden periods are already absent — see above. */}
               {periodSummary
-                .filter((p, i) => !hiddenColumns.includes(columnKey(i)))
                 .map((p) => (
                   <div key={p.label} className="rounded-lg bg-background p-2.5 text-sm">
                     <div className="flex items-center justify-between">

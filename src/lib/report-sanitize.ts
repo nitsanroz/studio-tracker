@@ -56,10 +56,47 @@ export function sanitizeSnapshot(
     }))
     .filter((sec) => sec.tasks.length > 0);
 
+  /**
+   * ⚠️ BUILT FIELD BY FIELD, NOT SPREAD, and that is deliberate.
+   *
+   * This was `{ ...snap, … }` with each period passed through whole, so every key
+   * in the stored jsonb reached the client. `link.snapshot` is a `jsonb` column
+   * CAST to `ReportSnapshot` — the cast asserts a shape rather than checking one —
+   * so TypeScript could not see what was actually in there, and the doc above
+   * promised the client "never receives hidden data in any form" for a payload
+   * this function did not build.
+   *
+   * No live leak: every version of `buildReportSnapshot` back to v0.92 allow-listed
+   * its own output. The hazard was the future one — any field later added to a
+   * snapshot or a period (an internal note, a rate, an assignee, a period's `paid`
+   * flag) would have become client-visible the moment it was published, with no
+   * code change on this path and no type error to catch it. The task mapping above
+   * was already an allow-list; these two levels now match it.
+   *
+   * `invoices` is deliberately NOT carried: the type declares it, nothing writes
+   * it and nothing renders it. If it is ever implemented it gets added here on
+   * purpose, which is the whole point of a list you have to opt into.
+   */
   const snapshot: ReportSnapshot = {
-    ...snap,
-    periods: snap.periods.filter((_, i) => periodKeep[i]),
-    ...(useWeeks ? { weeks: snap.weeks!.filter((_, i) => weekKeep[i]) } : {}),
+    clientName: snap.clientName,
+    clientColor: snap.clientColor,
+    generatedAt: snap.generatedAt,
+    periods: snap.periods
+      .filter((_, i) => periodKeep[i])
+      .map((p) => ({
+        label: p.label,
+        from: p.from,
+        to: p.to,
+        hourCap: p.hourCap,
+        advanceHours: p.advanceHours,
+      })),
+    ...(useWeeks
+      ? {
+          weeks: snap.weeks!
+            .filter((_, i) => weekKeep[i])
+            .map((w) => ({ label: w.label, from: w.from, to: w.to })),
+        }
+      : {}),
     sections,
   };
 
