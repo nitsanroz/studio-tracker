@@ -10,7 +10,8 @@ import { toISODate } from "@/lib/format";
 import { formatHoursAvg, formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
 import { useIsNarrow } from "@/lib/use-is-narrow";
-import { MemberPhoto } from "@/components/member-photo";
+import { DEFAULT_PORTRAIT, MemberPhoto } from "@/components/member-photo";
+import { useMemberPortraits } from "@/lib/use-member-portraits";
 import { Tabs } from "@/components/ui";
 import { PeriodStepper } from "@/components/period-stepper";
 import { PercentRing } from "@/components/charts";
@@ -155,6 +156,7 @@ export default function TeamPage() {
   const [showDeactivated, setShowDeactivated] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const memberEmails = useMemberEmails(isAdmin);
+  const portraits = useMemberPortraits();
 
   const [rangeKey, setRangeKey] = useState<PeriodKey>("This month");
   /** Deliberately NOT persisted, unlike the range key: reopening the page on
@@ -358,6 +360,7 @@ export default function TeamPage() {
               <MemberPhoto
                 name={p.name}
                 src={p.photoUrl}
+                portrait={portraits[p.id] ?? DEFAULT_PORTRAIT}
                 variant="avatar"
                 // ⚠️ 124px sets the CARD's height, so on a phone — one card per
                 // row instead of two or three — it turned the roster into ten

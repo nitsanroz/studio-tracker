@@ -12,18 +12,43 @@ import { useState, type CSSProperties } from "react";
  *  looked chequered instead of sitting on the brand circle. It was also 6.7MB. */
 export const DEFAULT_TEAM_PHOTO = "/brand/team/cutout.png";
 
-/** Fraction of the frame height above the top of the head in the cut-out assets.
- *  Measured from the alpha channel; used to work out how far to scale a portrait
- *  so a chosen amount of head clears the top of the avatar circle. */
-const HEAD_TOP_MARGIN = 0.039;
+/**
+ * The three cut-outs, with the alpha-channel measurements each one needs.
+ *
+ * ⚠️ THESE NUMBERS ARE PER-ASSET AND WERE MEASURED, NOT COPIED. `headTop` and
+ * `rightMargin` used to be two module constants taken from `cutout.png` — fine
+ * while that was the only portrait, and wrong the moment a second silhouette
+ * arrived: the new pair sit lower in their frames (head top 0.069 against 0.038)
+ * and carry a much wider empty right margin (0.18 and 0.21 against 0.128). Using
+ * cutout's figures for them would crop the head in the wrong place and leave the
+ * hero portrait floating away from the panel edge. Re-measure if an asset is
+ * ever replaced — `sharp(...).raw()`, then scan for the first and last pixel with
+ * alpha > 8.
+ */
+const PORTRAITS = {
+  neutral: { src: "/brand/team/cutout.png", headTop: 0.0375, rightMargin: 0.1281 },
+  man: { src: "/brand/team/man_avatar.png", headTop: 0.0688, rightMargin: 0.1797 },
+  woman: { src: "/brand/team/woman_avatar.png", headTop: 0.0688, rightMargin: 0.2094 },
+} as const;
 
-/** Transparent margin to the right of the figure, as a fraction of frame width
- *  (measured from the alpha channel: silhouette ends at x 1784 of 2048). Needed
- *  because the image is scaled by HEIGHT, so its width — and therefore the size of
- *  that empty margin — changes with the panel; anchoring the image's own edge would
- *  leave a gap that grows and shrinks. Shifting by this fraction anchors the
- *  *figure's* edge instead. */
-const SILHOUETTE_RIGHT_MARGIN = 0.128;
+export type PortraitVariant = keyof typeof PORTRAITS;
+
+/**
+ * What to draw when we have no recognised value for a member.
+ *
+ * ⚠️ Nitsan's call, 2026-08-24, and the reasoning is worth keeping because the
+ * obvious choice is the wrong one: `neutral` (cutout.png) is a cut-out of a REAL
+ * COLLEAGUE'S photograph, so using it for everybody presents one person's
+ * likeness as everybody else's — the defect the v0.99.17 entry describes. An
+ * androgynous illustrated figure is the less wrong default of the two.
+ *
+ * ⚠️ It is still a default that can be wrong about somebody: a woman whose gender
+ * has not been recorded is drawn as a man until it is. The fix for an individual
+ * is to fill their HR field, not to change this.
+ */
+export const DEFAULT_PORTRAIT: PortraitVariant = "man";
+
+
 
 function initials(name?: string) {
   if (!name) return "";
@@ -51,6 +76,7 @@ export function MemberPhoto({
   bleed = 0,
   fill = false,
   fallback = "cutout",
+  portrait = DEFAULT_PORTRAIT,
 }: {
   name?: string;
   src?: string | null;
@@ -64,13 +90,22 @@ export function MemberPhoto({
   fill?: boolean;
   /** "initials" = never fall back to the shared cut-out portrait. */
   fallback?: "cutout" | "initials";
+  /** Which default cut-out to use when the member has no portrait of their own.
+   *  Resolved from `member_hr.gender` via /api/member-avatars; "neutral" whenever
+   *  that is unset or unrecognised, which is deliberately the common case. */
+  portrait?: PortraitVariant;
 }) {
   const [failed, setFailed] = useState(false);
   // `fallback="initials"` opts OUT of the shared studio cut-out. Former staff kept
   // only for historical attribution have no portrait of their own, and the
   // placeholder is a photo of an actual colleague — presenting it as someone else
   // is worse than showing nothing. Everyone else keeps it until theirs is made.
-  const url = src || (fallback === "initials" ? "" : DEFAULT_TEAM_PHOTO);
+  const art = PORTRAITS[portrait] ?? PORTRAITS.neutral;
+  const url = src || (fallback === "initials" ? "" : art.src);
+  // An UPLOADED portrait is not one of ours, so its silhouette is unknown: fall
+  // back to the neutral geometry rather than cropping it by another figure's
+  // measurements. Only our own cut-outs get their own numbers.
+  const geom = src ? PORTRAITS.neutral : art;
   // src="" does not reliably fire onError, so decide up front rather than relying on it.
   const showImage = !!url && !failed;
 
@@ -96,7 +131,7 @@ export function MemberPhoto({
               // fill: pin the FIGURE's right edge to the container's right edge, by
               // pushing the frame right by its own empty margin. Otherwise centre it.
               ...(fill
-                ? { right: 0, transform: `translateX(${SILHOUETTE_RIGHT_MARGIN * 100}%)` }
+                ? { right: 0, transform: `translateX(${geom.rightMargin * 100}%)` }
                 : { left: "50%", transform: "translateX(-50%)" }),
               height: "100%",
               width: "auto",
@@ -136,7 +171,7 @@ export function MemberPhoto({
     // Rounded, not fractional: the two layers are laid out independently, so a
     // fractional height rounds differently in each and leaves a visible step
     // right at the circle's edge — which reads as the head being sliced off.
-    const drawn = Math.round((size * (1 + bleed)) / (1 - HEAD_TOP_MARGIN));
+    const drawn = Math.round((size * (1 + bleed)) / (1 - geom.headTop));
     const img: CSSProperties = {
       position: "absolute",
       left: "50%",

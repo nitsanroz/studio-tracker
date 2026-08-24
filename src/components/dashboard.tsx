@@ -25,7 +25,8 @@ import {
   rangeLabel,
 } from "@/lib/period-math";
 import { TaskAutocomplete, type TaskMatch } from "./task-autocomplete";
-import { MemberPhoto } from "./member-photo";
+import { DEFAULT_PORTRAIT, MemberPhoto } from "./member-photo";
+import { useMemberPortraits } from "@/lib/use-member-portraits";
 import { ConfirmDetailsBanner } from "./confirm-details-banner";
 import { Avatar, ClientChip, InfoDot, Tabs } from "./ui";
 import { MiniColumnsLabeled, MultiLineChart, PieChart } from "./charts";
@@ -1434,6 +1435,7 @@ function MemberWelcome({
   onLogTime: () => void;
 }) {
   const { entrySums, timeEntries, tasks } = useData();
+  const portraits = useMemberPortraits();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   // ⚠️ The hero used to be week-scoped ("You've logged 21h across 6 active
@@ -1581,7 +1583,13 @@ function MemberWelcome({
           className="pointer-events-none absolute z-20 hidden sm:block"
           style={{ top: -34, bottom: 0, right: 5, width: 176 }}
         >
-          <MemberPhoto name={me.name} src={me.photoUrl} variant="hero" fill />
+          <MemberPhoto
+            name={me.name}
+            src={me.photoUrl}
+            portrait={portraits[me.id] ?? DEFAULT_PORTRAIT}
+            variant="hero"
+            fill
+          />
         </div>
       </div>
 

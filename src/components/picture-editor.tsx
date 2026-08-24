@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { Pencil, Trash2, Upload, X } from "lucide-react";
 import { useData } from "@/lib/store";
 import { Avatar } from "./ui";
-import { MemberPhoto } from "./member-photo";
+import { DEFAULT_PORTRAIT, MemberPhoto } from "./member-photo";
+import { useMemberPortraits } from "@/lib/use-member-portraits";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -83,6 +84,7 @@ export function PictureEditor({
   hint: string;
 }) {
   const { current, busy, error, remove, fileInput, pick } = usePicture(profile, kind);
+  const portraits = useMemberPortraits();
 
   return (
     <div className={`flex items-center gap-4 ${busy ? "opacity-60" : ""}`}>
@@ -94,7 +96,7 @@ export function PictureEditor({
         {kind === "avatar" ? (
           <Avatar profile={profile} size={64} />
         ) : (
-          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={64} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
+          <MemberPhoto name={profile.name} src={profile.photoUrl} portrait={portraits[profile.id] ?? DEFAULT_PORTRAIT} variant="avatar" size={64} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
         )}
         <span className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/45 text-white group-hover/pic:flex">
           <Pencil size={16} />
@@ -150,6 +152,7 @@ export function PictureEditBadge({
   className?: string;
 }) {
   const { current, busy, error, remove, fileInput, pick } = usePicture(profile, kind);
+  const portraits = useMemberPortraits();
   const label = kind === "avatar" ? "avatar" : "studio portrait";
 
   return (
@@ -167,7 +170,7 @@ export function PictureEditBadge({
         {kind === "avatar" ? (
           <Avatar profile={profile} size={size} />
         ) : (
-          <MemberPhoto name={profile.name} src={profile.photoUrl} variant="avatar" size={size} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
+          <MemberPhoto name={profile.name} src={profile.photoUrl} portrait={portraits[profile.id] ?? DEFAULT_PORTRAIT} variant="avatar" size={size} fallback={profile.hasAccount === false ? "initials" : "cutout"} />
         )}
         <span
           className={`absolute inset-0 hidden items-center justify-center bg-black/45 text-white group-hover/pic:flex ${round ? "rounded-full" : "rounded-xl"}`}
