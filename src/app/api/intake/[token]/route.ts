@@ -242,14 +242,40 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
 
   const sb = admin();
 
-  // Rate limit: cap accepted submissions per link per window (serverless-safe,
-  // counted in the DB rather than in memory).
+  /**
+   * Rate limit: cap accepted submissions per link per window (serverless-safe,
+   * counted in the DB rather than in memory).
+   *
+   * ⚠️ COUNTS EDITS AS WELL AS NEW BRIEFS, and it did not. It counted rows
+   * CREATED in the window, while an edit UPDATEs an existing row and returns
+   * before any insert — so edits were never counted and nothing else bounded
+   * them. Every edit sends a fresh "Updated brief" email to every address in
+   * `intake_notify_emails`, so anyone holding their own `editId` + `editKey`
+   * (which the client's browser keeps, by design) could loop it: unbounded mail
+   * to the studio, Resend quota burned, and `seen_at` cleared each time so the
+   * queue re-flagged the brief on every pass. Both actions now share one window.
+   */
   const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MIN * 60_000).toISOString();
-  const { count: recent } = await sb
+  const { count: recent, error: rateErr } = await sb
     .from("task_requests")
     .select("id", { count: "exact", head: true })
     .eq("intake_link_id", link.id)
-    .gte("created_at", since);
+    .or(`created_at.gte.${since},edited_at.gte.${since}`);
+  /**
+   * ⚠️ THIS FAILS OPEN, DELIBERATELY, AND THAT IS A JUDGEMENT CALL WORTH READING.
+   *
+   * The error used to be discarded entirely, so a failed count silently became
+   * `0 >= 8` and the limiter was off with nothing said. It is now logged. It
+   * still lets the submission through, because the alternative is worse HERE:
+   * refusing costs a real client their brief, which is the exact failure this
+   * whole area was rewritten to end (v1.19.2 — a client lost one and the studio
+   * never knew it existed), and "a form that refuses to submit is a client who
+   * phones instead". A spam window is recoverable; a lost brief is not.
+   *
+   * ⚠️ The UPLOAD route's cap makes the opposite call for the opposite reason —
+   * a refused upload is retried in seconds and loses nothing.
+   */
+  if (rateErr) console.error("intake rate limit check failed — allowing", rateErr.message);
   if ((recent ?? 0) >= RATE_LIMIT_MAX) {
     return NextResponse.json(
       { error: "Too many submissions — please try again in a few minutes." },
