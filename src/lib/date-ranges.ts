@@ -1,4 +1,4 @@
-import { toISODate } from "./format";
+import { startOfWeek, toISODate } from "./format";
 
 export const RANGE_PRESETS = [
   "This week",
@@ -14,8 +14,9 @@ export type RangePreset = (typeof RANGE_PRESETS)[number];
 
 /** Israeli work week: Sunday–Saturday. Returns inclusive ISO date range. */
 export function presetRange(preset: RangePreset, now = new Date()): { from: string; to: string } {
-  const day = now.getDay();
-  const startOfThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+  // `startOfWeek` rather than the same arithmetic inline: two definitions of "the
+  // Israeli week starts on Sunday" is how one of them silently keeps the old rule.
+  const startOfThisWeek = startOfWeek(now);
   switch (preset) {
     case "This week": {
       const end = new Date(startOfThisWeek);

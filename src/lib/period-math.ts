@@ -7,7 +7,7 @@
 // log records two boundary bugs here that were caught by eye rather than by a
 // test: the `<` vs `<=` on the period end, and the last-bucket projection.
 
-import { shiftDays, startOfWeek, toISODate } from "./format";
+import { parseISO, shiftDays, startOfWeek, toISODate } from "./format";
 
 export const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 export type HomeRange = (typeof HOME_RANGES)[number];
@@ -151,19 +151,59 @@ export function comparablePrevRange(
   return { from: toISODate(prev.start), to: toISODate(prevEnd) };
 }
 
-/** Period-adaptive time buckets: day (≤31d range), else month (≤24), else year. */
+/** Period-adaptive time buckets: day (≤31d SPAN), else month (≤24), else year. */
 export function bucketize(dates: string[], hasRange: boolean) {
-  const byDay = hasRange && new Set(dates).size <= 31;
+  /**
+   * ⚠️ THE SPAN THE DATES COVER, NOT HOW MANY OF THEM THERE ARE. This counted
+   * `new Set(dates).size`, i.e. only the days that HAVE hours — so a 90-day range
+   * worked on 12 scattered days took the day branch and drew 12 evenly spaced
+   * bars across three months. Adjacent bars could be a day apart or five weeks
+   * apart with nothing showing the gap, so the axis was not linear in time and
+   * the trend read off it was not real.
+   */
+  const span =
+    dates.length === 0
+      ? 0
+      : daysBetween(parseISO(dates.reduce((a, b) => (b < a ? b : a))),
+                    parseISO(dates.reduce((a, b) => (b > a ? b : a)))) + 1;
+  const byDay = hasRange && span > 0 && span <= 31;
   const byMonth = !byDay && new Set(dates.map((d) => d.slice(0, 7))).size <= 24;
+  // Up to 24 months is up to THREE calendar years, and a bare "Jan" twice on one
+  // axis names nothing — the chart has no per-point tooltip to fall back on. Same
+  // reasoning, and the same fix, as the month chart on the client-reports page.
+  const multiYear = new Set(dates.map((d) => d.slice(0, 4))).size > 1;
   const keyFor = (date: string) => (byDay ? date : byMonth ? date.slice(0, 7) : date.slice(0, 4));
   const labelFor = (key: string) =>
     byDay
       ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
       : byMonth
-        ? MONTH_SHORT[Number(key.slice(5, 7)) - 1]
+        ? MONTH_SHORT[Number(key.slice(5, 7)) - 1] + (multiYear ? ` ${key.slice(2, 4)}` : "")
         : key;
   const unit: "day" | "month" | "year" = byDay ? "day" : byMonth ? "month" : "year";
   return { keyFor, labelFor, unit };
+}
+
+/**
+ * A period must be at least a FIFTH gone before its bucket is projected.
+ *
+ * ⚠️ THE ONLY GUARD USED TO BE `elapsed > 0`, WHICH LET DAY ONE THROUGH. On the 1st
+ * of a month that made the factor the month's length — a normal 27h day drew August
+ * at 837h against a real ~600h month, and a heavy 40h day drew 1240h. Because the
+ * chart scales to its largest value, one meaningless bar squashed every real one
+ * beside it. On 1 January the year factor was 365.
+ *
+ * A fifth caps the factor at 5, so the bar can still be read against completed
+ * periods without inventing most of it. The cost is honest and deliberate: for the
+ * first ~6 days of a month, and until mid-March for a year, there is no projection
+ * and the bucket is drawn as the partial thing it is. A visibly short bar is a
+ * better lie than a confident wrong one.
+ */
+const MIN_ELAPSED_FRACTION = 0.2;
+
+function scaleFrom(elapsed: number, total: number): number | null {
+  if (elapsed <= 0 || elapsed >= total) return null;
+  if (elapsed / total < MIN_ELAPSED_FRACTION) return null;
+  return total / elapsed;
 }
 
 /**
@@ -189,11 +229,11 @@ export function bucketProjection(
     if (lastKey !== cur) return null;
     const elapsed = now.getDate();
     const total = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    return elapsed > 0 && elapsed < total ? total / elapsed : null;
+    return scaleFrom(elapsed, total);
   }
   if (lastKey !== String(now.getFullYear())) return null;
   const jan1 = new Date(now.getFullYear(), 0, 1);
   const elapsed = daysBetween(jan1, now) + 1;
   const total = daysBetween(jan1, new Date(now.getFullYear(), 11, 31)) + 1;
-  return elapsed > 0 && elapsed < total ? total / elapsed : null;
+  return scaleFrom(elapsed, total);
 }

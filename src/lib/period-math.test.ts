@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toISODate } from "./format";
+import { presetRange } from "./date-ranges";
 import {
   bucketProjection,
   bucketize,
@@ -281,5 +282,95 @@ describe("periodBounds across a clocks-back transition", () => {
       expect(b.start.getDay()).toBe(0);
       expect(daysBetween(b.start, b.end)).toBe(6);
     }
+  });
+});
+
+/**
+ * ⚠️ `bucketProjection` had only `elapsed > 0`, so day one of a period projected it
+ * by the period's whole length: 31x on the 1st of a month, 365x on 1 January. One
+ * invented bar rescaled the chart and squashed every real one. A period must now be
+ * a fifth gone, capping the factor at 5.
+ */
+describe("bucketProjection minimum elapsed", () => {
+  it("does not project the first fifth of a month", () => {
+    expect(bucketProjection("month", "2026-08", at(2026, 8, 1))).toBeNull();
+    expect(bucketProjection("month", "2026-08", at(2026, 8, 6))).toBeNull(); // 6/31 < 0.2
+  });
+
+  it("projects once a fifth of the month has passed, capped at 5x", () => {
+    const f = bucketProjection("month", "2026-08", at(2026, 8, 7))!; // 7/31
+    expect(f).toBeCloseTo(31 / 7, 5);
+    expect(f).toBeLessThanOrEqual(5);
+  });
+
+  it("does not project a year from January", () => {
+    expect(bucketProjection("year", "2026", at(2026, 1, 1))).toBeNull();
+    expect(bucketProjection("year", "2026", at(2026, 2, 1))).toBeNull();
+  });
+
+  it("projects a year once a fifth is gone, capped at 5x", () => {
+    const f = bucketProjection("year", "2026", at(2026, 4, 1))!;
+    expect(f).toBeLessThanOrEqual(5);
+    expect(f).toBeGreaterThan(1);
+  });
+
+  it("still refuses a complete period and a day unit", () => {
+    expect(bucketProjection("month", "2026-08", at(2026, 8, 31))).toBeNull();
+    expect(bucketProjection("day", "2026-08-31", at(2026, 8, 20))).toBeNull();
+  });
+});
+
+describe("bucketize", () => {
+  const days = (from: string, count: number) =>
+    Array.from({ length: count }, (_, i) => {
+      const d = new Date(2026, 0, 1);
+      d.setDate(d.getDate() + i);
+      void from;
+      return toISODate(d);
+    });
+
+  it("uses the SPAN, not the number of days with hours", () => {
+    // 12 scattered days across ~3 months used to render as 12 day buckets
+    const sparse = ["2026-01-05", "2026-01-20", "2026-02-03", "2026-03-28"];
+    expect(bucketize(sparse, true).unit).toBe("month");
+  });
+
+  it("still buckets by day inside a month", () => {
+    expect(bucketize(days("2026-01-01", 20), true).unit).toBe("day");
+    expect(bucketize(days("2026-01-01", 31), true).unit).toBe("day");
+    expect(bucketize(days("2026-01-01", 32), true).unit).toBe("month");
+  });
+
+  it("names the year on month labels when the span crosses one", () => {
+    const one = bucketize(["2026-01-10", "2026-08-10", ...days("2026-01-01", 40)], false);
+    expect(one.labelFor("2026-08")).toBe("Aug");
+    const two = bucketize(["2025-08-10", "2026-08-10"], false);
+    expect(two.labelFor("2025-08")).toBe("Aug 25");
+    expect(two.labelFor("2026-08")).toBe("Aug 26");
+  });
+
+  it("handles no dates at all", () => {
+    expect(() => bucketize([], true)).not.toThrow();
+  });
+});
+
+describe("presetRange", () => {
+  it("starts the week on Sunday, via the shared startOfWeek", () => {
+    // 2026-08-26 is a Wednesday
+    expect(presetRange("This week", at(2026, 8, 26))).toEqual({
+      from: "2026-08-23",
+      to: "2026-08-29",
+    });
+    expect(presetRange("Last week", at(2026, 8, 26))).toEqual({
+      from: "2026-08-16",
+      to: "2026-08-22",
+    });
+  });
+
+  it("keeps the week whole across a clocks-back transition", () => {
+    expect(presetRange("This week", at(2025, 10, 28))).toEqual({
+      from: "2025-10-26",
+      to: "2025-11-01",
+    });
   });
 });
