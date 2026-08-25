@@ -27,7 +27,7 @@ export function sanitizeSnapshot(
   snap: ReportSnapshot,
   hiddenColumns: string[],
   hiddenTaskIds: string[],
-): { snapshot: ReportSnapshot; leadingHidden: string[] } {
+): { snapshot: ReportSnapshot; leadingHidden: string[]; periodTotals: number[] } {
   const hc = new Set(hiddenColumns);
   const ht = new Set(hiddenTaskIds);
   const hideEstimate = hc.has("estimate");
@@ -36,6 +36,37 @@ export function sanitizeSnapshot(
 
   const periodKeep = snap.periods.map((_, i) => !hc.has(`p:${i}`));
   const weekKeep = useWeeks ? snap.weeks!.map((_, i) => !hc.has(`w:${i}`)) : [];
+
+  /**
+   * The TRUE hours in each surviving period — summed over EVERY task, including
+   * the ones hidden below.
+   *
+   * ⚠️ THE SUMMARY TILES USED TO BE DERIVED FROM THE SURVIVING ROWS, WHICH MADE
+   * HIDING A TASK CHANGE THE CLIENT'S NUMBERS. That contradicted the rule this
+   * file is built on — hiding is a focus tool, not confidentiality, which is
+   * exactly why `totalMinutes` still spans hidden PERIODS — and it broke in the
+   * expensive direction: a 40h cap with 36h logged and one finished 12h task
+   * hidden read "this period 24h · Remaining 16h" when 4h of cap was left, on
+   * the page the studio invoices against. Nitsan's call, 2026-08-24: the tiles
+   * show real totals.
+   *
+   * ⚠️ Computed HERE, before the rows are filtered, because after that the
+   * hidden hours are gone and cannot be recovered. Sent alongside the snapshot
+   * rather than inside it: it is a summary, not a row anybody can unfold.
+   *
+   * ⚠️ And yes, this means a hidden task's hours are visible in aggregate
+   * (period total minus the rows shown). That is the accepted trade recorded in
+   * v1.0.2 and re-affirmed here — anything that must not be seen belongs in the
+   * hidden lists, which are stripped server-side, not in a focus filter.
+   */
+  const periodTotals = snap.periods
+    .map((_, i) =>
+      snap.sections.reduce(
+        (sum, sec) => sum + sec.tasks.reduce((n, t) => n + (t.periodMinutes[i] ?? 0), 0),
+        0,
+      ),
+    )
+    .filter((_, i) => periodKeep[i]);
 
   const sections = snap.sections
     .map((sec) => ({
@@ -104,5 +135,5 @@ export function sanitizeSnapshot(
     ...(hideEstimate ? ["estimate"] : []),
     ...(hideTotal ? ["total"] : []),
   ];
-  return { snapshot, leadingHidden };
+  return { snapshot, leadingHidden, periodTotals };
 }

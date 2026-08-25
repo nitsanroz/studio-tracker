@@ -34,6 +34,7 @@ export function PublicReportView({
   snapshot,
   publishedAt,
   hiddenColumns,
+  periodTotals,
   viewFlags,
 }: {
   clientName: string;
@@ -41,6 +42,8 @@ export function PublicReportView({
   snapshot: ReportSnapshot;
   publishedAt: string | null;
   hiddenColumns: string[];
+  /** True hours per visible period, spanning hidden tasks too — see `sanitizeSnapshot`. */
+  periodTotals: number[];
   viewFlags: ReportViewFlags | null;
 }) {
   const [periodOnly, setPeriodOnly] = useState(viewFlags?.periodOnly ?? false);
@@ -50,14 +53,21 @@ export function PublicReportView({
     ? new Date(publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : null;
 
-  // per-period charged totals for the invoices pane (all tasks are visible)
-  const periodSummary = useMemo(() => {
-    const tasks = snapshot.sections.flatMap((s) => s.tasks);
-    return snapshot.periods.map((p, i) => ({
-      ...p,
-      minutes: tasks.reduce((s, t) => s + (t.periodMinutes[i] ?? 0), 0),
-    }));
-  }, [snapshot]);
+  /**
+   * Per-period charged totals.
+   *
+   * ⚠️ FROM `periodTotals`, NOT SUMMED FROM THE ROWS ON SCREEN. Summing the
+   * visible rows made hiding a task change the client's figures: the tiles below
+   * and the Billing periods pane both understated, and `remaining` — cap minus
+   * charged — therefore OVERSTATED the budget left. Hiding is a focus tool, not
+   * confidentiality (the same reason `totalMinutes` spans hidden periods), so
+   * the summary has to be the real one. Computed server-side before the hidden
+   * rows are removed, since afterwards those hours are simply gone.
+   */
+  const periodSummary = useMemo(
+    () => snapshot.periods.map((p, i) => ({ ...p, minutes: periodTotals[i] ?? 0 })),
+    [snapshot, periodTotals],
+  );
 
   /**
    * ⚠️ NO PERIOD FILTER HERE, AND THAT IS THE POINT: hidden period columns are

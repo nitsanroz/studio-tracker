@@ -179,3 +179,48 @@ describe("sanitizeSnapshot ships only known fields", () => {
       }
   });
 });
+
+/**
+ * ⚠️ THE SUMMARY TILES USED TO MOVE WHEN AN ADMIN HID A TASK. They were summed
+ * from the surviving rows, so hiding a finished task cut the period's charged
+ * hours and INFLATED "Remaining" — a 40h cap with 36h logged and one 12h task
+ * hidden read "Remaining 16h" when 4h was left, on the page the studio invoices
+ * against. Hiding is a focus tool, not confidentiality — the same rule that
+ * keeps `totalMinutes` spanning hidden periods — so the summary is the real one.
+ */
+describe("periodTotals span hidden tasks", () => {
+  it("is unchanged by hiding a task", () => {
+    const open = sanitizeSnapshot(snap(), [], []);
+    const hidden = sanitizeSnapshot(snap(), [], ["t2"]);
+    expect(hidden.periodTotals).toEqual(open.periodTotals);
+    // the row itself is still gone from the payload
+    expect(allTasks(hidden.snapshot).some((t) => t.id === "t2")).toBe(false);
+  });
+
+  it("counts every task, not just the visible ones", () => {
+    // t1 100 + t2 40 + t3 60 in period 0
+    expect(sanitizeSnapshot(snap(), [], []).periodTotals[0]).toBe(200);
+    expect(sanitizeSnapshot(snap(), [], ["t2", "t3"]).periodTotals[0]).toBe(200);
+  });
+
+  it("keeps a cap reading honest when a task is hidden", () => {
+    // the reported failure, in numbers: 40h cap, period 0 holds 200 minutes
+    const { periodTotals } = sanitizeSnapshot(snap(), [], ["t2"]);
+    const capMinutes = 50 * 60;
+    expect(Math.max(0, capMinutes - periodTotals[0])).toBe(capMinutes - 200);
+  });
+
+  it("is indexed like the periods that survive, not the originals", () => {
+    const { snapshot, periodTotals } = sanitizeSnapshot(snap(), ["p:0"], []);
+    expect(periodTotals).toHaveLength(snapshot.periods.length);
+    // period 1 of the original (Feb) is now index 0: 200 + 80 + 0 = 280
+    expect(snapshot.periods[0].label).toBe("Feb");
+    expect(periodTotals[0]).toBe(280);
+  });
+
+  it("is all zeroes for a snapshot with no tasks left", () => {
+    const { periodTotals } = sanitizeSnapshot(snap(), [], ["t1", "t2", "t3"]);
+    // the ROWS are gone but the money figures are still the truth
+    expect(periodTotals[0]).toBe(200);
+  });
+});
