@@ -129,7 +129,7 @@ export function PublicReportView({
        it while the window sat empty either side — the same complaint v1.9.2 fixed
        on the public Gantt. Capped at 2200px only so it does not stretch absurdly on
        an ultrawide, and the padding grows with the screen. */
-    <main className="mx-auto w-full max-w-[2200px] p-4 sm:p-6 lg:p-10">
+    <main className="mx-auto w-full max-w-[2200px] p-2 sm:p-6 lg:p-10">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         {/* ⚠️ A WIDE gap, not the 20px this shipped with: the hours are set like the
             client's name on purpose, and two headlines that close together read as
@@ -137,7 +137,7 @@ export function PublicReportView({
             its too close". It grows with the screen, and the row still wraps on a
             narrow one rather than squeezing. */}
         <div className="flex min-w-0 flex-wrap items-center gap-x-10 gap-y-3 lg:gap-x-20">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 basis-full items-center gap-3 sm:basis-auto">
             {/* ⚠️ The real `ClientAvatar`, not a letter in a coloured box — Nitsan:
                 "you can use client avatar in the color cube - just as a client looks
                 in the system". It falls back to the glyph and then to the initial on
@@ -161,6 +161,24 @@ export function PublicReportView({
               </h1>
               <p className="-mt-0.5 text-sm text-muted">Hours report</p>
             </div>
+            {/* The PHONE instance of the mark — see the note on its desktop twin
+                below. `ml-auto` pushes it to the right end of the name row; the row
+                is `basis-full` below `sm` so that row is the full width.
+                ⚠️⚠️ THE `sm:hidden` MUST LIVE ON THIS WRAPPER, NEVER ON THE MASK
+                SPAN. `.brand-ampmore` sets `display: inline-block` in globals.css,
+                which is UNLAYERED, while Tailwind emits display utilities inside
+                `@layer utilities` — so the unlayered rule wins whatever the
+                specificity and `sm:hidden` on the span is silently inert. Measured:
+                with it on the span, BOTH marks rendered at 944px. This is the third
+                time this exact trap has cost time here (v1.12.0 form fields,
+                v1.22.1 `.brand-wordmark`). */}
+            <span className="ml-auto shrink-0 sm:hidden">
+              <span
+                className="brand-ampmore h-5 bg-brand"
+                role="img"
+                aria-label="Studio&more"
+              />
+            </span>
           </div>
 
           {/*
@@ -232,74 +250,91 @@ export function PublicReportView({
                 it brand with the faintest wash, so the pressed state is unmistakable
                 without the resting state shouting.
               */}
-              <div className="relative">
-                <button
-                  onClick={() => setPeriodsOpen((v) => !v)}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${
-                    periodsOpen
-                      ? "border-brand bg-brand/[0.06]"
-                      : "border-border hover:border-strong hover:bg-brand/[0.04]"
-                  }`}
-                  title="Billing periods"
-                >
-                  <span>
-                    {/* ⚠️ Above the figure, not below it: the other three carry their
-                        label as a subtitle, and this element already uses that slot
-                        for the date range. Nitsan's wording verbatim — and note it
-                        names the CURRENT period, which he confirmed is what he means
-                        by "next billing" (it is what the client is about to be
-                        invoiced for). */}
-                    <span className="block text-[11px] font-medium uppercase tracking-wide text-faint">
-                      next billing:
-                    </span>
-                    {/* ⚠️ PLAIN SANS, NOT the serif accent — "looks messy". That face
-                        is italic, so at this size its numerals and the en dash in a
-                        date range come out as a tangle; it earns its place on the
-                        three big figures and nowhere else in this row. One line,
-                        name then dates, no hours (`12h this period` is the first
-                        figure here and the pill was printing it twice). */}
-                    {/* ⚠️ gap-3, not a word space — "move dates away from period name
-                        - its too tight". A single space puts a bold month and a
-                        muted range close enough to read as one string. */}
-                    <span className="flex items-baseline gap-3 text-sm font-semibold leading-tight">
-                      {current.label}
-                      <span className="font-medium text-muted">
-                        {dm(current.from)} – {dm(current.to)}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <button
+                    onClick={() => setPeriodsOpen((v) => !v)}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${
+                      periodsOpen
+                        ? "border-brand bg-brand/[0.06]"
+                        : "border-border hover:border-strong hover:bg-brand/[0.04]"
+                    }`}
+                    title="Billing periods"
+                  >
+                    <span>
+                      {/* ⚠️ Above the figure, not below it: the other three carry their
+                          label as a subtitle, and this element already uses that slot
+                          for the date range. Nitsan's wording verbatim — and note it
+                          names the CURRENT period, which he confirmed is what he means
+                          by "next billing" (it is what the client is about to be
+                          invoiced for). */}
+                      <span className="block text-[11px] font-medium uppercase tracking-wide text-faint">
+                        next billing:
+                      </span>
+                      {/* ⚠️ PLAIN SANS, NOT the serif accent — "looks messy". That face
+                          is italic, so at this size its numerals and the en dash in a
+                          date range come out as a tangle; it earns its place on the
+                          three big figures and nowhere else in this row. One line,
+                          name then dates, no hours (`12h this period` is the first
+                          figure here and the pill was printing it twice). */}
+                      {/* ⚠️ gap-3, not a word space — "move dates away from period name
+                          - its too tight". A single space puts a bold month and a
+                          muted range close enough to read as one string. */}
+                      <span className="flex items-baseline gap-3 text-sm font-semibold leading-tight">
+                        {current.label}
+                        <span className="font-medium text-muted">
+                          {dm(current.from)} – {dm(current.to)}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                  <ChevronDown size={20} className={periodsOpen ? "rotate-180" : ""} />
-                </button>
-                {periodsOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setPeriodsOpen(false)} />
-                    <div className="absolute left-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-card">
-                      <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">
-                        Billing periods
-                      </div>
-                      {[...periodSummary].reverse().map((p) => (
-                        <div
-                          key={p.label + p.from}
-                          className={`rounded-lg px-2.5 py-2 ${p === current ? "bg-brand-soft" : ""}`}
-                        >
-                          <div className="flex items-baseline justify-between gap-3">
-                            <span className="truncate text-lg font-semibold">{p.label}</span>
-                            <span
-                              className={`shrink-0 text-lg font-semibold tabular-nums ${capTone(p.minutes, p.hourCap)}`}
-                            >
-                              {formatHoursShort(p.minutes)}
-                              {p.hourCap != null && (
-                                <span className="text-xs font-medium opacity-70">/{p.hourCap}h</span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="mt-0.5 text-[11px] text-muted">
-                            {dm(p.from)} – {dm(p.to)}
-                          </div>
+                    <ChevronDown size={20} className={periodsOpen ? "rotate-180" : ""} />
+                  </button>
+                  {periodsOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setPeriodsOpen(false)} />
+                      <div className="absolute left-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-card">
+                        <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">
+                          Billing periods
                         </div>
-                      ))}
-                    </div>
-                  </>
+                        {[...periodSummary].reverse().map((p) => (
+                          <div
+                            key={p.label + p.from}
+                            className={`rounded-lg px-2.5 py-2 ${p === current ? "bg-brand-soft" : ""}`}
+                          >
+                            <div className="flex items-baseline justify-between gap-3">
+                              <span className="truncate text-lg font-semibold">{p.label}</span>
+                              <span
+                                className={`shrink-0 text-lg font-semibold tabular-nums ${capTone(p.minutes, p.hourCap)}`}
+                              >
+                                {formatHoursShort(p.minutes)}
+                                {p.hourCap != null && (
+                                  <span className="text-xs font-medium opacity-70">/{p.hourCap}h</span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 text-[11px] text-muted">
+                              {dm(p.from)} – {dm(p.to)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+                {/* ⚠️ MOVED AGAIN, and this is its third home — page header, then
+                    the table's toolbar row, now here: "time updated can be right to
+                    billing element outside the table". It belongs beside the period
+                    selector because both answer "how current is this?", and outside
+                    the table because it describes the whole report rather than the
+                    figures in any column.
+                    ⚠️ STILL NOT A CHIP. It sits inches from an element that IS
+                    outlined to look pressable, so the contrast has to stay legible:
+                    plain muted text and a clock, no border, no fill. */}
+                {lastUpdated && (
+                  <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted">
+                    <Clock size={12} aria-hidden />
+                    Updated {lastUpdated}
+                  </span>
                 )}
               </div>
             </div>
@@ -320,7 +355,16 @@ export function PublicReportView({
             the very top while the left side is two lines of large type — so the
             stamp sat above the client's name rather than level with the block.
             Nitsan: "time updated needs to be center in height to the header". */}
-        <div className="flex shrink-0 items-center gap-3 self-center">
+        {/* ⚠️ TWO INSTANCES OF THE MARK, and the duplication is deliberate — the
+            same call v1.22.1 made on the public Gantt for the same reason: ONE DOM
+            ORDER CANNOT SERVE BOTH SHAPES. Nitsan wanted it "up inline with client
+            name just aligne to right", and on a phone the figures and the period
+            selector wrap between the name and this cluster, so a single instance
+            here lands three rows down as a stranded left-aligned banner. Moving it
+            into the name row instead would cost the desktop layout its right-hand
+            alignment. It is a CSS-mask span: no image, no request, nothing to load
+            twice. This one is the DESKTOP instance. */}
+        <div className="ml-auto hidden shrink-0 items-center gap-3 self-center sm:flex">
           <span
             className="brand-ampmore h-7 shrink-0 bg-brand lg:h-9"
             role="img"
@@ -335,8 +379,15 @@ export function PublicReportView({
           keeping both meant the same nine rows twice on one page. Dropping it also
           hands the table the whole width, which is what the responsive ask wanted. */}
       <div>
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+        {/* ⚠️ `p-2` below `sm`: at p-4 the page and the card each took 16px a side,
+          which left the table a 309px scroller on a 375px screen — 66px of
+          padding on the one element that needs every pixel it can get. */}
+        <div className="rounded-2xl border border-border bg-surface p-2 shadow-card sm:p-4">
+          {/* ⚠️ Centred below `sm` only — "align them to center too". From `sm` up the
+              row also holds the Updated stamp on its `ml-auto` right edge, and
+              centring there would pull the toggles off the table's left edge they
+              are aligned to. */}
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
             <ViewToggle
               touch
               on={!periodOnly}
@@ -357,18 +408,6 @@ export function PublicReportView({
             >
               Only rows with hours
             </ViewToggle>
-            {/* ⚠️ `ml-auto` puts the stamp at the table's right edge on the SAME row
-                as the toggles — Nitsan: "updated date can be in height with show all
-                periods button just aligned to right of the table". It was in the page
-                header; down here it sits level with the controls and reads against
-                the data it describes. `ml-auto` rather than `justify-between` so the
-                toggles stay grouped when the row wraps on a narrow screen. */}
-            {lastUpdated && (
-              <span className="ml-auto flex items-center gap-1.5 text-[11px] font-medium text-muted">
-                <Clock size={12} aria-hidden />
-                Updated {lastUpdated}
-              </span>
-            )}
             {foldedSections.length > 0 && (
               <button
                 onClick={() => setFoldedSections([])}

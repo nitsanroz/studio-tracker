@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, Plus } from "lucide-react";
 import { formatHoursShort } from "@/lib/format";
 import { ResizeHandle, useColWidths } from "@/components/resizable";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import { ContextMenu } from "@/components/ui";
 import type { ReportSnapshot } from "@/lib/types";
 
@@ -223,7 +224,27 @@ export function ReportTable({
   // Sticky needs a left offset per column, and an offset can only be computed from
   // widths we control. They are resizable because the task titles are the reason
   // anyone scrolls this table in the first place.
-  const { widths, startResize } = useColWidths(
+  /**
+   * ⚠️⚠️ ON A PHONE THE PINNED WIDTHS ARE OVERRIDDEN, AND THIS IS NOT COSMETIC —
+   * without it the client's numbers are UNREACHABLE. Measured at 375px on Visitt's
+   * real link: the three frozen columns come to 340+76+76 = **492px inside a 309px
+   * scroller**, so the pinned block is wider than the screen. Scrolling right cannot
+   * help — the block stays stuck at left 0 and covers the whole viewport — so a
+   * client saw task names and NOT ONE HOUR, and at full scroll saw Total with every
+   * task name sliced off its left edge ("olog fixes dev"). The week columns could
+   * not be brought into view at all.
+   *
+   * ⚠️ It must NOT go through `useColWidths`' stored value: that key holds whatever
+   * an admin last dragged on a laptop, and writing phone widths into it would follow
+   * them back to the desktop. So the hook still owns the desktop widths and this
+   * replaces them for the render, leaving `colw.client-report-lead` untouched.
+   *
+   * ⚠️ Nothing is HIDDEN here — every column a client could read before is still
+   * rendered and still reachable. Only the frozen block is made narrow enough that
+   * scrolling works, which is what a matrix this wide needs on a phone.
+   */
+  const narrow = useIsNarrow();
+  const { widths: deskWidths, startResize } = useColWidths(
     "client-report-lead",
     // task 340, not 260: dropping the Section column freed 140px, and the task name
     // is what that width was being spent on reading
@@ -233,6 +254,14 @@ export function ReportTable({
     // 76 default of the two number columns, so none of them is forced to move.
     { min: 72, max: 520 },
   );
+  /**
+   * ⚠️ 152px for the task column on a phone, and the number is measured rather than
+   * picked: Nitsan asked for "less wide to support 15 characters", and 15 characters
+   * of the row font (14px/380 Saans) measure **115px** on the canvas — plus 16px of
+   * cell padding and the 21px indent under a section heading, that is 152. At the
+   * 128 this first shipped with the name box was 92px, i.e. about twelve characters.
+   */
+  const widths = narrow ? { task: 152, estimate: 64, total: 68 } : deskWidths;
   // With a section heading row above each group, a Section COLUMN would be empty on
   // every task row — the name already has a line of its own — so there is no Section
   // column at all and the task names indent under the heading instead.
@@ -246,7 +275,10 @@ export function ReportTable({
   const lastPinned = showTot ? "total" : showEst ? "estimate" : "task";
   type Lead = keyof typeof leadOffset;
   const pinStyle = (col: Lead): React.CSSProperties => ({
-    left: leadOffset[col],
+    // ⚠️ No offset on a phone — nothing is pinned there, so a `left` would be read
+    // as a static-position offset by nothing and is simply noise. The WIDTHS stay,
+    // because the table still needs definite lead columns to lay out against.
+    left: narrow ? undefined : leadOffset[col],
     width: widths[col],
     minWidth: widths[col],
     maxWidth: widths[col],
@@ -256,8 +288,20 @@ export function ReportTable({
    * separator on the last frozen column is an inset SHADOW, not a border, because
    * `border-collapse: collapse` does not paint borders on sticky cells reliably.
    */
+  /**
+   * ⚠️⚠️ ON A PHONE NOTHING IS PINNED — Nitsan: "on mobile no need for the sticky
+   * colums - allow to scroll whole table". That is the right call and it removes a
+   * whole class of defect rather than tuning around it: three frozen columns cannot
+   * fit a 375px screen (measured at 492px against a 309px scroller before this
+   * round), and a frozen block wider than the viewport covers everything, so the
+   * client's hours were unreachable at ANY scroll position. Unpinned, the table is
+   * one wide sheet that scrolls, and every column can be brought into view. The
+   * separator shadow goes with it — it marks the frozen edge, and there isn't one.
+   */
   const pinCls = (col: Lead, bg: string, z = "z-10") =>
-    `sticky ${z} ${bg} ${col === lastPinned ? "shadow-[inset_-1px_0_0_0_var(--border-strong)]" : ""}`;
+    narrow
+      ? bg
+      : `sticky ${z} ${bg} ${col === lastPinned ? "shadow-[inset_-1px_0_0_0_var(--border-strong)]" : ""}`;
 
   // ── horizontal scrollbar pinned to the bottom of the screen ────────────────
   // The table's own scrollbar sits at the end of the table, which on a long report
@@ -524,7 +568,7 @@ export function ReportTable({
             <tr className="text-[10px] font-semibold text-foreground">
               <th
                 colSpan={leadingCols}
-                className="sticky left-0 z-20 bg-surface"
+                className={narrow ? "bg-surface" : "sticky left-0 z-20 bg-surface"}
                 style={{ width: leadWidth, minWidth: leadWidth }}
               />
               {groups.map((g, gi) => (
@@ -576,7 +620,7 @@ export function ReportTable({
               title="Tasks with logged hours or an estimate"
             >
               Task
-              <ResizeHandle onMouseDown={startResize("task")} />
+              {!narrow && <ResizeHandle onMouseDown={startResize("task")} />}
             </th>
             {showEst && (
               <th
@@ -584,8 +628,12 @@ export function ReportTable({
                 className={`${pinCls("estimate", "bg-surface", "z-20")} relative ${num} ${colCls("estimate")}`}
                 title="Estimated hours budget per task"
               >
-                <ResizeHandle onMouseDown={startResize("estimate")} />
-                Estimate
+                {!narrow && <ResizeHandle onMouseDown={startResize("estimate")} />}
+                {/* ⚠️ "Est." on a phone: the column is 58px there and the full word
+                    clipped mid-letter as "ESTIMAT", which reads as a broken cell
+                    rather than an abbreviation. The `title` above still spells it
+                    out. */}
+                {narrow ? "Est." : "Estimate"}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has("estimate")} onClick={() => onToggleColumn?.("estimate")} />
                 )}
@@ -597,7 +645,7 @@ export function ReportTable({
                 className={`${pinCls("total", "bg-surface", "z-20")} relative ${num} ${colCls("total")}`}
                 title="All hours ever logged on the task"
               >
-                <ResizeHandle onMouseDown={startResize("total")} />
+                {!narrow && <ResizeHandle onMouseDown={startResize("total")} />}
                 Total
                 {editable && (
                   <HideToggle hidden={hiddenCols.has("total")} onClick={() => onToggleColumn?.("total")} />
@@ -693,7 +741,7 @@ export function ReportTable({
               <Fragment key={g.sec.name}>
                 <tr className="border-t-2 border-t-border bg-background text-xs font-bold">
                   <td
-                    className="sticky left-0 z-10 bg-background px-2 py-1.5 text-left"
+                    className={`${narrow ? "" : "sticky left-0 z-10"} bg-background px-2 py-1.5 text-left`}
                     style={{ width: widths.task, minWidth: widths.task }}
                   >
                     {onToggleSection ? (
@@ -752,7 +800,10 @@ export function ReportTable({
                             the full name back on hover. */}
                         <td
                           style={pinStyle("task")}
-                          className={`${pinCls("task", "bg-surface")} py-1.5 pl-7 pr-2 text-left`}
+                          // ⚠️ A smaller indent on a phone: `pl-7` spends 28px of a
+                          // 152px column restating what the section heading directly
+                          // above already says. `sm:pl-7` keeps the desktop inset.
+                          className={`${pinCls("task", "bg-surface")} py-1.5 pl-5 pr-2 text-left sm:pl-7`}
                         >
                           <span className="flex items-center gap-1.5">
                             {editable && (
@@ -996,7 +1047,15 @@ export function ViewToggle({
       title={title}
       aria-pressed={on}
       className={`rounded-full border font-medium ${
-        touch ? "min-h-11 px-3 py-1 text-xs sm:min-h-0" : "px-2.5 py-1 text-[11px]"
+        touch
+          ? // ⚠️ 36px, NOT the 44px this app has used as its phone floor since
+            // v1.15.0 — Nitsan asked for it directly ("2 capsule buttons can be less
+            // high and wider"), and at 44px two capsules in a row read as a pair of
+            // slabs above the table. Wider padding keeps the TAP AREA generous in
+            // the axis that was actually cramped, which is why this is a reshape
+            // rather than a plain shrink. Flagged as a deliberate exception.
+            "min-h-9 px-5 py-1 text-xs sm:min-h-0 sm:px-3"
+          : "px-2.5 py-1 text-[11px]"
       } ${
         on
           ? "border-brand bg-brand text-white"
