@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { appOrigin } from "@/lib/app-origin";
 
 // Admin-only: send a member their "set your password" link.
 //
@@ -48,7 +49,10 @@ export async function POST(request: NextRequest) {
     email = data.user.email;
   }
 
-  const origin = request.nextUrl.origin;
+  // Admin-gated, so the Host header here is far less reachable than on the
+  // intake route — but this builds a PASSWORD-SET link, which is the last URL
+  // that should be host-controlled. Same fixed origin, same reasoning.
+  const origin = appOrigin();
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",
     email: email!,

@@ -17,6 +17,7 @@ import {
   EditableTextCell,
 } from "./editable-cell";
 import { useColWidths, ResizeHandle } from "./resizable";
+import { isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { Task } from "@/lib/types";
 
 /** The panel's own box, for the flip decision. 432px (w-72 + 50%) is wide enough
@@ -122,7 +123,12 @@ function FigmaCell({ url, onCommit }: { url: string | null; onCommit: (v: string
         onBlur={(e) => {
           if (!cancelled.current) {
             const v = e.target.value.trim();
-            if (v !== (url ?? "")) onCommit(v);
+            // ⚠️ Normalised before it is stored, exactly as `links-editor` does.
+            // This string becomes an `href`, and React 19 THROWS on a
+            // `javascript:` one — with no error boundary in the app that blanks
+            // the whole table for everyone, not just the person who typed it.
+            const next = v ? (normalizeUrl(v) ?? "") : "";
+            if (next !== (url ?? "")) onCommit(next);
           }
           cancelled.current = false;
           setEditing(false);
@@ -144,14 +150,27 @@ function FigmaCell({ url, onCommit }: { url: string | null; onCommit: (v: string
   }
   return (
     <span className="group/figma flex items-center gap-1 px-1.5 py-0.5">
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
-      >
-        Figma <ExternalLink size={10} />
-      </a>
+      {isSafeUrl(url) ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
+        >
+          Figma <ExternalLink size={10} />
+        </a>
+      ) : (
+        // Checked again at RENDER, not only on write: rows predate the guard and
+        // can be edited straight in SQL. Shown struck through rather than hidden,
+        // the same way `links-editor` refuses a link — so whoever sees it knows
+        // something unusable is stored, instead of the row silently vanishing.
+        <span
+          className="text-xs text-faint line-through"
+          title="This link isn't a normal web address, so it isn't clickable"
+        >
+          Figma
+        </span>
+      )}
       <button
         onClick={() => setEditing(true)}
         title="Edit link"

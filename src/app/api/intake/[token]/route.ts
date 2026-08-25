@@ -12,6 +12,7 @@ import {
 } from "@/lib/brief";
 import { kindById } from "@/lib/intake-fields";
 import { hostLabel, normalizeUrl } from "@/lib/links";
+import { appOrigin } from "@/lib/app-origin";
 import {
   MAX_INTAKE_BYTES,
   MAX_INTAKE_FILES,
@@ -202,7 +203,6 @@ async function suggestClient(sb: ReturnType<typeof admin>, company: string, emai
  */
 async function notify(
   sb: ReturnType<typeof admin>,
-  req: NextRequest,
   answers: IntakeAnswers,
   extras: { files: IntakeFile[]; links: BriefLink[]; dropped: string[] },
   updated: boolean,
@@ -216,7 +216,10 @@ async function notify(
       .maybeSingle();
     const recipients: string[] = Array.isArray(setting?.value) ? setting.value : [];
     if (!recipients.length) return;
-    const origin = req.nextUrl.origin;
+    // ⚠️ NOT req.nextUrl.origin — see `appOrigin`. This route is
+    // unauthenticated, so a forged Host header would put an attacker's URL
+    // inside a real notification from the studio's own verified sender.
+    const origin = appOrigin();
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -462,7 +465,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
       console.error("intake edit failed", upErr);
       return NextResponse.json({ error: "Could not save your changes — please try again." }, { status: 500 });
     }
-    await notify(sb, req, answers, { files, links, dropped }, true);
+    await notify(sb, answers, { files, links, dropped }, true);
     return NextResponse.json({
       ok: true,
       id: editId,
@@ -522,7 +525,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     }
   }
 
-  await notify(sb, req, answers, { files, links, dropped }, false);
+  await notify(sb, answers, { files, links, dropped }, false);
 
   return NextResponse.json({ ok: true, id: request.id, editKey: key });
 }

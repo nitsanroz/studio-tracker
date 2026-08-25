@@ -22,6 +22,7 @@ import { EditableTextCell } from "./editable-cell";
 import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
 import { BriefModal } from "./brief-modal";
 import { LinksEditor, type LinksEditorHandle } from "./links-editor";
+import { isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { Task, TimeEntry } from "@/lib/types";
 
 /** Query param that deep-links straight to a task — what "Copy task link" writes. */
@@ -871,14 +872,27 @@ export function TaskPanel() {
             <div className={`mb-1.5 ${SECTION_HEADING}`}>Figma</div>
             {task.figmaUrl && (!editingFigma || isNarrow) ? (
               <span className="group/figma flex items-center gap-2">
-                <a
-                  href={task.figmaUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-                >
-                  ◇ Open in Figma
-                </a>
+                {isSafeUrl(task.figmaUrl) ? (
+                  <a
+                    href={task.figmaUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+                  >
+                    ◇ Open in Figma
+                  </a>
+                ) : (
+                  // ⚠️ Checked at RENDER as well as on write, because rows predate
+                  // this guard and can be edited straight in SQL. React 19 THROWS
+                  // on a `javascript:` href and the app has no error boundary, so
+                  // an unchecked one here blanked the whole pane for everybody.
+                  <span
+                    className="bidi-auto min-w-0 flex-1 truncate text-sm text-muted line-through"
+                    title="This link isn't a normal web address, so it isn't clickable"
+                  >
+                    {task.figmaUrl}
+                  </span>
+                )}
                 <button
                   onClick={() => setEditingFigma(true)}
                   title="Edit link"
@@ -914,7 +928,14 @@ export function TaskPanel() {
                 }}
                 onBlur={(e) => {
                   const v = e.target.value.trim();
-                  if (v !== (task.figmaUrl ?? "")) updateTask(task.id, { figmaUrl: v || null });
+                  // Normalised before it is stored — same helper, same allowlist
+                  // (http/https/mailto) the studio's own link editor uses. A
+                  // paste that can't be made into a URL clears the field rather
+                  // than storing something no one can click.
+                  const next = v ? normalizeUrl(v) : null;
+                  if ((next ?? "") !== (task.figmaUrl ?? "")) {
+                    updateTask(task.id, { figmaUrl: next });
+                  }
                   setEditingFigma(false);
                 }}
               />
