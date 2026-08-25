@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capTone } from "@/app/(app)/client-reports/page";
+import { capTone } from "./cap";
 
 /**
  * The cap is SEMANTIC — Nitsan, 2026-08-24: "its only semantic for us and the

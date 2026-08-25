@@ -164,7 +164,18 @@ export function buildReportSnapshot(
       label: p.label,
       from: p.dateFrom,
       to: p.dateTo,
-      hourCap: p.hourCap,
+      /**
+       * ⚠️ THE CLIENT'S CAP WINS OVER THE PERIOD'S OWN.
+       *
+       * `client_billing_periods.hour_cap` has existed since 0007 and the app never
+       * once wrote it — there was no editor, which is why the client report's cap
+       * figure had never rendered for anybody. The cap is now per CLIENT
+       * (`clients.hour_cap`, 0033) because it does not change month to month, so
+       * that is the number a fresh snapshot freezes. The per-period column is
+       * still read as a fallback so an old row that somehow carries one is not
+       * silently dropped.
+       */
+      hourCap: client.hourCap ?? p.hourCap,
       advanceHours: p.advanceHours,
     })),
     weeks,

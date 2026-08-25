@@ -30,13 +30,20 @@ export default async function PublicReportPage({
     // missing column NAMED in a select fails the whole query -- which here means
     // notFound() on every client's report link until that SQL is run. With `*` the
     // key is simply absent and both filters read as off.
-    .select("*, clients(name, color)")
+    // ⚠️ `icon`/`icon_url` too: the client sees their own mark here, exactly as
+    // it looks everywhere in the studio, rather than a letter in a coloured box.
+    .select("*, clients(name, color, icon, icon_url)")
     .eq("token", token)
     .maybeSingle();
   if (!link || !link.active) notFound();
 
   const raw = link.snapshot as ReportSnapshot | null;
-  const client = link.clients as { name?: string; color?: string } | null;
+  const client = link.clients as {
+    name?: string;
+    color?: string;
+    icon?: string | null;
+    icon_url?: string | null;
+  } | null;
   const clientName = client?.name ?? raw?.clientName ?? "Client";
   const clientColor = client?.color ?? raw?.clientColor ?? "#0b43ed";
 
@@ -67,6 +74,8 @@ export default async function PublicReportPage({
     <PublicReportView
       clientName={clientName}
       clientColor={clientColor}
+      clientIcon={client?.icon ?? null}
+      clientIconUrl={client?.icon_url ?? null}
       snapshot={snapshot}
       publishedAt={link.published_at}
       hiddenColumns={leadingHidden}

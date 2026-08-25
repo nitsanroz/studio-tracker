@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, Plus } from "luci
 import { formatHoursShort } from "@/lib/format";
 import { ResizeHandle, useColWidths } from "@/components/resizable";
 import { ContextMenu } from "@/components/ui";
+import { capTone } from "@/lib/cap";
 import type { ReportSnapshot } from "@/lib/types";
 
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
@@ -15,6 +16,21 @@ export function columnKey(i: number): string {
 const fmtH = (m: number) => (m > 0 ? formatHoursShort(m) : "–");
 /** estimates are stored in HOURS, and read to one decimal */
 const fmtEst = (h: number) => (h > 0 ? `${Math.round(h * 10) / 10}h` : "–");
+
+/**
+ * How much of an estimate has been used, as a chip beside it.
+ *
+ * ⚠️ Deliberately reuses the CAP thresholds (`capTone`): a task at 95% of its
+ * estimate and a period at 95% of its cap mean the same thing to a reader, and
+ * two different colour scales on one page would teach neither.
+ *
+ * Returns null when there is nothing honest to say — no estimate, or an estimate
+ * of zero, where a percentage would be a division by zero dressed up as insight.
+ */
+export function estimatePct(minutes: number, estimateHours: number | null): number | null {
+  if (estimateHours == null || estimateHours <= 0) return null;
+  return Math.round((minutes / 60 / estimateHours) * 100);
+}
 
 type ReportTask = ReportSnapshot["sections"][number]["tasks"][number];
 
@@ -782,7 +798,27 @@ export function ReportTable({
                                 title="Edit estimate (hours)"
                               />
                             ) : t.estimateHours != null ? (
-                              `${t.estimateHours}h`
+                              <span className="inline-flex items-center gap-1.5">
+                                {`${t.estimateHours}h`}
+                                {/* ⚠️ The chip answers "how much of this is gone?",
+                                    which is the question an estimate raises and the
+                                    table never answered — the hours and the estimate
+                                    sat in neighbouring columns and left the division
+                                    to the reader. */}
+                                {(() => {
+                                  const pct = estimatePct(t.totalMinutes, t.estimateHours);
+                                  if (pct == null) return null;
+                                  const tone = capTone(t.totalMinutes, t.estimateHours);
+                                  return (
+                                    <span
+                                      className={`rounded-full bg-background px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${tone || "text-muted"}`}
+                                      title={`${fmtH(t.totalMinutes)} of ${t.estimateHours}h`}
+                                    >
+                                      {pct}%
+                                    </span>
+                                  );
+                                })()}
+                              </span>
                             ) : (
                               "–"
                             )}

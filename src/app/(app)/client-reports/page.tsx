@@ -15,6 +15,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
+import { capTone } from "@/lib/cap";
 import {
   formatDate,
   formatHoursShort,
@@ -35,24 +36,6 @@ import type { BillingPeriod, Client, ReportLink } from "@/lib/types";
     is stable across renders rather than a fresh [] each time. */
 const EMPTY_FOLDS: string[] = [];
 
-/**
- * How close a period is to the client's cap, as a text colour.
- *
- * ⚠️ The cap is SEMANTIC — Nitsan, 2026-08-24: "its only semantic for us and the
- * client to see that he doesn't exceed the cap without noticing, without
- * permission." So it is not a gate and nothing is blocked; the number just has to
- * say for itself that the period is filling. Notice at 70%, severe at 90%.
- */
-const CAP_NOTICE = 0.7;
-const CAP_SEVERE = 0.9;
-
-export function capTone(minutes: number, capHours: number | null): string {
-  if (capHours == null || capHours <= 0) return "";
-  const used = minutes / 60 / capHours;
-  if (used >= CAP_SEVERE) return "text-danger";
-  if (used >= CAP_NOTICE) return "text-amber-600";
-  return "";
-}
 
 /** iso date + n CALENDAR days → iso date. */
 function shiftDaysIso(iso: string, n: number): string {
