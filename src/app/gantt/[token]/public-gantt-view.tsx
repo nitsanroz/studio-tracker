@@ -23,6 +23,7 @@ import {
   dateRangeLabel,
   daysBetween,
   isWorkDay,
+  chartWindow,
   parseISO,
   shiftDays,
   ticksFor,
@@ -267,28 +268,15 @@ export function PublicGanttView({
 
   const all = rows.flatMap((g) => [...g.blocks.flatMap((b) => b.rows), ...g.rows]);
 
-  const { from, totalDays } = useMemo(() => {
-    const marks: Date[] = [today];
-    for (const r of all) marks.push(r.start, r.due);
-    // ⚠️ Milestone dates widen the window too. A launch is routinely set AFTER
-    // the last task's due date, and a chart sized to the tasks alone would put
-    // the one date the client most wants to see off the right-hand edge.
-    for (const m of milestones) marks.push(parseISO(m.onDate));
-    let min = marks[0];
-    let max = marks[0];
-    for (const d of marks) {
-      if (d < min) min = d;
-      if (d > max) max = d;
-    }
-    let start = shiftDays(min, -7);
-    // snap to a Sunday (the studio's week starts Sunday) so week columns line up
-    if (zoom !== "day") start = shiftDays(start, -start.getDay());
-    const end = shiftDays(max, 7);
-    return {
-      from: start,
-      totalDays: Math.max(daysBetween(start, end), zoom === "month" ? 365 : 91),
-    };
-  }, [all, today, zoom, milestones]);
+  const { from, totalDays } = useMemo(
+    () =>
+      chartWindow(
+        [...all.flatMap((r) => [r.start, r.due]), ...milestones.map((m) => parseISO(m.onDate))],
+        today,
+        zoom,
+      ),
+    [all, today, zoom, milestones],
+  );
 
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;

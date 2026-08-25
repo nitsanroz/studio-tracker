@@ -38,6 +38,7 @@ import {
   GROUP_LAYERS,
   daysBetween,
   isWorkDay,
+  chartWindow,
   parseISO,
   PX_PER_DAY,
   ROW_H,
@@ -518,17 +519,49 @@ function allRowsOf(g: Group): Row[] {
   return [...g.blocks.flatMap((b) => b.rows), ...g.rows];
 }
 
-/** Module-scoped like the client table's drag: a ref would not survive the drop. */
-let draggedRowId: string | null = null;
 /**
- * The CONTAINER the dragged row came from — its section AND its group (0027).
- * Reordering is confined to one container, so this has to name both: a row
- * dragged out of a group onto a loose row is a container change, and
- * `reorderTimelineTasks` would otherwise renumber a list the row isn't in.
+ * The row currently being dragged, and the CONTAINER it came from — its section
+ * AND its group (0027). Reordering is confined to one container, so this has to
+ * name both: a row dragged out of a group onto a loose row is a container
+ * change, and `reorderTimelineTasks` would otherwise renumber a list the row
+ * isn't in.
+ *
+ * ⚠️ Module-scoped, and ONE OBJECT rather than two `let`s. It has to be module
+ * scope because `TimelineRow` — a separate component — reads it to decide
+ * whether to accept a drop, so a ref inside `ClientTimeline` could not reach it
+ * without threading a prop through every row. It is an object because the React
+ * Compiler lint refuses a module variable that is REASSIGNED from a component
+ * (`react-hooks/globals`): assigning fields of a stable const is the same drag
+ * state without the rule violation. Not render state — nothing reads it during
+ * render, only drag handlers.
  */
-let draggedFromContainer: string | null = null;
+const dragRow: { id: string | null; fromContainer: string | null } = {
+  id: null,
+  fromContainer: null,
+};
 
-/** How a container is named in `draggedFromContainer` and the collapse set. */
+/**
+ * Written and cleared through functions rather than assigned in place.
+ *
+ * ⚠️ Not ceremony — the React Compiler lint treats a component that reassigns or
+ * mutates module state as impure (`react-hooks/globals`, then
+ * `react-hooks/immutability`). Doing it in a plain function declared out here
+ * keeps the handlers honest and the gate at zero errors, with no behaviour
+ * change: this is drag state, read only by handlers, never during render.
+ */
+function beginRowDrag(id: string, fromContainer: string): void {
+  dragRow.id = id;
+  dragRow.fromContainer = fromContainer;
+}
+
+function endRowDrag(): { id: string | null; fromContainer: string | null } {
+  const was = { id: dragRow.id, fromContainer: dragRow.fromContainer };
+  dragRow.id = null;
+  dragRow.fromContainer = null;
+  return was;
+}
+
+/** How a container is named in `dragRow.fromContainer` and the collapse set. */
 function containerKey(sectionId: string | null, groupId: string | null): string {
   return `${sectionId ?? ""}|${groupId ?? ""}`;
 }
@@ -868,22 +901,20 @@ export function ClientTimeline({
    * flush against the left edge, and floored at ~13 weeks so a client with two
    * tasks three days apart doesn't get a chart four columns wide.
    */
-  const { from, totalDays } = useMemo(() => {
-    const marks: Date[] = [today];
-    for (const r of allRows) marks.push(r.start, r.due);
-    let min = marks[0];
-    let max = marks[0];
-    for (const d of marks) {
-      if (d < min) min = d;
-      if (d > max) max = d;
-    }
-    let start = shiftDays(min, -7);
-    // snap to a Sunday (the studio's week starts Sunday) so week columns line up
-    if (zoom !== "day") start = shiftDays(start, -start.getDay());
-    const end = shiftDays(max, 7);
-    const span = Math.max(daysBetween(start, end), zoom === "month" ? 365 : 91);
-    return { from: start, totalDays: span };
-  }, [allRows, today, zoom]);
+  const { from, totalDays } = useMemo(
+    () =>
+      chartWindow(
+        [
+          ...allRows.flatMap((r) => [r.start, r.due]),
+          // ⚠️ Milestones widen the window too — see `chartWindow`. Omitted here
+          // until v1.28.2, so a mark outside the tasks' span was unreachable.
+          ...marks.map((m) => parseISO(m.onDate)),
+        ],
+        today,
+        zoom,
+      ),
+    [allRows, marks, today, zoom],
+  );
 
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
@@ -957,7 +988,20 @@ export function ClientTimeline({
     const bands: { id: string; top: number; bottom: number; left: number; right: number }[] = [];
     let y = 0;
     const band = (r: Row) => {
-      const left = leftW + daysBetween(from, r.start) * pxPerDay;
+      /**
+       * ⚠️ THE DIAMOND'S BOX MUST MATCH WHERE IT IS DRAWN, and it did not. A
+       * deadline marker is rendered CENTRED in its day column
+       * (`left + max(0, pxPerDay/2 - DIAMOND/2)`, see TimelineRow) while this
+       * band started at the column's left edge. At day zoom that is 26px per day
+       * against an 11px diamond — a 7.5px offset, so the two overlapped by 3.5px
+       * of 11: a marquee drawn tightly around a visible diamond selected
+       * nothing, and one drawn through the empty cell beside it selected the
+       * task. Day zoom has been the default since v1.11.0, so it was the case
+       * people met first. Spanning bars were always right — they share their
+       * formula with the render.
+       */
+      const shift = r.hasStart ? 0 : Math.max(0, pxPerDay / 2 - DIAMOND / 2);
+      const left = leftW + daysBetween(from, r.start) * pxPerDay + shift;
       const width = r.hasStart
         ? Math.max(10, (daysBetween(r.start, r.due) + 1) * pxPerDay)
         : DIAMOND;
@@ -1121,10 +1165,7 @@ export function ClientTimeline({
    * `reorderTimelineTasks` a list the moved row isn't in.
    */
   function dropRow(container: string, rows: Row[], targetId: string | null) {
-    const movedId = draggedRowId;
-    const fromContainer = draggedFromContainer;
-    draggedRowId = null;
-    draggedFromContainer = null;
+    const { id: movedId, fromContainer } = endRowDrag();
     setDropBefore(null);
     if (!movedId || movedId === targetId || fromContainer !== container) return;
     const ids = rows.map((r) => r.task.id);
@@ -1211,14 +1252,12 @@ export function ClientTimeline({
             setDrag(next);
           }}
           onRowDragStart={() => {
-            draggedRowId = row.task.id;
-            draggedFromContainer = container;
+            beginRowDrag(row.task.id, container);
           }}
           onRowDragOver={() => setDropBefore(row.task.id)}
           onRowDrop={() => dropRow(container, containerRows, row.task.id)}
           onRowDragEnd={() => {
-            draggedRowId = null;
-            draggedFromContainer = null;
+            endRowDrag();
             setDropBefore(null);
           }}
           onOpen={() => openTask(row.task.id)}
@@ -1536,7 +1575,7 @@ export function ClientTimeline({
                               {!bCollapsed && (
                                 <div
                                   className="h-0"
-                                  onDragOver={(e) => draggedRowId && e.preventDefault()}
+                                  onDragOver={(e) => dragRow.id && e.preventDefault()}
                                   onDrop={() =>
                                     dropRow(containerKey(sectionId, b.group.id), b.rows, null)
                                   }
@@ -1554,7 +1593,7 @@ export function ClientTimeline({
                       {!isCollapsed && (
                         <div
                           className="h-0"
-                          onDragOver={(e) => draggedRowId && e.preventDefault()}
+                          onDragOver={(e) => dragRow.id && e.preventDefault()}
                           onDrop={() => dropRow(containerKey(sectionId, null), g.rows, null)}
                           style={{ marginTop: -1, height: 1 }}
                         />
@@ -3093,7 +3132,7 @@ function TimelineRow({
       style={{ height: ROW_H, width: leftW + totalDays * pxPerDay }}
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, task.id) : undefined}
       onDragOver={(e) => {
-        if (!draggedRowId) return;
+        if (!dragRow.id) return;
         e.preventDefault();
         onRowDragOver();
       }}

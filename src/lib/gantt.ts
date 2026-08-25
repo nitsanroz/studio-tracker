@@ -216,3 +216,38 @@ export function ticksFor(
   }
   return { ticks };
 }
+
+/**
+ * The date window a chart spans: where it starts, and how many days it covers.
+ *
+ * ⚠️ ONE IMPLEMENTATION FOR BOTH CHARTS, AND THAT IS THE POINT. This was
+ * duplicated in `client-timeline.tsx` and `public-gantt-view.tsx`, and the
+ * copies drifted exactly as this module's own header warns: v1.12.1 taught the
+ * PUBLIC one that milestone dates widen the window — a launch is routinely set
+ * after the last task's due date — and the studio's own copy never learned it,
+ * so a mark outside the tasks' span was drawn past the edge of a scroller whose
+ * width IS `totalDays * pxPerDay`, unreachable at any zoom, on the very chart
+ * where marks are created and dragged.
+ *
+ * Padded a week either side so a bar never sits flush against the edge, snapped
+ * to a Sunday at week/month zoom so the columns line up, and floored at ~13
+ * weeks (a year at month zoom) so two tasks three days apart don't produce a
+ * chart four columns wide.
+ */
+export function chartWindow(
+  dates: Date[],
+  today: Date,
+  zoom: Zoom,
+): { from: Date; totalDays: number } {
+  const extremes = [today, ...dates];
+  let min = extremes[0];
+  let max = extremes[0];
+  for (const d of extremes) {
+    if (d < min) min = d;
+    if (d > max) max = d;
+  }
+  let start = shiftDays(min, -7);
+  if (zoom !== "day") start = shiftDays(start, -start.getDay());
+  const end = shiftDays(max, 7);
+  return { from: start, totalDays: Math.max(daysBetween(start, end), zoom === "month" ? 365 : 91) };
+}
