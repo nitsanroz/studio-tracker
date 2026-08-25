@@ -27,7 +27,12 @@ export function sanitizeSnapshot(
   snap: ReportSnapshot,
   hiddenColumns: string[],
   hiddenTaskIds: string[],
-): { snapshot: ReportSnapshot; leadingHidden: string[]; periodTotals: number[] } {
+): {
+  snapshot: ReportSnapshot;
+  leadingHidden: string[];
+  periodTotals: number[];
+  periodActiveTasks: number[];
+} {
   const hc = new Set(hiddenColumns);
   const ht = new Set(hiddenTaskIds);
   const hideEstimate = hc.has("estimate");
@@ -63,6 +68,21 @@ export function sanitizeSnapshot(
     .map((_, i) =>
       snap.sections.reduce(
         (sum, sec) => sum + sec.tasks.reduce((n, t) => n + (t.periodMinutes[i] ?? 0), 0),
+        0,
+      ),
+    )
+    .filter((_, i) => periodKeep[i]);
+
+  /**
+   * How many tasks carried hours in each surviving period — again over EVERY task,
+   * hidden ones included, for exactly the reason above: a count summed from the
+   * rows on screen would drop when an admin hid a task for focus, and "4 active
+   * tasks" quietly becoming 3 is the same defect as the hours figure moving.
+   */
+  const periodActiveTasks = snap.periods
+    .map((_, i) =>
+      snap.sections.reduce(
+        (n, sec) => n + sec.tasks.filter((t) => (t.periodMinutes[i] ?? 0) > 0).length,
         0,
       ),
     )
@@ -135,5 +155,5 @@ export function sanitizeSnapshot(
     ...(hideEstimate ? ["estimate"] : []),
     ...(hideTotal ? ["total"] : []),
   ];
-  return { snapshot, leadingHidden, periodTotals };
+  return { snapshot, leadingHidden, periodTotals, periodActiveTasks };
 }

@@ -224,3 +224,33 @@ describe("periodTotals span hidden tasks", () => {
     expect(periodTotals[0]).toBe(200);
   });
 });
+
+/**
+ * ⚠️ Same rule as `periodTotals`, for the same reason: a count summed from the rows
+ * on screen would drop when an admin hid a task for focus, and "4 active tasks"
+ * quietly becoming 3 is the same defect as the hours figure moving.
+ */
+describe("periodActiveTasks span hidden tasks", () => {
+  it("counts every task with hours in the period", () => {
+    // period 0: t1 100, t2 40, t3 60 — all three active
+    expect(sanitizeSnapshot(snap(), [], []).periodActiveTasks[0]).toBe(3);
+  });
+
+  it("is unchanged by hiding a task", () => {
+    expect(sanitizeSnapshot(snap(), [], ["t2"]).periodActiveTasks[0]).toBe(3);
+    expect(sanitizeSnapshot(snap(), [], ["t1", "t2", "t3"]).periodActiveTasks[0]).toBe(3);
+  });
+
+  it("does not count a task with no hours in that period", () => {
+    // t3 has [60, 0, 0] — active in period 0 only
+    const { periodActiveTasks } = sanitizeSnapshot(snap(), [], []);
+    expect(periodActiveTasks[1]).toBe(2); // t1 and t2 only
+  });
+
+  it("is indexed like the periods that survive", () => {
+    const { snapshot, periodActiveTasks } = sanitizeSnapshot(snap(), ["p:0"], []);
+    expect(periodActiveTasks).toHaveLength(snapshot.periods.length);
+    expect(snapshot.periods[0].label).toBe("Feb");
+    expect(periodActiveTasks[0]).toBe(2);
+  });
+});

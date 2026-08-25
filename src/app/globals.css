@@ -263,6 +263,31 @@ b,
 }
 
 /* Brand wordmark: masked element so it inherits any color via background-color */
+/**
+ * The mark's SHORT form — `&more` alone, for surfaces where the full lockup is
+ * too wide or the "studio" half is redundant.
+ *
+ * ⚠️ A cropped VIEWBOX of the same logo, not a redrawn file: the glyph positions
+ * were measured with `getBBox()` (studio ends at x=303, the "&" starts at 318,
+ * the final "e" ends at 693.24), so this is the official artwork windowed rather
+ * than a guess at where to cut.
+ *
+ * ⚠️ MASK LONGHANDS, never the `mask:` shorthand — Turbopack/lightningcss drops
+ * rules that use it, silently. Same trap as `.brand-wordmark` below.
+ */
+.brand-ampmore {
+  display: inline-block;
+  aspect-ratio: 381.24 / 113.296;
+  mask-image: url("/brand/logo-ampmore.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url("/brand/logo-ampmore.svg");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
 .brand-wordmark {
   display: inline-block;
   aspect-ratio: 693.24 / 113.296;

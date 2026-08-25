@@ -64,7 +64,7 @@ export default async function PublicReportPage({
     );
   }
 
-  const { snapshot, leadingHidden, periodTotals } = sanitizeSnapshot(
+  const { snapshot, leadingHidden, periodTotals, periodActiveTasks } = sanitizeSnapshot(
     raw,
     (link.hidden_columns as string[]) ?? [],
     (link.hidden_task_ids as string[]) ?? [],
@@ -80,6 +80,7 @@ export default async function PublicReportPage({
       publishedAt={link.published_at}
       hiddenColumns={leadingHidden}
       periodTotals={periodTotals}
+      periodActiveTasks={periodActiveTasks}
       viewFlags={(link.view_flags as ReportViewFlags | null) ?? null}
     />
   );
