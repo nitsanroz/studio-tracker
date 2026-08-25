@@ -122,7 +122,7 @@ describe("rollupTasks", () => {
   });
 
   it("counts a task's pre-Everhour remainder EXACTLY ONCE", () => {
-    // ⚠️ The double-count this guards: `taskHoursDone` already adds the task's
+    // ⚠️ The double-count this guards: `taskMinutesDone` already adds the task's
     // own `legacyHours`, so a rollup must not add it a second time — and the
     // SECTION's own `legacyHours` describes the same work again, which is why
     // it is never summed here (see the note on `rollupTasks`).

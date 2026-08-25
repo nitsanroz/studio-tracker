@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight, Layers, Search } from "lucide-react";
 import { useData } from "@/lib/store";
 import { buildTaskClientMap, latestActivityByClient, minutesByClientInRange } from "@/lib/aggregate";
 import { formatDayMonth, formatHoursDecimal, toISODate } from "@/lib/format";
-import { taskHoursDone } from "@/lib/task-hours";
+import { taskMinutesDone } from "@/lib/task-hours";
 import { ClientAvatar } from "./client-avatar";
 import type { Task } from "@/lib/types";
 
@@ -155,7 +155,7 @@ function TaskRow({
   todayIso: string;
   onOpen: (id: string) => void;
 }) {
-  const total = taskHoursDone(task, () => minutes);
+  const total = taskMinutesDone(task, () => minutes);
   const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
   return (
     <div

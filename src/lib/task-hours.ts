@@ -12,11 +12,11 @@ import type { Task } from "./types";
  * Anything that aggregates BY MONTH or BY PERSON must use the entries alone, not
  * this: the remainder has neither a date nor an author.
  */
-export function taskHoursDone(task: Task, taskMinutes: (id: string) => number): number {
+export function taskMinutesDone(task: Task, taskMinutes: (id: string) => number): number {
   return taskMinutes(task.id) + (task.legacyHours ?? 0) * 60;
 }
 
-/** The part of `taskHoursDone` that isn't itemised, so the UI can explain it. */
+/** The part of `taskMinutesDone` that isn't itemised, so the UI can explain it. */
 export function taskLegacyMinutes(task: Task): number {
   return (task.legacyHours ?? 0) * 60;
 }

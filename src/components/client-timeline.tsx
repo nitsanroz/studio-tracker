@@ -56,7 +56,7 @@ import {
   type Zoom,
 } from "@/lib/gantt";
 import { formatHoursDecimal, MONTH_NAMES_SHORT } from "@/lib/format";
-import { taskHoursDone } from "@/lib/task-hours";
+import { taskMinutesDone } from "@/lib/task-hours";
 import { rollupTasks, sectionBudgetHours, type Rollup } from "@/lib/task-rollup";
 import { Avatar, ContextMenu, Tabs } from "./ui";
 import { EditableNumberCell, EditableSelectCell, EditableTextCell } from "./editable-cell";
@@ -805,7 +805,7 @@ export function ClientTimeline({
           due,
           hasStart: !!t.startDate,
           undated: !t.dueDate,
-          doneMinutes: taskHoursDone(t, taskMinutes),
+          doneMinutes: taskMinutesDone(t, taskMinutes),
           assignee: t.assigneeId ? (profileById.get(t.assigneeId) ?? null) : null,
           type: t.typeId ? (typeById.get(t.typeId) ?? null) : null,
         };

@@ -9,7 +9,7 @@ import { formatDayMonth, formatHoursDecimal, formatHoursShort, toISODate } from 
 import { Avatar, ClientChip, TagBadge } from "./ui";
 import { LogTimeForm } from "./log-time-form";
 import { MobileSheet } from "./mobile-sheet";
-import { taskHoursDone } from "@/lib/task-hours";
+import { taskMinutesDone } from "@/lib/task-hours";
 import {
   EditableDateCell,
   EditableNumberCell,
@@ -269,7 +269,7 @@ function MobileTaskCards({
               {client && <ClientChip client={client} size="sm" />}
             </div>
             {g.tasks.map((task) => {
-              const total = taskHoursDone(task, (id) => stats.total.get(id) ?? 0);
+              const total = taskMinutesDone(task, (id) => stats.total.get(id) ?? 0);
               const budget = task.estimateHours;
               const overdue =
                 task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
@@ -410,7 +410,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           const section = sections.find((s) => s.id === task.sectionId);
           // the shared helper, so this table and the client page can't disagree
           // about a task's hours (it adds the pre-Everhour remainder on top)
-          const total = taskHoursDone(task, (id) => stats.total.get(id) ?? 0);
+          const total = taskMinutesDone(task, (id) => stats.total.get(id) ?? 0);
           const my = stats.mine.get(task.id) ?? 0;
           const budget = task.estimateHours;
           const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;

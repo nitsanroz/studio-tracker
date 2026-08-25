@@ -8,7 +8,7 @@
 // and that is now this function's `start`/`due`.
 
 import { parseISO, workDaysBetween } from "./gantt";
-import { taskHoursDone } from "./task-hours";
+import { taskMinutesDone } from "./task-hours";
 import type { Section, Task } from "./types";
 
 export interface Rollup {
@@ -46,7 +46,7 @@ const EMPTY: Rollup = {
  * same one the Timeline draws its shading from — pass it so "12 working days"
  * means the same thing here as it does on a bar's tooltip.
  *
- * ⚠️ **`taskHoursDone` already folds in each task's own `legacyHours`** — the
+ * ⚠️ **`taskMinutesDone` already folds in each task's own `legacyHours`** — the
  * pre-Everhour hours an old Asana title recorded but that could never be pinned
  * to a person and a day. Never add `Section.legacyHours` on top of this: that is
  * a SECTION-level display figure recovered from the old section name, describing
@@ -69,7 +69,7 @@ export function rollupTasks(
   let datedCount = 0;
 
   for (const t of tasks) {
-    doneMinutes += taskHoursDone(t, taskMinutes);
+    doneMinutes += taskMinutesDone(t, taskMinutes);
     if (t.estimateHours != null) {
       estimate += t.estimateHours;
       hasEstimate = true;

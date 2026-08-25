@@ -15,7 +15,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
-import { taskHoursDone, taskLegacyMinutes } from "@/lib/task-hours";
+import { taskMinutesDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { formatSize } from "@/lib/uploads";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
 import { EditableTextCell } from "./editable-cell";
@@ -501,7 +501,7 @@ export function TaskPanel() {
    * below carries an explicit line for the remainder, so the rows still add up to
    * this headline.
    */
-  const doneMinutes = taskHoursDone(task, taskMinutes);
+  const doneMinutes = taskMinutesDone(task, taskMinutes);
   const legacyMinutes = taskLegacyMinutes(task);
   const overBudget = task.estimateHours != null && doneMinutes / 60 > task.estimateHours;
   const activeProfiles = profiles.filter((p) => p.active);

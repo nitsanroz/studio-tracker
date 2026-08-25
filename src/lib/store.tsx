@@ -355,7 +355,7 @@ interface Store {
    * ⚠️ Derived ONCE here rather than by each consumer. The shell's badge, the
    * home-page banner and the queue all ask the same question, and three copies of
    * `taskRequests.filter(needsReview)` is how a badge comes to disagree with the
-   * list it points at — the same reason `task-rollup.ts` and `taskHoursDone` were
+   * list it points at — the same reason `task-rollup.ts` and `taskMinutesDone` were
    * extracted in earlier releases.
    */
   updatedRequests: TaskRequest[];

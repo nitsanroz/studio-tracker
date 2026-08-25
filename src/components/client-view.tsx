@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatDate, formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
-import { taskHoursDone } from "@/lib/task-hours";
+import { taskMinutesDone } from "@/lib/task-hours";
 import { rollupTasks, sectionBudgetHours, type Rollup } from "@/lib/task-rollup";
 import { toISO } from "@/lib/gantt";
 import { Avatar, BudgetBar, CollapseChevron, ContextMenu, Modal, Tabs, TagBadge } from "./ui";
@@ -75,9 +75,22 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
     // Recovered hours we could not pin to a person or a date. They are NOT in
     // entrySumsAll (they never became entries), so they are added to the total
     // separately and deliberately kept out of byMonth/byUser.
+    //
+    // ⚠️ THE BILLABLE PART IS COUNTED TOO, AND IT WAS NOT. The share below is
+    // `billable / total`, and `total` carries these hours while `billable` was
+    // built only from entries — which these are not — so every client with
+    // pre-Everhour history read as LESS billable than it is, in proportion to how
+    // much of that history it carries. A client whose work is entirely billable,
+    // with 100h tracked and 100h recovered, showed 50%. Not hypothetical: the
+    // recovery put 3,953.75h of remainder onto ~150 tasks. The tooltip beside the
+    // total already reasons about this split for the charts; the share was missed.
     let unattributed = 0;
+    let unattributedBillable = 0;
     for (const t of tasks) {
-      if (t.clientId === clientId) unattributed += (t.legacyHours ?? 0) * 60;
+      if (t.clientId !== clientId) continue;
+      const mins = (t.legacyHours ?? 0) * 60;
+      unattributed += mins;
+      if (t.billable) unattributedBillable += mins;
     }
 
     let total = 0;
@@ -111,7 +124,17 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 8);
 
-    return { total: total + unattributed, unattributed, billable, open, months, users };
+    return {
+      total: total + unattributed,
+      unattributed,
+      // Same basis as `total`: both sides of the share now include the recovered
+      // hours, so the percentage answers "how much of this client's work is
+      // billable" rather than "how much of the ITEMISED part is".
+      billable: billable + unattributedBillable,
+      open,
+      months,
+      users,
+    };
   }, [tasks, profiles, entrySumsAll, clientId]);
 
   const maxUser = stats.users[0]?.minutes ?? 0;
@@ -448,7 +471,7 @@ function makeComparator(
     case "hours":
       // must include the legacy remainder, exactly like the cell — sorting by a
       // number the user can't see is worse than not sorting at all
-      return (a, b) => num(taskHoursDone(a, taskMinutes), taskHoursDone(b, taskMinutes)) * sort.dir;
+      return (a, b) => num(taskMinutesDone(a, taskMinutes), taskMinutesDone(b, taskMinutes)) * sort.dir;
     case "budget":
       // Was utilisation (logged ÷ estimate). The column now shows the budget
       // number itself, so sorting it by a hidden ratio is indefensible.
@@ -575,8 +598,10 @@ function TaskRow({
   }
   const assignee = profiles.find((p) => p.id === task.assigneeId) ?? null;
   const taskType = taskTypes.find((t) => t.id === task.typeId) ?? null;
-  const hoursDone = taskHoursDone(task, taskMinutes);
-  const overBudget = task.estimateHours != null && hoursDone / 60 > task.estimateHours;
+  // ⚠️ MINUTES, hence the `/ 60` below. This was `doneMinutes`, which read as the
+  // mistake it was one line away from being.
+  const doneMinutes = taskMinutesDone(task, taskMinutes);
+  const overBudget = task.estimateHours != null && doneMinutes / 60 > task.estimateHours;
   const done = task.status === "done";
   const active = openTaskId === task.id;
 
@@ -825,11 +850,11 @@ function TaskRow({
       <span
         className="hidden text-xs tabular-nums md:block"
         style={colCell("hours")}
-        title={`${formatHoursShort(hoursDone)} logged`}
+        title={`${formatHoursShort(doneMinutes)} logged`}
       >
-        {hoursDone > 0 ? (
+        {doneMinutes > 0 ? (
           <span className={overBudget ? "font-semibold text-danger" : "text-muted"}>
-            {formatHoursDecimal(hoursDone)}h
+            {formatHoursDecimal(doneMinutes)}h
           </span>
         ) : (
           <span className="text-faint">–</span>
@@ -843,11 +868,11 @@ function TaskRow({
             value={task.estimateHours}
             onCommit={(v) => updateTask(task.id, { estimateHours: v })}
             display={
-              <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} label="budget" />
+              <BudgetBar doneMinutes={doneMinutes} estimateHours={task.estimateHours} label="budget" />
             }
           />
         ) : (
-          <BudgetBar doneMinutes={hoursDone} estimateHours={task.estimateHours} label="budget" />
+          <BudgetBar doneMinutes={doneMinutes} estimateHours={task.estimateHours} label="budget" />
         )}
       </span>
       )}
@@ -1437,7 +1462,7 @@ function DeleteGroupModal({
 }) {
   const { tasks, taskMinutes, deleteTaskGroup } = useData();
   const members = tasks.filter((t) => t.groupId === group.id);
-  const minutes = members.reduce((sum, t) => sum + taskHoursDone(t, taskMinutes), 0);
+  const minutes = members.reduce((sum, t) => sum + taskMinutesDone(t, taskMinutes), 0);
   // The same rule `deleteTasksBulk` follows for a selection: hours that have been
   // logged cannot be got back, so deleting the work is simply not offered.
   const blocked = minutes > 0;
