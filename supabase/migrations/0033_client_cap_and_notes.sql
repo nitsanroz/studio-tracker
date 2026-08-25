@@ -1,0 +1,24 @@
+-- A client's HOUR CAP and the studio's internal notes for its report page.
+--
+-- ⚠️ BOTH ARE PER CLIENT, NOT PER PERIOD. Nitsan, 2026-08-24: "cap is general for
+-- client - not different each month". `client_billing_periods.hour_cap` has
+-- existed since 0007 and was never once written — the app had no editor for it,
+-- which is why the client report's "Period cap" and "Remaining" tiles had never
+-- rendered for anybody. The per-period column is left in place (published
+-- snapshots carry its value in their frozen jsonb) but the app now fills each
+-- period's cap FROM the client, so there is one number to maintain.
+--
+-- ⚠️ `report_notes` is INTERNAL and must never reach a client. It is on `clients`,
+-- which the public report page never selects — that page reads only
+-- `report_links.snapshot`, and `sanitizeSnapshot` builds its output field by
+-- field, so a new client column cannot leak into it by accident.
+--
+-- ⚠️ NOT `invoice_note`, which looks free and is not: it renders as "Invoice day"
+-- ("20th") on the client-reports page.
+--
+-- Degrades gracefully: reads use `*` and fall back, writes go through
+-- `updateWithOptional` (PGRST204 on a missing column, not 42703 — see db.ts), so
+-- the app works normally before this is applied; the cap and notes simply cannot
+-- be saved.
+alter table clients add column if not exists hour_cap numeric(7,2);
+alter table clients add column if not exists report_notes text not null default '';

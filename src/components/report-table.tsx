@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, Plus } from "lucide-react";
 import { formatHoursShort } from "@/lib/format";
 import { ResizeHandle, useColWidths } from "@/components/resizable";
+import { ContextMenu } from "@/components/ui";
 import type { ReportSnapshot } from "@/lib/types";
 
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
@@ -310,15 +311,45 @@ export function ReportTable({
   >(null);
   const [dragging, setDragging] = useState(false);
   const [bubble, setBubble] = useState<{ x: number; y: number } | null>(null);
+  const [cellMenu, setCellMenu] = useState<{ x: number; y: number } | null>(null);
+  /** Brief "Copied" in the bubble — the only feedback available here. */
+  const [copied, setCopied] = useState(false);
+  /**
+   * ⚠️ The key handler is registered once, so it must not close over a stale
+   * `copySelection` — that one captures `bounds`, which changes with every drag.
+   *
+   * ⚠️ Written in an EFFECT, never during render: a ref assigned while rendering
+   * is a React violation and the linter flags it (same call as v1.19.7's Escape
+   * handler). The gap cannot matter — ⌘C only ever arrives from a real keypress,
+   * which is always after paint.
+   */
+  const copySelectionRef = useRef<(() => Promise<void>) | null>(null);
   const clearSel = () => {
     setSel(null);
     setBubble(null);
-  };
+    setCellMenu(null);
+  }
 
   useEffect(() => {
     if (!selectable) return;
     const up = () => setDragging(false);
-    const key = (e: KeyboardEvent) => e.key === "Escape" && clearSel();
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        clearSel();
+        return;
+      }
+      // ⌘C / Ctrl+C copies the selection — but ONLY when the browser has nothing
+      // of its own to copy. Hijacking the shortcut while the user has text
+      // selected, or a caret in an input, would steal a copy they meant.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
+        const el = document.activeElement as HTMLElement | null;
+        const inField =
+          !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+        const hasTextSelection = !!window.getSelection()?.toString();
+        if (inField || hasTextSelection) return;
+        void copySelectionRef.current?.();
+      }
+    };
     window.addEventListener("mouseup", up);
     window.addEventListener("keydown", key);
     return () => {
@@ -338,6 +369,55 @@ export function ReportTable({
   };
   const isSelected = (r: number, c: number) =>
     !!bounds && r >= bounds.r0 && r <= bounds.r1 && c >= bounds.c0 && c <= bounds.c1;
+
+  /**
+   * The selection as TAB-SEPARATED text, so it pastes straight into a spreadsheet
+   * as a grid of numbers rather than one run-together string.
+   *
+   * ⚠️ DECIMAL HOURS, not the "7h 30m" the cells show: the point of copying these
+   * is to add them up somewhere else, and Sheets cannot sum "7h 30m". An empty
+   * cell is copied as EMPTY rather than 0 — a blank means nothing was logged, and
+   * a column of zeroes averages differently from a column of blanks.
+   *
+   * ⚠️ Only the selected CELLS. Task names are deliberately not included: the
+   * selection is a rectangle of figures, and silently prepending a column nobody
+   * asked for is worse than pasting the shape that was highlighted.
+   */
+  function selectionText(): string {
+    if (!bounds) return "";
+    const lines: string[] = [];
+    for (let r = bounds.r0; r <= bounds.r1; r++) {
+      const t = gridRows[r];
+      if (!t) continue;
+      const cells: string[] = [];
+      for (let c = bounds.c0; c <= bounds.c1; c++) {
+        const col = visiblePeriods[c];
+        if (!col) continue;
+        const m = minutesAt(t, col.index);
+        cells.push(m > 0 ? String(Math.round((m / 60) * 100) / 100) : "");
+      }
+      lines.push(cells.join("\t"));
+    }
+    return lines.join("\n");
+  }
+
+  async function copySelection() {
+    const text = selectionText();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      // Clipboard access can be refused (insecure origin, unfocused document).
+      // Saying nothing would read as "the copy worked" — so say nothing changed.
+      setCopied(false);
+    }
+    setCellMenu(null);
+  }
+  useEffect(() => {
+    copySelectionRef.current = copySelection;
+  });
 
   // cheap enough to recompute each render: at most a few hundred cells
   let selMinutes = 0;
@@ -375,6 +455,17 @@ export function ReportTable({
             if (!dragging) return;
             setSel((s) => (s ? { ...s, r1: r, c1: c } : s));
             setBubble({ x: e.clientX, y: e.clientY });
+          },
+          /**
+           * Right-click offers Copy. ⚠️ On a cell OUTSIDE the current selection it
+           * selects that cell first — right-clicking somewhere else and copying
+           * the old selection would hand over figures the user was not pointing
+           * at, which for numbers going into an invoice is the wrong surprise.
+           */
+          onContextMenu: (e: React.MouseEvent) => {
+            e.preventDefault();
+            if (!isSelected(r, c)) setSel({ r0: r, c0: c, r1: r, c1: c, sig });
+            setCellMenu({ x: e.clientX, y: e.clientY });
           },
         }
       : {};
@@ -789,7 +880,29 @@ export function ReportTable({
       {/* Fixed, and a sibling of the scroll box rather than a child: an absolutely
           positioned bubble inside `overflow-x-auto` is clipped, which is exactly the
           bug the client tab menu had. pointer-events-none so it never eats a drag. */}
-      {selectable && bubble && selCells > 1 && (
+      {selectable && cellMenu && (
+        <ContextMenu
+          x={cellMenu.x}
+          y={cellMenu.y}
+          items={[
+            {
+              label: selCells > 1 ? `Copy ${selCells} cells` : "Copy cell",
+              hint: "⌘C",
+              onClick: () => void copySelection(),
+            },
+          ]}
+          onClose={() => setCellMenu(null)}
+        />
+      )}
+      {selectable && copied && bubble && (
+        <div
+          className="pointer-events-none fixed z-50 rounded-lg bg-foreground px-2.5 py-1 text-xs font-medium text-white shadow-card"
+          style={{ left: bubble.x + 16, top: bubble.y + 16 }}
+        >
+          Copied
+        </div>
+      )}
+      {selectable && !copied && bubble && selCells > 1 && (
         <div
           style={{ left: bubble.x + 16, top: bubble.y + 16 }}
           className="pointer-events-none fixed z-50 rounded-xl bg-foreground px-3 py-2 text-white shadow-xl"

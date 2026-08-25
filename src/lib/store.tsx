@@ -2181,11 +2181,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if ("billingPeriodNote" in patch) row.billing_period_note = patch.billingPeriodNote;
       if ("billable" in patch) row.billable = patch.billable;
       if ("invoiceNote" in patch) row.invoice_note = patch.invoiceNote;
-      supabase
-        .from("clients")
-        .update(row)
-        .eq("id", clientId)
-        .then(wrote("updateClient"));
+      /**
+       * ⚠️ 0033's two columns go through `updateWithOptional`, not into `row`.
+       * A missing column on a WRITE is reported by PostgREST as PGRST204 and
+       * fails the WHOLE update — so folding `hour_cap`/`report_notes` in here
+       * would mean that, before that SQL is run, renaming a client or marking it
+       * internal silently failed too. The optional pair is dropped and the rest
+       * retried instead. See `updateWithOptional` for why this must never be used
+       * for a value the app then relies on.
+       */
+      const optional: Record<string, unknown> = {};
+      if ("hourCap" in patch) optional.hour_cap = patch.hourCap;
+      if ("reportNotes" in patch) optional.report_notes = patch.reportNotes;
+      const tail = wrote("updateClient");
+      void updateWithOptional(supabase, "clients", { id: clientId }, row, optional).then((res) => {
+        tail(res);
+        // ⚠️ Say so rather than leaving local state claiming a value the database
+        // does not have — it would look saved until the next refresh took it away.
+        if (res.degraded && Object.keys(optional).length) {
+          setNotice("The cap and notes weren't saved — migration 0033 hasn't been run yet.");
+        }
+      });
       // Marking a client internal makes all its existing tasks non-billable.
       // The reverse is NOT mass-applied (keys tasks etc. must stay non-billable).
       if (patch.billable === false) {

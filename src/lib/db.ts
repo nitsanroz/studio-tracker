@@ -310,6 +310,8 @@ export const mapClient = (r: any): Client => ({
   archived: r.archived,
   billable: r.billable ?? true, // column exists from migration 0009
   invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
+  hourCap: r.hour_cap == null ? null : Number(r.hour_cap), // 0033
+  reportNotes: r.report_notes ?? "", // 0033
   notes: r.notes ?? "", // column exists from migration 0022
   icon: r.icon ?? null, // columns exist from migration 0023
   iconUrl: r.icon_url ?? null,

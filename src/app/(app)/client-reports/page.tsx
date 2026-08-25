@@ -35,6 +35,25 @@ import type { BillingPeriod, Client, ReportLink } from "@/lib/types";
     is stable across renders rather than a fresh [] each time. */
 const EMPTY_FOLDS: string[] = [];
 
+/**
+ * How close a period is to the client's cap, as a text colour.
+ *
+ * ⚠️ The cap is SEMANTIC — Nitsan, 2026-08-24: "its only semantic for us and the
+ * client to see that he doesn't exceed the cap without noticing, without
+ * permission." So it is not a gate and nothing is blocked; the number just has to
+ * say for itself that the period is filling. Notice at 70%, severe at 90%.
+ */
+const CAP_NOTICE = 0.7;
+const CAP_SEVERE = 0.9;
+
+export function capTone(minutes: number, capHours: number | null): string {
+  if (capHours == null || capHours <= 0) return "";
+  const used = minutes / 60 / capHours;
+  if (used >= CAP_SEVERE) return "text-danger";
+  if (used >= CAP_NOTICE) return "text-amber-600";
+  return "";
+}
+
 /** iso date + n CALENDAR days → iso date. */
 function shiftDaysIso(iso: string, n: number): string {
   return toISODate(shiftDays(parseISO(iso), n));
@@ -89,6 +108,24 @@ function PaymentPeriods({ client }: { client: Client }) {
     if (before && from <= before.dateTo) return;
     if (after && to >= after.dateFrom) return;
     updateBillingPeriod(p.id, { [key]: v });
+  };
+
+  /**
+   * The client's hour cap. Blank clears it.
+   *
+   * ⚠️ Anything that is not a non-negative number is REFUSED rather than coerced:
+   * `Number("")` is 0, so a naive parse would turn a cleared cap into a 0h cap
+   * and tell the client their whole period is overspent.
+   */
+  const commitClientCap = (c: Client, raw: string) => {
+    const v = raw.trim();
+    if (v === "") {
+      updateClient(c.id, { hourCap: null });
+      return;
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0) return;
+    updateClient(c.id, { hourCap: n });
   };
 
   const current = periods.find((p) => todayIso >= p.dateFrom && todayIso <= p.dateTo);
@@ -232,11 +269,39 @@ function PaymentPeriods({ client }: { client: Client }) {
           simply yields the difference — one number moves both panes. */}
       <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[504px]">
         <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
-          <div className="grid grid-cols-3 gap-2">
-            <div title="Hours logged on billable tasks in the current payment period">
+          <div className="grid grid-cols-4 gap-2">
+            <div
+              title={
+                client.hourCap != null
+                  ? `Hours logged on billable tasks in the current payment period, against this client's ${client.hourCap}h cap`
+                  : "Hours logged on billable tasks in the current payment period"
+              }
+            >
               <div className="text-[11px] font-medium text-muted">Current period</div>
-              <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+              {/* ⚠️ `136/150`, and the COLOUR is the whole point of the cap: it is
+                  semantic, so the number has to say by itself that the period is
+                  filling up. Amber from 70%, red from 90% — Nitsan's thresholds,
+                  so nobody goes over without noticing and asking. */}
+              <div
+                className={`mt-0.5 text-2xl font-semibold tabular-nums ${capTone(currentMinutes, client.hourCap)}`}
+              >
                 {current ? formatHoursShort(currentMinutes) : "–"}
+                {current && client.hourCap != null && (
+                  <span className="text-base font-medium opacity-70">/{client.hourCap}h</span>
+                )}
+              </div>
+            </div>
+            <div title="Hours agreed per billing period for this client. The client's report shows it as a cap with the hours remaining — leave it blank for no cap and neither appears. Click to edit.">
+              <div className="text-[11px] font-medium text-muted">Hour cap</div>
+              <div className="mt-0.5">
+                <EditableTextCell
+                  value={client.hourCap != null ? String(client.hourCap) : ""}
+                  placeholder="none"
+                  bidi={false}
+                  onCommit={(v) => commitClientCap(client, v)}
+                  className="text-2xl font-semibold"
+                  inputClassName="text-2xl font-semibold"
+                />
               </div>
             </div>
             <div title="Day of the month the invoice goes out — click to edit">
@@ -272,7 +337,57 @@ function PaymentPeriods({ client }: { client: Client }) {
             <p className="text-sm text-faint">No hours yet.</p>
           )}
         </div>
+        <InternalNotes client={client} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The studio's own notes about a client's reporting — why a month ran over, what
+ * was agreed on the phone, what to raise before the next invoice.
+ *
+ * ⚠️⚠️ INTERNAL. THIS MUST NEVER REACH A CLIENT. It is safe by construction, not
+ * by care: it lives on `clients`, and the public report page selects nothing from
+ * that table — it reads `report_links.snapshot` alone, and `sanitizeSnapshot`
+ * builds its output field by field (v1.27.1), so a new client column cannot leak
+ * into a published report even by accident. Keep it that way: if this ever needs
+ * to be shown to a client it should be a DIFFERENT field, not this one.
+ *
+ * Commits on blur rather than behind a Save button — same reasoning as the client
+ * Overview notes: there is no modal to hang a save on, and losing a typed
+ * paragraph is worse than saving one somebody meant to abandon (⌘Z still undoes
+ * it). An incoming value is adopted only when the textarea is not being edited,
+ * so a colleague's refresh cannot overwrite what is being typed here.
+ */
+function InternalNotes({ client }: { client: Client }) {
+  const { updateClient } = useData();
+  const [draft, setDraft] = useState(client.reportNotes);
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setDraft(client.reportNotes);
+  }, [client.reportNotes, editing]);
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h3
+        className="mb-2 text-xs font-medium uppercase tracking-wide text-faint"
+        title="Only the studio sees this — it is never part of a published client report"
+      >
+        Internal notes
+      </h3>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onFocus={() => setEditing(true)}
+        onBlur={() => {
+          setEditing(false);
+          if (draft !== client.reportNotes) updateClient(client.id, { reportNotes: draft });
+        }}
+        rows={5}
+        placeholder="Notes for the studio — never shown to the client."
+        className="bidi-auto w-full resize-y rounded-lg border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-brand"
+      />
     </div>
   );
 }

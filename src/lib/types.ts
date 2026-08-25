@@ -67,6 +67,10 @@ export interface Client {
   billable: boolean;
   /** free-text invoice day of month shown on Reports ("15th", "1st"…) */
   invoiceNote: string;
+  /** Hours agreed per billing period, studio-wide for this client (0033). null = no cap. */
+  hourCap: number | null;
+  /** Internal notes on the client-reports page. NEVER sent to a client (0033). */
+  reportNotes: string;
   /**
    * A preset glyph name from CLIENT_ICONS (migration 0023), or null for the
    * client's initial. Ignored when `iconUrl` is set.
