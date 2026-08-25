@@ -43,6 +43,56 @@ function daysLeftIn(to: string): number {
  * client can switch them off, because the data behind them was deliberately sent.
  * Anything that must not be seen belongs in the hidden lists above, not here.
  */
+/**
+ * The studio's `&more` mark.
+ *
+ * ⚠️⚠️ PUT THE RESPONSIVE `hidden` / `sm:*` ON `className`, WHICH LANDS ON THE
+ * WRAPPER — never reach past it to the mask span. `.brand-ampmore` sets
+ * `display: inline-block` in globals.css, which is UNLAYERED, while Tailwind emits
+ * display utilities inside `@layer utilities`, so the unlayered rule wins whatever
+ * the specificity and a `sm:hidden` on the span is silently inert. Measured: with
+ * it on the span, BOTH instances rendered at 944px. Third time this trap has cost
+ * time here (v1.12.0 form fields, v1.22.1 `.brand-wordmark`).
+ *
+ * ⚠️ It is rendered TWICE on this page and that is deliberate — the same call
+ * v1.22.1 made on the public Gantt. On a phone the mark belongs on the client-name
+ * row ("up inline with client name just aligne to right"); on a desktop it is the
+ * last item in the header's right-hand cluster, beside the billing box. The figures
+ * and the period selector wrap between those two positions, so ONE DOM ORDER
+ * CANNOT SERVE BOTH. It costs nothing to duplicate: a CSS-mask span, no image, no
+ * request.
+ */
+function AmpMark({ size, className = "" }: { size: string; className?: string }) {
+  return (
+    <span className={`shrink-0 ${className}`}>
+      <span className={`brand-ampmore bg-brand ${size}`} role="img" aria-label="Studio&more" />
+    </span>
+  );
+}
+
+/**
+ * "Updated 25 Aug 2026" — when the studio last published this snapshot.
+ *
+ * ⚠️ A `span`, deliberately NOT a button or a chip: nothing happens when you press
+ * it, and on a page a client only reads, anything shaped like a control invites a
+ * click that goes nowhere. A CLOCK rather than a refresh arrow for the same reason
+ * — a refresh glyph is a verb. It sits inches from the period selector, which IS
+ * outlined to look pressable, so that contrast has to stay legible.
+ *
+ * ⚠️ Also rendered twice, for the same reason as the mark: on a desktop it belongs
+ * in the table pane's top-right corner, on a phone beside the billing box, and the
+ * two rows in between are full (two 44px capsules there, the figures here). Pass
+ * the display utility in `className`; exactly one instance may be visible.
+ */
+function UpdatedStamp({ at, className = "" }: { at: string; className?: string }) {
+  return (
+    <span className={`items-center gap-1.5 text-[11px] font-medium text-muted ${className}`}>
+      <Clock size={12} aria-hidden />
+      Updated {at}
+    </span>
+  );
+}
+
 export function PublicReportView({
   clientName,
   clientColor,
@@ -85,9 +135,10 @@ export function PublicReportView({
    * Per-period charged totals.
    *
    * ⚠️ FROM `periodTotals`, NOT SUMMED FROM THE ROWS ON SCREEN. Summing the
-   * visible rows made hiding a task change the client's figures: the tiles below
-   * and the Billing periods pane both understated, and `remaining` — cap minus
-   * charged — therefore OVERSTATED the budget left. Hiding is a focus tool, not
+   * visible rows made hiding a task change the client's figures — the defect
+   * v1.29.0 fixed. (It named two surfaces that no longer exist, the tile row and
+   * the Billing periods aside; the rule now protects the three header figures,
+   * and `remaining` is gone with the tiles.) Hiding is a focus tool, not
    * confidentiality (the same reason `totalMinutes` spans hidden periods), so
    * the summary has to be the real one. Computed server-side before the hidden
    * rows are removed, since afterwards those hours are simply gone.
@@ -168,24 +219,10 @@ export function PublicReportView({
             </h1>
             <p className="-mt-0.5 text-sm text-muted">Hours report</p>
           </div>
-          {/* The PHONE instance of the mark — see the note on its desktop twin
-              below. `ml-auto` pushes it to the right end of the name row; the row
-              is `basis-full` below `sm` so that row is the full width.
-              ⚠️⚠️ THE `sm:hidden` MUST LIVE ON THIS WRAPPER, NEVER ON THE MASK
-              SPAN. `.brand-ampmore` sets `display: inline-block` in globals.css,
-              which is UNLAYERED, while Tailwind emits display utilities inside
-              `@layer utilities` — so the unlayered rule wins whatever the
-              specificity and `sm:hidden` on the span is silently inert. Measured:
-              with it on the span, BOTH marks rendered at 944px. This is the third
-              time this exact trap has cost time here (v1.12.0 form fields,
-              v1.22.1 `.brand-wordmark`). */}
-          <span className="ml-auto shrink-0 sm:hidden">
-            <span
-              className="brand-ampmore h-8 bg-brand"
-              role="img"
-              aria-label="Studio&more"
-            />
-          </span>
+          {/* The PHONE instance — see `AmpMark` for why there are two. `ml-auto`
+              pushes it to the right end of the name row, which is `basis-full`
+              below `sm` and so spans the screen. */}
+          <AmpMark size="h-8" className="ml-auto sm:hidden" />
         </div>
 
         {/* ⚠️ Below `sm` this is `w-full`, so it wraps UNDER the name and its own
@@ -334,31 +371,17 @@ export function PublicReportView({
                     ⚠️ STILL NOT A CHIP. It sits inches from an element that IS
                     outlined to look pressable, so the contrast has to stay legible:
                     plain muted text and a clock, no border, no fill. */}
+                {/* PHONE instance — right-aligned across the billing row. */}
                 {lastUpdated && (
-                  <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted sm:hidden">
-                    <Clock size={12} aria-hidden />
-                    Updated {lastUpdated}
-                  </span>
+                  <UpdatedStamp at={lastUpdated} className="ml-auto flex shrink-0 sm:hidden" />
                 )}
               </div>
             </div>
           )}
 
-          {/* ⚠️ TWO INSTANCES OF THE MARK, and the duplication is deliberate — the
-              same call v1.22.1 made on the public Gantt for the same reason: ONE DOM
-              ORDER CANNOT SERVE BOTH SHAPES. On a phone it belongs on the name row
-              ("up inline with client name just aligne to right"); on a desktop it is
-              the last thing in this right-hand cluster, beside the billing box. It
-              is a CSS-mask span: no image, no request, nothing to load twice.
-              ⚠️ The `hidden`/`sm:flex` lives on this WRAPPER, never on the mask span
-              — see the note on the phone instance above. This is the DESKTOP one. */}
-          <div className="hidden shrink-0 items-center sm:flex">
-            <span
-              className="brand-ampmore h-8 shrink-0 bg-brand lg:h-11"
-              role="img"
-              aria-label="Studio&more"
-            />
-          </div>
+          {/* The DESKTOP instance — last in this right-hand cluster, beside the
+              billing box. See `AmpMark`. */}
+          <AmpMark size="h-8 lg:h-11" className="hidden items-center sm:flex" />
         </div>
       </header>
 
@@ -387,10 +410,10 @@ export function PublicReportView({
                 right end of this row without moving the capsules off the left edge.
                 ⚠️ Still plain text and a clock, still NOT a chip. */}
             {lastUpdated && (
-              <span className="order-last ml-auto hidden shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted sm:flex">
-                <Clock size={12} aria-hidden />
-                Updated {lastUpdated}
-              </span>
+              <UpdatedStamp
+                at={lastUpdated}
+                className="order-last ml-auto hidden shrink-0 sm:flex"
+              />
             )}
             <ViewToggle
               touch

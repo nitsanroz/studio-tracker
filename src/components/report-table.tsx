@@ -220,10 +220,13 @@ export function ReportTable({
 
   const num = "px-2 py-1.5 text-right tabular-nums whitespace-nowrap";
 
-  // ── the four lead columns are pinned, so their widths must be definite ──────
-  // Sticky needs a left offset per column, and an offset can only be computed from
-  // widths we control. They are resizable because the task titles are the reason
-  // anyone scrolls this table in the first place.
+  // ── THREE lead columns, pinned on a desktop only ───────────────────────────
+  // (It said "four" until v1.32.3: the Section column was dropped back in v1.20.0
+  // when each group gained a heading row, and since v1.32.1 a phone pins none of
+  // them at all. The widths still have to be definite either way — sticky needs a
+  // per-column left offset, and an offset can only be computed from widths we own.)
+  // They are resizable because the task titles are the reason anyone scrolls this
+  // table in the first place.
   /**
    * ⚠️⚠️ ON A PHONE THE PINNED WIDTHS ARE OVERRIDDEN, AND THIS IS NOT COSMETIC —
    * without it the client's numbers are UNREACHABLE. Measured at 375px on Visitt's
