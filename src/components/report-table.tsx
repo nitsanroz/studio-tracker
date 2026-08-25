@@ -1048,13 +1048,12 @@ export function ViewToggle({
       aria-pressed={on}
       className={`rounded-full border font-medium ${
         touch
-          ? // ⚠️ 36px, NOT the 44px this app has used as its phone floor since
-            // v1.15.0 — Nitsan asked for it directly ("2 capsule buttons can be less
-            // high and wider"), and at 44px two capsules in a row read as a pair of
-            // slabs above the table. Wider padding keeps the TAP AREA generous in
-            // the axis that was actually cramped, which is why this is a reshape
-            // rather than a plain shrink. Flagged as a deliberate exception.
-            "min-h-9 px-5 py-1 text-xs sm:min-h-0 sm:px-3"
+          ? // ⚠️ BACK TO 44px, the phone tap floor this app has held since v1.15.0.
+            // It briefly shipped at 36 because Nitsan asked for "less high"; when the
+            // floor was pointed out he chose the floor ("keep the capsules at 44px
+            // then"). The WIDTH half of that ask stands — `px-5` on a phone — so the
+            // reshape survives without trading away the target size.
+            "min-h-11 px-5 py-1 text-xs sm:min-h-0 sm:px-3"
           : "px-2.5 py-1 text-[11px]"
       } ${
         on

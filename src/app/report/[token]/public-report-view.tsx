@@ -9,6 +9,7 @@ import { daysBetween } from "@/lib/period-math";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 
 /** `1/8` — compact enough to sit inside a period label. */
@@ -72,6 +73,10 @@ export function PublicReportView({
   const [hideEmptyRows, setHideEmptyRows] = useState(viewFlags?.hideEmptyRows ?? false);
   const [foldedSections, setFoldedSections] = useState<string[]>([]);
   const [periodsOpen, setPeriodsOpen] = useState(false);
+  // ⚠️ For the avatar SIZE only, which is a number rather than a class — the
+  // hook returns false on the first render, so a phone paints 56px for one
+  // frame. Harmless here; anything structural stays on `sm:` classes.
+  const narrow = useIsNarrow();
   const lastUpdated = publishedAt
     ? new Date(publishedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
     : null;
@@ -130,65 +135,64 @@ export function PublicReportView({
        on the public Gantt. Capped at 2200px only so it does not stretch absurdly on
        an ultrawide, and the padding grows with the screen. */
     <main className="mx-auto w-full max-w-[2200px] p-2 sm:p-6 lg:p-10">
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        {/* ⚠️ A WIDE gap, not the 20px this shipped with: the hours are set like the
-            client's name on purpose, and two headlines that close together read as
-            one run-on title ("Visitt 12h"). Nitsan: "move it away from client name -
-            its too close". It grows with the screen, and the row still wraps on a
-            narrow one rather than squeezing. */}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-10 gap-y-3 lg:gap-x-20">
-          <div className="flex min-w-0 basis-full items-center gap-3 sm:basis-auto">
-            {/* ⚠️ The real `ClientAvatar`, not a letter in a coloured box — Nitsan:
-                "you can use client avatar in the color cube - just as a client looks
-                in the system". It falls back to the glyph and then to the initial on
-                its own, so a client with no mark looks exactly as it did before. */}
-            <ClientAvatar
-              client={{ name: clientName, color: clientColor, icon: clientIcon, iconUrl: clientIconUrl }}
-              size={56}
-              className="shrink-0"
-            />
-            <div className="min-w-0">
-              {/* The name grows with the screen — it is the page's title, and a 3xl
-                  heading on a 2560px page reads as a caption. */}
-              {/* ⚠️ `leading-tight` + a small negative margin, so the caption sits
-                  under the name rather than floating below it. The default line
-                  height on a 5xl serif leaves ~14px of air, which reads as two
-                  separate things instead of a title and its subtitle. Applied to
-                  the hours pair below as well — they are set alike on purpose, so
-                  they have to be spaced alike. */}
-              <h1 className="font-serif-accent truncate text-3xl leading-tight lg:text-4xl xl:text-5xl">
-                {clientName}
-              </h1>
-              <p className="-mt-0.5 text-sm text-muted">Hours report</p>
-            </div>
-            {/* The PHONE instance of the mark — see the note on its desktop twin
-                below. `ml-auto` pushes it to the right end of the name row; the row
-                is `basis-full` below `sm` so that row is the full width.
-                ⚠️⚠️ THE `sm:hidden` MUST LIVE ON THIS WRAPPER, NEVER ON THE MASK
-                SPAN. `.brand-ampmore` sets `display: inline-block` in globals.css,
-                which is UNLAYERED, while Tailwind emits display utilities inside
-                `@layer utilities` — so the unlayered rule wins whatever the
-                specificity and `sm:hidden` on the span is silently inert. Measured:
-                with it on the span, BOTH marks rendered at 944px. This is the third
-                time this exact trap has cost time here (v1.12.0 form fields,
-                v1.22.1 `.brand-wordmark`). */}
-            <span className="ml-auto shrink-0 sm:hidden">
-              <span
-                className="brand-ampmore h-5 bg-brand"
-                role="img"
-                aria-label="Studio&more"
-              />
-            </span>
+      {/*
+        ⚠️ TWO CLUSTERS, NOT ONE ROW OF FOUR THINGS — Nitsan's layout: identity on the
+        left, and everything that answers "how much / how current" pushed to the
+        right, in the order figures → billing box → mark ("next billing box align to
+        right next to &more logo… 3 data elements can be aligned right to the billing
+        box"). `items-center` rather than `items-start`, so the right cluster sits
+        level with two lines of large serif on the left instead of riding above them.
+      */}
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-x-10 gap-y-4">
+        <div className="flex min-w-0 basis-full items-center gap-3 sm:basis-auto">
+          {/* ⚠️ The real `ClientAvatar`, not a letter in a coloured box — Nitsan:
+              "you can use client avatar in the color cube - just as a client looks
+              in the system". It falls back to the glyph and then to the initial on
+              its own, so a client with no mark looks exactly as it did before. */}
+          <ClientAvatar
+            client={{ name: clientName, color: clientColor, icon: clientIcon, iconUrl: clientIconUrl }}
+            size={narrow ? 44 : 56}
+            className="shrink-0"
+          />
+          <div className="min-w-0">
+            {/* The name grows with the screen — it is the page's title, and a 3xl
+                heading on a 2560px page reads as a caption. */}
+            {/* ⚠️ `leading-tight` + a small negative margin, so the caption sits
+                under the name rather than floating below it. The default line
+                height on a 5xl serif leaves ~14px of air, which reads as two
+                separate things instead of a title and its subtitle. Applied to
+                the hours pair below as well — they are set alike on purpose, so
+                they have to be spaced alike. */}
+            <h1 className="font-serif-accent truncate text-3xl leading-tight lg:text-4xl xl:text-5xl">
+              {clientName}
+            </h1>
+            <p className="-mt-0.5 text-sm text-muted">Hours report</p>
           </div>
+          {/* The PHONE instance of the mark — see the note on its desktop twin
+              below. `ml-auto` pushes it to the right end of the name row; the row
+              is `basis-full` below `sm` so that row is the full width.
+              ⚠️⚠️ THE `sm:hidden` MUST LIVE ON THIS WRAPPER, NEVER ON THE MASK
+              SPAN. `.brand-ampmore` sets `display: inline-block` in globals.css,
+              which is UNLAYERED, while Tailwind emits display utilities inside
+              `@layer utilities` — so the unlayered rule wins whatever the
+              specificity and `sm:hidden` on the span is silently inert. Measured:
+              with it on the span, BOTH marks rendered at 944px. This is the third
+              time this exact trap has cost time here (v1.12.0 form fields,
+              v1.22.1 `.brand-wordmark`). */}
+          <span className="ml-auto shrink-0 sm:hidden">
+            <span
+              className="brand-ampmore h-8 bg-brand"
+              role="img"
+              aria-label="Studio&more"
+            />
+          </span>
+        </div>
 
-          {/*
-            ⚠️ BESIDE THE NAME, NOT A BOXED TILE, and the four tiles that used to sit
-            below are GONE — Nitsan's call: "'this period' pane should move right to
-            the title of client name and not as a pane with a box". "Delivered to
-            date" went with them, and so did the separate Period-cap and Remaining
-            tiles: the cap is SEMANTIC, so it reads better as `12h/150h` that changes
-            colour than as two more boxes of arithmetic the client has to combine.
-          */}
+        {/* ⚠️ Below `sm` this is `w-full`, so it wraps UNDER the name and its own
+            children stack; from `sm` it shrinks to its content and hugs the right
+            edge. That is what lets one DOM order serve both shapes here — unlike the
+            mark, which genuinely needs two instances. */}
+        <div className="flex w-full flex-wrap items-center gap-x-8 gap-y-3 sm:w-auto sm:justify-end lg:gap-x-10">
           {current && (
             /* ⚠️ Three big numbers in a row need real space between them or they
                read as one figure ("12h 0 3"). Wider than the 16px this started at,
@@ -250,7 +254,7 @@ export function PublicReportView({
                 it brand with the faintest wash, so the pressed state is unmistakable
                 without the resting state shouting.
               */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex basis-full items-center gap-3 sm:basis-auto">
                 <div className="relative">
                   <button
                     onClick={() => setPeriodsOpen((v) => !v)}
@@ -331,7 +335,7 @@ export function PublicReportView({
                     outlined to look pressable, so the contrast has to stay legible:
                     plain muted text and a clock, no border, no fill. */}
                 {lastUpdated && (
-                  <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted">
+                  <span className="ml-auto flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted sm:hidden">
                     <Clock size={12} aria-hidden />
                     Updated {lastUpdated}
                   </span>
@@ -339,37 +343,22 @@ export function PublicReportView({
               </div>
             </div>
           )}
-        </div>
 
-        {/*
-          ⚠️ A CHIP AT THE TOP, NOT A LINE UNDER THE TITLE — Nitsan's call: "can be a
-          chip or any element that is not a button in the top of the page and not
-          under the title". Under the heading it read as part of the report's name;
-          up here it reads as what it is, a stamp on the page.
-
-          ⚠️ A `span`, deliberately NOT a button: nothing happens when you press it,
-          and a chip that looks pressable on a page a client is reading invites a
-          click that goes nowhere.
-        */}
-        {/* ⚠️ `self-center`: the header is `items-start`, which pinned this cluster to
-            the very top while the left side is two lines of large type — so the
-            stamp sat above the client's name rather than level with the block.
-            Nitsan: "time updated needs to be center in height to the header". */}
-        {/* ⚠️ TWO INSTANCES OF THE MARK, and the duplication is deliberate — the
-            same call v1.22.1 made on the public Gantt for the same reason: ONE DOM
-            ORDER CANNOT SERVE BOTH SHAPES. Nitsan wanted it "up inline with client
-            name just aligne to right", and on a phone the figures and the period
-            selector wrap between the name and this cluster, so a single instance
-            here lands three rows down as a stranded left-aligned banner. Moving it
-            into the name row instead would cost the desktop layout its right-hand
-            alignment. It is a CSS-mask span: no image, no request, nothing to load
-            twice. This one is the DESKTOP instance. */}
-        <div className="ml-auto hidden shrink-0 items-center gap-3 self-center sm:flex">
-          <span
-            className="brand-ampmore h-7 shrink-0 bg-brand lg:h-9"
-            role="img"
-            aria-label="Studio&more"
-          />
+          {/* ⚠️ TWO INSTANCES OF THE MARK, and the duplication is deliberate — the
+              same call v1.22.1 made on the public Gantt for the same reason: ONE DOM
+              ORDER CANNOT SERVE BOTH SHAPES. On a phone it belongs on the name row
+              ("up inline with client name just aligne to right"); on a desktop it is
+              the last thing in this right-hand cluster, beside the billing box. It
+              is a CSS-mask span: no image, no request, nothing to load twice.
+              ⚠️ The `hidden`/`sm:flex` lives on this WRAPPER, never on the mask span
+              — see the note on the phone instance above. This is the DESKTOP one. */}
+          <div className="hidden shrink-0 items-center sm:flex">
+            <span
+              className="brand-ampmore h-8 shrink-0 bg-brand lg:h-11"
+              role="img"
+              aria-label="Studio&more"
+            />
+          </div>
         </div>
       </header>
 
@@ -388,6 +377,21 @@ export function PublicReportView({
               centring there would pull the toggles off the table's left edge they
               are aligned to. */}
           <div className="mb-3 flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+            {/* ⚠️ THE DESKTOP STAMP LIVES HERE, the phone one in the header — its
+                fourth and fifth homes, and the split is Nitsan's: "updated date can
+                be inside table pane aligned to top right corner" (desktop) while on
+                a phone it sits beside the billing box, right-aligned. Two instances
+                rather than one, because on a phone this row holds two 44px capsules
+                that already fill the width, and on a desktop the header's right
+                cluster is full of figures. `order-last` + `ml-auto` put it at the
+                right end of this row without moving the capsules off the left edge.
+                ⚠️ Still plain text and a clock, still NOT a chip. */}
+            {lastUpdated && (
+              <span className="order-last ml-auto hidden shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted sm:flex">
+                <Clock size={12} aria-hidden />
+                Updated {lastUpdated}
+              </span>
+            )}
             <ViewToggle
               touch
               on={!periodOnly}
