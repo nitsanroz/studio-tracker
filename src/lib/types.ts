@@ -298,6 +298,15 @@ export interface ReportLink {
   /** admin-edited column date ranges; null = auto week buckets */
   customWeeks: { label: string; from: string; to: string }[] | null;
   /**
+   * The day this report's hours were counted up to, inclusive; null = everything.
+   *
+   * ⚠️ A RECORD, NOT A FILTER — the scoping is baked into `snapshot` when it is
+   * built (see `buildReportSnapshot`'s `through`), so this column only says which
+   * day was chosen. Nothing at read time consults it, which is why the public page
+   * is unaffected by whether migration 0034 has run.
+   */
+  throughDate: string | null;
+  /**
    * How the table was filtered when it was published, so the client opens on the
    * same view the studio approved. Unlike `hiddenColumns`/`hiddenTaskIds` these are
    * DEFAULTS, not censorship: the client has buttons to switch them off, and the

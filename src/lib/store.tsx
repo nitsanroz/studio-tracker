@@ -380,6 +380,20 @@ interface Store {
    * Deliberately NOT writeError: that banner is about failed saves and says
    * "reload", neither of which applies here.
    */
+  /**
+   * The row created most recently, for ~600ms.
+   *
+   * ⚠️ A time entry lands in a DATE-SORTED list, not at the bottom, so this is
+   * what answers "which one is mine, and where did it go?" — read by any list
+   * that renders entries and turned into the 400ms `row-flash` (Nitsan's variant
+   * 3A). It is state, not a callback through six hosts, precisely so every
+   * surface that shows entries can flash without being wired individually.
+   *
+   * ⚠️ It CLEARS ITSELF after 600ms — longer than the animation, so the class is
+   * definitely gone before a re-render could restart it, and short enough that a
+   * refresh arriving later cannot re-flash a row from minutes ago.
+   */
+  freshEntryId: string | null;
   notice: string | null;
   /** Say something neutral to the user — a refusal or an explanation, not an error. */
   showNotice: (text: string) => void;
@@ -614,6 +628,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const dismissNotice = useCallback(() => setNotice(null), []);
+  const [freshEntryId, setFreshEntryId] = useState<string | null>(null);
+  const freshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** ⚠️ One timer, replaced — logging twice quickly must not leave the first row
+   *  lit while the second is still animating. */
+  const markFresh = useCallback((id: string) => {
+    if (freshTimer.current) clearTimeout(freshTimer.current);
+    setFreshEntryId(id);
+    freshTimer.current = setTimeout(() => setFreshEntryId(null), 600);
+  }, []);
   const showNotice = useCallback((text: string) => setNotice(text), []);
   /** Bumped by boot AND every refresh, so a slow response can tell it's stale. */
   const generation = useRef(0);
@@ -2692,13 +2715,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       const entry = mapTimeEntry(data);
       applyEntryLocally(entry);
+      markFresh(entry.id);
       record({
         undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
         redo: () => restoreTimeEntry(entry),
       });
       return entry;
     },
-    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError, counting],
+    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError, counting, markFresh],
   );
 
   /**
@@ -3543,6 +3567,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       notice,
       showNotice,
       dismissNotice,
+      freshEntryId,
       refreshing,
       lastSyncedAt,
       refresh: refreshNow,
@@ -3551,7 +3576,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

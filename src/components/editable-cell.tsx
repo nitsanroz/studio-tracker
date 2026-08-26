@@ -291,7 +291,7 @@ export function EditableDateCell({
         <span
           ref={panel}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 flex items-center gap-1 rounded-lg border border-border bg-surface p-1 shadow-xl"
+          className="fixed z-50 flex items-center gap-1 rounded-lg border border-border bg-surface p-1 shadow-xl pop-in"
           style={{ left: pos.left, top: pos.top }}
         >
           <input

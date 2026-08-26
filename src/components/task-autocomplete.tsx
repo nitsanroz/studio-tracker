@@ -326,7 +326,7 @@ export function TaskAutocomplete({
           // `w-max` sizes the panel to the longest row, `min-w-full` keeps it at
           // least as wide as the input, and the cap stops one long title from
           // running off-screen (rows then truncate, as before).
-          className="absolute left-0 top-full z-50 mt-1.5 flex w-max min-w-full max-w-[min(34rem,calc(100vw_-_2rem))] flex-col rounded-xl border border-border bg-surface p-1 shadow-xl"
+          className="absolute left-0 top-full z-50 mt-1.5 flex w-max min-w-full max-w-[min(34rem,calc(100vw_-_2rem))] flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in"
           // keeps focus in the input, so blur can't unmount a row between
           // mousedown and mouseup and swallow the click
           onMouseDown={(e) => e.preventDefault()}

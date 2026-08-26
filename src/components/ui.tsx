@@ -44,7 +44,7 @@ export function ContextMenu({
         }}
       />
       <div
-        className="fixed z-50 flex flex-col rounded-lg border border-border bg-surface p-1 shadow-xl"
+        className="fixed z-50 flex flex-col rounded-lg border border-border bg-surface p-1 shadow-xl pop-in"
         style={{ left, top, minWidth: width }}
       >
         {items.map((item) => (

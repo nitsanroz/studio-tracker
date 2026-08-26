@@ -333,7 +333,7 @@ export function PublicReportView({
                   {periodsOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setPeriodsOpen(false)} />
-                      <div className="absolute left-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-card">
+                      <div className="absolute left-0 z-50 mt-2 max-h-96 w-72 overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-card pop-in">
                         <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">
                           Billing periods
                         </div>

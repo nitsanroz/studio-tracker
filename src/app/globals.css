@@ -328,3 +328,90 @@ b,
     font-size: 16px;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MOTION
+
+   Four behaviours, each a variant Nitsan picked from the /motion-preview route
+   (1C, 2B, 3A, 4 yes; the timeline's bar settle is inline in that component
+   because it has to be gated on the drag). Kept here rather than as Tailwind
+   `animate-*` theme entries so the durations and easings sit beside the
+   reduced-motion guard that switches them all off.
+
+   ⚠️ EVERY ONE ANIMATES `opacity`, `transform` OR `background-color` ONLY —
+   never a layout property. These sit next to tables of ~57,000 cells, and a
+   reflow per frame there is a real cost, not a theoretical one.
+
+   ⚠️ Enter-only, by design, for the popovers and notices: they are mounted
+   conditionally, so an exit would mean holding each one in the tree behind a
+   state machine at eight-plus call sites. The pane is the one place that earns
+   that (see `useMountTransition`). */
+
+/* 2B — popovers: the period selector, Show/Columns menus, autocomplete,
+   context menus. 110ms, fade plus a 2px rise. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pop-in {
+  animation: pop-in 110ms ease-out;
+}
+
+/* 4 — notices and the write-error banner: the same shape one step slower and
+   from a little further, because they arrive unbidden rather than in answer to
+   a click, and a 2px move at the bottom of the screen is not noticed at all. */
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.notice-in {
+  animation: notice-in 160ms ease-out;
+}
+
+/* 3A — the row you just created. NOT decoration: a new task, plan chip or time
+   entry lands in a SORTED position rather than at the bottom, so this is what
+   answers "which one is mine, and where did it go?". 400ms was the shortest of
+   the three options and the one he picked — long enough to catch the eye,
+   short enough not to read as a selected row. */
+@keyframes row-flash {
+  from {
+    background-color: var(--brand-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.row-flash {
+  animation: row-flash 400ms linear;
+}
+
+/* ⚠️⚠️ THE GUARD. Not optional and not a nicety: `prefers-reduced-motion` is a
+   real accessibility setting, and this app's public surfaces — the client
+   report and the shared Gantt — are opened by strangers on their own devices
+   where we cannot ask. One block, so a new animation cannot forget it.
+
+   ⚠️ `!important` because these have to beat inline styles: the pane's slide and
+   the timeline's bar settle are inline `transition` values (they carry live
+   pixel maths), and a media query cannot otherwise reach them. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

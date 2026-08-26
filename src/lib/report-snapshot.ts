@@ -75,6 +75,28 @@ export function buildReportSnapshot(
   periods: BillingPeriod[],
   /** admin-edited column ranges; falls back to auto week buckets */
   customWeeks?: { label: string; from: string; to: string }[] | null,
+  /**
+   * Inclusive cut-off: hours logged AFTER this date are left out of the report
+   * entirely.
+   *
+   * ⚠️⚠️ IT IS APPLIED IN ONE PLACE — the `clientEntries` filter below — AND THAT
+   * IS THE WHOLE POINT. Every figure in a report descends from that list: the week
+   * columns (`buildWeeks` reads it), each row's Total, the per-period totals, and
+   * the `periodTotals` the client's header figure is built from. Filter it once and
+   * they all agree; filter anywhere downstream and the report contradicts itself.
+   *
+   * ⚠️ WHY THIS EXISTS, so nobody "simplifies" it into a hidden column: a weekly
+   * report is a summary of the week that ENDED. Nitsan published Anchor's on the
+   * Sunday afternoon, after colleagues had already logged hours into the new week,
+   * and hiding that column (`hidden_columns`) removed it from the table while
+   * leaving those 8h inside the row totals and the header figure — so the page
+   * disagreed with itself: 62.5h in the header against 54.5h in the Period column.
+   * Hiding is a focus tool; scoping is arithmetic, and only this can do it.
+   *
+   * ⚠️ Stored-week columns that begin after the cut-off are dropped too, or a
+   * hand-edited list would leave an empty trailing column with no hours in it.
+   */
+  through?: string | null,
 ): ReportSnapshot {
   const clientTasks = tasks.filter((t) => t.clientId === client.id && t.billable && !t.pending);
   const taskIds = new Set(clientTasks.map((t) => t.id));
@@ -83,7 +105,9 @@ export function buildReportSnapshot(
   const periodByTask = new Map<string, number[]>();
   const weekByTask = new Map<string, number[]>();
   const sorted = [...periods].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom));
-  const clientEntries = entrySums.filter((e) => taskIds.has(e.taskId));
+  const clientEntries = entrySums.filter(
+    (e) => taskIds.has(e.taskId) && (!through || e.date <= through),
+  );
   /**
    * ⚠️ A HAND-EDITED COLUMN LIST IS AN OVERRIDE, NOT A FREEZE, and it used to be
    * a freeze. `handleEditColumnDates` snapshots the whole rendered list into
@@ -96,10 +120,12 @@ export function buildReportSnapshot(
    */
   // `reduce` rather than `at(-1)`, because a hand-edited list need not have stayed
   // chronological. `""` seeds it: every ISO date sorts above it.
-  const lastStored = customWeeks?.length
-    ? customWeeks.reduce((max, w) => (w.to > max ? w.to : max), "")
+  // A stored column that starts past the cut-off has nothing in it — see `through`.
+  const storedWeeks = (customWeeks ?? []).filter((w) => !through || w.from <= through);
+  const lastStored = storedWeeks.length
+    ? storedWeeks.reduce((max, w) => (w.to > max ? w.to : max), "")
     : undefined;
-  const weeks = [...(customWeeks ?? []), ...buildWeeks(clientEntries, lastStored)];
+  const weeks = [...storedWeeks, ...buildWeeks(clientEntries, lastStored)];
 
   for (const e of clientEntries) {
     totalByTask.set(e.taskId, (totalByTask.get(e.taskId) ?? 0) + e.minutes);

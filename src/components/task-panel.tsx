@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
+import { useEnterTransition } from "@/lib/use-enter-transition";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskMinutesDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { formatSize } from "@/lib/uploads";
@@ -174,7 +175,7 @@ function DatesField({
         // Anchored to the field's RIGHT edge: Dates sits in the right-hand
         // column of the two-column grid, a few pixels from the pane's edge, so
         // a left-anchored 224px panel hung off the side of the screen.
-        <span className="absolute right-0 top-full z-40 mt-1 flex w-56 flex-col gap-2 rounded-xl border border-border bg-surface p-2.5 shadow-xl">
+        <span className="absolute right-0 top-full z-40 mt-1 flex w-56 flex-col gap-2 rounded-xl border border-border bg-surface p-2.5 shadow-xl pop-in">
           <label className="flex items-center gap-2 text-xs text-muted">
             <span className="w-9 shrink-0">Start</span>
             {/* An empty end opens on the OTHER end's month, not on today: a
@@ -384,6 +385,11 @@ function MoveEntriesModal({
   );
 }
 
+/** ⚠️ The pane's slide, in ms. The CSS transitions below and the close timer must
+ *  both read this — a JS timer shorter than the CSS yanks the pane mid-slide, and
+ *  longer leaves it mounted and invisible, swallowing clicks. */
+const PANE_MS = 260;
+
 export function TaskPanel() {
   const {
     openTaskId,
@@ -397,6 +403,7 @@ export function TaskPanel() {
     timeEntries,
     tags,
     taskTypes,
+    freshEntryId,
     updateTask,
     addComment,
     deleteComment,
@@ -413,6 +420,21 @@ export function TaskPanel() {
   const [editingBrief, setEditingBrief] = useState(false);
   const linksRef = useRef<LinksEditorHandle>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  /**
+   * ⚠️ 1C (Nitsan's pick): the pane slides 260ms, and `PANE_MS` must equal the CSS
+   * duration below.
+   *
+   * ⚠️ THE EXIT IS OWNED BY `closing`, NOT BY THE HOOK, and that is the whole
+   * design. On close the pane has to keep drawing the task it was showing — but
+   * `openTaskId` is what it derives that task from, so instead of remembering the
+   * task, `closePane` DELAYS CLEARING THE STORE until the slide is done. Nothing
+   * is duplicated and nothing is read during render. (The first attempt held the
+   * task in a ref and read it while rendering, which the React Compiler correctly
+   * refuses — it took eslint from 38 warnings to 111.)
+   */
+  const [closing, setClosing] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const paneEntered = useEnterTransition(!!openTaskId && !closing);
   const [copied, setCopied] = useState(false);
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
@@ -515,12 +537,32 @@ export function TaskPanel() {
    */
   function closePane() {
     linksRef.current?.commitPending();
-    openTask(null);
+    // ⚠️ The link form is committed FIRST, before the delay — a save must not wait
+    // on an animation, and the pane may be unmounted by another path mid-slide.
+    if (closeTimer.current) return; // already closing; a second click is a no-op
+    setClosing(true);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setClosing(false);
+      openTask(null);
+    }, PANE_MS);
   }
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={closePane} />
+      {/* ⚠️ The backdrop fades WITH the panel on the same curve — a backdrop that
+          snaps while the panel slides is the thing that reads as a glitch.
+          `pointer-events` drop as soon as it starts leaving, or the closing pane
+          swallows the next click for 260ms. */}
+      <div
+        className="fixed inset-0 z-40 bg-black/20"
+        style={{
+          opacity: paneEntered ? 1 : 0,
+          transition: `opacity ${PANE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+          pointerEvents: paneEntered ? "auto" : "none",
+        }}
+        onClick={closePane}
+      />
       {/* Full screen is the same panel widened to the viewport — not a second
           layout — so every control below behaves identically in both modes. */}
       <div
@@ -532,6 +574,15 @@ export function TaskPanel() {
             ? "inset-0 w-full"
             : "inset-y-0 right-0 w-full max-w-xl border-l border-border"
         }`}
+        // ⚠️ `transform`, never `right`/`width`: the pane holds the comment thread
+        // and the time list, so a layout-property slide would re-flow all of it on
+        // every frame. Full screen is deliberately NOT slid from the side — it is
+        // the same panel widened, so once open it must not re-animate.
+        style={{
+          transform: paneEntered || fullscreen ? "none" : "translateX(100%)",
+          transition: `transform ${PANE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+          pointerEvents: paneEntered ? "auto" : "none",
+        }}
       >
         {/* Toolbar */}
         <div className="sticky top-0 z-10 border-b border-border bg-surface px-6 py-3">
@@ -1084,9 +1135,12 @@ export function TaskPanel() {
                           }
                         : undefined
                     }
+                    // ⚠️ 3A: the row you just logged flashes once. It lands in a
+                    // DATE-SORTED list, so without this an hour logged on an old
+                    // date appears somewhere off-screen with nothing to say so.
                     className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
                       clickable ? "cursor-pointer hover:bg-background" : ""
-                    }`}
+                    } ${e.id === freshEntryId ? "row-flash" : ""}`}
                   >
                     {isAdmin && (
                       <input

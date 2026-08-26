@@ -358,7 +358,7 @@ function ColumnsMenu({
         <ChevronDown size={13} className="text-faint" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 flex w-44 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-1 flex w-44 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in">
           {OPTIONAL_COLS.map((c) => (
             <label
               key={c.key}

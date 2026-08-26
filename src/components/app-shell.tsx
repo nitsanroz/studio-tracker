@@ -872,7 +872,7 @@ function Shell({ children }: { children: ReactNode }) {
       {notice && (
         <div
           role="status"
-          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-foreground px-4 py-3 text-sm text-white shadow-lg"
+          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-foreground px-4 py-3 text-sm text-white shadow-lg notice-in"
         >
           <span className="flex-1">{notice}</span>
           <button
@@ -929,7 +929,7 @@ function Shell({ children }: { children: ReactNode }) {
       {writeError && (
         <div
           role="alert"
-          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-danger px-4 py-3 text-sm text-white shadow-lg"
+          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-danger px-4 py-3 text-sm text-white shadow-lg notice-in"
         >
           <span className="flex-1">{writeError}</span>
           <button

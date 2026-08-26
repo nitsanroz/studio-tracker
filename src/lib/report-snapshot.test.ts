@@ -147,6 +147,80 @@ describe("buildReportSnapshot", () => {
     expect(reported).toBe(210);
   });
 
+  /**
+   * The cut-off. These exist because the failure it fixes was not "a column is
+   * showing" but "the page contradicts itself": hiding the week left its hours in
+   * the row totals and the header figure. So each of these asserts a DIFFERENT
+   * figure moves together — dropping any one of them is how the bug comes back.
+   */
+  describe("through (cut-off date)", () => {
+    const week2 = [
+      sum("t1", "2026-08-20", 120), // Thu, inside the reported week
+      sum("t1", "2026-08-24", 480), // Mon, the new week — 8h, the real Anchor case
+    ];
+
+    it("leaves out hours logged after the cut-off, in the row total", () => {
+      const snap = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, null, "2026-08-22",
+      );
+      expect(snap.sections[0].tasks[0].totalMinutes).toBe(120);
+    });
+
+    it("drops the week COLUMN the excluded hours would have created", () => {
+      const snap = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, null, "2026-08-22",
+      );
+      expect(snap.weeks?.some((w) => w.from === "2026-08-23")).toBe(false);
+    });
+
+    it("keeps the period total in step with the columns", () => {
+      const p: BillingPeriod[] = [
+        { id: "p1", clientId: "c1", label: "August", dateFrom: "2026-08-01", dateTo: "2026-08-31" } as BillingPeriod,
+      ];
+      const snap = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, p, null, "2026-08-22",
+      );
+      const row = snap.sections[0].tasks[0];
+      // the figure the client's header is built from, and the row's own total
+      expect(row.periodMinutes[0]).toBe(120);
+      expect(row.totalMinutes).toBe(120);
+      // and the week cells add up to exactly that — the check that failed on the
+      // live Anchor link when the column was merely hidden
+      expect((row.weekMinutes ?? []).reduce((a, b) => a + b, 0)).toBe(120);
+    });
+
+    it("changes nothing when no cut-off is given", () => {
+      const withOut = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods,
+      );
+      const withNull = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, null, null,
+      );
+      expect(withOut.sections[0].tasks[0].totalMinutes).toBe(600);
+      expect(withNull.sections[0].tasks[0].totalMinutes).toBe(600);
+    });
+
+    it("is INCLUSIVE of the cut-off day itself", () => {
+      const snap = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")],
+        [sum("t1", "2026-08-22", 60)], periods, null, "2026-08-22",
+      );
+      expect(snap.sections[0].tasks[0].totalMinutes).toBe(60);
+    });
+
+    it("drops a stored column that begins after the cut-off", () => {
+      const snap = buildReportSnapshot(
+        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods,
+        [
+          { label: "16 Aug – 22 Aug", from: "2026-08-16", to: "2026-08-22" },
+          { label: "23 Aug – 29 Aug", from: "2026-08-23", to: "2026-08-29" },
+        ],
+        "2026-08-22",
+      );
+      expect(snap.weeks?.map((w) => w.from)).toEqual(["2026-08-16"]);
+    });
+  });
+
   it("appends the weeks after a stored column list instead of freezing on it", () => {
     const snap = buildReportSnapshot(
       client,

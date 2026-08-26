@@ -249,6 +249,9 @@ export const mapReportLink = (r: any): ReportLink => ({
   hiddenColumns: r.hidden_columns ?? [],
   hiddenTaskIds: r.hidden_task_ids ?? [],
   customWeeks: r.custom_weeks ?? null,
+  // Reads as "no cut-off" before 0034 is applied, which is the pre-feature
+  // behaviour — the report is simply scoped to everything, as it always was.
+  throughDate: (r.through_date as string | null) ?? null,
   viewFlags: r.view_flags ?? null,
 });
 

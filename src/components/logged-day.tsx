@@ -54,7 +54,7 @@ export function LoggedEntryRow({
   entry: TimeEntry;
   onPick: (entry: TimeEntry) => void;
 }) {
-  const { tasks, clients } = useData();
+  const { tasks, clients, freshEntryId } = useData();
   const task = tasks.find((t) => t.id === entry.taskId);
   const client = clients.find((c) => c.id === task?.clientId);
   return (
@@ -62,7 +62,12 @@ export function LoggedEntryRow({
       onClick={() => onPick(entry)}
       // the whole line opens the editor — on a phone a pencil beside it would be
       // a 16px target next to a 300px one
-      className="flex min-h-11 w-full items-start gap-2 rounded-lg px-1 py-1 text-left hover:bg-background"
+      // ⚠️ 3A: `row-flash` on the row just created — same reasoning as the task
+      // pane's time list, and it matters more here, because this list is a whole
+      // day of entries and a new one does not go at the end.
+      className={`flex min-h-11 w-full items-start gap-2 rounded-lg px-1 py-1 text-left hover:bg-background ${
+        entry.id === freshEntryId ? "row-flash" : ""
+      }`}
     >
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex items-center gap-1.5">

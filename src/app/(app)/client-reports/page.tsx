@@ -22,6 +22,7 @@ import {
   parseISO,
   shortRangeLabel,
   shiftDays,
+  startOfWeek,
   toISODate,
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
@@ -415,6 +416,21 @@ function PublishWorkspace() {
   const effPeriodOnly = periodOnly && !showAll;
   const effHideEmpty = hideEmptyRows && !showAll;
   const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
+  /**
+   * ⚠️ HOURS UP TO THIS DAY ONLY. A weekly report is a summary of the week that
+   * ENDED, and Nitsan published Anchor's on the Sunday afternoon — by which time
+   * colleagues had logged into the NEW week, putting 8h the report was not meant to
+   * cover in front of the client.
+   *
+   * ⚠️ IT DEFAULTS TO THE END OF THE LAST COMPLETE WEEK (the Saturday), because
+   * that is right for every normal Sunday-morning publish as well as a late one.
+   * It is a plain date, not a "skip the current week" switch, so a client billed to
+   * the 20th can be cut there too.
+   *
+   * ⚠️ The PREVIEW is built with it, so what the studio checks is exactly what
+   * publishes — the cut-off cannot be a publish-time surprise.
+   */
+  const [through, setThrough] = useState<string>(() => toISODate(shiftDays(startOfWeek(new Date()), -1)));
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -476,6 +492,9 @@ function PublishWorkspace() {
     setHiddenColumns(link?.hiddenColumns ?? []);
     setHiddenTaskIds(link?.hiddenTaskIds ?? []);
     setCustomWeeks(link?.customWeeks ?? null);
+    // A link that has been published before remembers what it was scoped to; one
+    // that has not falls back to the last complete week.
+    setThrough(link?.throughDate ?? toISODate(shiftDays(startOfWeek(new Date()), -1)));
     setFoldedSections([]); // section names are per client
     setPeriodOnly(link?.viewFlags?.periodOnly ?? false);
     setHideEmptyRows(link?.viewFlags?.hideEmptyRows ?? false);
@@ -508,8 +527,9 @@ function PublishWorkspace() {
       entrySumsAll,
       billingPeriods.filter((p) => p.clientId === selectedClient.id),
       customWeeks,
+      through || null,
     );
-  }, [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks]);
+  }, [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks, through]);
 
   // ── period dividers + editable columns ────────────────────────────────
   const clientPeriods = useMemo(
@@ -677,7 +697,12 @@ function PublishWorkspace() {
         hidden_columns: hiddenColumns,
         hidden_task_ids: hiddenTaskIds,
       },
-      { view_flags: { periodOnly, hideEmptyRows } },
+      // ⚠️ `through_date` joins `view_flags` in the OPTIONAL bucket: a missing column
+      // on a WRITE is PGRST204 and fails the whole update, so before 0034 is run
+      // publishing would break outright — taking the one button this page exists
+      // for. The scoping still WORKS without the column, because it is applied when
+      // the snapshot is built; only the record of which day it was is lost.
+      { view_flags: { periodOnly, hideEmptyRows }, through_date: through || null },
     );
     setPublishing(false);
     if (error) {
@@ -693,6 +718,7 @@ function PublishWorkspace() {
       hiddenColumns,
       hiddenTaskIds,
       viewFlags: degraded ? null : { periodOnly, hideEmptyRows },
+      throughDate: degraded ? null : through || null,
     };
     setLinks((prev) => new Map(prev).set(selectedClient.id, updated));
     const url = `${window.location.origin}/report/${link.token}`;
@@ -754,6 +780,25 @@ function PublishWorkspace() {
                 "Never published — clients see nothing until you publish."
               )}
             </span>
+            {/*
+              ⚠️ IT SITS BESIDE PUBLISH, NOT IN THE FILTER PILLS ABOVE, and the
+              placement is the point: the pills only change what the STUDIO is
+              looking at, while this changes the hours the client is billed against.
+              Different kind of control, so it lives with the button that commits it.
+              ⚠️ Clearing it means "everything", which is the pre-feature behaviour.
+            */}
+            <label
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted"
+              title="Count hours up to and including this day. Defaults to the end of the last complete week, so publishing on a Sunday afternoon does not pull in the new week's hours."
+            >
+              <span className="whitespace-nowrap">Hours through</span>
+              <input
+                type="date"
+                value={through}
+                onChange={(e) => setThrough(e.target.value)}
+                className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs outline-none focus:border-brand"
+              />
+            </label>
             <button
               onClick={copyLink}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:border-brand hover:text-brand"

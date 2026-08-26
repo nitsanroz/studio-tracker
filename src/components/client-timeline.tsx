@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -416,7 +417,7 @@ function TimelineColumnsMenu({
         <ChevronDown size={13} className="text-faint" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in">
           {TL_COLS.map((c) => (
             <label
               key={c.key}
@@ -643,6 +644,19 @@ export function ClientTimeline({
   const marqueeRef = useRef<typeof marquee>(null);
   const body = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  /**
+   * 200ms after a drag commits, the bars that moved ease into place (Nitsan's
+   * variant 5C). See the ⚠️ at the call site for why it is armed there only.
+   */
+  const [settling, setSettling] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const armSettle = useCallback(() => {
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    setSettling(true);
+    // 240, a little past the 200ms transition: cleared too early and the bar jumps
+    // the last few pixels.
+    settleTimer.current = setTimeout(() => setSettling(false), 240);
+  }, []);
   const dragRef = useRef<DragState | null>(null);
   const dragging = drag !== null;
   const [dropBefore, setDropBefore] = useState<string | null>(null);
@@ -1113,7 +1127,21 @@ export function ClientTimeline({
       const d = dragRef.current;
       dragRef.current = null;
       setDrag(null);
-      if (d) commit(d);
+      if (d) {
+        // ⚠️⚠️ 5C: THE SETTLE IS ARMED HERE AND NOWHERE ELSE, and the narrowness is
+        // the whole design. The bars are positioned with `left`/`width`, which ARE
+        // layout properties — so a standing transition on them would animate every
+        // bar on the chart whenever anything moved them, including a zoom switch,
+        // which on Anchor's 108 rows means 108 elements re-flowing per frame. Armed
+        // only on a real commit, it animates the one or two bars that actually
+        // changed, once, for 200ms.
+        //
+        // ⚠️ And it is armed AFTER `setDrag(null)`: while the pointer is down the
+        // bar must track the cursor exactly, so a transition there would make it
+        // lag behind the hand. That was the one real risk flagged in the preview.
+        if (d.moved && d.deltaDays !== 0) armSettle();
+        commit(d);
+      }
     }
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -1205,6 +1233,7 @@ export function ClientTimeline({
           canEdit={isAdmin}
           indent={indent}
           off={offDates}
+          settling={settling}
           // Every bar in the selection previews the same shift — dragging five
           // tasks while four sit still would read as a failed gesture, not a
           // pending one.
@@ -1910,7 +1939,7 @@ function DatesCell({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="fixed z-50 w-60 rounded-xl border border-border bg-surface p-3 shadow-xl"
+            className="fixed z-50 w-60 rounded-xl border border-border bg-surface p-3 shadow-xl pop-in"
             style={{ left: Math.min(pos.left, window.innerWidth - 250), top: pos.top }}
           >
             <div className="mb-2 truncate text-xs font-semibold" title={row.task.title}>
@@ -2927,7 +2956,7 @@ function AssigneeCell({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setPos(null)} />
           <div
-            className="fixed z-50 flex w-44 flex-col overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl"
+            className="fixed z-50 flex w-44 flex-col overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-xl pop-in"
             style={{ left: Math.min(pos.left, window.innerWidth - 190), top: pos.top, maxHeight: listH }}
           >
             <button
@@ -2973,6 +3002,8 @@ function TimelineRow({
   indent = 0,
   off,
   drag,
+  /** 5C: true for ~240ms after a drag commits — see the ⚠️ where it is armed. */
+  settling,
   dropTarget,
   selected,
   anySelected,
@@ -3005,6 +3036,7 @@ function TimelineRow({
   indent?: number;
   off: Set<string>;
   drag: DragState | null;
+  settling: boolean;
   dropTarget: boolean;
   selected: boolean;
   /** keeps every checkbox visible once one is ticked, so the set is legible */
@@ -3464,6 +3496,16 @@ function TimelineRow({
             left,
             width: barWidth,
             height: BAR_H,
+            // ⚠️⚠️ 5C, AND THE GATE IS LOAD-BEARING. `left`/`width` are LAYOUT
+            // properties, so this transition exists for exactly the ~240ms after a
+            // drag commits and at no other time: a standing one would animate every
+            // bar on a zoom switch (108 of them on Anchor) and re-flow each frame.
+            // `drag &&` excludes the bar under the pointer, which must track the
+            // cursor exactly.
+            transition:
+              settling && !drag
+                ? "left 200ms cubic-bezier(0.2, 0, 0, 1), width 200ms cubic-bezier(0.2, 0, 0, 1)"
+                : undefined,
             // ~1/4 of the height, matching the reference's proportion. A full
             // pill (radius = half the height) rounded the ends so hard that a
             // short bar stopped reading as a span at all.

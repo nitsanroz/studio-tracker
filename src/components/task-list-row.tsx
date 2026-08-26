@@ -75,7 +75,7 @@ function AddTimePopover({
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
-        className="fixed z-50 flex w-[27rem] flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-xl"
+        className="fixed z-50 flex w-[27rem] flex-col gap-2 rounded-2xl border border-border bg-surface p-3 shadow-xl pop-in"
         style={{ left: at.left, top: at.top }}
       >
         <LogTimeForm

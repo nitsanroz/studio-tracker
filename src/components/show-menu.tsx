@@ -107,7 +107,7 @@ export function ShowMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in">
           {/* The three view switches read as settings — an emoji to find the
               row by and a switch to flip — while the types below stay
               checkboxes, because those are a LIST you tick items out of. */}
