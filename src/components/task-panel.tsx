@@ -15,6 +15,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { useEnterTransition } from "@/lib/use-enter-transition";
+import { proxyStorageUrl } from "@/lib/storage-url";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskMinutesDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { formatSize } from "@/lib/uploads";
@@ -261,7 +262,10 @@ function TaskAttachments({ taskId }: { taskId: string }) {
             <div key={f.id} className="group/att flex items-center gap-2.5 px-3 py-2 text-sm">
               <span className="text-faint">📎</span>
               <a
-                href={f.filePath}
+                // ⚠️ `filePath` is misnamed: it stores an absolute PUBLIC url (see
+                // /api/task-attachments). `task-files` is a private bucket now, so it
+                // is rewritten to the session-checked `/api/file` on the way out.
+                href={proxyStorageUrl(f.filePath)}
                 target="_blank"
                 rel="noreferrer"
                 className="bidi-auto min-w-0 flex-1 truncate font-medium text-brand hover:underline"

@@ -25,8 +25,18 @@
  * here.)
  */
 
-/** Buckets served through the proxy. A bucket NOT listed here is left alone. */
-export const PROXIED_BUCKETS = ["intake"] as const;
+/**
+ * Buckets served through the proxy. A bucket NOT listed here is left alone.
+ *
+ * ⚠️ ADD THE BUCKET HERE AND DEPLOY **BEFORE** FLIPPING IT PRIVATE. Signing works
+ * on a public bucket too, so in that order nothing breaks at any point; in the
+ * other order every object 400s until the deploy lands.
+ *
+ * `avatars` is still public and is the harder one: `ClientAvatar` renders on the
+ * PUBLIC client report, where there is no session to check, so those have to be
+ * signed in the server component rather than proxied through this route.
+ */
+export const PROXIED_BUCKETS = ["intake", "task-files"] as const;
 
 const PUBLIC_MARKER = "/storage/v1/object/public/";
 

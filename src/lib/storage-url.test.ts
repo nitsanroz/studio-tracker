@@ -9,6 +9,12 @@ const BASE = "https://hjrhfifbmxduwacjzqdt.supabase.co/storage/v1/object/public"
  * should (the file stays world-readable, which is the whole point of the change).
  */
 describe("proxyStorageUrl", () => {
+  it("rewrites a task-files attachment to the proxy", () => {
+    expect(proxyStorageUrl(`${BASE}/task-files/7785740a/Laredo POV Estimate v3.pdf`)).toBe(
+      "/api/file?b=task-files&p=7785740a%2FLaredo%20POV%20Estimate%20v3.pdf",
+    );
+  });
+
   it("rewrites an intake object to the proxy", () => {
     expect(proxyStorageUrl(`${BASE}/intake/abc123/brief.pdf`)).toBe(
       "/api/file?b=intake&p=abc123%2Fbrief.pdf",
@@ -62,11 +68,21 @@ describe("parseProxyRequest", () => {
     });
   });
 
+  it("accepts task-files, the second bucket to go private", () => {
+    expect(parseProxyRequest("task-files", "abc/plan.pdf")).toEqual({
+      bucket: "task-files",
+      path: "abc/plan.pdf",
+    });
+  });
+
   it("REFUSES a bucket that is not allow-listed, however valid the path", () => {
-    // without this the route would sign any object in any bucket for any session
+    // without this the route would sign any object in any bucket for any session.
+    // ⚠️ `avatars` is the live case, not a hypothetical: it is still PUBLIC, so it
+    // must not be signable here — and when it is made private it needs the server
+    // -component treatment (the public client report has no session to check).
     expect(parseProxyRequest("avatars", "a/b.png")).toBeNull();
-    expect(parseProxyRequest("task-files", "a/b.png")).toBeNull();
     expect(parseProxyRequest("secrets", "a/b.png")).toBeNull();
+    expect(parseProxyRequest("", "a/b.png")).toBeNull();
   });
 
   it("refuses traversal and absolute keys", () => {
