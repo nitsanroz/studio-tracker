@@ -237,3 +237,25 @@ export function bucketProjection(
   const total = daysBetween(jan1, new Date(now.getFullYear(), 11, 31)) + 1;
   return scaleFrom(elapsed, total);
 }
+
+/**
+ * Days remaining in a billing period, counted from `asOf` and never negative.
+ *
+ * ⚠️⚠️ `asOf` IS NOT OPTIONAL AND MUST NOT BECOME `new Date()` BY DEFAULT. This
+ * backs the "days left to period" figure on the CLIENT'S published report, where
+ * every other number comes from a frozen snapshot. Measuring from the clock made
+ * it the one figure that kept moving after publishing — a report scoped through
+ * Saturday read "6 days left" on Sunday and "4 days left" on Tuesday against hours
+ * that had not changed. Pass the report's cut-off (`report_links.through_date`), or
+ * its publish day for links that predate that column.
+ *
+ * ⚠️ 0 means the period ends on `asOf`; a period already past also reads 0, which
+ * is the honest answer to "how much is left" rather than a negative count.
+ *
+ * ⚠️ Built on `daysBetween`, which floors both dates to local midnight and rounds
+ * — never `(end - start) / 86_400_000`, which is an hour short across a clocks
+ * change and lands on the wrong calendar day (the arithmetic v1.23.0 deleted).
+ */
+export function daysLeftInPeriod(periodEnd: Date, asOf: Date): number {
+  return Math.max(0, daysBetween(asOf, periodEnd));
+}

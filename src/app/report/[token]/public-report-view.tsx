@@ -5,7 +5,7 @@ import { ChevronDown, Clock } from "lucide-react";
 import { formatHoursShort } from "@/lib/format";
 import { capTone } from "@/lib/cap";
 import { parseISO } from "@/lib/format";
-import { daysBetween } from "@/lib/period-math";
+import { daysLeftInPeriod } from "@/lib/period-math";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
@@ -27,8 +27,15 @@ function dm(iso: string): string {
  * v1.23.0. 0 means the period ends today; a period already past reads 0 too, which
  * is the honest answer to "how much time is left".
  */
-function daysLeftIn(to: string): number {
-  return Math.max(0, daysBetween(new Date(), parseISO(to)));
+/**
+ * ⚠️ `active tasks` needed NO change when the cut-off arrived, and that is worth
+ * recording rather than re-deriving: it comes from `periodActiveTasks`, computed
+ * server-side over the snapshot, whose entries are already cut off at the same
+ * day. It was never live. `days left` WAS, which is why it now takes `asOf` —
+ * see `daysLeftInPeriod`.
+ */
+function daysLeftIn(to: string, asOf: string | null): number {
+  return daysLeftInPeriod(parseISO(to), asOf ? parseISO(asOf) : new Date());
 }
 
 /**
@@ -100,6 +107,7 @@ export function PublicReportView({
   clientIconUrl,
   snapshot,
   publishedAt,
+  asOf,
   hiddenColumns,
   periodTotals,
   periodActiveTasks,
@@ -112,6 +120,13 @@ export function PublicReportView({
   clientIconUrl: string | null;
   snapshot: ReportSnapshot;
   publishedAt: string | null;
+  /**
+   * The day this report's hours were counted up to — `report_links.through_date`,
+   * falling back to the publish date for links that predate the cut-off feature.
+   * Everything derived from time on this page must be measured from HERE, never
+   * from the clock: the snapshot is frozen, so a figure that keeps moving is wrong.
+   */
+  asOf: string | null;
   hiddenColumns: string[];
   /** True hours per visible period, spanning hidden tasks too — see `sanitizeSnapshot`. */
   periodTotals: number[];
@@ -256,9 +271,9 @@ export function PublicReportView({
                   the period is gone, and time left is the other half of that. */}
               <div>
                 <div className="font-serif-accent text-3xl leading-tight tabular-nums lg:text-4xl xl:text-5xl">
-                  {daysLeftIn(current.to)}
+                  {daysLeftIn(current.to, asOf)}
                 </div>
-                <p className="-mt-0.5 text-sm text-muted">days left</p>
+                <p className="-mt-0.5 text-sm text-muted">days left to period</p>
               </div>
 
               <div>

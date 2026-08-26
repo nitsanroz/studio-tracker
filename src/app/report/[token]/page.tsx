@@ -78,6 +78,14 @@ export default async function PublicReportPage({
       clientIconUrl={client?.icon_url ?? null}
       snapshot={snapshot}
       publishedAt={link.published_at}
+      /* ⚠️ The cut-off if there is one, else the publish DAY — never the clock.
+         `days left` is measured from this, so it stays still like every other
+         figure on a frozen report. Older links have no `through_date`, and their
+         publish date is the honest as-of for them. */
+      asOf={
+        ((link.through_date as string | null) ?? null) ??
+        (link.published_at ? String(link.published_at).slice(0, 10) : null)
+      }
       hiddenColumns={leadingHidden}
       periodTotals={periodTotals}
       periodActiveTasks={periodActiveTasks}
