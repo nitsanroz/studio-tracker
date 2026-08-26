@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { signStorageUrl } from "@/lib/sign-storage";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 import { sanitizeSnapshot } from "@/lib/report-sanitize";
 import { PublicReportView } from "./public-report-view";
@@ -44,6 +45,9 @@ export default async function PublicReportPage({
     icon?: string | null;
     icon_url?: string | null;
   } | null;
+  // ⚠️ Awaited BEFORE the early return below, so both branches share one value and
+  // neither can forget it.
+  const signedIcon = await signStorageUrl(client?.icon_url ?? null);
   const clientName = client?.name ?? raw?.clientName ?? "Client";
   const clientColor = client?.color ?? raw?.clientColor ?? "#0b43ed";
 
@@ -75,7 +79,13 @@ export default async function PublicReportPage({
       clientName={clientName}
       clientColor={clientColor}
       clientIcon={client?.icon ?? null}
-      clientIconUrl={client?.icon_url ?? null}
+      /* ⚠️⚠️ SIGNED HERE, SERVER-SIDE, because this page's reader is a CLIENT with
+         no session — `/api/file` would 401 them and the mark would be a broken
+         image on their own report. The signed url passes through
+         `proxyStorageUrl` untouched (it is `/object/sign/`, not
+         `/object/public/`), so `ClientAvatar` serves both surfaces unchanged.
+         Null on failure, which renders the glyph or the initial. */
+      clientIconUrl={signedIcon}
       snapshot={snapshot}
       publishedAt={link.published_at}
       /* ⚠️ The cut-off if there is one, else the publish DAY — never the clock.

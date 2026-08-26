@@ -28,9 +28,25 @@ describe("proxyStorageUrl", () => {
     );
   });
 
-  it("leaves a bucket that is still public alone", () => {
-    const u = `${BASE}/avatars/client/x.png`;
-    expect(proxyStorageUrl(u)).toBe(u);
+  it("rewrites an avatar, now that its bucket is private too", () => {
+    expect(proxyStorageUrl(`${BASE}/avatars/client/x.png`)).toBe(
+      "/api/file?b=avatars&p=client%2Fx.png",
+    );
+  });
+
+  /**
+   * ⚠️⚠️ THE ONE THAT HOLDS THE TWO MECHANISMS APART. The public client report and
+   * the shared Gantt have no session, so `/api/file` would 401 their readers —
+   * those pages sign the client's mark SERVER-SIDE and pass the signed url into
+   * the very same `ClientAvatar` the app uses. This asserts the signed url is left
+   * alone; if that ever stopped being true, every client's own mark would silently
+   * become a broken image on their own report.
+   */
+  it("NEVER re-proxies an already-signed url", () => {
+    const signed =
+      "https://hjrhfifbmxduwacjzqdt.supabase.co/storage/v1/object/sign/avatars/client/x.png" +
+      "?token=eyJhbGciOiJIUzI1NiJ9.abc.def";
+    expect(proxyStorageUrl(signed)).toBe(signed);
   });
 
   it("leaves a client's own typed link completely alone", () => {
@@ -77,11 +93,11 @@ describe("parseProxyRequest", () => {
 
   it("REFUSES a bucket that is not allow-listed, however valid the path", () => {
     // without this the route would sign any object in any bucket for any session.
-    // ⚠️ `avatars` is the live case, not a hypothetical: it is still PUBLIC, so it
-    // must not be signable here — and when it is made private it needs the server
-    // -component treatment (the public client report has no session to check).
-    expect(parseProxyRequest("avatars", "a/b.png")).toBeNull();
+    // ⚠️ All three real buckets are allow-listed now, so this guards the shape
+    // rather than a specific name: anything NOT in the list is refused, which is
+    // what stops the route signing an arbitrary bucket for anyone with a session.
     expect(parseProxyRequest("secrets", "a/b.png")).toBeNull();
+    expect(parseProxyRequest("storage", "a/b.png")).toBeNull();
     expect(parseProxyRequest("", "a/b.png")).toBeNull();
   });
 

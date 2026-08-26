@@ -7,6 +7,7 @@ import { useDataMaybe } from "@/lib/store";
 import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
 import { ClientAvatar } from "./client-avatar";
+import { proxyStorageUrl } from "@/lib/storage-url";
 
 export interface ContextMenuItem {
   label: string;
@@ -525,7 +526,10 @@ export function Avatar({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={profile.avatarUrl}
+        // ⚠️ `avatars` is a private bucket; a stored public URL is rewritten to
+        // the session-checked `/api/file`. An ALREADY-SIGNED url (the public
+        // client report signs server-side) passes through untouched.
+        src={proxyStorageUrl(profile.avatarUrl)}
         alt={profile.name}
         title={profile.name}
         className="rounded-full object-cover shrink-0"

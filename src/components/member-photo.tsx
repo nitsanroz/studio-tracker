@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { proxyStorageUrl } from "@/lib/storage-url";
 
 /** Shared placeholder used for every member until per-person portraits are generated.
  *  Drop real cut-out PNGs (transparent bg, white studio&more tee, blue & on the chest)
@@ -101,7 +102,13 @@ export function MemberPhoto({
   // placeholder is a photo of an actual colleague — presenting it as someone else
   // is worse than showing nothing. Everyone else keeps it until theirs is made.
   const art = PORTRAITS[portrait] ?? PORTRAITS.neutral;
-  const url = src || (fallback === "initials" ? "" : art.src);
+  /**
+   * ⚠️ PROXIED ONCE, HERE, because this component renders the same url in FOUR
+   * branches (avatar, the two bleed layers, plain) — patching them one at a time
+   * is exactly how three of them were missed and /team kept serving 8 raw public
+   * URLs. `art.src` is a local asset and passes through untouched.
+   */
+  const url = proxyStorageUrl(src || (fallback === "initials" ? "" : art.src));
   // An UPLOADED portrait is not one of ours, so its silhouette is unknown: fall
   // back to the neutral geometry rather than cropping it by another figure's
   // measurements. Only our own cut-outs get their own numbers.

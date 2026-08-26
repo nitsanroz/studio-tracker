@@ -32,13 +32,18 @@
  * on a public bucket too, so in that order nothing breaks at any point; in the
  * other order every object 400s until the deploy lands.
  *
- * `avatars` is still public and is the harder one: `ClientAvatar` renders on the
- * PUBLIC client report, where there is no session to check, so those have to be
- * signed in the server component rather than proxied through this route.
+ * ⚠️ `avatars` IS HERE BUT IS ONLY HALF THE STORY. It renders on the PUBLIC client
+ * report and the shared Gantt, where the reader has no session and this route
+ * would 401 — so those two pages sign the mark SERVER-SIDE instead
+ * (`signStorageUrl`) and pass an already-signed URL down. That URL contains
+ * `/object/sign/` rather than `/object/public/`, so `proxyStorageUrl` does not
+ * recognise it and leaves it alone, which is what lets both mechanisms coexist in
+ * the same component. There is a test pinning exactly that.
  */
-export const PROXIED_BUCKETS = ["intake", "task-files"] as const;
+export const PROXIED_BUCKETS = ["intake", "task-files", "avatars"] as const;
 
-const PUBLIC_MARKER = "/storage/v1/object/public/";
+/** Exported for `sign-storage.ts`, which has to recognise the same URLs. */
+export const PUBLIC_MARKER = "/storage/v1/object/public/";
 
 /**
  * `https://…/storage/v1/object/public/intake/<id>/file.pdf` → `/api/file?b=…&p=…`

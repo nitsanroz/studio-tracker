@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { signStorageUrl } from "@/lib/sign-storage";
 import {
   PublicGanttView,
   type PublicGanttBlock,
@@ -59,6 +60,8 @@ export default async function PublicGanttPage({
   } | null;
   const clientName = client?.name ?? "Client";
   const clientColor = client?.color ?? "#0b43ed";
+  // ⚠️ Server-side — the reader of a shared Gantt has no session either.
+  const signedIcon = await signStorageUrl(client?.icon_url ?? null);
 
   const [
     { data: sections },
@@ -210,7 +213,13 @@ export default async function PublicGanttPage({
       clientName={clientName}
       clientColor={clientColor}
       clientIcon={client?.icon ?? null}
-      clientIconUrl={client?.icon_url ?? null}
+      /* ⚠️⚠️ SIGNED HERE, SERVER-SIDE, because this page's reader is a CLIENT with
+         no session — `/api/file` would 401 them and the mark would be a broken
+         image on their own report. The signed url passes through
+         `proxyStorageUrl` untouched (it is `/object/sign/`, not
+         `/object/public/`), so `ClientAvatar` serves both surfaces unchanged.
+         Null on failure, which renders the glyph or the initial. */
+      clientIconUrl={signedIcon}
       groups={groups}
       offDays={offDays}
       milestones={milestones}

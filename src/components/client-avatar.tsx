@@ -29,6 +29,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Client } from "@/lib/types";
+import { proxyStorageUrl } from "@/lib/storage-url";
 
 /**
  * The preset client marks (migration 0023). Stored by NAME, not by component —
@@ -105,7 +106,10 @@ export function ClientAvatar({
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- Supabase storage URL, no loader configured */}
         <img
-          src={client.iconUrl}
+          // ⚠️ Signed server-side on the PUBLIC report/Gantt and proxied here for
+          // the app — `proxyStorageUrl` leaves an already-signed url alone, which is
+          // what lets one component serve both. See `signStorageUrl`.
+          src={proxyStorageUrl(client.iconUrl)}
           alt=""
           className="size-full object-contain p-[15%]"
           draggable={false}
