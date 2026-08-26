@@ -6,6 +6,7 @@ import { useData, useIsAdmin, type TaskRequest } from "@/lib/store";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { formatDate } from "@/lib/format";
 import { readSubmission } from "@/lib/brief";
+import { proxyStorageUrl } from "@/lib/storage-url";
 import { isSafeUrl } from "@/lib/links";
 import { kindById } from "@/lib/intake-fields";
 import { diffBriefs, needsReview } from "@/lib/brief-diff";
@@ -56,7 +57,9 @@ function AddedItem({
       <span className="shrink-0 font-semibold text-emerald-600">+</span>
       {safe ? (
         <a
-          href={url}
+          // ⚠️ Client-supplied links pass through untouched; an uploaded INTAKE
+          // file is rewritten to `/api/file`, because that bucket is private now.
+          href={proxyStorageUrl(url)}
           target="_blank"
           rel="noopener noreferrer"
           className="bidi-auto min-w-0 flex-1 truncate text-base text-brand hover:underline"
@@ -891,7 +894,7 @@ function SafeLink({ url, label, icon }: { url: string; label: string; icon: "fil
   }
   return (
     <a
-      href={url}
+      href={proxyStorageUrl(url)}
       target="_blank"
       rel="noopener noreferrer"
       className="bidi-auto truncate text-sm text-brand hover:underline"

@@ -4,6 +4,7 @@ import { useImperativeHandle, useRef, useState, type Ref } from "react";
 import { ExternalLink, Link2, Pencil, Trash2 } from "lucide-react";
 import { useData } from "@/lib/store";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
+import { proxyStorageUrl } from "@/lib/storage-url";
 import type { Link as RefLink } from "@/lib/types";
 
 /**
@@ -153,7 +154,9 @@ function LinkRow({
       <ExternalLink size={13} className="shrink-0 text-faint" />
       {safe ? (
         <a
-          href={link.url}
+          // An approved brief's attachments become real `links` rows, so a row here
+          // can point at the private intake bucket — see `proxyStorageUrl`.
+          href={proxyStorageUrl(link.url)}
           target="_blank"
           rel="noreferrer noopener"
           title={link.url}
