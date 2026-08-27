@@ -818,8 +818,26 @@ const MONTH_NAMES = [
  * frozen column. The negative spread confines each one to its own edge instead
  * of letting it bloom across the neighbouring cells.
  */
-const SHADOW_X = "shadow-[6px_0_8px_-6px_rgba(0,0,0,0.14)]";
-const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
+/**
+ * ⚠️⚠️ DO NOT REINTRODUCE A SPREAD THAT CANCELS THE OFFSET. These started life as
+ * `6px 0 8px -6px` / `0 5px 8px -6px`, copied from `client-timeline.tsx`, and
+ * Nitsan reported "no shadows at all" TWICE while the class was provably applied.
+ * The geometry is why: a -6px spread shrinks the shadow rect by the same 6px the
+ * offset moves it, so its hard edge lands exactly ON the cell's own edge and only
+ * about 4px of blurred 0.14 alpha escapes — invisible beside the 1px cell border.
+ *
+ * ⚠️ So the spread is now SMALLER than the offset, which is what actually puts a
+ * gradient outside the edge: offset 8 - spread 4 = 4px clear, plus half the 12px
+ * blur, so roughly 10px of visible falloff. Alpha is raised to 0.18 and uses the
+ * app's shadow ink (`rgba(6,17,47,…)`, the --shadow-card colour) rather than pure
+ * black, which reads as grime against the brand-tinted surfaces.
+ *
+ * ⚠️ The negative spread is still needed — without one the shadow also spills from
+ * the cell's TOP and BOTTOM edges, drawing a box around every individual row
+ * instead of one continuous edge down the pinned column.
+ */
+const SHADOW_X = "shadow-[8px_0_12px_-4px_rgba(6,17,47,0.18)]";
+const SHADOW_Y = "shadow-[0_8px_12px_-4px_rgba(6,17,47,0.18)]";
 /**
  * ⚠️ THE CORNER CELL NEEDS ITS OWN COMBINED VALUE, NOT `SHADOW_X SHADOW_Y`. It is
  * the only cell pinned on both axes, and two `shadow-[…]` utilities on one element
@@ -828,7 +846,8 @@ const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
  * edges belong in a single class. (Same trap as the stacked `bg-*` utilities that
  * killed the studio column's tint; see globals.css.)
  */
-const SHADOW_XY = "shadow-[6px_0_8px_-6px_rgba(0,0,0,0.14),0_5px_8px_-6px_rgba(0,0,0,0.14)]";
+const SHADOW_XY =
+  "shadow-[8px_0_12px_-4px_rgba(6,17,47,0.18),0_8px_12px_-4px_rgba(6,17,47,0.18)]";
 
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
