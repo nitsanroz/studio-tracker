@@ -395,6 +395,7 @@ function PublishWorkspace() {
     updateTask,
     addBillingPeriod,
     updateBillingPeriod,
+    refresh,
   } = useData();
   const supabase = useMemo(() => createClient(), []);
   const [links, setLinks] = useState<Map<string, ReportLink>>(new Map());
@@ -601,6 +602,17 @@ function PublishWorkspace() {
 
       const today = new Date();
       const todayIso = toISODate(today);
+      /**
+       * ⚠️ THE STORE MUST BE REFRESHED AFTER THIS, or the work is invisible. These
+       * rows are written STRAIGHT to Supabase (the upsert is what makes the write
+       * idempotent, and `addBillingPeriod` cannot do that), so the store's own
+       * `billingPeriods` never learns about them and the page keeps rendering the
+       * OLD latest period until a poll happens to land. Measured on Maccabi: the
+       * periods were correctly created and the PERIOD column still read
+       * "Jan – Jul", which is indistinguishable from the feature not working —
+       * and is exactly what Nitsan reported.
+       */
+      let wrote = false;
       for (const client of clients) {
         /**
          * ⚠️⚠️ ARCHIVED CLIENTS ARE SKIPPED, AND THIS IS THE WHOLE BALLGAME. A dry
@@ -683,10 +695,13 @@ function PublishWorkspace() {
           console.warn(
             `[billing] could not open the next period for ${client.name} — has migration 0035 been run? ${error.message}`,
           );
+        } else {
+          wrote = true;
         }
       }
+      if (wrote) refresh();
     })();
-  }, [clients, billingPeriods, supabase]);
+  }, [clients, billingPeriods, supabase, refresh]);
 
   /**
    * ⚠️⚠️ TWO SNAPSHOTS, AND MIXING THEM UP SENDS A CLIENT HOURS THEY SHOULD NOT
