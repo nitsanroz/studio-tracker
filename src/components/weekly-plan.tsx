@@ -810,6 +810,16 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+/**
+ * ⚠️ BOX-SHADOWS, NOT BORDERS, AND THAT IS FORCED: this table is
+ * `border-collapse: collapse`, which does not paint borders on sticky cells
+ * reliably — the same reason `report-table.tsx` uses an inset shadow on its last
+ * frozen column. The negative spread confines each one to its own edge instead
+ * of letting it bloom across the neighbouring cells.
+ */
+const SHADOW_X = "shadow-[6px_0_8px_-6px_rgba(0,0,0,0.14)]";
+const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
+
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
     useData();
@@ -824,6 +834,25 @@ export function WeeklyPlan() {
   const [dayStateTarget, setDayStateTarget] = useState<string | null>(null);
   const [showColumns, setShowColumns] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  /**
+   * Whether anything is hidden behind the pinned header row / pinned date column.
+   *
+   * ⚠️ The reasoning is copied from `client-timeline.tsx` along with the pattern:
+   * both edges stay SILENT until something is actually behind them, so a shadow
+   * is information rather than decoration. Nitsan reported the grid scrolling
+   * sideways under the date column "with no shadow to show its a pocket".
+   *
+   * ⚠️ Only a BOUNDARY CROSSING re-renders — scrolling within a state is free.
+   * This grid runs to ~10 columns × 378 days, so a setState per scroll event
+   * would be a re-render per frame while dragging a chip across it.
+   */
+  const [gridShadow, setGridShadow] = useState({ x: false, y: false });
+  function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    const x = el.scrollLeft > 0;
+    const y = el.scrollTop > 0;
+    setGridShadow((g) => (g.x === x && g.y === y ? g : { x, y }));
+  }
   const scrollerRef = useRef<HTMLDivElement>(null);
   const hoveredCell = useRef<CellTarget | null>(null);
   const hoveredEntry = useRef<PlanEntry | null>(null);
@@ -1041,6 +1070,7 @@ export function WeeklyPlan() {
           ref={scrollerRef}
           className="min-w-0 flex-1 overflow-auto rounded-xl border border-border bg-surface"
           style={{ maxHeight: "calc(100vh - 170px)" }}
+          onScroll={onGridScroll}
         >
           {/*
             `table-fixed`, so every person column is exactly as wide as every
@@ -1056,7 +1086,11 @@ export function WeeklyPlan() {
           <table className="w-full table-fixed border-collapse">
             <thead className="sticky top-0 z-20">
               <tr>
-                <th className="sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint">
+                <th
+                  className={`sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint ${
+                    gridShadow.x ? SHADOW_X : ""
+                  } ${gridShadow.y ? SHADOW_Y : ""}`}
+                >
                   <button
                     onClick={() => setRangeStart((s) => shiftDays(s, -28))}
                     className="rounded px-1 text-brand hover:underline"
@@ -1075,7 +1109,7 @@ export function WeeklyPlan() {
                       key={col.id}
                       // a width, not a min-width: under fixed layout the header
                       // row's widths ARE the column widths
-                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${col.type === "studio" ? "bg-brand-soft/60" : ""} ${isMe ? "bg-aqua/20" : ""}`}
+                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${gridShadow.y ? SHADOW_Y : ""} ${col.type === "studio" ? "bg-brand-soft/60" : ""} ${isMe ? "bg-aqua/20" : ""}`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-semibold">
                         {profile ? <Avatar profile={profile} size={20} /> : null}
@@ -1131,7 +1165,7 @@ export function WeeklyPlan() {
                   >
                     <td
                       onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
-                      className={`group/date sticky left-0 z-10 border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand bg-aqua/20" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer hover:bg-brand-soft/60" : ""}`}
+                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${gridShadow.x ? SHADOW_X : ""} ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
                       title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
                       <div className="flex items-start justify-between gap-1">

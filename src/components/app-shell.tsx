@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
+import { useEnterTransition } from "@/lib/use-enter-transition";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
@@ -41,6 +42,9 @@ import { WhatsNewModal } from "./whats-new-modal";
 
 // admin-only sections render LAST, below a thin divider.
 //
+/** ⚠️ Must equal the CSS duration on the drawer below — the `PANE_MS` rule. */
+const DRAWER_MS = 200;
+
 // `mobile: false` keeps a route out of the phone drawer. It is not a permission
 // and it is not a redirect — the route still exists and still resolves; it just
 // isn't offered where it can't be used. Every one of these has a matching entry
@@ -376,15 +380,37 @@ function MobileDrawer({
   onNews: () => void;
 }) {
   const items = NAV.filter((n) => n.mobile && (!n.adminOnly || isAdmin));
+  // Mounts closed, opens one frame later — see `useEnterTransition`.
+  const entered = useEnterTransition(true);
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onClose} aria-hidden />
+      {/* ⚠️ ENTER ONLY, AND THAT IS A JUDGEMENT RATHER THAN A SHORTCUT. Nearly
+          every dismissal of this drawer comes WITH a navigation — AppShell closes
+          it on a pathname change, so the page underneath is being replaced at the
+          same moment. Sliding a menu out over a page that is itself changing
+          reads as two things fighting; the sheet gets a real exit because it
+          closes onto the SAME page, where an instant vanish is what looks wrong.
+          ⚠️ `transform`/`opacity` only — the drawer holds the whole nav list. */}
+      <div
+        className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        style={{
+          opacity: entered ? 1 : 0,
+          transition: `opacity ${DRAWER_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+        }}
+        onClick={onClose}
+        aria-hidden
+      />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
         className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col md:hidden"
-        style={{ backgroundColor: "var(--sb-bg)", color: "var(--sb-fg)" }}
+        style={{
+          backgroundColor: "var(--sb-bg)",
+          color: "var(--sb-fg)",
+          transform: entered ? "none" : "translateX(-100%)",
+          transition: `transform ${DRAWER_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+        }}
       >
         <div className="flex items-center px-4 pb-3 pt-5">
           <span className="text-[26px] leading-none" style={{ fontWeight: 700 }}>

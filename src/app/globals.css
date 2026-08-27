@@ -415,3 +415,34 @@ b,
     scroll-behavior: auto !important;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PINNED-CELL TINTS (weekly plan)
+
+   ⚠️⚠️ A PINNED CELL'S BACKGROUND MUST BE OPAQUE, and this is the second time
+   this exact trap has cost something here — v1.10.0 records it on the client
+   table ("a translucent tint REPLACES bg-surface rather than layering over it,
+   so the pinned column went 40% transparent on hover and the calendar showed
+   through the task's own name").
+
+   The weekly plan's date column is `sticky left-0`, and its today cell used
+   `bg-aqua/20` while its hover used `bg-brand-soft/60`. Both composite to about
+   0.2 and 0.6 alpha — so chips scrolling sideways UNDERNEATH the pinned column
+   showed straight through the date, which is what Nitsan reported as a collision
+   alongside the missing shadow. Raising the z-index alone does not fix it: the
+   cell was already on top, it was simply see-through.
+
+   ⚠️ So the tint is PRE-COMPOSITED against the surface with `color-mix`, giving
+   the same colour at full opacity. Change the mix percentage, never the alpha.
+
+   ⚠️ These rules are UNLAYERED, so they beat Tailwind's `bg-*` utilities on the
+   same element whatever the class order (the precedence trap documented on
+   `.brand-ampmore` and the 16px form fields). That is intended here — they are
+   applied only on the cell that should win — but do not add a Tailwind
+   background to an element carrying one and expect it to apply. */
+.pin-today {
+  background-color: color-mix(in oklab, var(--aqua) 20%, var(--surface));
+}
+.pin-hover:hover {
+  background-color: color-mix(in oklab, var(--brand-soft) 60%, var(--surface));
+}
