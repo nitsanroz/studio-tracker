@@ -424,8 +424,28 @@ interface HistoryAction {
 }
 
 // ── background refresh cadence ──────────────────────────────────────────
+/**
+ * ⚠️⚠️ DEVELOPMENT POLLS TEN TIMES SLOWER, AND THIS IS AN EGRESS FIX, NOT A
+ * CONVENIENCE. Measured 2026-08-27: one open tab costs **~72 MB/hour** at the
+ * production cadence, and a dev server points at the LIVE studio project — so a
+ * three-hour build session with a tab open spent ~216 MB of the studio's 5 GB
+ * allowance on nobody's work. Against a routine studio day of ~100 MB that is
+ * the largest single line in the bill, and separating the two by pointing dev at
+ * its own Supabase project is **not available**: the org is on the Free plan,
+ * which allows 2 projects, and both are in use (`studio-tracker`, `Lomdoni`).
+ * So the traffic is cut where it is generated instead.
+ *
+ * ⚠️ PRODUCTION IS PROVABLY UNTOUCHED — `NODE_ENV` is `"production"` in the
+ * built app, so the multiplier is 1 there and this whole block folds away.
+ * ⚠️ Set **`NEXT_PUBLIC_FULL_REFRESH=1`** to restore the real cadence in dev,
+ * which is REQUIRED when verifying anything about refresh, staleness or the
+ * write-vs-refresh races in `refreshVerdict` — at 10 minutes a tick those are
+ * untestable, and a slow tick looks exactly like a broken one.
+ */
+const DEV_SLOWDOWN =
+  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_FULL_REFRESH !== "1" ? 10 : 1;
 /** Hot poll. A minute is inside "my colleague sees my drag soon" for the plan. */
-const HOT_INTERVAL_MS = 60_000;
+const HOT_INTERVAL_MS = 60_000 * DEV_SLOWDOWN;
 /** Studio structure (people, clients, sections, tags) every 10th hot tick. */
 const COLD_EVERY_N_TICKS = 10;
 /**

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   estimateCycle,
   egressLevel,
+  combinedLevel,
+  projectCycle,
   mergeSamples,
   type DaySample,
   type EgressState,
@@ -117,9 +119,12 @@ export async function GET() {
 
   const now = new Date();
   const estimate = estimateCycle(state, now);
+  // ⚠️ The forecast may RAISE the level but never soften it — see `combinedLevel`.
+  const projection = projectCycle(state, estimate, now);
   return NextResponse.json({
     ...estimate,
-    level: egressLevel(estimate, state.lastPolledAt, now),
+    projection,
+    level: combinedLevel(egressLevel(estimate, state.lastPolledAt, now), projection),
     lastPolledAt: state.lastPolledAt,
     tokenConfigured: !!token,
     pollError,

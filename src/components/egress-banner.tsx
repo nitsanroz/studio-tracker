@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useIsAdmin } from "@/lib/store";
-import type { EgressLevel } from "@/lib/egress";
+import type { CycleProjection, EgressLevel } from "@/lib/egress";
 
 /**
  * Warns admins at 80% and 95% of the org's 5 GB monthly egress allowance.
@@ -39,9 +39,16 @@ type Info = {
   cycle: { start: string; end: string };
   lastPolledAt: string | null;
   tokenConfigured: boolean;
+  projection: CycleProjection | null;
 };
 
 const KEY = "egress.dismissed";
+
+/** Bytes as MB or GB, whichever reads better at that size. */
+function mb(bytes: number): string {
+  const m = bytes / 1024 ** 2;
+  return m >= 1024 ? `${(m / 1024).toFixed(1)} GB` : `${Math.round(m)} MB`;
+}
 
 export function EgressBanner() {
   const isAdmin = useIsAdmin();
@@ -120,6 +127,19 @@ export function EgressBanner() {
               This is an <strong>estimate</strong> from request counts, not a meter — check the real
               figure before acting. Cycle {info.cycle.start} → {info.cycle.end}.
             </span>
+            {/* ⚠️ The forecast is what makes this useful BEFORE the limit rather
+                than after it. Only shown once there are enough days behind it —
+                `projection` is null below the minimum, and its own `confident`
+                flag is what allowed it to raise this banner in the first place. */}
+            {info.projection && (
+              <span className="text-white/85">
+                On this rate the cycle lands near{" "}
+                <strong>{(info.projection.bytes / 1024 ** 3).toFixed(1)} GB</strong> by{" "}
+                {info.cycle.end} — about {Math.round(info.projection.pct)}% of the allowance.{" "}
+                {mb(info.projection.perWorkday)} a working day, {mb(info.projection.perWeekend)} at
+                the weekend, from {info.projection.daysSampled} days measured.
+              </span>
+            )}
           </>
         )}
         <a
