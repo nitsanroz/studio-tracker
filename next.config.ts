@@ -37,6 +37,21 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * Lets the build gate run in its own output dir — `NEXT_BUILD_DIR=.next-build
+   * npm run build` — so it cannot share `.next` with a running dev server.
+   *
+   * ⚠️ Cheap insurance rather than a fix for a proven bug, and the distinction is
+   * recorded because I got it wrong out loud: I blamed a plain gate build for a
+   * "localhost:3000 is not responding" report on 2026-08-27, then measured it and
+   * found dev serves from `.next/dev` while the build writes `.next/server` — a
+   * default build with the dev server up left `/login` answering in 0.03s. The
+   * likelier cause was the dev-server RESTART for the new `src/proxy.ts`, whose
+   * first compile takes many seconds.
+   *
+   * ⚠️ Vercel does not set this variable, so production builds are unaffected.
+   */
+  distDir: process.env.NEXT_BUILD_DIR || ".next",
   // The floating dev-tools bubble overlaps the sidebar user card
   devIndicators: false,
   // Don't advertise the framework and its version to a scanner.

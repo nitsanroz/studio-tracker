@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Local import artifacts (client data) — not for version control
 /data
+
+# gate builds run here so they cannot clobber the dev server (see next.config.ts)
+.next-build
