@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextInvoiceDate, nextPeriod, periodLabel } from "./billing-rollover";
+import { nextInvoiceDate, nextPeriod, parseInvoiceDay, periodLabel } from "./billing-rollover";
 
 describe("nextInvoiceDate", () => {
   it("finds the invoice day inside the same month", () => {
@@ -115,5 +115,30 @@ describe("periodLabel", () => {
 
   it("does not call a partial month by the month's name", () => {
     expect(periodLabel("2026-09-01", "2026-09-15")).toBe("1/9 → 15/9");
+  });
+});
+
+describe("parseInvoiceDay", () => {
+  it("reads the ordinals actually in the data", () => {
+    // The three clients using this field today: Anchor, Visitt, Baseline.
+    expect(parseInvoiceDay("20th")).toBe(20);
+    expect(parseInvoiceDay("1st")).toBe(1);
+  });
+
+  it("reads a bare number and a fuller phrase", () => {
+    expect(parseInvoiceDay("5")).toBe(5);
+    expect(parseInvoiceDay("15th of the month")).toBe(15);
+    expect(parseInvoiceDay(" 28 ")).toBe(28);
+  });
+
+  it("returns null for anything it cannot read, so the fallback is a calendar month", () => {
+    // ⚠️ Never a guess: a boundary nobody chose is worse than no alignment.
+    for (const v of ["", "   ", "end of month", "on delivery", "when invoiced", null, undefined]) {
+      expect(parseInvoiceDay(v)).toBe(null);
+    }
+  });
+
+  it("refuses a number that is not a day of the month", () => {
+    for (const v of ["45", "0", "2026", "99th"]) expect(parseInvoiceDay(v)).toBe(null);
   });
 });

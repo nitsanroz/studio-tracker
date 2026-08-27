@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { nextPeriod } from "@/lib/billing-rollover";
+import { nextPeriod, parseInvoiceDay } from "@/lib/billing-rollover";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import { capTone } from "@/lib/cap";
@@ -291,7 +291,12 @@ function PaymentPeriods({ client }: { client: Client }) {
                 />
               </div>
             </div>
-            <div title="Day of the month the invoice goes out — click to edit">
+            {/* ⚠️ THIS FIELD NOW SHAPES DATA, not just a note. `parseInvoiceDay`
+                reads a day number out of it and the automatic period rollover
+                aligns new periods to it; anything it cannot read (blank, "end of
+                month") falls back to a plain calendar month. Keep the placeholder
+                ordinal-shaped. */}
+            <div title="Day of the month the invoice goes out — click to edit. New billing periods are aligned to end the day before this; leave it blank and they simply run a calendar month.">
               <div className="text-[11px] font-medium text-muted">Invoice day</div>
               <div className="mt-0.5">
                 <EditableTextCell
@@ -580,26 +585,6 @@ function PublishWorkspace() {
     if (!clients.length || !billingPeriods.length) return;
     rolloverRan.current = true;
     (async () => {
-      /**
-       * ⚠️ A TOLERANT, SEPARATE READ — deliberately not added to the main clients
-       * query. Selecting a column that does not exist FAILS the whole request, so
-       * folding `invoice_day` into the page's normal fetch would break Client
-       * Reports for everyone until the migration below is run. Missing column here
-       * just means "no invoice day", and every client falls back to a calendar
-       * month.
-       */
-      const invoiceDays = new Map<string, number | null>();
-      try {
-        const { data, error } = await supabase.from("clients").select("id,invoice_day");
-        if (!error && data) {
-          for (const row of data as { id: string; invoice_day: number | null }[]) {
-            invoiceDays.set(row.id, row.invoice_day ?? null);
-          }
-        }
-      } catch {
-        /* no invoice_day column yet — calendar months for everyone */
-      }
-
       const today = new Date();
       const todayIso = toISODate(today);
       /**
@@ -649,7 +634,7 @@ function PublishWorkspace() {
         }[] = [];
         let position = Math.max(0, ...mine.map((p) => p.position));
         while (rows.length < MAX_CATCH_UP) {
-          const next = nextPeriod(last, invoiceDays.get(client.id) ?? null, today);
+          const next = nextPeriod(last, parseInvoiceDay(client.invoiceNote), today);
           if (!next) break;
           if (taken.has(next.dateFrom)) break;
           position += 1;

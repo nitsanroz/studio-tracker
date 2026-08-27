@@ -68,6 +68,22 @@ const NOISE_SCHEMES = [
   "data:text/html",
 ];
 
+/**
+ * ⚠️ THE FILTER CANNOT CATCH EVERY EXTENSION-CAUSED VIOLATION, and the first real
+ * report proved it: within minutes of shipping, the viewer showed `font-src`
+ * blocking `https://fonts.gstatic.com` twice. The app turned out to be clean —
+ * `next/font/google` self-hosts Rubik, and the entire production build contains
+ * ZERO references to gstatic or googleapis — so an extension had injected a
+ * stylesheet asking for a Google font ON our page. That produces a blocked URL
+ * which is an ordinary https origin and a document URL which is genuinely ours,
+ * so nothing here can distinguish it from our own code doing it.
+ *
+ * ⚠️ THE PRACTICAL RULE FOR WHOEVER READS THIS LIST: before changing the policy to
+ * allow something, check whether the app actually asks for it —
+ * `grep -rl gstatic .next-build/static/` and the equivalent for the origin in
+ * question. Widening `font-src` for that report would have weakened the policy for
+ * a font we never load.
+ */
 function isNoisyValue(v: string): boolean {
   const lower = v.toLowerCase();
   return NOISE_SCHEMES.some((s) => lower.startsWith(s));

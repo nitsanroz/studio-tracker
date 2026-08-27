@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
@@ -738,6 +738,152 @@ const ADMIN_TABS = [
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
 
+/**
+ * What the Content Security Policy has refused, for admins.
+ *
+ * ⚠️ WHY IT EXISTS: v1.39.0's CSP caught a live dependency nobody knew about — 17
+ * avatars still served from Everhour's retired CDN — and only because somebody
+ * happened to have the browser console open. v1.41.0 added the report sink; without
+ * somewhere to READ it, the next unknown third party still fails silently and
+ * reaches us as "the app looks wrong".
+ *
+ * ⚠️ AN EMPTY LIST IS GOOD NEWS AND MUST SAY SO. A blank card reads as broken, and
+ * "nothing has been blocked" is the state we expect almost always.
+ *
+ * ⚠️ `dropped` IS SHOWN WHENEVER IT IS NON-ZERO. The store caps distinct
+ * signatures, and a full cap silently hiding new ones would present as "no new
+ * violations" — the one thing this must never claim falsely.
+ */
+type CspStore = {
+  items: {
+    sig: string;
+    directive: string;
+    blocked: string;
+    documentUri: string;
+    count: number;
+    firstSeen: string;
+    lastSeen: string;
+  }[];
+  updatedAt: string | null;
+  dropped: number;
+};
+
+function CspReportsSection() {
+  const [store, setStore] = useState<CspStore | null>(null);
+  const [state, setState] = useState<"loading" | "ok" | "error">("loading");
+
+  /**
+   * ⚠️ The fetch is factored out so the EFFECT can await it without setting state
+   * synchronously — `useEffect(load, [load])` tripped
+   * `react-hooks/set-state-in-effect`, because `load` flips to "loading" on entry.
+   * The Refresh button still wants that flip (it is an event handler, where a
+   * synchronous setState is exactly right), hence two callers of one reader.
+   */
+  const read = useCallback(
+    (alive: () => boolean) =>
+      fetch("/api/csp-report", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((j) => {
+          if (!alive()) return;
+          setStore(j as CspStore);
+          setState("ok");
+        })
+        .catch(() => {
+          if (alive()) setState("error");
+        }),
+    [],
+  );
+  const load = useCallback(() => {
+    setState("loading");
+    void read(() => true);
+  }, [read]);
+  useEffect(() => {
+    // Guarded, so a slow response cannot set state on an unmounted card — a tab
+    // switch away from Studio setup unmounts this.
+    let alive = true;
+    void read(() => alive);
+    return () => {
+      alive = false;
+    };
+  }, [read]);
+
+  const items = store?.items ?? [];
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h2 className="mb-1 font-heading">Blocked by the security policy</h2>
+      <p className="mb-3 text-xs text-muted">
+        Anything the browser refused to load — a script, image or connection the policy does not
+        allow. This is how a retired third-party CDN or a new embed announces itself instead of just
+        looking broken.
+      </p>
+
+      {state === "loading" && <p className="text-sm text-muted">Reading…</p>}
+      {state === "error" && (
+        <p className="text-sm text-danger">
+          Could not read the reports. The endpoint is admin-only — if this keeps happening, check the
+          browser console.
+        </p>
+      )}
+
+      {state === "ok" && items.length === 0 && (
+        <p className="text-sm text-success">Nothing has been blocked. Everything the app loads is allowed.</p>
+      )}
+
+      {state === "ok" && items.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="text-[11px] uppercase tracking-wide text-faint">
+              <tr>
+                <th className="pb-1 pr-3 font-medium">Blocked</th>
+                <th className="pb-1 pr-3 font-medium">Rule</th>
+                <th className="pb-1 pr-3 font-medium tabular-nums">Times</th>
+                <th className="pb-1 font-medium">Last seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={i.sig} className="border-t border-border">
+                  {/* The origin, not the full URL — one CDN is one problem, and a
+                      path is more data than we have any reason to keep. */}
+                  <td className="py-1.5 pr-3 font-medium" title={i.documentUri}>
+                    {i.blocked}
+                  </td>
+                  <td className="py-1.5 pr-3 text-muted">{i.directive}</td>
+                  <td className="py-1.5 pr-3 tabular-nums text-muted">{i.count}</td>
+                  <td className="py-1.5 text-muted">{new Date(i.lastSeen).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {state === "ok" && !!store?.dropped && (
+        <p className="mt-2 text-xs text-warning">
+          {store.dropped} further {store.dropped === 1 ? "kind" : "kinds"} of violation could not be
+          recorded — the list is full, so this is not the whole picture.
+        </p>
+      )}
+
+      {state === "ok" && (
+        <div className="mt-3 flex items-center gap-3">
+          <button
+            onClick={load}
+            className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold hover:bg-background"
+          >
+            Refresh
+          </button>
+          <span className="text-[11px] text-faint">
+            {store?.updatedAt
+              ? `Last report ${new Date(store.updatedAt).toLocaleString()}`
+              : "No reports yet"}
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const isAdmin = useIsAdmin();
   const [tab, setTab] = useState<SettingsTab>("pictures");
@@ -816,12 +962,13 @@ export default function SettingsPage() {
       )}
 
       {tab === "studio" && isAdmin && (
-        // three cards, so plain source-order auto-placement rather than a
+        // four cards, so plain source-order auto-placement rather than a
         // hand-split masonry
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <TaskTypesSection />
           <TagsSection isAdmin={isAdmin} />
           <OccasionsSettings />
+          <CspReportsSection />
         </div>
       )}
 

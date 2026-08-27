@@ -145,3 +145,37 @@ export function nextPeriod(
   if (dateTo < dateFrom) return null;
   return { label: periodLabel(dateFrom, dateTo), dateFrom, dateTo };
 }
+
+/**
+ * Reads a day-of-month out of the client's free-text "Invoice day".
+ *
+ * ⚠️⚠️ THE FIELD ALREADY EXISTED AND IS FREE TEXT — `clients.invoice_note` from
+ * migration 0010, edited on the Client Reports panel as "Invoice day" with the
+ * placeholder "e.g. 15th". Nitsan meant THAT field ("= invoice day"), so this
+ * parses it rather than introducing a second, numeric one: two fields for one
+ * concept is how they drift apart. Real values today: "20th", "1st", "20th".
+ *
+ * ⚠️ ANYTHING IT CANNOT READ RETURNS NULL, and null means "just run a calendar
+ * month" — never a guess. "end of month", "on delivery" or a typo must not quietly
+ * produce a period boundary nobody chose.
+ *
+ * ⚠️ Deliberately strict about RANGE: a bare number outside 1–31 is not a day of
+ * the month, so "2026" or "45" is refused rather than clamped.
+ */
+export function parseInvoiceDay(note: string | null | undefined): number | null {
+  if (!note) return null;
+  /**
+   * The first RUN OF DIGITS, however long, then range-checked.
+   *
+   * ⚠️ NOT `\b(\d{1,2})\b`, which was my first attempt and silently read NOTHING
+   * from the real data: in "20th" there is no word boundary between the `0` and the
+   * `t`, so the match failed on every ordinal — which is every value in use.
+   * ⚠️ Matching the whole run is also what makes "2026" safe: it parses as 2026 and
+   * fails the range check, where a 1–2 digit match would have taken "20" from it.
+   */
+  const m = note.trim().match(/(\d+)/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isInteger(n) || n < 1 || n > 31) return null;
+  return n;
+}

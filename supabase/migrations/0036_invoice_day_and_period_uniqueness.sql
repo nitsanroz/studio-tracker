@@ -21,9 +21,15 @@
 create unique index if not exists client_billing_periods_client_from_key
   on client_billing_periods (client_id, date_from);
 
--- ⚠️ Day of the month a client is invoiced on, so new periods align to the
--- invoicing cycle instead of drifting. NULL means "just run a calendar month",
--- which is what every client does today.
+-- ⚠️⚠️ THIS COLUMN IS NOT READ BY THE APP, and adding it was my mistake — leaving
+-- it here with the reason rather than churning another migration to drop it.
+-- `clients.invoice_note` (migration 0010) ALREADY holds this: it is the free-text
+-- field edited as "Invoice day" on the Client Reports panel, placeholder
+-- "e.g. 15th", and it is the field Nitsan meant. Real values: "20th", "1st",
+-- "20th". `parseInvoiceDay` in `src/lib/billing-rollover.ts` reads a day number
+-- out of it, so there is ONE source of truth. Two fields for one concept is how
+-- they drift apart. If a strict numeric field is ever wanted, migrate the text
+-- values into this column deliberately rather than reading both.
 --
 -- ⚠️ Read by a SEPARATE, tolerant query in the app, never folded into the main
 -- clients select: selecting a column that does not exist fails the WHOLE request,
