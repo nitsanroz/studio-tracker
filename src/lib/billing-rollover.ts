@@ -1,4 +1,4 @@
-import { shiftDays, toISODate } from "./format";
+import { parseISO, shiftDays, toISODate } from "./format";
 
 /**
  * Works out the billing period that should follow the last one a client has.
@@ -34,12 +34,6 @@ const MONTH_NAMES = [
   "December",
 ];
 
-/** `YYYY-MM-DD` → a LOCAL date at midnight, matching `parseISO` elsewhere. */
-function parse(iso: string): Date {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
 /**
  * Days in a month, so an invoice day of 31 does not fall off a 30-day month.
  * `new Date(y, m, 0)` is the last day of month `m`, 1-indexed.
@@ -56,7 +50,7 @@ function daysInMonth(year: number, monthIndex0: number): number {
  * over, and that rollover would shift every subsequent period by three days.
  */
 export function nextInvoiceDate(from: string, invoiceDay: number): string {
-  const start = parse(from);
+  const start = parseISO(from);
   let y = start.getFullYear();
   let m = start.getMonth();
   for (let i = 0; i < 3; i++) {
@@ -81,7 +75,7 @@ export function nextInvoiceDate(from: string, invoiceDay: number): string {
  * the 31st gives a sane end rather than skipping a month.
  */
 function oneMonthFrom(from: string): string {
-  const start = parse(from);
+  const start = parseISO(from);
   let y = start.getFullYear();
   let m = start.getMonth() + 1;
   if (m > 11) {
@@ -94,8 +88,8 @@ function oneMonthFrom(from: string): string {
 
 /** `September 2026`, or `5/9 → 4/10` when the period straddles two months. */
 export function periodLabel(dateFrom: string, dateTo: string): string {
-  const a = parse(dateFrom);
-  const b = parse(dateTo);
+  const a = parseISO(dateFrom);
+  const b = parseISO(dateTo);
   // A period covering one whole calendar month is named after it — the common case
   // when the invoice day is the 1st.
   const wholeMonth =
@@ -126,7 +120,7 @@ export function nextPeriod(
   const todayIso = toISODate(today);
   if (last.dateTo >= todayIso) return null;
 
-  const dateFrom = toISODate(shiftDays(parse(last.dateTo), 1));
+  const dateFrom = toISODate(shiftDays(parseISO(last.dateTo), 1));
   // ⚠️ Guard against a period that ended so long ago the "next" one is also in the
   // past. One period at a time: the caller can run again tomorrow, and a silent
   // burst of six backfilled periods is not something to do to a client's report
@@ -137,7 +131,7 @@ export function nextPeriod(
     // If the next invoice date IS the start, the cycle ends a month later.
     dateTo =
       invoice > dateFrom
-        ? toISODate(shiftDays(parse(invoice), -1))
+        ? toISODate(shiftDays(parseISO(invoice), -1))
         : oneMonthFrom(dateFrom);
   } else {
     dateTo = oneMonthFrom(dateFrom);
@@ -185,7 +179,10 @@ export function parseInvoiceDay(note: string | null | undefined): number | null 
   if (!m) return null;
   const digits = m[1];
   const isWholeValue = trimmed === digits;
-  const hasOrdinalSuffix = new RegExp(`${digits}(st|nd|rd|th)\\b`, "i").test(trimmed);
+  // Anchored at the matched run rather than built from it: a pattern interpolated
+  // from `digits` cannot be read on its own, and it would also match an ordinal on
+  // some OTHER occurrence of the same digits later in the note.
+  const hasOrdinalSuffix = /^\d+(?:st|nd|rd|th)\b/i.test(trimmed.slice(m.index));
   if (!isWholeValue && !hasOrdinalSuffix) return null;
   const n = Number(digits);
   if (!Number.isInteger(n) || n < 1 || n > 31) return null;

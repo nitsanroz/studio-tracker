@@ -79,6 +79,39 @@ function logViolations(violations: { directive: string; blocked: string; documen
   }
 }
 
+/**
+ * First write for a key that has no row yet. A plain INSERT rather than an upsert,
+ * so losing the race is an ERROR we can see and retry instead of quietly
+ * overwriting whoever got there first.
+ */
+async function claimRow(db: ReturnType<typeof admin>, store: ReportStore): Promise<boolean> {
+  const { error } = await db.from("app_settings").insert({ key: SETTINGS_KEY, value: store });
+  return !error;
+}
+
+/**
+ * Compare-and-set: replace the row only if its `updatedAt` is still the one we
+ * merged onto. Returns false when somebody wrote in between, which is the caller's
+ * signal to re-read and merge onto theirs.
+ *
+ * ⚠️ `is null` rather than `eq` for a store that has never been written: `->>` on
+ * an absent or null key yields SQL NULL, which `eq` never matches.
+ */
+async function replaceRow(
+  db: ReturnType<typeof admin>,
+  store: ReportStore,
+  seenAt: string | null,
+): Promise<boolean> {
+  const base = db.from("app_settings").update({ value: store }).eq("key", SETTINGS_KEY);
+  const guarded =
+    seenAt === null ? base.is("value->>updatedAt", null) : base.eq("value->>updatedAt", seenAt);
+  // ⚠️ `.select("key")` and not `.select()` — the row count is the whole signal, and
+  // echoing the ~20KB `value` back on every report would be pure egress.
+  const { data, error } = await guarded.select("key");
+  if (error) throw error;
+  return !!data?.length;
+}
+
 export async function POST(req: NextRequest) {
   // 204 on every path below. `void` the work rather than reporting it.
   const done = new NextResponse(null, { status: 204 });
@@ -121,8 +154,16 @@ export async function POST(req: NextRequest) {
      * match, somebody wrote in between, so we RE-READ and merge onto theirs rather
      * than clobbering it. Bounded attempts: this is a best-effort sink on an
      * unauthenticated endpoint and must never spin.
+     *
+     * ⚠️⚠️ AND THIS IS DELIBERATELY *NOT* A SHARED HELPER, THOUGH IT LOOKS LIKE ONE.
+     * `/api/egress` does the same read-merge-write on its own `app_settings` row
+     * with a plain upsert and NEEDS no guard, because a lost write there loses
+     * nothing: every poll pulls a 7-day window, so a dropped sample backfills
+     * itself on the next one. A violation report arrives ONCE and is gone — that
+     * asymmetry, not the shape of the code, is why only this one pays for CAS.
+     * Before "harmonising" the two, ask whether the data is re-derivable.
      */
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let i = 0; i < 3; i++) {
       const { data: row } = await db
         .from("app_settings")
         .select("value")
@@ -137,27 +178,10 @@ export async function POST(req: NextRequest) {
       // seconds must not cost a write every few seconds.
       if (!changed) break;
 
-      if (!row) {
-        // No row yet. A plain insert so that losing the race is an ERROR we can
-        // see and retry, rather than an upsert quietly overwriting the winner.
-        const { error } = await db.from("app_settings").insert({ key: SETTINGS_KEY, value: store });
-        if (!error) {
-          logViolations(violations);
-          break;
-        }
-        continue; // somebody claimed it first — re-read and merge onto theirs
-      }
-
-      let q = db.from("app_settings").update({ value: store }).eq("key", SETTINGS_KEY);
-      // ⚠️ `is null` rather than `eq` for a store that has never been written:
-      // `->>` on an absent or null key yields SQL NULL, which `eq` never matches.
-      q =
-        existing.updatedAt === null
-          ? q.is("value->>updatedAt", null)
-          : q.eq("value->>updatedAt", existing.updatedAt);
-      const { data: applied, error } = await q.select("key");
-      if (error) throw error;
-      if (applied?.length) {
+      // Each branch answers one question — did OUR write land? — so the success
+      // path is stated once below rather than once per branch.
+      const won = !row ? await claimRow(db, store) : await replaceRow(db, store, existing.updatedAt);
+      if (won) {
         logViolations(violations);
         break;
       }

@@ -9,6 +9,20 @@ import { ContextMenu } from "@/components/ui";
 import type { ReportSnapshot } from "@/lib/types";
 
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
+/**
+ * The "not shared" flag under a column heading — rendered on BOTH a week/period
+ * heading and the Total heading, so it lives in one place. ⚠️ Restyling it in only
+ * one of the two is how the Total silently stops being marked, and the Total is
+ * the figure most likely to be read aloud to a client.
+ */
+function NotSharedMark() {
+  return (
+    <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
+      not shared
+    </span>
+  );
+}
+
 export function columnKey(i: number): string {
   return `p:${i}`;
 }
@@ -688,9 +702,7 @@ export function ReportTable({
                 {!narrow && <ResizeHandle onMouseDown={startResize("total")} />}
                 Total
                 {totalNotShared && (
-                  <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
-                    not shared
-                  </span>
+                  <NotSharedMark />
                 )}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has("total")} onClick={() => onToggleColumn?.("total")} />
@@ -749,9 +761,7 @@ export function ReportTable({
                     in the preview's Total but not in the client's. Say so on the
                     face of it. */}
                 {notShared(p.to) && (
-                  <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
-                    not shared
-                  </span>
+                  <NotSharedMark />
                 )}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has(p.key)} onClick={() => onToggleColumn?.(p.key)} />

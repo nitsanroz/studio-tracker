@@ -778,36 +778,36 @@ function CspReportsSection() {
    * `react-hooks/set-state-in-effect`, because `load` flips to "loading" on entry.
    * The Refresh button still wants that flip (it is an event handler, where a
    * synchronous setState is exactly right), hence two callers of one reader.
+   *
+   * ⚠️ ONE alive flag, READ INSIDE the fetcher rather than passed in. The Refresh
+   * button used to hand `read` its own `() => true`, opting itself out of the very
+   * guard the effect had added — click Refresh, switch tab, and the late response
+   * still set state on an unmounted card. Taking no parameter makes that
+   * unrepresentable instead of merely discouraged. A ref rather than a local,
+   * because the button's handler outlives any one effect run.
    */
+  const alive = useRef(true);
   const read = useCallback(
-    (alive: () => boolean) =>
+    () =>
       fetch("/api/csp-report", { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((j) => {
-          if (!alive()) return;
+          if (!alive.current) return;
           setStore(j as CspStore);
           setState("ok");
         })
         .catch(() => {
-          if (alive()) setState("error");
+          if (alive.current) setState("error");
         }),
     [],
   );
-  /**
-   * ⚠️ ONE alive flag for BOTH callers. The Refresh button used to pass
-   * `() => true`, which opted itself out of the very guard the effect added — click
-   * Refresh, switch tab, and the late response still set state on an unmounted
-   * card. A ref rather than a local, because the button's handler outlives any one
-   * effect run.
-   */
-  const alive = useRef(true);
   const load = useCallback(() => {
     setState("loading");
-    void read(() => alive.current);
+    void read();
   }, [read]);
   useEffect(() => {
     alive.current = true;
-    void read(() => alive.current);
+    void read();
     return () => {
       alive.current = false;
     };
