@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
@@ -793,17 +793,23 @@ function CspReportsSection() {
         }),
     [],
   );
+  /**
+   * ⚠️ ONE alive flag for BOTH callers. The Refresh button used to pass
+   * `() => true`, which opted itself out of the very guard the effect added — click
+   * Refresh, switch tab, and the late response still set state on an unmounted
+   * card. A ref rather than a local, because the button's handler outlives any one
+   * effect run.
+   */
+  const alive = useRef(true);
   const load = useCallback(() => {
     setState("loading");
-    void read(() => true);
+    void read(() => alive.current);
   }, [read]);
   useEffect(() => {
-    // Guarded, so a slow response cannot set state on an unmounted card — a tab
-    // switch away from Studio setup unmounts this.
-    let alive = true;
-    void read(() => alive);
+    alive.current = true;
+    void read(() => alive.current);
     return () => {
-      alive = false;
+      alive.current = false;
     };
   }, [read]);
 

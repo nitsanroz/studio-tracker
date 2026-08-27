@@ -650,9 +650,16 @@ function PublishWorkspace() {
           if (next.dateTo >= todayIso) break;
         }
         if (!rows.length) continue;
-        if (rows.length >= MAX_CATCH_UP) {
+        /**
+         * ⚠️ KEYED ON WHETHER WE ACTUALLY REACHED TODAY, not on the row count. The
+         * loop breaks successfully the moment a period covers today, so a client
+         * needing exactly MAX_CATCH_UP periods hit the cap AND finished — and the
+         * old `rows.length >= MAX_CATCH_UP` test sent somebody to audit dates that
+         * were already correct.
+         */
+        if (rows[rows.length - 1].date_to < todayIso) {
           console.warn(
-            `[billing] ${client.name}: stopped after ${MAX_CATCH_UP} periods without reaching today — check its dates by hand`,
+            `[billing] ${client.name}: stopped after ${rows.length} periods without reaching today — check its dates by hand`,
           );
         }
         /**

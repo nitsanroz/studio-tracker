@@ -69,6 +69,16 @@ function allowedOrigins(req: NextRequest): string[] {
   return [...set];
 }
 
+/**
+ * To the server log as well as the store, so a violation is visible in Vercel's
+ * runtime logs without anyone remembering this endpoint exists.
+ */
+function logViolations(violations: { directive: string; blocked: string; documentUri: string }[]) {
+  for (const v of violations) {
+    console.warn("[csp] blocked", v.directive, v.blocked, "on", v.documentUri);
+  }
+}
+
 export async function POST(req: NextRequest) {
   // 204 on every path below. `void` the work rather than reporting it.
   const done = new NextResponse(null, { status: 204 });
@@ -98,22 +108,60 @@ export async function POST(req: NextRequest) {
 
   try {
     const db = admin();
-    const { data: row } = await db
-      .from("app_settings")
-      .select("value")
-      .eq("key", SETTINGS_KEY)
-      .maybeSingle();
-    const existing: ReportStore = { ...EMPTY_STORE, ...((row?.value as Partial<ReportStore>) ?? {}) };
-    const { store, changed } = mergeReports(existing, violations, new Date());
-    // ⚠️ The whole point of `changed`: a known violation repeating every few
-    // seconds must not cost a write every few seconds.
-    if (changed) {
-      await db.from("app_settings").upsert({ key: SETTINGS_KEY, value: store }, { onConflict: "key" });
-      // Also to the server log, so a violation is visible in Vercel's runtime logs
-      // without anyone remembering this endpoint exists.
-      for (const v of violations) {
-        console.warn("[csp] blocked", v.directive, v.blocked, "on", v.documentUri);
+    /**
+     * ⚠️⚠️ COMPARE-AND-SET, NOT A BARE UPSERT — the whole store is ONE jsonb row,
+     * so a plain read-then-write loses a concurrent report entirely. Two colleagues
+     * loading a page at the same moment, each hitting a different first-time
+     * violation, both read the same base and the later write overwrote the earlier
+     * one: a genuinely new dependency vanished while `dropped` stayed 0, i.e. the
+     * store reported itself complete. That is the one thing `dropped` exists to
+     * prevent.
+     *
+     * ⚠️ The guard is `value->>updatedAt` matching what we read. If it does not
+     * match, somebody wrote in between, so we RE-READ and merge onto theirs rather
+     * than clobbering it. Bounded attempts: this is a best-effort sink on an
+     * unauthenticated endpoint and must never spin.
+     */
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data: row } = await db
+        .from("app_settings")
+        .select("value")
+        .eq("key", SETTINGS_KEY)
+        .maybeSingle();
+      const existing: ReportStore = {
+        ...EMPTY_STORE,
+        ...((row?.value as Partial<ReportStore>) ?? {}),
+      };
+      const { store, changed } = mergeReports(existing, violations, new Date());
+      // ⚠️ The whole point of `changed`: a known violation repeating every few
+      // seconds must not cost a write every few seconds.
+      if (!changed) break;
+
+      if (!row) {
+        // No row yet. A plain insert so that losing the race is an ERROR we can
+        // see and retry, rather than an upsert quietly overwriting the winner.
+        const { error } = await db.from("app_settings").insert({ key: SETTINGS_KEY, value: store });
+        if (!error) {
+          logViolations(violations);
+          break;
+        }
+        continue; // somebody claimed it first — re-read and merge onto theirs
       }
+
+      let q = db.from("app_settings").update({ value: store }).eq("key", SETTINGS_KEY);
+      // ⚠️ `is null` rather than `eq` for a store that has never been written:
+      // `->>` on an absent or null key yields SQL NULL, which `eq` never matches.
+      q =
+        existing.updatedAt === null
+          ? q.is("value->>updatedAt", null)
+          : q.eq("value->>updatedAt", existing.updatedAt);
+      const { data: applied, error } = await q.select("key");
+      if (error) throw error;
+      if (applied?.length) {
+        logViolations(violations);
+        break;
+      }
+      // Lost the race. Loop: re-read and fold these violations onto the newer store.
     }
   } catch (e) {
     // Never surfaced to the caller — see the 204 note above.
