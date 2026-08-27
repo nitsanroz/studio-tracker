@@ -17,7 +17,13 @@ const SECURITY_HEADERS = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   // ⚠️ Belt to `frame-ancestors 'none'` in the CSP, kept for older browsers that
   // honour this and not that. If the app ever needs to be embedded, BOTH change.
-  { key: "X-Frame-Options", value: "DENY" },
+  // ⚠️⚠️ DEV IS EXEMPT, for the same reason the CSP directive is — Claude Code's
+  // preview pane iframes localhost, and DENY blanks it while the server is healthy.
+  // The two MUST stay in step: leaving this unconditional would keep the pane
+  // broken no matter what the CSP says, since either header alone blocks framing.
+  ...(process.env.NODE_ENV === "development"
+    ? []
+    : [{ key: "X-Frame-Options", value: "DENY" }]),
   // Send the full URL within our own origin, only the origin off-site. Report and
   // intake URLs carry an unguessable TOKEN in the path — leaking that in a
   // Referer to a client's own outbound link would hand over the whole report.
