@@ -446,3 +446,34 @@ b,
 .pin-hover:hover {
   background-color: color-mix(in oklab, var(--brand-soft) 60%, var(--surface));
 }
+
+/* The weekly plan's remaining tints, pre-composited for the same reason as
+   `.pin-today` above — plus a bug the measurement turned up on 2026-08-27.
+
+   ⚠️⚠️ THE STUDIO COLUMN'S HEADER TINT WAS SILENTLY NOT APPLYING AT ALL. The
+   `<th>` carried `bg-surface`, `bg-brand-soft/60` AND `bg-aqua/20` together, and
+   Tailwind emits those as EQUAL-SPECIFICITY utilities — the winner is whichever
+   lands later in the generated stylesheet, NOT the order in the class attribute.
+   Measured on the live grid, the studio header computed to plain
+   `rgb(255,255,255)`: the tint had been dead, probably for a long time, and no
+   amount of reordering the class string would have fixed it.
+
+   ⚠️ So each element now gets exactly ONE of these, chosen in the JSX with an
+   if/else rather than by stacking conditional classes. Two of them on one element
+   would put us straight back into the same coin-flip.
+
+   ⚠️ Percentages are matched to the alphas they replace so nothing changes
+   appearance: /60 → 60%, /30 → 30%, /20 → 20%, /10 → 10%. As above, change the
+   MIX PERCENTAGE, never introduce an alpha. */
+.plan-head-studio {
+  background-color: color-mix(in oklab, var(--brand-soft) 60%, var(--surface));
+}
+.plan-head-me {
+  background-color: color-mix(in oklab, var(--aqua) 20%, var(--surface));
+}
+.plan-cell-studio {
+  background-color: color-mix(in oklab, var(--brand-soft) 30%, var(--surface));
+}
+.plan-cell-me {
+  background-color: color-mix(in oklab, var(--aqua) 10%, var(--surface));
+}

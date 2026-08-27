@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -819,6 +820,15 @@ const MONTH_NAMES = [
  */
 const SHADOW_X = "shadow-[6px_0_8px_-6px_rgba(0,0,0,0.14)]";
 const SHADOW_Y = "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]";
+/**
+ * ⚠️ THE CORNER CELL NEEDS ITS OWN COMBINED VALUE, NOT `SHADOW_X SHADOW_Y`. It is
+ * the only cell pinned on both axes, and two `shadow-[…]` utilities on one element
+ * are EQUAL-SPECIFICITY — the stylesheet order picks a winner and the other edge
+ * silently loses its shadow. `box-shadow` takes a comma-separated list, so both
+ * edges belong in a single class. (Same trap as the stacked `bg-*` utilities that
+ * killed the studio column's tint; see globals.css.)
+ */
+const SHADOW_XY = "shadow-[6px_0_8px_-6px_rgba(0,0,0,0.14),0_5px_8px_-6px_rgba(0,0,0,0.14)]";
 
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
@@ -835,25 +845,55 @@ export function WeeklyPlan() {
   const [showColumns, setShowColumns] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   /**
-   * Whether anything is hidden behind the pinned header row / pinned date column.
+   * Whether to shade the pinned header row / pinned date column.
    *
-   * ⚠️ The reasoning is copied from `client-timeline.tsx` along with the pattern:
-   * both edges stay SILENT until something is actually behind them, so a shadow
-   * is information rather than decoration. Nitsan reported the grid scrolling
-   * sideways under the date column "with no shadow to show its a pocket".
+   * ⚠️⚠️ THE TWO AXES USE DIFFERENT RULES ON PURPOSE — DO NOT "MAKE THEM
+   * CONSISTENT". `y` appears once you have actually scrolled down, because the day
+   * list is hundreds of rows long and there is always more below. `x` appears as
+   * soon as the grid CAN scroll sideways at all, whatever the current position.
+   *
+   * ⚠️ WHY x IGNORES scrollLeft: v1.40.0 gated it on `scrollLeft > 0`, copying
+   * `client-timeline.tsx`'s "silent until something is behind it". Measured on the
+   * real grid, the whole horizontal overflow is about **189px** — so the studio
+   * sits at scrollLeft 0 essentially always, and Nitsan reported the shadow
+   * missing twice because for him it never rendered. The mechanism was fine; the
+   * gate was wrong. A pinned column that CAN be scrolled under is a pocket whether
+   * or not you have used it yet, and that is exactly the affordance he asked for.
+   * When there is no overflow there is no pocket, so it correctly stays silent.
    *
    * ⚠️ Only a BOUNDARY CROSSING re-renders — scrolling within a state is free.
    * This grid runs to ~10 columns × 378 days, so a setState per scroll event
    * would be a re-render per frame while dragging a chip across it.
    */
   const [gridShadow, setGridShadow] = useState({ x: false, y: false });
-  function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
-    const el = e.currentTarget;
-    const x = el.scrollLeft > 0;
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const syncGridShadow = useCallback((el: HTMLDivElement) => {
+    const x = el.scrollWidth > el.clientWidth;
     const y = el.scrollTop > 0;
     setGridShadow((g) => (g.x === x && g.y === y ? g : { x, y }));
+  }, []);
+  function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
+    syncGridShadow(e.currentTarget);
   }
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  /**
+   * ⚠️ `x` now depends on a MEASUREMENT, not on a scroll, so it has to be taken
+   * on mount and whenever the box changes — a scroll handler alone would leave the
+   * pinned column flat until you happened to scroll. Overflow here changes with
+   * the window, the sidebar, the rail width and the number of person columns, so
+   * this observes the element rather than listening for window resizes.
+   */
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    syncGridShadow(el);
+    const ro = new ResizeObserver(() => syncGridShadow(el));
+    ro.observe(el);
+    // The table, not just the viewport: adding a column changes scrollWidth
+    // without changing the scroller's own size.
+    const table = el.querySelector("table");
+    if (table) ro.observe(table);
+    return () => ro.disconnect();
+  }, [syncGridShadow]);
   const hoveredCell = useRef<CellTarget | null>(null);
   const hoveredEntry = useRef<PlanEntry | null>(null);
   const todayIso = toISODate(new Date());
@@ -1088,8 +1128,14 @@ export function WeeklyPlan() {
               <tr>
                 <th
                   className={`sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint ${
-                    gridShadow.x ? SHADOW_X : ""
-                  } ${gridShadow.y ? SHADOW_Y : ""}`}
+                    gridShadow.x && gridShadow.y
+                      ? SHADOW_XY
+                      : gridShadow.x
+                        ? SHADOW_X
+                        : gridShadow.y
+                          ? SHADOW_Y
+                          : ""
+                  }`}
                 >
                   <button
                     onClick={() => setRangeStart((s) => shiftDays(s, -28))}
@@ -1109,7 +1155,21 @@ export function WeeklyPlan() {
                       key={col.id}
                       // a width, not a min-width: under fixed layout the header
                       // row's widths ARE the column widths
-                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${gridShadow.y ? SHADOW_Y : ""} ${col.type === "studio" ? "bg-brand-soft/60" : ""} ${isMe ? "bg-aqua/20" : ""}`}
+                      // ⚠️ ONE background class, picked here rather than stacked. This
+                      // carried `bg-surface`, `bg-brand-soft/60` and `bg-aqua/20`
+                      // at once, and Tailwind emits those at EQUAL specificity —
+                      // stylesheet order won, not class order, and the studio tint
+                      // measured as plain white on the live grid. See globals.css.
+                      // ⚠️ `bg-surface` STAYS as the base even when a tint is
+                      // added. This cell is sticky, so a transparent one lets the
+                      // rows scroll through the header — and it is exactly what I
+                      // briefly shipped by replacing the base instead of layering.
+                      // The tint classes are UNLAYERED, so they beat this
+                      // deterministically (globals.css); two TAILWIND backgrounds
+                      // are what was ambiguous, not a Tailwind base under one.
+                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
+                        isMe ? "plan-head-me" : col.type === "studio" ? "plan-head-studio" : ""
+                      } ${gridShadow.y ? SHADOW_Y : ""}`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-semibold">
                         {profile ? <Avatar profile={profile} size={20} /> : null}
@@ -1195,7 +1255,16 @@ export function WeeklyPlan() {
                         // overrides h-px anyway — so PlanCell's h-full finally
                         // stretches to the ROW height and an absence fills a tall
                         // row instead of one chip's worth of it.
-                        className={`h-px border-b border-r border-border p-0 align-top last:border-r-0 ${col.type === "studio" && !weekend ? "bg-brand-soft/30" : ""} ${col.profileId === currentUserId && !weekend ? "bg-aqua/10" : ""}`}
+                        // ⚠️ One OPAQUE tint class, same reason as the header above.
+                        className={`h-px border-b border-r border-border p-0 align-top last:border-r-0 ${
+                          weekend
+                            ? ""
+                            : col.profileId === currentUserId
+                              ? "plan-cell-me"
+                              : col.type === "studio"
+                                ? "plan-cell-studio"
+                                : ""
+                        }`}
                       >
                         <PlanCell
                           date={iso}
