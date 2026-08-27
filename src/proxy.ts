@@ -36,6 +36,20 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", csp);
+  /**
+   * ⚠️ REQUIRED FOR THE CSP's `report-to csp-endpoint` TO MEAN ANYTHING — the
+   * directive only names a group, and this header is what defines it. Without it
+   * Chrome silently sends nothing and the endpoint looks like it works because
+   * Safari's legacy `report-uri` still reports.
+   * ⚠️ An ABSOLUTE URL, because unlike `report-uri` this header does not accept a
+   * path. It is built from the request's own origin so localhost and preview
+   * deployments report to themselves; the endpoint independently rejects reports
+   * about pages that are not ours (`src/app/api/csp-report/route.ts`).
+   */
+  response.headers.set(
+    "Reporting-Endpoints",
+    `csp-endpoint="${request.nextUrl.origin}/api/csp-report"`,
+  );
   return response;
 }
 

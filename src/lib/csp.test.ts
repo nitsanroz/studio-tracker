@@ -52,6 +52,23 @@ describe("policy", () => {
     expect(policy(NONCE, false)).not.toContain("'unsafe-eval'");
   });
 
+  it("carries BOTH reporting directives in both modes", () => {
+    // ⚠️ `report-to` is Chrome's and needs the `Reporting-Endpoints` header set in
+    // src/proxy.ts to mean anything; `report-uri` is deprecated but is what Safari
+    // and Firefox use — and Safari is most of the studio. Losing either makes the
+    // report endpoint look like it works while half the browsers stay silent.
+    for (const isDev of [true, false]) {
+      const p = policy(NONCE, isDev);
+      expect(p).toContain("report-uri /api/csp-report");
+      expect(p).toContain("report-to csp-endpoint");
+    }
+  });
+
+  it("keeps report-uri as a path, so a forged Host cannot redirect reports", () => {
+    // It resolves against the document, which is why it needs no origin.
+    expect(policy(NONCE, false)).not.toMatch(/report-uri https?:/);
+  });
+
   it("keeps 'unsafe-inline' for styles and no style nonce", () => {
     // ⚠️ A nonce in style-src makes browsers IGNORE 'unsafe-inline', and inline
     // `style=` attributes position every Gantt bar, timeline row and chart element.

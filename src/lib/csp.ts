@@ -58,6 +58,18 @@ export function policy(nonce: string, isDev: boolean): string {
     // 2026-08-27. Dev is a local origin nobody can reach; production keeps 'none'.
     isDev ? "" : `frame-ancestors 'none'`,
     `upgrade-insecure-requests`,
+    /**
+     * ⚠️ BOTH REPORTING DIRECTIVES ARE PRESENT AND BOTH ARE NEEDED. `report-to`
+     * is the modern one (Chrome; it names an endpoint group declared by the
+     * `Reporting-Endpoints` response header in `src/proxy.ts`), while `report-uri`
+     * is deprecated but is what FIREFOX AND SAFARI still use — and Safari is most
+     * of the studio. Shipping only the modern one would leave us deaf to the
+     * browsers the studio actually runs.
+     * ⚠️ `report-uri` takes a PATH deliberately: it resolves against the document,
+     * so it needs no origin and cannot be pointed elsewhere by a forged Host.
+     */
+    `report-uri /api/csp-report`,
+    `report-to csp-endpoint`,
   ]
     .filter(Boolean)
     .join("; ");
