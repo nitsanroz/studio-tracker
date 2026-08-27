@@ -478,51 +478,6 @@ b,
   background-color: color-mix(in oklab, var(--aqua) 10%, var(--surface));
 }
 
-/* The weekly plan's pinned-edge shadows.
-
-   ⚠️⚠️ THESE ARE PSEUDO-ELEMENTS BECAUSE `box-shadow` ON A TABLE CELL DOES NOT
-   PAINT AT ALL when the table is `border-collapse: collapse`, which this one is.
-   That is the whole reason Nitsan reported "no shadows" THREE TIMES while the
-   `shadow-[…]` class was provably applied and `getComputedStyle` returned a real
-   box-shadow. Proved it on the live grid: a hard, fully opaque 14px RED box-shadow
-   on 42 sticky cells rendered not one visible pixel, while this gradient showed up
-   immediately. ⚠️ So do not "simplify" these back to a Tailwind `shadow-*` class,
-   and do not trust a computed box-shadow as evidence that a shadow is visible.
-
-   ⚠️ `pointer-events: none` is REQUIRED. The grid is drag-and-drop and does its
-   own hit-testing (`elementFromPoint`); a 10px strip hovering over the first
-   person column would silently steal drops at the pinned edge.
-
-   ⚠️ Two DIFFERENT pseudo-elements (::after for the vertical edge, ::before for
-   the horizontal one) so the corner cell — the only one pinned on both axes — can
-   carry both at once. A single shared pseudo-element would make the two edges
-   mutually exclusive, which is the same trap the stacked `shadow-[…]` utilities
-   had, moved one level down.
-
-   ⚠️ These need a POSITIONED cell to anchor to. The pinned date cells and the
-   corner are `sticky`, which counts; the person `<th>`s are static and carry an
-   explicit `relative` for this reason. */
-.pin-edge-x::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: -10px;
-  width: 10px;
-  pointer-events: none;
-  background: linear-gradient(to right, rgba(6, 17, 47, 0.16), rgba(6, 17, 47, 0));
-}
-.pin-edge-y::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 8px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgba(6, 17, 47, 0.16), rgba(6, 17, 47, 0));
-}
-
 /* The weekly plan's ROW-level tints and the past-day fade.
 
    ⚠️⚠️ `opacity` ON A `<tr>` IS WHY THE PINNED COLUMN LEAKED, and it is a third

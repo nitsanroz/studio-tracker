@@ -819,20 +819,29 @@ const MONTH_NAMES = [
  * of letting it bloom across the neighbouring cells.
  */
 /**
- * The pinned edges' shadows, as CLASSES ON A PSEUDO-ELEMENT rather than Tailwind
- * `shadow-*` utilities.
+ * The pinned edges' shadows, as ONE GRADIENT PER EDGE rather than per cell.
  *
- * ⚠️⚠️ A `box-shadow` ON A CELL OF A `border-collapse: collapse` TABLE DOES NOT
- * PAINT — and this table is collapsed. That single fact is why Nitsan reported
- * "no shadows" three times while the class was applied and the computed
- * `box-shadow` was a real value. Measured: a hard OPAQUE 14px red box-shadow on 42
- * sticky cells produced zero visible pixels. See globals.css before touching this.
+ * ⚠️⚠️ TWO SEPARATE THINGS MAKE A PER-CELL SHADOW WRONG HERE, and I hit both
+ * before landing on this. (1) A `box-shadow` on a cell of a
+ * `border-collapse: collapse` table DOES NOT PAINT AT ALL in Chrome — proved with
+ * a hard opaque red 14px shadow on 42 sticky cells that produced zero visible
+ * pixels, while the class was applied and `getComputedStyle` returned a real
+ * value the whole time. (2) Once a per-cell PSEUDO-ELEMENT made it paint, every
+ * row border cut across it and the result was a dashed column of smudges — which
+ * is what Nitsan called "holes".
  *
- * ⚠️ They use two different pseudo-elements, so the corner cell can carry both
- * edges at once — which also removes the old `SHADOW_XY` special case entirely.
+ * ⚠️ `client-timeline.tsx` already learned exactly this and says so at its
+ * `shadow.x` layer: "ONE shadow for the whole pinned column, not one per row …
+ * each row's bottom border cut across it, so what should have been a single soft
+ * edge came out as a column of separate smudges with ticks between them." These
+ * values are ITS values, because Nitsan asked for the timeline's strength: 10px
+ * wide at **0.075** alpha, not the 0.16 I had guessed.
  */
-const EDGE_X = "pin-edge-x";
-const EDGE_Y = "pin-edge-y";
+const EDGE_TINT = "rgba(0,0,0,0.075)";
+const EDGE_X_BG = `linear-gradient(to right, ${EDGE_TINT}, rgba(0,0,0,0))`;
+const EDGE_Y_BG = `linear-gradient(to bottom, ${EDGE_TINT}, rgba(0,0,0,0))`;
+/** The pinned date column's width — `w-24`, and the gradient sticks at its edge. */
+const DATE_COL_W = 96;
 
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
@@ -870,11 +879,24 @@ export function WeeklyPlan() {
    * would be a re-render per frame while dragging a chip across it.
    */
   const [gridShadow, setGridShadow] = useState({ x: false, y: false });
+  /**
+   * The sticky header's rendered height, so the horizontal gradient can sit
+   * exactly beneath it. ⚠️ MEASURED, not a constant: the person cells carry an
+   * avatar and a name that wraps, so this row is 44px on some weeks and taller on
+   * others, and a hardcoded offset would float the shadow inside the header or
+   * leave a gap under it.
+   */
+  const [headerH, setHeaderH] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const syncGridShadow = useCallback((el: HTMLDivElement) => {
     const x = el.scrollWidth > el.clientWidth;
     const y = el.scrollTop > 0;
     setGridShadow((g) => (g.x === x && g.y === y ? g : { x, y }));
+    const head = el.querySelector("thead");
+    if (head) {
+      const h = head.getBoundingClientRect().height;
+      setHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+    }
   }, []);
   function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
     syncGridShadow(e.currentTarget);
@@ -1127,13 +1149,31 @@ export function WeeklyPlan() {
             wrapper scroll (which is what it did before), and when they total less
             the spare is split evenly. So no min-width is needed here.
           */}
-          <table className="w-full table-fixed border-collapse">
+          {/*
+            ⚠️ THIS WRAPPER EXISTS FOR THE TWO EDGE GRADIENTS BELOW — it is the
+            full-height positioning context they need, and its width tracks the
+            table's own scroll width rather than the viewport's.
+          */}
+          <div className="relative">
+            {/* The header's counterpart, offset by the MEASURED header height.
+                ⚠️ IT MUST COME BEFORE THE TABLE. A sticky element cannot rise
+                above its own static position, so placed after the table it only
+                unstuck at the very bottom of the grid — measured at y=1659, far
+                below the header it was meant to sit under. `h-0` keeps it out of
+                the flow; it exists only to position its child. */}
+            {gridShadow.y && headerH > 0 && (
+              <div className="pointer-events-none sticky top-0 z-[24] h-0 w-full">
+                <div
+                  className="absolute left-0 right-0 h-2.5"
+                  style={{ top: headerH, background: EDGE_Y_BG }}
+                />
+              </div>
+            )}
+            <table className="w-full table-fixed border-collapse">
             <thead className="sticky top-0 z-20">
               <tr>
                 <th
-                  className={`sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint ${
-                    gridShadow.x ? EDGE_X : ""
-                  } ${gridShadow.y ? EDGE_Y : ""}`}
+                  className={`sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint`}
                 >
                   <button
                     onClick={() => setRangeStart((s) => shiftDays(s, -28))}
@@ -1165,13 +1205,9 @@ export function WeeklyPlan() {
                       // The tint classes are UNLAYERED, so they beat this
                       // deterministically (globals.css); two TAILWIND backgrounds
                       // are what was ambiguous, not a Tailwind base under one.
-                      // ⚠️ `relative` is what the EDGE_Y pseudo-element anchors
-                      // to. This cell is static (only the <thead> is sticky), so
-                      // without it the gradient positions against some distant
-                      // ancestor and lands nowhere near the header's bottom edge.
-                      className={`${PERSON_COL} relative border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
+                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
                         isMe ? "plan-head-me" : col.type === "studio" ? "plan-head-studio" : ""
-                      } ${gridShadow.y ? EDGE_Y : ""}`}
+                      }`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-semibold">
                         {profile ? <Avatar profile={profile} size={20} /> : null}
@@ -1234,7 +1270,7 @@ export function WeeklyPlan() {
                   >
                     <td
                       onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
-                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${gridShadow.x ? EDGE_X : ""} ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
+                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
                       title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
                       <div className="flex items-start justify-between gap-1">
@@ -1304,7 +1340,26 @@ export function WeeklyPlan() {
                 </td>
               </tr>
             </tbody>
-          </table>
+            </table>
+            {/*
+              ONE gradient for the whole pinned column, not one per row — the
+              lesson `client-timeline.tsx` records at its own `shadow.x` layer.
+              Per-row, every cell border cut across the shadow and it rendered as
+              a dashed column of smudges. This runs unbroken from the top of the
+              header to the last row, OVER the borders rather than between them.
+              ⚠️ `pointer-events-none` on both: the grid drag-and-drops and
+              hit-tests with `elementFromPoint`, so a live 10px strip at the pinned
+              edge would silently swallow drops into the first person column.
+            */}
+            {gridShadow.x && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-[24] w-full">
+                <div
+                  className="sticky h-full w-2.5"
+                  style={{ left: DATE_COL_W, background: EDGE_X_BG }}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {canEdit && (
