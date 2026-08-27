@@ -31,6 +31,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
+import { EgressBanner } from "./egress-banner";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
 import { AboutModal } from "./about-modal";
@@ -900,6 +901,12 @@ function Shell({ children }: { children: ReactNode }) {
         pushes the layout down would knock that alignment out — see the z-index
         and sticky table in client-view.tsx.
       */}
+      {/* ⚠️ ABOVE the serviceBlocked banner in the DOM but they never both show:
+          serviceBlocked means the quota already ran out, at which point a "you are
+          at 95%" warning is history. Both sit bottom-centre, lifted clear of the
+          phone's bottom nav, for the reason documented just above. */}
+      <EgressBanner />
+
       {serviceBlocked && (
         <div
           role="alert"
