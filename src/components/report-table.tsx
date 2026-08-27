@@ -105,8 +105,8 @@ export function ReportTable({
    *
    * ⚠️ THE PREVIEW RUNS TO TODAY WHILE THE PUBLISHED SNAPSHOT IS CUT AT THIS DATE,
    * so without a marker the editor shows columns and totals the client will never
-   * see and looks authoritative doing it. Any column starting after this is
-   * flagged. Undefined on the public report, which has no such distinction.
+   * see and looks authoritative doing it. Undefined on the public report, which has
+   * no such distinction.
    */
   clientCutoff?: string | null;
   /** show just the columns of the latest payment period */
@@ -168,6 +168,27 @@ export function ReportTable({
     latestCache.set(t.id, sum);
     return sum;
   };
+
+  /**
+   * Does the client's copy hold LESS than the preview does for this column?
+   *
+   * ⚠️⚠️ IT KEYS OFF THE COLUMN'S END, NOT ITS START, and that is the whole
+   * correctness of this marker. `buildReportSnapshot` filters entries by
+   * `date <= through`, so a column is short whenever ANY of its days fall past the
+   * cut-off — including a column that STRADDLES it. Keying off `from` (as this
+   * first shipped) flagged only wholly-future columns, so a client cut off on the
+   * 20th got an unflagged week column reading the editor's figure while their own
+   * copy showed less. The default cut-off is a Saturday, which is why that case
+   * hides until somebody bills to a day of the month.
+   */
+  const notShared = (to: string) => !!clientCutoff && to > clientCutoff;
+  /**
+   * ⚠️ THE TOTAL COLUMN NEEDS THE SAME MARKER AND IS EASY TO FORGET — it sums
+   * EVERY entry, so it is short whenever any column is, and it is the figure most
+   * likely to be read aloud off this screen. The section subtotals sit in this same
+   * column, so labelling the header labels them too.
+   */
+  const totalNotShared = cols.some((c) => notShared(c.to));
 
   const visiblePeriods = cols.filter(
     (p) => showCol(p.key) && (!periodOnly || colPeriod[p.index] === latestIndex),
@@ -655,11 +676,22 @@ export function ReportTable({
             {showTot && (
               <th
                 style={pinStyle("total")}
-                className={`${pinCls("total", "bg-surface", "z-20")} relative ${num} ${colCls("total")}`}
-                title="All hours ever logged on the task"
+                className={`${pinCls("total", "bg-surface", "z-20")} relative ${num} ${colCls("total")} ${
+                  totalNotShared ? "opacity-60" : ""
+                }`}
+                title={`All hours ever logged on the task${
+                  totalNotShared
+                    ? ` — the client's copy is cut off at ${clientCutoff}, so their total is lower than this`
+                    : ""
+                }`}
               >
                 {!narrow && <ResizeHandle onMouseDown={startResize("total")} />}
                 Total
+                {totalNotShared && (
+                  <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
+                    not shared
+                  </span>
+                )}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has("total")} onClick={() => onToggleColumn?.("total")} />
                 )}
@@ -669,11 +701,11 @@ export function ReportTable({
               <th
                 key={p.key}
                 className={`group/col relative ${num} ${colCls(p.key)} ${divCls(p.index)} ${
-                  clientCutoff && p.from > clientCutoff ? "opacity-60" : ""
+                  notShared(p.to) ? "opacity-60" : ""
                 }`}
                 title={`${p.from} → ${p.to}${
-                  clientCutoff && p.from > clientCutoff
-                    ? ` — NOT in the client's copy (cut off at ${clientCutoff})`
+                  notShared(p.to)
+                    ? ` — the client's copy is cut off at ${clientCutoff}, so it holds fewer hours than this`
                     : ""
                 }${periodsEditable ? " — click the dates to edit this column's range" : ""}`}
                 {...dropProps(p.index)}
@@ -716,7 +748,7 @@ export function ReportTable({
                 {/* ⚠️ A tooltip alone is not enough here — this column's hours are
                     in the preview's Total but not in the client's. Say so on the
                     face of it. */}
-                {clientCutoff && p.from > clientCutoff && (
+                {notShared(p.to) && (
                   <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
                     not shared
                   </span>

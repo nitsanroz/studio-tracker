@@ -197,8 +197,23 @@ export function keepViolation(v: Violation, allowedOrigins: string[]): boolean {
  * Fold new violations into the store.
  *
  * Returns `changed` so the caller can skip the write entirely — the point of the
- * throttle. A repeat inside `THROTTLE_MS` still increments `count` in the returned
- * store; it simply is not worth a round trip on its own.
+ * throttle.
+ *
+ * ⚠️⚠️ WHEN NOTHING EARNS A WRITE THIS RETURNS THE STORE IT WAS GIVEN, UNTOUCHED,
+ * and that is a correctness fix rather than tidiness. It used to increment `count`
+ * and hand back a store the caller then DISCARDED (the route only persists when
+ * `changed`), so the returned object described a state that never reached the
+ * database — and the unit tests, which thread the returned store forward, agreed
+ * with it while production did not. Returning `existing` makes the two the same.
+ *
+ * ⚠️ CONSEQUENCE, AND IT IS THE HONEST READING OF `count`: repeats inside
+ * `THROTTLE_MS` are COLLAPSED, so `count` is "times recorded", a FLOOR on the real
+ * number, not a tally of violations. That is the deliberate trade — accuracy here
+ * would cost one Supabase write per report on an unauthenticated endpoint, and
+ * egress is this project's tightest constraint. Anything reading `count` must say
+ * so — and it must say it about the WHOLE list, not per row: once repeats have
+ * been collapsed an entry is indistinguishable from a single sighting, so there is
+ * no way to mark the affected rows. The viewer carries one footnote instead.
  */
 export function mergeReports(
   existing: ReportStore,
@@ -246,10 +261,11 @@ export function mergeReports(
     changed = true;
   }
 
+  // ⚠️ Nothing earned a write, so hand back exactly what came in — see the note
+  // above. Returning the mutated copy would describe a state the caller discards.
+  if (!changed) return { store: existing, changed: false };
+
   // Most recent first: the list is read to answer "what is breaking now?".
   items.sort((a, b) => (a.lastSeen < b.lastSeen ? 1 : a.lastSeen > b.lastSeen ? -1 : 0));
-  return {
-    store: { items, updatedAt: changed ? iso : existing.updatedAt, dropped },
-    changed,
-  };
+  return { store: { items, updatedAt: iso, dropped }, changed: true };
 }

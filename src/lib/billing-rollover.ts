@@ -165,17 +165,29 @@ export function nextPeriod(
 export function parseInvoiceDay(note: string | null | undefined): number | null {
   if (!note) return null;
   /**
-   * The first RUN OF DIGITS, however long, then range-checked.
+   * ⚠️⚠️ A NUMBER IN RANGE IS NOT ENOUGH — IT MUST LOOK LIKE A DAY OF THE MONTH.
+   * This field was a FREE-TEXT NOTE from migration 0010 until v1.42.0 gave it
+   * meaning, so it can hold anything anyone has ever typed about invoicing. A bare
+   * range check reads **"Net 30"** and **"30 days from invoice"** as the 30th and
+   * silently re-aligns every future billing period on that client, with nothing in
+   * the UI reporting that a day was inferred from payment terms.
    *
-   * ⚠️ NOT `\b(\d{1,2})\b`, which was my first attempt and silently read NOTHING
-   * from the real data: in "20th" there is no word boundary between the `0` and the
-   * `t`, so the match failed on every ordinal — which is every value in use.
-   * ⚠️ Matching the whole run is also what makes "2026" safe: it parses as 2026 and
-   * fails the range check, where a 1–2 digit match would have taken "20" from it.
+   * So a value is a day only when the digits are the WHOLE value ("5", "28") or
+   * carry an ordinal suffix ("20th", "1st of the month"). Everything else is
+   * `null`, which means a plain calendar month — the documented fallback.
+   *
+   * ⚠️ The suffix must be checked WITHOUT a leading `\b`: in "20th" there is no
+   * word boundary between the `0` and the `t`, which is the bug that made an
+   * earlier `\b(\d{1,2})\b` read nothing at all from the real data.
    */
-  const m = note.trim().match(/(\d+)/);
+  const trimmed = note.trim();
+  const m = trimmed.match(/(\d+)/);
   if (!m) return null;
-  const n = Number(m[1]);
+  const digits = m[1];
+  const isWholeValue = trimmed === digits;
+  const hasOrdinalSuffix = new RegExp(`${digits}(st|nd|rd|th)\\b`, "i").test(trimmed);
+  if (!isWholeValue && !hasOrdinalSuffix) return null;
+  const n = Number(digits);
   if (!Number.isInteger(n) || n < 1 || n > 31) return null;
   return n;
 }

@@ -141,4 +141,28 @@ describe("parseInvoiceDay", () => {
   it("refuses a number that is not a day of the month", () => {
     for (const v of ["45", "0", "2026", "99th"]) expect(parseInvoiceDay(v)).toBe(null);
   });
+
+  it("refuses PAYMENT TERMS, which are the dangerous case", () => {
+    // ⚠️⚠️ This field was a free-text note for four years before it meant
+    // anything, so it can hold anything anyone typed about invoicing. Every one of
+    // these carries a number in 1–31 and NONE of them names a day of the month —
+    // read as one, they silently re-align a client's billing periods.
+    for (const v of [
+      "Net 30",
+      "net 14",
+      "30 days from invoice",
+      "15 days EOM",
+      "within 7 days",
+      "2 weeks after delivery",
+      "PO 12345 required",
+    ]) {
+      expect(parseInvoiceDay(v)).toBe(null);
+    }
+  });
+
+  it("accepts a day whether it is bare or ordinal, anywhere in the phrase", () => {
+    expect(parseInvoiceDay("the 5th of each month")).toBe(5);
+    expect(parseInvoiceDay("22nd")).toBe(22);
+    expect(parseInvoiceDay("3rd")).toBe(3);
+  });
 });

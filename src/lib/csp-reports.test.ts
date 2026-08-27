@@ -157,9 +157,15 @@ describe("mergeReports", () => {
     const soon = new Date(t0.getTime() + THROTTLE_MS - 1000);
     const second = mergeReports(first.store, [v()], soon);
     expect(second.changed).toBe(false);
-    // ...but the count still moves, so nothing is lost from the record.
-    expect(second.store.items[0].count).toBe(2);
-    expect(second.store.updatedAt).toBe(first.store.updatedAt);
+    /**
+     * ⚠️⚠️ AND IT RETURNS THE STORE IT WAS GIVEN, BYTE FOR BYTE. This used to hand
+     * back an incremented `count` that the route then discarded, because the route
+     * only persists when `changed` — so the returned object described a state that
+     * never reached the database and this test agreed with the fiction. The
+     * collapsed count is the deliberate trade; a returned store that lies is not.
+     */
+    expect(second.store).toBe(first.store);
+    expect(second.store.items[0].count).toBe(1);
   });
 
   it("earns a write once the throttle window has passed", () => {
@@ -181,9 +187,42 @@ describe("mergeReports", () => {
       store = r.store;
       if (r.changed) writes++;
     }
-    expect(store.items[0].count).toBe(20);
     expect(writes).toBe(1); // only the very first one
+    /**
+     * ⚠️ AND `count` IS 1, NOT 20 — this is the honest reading of the throttle and
+     * the reason `countIsFloor` exists. 19 of those reports were collapsed, so the
+     * figure is a FLOOR on how often this happened, never a tally. The viewer says
+     * so rather than presenting a sampled number as a count.
+     */
+    /**
+     * ⚠️ AND THE STORE CANNOT TELL YOU IT COLLAPSED ANYTHING — this entry is now
+     * indistinguishable from a single sighting, which is exactly why the caveat is
+     * a footnote on the whole table rather than a per-row marker. Do not add one:
+     * there is no field that could drive it honestly.
+     */
+    expect(store.items[0].count).toBe(1);
+    expect(store.items[0].lastSeen).toBe(store.items[0].firstSeen);
   });
+
+  it("advances the count once the throttle window has passed", () => {
+    // The floor still climbs — a violation that keeps happening keeps counting,
+    // one per window, so it can be told apart from a one-off.
+    let store = EMPTY_STORE;
+    for (let i = 0; i < 4; i++) {
+      store = mergeReports(store, [v()], new Date(t0.getTime() + i * (THROTTLE_MS + 1000))).store;
+    }
+    expect(store.items[0].count).toBe(4);
+  });
+
+  it("still counts every report inside ONE request", () => {
+    // ⚠️ The collapsing is across requests, not within one. A batch carrying the
+    // same violation five times is one write and must record all five, or a noisy
+    // page would read the same as a single stray report.
+    const { store, changed } = mergeReports(EMPTY_STORE, [v(), v(), v(), v(), v()], t0);
+    expect(changed).toBe(true);
+    expect(store.items[0].count).toBe(5);
+  });
+
 
   it("caps distinct signatures and COUNTS what it dropped", () => {
     // ⚠️ A full store that silently discarded new signatures would read as "no

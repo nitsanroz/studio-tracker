@@ -836,7 +836,7 @@ function CspReportsSection() {
               <tr>
                 <th className="pb-1 pr-3 font-medium">Blocked</th>
                 <th className="pb-1 pr-3 font-medium">Rule</th>
-                <th className="pb-1 pr-3 font-medium tabular-nums">Times</th>
+                <th className="pb-1 pr-3 font-medium tabular-nums">Times seen</th>
                 <th className="pb-1 font-medium">Last seen</th>
               </tr>
             </thead>
@@ -850,12 +850,38 @@ function CspReportsSection() {
                   </td>
                   <td className="py-1.5 pr-3 text-muted">{i.directive}</td>
                   <td className="py-1.5 pr-3 tabular-nums text-muted">{i.count}</td>
-                  <td className="py-1.5 text-muted">{new Date(i.lastSeen).toLocaleDateString()}</td>
+                  {/* Both ends: "first seen" is what distinguishes a one-off
+                      from something that has been happening for a fortnight, and
+                      it is the honest substitute for a precise count. */}
+                  <td className="py-1.5 text-muted" title={`first seen ${new Date(i.firstSeen).toLocaleString()}`}>
+                    {new Date(i.lastSeen).toLocaleDateString()}
+                    {i.firstSeen.slice(0, 10) !== i.lastSeen.slice(0, 10) && (
+                      <span className="text-faint">
+                        {" "}
+                        (since {new Date(i.firstSeen).toLocaleDateString()})
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* ⚠️⚠️ THE COUNT IS A FLOOR AND MUST SAY SO. Repeats of the same violation
+          inside 10 minutes are collapsed into one write (`mergeReports` — the
+          endpoint is unauthenticated and egress is this project's tightest
+          constraint), so a violation firing on every page load can show "1". An
+          admin sizing a problem by an unqualified number would read a count of
+          throttle windows as a count of violations. ⚠️ It cannot be a per-row
+          marker: once collapsed, an entry is indistinguishable from a single
+          sighting. */}
+      {state === "ok" && items.length > 0 && (
+        <p className="mt-2 text-[11px] text-faint">
+          Repeats within 10 minutes are counted once, so &ldquo;times seen&rdquo; is a minimum
+          rather than a tally — use the dates to judge whether something is still happening.
+        </p>
       )}
 
       {state === "ok" && !!store?.dropped && (
