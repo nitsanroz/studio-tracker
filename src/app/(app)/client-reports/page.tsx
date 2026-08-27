@@ -20,12 +20,14 @@ import {
   formatDate,
   formatHoursShort,
   parseISO,
+  formatDayMonth,
   shortRangeLabel,
   shiftDays,
   startOfWeek,
   toISODate,
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
+import { cutoffIsStale, lastCompleteWeekEnd } from "@/lib/period-math";
 import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
 import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
@@ -431,6 +433,31 @@ function PublishWorkspace() {
    * publishes — the cut-off cannot be a publish-time surprise.
    */
   const [through, setThrough] = useState<string>(() => toISODate(shiftDays(startOfWeek(new Date()), -1)));
+  /**
+   * ⚠️ Recomputed per render rather than held in state: this page stays open for
+   * long stretches, and a value captured at mount would still name last Saturday
+   * after midnight on the Sunday somebody publishes from it.
+   */
+  const weekEnd = lastCompleteWeekEnd(new Date());
+  /**
+   * ⚠️⚠️ A REMEMBERED CUT-OFF GOES STALE EVERY WEEK, AND SILENTLY.
+   *
+   * The effect below deliberately adopts `link.throughDate` so a client billed to
+   * the 20th keeps that cut-off across republishes. But the ordinary case is the
+   * Sunday weekly summary, where the cut-off must ADVANCE — and a remembered date
+   * does the opposite: Anchor sat at 22 Aug, so publishing on 30 Aug would have
+   * reported the week ending 29 Aug **with 23–29 Aug excluded**. Every figure
+   * would have agreed with every other, which is exactly what makes it dangerous:
+   * v1.33.0 built this field because a report that quietly misstates its period is
+   * worse than one that visibly contradicts itself.
+   *
+   * ⚠️ SO IT WARNS RATHER THAN CORRECTING. `max(stored, default)` looks tempting
+   * and breaks the case the memory exists for — it would drag a deliberate 20th
+   * cut-off forward to the 22nd. Showing the difference and offering one click is
+   * the same choice v1.19.7 made for the client's requested due date.
+   * ⚠️ And it must NOT block publishing: an older date is legitimate.
+   */
+  const throughIsStale = cutoffIsStale(through, new Date());
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -788,7 +815,11 @@ function PublishWorkspace() {
               ⚠️ Clearing it means "everything", which is the pre-feature behaviour.
             */}
             <label
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted"
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
+                throughIsStale
+                  ? "border-amber-500 bg-amber-50 text-amber-900"
+                  : "border-border bg-surface text-muted"
+              }`}
               title="Count hours up to and including this day. Defaults to the end of the last complete week, so publishing on a Sunday afternoon does not pull in the new week's hours."
             >
               <span className="whitespace-nowrap">Hours through</span>
@@ -796,9 +827,23 @@ function PublishWorkspace() {
                 type="date"
                 value={through}
                 onChange={(e) => setThrough(e.target.value)}
-                className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs outline-none focus:border-brand"
+                className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-brand"
               />
             </label>
+            {/* ⚠️ Placed AFTER the field and before Publish, so it is read on the
+                way to the button that commits it. See `throughIsStale`. */}
+            {throughIsStale && (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                a week behind — the last complete week ended {formatDayMonth(weekEnd)}
+                <button
+                  onClick={() => setThrough(weekEnd)}
+                  className="rounded-md border border-amber-500 px-1.5 py-0.5 font-semibold text-amber-900 hover:bg-amber-100"
+                  title="Scope this report to the end of the last complete week"
+                >
+                  use {formatDayMonth(weekEnd)}
+                </button>
+              </span>
+            )}
             <button
               onClick={copyLink}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:border-brand hover:text-brand"

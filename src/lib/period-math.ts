@@ -259,3 +259,33 @@ export function bucketProjection(
 export function daysLeftInPeriod(periodEnd: Date, asOf: Date): number {
   return Math.max(0, daysBetween(asOf, periodEnd));
 }
+
+/**
+ * The end of the last COMPLETE week (a Saturday), as an ISO date.
+ *
+ * ⚠️ Built on `startOfWeek` + `shiftDays`, never ms arithmetic — the trap v1.23.0
+ * deleted from this app. `asOf` is a REQUIRED argument for the reason
+ * `daysLeftInPeriod` states: a default of `new Date()` is the bug.
+ */
+export function lastCompleteWeekEnd(asOf: Date): string {
+  return toISODate(shiftDays(startOfWeek(asOf), -1));
+}
+
+/**
+ * Has a remembered report cut-off fallen behind the week being reported?
+ *
+ * ⚠️⚠️ THIS EXISTS BECAUSE A REMEMBERED DATE DECAYS SILENTLY. `client-reports`
+ * adopts `report_links.through_date` so a client billed to the 20th keeps that
+ * cut-off across republishes — but the ordinary case is the Sunday weekly
+ * summary, where the cut-off must ADVANCE. Anchor sat at 22 Aug while the week
+ * ending 29 Aug was about to be published, and every figure in that report would
+ * have agreed with every other while omitting the week it claimed to cover.
+ *
+ * ⚠️ It reports, it does not correct. `max(stored, thisWeek)` would drag a
+ * deliberate 20th-of-the-month cut-off forward and break the case the memory
+ * exists for, so the UI shows the difference and offers one click instead.
+ */
+export function cutoffIsStale(through: string | null | undefined, asOf: Date): boolean {
+  if (!through) return false; // blank means "everything", which is never stale
+  return through < lastCompleteWeekEnd(asOf);
+}

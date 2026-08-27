@@ -9,6 +9,8 @@ import {
   periodBounds,
   periodRange,
   rangeLabel,
+  lastCompleteWeekEnd,
+  cutoffIsStale,
 } from "./period-math";
 
 // These are the numbers the admin home reads its KPI deltas and chart
@@ -372,5 +374,47 @@ describe("presetRange", () => {
       from: "2025-10-26",
       to: "2025-11-01",
     });
+  });
+});
+
+describe("lastCompleteWeekEnd / cutoffIsStale", () => {
+  // The studio week is Sun–Thu; startOfWeek is Sunday.
+  it("names the Saturday before this week", () => {
+    // Thu 27 Aug 2026 → this week began Sun 23 Aug → last complete week ended 22 Aug
+    expect(lastCompleteWeekEnd(new Date(2026, 7, 27))).toBe("2026-08-22");
+  });
+
+  it("advances on the Sunday, which is when the weekly report is published", () => {
+    expect(lastCompleteWeekEnd(new Date(2026, 7, 30))).toBe("2026-08-29");
+  });
+
+  it("is right on a Saturday (that week is not complete until it ends)", () => {
+    // Sat 29 Aug is still inside the week that began Sun 23 Aug
+    expect(lastCompleteWeekEnd(new Date(2026, 7, 29))).toBe("2026-08-22");
+  });
+
+  /** ⚠️ Israel's clocks go back 25 Oct 2026 — a Sunday. */
+  it("survives a clocks change", () => {
+    expect(lastCompleteWeekEnd(new Date(2026, 9, 26))).toBe("2026-10-24");
+  });
+
+  /**
+   * ⚠️ THE REAL CASE: Anchor was scoped to 22 Aug with the week ending 29 Aug
+   * about to be published. Quiet on the Thursday, stale on the Sunday.
+   */
+  it("catches Anchor's remembered cut-off on the Sunday but not before", () => {
+    expect(cutoffIsStale("2026-08-22", new Date(2026, 7, 27))).toBe(false); // Thu
+    expect(cutoffIsStale("2026-08-22", new Date(2026, 7, 30))).toBe(true); // Sun
+  });
+
+  it("treats a blank cut-off as never stale — blank means everything", () => {
+    expect(cutoffIsStale(null, new Date(2026, 7, 30))).toBe(false);
+    expect(cutoffIsStale("", new Date(2026, 7, 30))).toBe(false);
+    expect(cutoffIsStale(undefined, new Date(2026, 7, 30))).toBe(false);
+  });
+
+  it("does not flag a cut-off at or ahead of the last complete week", () => {
+    expect(cutoffIsStale("2026-08-29", new Date(2026, 7, 30))).toBe(false);
+    expect(cutoffIsStale("2026-09-02", new Date(2026, 7, 30))).toBe(false);
   });
 });
