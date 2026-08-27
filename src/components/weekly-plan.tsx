@@ -1263,8 +1263,20 @@ export function WeeklyPlan() {
                     <tr key={`m-${row.key}`}>
                       <td
                         colSpan={gridCols.length + 1}
-                        className="border-b border-border bg-background/90 px-2 py-1"
+                        // ⚠️ OPAQUE, not `bg-background/90`. The label inside is
+                        // sticky now, and a pinned element over a translucent band
+                        // is the exact pattern that produced four rounds of
+                        // "holes" in this grid — see globals.css.
+                        className="plan-month-band border-b border-border px-2 py-1"
                       >
+                        {/*
+                          ⚠️ `sticky left-0` KEEPS THE MONTH LABEL PUT WHILE THE
+                          GRID SCROLLS SIDEWAYS. The cell spans every column, so
+                          without this the label slid away to the left while the
+                          date column it belongs to stayed pinned — the two read as
+                          one column, and only one of them moved. `w-fit` so the
+                          sticky box is the button, not the full table width.
+                        */}
                         <button
                           onClick={() =>
                             setCollapsed((prev) => {
@@ -1274,7 +1286,7 @@ export function WeeklyPlan() {
                               return next;
                             })
                           }
-                          className="-mx-2 -my-1 flex items-center gap-1 rounded px-2 py-1.5 font-heading text-xs text-muted hover:bg-black/5 hover:text-foreground"
+                          className="sticky left-0 -mx-2 -my-1 flex w-fit items-center gap-1 rounded px-2 py-1.5 font-heading text-xs text-muted hover:bg-black/5 hover:text-foreground"
                         >
                           {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                           {row.label}

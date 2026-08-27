@@ -508,3 +508,13 @@ b,
   /* Tailwind's blue-100, the literal this replaces (`bg-blue-100/60`). */
   background-color: color-mix(in oklab, #dbeafe 60%, var(--surface));
 }
+
+/* The weekly plan's month separator band.
+
+   ⚠️ Pre-composited from `bg-background/90` for the same reason as every other
+   tint in this grid: the month LABEL is `sticky left-0`, and a pinned element
+   sitting on a translucent band is precisely the arrangement that produced four
+   rounds of "holes" on 2026-08-27. Change the mix percentage, never the alpha. */
+.plan-month-band {
+  background-color: color-mix(in oklab, var(--background) 90%, var(--surface));
+}
