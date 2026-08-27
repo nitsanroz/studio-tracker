@@ -819,35 +819,20 @@ const MONTH_NAMES = [
  * of letting it bloom across the neighbouring cells.
  */
 /**
- * ⚠️⚠️ DO NOT REINTRODUCE A SPREAD THAT CANCELS THE OFFSET. These started life as
- * `6px 0 8px -6px` / `0 5px 8px -6px`, copied from `client-timeline.tsx`, and
- * Nitsan reported "no shadows at all" TWICE while the class was provably applied.
- * The geometry is why: a -6px spread shrinks the shadow rect by the same 6px the
- * offset moves it, so its hard edge lands exactly ON the cell's own edge and only
- * about 4px of blurred 0.14 alpha escapes — invisible beside the 1px cell border.
+ * The pinned edges' shadows, as CLASSES ON A PSEUDO-ELEMENT rather than Tailwind
+ * `shadow-*` utilities.
  *
- * ⚠️ So the spread is now SMALLER than the offset, which is what actually puts a
- * gradient outside the edge: offset 8 - spread 4 = 4px clear, plus half the 12px
- * blur, so roughly 10px of visible falloff. Alpha is raised to 0.18 and uses the
- * app's shadow ink (`rgba(6,17,47,…)`, the --shadow-card colour) rather than pure
- * black, which reads as grime against the brand-tinted surfaces.
+ * ⚠️⚠️ A `box-shadow` ON A CELL OF A `border-collapse: collapse` TABLE DOES NOT
+ * PAINT — and this table is collapsed. That single fact is why Nitsan reported
+ * "no shadows" three times while the class was applied and the computed
+ * `box-shadow` was a real value. Measured: a hard OPAQUE 14px red box-shadow on 42
+ * sticky cells produced zero visible pixels. See globals.css before touching this.
  *
- * ⚠️ The negative spread is still needed — without one the shadow also spills from
- * the cell's TOP and BOTTOM edges, drawing a box around every individual row
- * instead of one continuous edge down the pinned column.
+ * ⚠️ They use two different pseudo-elements, so the corner cell can carry both
+ * edges at once — which also removes the old `SHADOW_XY` special case entirely.
  */
-const SHADOW_X = "shadow-[8px_0_12px_-4px_rgba(6,17,47,0.18)]";
-const SHADOW_Y = "shadow-[0_8px_12px_-4px_rgba(6,17,47,0.18)]";
-/**
- * ⚠️ THE CORNER CELL NEEDS ITS OWN COMBINED VALUE, NOT `SHADOW_X SHADOW_Y`. It is
- * the only cell pinned on both axes, and two `shadow-[…]` utilities on one element
- * are EQUAL-SPECIFICITY — the stylesheet order picks a winner and the other edge
- * silently loses its shadow. `box-shadow` takes a comma-separated list, so both
- * edges belong in a single class. (Same trap as the stacked `bg-*` utilities that
- * killed the studio column's tint; see globals.css.)
- */
-const SHADOW_XY =
-  "shadow-[8px_0_12px_-4px_rgba(6,17,47,0.18),0_8px_12px_-4px_rgba(6,17,47,0.18)]";
+const EDGE_X = "pin-edge-x";
+const EDGE_Y = "pin-edge-y";
 
 export function WeeklyPlan() {
   const { planColumns, planEntries, profiles, currentUserId, dayStates, addPlanEntry, deletePlanEntry } =
@@ -1147,14 +1132,8 @@ export function WeeklyPlan() {
               <tr>
                 <th
                   className={`sticky left-0 z-30 w-24 border-b border-r border-border bg-surface p-2 text-left text-xs font-medium text-faint ${
-                    gridShadow.x && gridShadow.y
-                      ? SHADOW_XY
-                      : gridShadow.x
-                        ? SHADOW_X
-                        : gridShadow.y
-                          ? SHADOW_Y
-                          : ""
-                  }`}
+                    gridShadow.x ? EDGE_X : ""
+                  } ${gridShadow.y ? EDGE_Y : ""}`}
                 >
                   <button
                     onClick={() => setRangeStart((s) => shiftDays(s, -28))}
@@ -1186,9 +1165,13 @@ export function WeeklyPlan() {
                       // The tint classes are UNLAYERED, so they beat this
                       // deterministically (globals.css); two TAILWIND backgrounds
                       // are what was ambiguous, not a Tailwind base under one.
-                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
+                      // ⚠️ `relative` is what the EDGE_Y pseudo-element anchors
+                      // to. This cell is static (only the <thead> is sticky), so
+                      // without it the gradient positions against some distant
+                      // ancestor and lands nowhere near the header's bottom edge.
+                      className={`${PERSON_COL} relative border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
                         isMe ? "plan-head-me" : col.type === "studio" ? "plan-head-studio" : ""
-                      } ${gridShadow.y ? SHADOW_Y : ""}`}
+                      } ${gridShadow.y ? EDGE_Y : ""}`}
                     >
                       <div className="flex items-center gap-1.5 text-xs font-semibold">
                         {profile ? <Avatar profile={profile} size={20} /> : null}
@@ -1240,11 +1223,18 @@ export function WeeklyPlan() {
                   <tr
                     key={iso}
                     id={`plan-day-${iso}`}
-                    className={`${dayState ? "bg-blue-100/60" : weekend ? "bg-weekend" : ""} ${isToday ? "bg-aqua/10 outline outline-2 -outline-offset-2 outline-brand" : ""} ${isPast ? "opacity-55" : ""}`}
+                    // ⚠️ `isPast` uses `plan-row-past`, NOT `opacity-55`. Opacity
+                    // on a row applies to its descendants as a group, so it made
+                    // the STICKY date cell 55% transparent and chips scrolling
+                    // under the pinned column showed through — on 18 of 45 rows,
+                    // while every cell still measured a fully opaque background.
+                    // The class fades the cells' CONTENT and leaves the cell
+                    // backgrounds alone. See globals.css.
+                    className={`${dayState ? "plan-row-holiday" : weekend ? "bg-weekend" : ""} ${isToday ? "plan-row-today outline outline-2 -outline-offset-2 outline-brand" : ""} ${isPast ? "plan-row-past" : ""}`}
                   >
                     <td
                       onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
-                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${gridShadow.x ? SHADOW_X : ""} ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
+                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${gridShadow.x ? EDGE_X : ""} ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
                       title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
                       <div className="flex items-start justify-between gap-1">
