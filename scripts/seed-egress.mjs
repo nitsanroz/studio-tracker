@@ -1,8 +1,12 @@
 /**
  * Seed the cycle-to-date egress figure from a dashboard reading.
  *
- *   node --env-file=.env.local scripts/seed-egress.mjs 11.95 2026-08-26
- *                                                       ^GB   ^date read
+ *   node --env-file=.env.local scripts/seed-egress.mjs <GB> [YYYY-MM-DD]
+ *
+ * ⚠️ The usage line deliberately shows `<GB>` rather than a plausible number.
+ * v1.37.0 was handed over with `11.95 2026-08-26` written out inside a runnable
+ * command, and the example values were pasted through and stored as if they were a
+ * real reading. A placeholder that looks like data is a trap.
  *
  * ⚠️ WHY A SEED IS NEEDED AT ALL: `usage.api-counts` looks back 7 days at most, so
  * the first three weeks of a ~30-day cycle cannot be recovered. The estimate is
@@ -26,6 +30,7 @@ import { createClient } from "@supabase/supabase-js";
 const [gbArg, dateArg] = process.argv.slice(2);
 if (!gbArg) {
   console.error("usage: seed-egress.mjs <GB from the dashboard> [YYYY-MM-DD it was read]");
+  console.error('  the figure next to "Used in period" on the org usage page');
   process.exit(1);
 }
 const gb = Number(gbArg);
@@ -37,6 +42,14 @@ if (!Number.isFinite(gb) || gb < 0) {
 const readOn = dateArg ? new Date(`${dateArg}T12:00:00`) : new Date();
 if (Number.isNaN(readOn.getTime())) {
   console.error(`not a date: ${dateArg}`);
+  process.exit(1);
+}
+// ⚠️ A date in the future cannot be a reading of anything, and accepting one
+// silently shifts the anchor so a day of real samples is skipped. It happened.
+const endOfToday = new Date();
+endOfToday.setHours(23, 59, 59, 999);
+if (readOn > endOfToday) {
+  console.error(`${dateArg} is in the future — a dashboard reading must be today or earlier.`);
   process.exit(1);
 }
 // One day earlier — see the header.
