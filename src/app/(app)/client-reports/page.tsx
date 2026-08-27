@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Banknote,
   Check,
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { nextPeriod } from "@/lib/billing-rollover";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import { capTone } from "@/lib/cap";
@@ -545,18 +546,182 @@ function PublishWorkspace() {
     } catch {}
   }
 
-  const preview = useMemo(() => {
-    if (!selectedClient) return null;
-    return buildReportSnapshot(
-      selectedClient,
-      sections,
-      tasks,
-      entrySumsAll,
-      billingPeriods.filter((p) => p.clientId === selectedClient.id),
-      customWeeks,
-      through || null,
-    );
-  }, [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks, through]);
+  /**
+   * Opens the next billing period for any client whose last one has ended.
+   *
+   * ⚠️ WHY IT IS NEEDED: nothing ever created these. They are hand-added rows, so
+   * once the last period ended, hours kept logging and the **Total and week
+   * columns stayed correct while the period breakdown silently dropped them** — a
+   * period bucket only counts entries inside its own dates. A report that looks
+   * right and is incomplete is the worst shape for something a client is invoiced
+   * from.
+   *
+   * ⚠️ RUNS HERE RATHER THAN ON A SCHEDULE because this app deliberately has no
+   * cron (Hobby plan — see `src/app/api/egress/route.ts`). Opening Client Reports
+   * is the moment periods matter, and an admin does that before every publish.
+   *
+   * ⚠️ ONE PERIOD PER CLIENT PER VISIT, and only for clients that ALREADY have at
+   * least one. It never invents a client's FIRST period — when billing starts is a
+   * business decision, not something to guess — and it never backfills a run of
+   * months at once (`nextPeriod` returns a single period; see its tests).
+   *
+   * ⚠️ `hourCap: null` is correct and is NOT an oversight: migration 0033 moved the
+   * cap to the CLIENT ("cap is general for client - not different each month") and
+   * the app fills each period's cap from there at render time.
+   *
+   * ⚠️ `ranRef` guards the effect, not the data. Two open tabs can still both
+   * insert; the unique index in the migration below is what actually prevents a
+   * duplicate, and a rejected insert is harmless here.
+   */
+  const rolloverRan = useRef(false);
+  useEffect(() => {
+    if (rolloverRan.current) return;
+    if (!clients.length || !billingPeriods.length) return;
+    rolloverRan.current = true;
+    (async () => {
+      /**
+       * ⚠️ A TOLERANT, SEPARATE READ — deliberately not added to the main clients
+       * query. Selecting a column that does not exist FAILS the whole request, so
+       * folding `invoice_day` into the page's normal fetch would break Client
+       * Reports for everyone until the migration below is run. Missing column here
+       * just means "no invoice day", and every client falls back to a calendar
+       * month.
+       */
+      const invoiceDays = new Map<string, number | null>();
+      try {
+        const { data, error } = await supabase.from("clients").select("id,invoice_day");
+        if (!error && data) {
+          for (const row of data as { id: string; invoice_day: number | null }[]) {
+            invoiceDays.set(row.id, row.invoice_day ?? null);
+          }
+        }
+      } catch {
+        /* no invoice_day column yet — calendar months for everyone */
+      }
+
+      const today = new Date();
+      const todayIso = toISODate(today);
+      for (const client of clients) {
+        /**
+         * ⚠️⚠️ ARCHIVED CLIENTS ARE SKIPPED, AND THIS IS THE WHOLE BALLGAME. A dry
+         * run against real data found 15 clients whose last period had ended —
+         * and TWELVE were archived, some for over a year (Monday's last period
+         * ended May 2025). Opening new billing periods on finished engagements
+         * would have quietly grown every one of them a fresh, empty period.
+         */
+        if (client.archived) continue;
+        const mine = billingPeriods.filter((p) => p.clientId === client.id);
+        if (!mine.length) continue;
+
+        /**
+         * ⚠️ CATCH UP TO TODAY, not one period per visit. Whitebox's last period
+         * ended 20 July and Checkmarx's 29 June, so a single new period would
+         * ALSO be in the past and the client would still have no current one —
+         * the exact gap this feature exists to close.
+         *
+         * ⚠️ Capped, because an active client dormant for years should not gain
+         * dozens of periods from one page load. The cap is logged rather than
+         * silent: reaching it means the client needs a look, not a retry.
+         */
+        const MAX_CATCH_UP = 12;
+        let last: { dateFrom: string; dateTo: string } = mine.reduce((a, b) =>
+          b.dateTo > a.dateTo ? b : a,
+        );
+        const taken = new Set(mine.map((p) => p.dateFrom));
+        const rows: {
+          client_id: string;
+          label: string;
+          date_from: string;
+          date_to: string;
+          position: number;
+        }[] = [];
+        let position = Math.max(0, ...mine.map((p) => p.position));
+        while (rows.length < MAX_CATCH_UP) {
+          const next = nextPeriod(last, invoiceDays.get(client.id) ?? null, today);
+          if (!next) break;
+          if (taken.has(next.dateFrom)) break;
+          position += 1;
+          rows.push({
+            client_id: client.id,
+            label: next.label,
+            date_from: next.dateFrom,
+            date_to: next.dateTo,
+            position,
+          });
+          taken.add(next.dateFrom);
+          last = next;
+          if (next.dateTo >= todayIso) break;
+        }
+        if (!rows.length) continue;
+        if (rows.length >= MAX_CATCH_UP) {
+          console.warn(
+            `[billing] ${client.name}: stopped after ${MAX_CATCH_UP} periods without reaching today — check its dates by hand`,
+          );
+        }
+        /**
+         * ⚠️⚠️ UPSERT WITH `ignoreDuplicates`, NEVER A PLAIN INSERT, AND NOT VIA
+         * `addBillingPeriod`. AN IN-MEMORY GUARD IS NOT A GUARD HERE — proven the
+         * hard way on 2026-08-27: this effect ran THREE TIMES against a Client
+         * Reports page that was already open in a browser (saving this file
+         * hot-reloads it, which remounts the component and resets `rolloverRan`),
+         * each run read the same stale `billingPeriods`, and every one of them
+         * inserted. 60 unwanted rows across 20 clients in one second, which then
+         * had to be deleted and restored from a backup.
+         *
+         * ⚠️ THE DATABASE IS THE ONLY HONEST GUARD, so the unique index in the
+         * migration is a HARD PREREQUISITE, not a nice-to-have. Until it exists
+         * this upsert fails and the feature is simply INERT — which is the correct
+         * failure direction, and far better than silently multiplying a client's
+         * billing periods.
+         */
+        const { error } = await supabase
+          .from("client_billing_periods")
+          .upsert(rows, { onConflict: "client_id,date_from", ignoreDuplicates: true });
+        if (error) {
+          // Not a toast: this runs unprompted on page load, and a person who did
+          // not ask for it should not be handed its failures.
+          console.warn(
+            `[billing] could not open the next period for ${client.name} — has migration 0035 been run? ${error.message}`,
+          );
+        }
+      }
+    })();
+  }, [clients, billingPeriods, supabase]);
+
+  /**
+   * ⚠️⚠️ TWO SNAPSHOTS, AND MIXING THEM UP SENDS A CLIENT HOURS THEY SHOULD NOT
+   * SEE. `preview` is what NITSAN looks at and runs to TODAY, so the current,
+   * incomplete week has a column and he can watch Sun–Mon hours land in it.
+   * `publishable` is what the CLIENT gets and is cut at `through`.
+   *
+   * ⚠️ THE PUBLISH BUTTON MUST WRITE `publishable`. Publishing stores the snapshot
+   * VERBATIM (`snapshot: publishable`) — the public page renders that frozen object
+   * and never rebuilds from `through_date` — so handing it `preview` would ship
+   * every hour logged up to today no matter what the cut-off field said.
+   *
+   * ⚠️ The extra columns only ever appear at the END, because weeks are
+   * chronological. That is what keeps `hiddenColumns` indices — which are positions
+   * in this list — valid across both snapshots. If week ordering ever stops being
+   * chronological, those indices silently point at the wrong columns.
+   */
+  const previewThrough = toISODate(new Date());
+  const buildFor = useCallback(
+    (cutoff: string | null) =>
+      selectedClient
+        ? buildReportSnapshot(
+            selectedClient,
+            sections,
+            tasks,
+            entrySumsAll,
+            billingPeriods.filter((p) => p.clientId === selectedClient.id),
+            customWeeks,
+            cutoff,
+          )
+        : null,
+    [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks],
+  );
+  const preview = useMemo(() => buildFor(previewThrough), [buildFor, previewThrough]);
+  const publishable = useMemo(() => buildFor(through || null), [buildFor, through]);
 
   // ── period dividers + editable columns ────────────────────────────────
   const clientPeriods = useMemo(
@@ -719,7 +884,8 @@ function PublishWorkspace() {
       "report_links",
       { id: link.id },
       {
-        snapshot: preview,
+        // ⚠️ `publishable`, NOT `preview` — see the two-snapshot note above.
+        snapshot: publishable,
         published_at: publishedAt,
         hidden_columns: hiddenColumns,
         hidden_task_ids: hiddenTaskIds,
@@ -740,7 +906,7 @@ function PublishWorkspace() {
     }
     const updated = {
       ...link,
-      snapshot: preview,
+      snapshot: publishable,
       publishedAt,
       hiddenColumns,
       hiddenTaskIds,
@@ -1030,6 +1196,7 @@ function PublishWorkspace() {
                 )
               }
               onEditColumnDates={handleEditColumnDates}
+              clientCutoff={through || null}
             />
           </div>
 

@@ -72,6 +72,7 @@ export function ReportTable({
   onMoveBoundary,
   onTogglePeriodHidden,
   onEditColumnDates,
+  clientCutoff,
   periodOnly = false,
   hideEmptyRows = false,
   foldedSections,
@@ -99,6 +100,15 @@ export function ReportTable({
   onTogglePeriodHidden?: (keys: string[], hide: boolean) => void;
   /** change a column's date range */
   onEditColumnDates?: (colIndex: number, patch: { from: string; to: string }) => void;
+  /**
+   * The CLIENT's cut-off date, when this table is the editor's preview.
+   *
+   * ⚠️ THE PREVIEW RUNS TO TODAY WHILE THE PUBLISHED SNAPSHOT IS CUT AT THIS DATE,
+   * so without a marker the editor shows columns and totals the client will never
+   * see and looks authoritative doing it. Any column starting after this is
+   * flagged. Undefined on the public report, which has no such distinction.
+   */
+  clientCutoff?: string | null;
   /** show just the columns of the latest payment period */
   periodOnly?: boolean;
   /** drop tasks with no hours in the columns currently on screen */
@@ -658,8 +668,14 @@ export function ReportTable({
             {visiblePeriods.map((p) => (
               <th
                 key={p.key}
-                className={`group/col relative ${num} ${colCls(p.key)} ${divCls(p.index)}`}
-                title={`${p.from} → ${p.to}${periodsEditable ? " — click the dates to edit this column's range" : ""}`}
+                className={`group/col relative ${num} ${colCls(p.key)} ${divCls(p.index)} ${
+                  clientCutoff && p.from > clientCutoff ? "opacity-60" : ""
+                }`}
+                title={`${p.from} → ${p.to}${
+                  clientCutoff && p.from > clientCutoff
+                    ? ` — NOT in the client's copy (cut off at ${clientCutoff})`
+                    : ""
+                }${periodsEditable ? " — click the dates to edit this column's range" : ""}`}
                 {...dropProps(p.index)}
               >
                 {periodsEditable && editingCol === p.index ? (
@@ -695,6 +711,14 @@ export function ReportTable({
                     className={periodsEditable ? "cursor-pointer rounded px-0.5 hover:bg-background" : ""}
                   >
                     {p.label}
+                  </span>
+                )}
+                {/* ⚠️ A tooltip alone is not enough here — this column's hours are
+                    in the preview's Total but not in the client's. Say so on the
+                    face of it. */}
+                {clientCutoff && p.from > clientCutoff && (
+                  <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
+                    not shared
                   </span>
                 )}
                 {editable && (
