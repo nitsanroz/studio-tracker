@@ -693,7 +693,7 @@ function PublishWorkspace() {
           // Not a toast: this runs unprompted on page load, and a person who did
           // not ask for it should not be handed its failures.
           console.warn(
-            `[billing] could not open the next period for ${client.name} — has migration 0035 been run? ${error.message}`,
+            `[billing] could not open the next period for ${client.name} — has migration 0036 been run? ${error.message}`,
           );
         } else {
           wrote = true;
