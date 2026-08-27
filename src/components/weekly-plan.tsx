@@ -887,6 +887,8 @@ export function WeeklyPlan() {
    * leave a gap under it.
    */
   const [headerH, setHeaderH] = useState(0);
+  /** The table's own width, for the edge overlays — see `syncGridShadow`. */
+  const [tableW, setTableW] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const syncGridShadow = useCallback((el: HTMLDivElement) => {
     const x = el.scrollWidth > el.clientWidth;
@@ -896,6 +898,21 @@ export function WeeklyPlan() {
     if (head) {
       const h = head.getBoundingClientRect().height;
       setHeaderH((prev) => (Math.abs(prev - h) < 0.5 ? prev : h));
+    }
+    /**
+     * ⚠️ THE OVERLAYS MUST BE AS WIDE AS THE TABLE, NOT AS THE SCROLLER. A plain
+     * `relative` div inside an `overflow-auto` box takes the CLIENT width, so the
+     * wrapper measured 814px against a 1323px table — the header's shadow simply
+     * stopped partway across, and the missing strip grew as you scrolled right.
+     * That is the "shadow is trimmed here" Nitsan photographed at the Freelancers
+     * column. `client-timeline.tsx` avoids it by giving its wrapper an explicit
+     * `width: leftW + chartW`; ours is measured, because the column count and the
+     * rail width both move.
+     */
+    const tbl = el.querySelector("table");
+    if (tbl) {
+      const w = tbl.scrollWidth;
+      setTableW((prev) => (Math.abs(prev - w) < 0.5 ? prev : w));
     }
   }, []);
   function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
@@ -1154,7 +1171,7 @@ export function WeeklyPlan() {
             full-height positioning context they need, and its width tracks the
             table's own scroll width rather than the viewport's.
           */}
-          <div className="relative">
+          <div className="relative" style={tableW ? { width: tableW } : undefined}>
             {/* The header's counterpart, offset by the MEASURED header height.
                 ⚠️ IT MUST COME BEFORE THE TABLE. A sticky element cannot rise
                 above its own static position, so placed after the table it only
@@ -1169,7 +1186,24 @@ export function WeeklyPlan() {
                 />
               </div>
             )}
-            <table className="w-full table-fixed border-collapse">
+            {/*
+              ⚠️⚠️ `border-separate` WITH ZERO SPACING, NOT `border-collapse`, AND
+              THE REASON IS A BUG NITSAN REPORTED AS "a hole on left edge of
+              table". Under `border-collapse: collapse` the table reserves its own
+              outer border, so the rows started at x=235 while the scroller's
+              content box starts at 233 — a 2px strip down the whole left edge
+              where only the scroller's white `bg-surface` showed. On a mint today
+              row or a lavender weekend row that reads as a gap in the table.
+              Measured after the switch: rows start at 233, flush.
+
+              ⚠️ NOTHING DOUBLES, which is the only thing collapse was buying us:
+              every cell here declares `border-b border-r` and never a top or left
+              border, so each shared edge is drawn by exactly ONE cell either way.
+              ⚠️ It also means cell `box-shadow` would paint again (collapse
+              suppresses it entirely) — but do NOT go back to per-cell shadows; see
+              the edge-gradient note above for why they render as a dashed column.
+            */}
+            <table className="w-full table-fixed border-separate border-spacing-0">
             <thead className="sticky top-0 z-20">
               <tr>
                 <th
