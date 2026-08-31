@@ -24,7 +24,6 @@ import {
   formatDayMonth,
   shortRangeLabel,
   shiftDays,
-  startOfWeek,
   toISODate,
   MONTH_NAMES_SHORT,
 } from "@/lib/format";
@@ -388,6 +387,16 @@ function InternalNotes({ client }: { client: Client }) {
 
 const HIDDEN_TABS_KEY = "reports.hiddenTabs";
 
+/** What the studio is currently looking at for ONE client. See `views`. */
+type ViewDraft = {
+  periodOnly: boolean;
+  hideEmptyRows: boolean;
+  /** The "show all" peek. Per client like the rest, so a tab switch cannot flip it. */
+  showAll: boolean;
+  foldedSections: string[];
+  through: string;
+};
+
 function PublishWorkspace() {
   const {
     clients,
@@ -404,67 +413,15 @@ function PublishWorkspace() {
   } = useData();
   const supabase = useMemo(() => createClient(), []);
   const [links, setLinks] = useState<Map<string, ReportLink>>(new Map());
+  // ⚠️ Gates the view-draft seeding below, which must not run against an
+  // empty-because-still-loading `links`.
+  const [linksLoaded, setLinksLoaded] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
-  // View-only filters. Deliberately NOT hiddenColumns/hiddenTaskIds: those are the
-  // published state that decides what the client sees, so folding the table down to
-  // one period here must never leak into the next publish.
-  const [periodOnly, setPeriodOnly] = useState(false);
-  const [hideEmptyRows, setHideEmptyRows] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-  const [foldedSections, setFoldedSections] = useState<string[]>([]);
-  // "Show all" SUSPENDS the filters rather than clearing them, so the studio gets its
-  // view back when it switches off. That rule was spelled out at each of the eight
-  // places that needed it; here it is once, and the pills and the table cannot
-  // disagree about what is currently on screen. `periodOnly`/`hideEmptyRows` stay the
-  // studio's actual setting -- which is what a publish records.
-  const effPeriodOnly = periodOnly && !showAll;
-  const effHideEmpty = hideEmptyRows && !showAll;
-  const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
-  /**
-   * ⚠️ HOURS UP TO THIS DAY ONLY. A weekly report is a summary of the week that
-   * ENDED, and Nitsan published Anchor's on the Sunday afternoon — by which time
-   * colleagues had logged into the NEW week, putting 8h the report was not meant to
-   * cover in front of the client.
-   *
-   * ⚠️ IT DEFAULTS TO THE END OF THE LAST COMPLETE WEEK (the Saturday), because
-   * that is right for every normal Sunday-morning publish as well as a late one.
-   * It is a plain date, not a "skip the current week" switch, so a client billed to
-   * the 20th can be cut there too.
-   *
-   * ⚠️ The PREVIEW is built with it, so what the studio checks is exactly what
-   * publishes — the cut-off cannot be a publish-time surprise.
-   */
-  const [through, setThrough] = useState<string>(() => toISODate(shiftDays(startOfWeek(new Date()), -1)));
-  /**
-   * ⚠️ Recomputed per render rather than held in state: this page stays open for
-   * long stretches, and a value captured at mount would still name last Saturday
-   * after midnight on the Sunday somebody publishes from it.
-   */
-  const weekEnd = lastCompleteWeekEnd(new Date());
-  /**
-   * ⚠️⚠️ A REMEMBERED CUT-OFF GOES STALE EVERY WEEK, AND SILENTLY.
-   *
-   * The effect below deliberately adopts `link.throughDate` so a client billed to
-   * the 20th keeps that cut-off across republishes. But the ordinary case is the
-   * Sunday weekly summary, where the cut-off must ADVANCE — and a remembered date
-   * does the opposite: Anchor sat at 22 Aug, so publishing on 30 Aug would have
-   * reported the week ending 29 Aug **with 23–29 Aug excluded**. Every figure
-   * would have agreed with every other, which is exactly what makes it dangerous:
-   * v1.33.0 built this field because a report that quietly misstates its period is
-   * worse than one that visibly contradicts itself.
-   *
-   * ⚠️ SO IT WARNS RATHER THAN CORRECTING. `max(stored, default)` looks tempting
-   * and breaks the case the memory exists for — it would drag a deliberate 20th
-   * cut-off forward to the 22nd. Showing the difference and offering one click is
-   * the same choice v1.19.7 made for the client's requested due date.
-   * ⚠️ And it must NOT block publishing: an older date is legitimate.
-   */
-  const throughIsStale = cutoffIsStale(through, new Date());
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -488,7 +445,8 @@ function PublishWorkspace() {
         }
         setLinks(map);
       })
-      .catch((e) => console.error("links load failed", e));
+      .catch((e) => console.error("links load failed", e))
+      .finally(() => setLinksLoaded(true));
     try {
       const raw = localStorage.getItem(HIDDEN_TABS_KEY);
       if (raw) setHiddenTabs(JSON.parse(raw));
@@ -519,6 +477,95 @@ function PublishWorkspace() {
   const selectedClient =
     clients.find((c) => c.id === selected) ?? visibleTabs[0] ?? null;
 
+  /**
+   * ⚠️ Recomputed per render rather than held in state: this page stays open for
+   * long stretches, and a value captured at mount would still name last Saturday
+   * after midnight on the Sunday somebody publishes from it.
+   */
+  const weekEnd = lastCompleteWeekEnd(new Date());
+  /**
+   * View-only filters, held PER CLIENT. Deliberately NOT hiddenColumns/hiddenTaskIds:
+   * those are the published state that decides what the client sees, so folding the
+   * table down to one period here must never leak into the next publish.
+   *
+   * ⚠️⚠️ ONE MAP KEYED BY CLIENT AND NOT FIVE LOOSE SCALARS, AND THE TAB STRIP IS
+   * WHY. They were plain state re-seeded from the published link whenever `selectedClient` OR
+   * `links` changed, which threw the studio's picks away twice over: switching to
+   * another tab and back reverted the pills and the cut-off to whatever was last
+   * published, and — with the tab standing still — so did ANY write to `links`, i.e.
+   * dragging a period divider, publishing, or the session's first `ensureLink`.
+   *
+   * ⚠️ So each client is seeded ONCE and the draft is the studio's from then until
+   * the page reloads. That is also why seeding is idempotent: `links` refreshing must
+   * never overwrite a draft that already exists.
+   */
+  const [views, setViews] = useState<Record<string, ViewDraft>>({});
+  // ⚠️ `EMPTY_FOLDS` and not a fresh `[]`: a new array identity every render would
+  // re-render the whole table through `effFolded`.
+  const unseeded = (): ViewDraft => ({
+    periodOnly: false,
+    hideEmptyRows: false,
+    showAll: false,
+    foldedSections: EMPTY_FOLDS,
+    through: weekEnd,
+  });
+  const { periodOnly, hideEmptyRows, showAll, foldedSections, through } =
+    (selectedClient ? views[selectedClient.id] : undefined) ?? unseeded();
+  function patchView(patch: (d: ViewDraft) => Partial<ViewDraft>) {
+    const id = selectedClient?.id;
+    if (!id) return;
+    setViews((prev) => {
+      const cur = prev[id] ?? unseeded();
+      return { ...prev, [id]: { ...cur, ...patch(cur) } };
+    });
+  }
+  const togglePeriodOnly = () => patchView((d) => ({ periodOnly: !d.periodOnly }));
+  const toggleShowAll = () => patchView((d) => ({ showAll: !d.showAll }));
+  const toggleHideEmpty = () => patchView((d) => ({ hideEmptyRows: !d.hideEmptyRows }));
+  const setThrough = (v: string) => patchView(() => ({ through: v }));
+  const setFoldedSections = (next: string[] | ((prev: string[]) => string[])) =>
+    patchView((d) => ({ foldedSections: typeof next === "function" ? next(d.foldedSections) : next }));
+  // "Show all" SUSPENDS the filters rather than clearing them, so the studio gets its
+  // view back when it switches off. That rule was spelled out at each of the eight
+  // places that needed it; here it is once, and the pills and the table cannot
+  // disagree about what is currently on screen. `periodOnly`/`hideEmptyRows` stay the
+  // studio's actual setting -- which is what a publish records.
+  const effPeriodOnly = periodOnly && !showAll;
+  const effHideEmpty = hideEmptyRows && !showAll;
+  const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
+  /**
+   * ⚠️ HOURS UP TO THIS DAY ONLY (`through`). A weekly report is a summary of the
+   * week that ENDED, and Nitsan published Anchor's on the Sunday afternoon — by which
+   * time colleagues had logged into the NEW week, putting 8h the report was not meant
+   * to cover in front of the client.
+   *
+   * ⚠️ IT DEFAULTS TO THE END OF THE LAST COMPLETE WEEK (the Saturday), because
+   * that is right for every normal Sunday-morning publish as well as a late one.
+   * It is a plain date, not a "skip the current week" switch, so a client billed to
+   * the 20th can be cut there too.
+   *
+   * ⚠️ The PREVIEW is built with it, so what the studio checks is exactly what
+   * publishes — the cut-off cannot be a publish-time surprise.
+   *
+   * ⚠️⚠️ AND A REMEMBERED CUT-OFF GOES STALE EVERY WEEK, SILENTLY.
+   *
+   * Seeding deliberately adopts `link.throughDate` so a client billed to the 20th
+   * keeps that cut-off across republishes. But the ordinary case is the Sunday weekly
+   * summary, where the cut-off must ADVANCE — and a remembered date does the
+   * opposite: Anchor sat at 22 Aug, so publishing on 30 Aug would have reported the
+   * week ending 29 Aug **with 23–29 Aug excluded**. Every figure would have agreed
+   * with every other, which is exactly what makes it dangerous: v1.33.0 built this
+   * field because a report that quietly misstates its period is worse than one that
+   * visibly contradicts itself.
+   *
+   * ⚠️ SO IT WARNS RATHER THAN CORRECTING. `max(stored, default)` looks tempting
+   * and breaks the case the memory exists for — it would drag a deliberate 20th
+   * cut-off forward to the 22nd. Showing the difference and offering one click is
+   * the same choice v1.19.7 made for the client's requested due date.
+   * ⚠️ And it must NOT block publishing: an older date is legitimate.
+   */
+  const throughIsStale = cutoffIsStale(through, new Date());
+
   // sync hide-state + column overrides when switching client
   useEffect(() => {
     if (!selectedClient) return;
@@ -526,14 +573,30 @@ function PublishWorkspace() {
     setHiddenColumns(link?.hiddenColumns ?? []);
     setHiddenTaskIds(link?.hiddenTaskIds ?? []);
     setCustomWeeks(link?.customWeeks ?? null);
-    // A link that has been published before remembers what it was scoped to; one
-    // that has not falls back to the last complete week.
-    setThrough(link?.throughDate ?? toISODate(shiftDays(startOfWeek(new Date()), -1)));
-    setFoldedSections([]); // section names are per client
-    setPeriodOnly(link?.viewFlags?.periodOnly ?? false);
-    setHideEmptyRows(link?.viewFlags?.hideEmptyRows ?? false);
-    setShowAll(false);
-  }, [selectedClient?.id, links]); // eslint-disable-line react-hooks/exhaustive-deps
+    // ⚠️⚠️ SEED ONLY, NEVER OVERWRITE — see `views`. A link published before hands
+    // the draft its cut-off and pills; a client already opened this session keeps
+    // the draft it has, so neither a tab switch nor a `links` refresh undoes a pick.
+    // ⚠️ And it waits for `linksLoaded`: the links arrive after first paint, so
+    // seeding before that would bank the defaults and then refuse — being a draft
+    // already — to adopt what was actually published.
+    if (!linksLoaded) return;
+    setViews((prev) =>
+      prev[selectedClient.id]
+        ? prev
+        : {
+            ...prev,
+            [selectedClient.id]: {
+              periodOnly: link?.viewFlags?.periodOnly ?? false,
+              hideEmptyRows: link?.viewFlags?.hideEmptyRows ?? false,
+              showAll: false,
+              foldedSections: EMPTY_FOLDS, // section names are per client
+              // A link that has been published before remembers what it was scoped
+              // to; one that has not falls back to the last complete week.
+              through: link?.throughDate ?? lastCompleteWeekEnd(new Date()),
+            },
+          },
+    );
+  }, [selectedClient?.id, links, linksLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // show the tab-strip arrows only when it actually overflows
   useEffect(() => {
@@ -1141,7 +1204,7 @@ function PublishWorkspace() {
               <ViewToggle
                 on={effPeriodOnly}
                 dim={showAll}
-                onClick={() => setPeriodOnly((v) => !v)}
+                onClick={togglePeriodOnly}
                 title="Show only the week columns of the latest payment period"
               >
                 Latest period only
@@ -1149,14 +1212,14 @@ function PublishWorkspace() {
               <ViewToggle
                 on={effHideEmpty}
                 dim={showAll}
-                onClick={() => setHideEmptyRows((v) => !v)}
+                onClick={toggleHideEmpty}
                 title="Hide tasks with no hours in the columns currently shown"
               >
                 Only rows with hours
               </ViewToggle>
               <ViewToggle
                 on={showAll}
-                onClick={() => setShowAll((v) => !v)}
+                onClick={toggleShowAll}
                 title="Temporarily show every row, column and section — turning it off restores the filters you had"
               >
                 Show all
