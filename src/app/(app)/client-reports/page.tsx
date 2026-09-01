@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Banknote,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -32,12 +33,33 @@ import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
 import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
+import {
+  currentPeriodIndex,
+  periodIndexFromDate,
+  previousPeriodIndex,
+} from "@/lib/report-period-focus";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
-import type { BillingPeriod, Client, ReportLink } from "@/lib/types";
+import type { BillingPeriod, Client, ReportLink, ReportSnapshot } from "@/lib/types";
 
 /** "Show all" hands the table an empty fold list; a module constant so the identity
     is stable across renders rather than a fresh [] each time. */
 const EMPTY_FOLDS: string[] = [];
+const EMPTY_PERIODS: ReportSnapshot["periods"] = [];
+
+/**
+ * What a pre-v1.43.0 `view_flags.periodOnly: true` was pointing at, named as a date.
+ *
+ * ⚠️ Read off the PUBLISHED snapshot rather than the live period list, because that
+ * is the list the flag was written against. If the studio has since deleted or moved
+ * that period the date will not resolve and the client opens on every period —
+ * strictly better than opening on a period nobody chose.
+ */
+function legacyPeriodFrom(link: ReportLink | undefined): string | null {
+  if (!link?.viewFlags?.periodOnly) return null;
+  const periods = link.snapshot?.periods ?? [];
+  const i = currentPeriodIndex(periods);
+  return i < 0 ? null : periods[i].from;
+}
 
 
 /** iso date + n CALENDAR days → iso date. */
@@ -389,7 +411,16 @@ const HIDDEN_TABS_KEY = "reports.hiddenTabs";
 
 /** What the studio is currently looking at for ONE client. See `views`. */
 type ViewDraft = {
-  periodOnly: boolean;
+  /**
+   * The focused payment period's START DATE, or null for every period.
+   *
+   * ⚠️ A DATE AND NOT AN INDEX, for two separate reasons. (1) This page EDITS
+   * periods — dragging a divider, adding one, renaming one — and an index would
+   * quietly slide onto a different period the moment the list changed underneath
+   * it. (2) It is published verbatim as `view_flags.periodFrom`, which has to
+   * survive `sanitizeSnapshot` dropping hidden periods from the client's copy.
+   */
+  periodFrom: string | null;
   hideEmptyRows: boolean;
   /** The "show all" peek. Per client like the rest, so a tab switch cannot flip it. */
   showAll: boolean;
@@ -419,6 +450,7 @@ function PublishWorkspace() {
   const [selected, setSelected] = useState<string | null>(null);
   const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [periodPickOpen, setPeriodPickOpen] = useState(false);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
@@ -503,13 +535,13 @@ function PublishWorkspace() {
   // ⚠️ `EMPTY_FOLDS` and not a fresh `[]`: a new array identity every render would
   // re-render the whole table through `effFolded`.
   const unseeded = (): ViewDraft => ({
-    periodOnly: false,
+    periodFrom: null,
     hideEmptyRows: false,
     showAll: false,
     foldedSections: EMPTY_FOLDS,
     through: weekEnd,
   });
-  const { periodOnly, hideEmptyRows, showAll, foldedSections, through } =
+  const { periodFrom, hideEmptyRows, showAll, foldedSections, through } =
     (selectedClient ? views[selectedClient.id] : undefined) ?? unseeded();
   function patchView(patch: (d: ViewDraft) => Partial<ViewDraft>) {
     const id = selectedClient?.id;
@@ -519,7 +551,10 @@ function PublishWorkspace() {
       return { ...prev, [id]: { ...cur, ...patch(cur) } };
     });
   }
-  const togglePeriodOnly = () => patchView((d) => ({ periodOnly: !d.periodOnly }));
+  /** Focus one period by its start date; clicking the focused one clears the scope. */
+  const focusPeriod = (from: string | null) =>
+    patchView((d) => ({ periodFrom: d.periodFrom === from ? null : from }));
+  const clearPeriod = () => patchView(() => ({ periodFrom: null }));
   const toggleShowAll = () => patchView((d) => ({ showAll: !d.showAll }));
   const toggleHideEmpty = () => patchView((d) => ({ hideEmptyRows: !d.hideEmptyRows }));
   const setThrough = (v: string) => patchView(() => ({ through: v }));
@@ -530,7 +565,6 @@ function PublishWorkspace() {
   // places that needed it; here it is once, and the pills and the table cannot
   // disagree about what is currently on screen. `periodOnly`/`hideEmptyRows` stay the
   // studio's actual setting -- which is what a publish records.
-  const effPeriodOnly = periodOnly && !showAll;
   const effHideEmpty = hideEmptyRows && !showAll;
   const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
   /**
@@ -586,7 +620,11 @@ function PublishWorkspace() {
         : {
             ...prev,
             [selectedClient.id]: {
-              periodOnly: link?.viewFlags?.periodOnly ?? false,
+              // ⚠️ `periodFrom` first, `periodOnly` only for links published before
+              // v1.43.0 — those carry the boolean alone, and it meant "the current
+              // period". `null` there resolves to no scope at render time, which is
+              // what the old `false` did.
+              periodFrom: link?.viewFlags?.periodFrom ?? legacyPeriodFrom(link),
               hideEmptyRows: link?.viewFlags?.hideEmptyRows ?? false,
               showAll: false,
               foldedSections: EMPTY_FOLDS, // section names are per client
@@ -793,6 +831,19 @@ function PublishWorkspace() {
   const preview = useMemo(() => buildFor(previewThrough), [buildFor, previewThrough]);
   const publishable = useMemo(() => buildFor(through || null), [buildFor, through]);
 
+  /**
+   * The focused period, resolved at RENDER against the periods the preview is
+   * showing — see `ViewDraft.periodFrom` for why the draft holds a date instead.
+   *
+   * ⚠️ It has to sit BELOW `preview`, not up with the rest of the view state: the
+   * draft is a date and only the built snapshot knows which index that is.
+   */
+  const previewPeriods = preview?.periods ?? EMPTY_PERIODS;
+  const currentIndex = currentPeriodIndex(previewPeriods);
+  const previousIndex = previousPeriodIndex(previewPeriods);
+  const periodIndex = periodIndexFromDate(previewPeriods, periodFrom);
+  const effPeriodIndex = showAll ? null : periodIndex;
+
   // ── period dividers + editable columns ────────────────────────────────
   const clientPeriods = useMemo(
     () =>
@@ -965,7 +1016,10 @@ function PublishWorkspace() {
       // publishing would break outright — taking the one button this page exists
       // for. The scoping still WORKS without the column, because it is applied when
       // the snapshot is built; only the record of which day it was is lost.
-      { view_flags: { periodOnly, hideEmptyRows }, through_date: through || null },
+      {
+        view_flags: { periodOnly: periodIndex !== null, periodFrom, hideEmptyRows },
+        through_date: through || null,
+      },
     );
     setPublishing(false);
     if (error) {
@@ -980,7 +1034,7 @@ function PublishWorkspace() {
       publishedAt,
       hiddenColumns,
       hiddenTaskIds,
-      viewFlags: degraded ? null : { periodOnly, hideEmptyRows },
+      viewFlags: degraded ? null : { periodOnly: periodIndex !== null, periodFrom, hideEmptyRows },
       throughDate: degraded ? null : through || null,
     };
     setLinks((prev) => new Map(prev).set(selectedClient.id, updated));
@@ -1201,14 +1255,101 @@ function PublishWorkspace() {
         <div className="flex flex-col gap-4">
           <div className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-3">
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {/* ⚠️ "Current period", not "Latest period only" — Nitsan's wording,
+                  and it now names one choice among several rather than describing a
+                  switch. The pills are radio-like: the table is scoped to exactly one
+                  period or to none, so two of them lit would describe a state that
+                  cannot exist. Clicking the lit one clears the scope, which is the
+                  toggle behaviour this pill has always had. */}
               <ViewToggle
-                on={effPeriodOnly}
+                on={effPeriodIndex !== null && effPeriodIndex === currentIndex}
                 dim={showAll}
-                onClick={togglePeriodOnly}
-                title="Show only the week columns of the latest payment period"
+                onClick={() => focusPeriod(previewPeriods[currentIndex]?.from ?? null)}
+                title={
+                  previewPeriods[currentIndex]
+                    ? `Show only the week columns of ${previewPeriods[currentIndex].label}`
+                    : "Show only the week columns of the current payment period"
+                }
               >
-                Latest period only
+                Current period
               </ViewToggle>
+              {/* Hidden, not disabled, for a client with a single period — there is
+                  no previous one to show and a dead pill only invites a click. */}
+              {previousIndex >= 0 && (
+                <ViewToggle
+                  on={effPeriodIndex === previousIndex}
+                  dim={showAll}
+                  onClick={() => focusPeriod(previewPeriods[previousIndex].from)}
+                  title={`Show only the week columns of ${previewPeriods[previousIndex].label}`}
+                >
+                  Previous period
+                </ViewToggle>
+              )}
+              {/* ⚠️ THE REST OF THE PERIODS LIVE BEHIND THIS, NOT AS MORE PILLS: a
+                  client with two years of history has two dozen, and a pill row that
+                  wraps to four lines buries the two filters beside it. The button
+                  carries the chosen period's NAME once the choice is not one of the
+                  two pills, so the scope is never a state you have to open a menu to
+                  discover. */}
+              {previewPeriods.length > 2 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setPeriodPickOpen((o) => !o)}
+                    title="Scope the table to any payment period"
+                    className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      effPeriodIndex !== null &&
+                      effPeriodIndex !== currentIndex &&
+                      effPeriodIndex !== previousIndex
+                        ? "border-brand bg-brand text-white"
+                        : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
+                    } ${showAll ? "opacity-40" : ""}`}
+                  >
+                    {effPeriodIndex !== null &&
+                    effPeriodIndex !== currentIndex &&
+                    effPeriodIndex !== previousIndex
+                      ? previewPeriods[effPeriodIndex].label
+                      : "Period"}
+                    <ChevronDown size={12} />
+                  </button>
+                  {periodPickOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setPeriodPickOpen(false)} />
+                      <div className="absolute left-0 top-full z-40 mt-1 max-h-72 w-64 overflow-y-auto rounded-2xl border border-border bg-surface p-1 shadow-card shadow-xl">
+                        <button
+                          onClick={() => {
+                            clearPeriod();
+                            setPeriodPickOpen(false);
+                          }}
+                          disabled={periodIndex === null}
+                          className="flex w-full items-center rounded-lg px-2 py-1.5 text-left text-xs text-muted hover:bg-background disabled:opacity-40"
+                        >
+                          All periods
+                        </button>
+                        {previewPeriods
+                          .map((p, i) => ({ p, i }))
+                          .reverse()
+                          .map(({ p, i }) => (
+                            <button
+                              key={p.from + p.label}
+                              onClick={() => {
+                                focusPeriod(p.from);
+                                setPeriodPickOpen(false);
+                              }}
+                              className={`flex w-full items-baseline justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-background ${
+                                periodIndex === i ? "bg-brand-soft font-semibold" : ""
+                              }`}
+                            >
+                              <span className="truncate">{p.label}</span>
+                              <span className="shrink-0 text-[11px] text-faint">
+                                {formatDayMonth(p.from)} – {formatDayMonth(p.to)}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <ViewToggle
                 on={effHideEmpty}
                 dim={showAll}
@@ -1250,7 +1391,7 @@ function PublishWorkspace() {
               editable
               periodsEditable
               selectable
-              periodOnly={effPeriodOnly}
+              periodIndex={effPeriodIndex}
               hideEmptyRows={effHideEmpty}
               foldedSections={effFolded}
               onToggleSection={(name) => setFoldedSections((prev) => toggleIn(prev, name))}

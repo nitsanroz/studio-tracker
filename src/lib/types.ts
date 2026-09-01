@@ -322,8 +322,25 @@ export interface ReportLink {
  * third filter is a single edit the compiler then chases to every reader.
  */
 export interface ReportViewFlags {
+  /**
+   * Whether the table was scoped to a single payment period. `periodFrom` says
+   * WHICH; this stays as the plain question every older published row can answer.
+   *
+   * ⚠️ Rows published before v1.43.0 carry only this, so a reader must fall back to
+   * "the current period" when it is true and `periodFrom` is absent. Do not delete
+   * it — a published link is permanent and nobody republishes an archived client.
+   */
   periodOnly: boolean;
   hideEmptyRows: boolean;
+  /**
+   * The focused period's START DATE, the stable way to name a period across the
+   * editor/client boundary.
+   *
+   * ⚠️⚠️ NOT AN INDEX: `sanitizeSnapshot` REMOVES hidden periods from the client's
+   * copy, so the same period sits at a different index there. See
+   * `periodIndexFromDate`, which is the only thing that should resolve this.
+   */
+  periodFrom?: string | null;
 }
 
 /** Frozen, admin-approved report payload rendered by /report/[token]. */

@@ -9,6 +9,11 @@ import { daysLeftInPeriod } from "@/lib/period-math";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
+import {
+  currentPeriodIndex,
+  periodIndexFromDate,
+  previousPeriodIndex,
+} from "@/lib/report-period-focus";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 
@@ -134,7 +139,27 @@ export function PublicReportView({
   periodActiveTasks: number[];
   viewFlags: ReportViewFlags | null;
 }) {
-  const [periodOnly, setPeriodOnly] = useState(viewFlags?.periodOnly ?? false);
+  /**
+   * Which payment period the table is scoped to — null shows every period.
+   *
+   * ⚠️ SEEDED FROM `periodFrom`, WITH `periodOnly` AS THE LEGACY FALLBACK. Links
+   * published before v1.43.0 carry only the boolean, and a report URL is permanent:
+   * an archived client's link is never republished, so "no `periodFrom` field at
+   * all" has to keep meaning what it meant when it was written.
+   * ⚠️ `periodFrom` present but unresolvable means the studio focused a period and
+   * then HID it — `periodIndexFromDate` returns null and the client sees the whole
+   * table, which is the honest reading. It must NOT quietly fall through to the
+   * current period: that would scope the report to a period nobody chose.
+   */
+  const [periodIndex, setPeriodIndex] = useState<number | null>(() => {
+    const from = viewFlags?.periodFrom;
+    if (from) return periodIndexFromDate(snapshot.periods, from);
+    if (from === undefined && viewFlags?.periodOnly) {
+      const i = currentPeriodIndex(snapshot.periods);
+      return i < 0 ? null : i;
+    }
+    return null;
+  });
   const [hideEmptyRows, setHideEmptyRows] = useState(viewFlags?.hideEmptyRows ?? false);
   const [foldedSections, setFoldedSections] = useState<string[]>([]);
   const [periodsOpen, setPeriodsOpen] = useState(false);
@@ -183,15 +208,21 @@ export function PublicReportView({
    * browser. The enforcement is server-side, full stop.
    */
   /**
-   * The period the client is currently inside — the last one, since periods are
-   * built in date order.
+   * The period the client is currently inside — the latest by END date.
+   *
+   * ⚠️ Was `periodSummary.at(-1)`, "the last one, since periods are built in date
+   * order". Now the shared `currentPeriodIndex`, because the "Current period" pill
+   * below and the row this highlights have to name the SAME period — two rules that
+   * agree today is how they disagree later.
    *
    * ⚠️ `delivered` (the all-periods total) and `remaining` (cap − charged) are
    * GONE with the tiles that showed them. Nitsan removed "Delivered to date", and
    * the cap now reads as `12h/150h` beside the client's name, which says the same
    * thing as a cap-plus-remaining pair without asking the reader to subtract.
    */
-  const current = periodSummary.at(-1) ?? null;
+  const currentIndex = currentPeriodIndex(snapshot.periods);
+  const previousIndex = previousPeriodIndex(snapshot.periods);
+  const current = periodSummary[currentIndex] ?? null;
 
   return (
     /* ⚠️ FLUID, not `max-w-6xl`. Nitsan: "all page should expand responsively to all
@@ -352,27 +383,57 @@ export function PublicReportView({
                         <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-wide text-faint">
                           Billing periods
                         </div>
-                        {[...periodSummary].reverse().map((p) => (
-                          <div
-                            key={p.label + p.from}
-                            className={`rounded-lg px-2.5 py-2 ${p === current ? "bg-brand-soft" : ""}`}
-                          >
-                            <div className="flex items-baseline justify-between gap-3">
-                              <span className="truncate text-lg font-semibold">{p.label}</span>
-                              <span
-                                className={`shrink-0 text-lg font-semibold tabular-nums ${capTone(p.minutes, p.hourCap)}`}
+                        {/* ⚠️ EACH ROW IS NOW A BUTTON — Nitsan: "allow admin or
+                            client to select a payment period from the list of periods
+                            to see it in the hours table". The list was read-only, and
+                            a list of periods sitting above a table scoped to one of
+                            them is where a reader already expects to change it.
+                            ⚠️ Clicking the SELECTED row clears the scope rather than
+                            re-selecting it, so the dropdown can undo itself; without
+                            that, a client who picked a period from here has to find
+                            the "All periods" pill to get back. */}
+                        {[...periodSummary]
+                          .map((p, i) => ({ p, i }))
+                          .reverse()
+                          .map(({ p, i }) => {
+                            const selected = periodIndex === i;
+                            return (
+                              <button
+                                key={p.label + p.from}
+                                onClick={() => {
+                                  setPeriodIndex(selected ? null : i);
+                                  setPeriodsOpen(false);
+                                }}
+                                title={
+                                  selected
+                                    ? "Showing this period — click to show every period"
+                                    : `Show only ${p.label} in the hours table`
+                                }
+                                className={`block w-full rounded-lg px-2.5 py-2 text-left ${
+                                  selected
+                                    ? "bg-brand-soft ring-1 ring-inset ring-brand"
+                                    : i === currentIndex
+                                      ? "bg-brand-soft/50 hover:bg-brand-soft"
+                                      : "hover:bg-background"
+                                }`}
                               >
-                                {formatHoursShort(p.minutes)}
-                                {p.hourCap != null && (
-                                  <span className="text-xs font-medium opacity-70">/{p.hourCap}h</span>
-                                )}
-                              </span>
-                            </div>
-                            <div className="mt-0.5 text-[11px] text-muted">
-                              {dm(p.from)} – {dm(p.to)}
-                            </div>
-                          </div>
-                        ))}
+                                <div className="flex items-baseline justify-between gap-3">
+                                  <span className="truncate text-lg font-semibold">{p.label}</span>
+                                  <span
+                                    className={`shrink-0 text-lg font-semibold tabular-nums ${capTone(p.minutes, p.hourCap)}`}
+                                  >
+                                    {formatHoursShort(p.minutes)}
+                                    {p.hourCap != null && (
+                                      <span className="text-xs font-medium opacity-70">/{p.hourCap}h</span>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="mt-0.5 text-[11px] text-muted">
+                                  {dm(p.from)} – {dm(p.to)}
+                                </div>
+                              </button>
+                            );
+                          })}
                       </div>
                     </>
                   )}
@@ -430,18 +491,62 @@ export function PublicReportView({
                 className="order-last ml-auto hidden shrink-0 sm:flex"
               />
             )}
+            {/* ⚠️ THREE PILLS, ONE VALUE. They are radio-like rather than three
+                independent switches: the table is scoped to exactly one period or to
+                none, so a pair of them lit would describe a state that cannot exist.
+                ⚠️ "All periods" stays FIRST and keeps its old place in the row — it
+                was the only pill here before v1.43.0, and a client who learned where
+                it sits should still find it there. */}
+            {/* ⚠️⚠️ THE WORD "PERIOD" IS DROPPED BELOW `sm`, AND ONLY THERE. Three
+                44px capsules reading "All periods / Current period / Previous period"
+                need 347px of a 359px phone line once the gaps are counted, so they
+                wrapped mid-set: "Previous period" landed on the second line beside
+                "Only rows with hours", which reads as though the two belong together
+                when one picks a period and the other filters rows. Short labels keep
+                the three on one line as a set, with the row filter beneath them.
+                ⚠️ The 44px tap floor and the phone's `px-5` are both untouched — this
+                buys the width back from the WORDING, the only part of the capsule that
+                was ever spare. The desktop keeps Nitsan's full wording.
+                ⚠️ And the pills sit directly under the "next billing: Aug 20/7 – 20/8"
+                selector, which is what makes the short forms readable: the noun they
+                drop is named an inch above them. */}
             <ViewToggle
               touch
-              on={!periodOnly}
-              onClick={() => setPeriodOnly((v) => !v)}
+              on={periodIndex === null}
+              onClick={() => setPeriodIndex(null)}
+              title="Show every payment period"
+            >
+              <span className="sm:hidden">All</span>
+              <span className="hidden sm:inline">All periods</span>
+            </ViewToggle>
+            <ViewToggle
+              touch
+              on={periodIndex !== null && periodIndex === currentIndex}
+              onClick={() => setPeriodIndex(currentIndex < 0 ? null : currentIndex)}
               title={
-                periodOnly
-                  ? "Show every period, not just the latest"
-                  : "Show only the latest payment period"
+                current
+                  ? `Show only ${current.label} — ${dm(current.from)} – ${dm(current.to)}`
+                  : "Show only the current payment period"
               }
             >
-              {periodOnly ? "Show all periods" : "All periods"}
+              <span className="sm:hidden">Current</span>
+              <span className="hidden sm:inline">Current period</span>
             </ViewToggle>
+            {/* Hidden rather than disabled when the client has one period: a dead
+                control on a client-facing page invites a click that does nothing. */}
+            {previousIndex >= 0 && (
+              <ViewToggle
+                touch
+                on={periodIndex === previousIndex}
+                onClick={() => setPeriodIndex(previousIndex)}
+                title={`Show only ${periodSummary[previousIndex].label} — ${dm(
+                  periodSummary[previousIndex].from,
+                )} – ${dm(periodSummary[previousIndex].to)}`}
+              >
+                <span className="sm:hidden">Previous</span>
+                <span className="hidden sm:inline">Previous period</span>
+              </ViewToggle>
+            )}
             <ViewToggle
               touch
               on={hideEmptyRows}
@@ -463,7 +568,7 @@ export function PublicReportView({
             snapshot={snapshot}
             hiddenColumns={hiddenColumns}
             hiddenTaskIds={[]}
-            periodOnly={periodOnly}
+            periodIndex={periodIndex}
             hideEmptyRows={hideEmptyRows}
             foldedSections={foldedSections}
             onToggleSection={(name) => setFoldedSections((prev) => toggleIn(prev, name))}

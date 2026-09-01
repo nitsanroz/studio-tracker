@@ -6,6 +6,7 @@ import { formatHoursShort } from "@/lib/format";
 import { ResizeHandle, useColWidths } from "@/components/resizable";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { ContextMenu } from "@/components/ui";
+import { currentPeriodIndex } from "@/lib/report-period-focus";
 import type { ReportSnapshot } from "@/lib/types";
 
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
@@ -87,7 +88,7 @@ export function ReportTable({
   onTogglePeriodHidden,
   onEditColumnDates,
   clientCutoff,
-  periodOnly = false,
+  periodIndex = null,
   hideEmptyRows = false,
   foldedSections,
   onToggleSection,
@@ -123,8 +124,18 @@ export function ReportTable({
    * no such distinction.
    */
   clientCutoff?: string | null;
-  /** show just the columns of the latest payment period */
-  periodOnly?: boolean;
+  /**
+   * Scope the table to ONE payment period, by index into `snapshot.periods`; null
+   * shows every period.
+   *
+   * ⚠️ AN INDEX AND NOT A BOOLEAN SINCE v1.43.0 — it was "latest period only", and
+   * the editor and the client link can now both pick "previous" or any period from
+   * the list. ⚠️ The index is into THIS snapshot's periods: the client's copy has
+   * had hidden periods removed by `sanitizeSnapshot`, so a caller holding a
+   * published selection must resolve it with `periodIndexFromDate`, never carry a
+   * raw index across that boundary.
+   */
+  periodIndex?: number | null;
   /** drop tasks with no hours in the columns currently on screen */
   hideEmptyRows?: boolean;
   /** collapsed section names; omit for a table that cannot fold */
@@ -152,34 +163,35 @@ export function ReportTable({
     snapshot.periods.findIndex((p) => c.from >= p.from && c.from <= p.to),
   );
 
-  // The LATEST period by end date -- not the one today falls inside. A published
-  // report is frozen, and a "today" rule would make the same link total a different
-  // period next month with nobody republishing it.
-  // `>` rather than localeCompare: these are YYYY-MM-DD, where the two agree.
-  const latestIndex = snapshot.periods.reduce(
-    (best, p, j, all) => (best < 0 || p.to > all[best].to ? j : best),
-    -1,
-  );
-  const latestPeriod = latestIndex >= 0 ? snapshot.periods[latestIndex] : undefined;
+  /**
+   * The period the green "Period" column totals.
+   *
+   * ⚠️ IT FOLLOWS THE SELECTION, and that is the point of the change: scoping the
+   * table to July while a column headed "Period" kept totalling August would put two
+   * different periods side by side under one heading, on the screen hours are read
+   * off. With nothing selected it is the CURRENT period, exactly as before.
+   */
+  const focusIndex = periodIndex ?? currentPeriodIndex(snapshot.periods);
+  const focusPeriod = focusIndex >= 0 ? snapshot.periods[focusIndex] : undefined;
 
-  // Which week buckets fall inside the latest period, worked out ONCE. Scanning
-  // every week the client has ever logged is loop-invariant, and `latestMinutes` is
+  // Which week buckets fall inside the focused period, worked out ONCE. Scanning
+  // every week the client has ever logged is loop-invariant, and `focusMinutes` is
   // asked for the same task three times per render (row cell, section subtotal,
   // grand total) -- hence the cache too.
-  const latestWeeks = latestPeriod
+  const focusWeeks = focusPeriod
     ? (snapshot.weeks ?? []).flatMap((w, i) =>
-        w.to >= latestPeriod.from && w.from <= latestPeriod.to ? [i] : [],
+        w.to >= focusPeriod.from && w.from <= focusPeriod.to ? [i] : [],
       )
     : [];
-  const latestCache = new Map<string, number>();
-  /** minutes a task logged inside the latest period */
-  const latestMinutes = (t: ReportTask) => {
-    if (!latestPeriod) return 0;
-    if (!useWeeks) return t.periodMinutes[latestIndex] ?? 0;
-    const hit = latestCache.get(t.id);
+  const focusCache = new Map<string, number>();
+  /** minutes a task logged inside the focused period */
+  const focusMinutes = (t: ReportTask) => {
+    if (!focusPeriod) return 0;
+    if (!useWeeks) return t.periodMinutes[focusIndex] ?? 0;
+    const hit = focusCache.get(t.id);
     if (hit !== undefined) return hit;
-    const sum = latestWeeks.reduce((a, i) => a + (t.weekMinutes?.[i] ?? 0), 0);
-    latestCache.set(t.id, sum);
+    const sum = focusWeeks.reduce((a, i) => a + (t.weekMinutes?.[i] ?? 0), 0);
+    focusCache.set(t.id, sum);
     return sum;
   };
 
@@ -205,7 +217,7 @@ export function ReportTable({
   const totalNotShared = cols.some((c) => notShared(c.to));
 
   const visiblePeriods = cols.filter(
-    (p) => showCol(p.key) && (!periodOnly || colPeriod[p.index] === latestIndex),
+    (p) => showCol(p.key) && (periodIndex == null || colPeriod[p.index] === periodIndex),
   );
   // "rows with hours" means hours in the columns ON SCREEN RIGHT NOW -- so it
   // narrows further when the period filter is on, and a column hidden from the
@@ -260,8 +272,8 @@ export function ReportTable({
     visiblePeriods.map((p) => [p.index, visibleTasks.reduce((s, t) => s + minutesAt(t, p.index), 0)]),
   );
 
-  // "Period" (green) = hours inside the latest billing period, like the Excel
-  const periodTotal = visibleTasks.reduce((s, t) => s + latestMinutes(t), 0);
+  // "Period" (green) = hours inside the FOCUSED billing period, like the Excel
+  const periodTotal = visibleTasks.reduce((s, t) => s + focusMinutes(t), 0);
 
   const num = "px-2 py-1.5 text-right tabular-nums whitespace-nowrap";
 
@@ -477,7 +489,7 @@ export function ReportTable({
     };
   }, [selectable]);
 
-  const sig = `${[...folded].sort().join("|")}|${periodOnly}|${hideEmptyRows}`;
+  const sig = `${[...folded].sort().join("|")}|${periodIndex}|${hideEmptyRows}`;
   const live = sel && sel.sig === sig ? sel : null;
 
   const bounds = live && {
@@ -658,7 +670,7 @@ export function ReportTable({
                   )}
                 </th>
               ))}
-              {latestPeriod && <th />}
+              {focusPeriod && <th />}
             </tr>
           )}
           <tr className="group/thead border-b border-border text-xs font-medium uppercase tracking-wide text-faint">
@@ -790,10 +802,10 @@ export function ReportTable({
                   ))}
               </th>
             ))}
-            {latestPeriod && (
+            {focusPeriod && (
               <th
                 className={`${num} bg-green-100 text-green-900`}
-                title={`Hours in the latest payment period — ${latestPeriod.label}: ${latestPeriod.from} → ${latestPeriod.to}`}
+                title={`Hours in ${focusPeriod.label}: ${focusPeriod.from} → ${focusPeriod.to}`}
               >
                 Period
               </th>
@@ -805,7 +817,7 @@ export function ReportTable({
             const isFolded = folded.has(g.sec.name);
             const secEstimate = g.rows.reduce((a, t) => a + (t.estimateHours ?? 0), 0);
             const secTotal = g.rows.reduce((a, t) => a + t.totalMinutes, 0);
-            const secPeriod = g.rows.reduce((a, t) => a + latestMinutes(t), 0);
+            const secPeriod = g.rows.reduce((a, t) => a + focusMinutes(t), 0);
             return (
               <Fragment key={g.sec.name}>
                 <tr className="border-t-2 border-t-border bg-background text-xs font-bold">
@@ -852,7 +864,7 @@ export function ReportTable({
                       {fmtH(g.rows.reduce((a, t) => a + minutesAt(t, p.index), 0))}
                     </td>
                   ))}
-                  {latestPeriod && (
+                  {focusPeriod && (
                     <td className={`${num} bg-green-100 text-green-900`}>{fmtH(secPeriod)}</td>
                   )}
                 </tr>
@@ -983,9 +995,9 @@ export function ReportTable({
                             {fmtH(minutesAt(t, p.index))}
                           </td>
                         ))}
-                        {latestPeriod && (
+                        {focusPeriod && (
                           <td className={`${num} bg-green-50 font-medium text-green-900`}>
-                            {fmtH(latestMinutes(t))}
+                            {fmtH(focusMinutes(t))}
                           </td>
                         )}
                       </tr>
@@ -1026,7 +1038,7 @@ export function ReportTable({
                 {fmtH(periodTotals.get(p.index) ?? 0)}
               </td>
             ))}
-            {latestPeriod && (
+            {focusPeriod && (
               <td className={`${num} bg-green-100 text-green-900`}>{fmtH(periodTotal)}</td>
             )}
           </tr>
