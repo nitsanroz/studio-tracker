@@ -239,25 +239,39 @@ export function bucketProjection(
 }
 
 /**
- * Days remaining in a billing period, counted from `asOf` and never negative.
+ * How many days of a billing period the report on screen actually COVERS —
+ * inclusive of both ends, and cut short by `asOf` when the report stops mid-period.
+ *
+ * ⚠️⚠️ THIS REPLACED "days left to period" IN v1.43.1, AND THE DIFFERENCE IS THE
+ * POINT. Nitsan: *"change title of 'days left to period' to 'days in period' to
+ * state how many days shown here (if its middle of month show only days of that
+ * half not what defined in the period)"*. A client reading a report cut on the 10th
+ * of a calendar-month period is looking at 10 days of work, not 30 — the figure now
+ * describes the DATA IN FRONT OF THEM rather than the calendar the studio bills on.
+ * That is also why it beats "days left": on a past period, days-left was always 0,
+ * so the figure said nothing at all on every report but the newest.
  *
  * ⚠️⚠️ `asOf` IS NOT OPTIONAL AND MUST NOT BECOME `new Date()` BY DEFAULT. This
- * backs the "days left to period" figure on the CLIENT'S published report, where
- * every other number comes from a frozen snapshot. Measuring from the clock made
- * it the one figure that kept moving after publishing — a report scoped through
- * Saturday read "6 days left" on Sunday and "4 days left" on Tuesday against hours
- * that had not changed. Pass the report's cut-off (`report_links.through_date`), or
- * its publish day for links that predate that column.
+ * backs a figure on the CLIENT'S published report, where every other number comes
+ * from a frozen snapshot. Measuring from the clock made the old version the one
+ * figure that kept moving after publishing — a report scoped through Saturday read
+ * "6 days left" on Sunday and "4 days left" on Tuesday against hours that had not
+ * changed. Pass the report's cut-off (`report_links.through_date`), or its publish
+ * day for links that predate that column.
  *
- * ⚠️ 0 means the period ends on `asOf`; a period already past also reads 0, which
- * is the honest answer to "how much is left" rather than a negative count.
+ * ⚠️ INCLUSIVE: a period of 1–31 August read in full is 31 days, not 30. The `+ 1`
+ * is the difference between "days covered" and "days elapsed", and dropping it
+ * makes a one-day period read 0.
+ *
+ * ⚠️ A period that has not started by `asOf` reads 0 rather than a negative count.
  *
  * ⚠️ Built on `daysBetween`, which floors both dates to local midnight and rounds
  * — never `(end - start) / 86_400_000`, which is an hour short across a clocks
  * change and lands on the wrong calendar day (the arithmetic v1.23.0 deleted).
  */
-export function daysLeftInPeriod(periodEnd: Date, asOf: Date): number {
-  return Math.max(0, daysBetween(asOf, periodEnd));
+export function daysCoveredInPeriod(periodStart: Date, periodEnd: Date, asOf: Date): number {
+  const last = asOf < periodEnd ? asOf : periodEnd;
+  return Math.max(0, daysBetween(periodStart, last) + 1);
 }
 
 /**
@@ -265,7 +279,7 @@ export function daysLeftInPeriod(periodEnd: Date, asOf: Date): number {
  *
  * ⚠️ Built on `startOfWeek` + `shiftDays`, never ms arithmetic — the trap v1.23.0
  * deleted from this app. `asOf` is a REQUIRED argument for the reason
- * `daysLeftInPeriod` states: a default of `new Date()` is the bug.
+ * `daysCoveredInPeriod` states: a default of `new Date()` is the bug.
  */
 export function lastCompleteWeekEnd(asOf: Date): string {
   return toISODate(shiftDays(startOfWeek(asOf), -1));

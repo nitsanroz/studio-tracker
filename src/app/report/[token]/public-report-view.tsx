@@ -5,7 +5,7 @@ import { ChevronDown, Clock } from "lucide-react";
 import { formatHoursShort } from "@/lib/format";
 import { capTone } from "@/lib/cap";
 import { parseISO } from "@/lib/format";
-import { daysLeftInPeriod } from "@/lib/period-math";
+import { daysCoveredInPeriod } from "@/lib/period-math";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import { toggleIn } from "@/lib/toggle";
@@ -36,11 +36,11 @@ function dm(iso: string): string {
  * ⚠️ `active tasks` needed NO change when the cut-off arrived, and that is worth
  * recording rather than re-deriving: it comes from `periodActiveTasks`, computed
  * server-side over the snapshot, whose entries are already cut off at the same
- * day. It was never live. `days left` WAS, which is why it now takes `asOf` —
- * see `daysLeftInPeriod`.
+ * day. It was never live. The days figure WAS, which is why it takes `asOf` —
+ * see `daysCoveredInPeriod`.
  */
-function daysLeftIn(to: string, asOf: string | null): number {
-  return daysLeftInPeriod(parseISO(to), asOf ? parseISO(asOf) : new Date());
+function daysIn(from: string, to: string, asOf: string | null): number {
+  return daysCoveredInPeriod(parseISO(from), parseISO(to), asOf ? parseISO(asOf) : new Date());
 }
 
 /**
@@ -222,7 +222,24 @@ export function PublicReportView({
    */
   const currentIndex = currentPeriodIndex(snapshot.periods);
   const previousIndex = previousPeriodIndex(snapshot.periods);
-  const current = periodSummary[currentIndex] ?? null;
+  /**
+   * ⚠️⚠️ THE THREE BIG FIGURES AND THE BILLING BOX FOLLOW THE SELECTED PERIOD.
+   * Nitsan, on the period picker this release added: *"when selecting a period of
+   * billing it doesnt change… number on top should show data on the shown period
+   * bill"*. He was right, and it was the worse half of the feature: picking January
+   * rebuilt the TABLE while the headline still read "12h · Aug 20/7 – 20/8", so the
+   * page showed one period's hours under another period's summary — and the control
+   * he had just used was the thing that looked most unchanged.
+   *
+   * ⚠️ With "All periods" showing there is no one period to summarise, so it falls
+   * back to the CURRENT one, which is what the page did before any of this. The
+   * billing box names whichever period the figures describe, so the pair can never
+   * disagree even in that case.
+   */
+  const shownIndex = periodIndex ?? currentIndex;
+  const shown = periodSummary[shownIndex] ?? null;
+  /** Only for the "Current period" pill's own title — it names the current one whatever is shown. */
+  const currentPeriod = periodSummary[currentIndex] ?? null;
 
   return (
     /* ⚠️ FLUID, not `max-w-6xl`. Nitsan: "all page should expand responsively to all
@@ -276,7 +293,7 @@ export function PublicReportView({
             edge. That is what lets one DOM order serve both shapes here — unlike the
             mark, which genuinely needs two instances. */}
         <div className="flex w-full flex-wrap items-center gap-x-8 gap-y-3 sm:w-auto sm:justify-end lg:gap-x-10">
-          {current && (
+          {shown && (
             /* ⚠️ Three big numbers in a row need real space between them or they
                read as one figure ("12h 0 3"). Wider than the 16px this started at,
                and it wraps rather than squeezing on a narrow screen. */
@@ -288,28 +305,33 @@ export function PublicReportView({
                   a different typeface. */}
               <div>
                 <div
-                  className={`font-serif-accent text-3xl leading-tight tabular-nums lg:text-4xl xl:text-5xl ${capTone(current.minutes, current.hourCap)}`}
+                  className={`font-serif-accent text-3xl leading-tight tabular-nums lg:text-4xl xl:text-5xl ${capTone(shown.minutes, shown.hourCap)}`}
                 >
-                  {formatHoursShort(current.minutes)}
-                  {current.hourCap != null && (
-                    <span className="text-lg opacity-70 lg:text-xl xl:text-2xl">/{current.hourCap}h</span>
+                  {formatHoursShort(shown.minutes)}
+                  {shown.hourCap != null && (
+                    <span className="text-lg opacity-70 lg:text-xl xl:text-2xl">/{shown.hourCap}h</span>
                   )}
                 </div>
                 <p className="-mt-0.5 text-sm text-muted">this period</p>
               </div>
 
-              {/* Set exactly like the pair beside it — the client asked how much of
-                  the period is gone, and time left is the other half of that. */}
+              {/* ⚠️ "DAYS IN PERIOD", NOT "days left to period" — Nitsan: *"to state
+                  how many days shown here (if its middle of month show only days of
+                  that half not what defined in the period)"*. It is the span the
+                  figures beside it actually cover, cut short by the report's own
+                  cut-off, so all three numbers describe one thing. The old figure
+                  read 0 on every period but the newest, which on a page that can now
+                  show ANY period would have been three-quarters of the time. */}
               <div>
                 <div className="font-serif-accent text-3xl leading-tight tabular-nums lg:text-4xl xl:text-5xl">
-                  {daysLeftIn(current.to, asOf)}
+                  {daysIn(shown.from, shown.to, asOf)}
                 </div>
-                <p className="-mt-0.5 text-sm text-muted">days left to period</p>
+                <p className="-mt-0.5 text-sm text-muted">days in period</p>
               </div>
 
               <div>
                 <div className="font-serif-accent text-3xl leading-tight tabular-nums lg:text-4xl xl:text-5xl">
-                  {current.activeTasks}
+                  {shown.activeTasks}
                 </div>
                 <p className="-mt-0.5 text-sm text-muted">active tasks</p>
               </div>
@@ -355,8 +377,14 @@ export function PublicReportView({
                           names the CURRENT period, which he confirmed is what he means
                           by "next billing" (it is what the client is about to be
                           invoiced for). */}
+                      {/* ⚠️ "billing period:", was "next billing:" — Nitsan: *"maybe
+                          also change title to 'billing period' to state what are we
+                          seeing in the screen"*. It stopped being a forward-looking
+                          note the moment the box could name a period from last
+                          January; it labels what is ON SCREEN, and the figures beside
+                          it are that period's. */}
                       <span className="block text-[11px] font-medium uppercase tracking-wide text-faint">
-                        next billing:
+                        billing period:
                       </span>
                       {/* ⚠️ PLAIN SANS, NOT the serif accent — "looks messy". That face
                           is italic, so at this size its numerals and the en dash in a
@@ -368,9 +396,9 @@ export function PublicReportView({
                           - its too tight". A single space puts a bold month and a
                           muted range close enough to read as one string. */}
                       <span className="flex items-baseline gap-3 text-sm font-semibold leading-tight">
-                        {current.label}
+                        {shown.label}
                         <span className="font-medium text-muted">
-                          {dm(current.from)} – {dm(current.to)}
+                          {dm(shown.from)} – {dm(shown.to)}
                         </span>
                       </span>
                     </span>
@@ -524,8 +552,8 @@ export function PublicReportView({
               on={periodIndex !== null && periodIndex === currentIndex}
               onClick={() => setPeriodIndex(currentIndex < 0 ? null : currentIndex)}
               title={
-                current
-                  ? `Show only ${current.label} — ${dm(current.from)} – ${dm(current.to)}`
+                currentPeriod
+                  ? `Show only ${currentPeriod.label} — ${dm(currentPeriod.from)} – ${dm(currentPeriod.to)}`
                   : "Show only the current payment period"
               }
             >
