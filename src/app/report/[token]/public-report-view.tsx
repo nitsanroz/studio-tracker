@@ -361,12 +361,27 @@ export function PublicReportView({
               */}
               <div className="flex basis-full items-center gap-3 sm:basis-auto">
                 <div className="relative">
+                  {/* ⚠️⚠️ A HEAVIER OUTLINE BELOW `sm`, BECAUSE ON A PHONE THIS IS THE
+                      ONLY CONTROL LEFT. Nitsan: *"on mobile of client hours report you
+                      can remove 4 buttons of time filter. just make outline border to
+                      billing period stronger"* — with the pills gone, a weak 1px
+                      outline is the entire affordance for changing what the page
+                      shows, and a client who does not find it sees one period and
+                      assumes that is the report. `border-2 border-border-strong` on a
+                      phone, unchanged from `sm` up: the desktop weight is what he
+                      settled on over four rounds ("a weak outline is better the fill
+                      to that cube") and it still sits beside three plain figures there.
+                      ⚠️ THE HOVER FIRMING NEVER WORKED: `hover:border-strong` is not a
+                      class in this codebase — the token is `--color-border-strong`, so
+                      the 44 other uses read `border-border-strong`. A silent no-op,
+                      and part of why the outline read as weak on a desktop too. Fixed
+                      here rather than noted, since this release is about exactly that. */}
                   <button
                     onClick={() => setPeriodsOpen((v) => !v)}
-                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${
+                    className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-left transition-colors sm:border ${
                       periodsOpen
                         ? "border-brand bg-brand/[0.06]"
-                        : "border-border hover:border-strong hover:bg-brand/[0.04]"
+                        : "border-border-strong hover:border-border-strong hover:bg-brand/[0.04] sm:border-border"
                     }`}
                     title="Billing periods"
                   >
@@ -503,7 +518,18 @@ export function PublicReportView({
               row also holds the Updated stamp on its `ml-auto` right edge, and
               centring there would pull the toggles off the table's left edge they
               are aligned to. */}
-          <div className="mb-3 flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+          {/* ⚠️⚠️ THE FILTER PILLS ARE DESKTOP-ONLY SINCE v1.43.2 — Nitsan asked for
+              them off the phone, and the billing-period box above does the one job
+              that matters there. What is left below `sm` is the unfold escape hatch,
+              and ONLY when a section is actually folded: a client who taps a section
+              closed on a phone must have a way back, but an empty toolbar row would
+              otherwise still spend `mb-3` above the table on the screen with the
+              least room for it. From `sm` the row is exactly what it was. */}
+          <div
+            className={`mb-3 ${
+              foldedSections.length > 0 ? "flex" : "hidden"
+            } flex-wrap items-center justify-center gap-1.5 sm:flex sm:justify-start`}
+          >
             {/* ⚠️ THE DESKTOP STAMP LIVES HERE, the phone one in the header — its
                 fourth and fifth homes, and the split is Nitsan's: "updated date can
                 be inside table pane aligned to top right corner" (desktop) while on
@@ -525,64 +551,59 @@ export function PublicReportView({
                 ⚠️ "All periods" stays FIRST and keeps its old place in the row — it
                 was the only pill here before v1.43.0, and a client who learned where
                 it sits should still find it there. */}
-            {/* ⚠️⚠️ THE WORD "PERIOD" IS DROPPED BELOW `sm`, AND ONLY THERE. Three
-                44px capsules reading "All periods / Current period / Previous period"
-                need 347px of a 359px phone line once the gaps are counted, so they
-                wrapped mid-set: "Previous period" landed on the second line beside
-                "Only rows with hours", which reads as though the two belong together
-                when one picks a period and the other filters rows. Short labels keep
-                the three on one line as a set, with the row filter beneath them.
-                ⚠️ The 44px tap floor and the phone's `px-5` are both untouched — this
-                buys the width back from the WORDING, the only part of the capsule that
-                was ever spare. The desktop keeps Nitsan's full wording.
-                ⚠️ And the pills sit directly under the "next billing: Aug 20/7 – 20/8"
-                selector, which is what makes the short forms readable: the noun they
-                drop is named an inch above them. */}
-            <ViewToggle
-              touch
-              on={periodIndex === null}
-              onClick={() => setPeriodIndex(null)}
-              title="Show every payment period"
-            >
-              <span className="sm:hidden">All</span>
-              <span className="hidden sm:inline">All periods</span>
-            </ViewToggle>
-            <ViewToggle
-              touch
-              on={periodIndex !== null && periodIndex === currentIndex}
-              onClick={() => setPeriodIndex(currentIndex < 0 ? null : currentIndex)}
-              title={
-                currentPeriod
-                  ? `Show only ${currentPeriod.label} — ${dm(currentPeriod.from)} – ${dm(currentPeriod.to)}`
-                  : "Show only the current payment period"
-              }
-            >
-              <span className="sm:hidden">Current</span>
-              <span className="hidden sm:inline">Current period</span>
-            </ViewToggle>
-            {/* Hidden rather than disabled when the client has one period: a dead
-                control on a client-facing page invites a click that does nothing. */}
-            {previousIndex >= 0 && (
+            {/* ⚠️⚠️ `hidden sm:contents` — THE WHOLE PILL SET IS OFF THE PHONE, and
+                `contents` rather than a wrapping div so the desktop row stays the flat
+                flex it always was: the pills remain direct children there, and the
+                Updated stamp's `ml-auto` still pushes off them.
+                ⚠️ v1.43.0 shortened these to "All / Current / Previous" below `sm` to
+                stop them wrapping mid-set. That workaround is GONE with them rather
+                than left behind as unreachable markup — a `sm:hidden` label inside a
+                block that only exists from `sm` up can never render, and the next
+                reader would have had to work that out to know it was dead. */}
+            <div className="hidden sm:contents">
               <ViewToggle
                 touch
-                on={periodIndex === previousIndex}
-                onClick={() => setPeriodIndex(previousIndex)}
-                title={`Show only ${periodSummary[previousIndex].label} — ${dm(
-                  periodSummary[previousIndex].from,
-                )} – ${dm(periodSummary[previousIndex].to)}`}
+                on={periodIndex === null}
+                onClick={() => setPeriodIndex(null)}
+                title="Show every payment period"
               >
-                <span className="sm:hidden">Previous</span>
-                <span className="hidden sm:inline">Previous period</span>
+                All periods
               </ViewToggle>
-            )}
-            <ViewToggle
-              touch
-              on={hideEmptyRows}
-              onClick={() => setHideEmptyRows((v) => !v)}
-              title="Hide tasks with no hours in the columns shown"
-            >
-              Only rows with hours
-            </ViewToggle>
+              <ViewToggle
+                touch
+                on={periodIndex !== null && periodIndex === currentIndex}
+                onClick={() => setPeriodIndex(currentIndex < 0 ? null : currentIndex)}
+                title={
+                  currentPeriod
+                    ? `Show only ${currentPeriod.label} — ${dm(currentPeriod.from)} – ${dm(currentPeriod.to)}`
+                    : "Show only the current payment period"
+                }
+              >
+                Current period
+              </ViewToggle>
+              {/* Hidden rather than disabled when the client has one period: a dead
+                  control on a client-facing page invites a click that does nothing. */}
+              {previousIndex >= 0 && (
+                <ViewToggle
+                  touch
+                  on={periodIndex === previousIndex}
+                  onClick={() => setPeriodIndex(previousIndex)}
+                  title={`Show only ${periodSummary[previousIndex].label} — ${dm(
+                    periodSummary[previousIndex].from,
+                  )} – ${dm(periodSummary[previousIndex].to)}`}
+                >
+                  Previous period
+                </ViewToggle>
+              )}
+              <ViewToggle
+                touch
+                on={hideEmptyRows}
+                onClick={() => setHideEmptyRows((v) => !v)}
+                title="Hide tasks with no hours in the columns shown"
+              >
+                Only rows with hours
+              </ViewToggle>
+            </div>
             {foldedSections.length > 0 && (
               <button
                 onClick={() => setFoldedSections([])}
