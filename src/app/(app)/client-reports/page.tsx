@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { nextPeriod, parseInvoiceDay } from "@/lib/billing-rollover";
+import { invoiceDayToStore, nextPeriod, parseInvoiceDay } from "@/lib/billing-rollover";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import { capTone } from "@/lib/cap";
@@ -32,6 +32,7 @@ import { cutoffIsStale, lastCompleteWeekEnd } from "@/lib/period-math";
 import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
 import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
+import { Modal, ModalClose } from "@/components/ui";
 import { toggleIn } from "@/lib/toggle";
 import {
   currentPeriodIndex,
@@ -62,11 +63,61 @@ function legacyPeriodFrom(link: ReportLink | undefined): string | null {
 }
 
 
+/**
+ * What the numeric field SHOWS for a value still stored the old way ("20th" → "20").
+ *
+ * ⚠️ Display only — nothing is rewritten until somebody edits the field, so a note
+ * this cannot read (there are none today) stays visible as itself rather than being
+ * silently blanked by the input that is about to save over it.
+ */
+function invoiceDayText(note: string | null | undefined): string {
+  const day = parseInvoiceDay(note);
+  return day != null ? String(day) : (note ?? "");
+}
+
+/**
+ * "1st" / "22nd" — for a TOOLTIP only. The badge itself is the bare number, which
+ * is what Nitsan asked for ("just the number (no th or st)"): at 10px in a 16px
+ * square a suffix is unreadable and costs the width the second digit needs.
+ */
+function ordinalSuffix(n: number): string {
+  if (n % 100 >= 11 && n % 100 <= 13) return "th";
+  return ["th", "st", "nd", "rd"][n % 10] ?? "th";
+}
+
 /** iso date + n CALENDAR days → iso date. */
 function shiftDaysIso(iso: string, n: number): string {
   return toISODate(shiftDays(parseISO(iso), n));
 }
 
+
+/** One "include this" line in the publish checklist. */
+function IncludeRow({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border px-3 py-2 hover:border-brand">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="size-4 accent-brand"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{label}</span>
+        <span className="block text-[11px] text-faint">{hint}</span>
+      </span>
+    </label>
+  );
+}
 
 // ── payment periods pane (below the report table) + info pane + graph ──────
 
@@ -125,6 +176,22 @@ function PaymentPeriods({ client }: { client: Client }) {
    * `Number("")` is 0, so a naive parse would turn a cleared cap into a 0h cap
    * and tell the client their whole period is overspent.
    */
+  /**
+   * The invoice day, written as a bare number.
+   *
+   * ⚠️ REFUSED RATHER THAN COERCED, exactly like the cap below: `Number("")` is 0
+   * and `parseInt("30 days")` is 30, and either would put a day nobody chose into
+   * the field the ROLLOVER aligns periods to. Blank clears it, 1–31 commits, and
+   * anything else leaves the value alone.
+   * ⚠️ 1–31 and not 1–28: `nextInvoiceDate` clamps a 31st into a short month, which
+   * is the behaviour a client billed on the 31st actually wants.
+   */
+  const commitInvoiceDay = (c: Client, raw: string) => {
+    const next = invoiceDayToStore(raw);
+    if (next === null) return; // refused — see `invoiceDayToStore`
+    updateClient(c.id, { invoiceNote: next });
+  };
+
   const commitClientCap = (c: Client, raw: string) => {
     const v = raw.trim();
     if (v === "") {
@@ -312,20 +379,32 @@ function PaymentPeriods({ client }: { client: Client }) {
                 />
               </div>
             </div>
-            {/* ⚠️ THIS FIELD NOW SHAPES DATA, not just a note. `parseInvoiceDay`
-                reads a day number out of it and the automatic period rollover
-                aligns new periods to it; anything it cannot read (blank, "end of
-                month") falls back to a plain calendar month. Keep the placeholder
-                ordinal-shaped. */}
-            <div title="Day of the month the invoice goes out — click to edit. New billing periods are aligned to end the day before this; leave it blank and they simply run a calendar month.">
+            {/* ⚠️⚠️ A DAY NUMBER, NOT A NOTE — and it stopped being free text on
+                2026-09-01 at Nitsan's word: *"numeric please it just state when a
+                billing period ends - nothing to do with payment terms"*. Checked
+                against the real data before changing it, because v1.42.1 had built
+                `parseInvoiceDay` to defend this column from payment TERMS ("Net 30")
+                that would otherwise read as a day: all nine non-empty values were
+                ordinals — 20th, 1st, 15th — and not one was a term. His call is the
+                right one for the data that exists.
+                ⚠️ THIS FIELD SHAPES DATA. The automatic rollover aligns each new
+                billing period to end the day before it; blank falls back to a plain
+                calendar month, which is why blank is still allowed and is not an
+                error state.
+                ⚠️ `parseInvoiceDay` STAYS as the reader. The stored values are still
+                the old ordinals until the normalising UPDATE is run, a published
+                report link is permanent, and a reader that accepts both costs
+                nothing. Do not "simplify" it to `Number()` without checking the
+                column first. */}
+            <div title="Day of the month the invoice goes out — click to edit, 1–31. New billing periods are aligned to end the day before this; leave it blank and they simply run a calendar month.">
               <div className="text-[11px] font-medium text-muted">Invoice day</div>
               <div className="mt-0.5">
                 <EditableTextCell
-                  value={client.invoiceNote}
-                  placeholder="e.g. 15th"
-                  onCommit={(v) => updateClient(client.id, { invoiceNote: v })}
-                  className="text-2xl font-semibold"
-                  inputClassName="text-2xl font-semibold"
+                  value={invoiceDayText(client.invoiceNote)}
+                  placeholder="e.g. 15"
+                  onCommit={(v) => commitInvoiceDay(client, v)}
+                  className="text-2xl font-semibold tabular-nums"
+                  inputClassName="text-2xl font-semibold tabular-nums"
                 />
               </div>
             </div>
@@ -451,6 +530,7 @@ function PublishWorkspace() {
   const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [periodPickOpen, setPeriodPickOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
@@ -1077,6 +1157,32 @@ function PublishWorkspace() {
       })
     : null;
 
+  /**
+   * PUBLISH CHECKLIST — what the client is about to be given.
+   *
+   * ⚠️⚠️ THE POINT IS THAT THESE FOUR THINGS WERE DECIDED IN FOUR DIFFERENT PLACES
+   * and only ever met each other in the published result. Nitsan asked for a
+   * confirmation on Publish listing "total column, estimate column, end date of the
+   * report to show (hours through) and anything else relevant to set before creating
+   * the link or updating it" — because Publish overwrites what a client sees at a
+   * PERMANENT url, and the eye on a column header two screens down is not where you
+   * remember to look on the way to the button.
+   *
+   * ⚠️ The rows below EDIT THE PAGE'S REAL STATE — there is no draft copy. Toggling
+   * a column here is the same act as clicking its eye in the table, and the preview
+   * behind the dialog updates as you do it, which is what makes the checklist a
+   * checklist rather than a second source of truth to keep in sync. Cancel therefore
+   * leaves any toggles applied — exactly as the eyes do, since neither is persisted
+   * until a publish.
+   */
+  const hiddenWeekCols = hiddenColumns.filter((k) => k.startsWith("w:")).length;
+  const hiddenPeriodCols = hiddenColumns.filter((k) => k.startsWith("p:")).length;
+  const showsColumn = (key: string) => !hiddenColumns.includes(key);
+  const setShowsColumn = (key: string, show: boolean) =>
+    setHiddenColumns((prev) => (show ? prev.filter((k) => k !== key) : [...new Set([...prev, key])]));
+  const opensOn =
+    periodIndex !== null ? previewPeriods[periodIndex]?.label ?? "one period" : "every period";
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
@@ -1141,11 +1247,16 @@ function PublishWorkspace() {
             >
               <Copy size={14} /> Copy link
             </button>
+            {/* ⚠️ OPENS THE CHECKLIST, DOES NOT PUBLISH. Publishing is the one
+                irreversible thing this page does — it replaces what a client sees at
+                a permanent URL — and everything that decides its contents was spread
+                across the table's eye icons, a date field and the filter pills. See
+                `PUBLISH CHECKLIST` below. */}
             <button
-              onClick={publish}
+              onClick={() => setConfirmOpen(true)}
               disabled={publishing}
               className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-              title="Freeze the current preview, publish it to the client link, and open that link in a new tab so you can check what the client will see"
+              title="Check what the client will get, then publish"
             >
               <Send size={14} />
               {publishing ? "Publishing…" : "Publish"}
@@ -1193,8 +1304,24 @@ function PublishWorkspace() {
               >
                 <span className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
                 {c.name}
-                {links.get(c.id)?.publishedAt && (
-                  <span className="size-1.5 rounded-full bg-success" title="Published" />
+                {/* ⚠️⚠️ THE INVOICE DAY, WHERE THE "PUBLISHED" DOT USED TO BE — Nitsan's
+                    swap, and the reason is what the strip is FOR: you scan it to decide
+                    who to bill next, and a green dot only said "this one has a link".
+                    ⚠️ STILL PARSED, NOT READ RAW. The field is numeric now, but the
+                    stored values are the old ordinals ("20th") until the normalising
+                    UPDATE runs, and older ones live on in nothing else — so the badge
+                    goes through `parseInvoiceDay` like every other reader. A value it
+                    cannot read shows NO badge, which is honest: better than a guessed
+                    30th on the tab you bill from. */}
+                {parseInvoiceDay(c.invoiceNote) != null && (
+                  <span
+                    className="min-w-4 rounded-[5px] border border-border-strong px-0.5 text-center text-[10px] font-semibold leading-4 tabular-nums"
+                    title={`Invoice day — the ${parseInvoiceDay(c.invoiceNote)}${ordinalSuffix(
+                      parseInvoiceDay(c.invoiceNote)!,
+                    )} of the month`}
+                  >
+                    {parseInvoiceDay(c.invoiceNote)}
+                  </span>
                 )}
               </button>
               <button
@@ -1417,6 +1544,114 @@ function PublishWorkspace() {
         <p className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-6 text-center text-sm text-faint">
           No clients with recent activity. Use ⋯ to pick one.
         </p>
+      )}
+
+      {confirmOpen && selectedClient && (
+        <Modal onClose={() => setConfirmOpen(false)} labelledBy="publish-confirm-title">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="publish-confirm-title" className="text-lg font-semibold">
+              {currentLink?.publishedAt ? "Update" : "Create"} {selectedClient.name}&apos;s report
+            </h2>
+            <ModalClose onClose={() => setConfirmOpen(false)} />
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            {currentLink?.publishedAt
+              ? `Replaces what the client sees at the existing link — last published ${lastPublished}.`
+              : "Creates the client's permanent link and publishes this preview to it."}
+          </p>
+
+          <div className="mt-3 flex flex-col gap-1.5">
+            <IncludeRow
+              label="Total column"
+              hint="Every hour ever logged on each task"
+              checked={showsColumn("total")}
+              onChange={(v) => setShowsColumn("total", v)}
+            />
+            <IncludeRow
+              label="Estimate column"
+              hint="The estimate set on each task"
+              checked={showsColumn("estimate")}
+              onChange={(v) => setShowsColumn("estimate", v)}
+            />
+          </div>
+
+          {/* ⚠️ THE CUT-OFF SITS IN THE DIALOG TOO, WITH ITS WARNING. It is the one
+              field here that decides the HOURS rather than the columns, and a stale
+              one is the failure this whole feature exists around — see
+              `throughIsStale`. Publishing is exactly the moment to be shown it. */}
+          <label className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2">
+            <span className="text-sm font-medium">Hours through</span>
+            <input
+              type="date"
+              value={through}
+              onChange={(e) => setThrough(e.target.value)}
+              className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-brand"
+            />
+            <span className="text-[11px] text-faint">
+              {through ? "Hours logged after this day are left out" : "Every hour logged"}
+            </span>
+            {throughIsStale && (
+              <span className="flex w-full items-center gap-1.5 text-[11px] font-medium text-amber-700">
+                a week behind — the last complete week ended {formatDayMonth(weekEnd)}
+                <button
+                  onClick={() => setThrough(weekEnd)}
+                  className="rounded-md border border-amber-500 px-1.5 py-0.5 font-semibold text-amber-900 hover:bg-amber-100"
+                >
+                  use {formatDayMonth(weekEnd)}
+                </button>
+              </span>
+            )}
+          </label>
+
+          {/* ⚠️ READ-ONLY, AND DELIBERATELY SO. Everything below is already set by a
+              control on the page — the pills, the eyes on rows and column headings.
+              Repeating them as editors here would be a second way to set the same
+              thing; repeating them as FACTS is the point, because a task hidden three
+              weeks ago is invisible from this button. */}
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-xl border border-border px-3 py-2 text-xs">
+            <dt className="text-muted">Opens on</dt>
+            <dd className="font-medium">
+              {opensOn}
+              {hideEmptyRows && ", only rows with hours"}
+            </dd>
+            {/* ⚠️ "ALSO hidden", not "hidden from the client" — the two checkboxes
+                above are hidden columns too, and a line reading "nothing" directly
+                under an unticked Total would flatly contradict them. */}
+            <dt className="text-muted">Also hidden</dt>
+            <dd className={hiddenTaskIds.length + hiddenWeekCols + hiddenPeriodCols > 0 ? "font-medium text-warning" : "font-medium"}>
+              {[
+                hiddenTaskIds.length && `${hiddenTaskIds.length} task${hiddenTaskIds.length > 1 ? "s" : ""}`,
+                hiddenWeekCols && `${hiddenWeekCols} week column${hiddenWeekCols > 1 ? "s" : ""}`,
+                hiddenPeriodCols && `${hiddenPeriodCols} period${hiddenPeriodCols > 1 ? "s" : ""}`,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "nothing"}
+            </dd>
+          </dl>
+
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <button
+              onClick={() => setConfirmOpen(false)}
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted hover:border-brand hover:text-brand"
+            >
+              Cancel
+            </button>
+            {/* ⚠️ `publish()` OPENS ITS TAB FROM INSIDE THIS CLICK, which is what keeps
+                Safari from treating it as an unsolicited popup — the transient
+                activation belongs to this gesture just as it did to the old button. */}
+            <button
+              onClick={() => {
+                setConfirmOpen(false);
+                void publish();
+              }}
+              disabled={publishing}
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+            >
+              <Send size={14} />
+              {currentLink?.publishedAt ? "Update the report" : "Publish"}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {toast && (

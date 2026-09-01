@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { nextInvoiceDate, nextPeriod, parseInvoiceDay, periodLabel } from "./billing-rollover";
+import {
+  invoiceDayToStore,
+  nextInvoiceDate,
+  nextPeriod,
+  parseInvoiceDay,
+  periodLabel,
+} from "./billing-rollover";
 
 describe("nextInvoiceDate", () => {
   it("finds the invoice day inside the same month", () => {
@@ -164,5 +170,42 @@ describe("parseInvoiceDay", () => {
     expect(parseInvoiceDay("the 5th of each month")).toBe(5);
     expect(parseInvoiceDay("22nd")).toBe(22);
     expect(parseInvoiceDay("3rd")).toBe(3);
+  });
+});
+
+/**
+ * The numeric "Invoice day" field, made numeric on 2026-09-01. It guards the value
+ * the ROLLOVER aligns new billing periods to, so a coerced number here silently
+ * moves hours between invoices.
+ */
+describe("invoiceDayToStore", () => {
+  it("stores a bare number", () => {
+    expect(invoiceDayToStore("20")).toBe("20");
+    expect(invoiceDayToStore(" 1 ")).toBe("1");
+  });
+
+  it("clears on blank", () => {
+    expect(invoiceDayToStore("")).toBe("");
+    expect(invoiceDayToStore("   ")).toBe("");
+  });
+
+  it("normalises an ordinal typed out of habit", () => {
+    // "20th" is what the field held for years; Number() rejects it, so it is
+    // REFUSED rather than silently turned into something else.
+    expect(invoiceDayToStore("20th")).toBeNull();
+  });
+
+  it("refuses anything that is not a whole day of the month", () => {
+    expect(invoiceDayToStore("0")).toBeNull();
+    expect(invoiceDayToStore("32")).toBeNull();
+    expect(invoiceDayToStore("-5")).toBeNull();
+    expect(invoiceDayToStore("15.5")).toBeNull();
+    expect(invoiceDayToStore("Net 30")).toBeNull();
+    expect(invoiceDayToStore("30 days")).toBeNull();
+  });
+
+  it("allows 31 — nextInvoiceDate clamps it into a short month", () => {
+    expect(invoiceDayToStore("31")).toBe("31");
+    expect(nextInvoiceDate("2026-02-01", 31)).toBe("2026-02-28");
   });
 });

@@ -141,6 +141,30 @@ export function nextPeriod(
 }
 
 /**
+ * What to STORE for a typed invoice day: `""` clears it, 1–31 stores that number,
+ * and anything else returns null meaning "refuse, leave the field as it was".
+ *
+ * ⚠️⚠️ REFUSED RATHER THAN COERCED, and the field it guards is the reason.
+ * `Number("")` is 0 and `parseInt("30 days")` is 30 — either would put a day nobody
+ * chose into the value the ROLLOVER aligns every new billing period to, and a wrong
+ * period boundary moves hours between invoices without anything looking broken.
+ *
+ * ⚠️ 1–31, not 1–28: `nextInvoiceDate` clamps a 31st into a short month, which is
+ * what a client billed on the 31st actually wants.
+ *
+ * ⚠️ It writes a BARE NUMBER ("20", not "20th") — Nitsan made the field numeric on
+ * 2026-09-01. `parseInvoiceDay` below still reads the old ordinals, because the
+ * stored values stay as they are until each one is edited or normalised by hand.
+ */
+export function invoiceDayToStore(raw: string): string | null {
+  const v = raw.trim();
+  if (v === "") return "";
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1 || n > 31) return null;
+  return String(n);
+}
+
+/**
  * Reads a day-of-month out of the client's free-text "Invoice day".
  *
  * ⚠️⚠️ THE FIELD ALREADY EXISTED AND IS FREE TEXT — `clients.invoice_note` from

@@ -10,19 +10,6 @@ import { currentPeriodIndex } from "@/lib/report-period-focus";
 import type { ReportSnapshot } from "@/lib/types";
 
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
-/**
- * The "not shared" flag under a column heading — rendered on BOTH a week/period
- * heading and the Total heading, so it lives in one place. ⚠️ Restyling it in only
- * one of the two is how the Total silently stops being marked, and the Total is
- * the figure most likely to be read aloud to a client.
- */
-function NotSharedMark() {
-  return (
-    <span className="block text-[9px] font-normal normal-case tracking-normal text-warning">
-      not shared
-    </span>
-  );
-}
 
 export function columnKey(i: number): string {
   return `p:${i}`;
@@ -174,26 +161,32 @@ export function ReportTable({
   const focusIndex = periodIndex ?? currentPeriodIndex(snapshot.periods);
   const focusPeriod = focusIndex >= 0 ? snapshot.periods[focusIndex] : undefined;
 
-  // Which week buckets fall inside the focused period, worked out ONCE. Scanning
-  // every week the client has ever logged is loop-invariant, and `focusMinutes` is
-  // asked for the same task three times per render (row cell, section subtotal,
-  // grand total) -- hence the cache too.
-  const focusWeeks = focusPeriod
-    ? (snapshot.weeks ?? []).flatMap((w, i) =>
-        w.to >= focusPeriod.from && w.from <= focusPeriod.to ? [i] : [],
-      )
-    : [];
-  const focusCache = new Map<string, number>();
-  /** minutes a task logged inside the focused period */
-  const focusMinutes = (t: ReportTask) => {
-    if (!focusPeriod) return 0;
-    if (!useWeeks) return t.periodMinutes[focusIndex] ?? 0;
-    const hit = focusCache.get(t.id);
-    if (hit !== undefined) return hit;
-    const sum = focusWeeks.reduce((a, i) => a + (t.weekMinutes?.[i] ?? 0), 0);
-    focusCache.set(t.id, sum);
-    return sum;
-  };
+  /**
+   * Minutes a task logged inside the focused period.
+   *
+   * ⚠️⚠️ IT READS `periodMinutes`, WHICH IS BUCKETED BY DATE. It used to SUM THE
+   * WEEK COLUMNS THAT OVERLAP THE PERIOD, and a week that straddles a period
+   * boundary belongs to both — so the whole of it was counted, days outside the
+   * period included. Caught by Nitsan on Baseline, 2026-09-01: the payment-periods
+   * pane read **16.75h** for August and this column read **17.25h**. The half hour
+   * is 1 Sep, which sits in the 30 Aug – 5 Sep bucket: that week contributed all
+   * 120 of its minutes when only 90 fell in August.
+   *
+   * ⚠️ IT WAS WRONG IN THE CLIENT'S COPY TOO, under a heading a client reads as the
+   * bill for the period. `periodMinutes` is what `buildReportSnapshot` fills by
+   * testing each entry's DATE against `dateFrom`/`dateTo`, which is the same rule
+   * the periods pane totals with — so the two now agree by construction rather than
+   * by coincidence.
+   *
+   * ⚠️ Indices line up because `snapshot.periods` and every task's `periodMinutes`
+   * are built from one sorted list and filtered together by `sanitizeSnapshot`'s
+   * `periodKeep`. Anything that reorders one must reorder the other.
+   *
+   * ⚠️ The week-overlap version needed a per-task cache (this is asked three times
+   * per row: cell, section subtotal, grand total). An array index does not.
+   */
+  const focusMinutes = (t: ReportTask) =>
+    focusPeriod ? (t.periodMinutes[focusIndex] ?? 0) : 0;
 
   /**
    * Does the client's copy hold LESS than the preview does for this column?
@@ -207,14 +200,21 @@ export function ReportTable({
    * copy showed less. The default cut-off is a Saturday, which is why that case
    * hides until somebody bills to a day of the month.
    */
-  const notShared = (to: string) => !!clientCutoff && to > clientCutoff;
+  const clientSeesLess = (to: string) => !!clientCutoff && to > clientCutoff;
   /**
-   * ⚠️ THE TOTAL COLUMN NEEDS THE SAME MARKER AND IS EASY TO FORGET — it sums
-   * EVERY entry, so it is short whenever any column is, and it is the figure most
-   * likely to be read aloud off this screen. The section subtotals sit in this same
-   * column, so labelling the header labels them too.
-   */
-  const totalNotShared = cols.some((c) => notShared(c.to));
+   * ⚠️ THE TOTAL COLUMN NEEDS THE SAME SIGNAL AND IS EASY TO FORGET — it sums EVERY
+   * entry, so it is short whenever any column is, and it is the figure most likely
+   * to be read aloud off this screen. The section subtotals sit in this same column,
+   * so dimming the header covers them too.
+   *
+   * ⚠️⚠️ THE PRINTED LABEL IS GONE, THE SIGNAL IS NOT. It read "not shared", which
+   * Nitsan correctly took to mean the column was withheld; renamed to "client sees
+   * less", he cut it — *"its location is weird anyway"* — and he is right that a
+   * second line of type under a column heading fights the heading. What remains is
+   * the dimming plus the `title`, which says it in full on hover. ⚠️ Do not delete
+   * `opacity-60` as dead styling: with the text gone it is the only thing left that
+   * marks a figure the client's copy does not match. */
+  const totalSeesLess = cols.some((c) => clientSeesLess(c.to));
 
   const visiblePeriods = cols.filter(
     (p) => showCol(p.key) && (periodIndex == null || colPeriod[p.index] === periodIndex),
@@ -703,19 +703,16 @@ export function ReportTable({
               <th
                 style={pinStyle("total")}
                 className={`${pinCls("total", "bg-surface", "z-20")} relative ${num} ${colCls("total")} ${
-                  totalNotShared ? "opacity-60" : ""
+                  totalSeesLess ? "opacity-60" : ""
                 }`}
                 title={`All hours ever logged on the task${
-                  totalNotShared
+                  totalSeesLess
                     ? ` — the client's copy is cut off at ${clientCutoff}, so their total is lower than this`
                     : ""
                 }`}
               >
                 {!narrow && <ResizeHandle onMouseDown={startResize("total")} />}
                 Total
-                {totalNotShared && (
-                  <NotSharedMark />
-                )}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has("total")} onClick={() => onToggleColumn?.("total")} />
                 )}
@@ -725,10 +722,10 @@ export function ReportTable({
               <th
                 key={p.key}
                 className={`group/col relative ${num} ${colCls(p.key)} ${divCls(p.index)} ${
-                  notShared(p.to) ? "opacity-60" : ""
+                  clientSeesLess(p.to) ? "opacity-60" : ""
                 }`}
                 title={`${p.from} → ${p.to}${
-                  notShared(p.to)
+                  clientSeesLess(p.to)
                     ? ` — the client's copy is cut off at ${clientCutoff}, so it holds fewer hours than this`
                     : ""
                 }${periodsEditable ? " — click the dates to edit this column's range" : ""}`}
@@ -772,9 +769,6 @@ export function ReportTable({
                 {/* ⚠️ A tooltip alone is not enough here — this column's hours are
                     in the preview's Total but not in the client's. Say so on the
                     face of it. */}
-                {notShared(p.to) && (
-                  <NotSharedMark />
-                )}
                 {editable && (
                   <HideToggle hidden={hiddenCols.has(p.key)} onClick={() => onToggleColumn?.(p.key)} />
                 )}

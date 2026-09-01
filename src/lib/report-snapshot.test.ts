@@ -133,6 +133,41 @@ describe("buildReportSnapshot", () => {
     expect(other?.tasks[0].totalMinutes).toBe(120);
   });
 
+  /**
+   * ⚠️⚠️ THE INVARIANT BEHIND THE GREEN "Period" COLUMN, pinned here because the
+   * bug it replaces was invisible: `report-table.tsx` used to total that column by
+   * summing every WEEK bucket overlapping the period, and a week straddling a
+   * period boundary belongs to both — so days outside the period were billed into
+   * it. Baseline's August read 17.25h against the payment-periods pane's 16.75h
+   * (2026-09-01, found by Nitsan), and the same wrong figure went to the client.
+   *
+   * `periodMinutes` is bucketed by DATE and is the only correct source for it.
+   * These two assertions together say: the straddling week really does hold the
+   * outside day, and the period really does not.
+   */
+  it("buckets a straddling week's outside days into the week but NOT the period", () => {
+    const august = {
+      id: "p1", clientId: "c1", label: "August",
+      dateFrom: "2026-08-01", dateTo: "2026-08-31", position: 0,
+    } as unknown as BillingPeriod;
+    const snap = buildReportSnapshot(
+      client,
+      [section("s1", "Design")],
+      [task("t1", "s1")],
+      [
+        sum("t1", "2026-08-30", 30), // Sun, inside August
+        sum("t1", "2026-08-31", 60), // Mon, inside August
+        sum("t1", "2026-09-01", 30), // Tue, SAME week bucket, outside August
+      ],
+      [august],
+    );
+    const t = snap.sections[0].tasks[0];
+    expect(t.periodMinutes[0]).toBe(90); // not 120
+    const straddling = (snap.weeks ?? []).findIndex((w) => w.from <= "2026-08-31" && w.to >= "2026-09-01");
+    expect(straddling).toBeGreaterThanOrEqual(0);
+    expect(t.weekMinutes?.[straddling]).toBe(120);
+  });
+
   it("never reports fewer hours than were logged", () => {
     const snap = buildReportSnapshot(
       client,
