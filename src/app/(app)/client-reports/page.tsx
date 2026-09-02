@@ -32,6 +32,8 @@ import { cutoffIsStale, lastCompleteWeekEnd } from "@/lib/period-math";
 import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
 import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
+import type { InspectableCell } from "@/components/report-table";
+import { CellInspector } from "@/components/cell-inspector";
 import { Modal, ModalClose } from "@/components/ui";
 import { toggleIn } from "@/lib/toggle";
 import {
@@ -132,6 +134,19 @@ function PaymentPeriods({ client }: { client: Client }) {
     updateClient,
   } = useData();
   const periods = billingPeriods.filter((p) => p.clientId === client.id);
+  /**
+   * What the Keys-task picker may offer: this client's NON-BILLABLE tasks, with
+   * keys-shaped titles first so the usual answer is at the top.
+   *
+   * ⚠️ The billable filter is the safety rule, not a convenience — a billable
+   * destination cannot reduce a bill.
+   */
+  const keysCandidates = tasks
+    .filter((t) => t.clientId === client.id && !t.billable)
+    .sort((a, b) => {
+      const k = (t: typeof a) => (/keys/i.test(t.title) ? 0 : 1);
+      return k(a) - k(b) || a.title.localeCompare(b.title);
+    });
   const todayIso = toISODate(new Date());
 
   const clientTaskIds = useMemo(
@@ -408,6 +423,32 @@ function PaymentPeriods({ client }: { client: Client }) {
                 />
               </div>
             </div>
+            {/* ⚠️⚠️ THE KEYS TASK IS CHOSEN, NEVER GUESSED — see `Client.keysTaskId`.
+                The real data holds `--- Keys ---` SEPARATOR rows and two keys-shaped
+                tasks still marked BILLABLE, so name-matching would eventually move
+                hours onto a separator or onto a task that keeps billing the client,
+                which is the opposite of a write-down.
+                ⚠️ It lists only NON-BILLABLE tasks of this client. A billable
+                destination cannot reduce a bill, so offering one is offering a
+                mistake; if a client's keys task is missing here, its `billable` flag
+                is what to fix. */}
+            <div title="Where hovering an hours cell can write hours down to. Only this client's non-billable tasks are offered, because a billable destination cannot reduce a bill.">
+              <div className="text-[11px] font-medium text-muted">Keys task</div>
+              <div className="mt-0.5">
+                <select
+                  value={client.keysTaskId ?? ""}
+                  onChange={(e) => updateClient(client.id, { keysTaskId: e.target.value || null })}
+                  className="w-full rounded-md border border-border bg-surface px-1 py-0.5 text-sm outline-none focus:border-brand"
+                >
+                  <option value="">none — write-down off</option>
+                  {keysCandidates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div title="Tasks with hours logged in the current payment period">
               <div className="text-[11px] font-medium text-muted">Active tasks</div>
               <div className="mt-0.5 text-2xl font-semibold tabular-nums">
@@ -501,8 +542,6 @@ type ViewDraft = {
    */
   periodFrom: string | null;
   hideEmptyRows: boolean;
-  /** The "show all" peek. Per client like the rest, so a tab switch cannot flip it. */
-  showAll: boolean;
   foldedSections: string[];
   through: string;
 };
@@ -531,6 +570,34 @@ function PublishWorkspace() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [periodPickOpen, setPeriodPickOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  /**
+   * The hours cell being inspected, and the hover choreography around it.
+   *
+   * ⚠️⚠️ A GRACE PERIOD ON THE WAY OUT, OR THE CARD IS UNREACHABLE. It opens on the
+   * cell and has to be reachable with the pointer — there is a gap between the cell
+   * and the card, and closing on the cell's `mouseleave` alone made the card vanish
+   * as soon as you moved toward it. So leaving schedules a close, entering the card
+   * (or another cell) cancels it.
+   * ⚠️ And a delay on the way IN: these cells are 60px wide in a table you scan
+   * across, so opening instantly meant a card firing for every cell the pointer
+   * crossed — each one a fetch.
+   */
+  const [inspect, setInspect] = useState<{ cell: InspectableCell; rect: DOMRect } | null>(null);
+  const inspectTimer = useRef<number | null>(null);
+  const clearInspectTimer = () => {
+    if (inspectTimer.current !== null) window.clearTimeout(inspectTimer.current);
+    inspectTimer.current = null;
+  };
+  const openInspect = (cell: InspectableCell, rect: DOMRect) => {
+    clearInspectTimer();
+    inspectTimer.current = window.setTimeout(() => setInspect({ cell, rect }), 220);
+  };
+  const closeInspect = () => {
+    clearInspectTimer();
+    inspectTimer.current = window.setTimeout(() => setInspect(null), 140);
+  };
+  // ⚠️ A stray timer would open a card over whatever the page shows next.
+  useEffect(() => clearInspectTimer, []);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
   const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
@@ -617,11 +684,10 @@ function PublishWorkspace() {
   const unseeded = (): ViewDraft => ({
     periodFrom: null,
     hideEmptyRows: false,
-    showAll: false,
     foldedSections: EMPTY_FOLDS,
     through: weekEnd,
   });
-  const { periodFrom, hideEmptyRows, showAll, foldedSections, through } =
+  const { periodFrom, hideEmptyRows, foldedSections, through } =
     (selectedClient ? views[selectedClient.id] : undefined) ?? unseeded();
   function patchView(patch: (d: ViewDraft) => Partial<ViewDraft>) {
     const id = selectedClient?.id;
@@ -635,18 +701,21 @@ function PublishWorkspace() {
   const focusPeriod = (from: string | null) =>
     patchView((d) => ({ periodFrom: d.periodFrom === from ? null : from }));
   const clearPeriod = () => patchView(() => ({ periodFrom: null }));
-  const toggleShowAll = () => patchView((d) => ({ showAll: !d.showAll }));
   const toggleHideEmpty = () => patchView((d) => ({ hideEmptyRows: !d.hideEmptyRows }));
   const setThrough = (v: string) => patchView(() => ({ through: v }));
   const setFoldedSections = (next: string[] | ((prev: string[]) => string[])) =>
     patchView((d) => ({ foldedSections: typeof next === "function" ? next(d.foldedSections) : next }));
-  // "Show all" SUSPENDS the filters rather than clearing them, so the studio gets its
-  // view back when it switches off. That rule was spelled out at each of the eight
-  // places that needed it; here it is once, and the pills and the table cannot
-  // disagree about what is currently on screen. `periodOnly`/`hideEmptyRows` stay the
-  // studio's actual setting -- which is what a publish records.
-  const effHideEmpty = hideEmptyRows && !showAll;
-  const effFolded = showAll ? EMPTY_FOLDS : foldedSections;
+  /**
+   * ⚠️⚠️ THERE IS NO LONGER A "SUSPEND EVERYTHING" PILL, AND THAT IS THE POINT.
+   * "Show all" used to override the period scope, the row filter AND the folds at
+   * once, so the studio could not ask the one question it actually asks — *every*
+   * period, but only the rows with hours in them. Nitsan: *"change 'show all' to
+   * 'all periods' - so it only reveals all periods, so i can see all periods but if
+   * i also press 'only rows with hours' i see"*. Each control now governs exactly
+   * one axis and they compose, which is why these two are plain pass-throughs.
+   */
+  const effHideEmpty = hideEmptyRows;
+  const effFolded = foldedSections;
   /**
    * ⚠️ HOURS UP TO THIS DAY ONLY (`through`). A weekly report is a summary of the
    * week that ENDED, and Nitsan published Anchor's on the Sunday afternoon — by which
@@ -706,7 +775,6 @@ function PublishWorkspace() {
               // what the old `false` did.
               periodFrom: link?.viewFlags?.periodFrom ?? legacyPeriodFrom(link),
               hideEmptyRows: link?.viewFlags?.hideEmptyRows ?? false,
-              showAll: false,
               foldedSections: EMPTY_FOLDS, // section names are per client
               // A link that has been published before remembers what it was scoped
               // to; one that has not falls back to the last complete week.
@@ -922,7 +990,7 @@ function PublishWorkspace() {
   const currentIndex = currentPeriodIndex(previewPeriods);
   const previousIndex = previousPeriodIndex(previewPeriods);
   const periodIndex = periodIndexFromDate(previewPeriods, periodFrom);
-  const effPeriodIndex = showAll ? null : periodIndex;
+  const effPeriodIndex = periodIndex;
 
   // ── period dividers + editable columns ────────────────────────────────
   const clientPeriods = useMemo(
@@ -1382,6 +1450,19 @@ function PublishWorkspace() {
         <div className="flex flex-col gap-4">
           <div className="rounded-b-2xl border border-t-0 border-border bg-surface shadow-card p-3">
             <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              {/* ⚠️⚠️ "ALL PERIODS" IS A PERIOD PILL, NOT THE OLD "SHOW ALL". It clears
+                  the period scope and NOTHING else — the row filter and the folds
+                  keep applying, which is exactly the combination that was
+                  unreachable before (every period, only the rows with hours).
+                  ⚠️ It sits FIRST, like the client link's own pill of the same name,
+                  so the two surfaces read the same way round. */}
+              <ViewToggle
+                on={effPeriodIndex === null}
+                onClick={clearPeriod}
+                title="Show every payment period — the row filter still applies"
+              >
+                All periods
+              </ViewToggle>
               {/* ⚠️ "Current period", not "Latest period only" — Nitsan's wording,
                   and it now names one choice among several rather than describing a
                   switch. The pills are radio-like: the table is scoped to exactly one
@@ -1390,7 +1471,6 @@ function PublishWorkspace() {
                   toggle behaviour this pill has always had. */}
               <ViewToggle
                 on={effPeriodIndex !== null && effPeriodIndex === currentIndex}
-                dim={showAll}
                 onClick={() => focusPeriod(previewPeriods[currentIndex]?.from ?? null)}
                 title={
                   previewPeriods[currentIndex]
@@ -1405,7 +1485,6 @@ function PublishWorkspace() {
               {previousIndex >= 0 && (
                 <ViewToggle
                   on={effPeriodIndex === previousIndex}
-                  dim={showAll}
                   onClick={() => focusPeriod(previewPeriods[previousIndex].from)}
                   title={`Show only the week columns of ${previewPeriods[previousIndex].label}`}
                 >
@@ -1429,7 +1508,7 @@ function PublishWorkspace() {
                       effPeriodIndex !== previousIndex
                         ? "border-brand bg-brand text-white"
                         : "border-border bg-surface text-muted hover:border-brand hover:text-brand"
-                    } ${showAll ? "opacity-40" : ""}`}
+                    }`}
                   >
                     {effPeriodIndex !== null &&
                     effPeriodIndex !== currentIndex &&
@@ -1479,20 +1558,12 @@ function PublishWorkspace() {
               )}
               <ViewToggle
                 on={effHideEmpty}
-                dim={showAll}
                 onClick={toggleHideEmpty}
                 title="Hide tasks with no hours in the columns currently shown"
               >
                 Only rows with hours
               </ViewToggle>
-              <ViewToggle
-                on={showAll}
-                onClick={toggleShowAll}
-                title="Temporarily show every row, column and section — turning it off restores the filters you had"
-              >
-                Show all
-              </ViewToggle>
-              {foldedSections.length > 0 && !showAll && (
+              {foldedSections.length > 0 && (
                 <button
                   onClick={() => setFoldedSections([])}
                   className="rounded-full px-2.5 py-1 text-[11px] text-muted hover:bg-background hover:text-foreground"
@@ -1524,6 +1595,8 @@ function PublishWorkspace() {
               onToggleSection={(name) => setFoldedSections((prev) => toggleIn(prev, name))}
               onOpenTask={openTask}
               onEditEstimate={(taskId, hours) => updateTask(taskId, { estimateHours: hours })}
+              onInspectCell={openInspect}
+              onLeaveCell={closeInspect}
               onToggleColumn={(key) => setHiddenColumns((prev) => toggleIn(prev, key))}
               onToggleTask={(id) => setHiddenTaskIds((prev) => toggleIn(prev, id))}
               onAddBoundary={handleAddBoundary}
@@ -1652,6 +1725,22 @@ function PublishWorkspace() {
             </button>
           </div>
         </Modal>
+      )}
+
+      {inspect && (
+        <CellInspector
+          cell={inspect.cell}
+          rect={inspect.rect}
+          /* ⚠️ Withheld when the hovered cell IS the keys task — writing keys hours
+             down to themselves is a no-op, and offering it invites the click. */
+          keysTaskId={
+            selectedClient?.keysTaskId && selectedClient.keysTaskId !== inspect.cell.taskId
+              ? selectedClient.keysTaskId
+              : null
+          }
+          onEnter={clearInspectTimer}
+          onLeave={closeInspect}
+        />
       )}
 
       {toast && (

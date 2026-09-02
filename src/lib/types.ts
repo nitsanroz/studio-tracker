@@ -72,6 +72,18 @@ export interface Client {
   /** Internal notes on the client-reports page. NEVER sent to a client (0033). */
   reportNotes: string;
   /**
+   * This client's non-billable **Keys** task — where hours are written down to
+   * before a report goes out (migration 0037).
+   *
+   * ⚠️⚠️ SET EXPLICITLY, NEVER MATCHED BY NAME. Most clients have a "<Client> Keys"
+   * task, but the real data also holds `--- Keys ---` SEPARATOR rows and two
+   * keys-shaped tasks marked BILLABLE — so guessing from the title would sooner or
+   * later move hours onto a separator, or onto a task that still bills the client,
+   * which is the exact opposite of a write-down. Null means this client has no keys
+   * task chosen, and the write-down control is simply not offered.
+   */
+  keysTaskId: string | null;
+  /**
    * A preset glyph name from CLIENT_ICONS (migration 0023), or null for the
    * client's initial. Ignored when `iconUrl` is set.
    */

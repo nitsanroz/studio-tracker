@@ -322,6 +322,10 @@ interface Store {
   ) => Promise<TimeEntry | null>;
   /** One member's entries for one date. `timeEntries` only holds the recent 400. */
   loadDayEntries: (userId: string, dateIso: string) => Promise<TimeEntry[]>;
+  /** the log rows behind one hours cell of the client report — see `loadCellEntries` */
+  loadCellEntries: (taskId: string, from: string, to: string) => Promise<TimeEntry[]>;
+  /** move `minutes` of one entry onto the client's non-billable Keys task — see `writeDownToKeys` */
+  writeDownToKeys: (entryId: string, minutes: number, keysTaskId: string) => Promise<boolean>;
   /**
    * `userId` reassigns the entry to another member — admins only. RLS refuses it
    * for members anyway: `own time update`'s USING clause constrains the very
@@ -2236,13 +2240,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const optional: Record<string, unknown> = {};
       if ("hourCap" in patch) optional.hour_cap = patch.hourCap;
       if ("reportNotes" in patch) optional.report_notes = patch.reportNotes;
+      // 0037. Optional for the same reason as the two above: a missing column on a
+      // WRITE is PGRST204 and fails the whole update, which would break renaming a
+      // client until the migration runs.
+      if ("keysTaskId" in patch) optional.keys_task_id = patch.keysTaskId;
       const tail = wrote("updateClient");
       void updateWithOptional(supabase, "clients", { id: clientId }, row, optional).then((res) => {
         tail(res);
         // ⚠️ Say so rather than leaving local state claiming a value the database
         // does not have — it would look saved until the next refresh took it away.
         if (res.degraded && Object.keys(optional).length) {
-          setNotice("The cap and notes weren't saved — migration 0033 hasn't been run yet.");
+          setNotice("The cap, notes and keys task weren't saved — migration 0033/0037 hasn't been run yet.");
         }
       });
       // Marking a client internal makes all its existing tasks non-billable.
@@ -2772,6 +2780,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase],
   );
 
+  /**
+   * The individual log rows behind ONE hours cell of the client report.
+   *
+   * ⚠️⚠️ A NARROW SELECT AND A DATE WINDOW, BOTH DELIBERATE. `timeEntries` in this
+   * store is only the newest 400 rows studio-wide, so the descriptions behind a
+   * week column from March are simply not in memory — and `loadTaskExtras` would
+   * fetch that task's comments, attachments, brief and EVERY entry it has, to show
+   * five rows. Egress is this project's tightest constraint (see the v1.31.0 note),
+   * and this fires on HOVER, so it asks for the five columns it renders and only
+   * the dates on screen.
+   *
+   * ⚠️ Returned, not merged into state: nothing else needs these rows, and merging
+   * would race the background refresh for no benefit. The caller caches per cell.
+   */
+  const loadCellEntries = useCallback(
+    async (taskId: string, from: string, to: string): Promise<TimeEntry[]> => {
+      const { data, error } = await supabase
+        .from("time_entries")
+        .select("id, task_id, user_id, legacy_author_name, date, minutes, description")
+        .eq("task_id", taskId)
+        .gte("date", from)
+        .lte("date", to)
+        .not("minutes", "is", null)
+        .order("date");
+      if (error) {
+        console.error("loadCellEntries failed", error.message);
+        return [];
+      }
+      return (data ?? []).map(mapTimeEntry);
+    },
+    [supabase],
+  );
+
   const updateTimeEntry = useCallback(
     (entryId: string, patch: TimeEntryPatch) => {
       // full row if loaded; the slim sums row covers minutes/date-only patches
@@ -3280,6 +3321,111 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, currentUserId, wrote],
   );
 
+  /**
+   * Write hours down to the client's non-billable "Keys" task.
+   *
+   * ⚠️⚠️ THIS IS THE ONE PLACE THE STUDIO REDUCES WHAT A CLIENT IS CHARGED, so it
+   * is built to keep the ledger honest rather than to be convenient. Nitsan:
+   * *"basicly i reduce hours to be charged by clent for a certain task because for
+   * example he worked slowly"* — and his ruling on the shape: SPLIT the entry, keep
+   * the hours as the designer's own.
+   *
+   * ⚠️ THE HOURS ARE MOVED, NEVER DELETED, AND THE TOTAL NEVER CHANGES. `n === all`
+   * re-points the whole entry; anything less splits it into a billable remainder and
+   * a non-billable piece, so `before === after` for that person, that day and that
+   * client. A write-down that quietly reduced somebody's logged time would make the
+   * designer look slower than they were AND lose the record of the work.
+   *
+   * ⚠️ THE SPLIT INSERTS FIRST AND SHRINKS SECOND. In the other order a failure
+   * between the two writes loses the hours outright; this way it duplicates them,
+   * which is visible in the next report and recoverable by hand. Prefer the failure
+   * you can see.
+   *
+   * ⚠️ Provenance rides along in `moved_from_task_id`/`moved_at`/`moved_by`, the
+   * same three columns `moveTimeEntries` stamps — so a keys row can always be traced
+   * back to the task it was billed against.
+   *
+   * ⚠️ NOT UNDOABLE, deliberately, and the precedent is `moveTimeEntries`: undoing a
+   * split means re-merging two rows one of which may have been edited since, and a
+   * ⌘Z that silently re-bills a client is worse than none. The reverse is one more
+   * write-down in the other direction, which is why the caller shows both tasks.
+   */
+  const writeDownToKeys = useCallback(
+    async (entryId: string, minutes: number, keysTaskId: string): Promise<boolean> => {
+      const row = await supabase
+        .from("time_entries")
+        .select("id, task_id, user_id, date, minutes, description")
+        .eq("id", entryId)
+        .single();
+      if (row.error || !row.data) {
+        noteWriteError("writeDownToKeys read", row.error ?? { message: "entry not found" });
+        return false;
+      }
+      const e = mapTimeEntry(row.data);
+      // ⚠️ Re-checked against the row we just read, not against what the screen
+      // showed: the card's rows come from a fetch that may be minutes old.
+      if (!Number.isInteger(minutes) || minutes <= 0 || minutes > e.minutes) {
+        noteWriteError("writeDownToKeys", {
+          message: `that entry holds ${e.minutes} minutes, so ${minutes} cannot be moved`,
+        });
+        return false;
+      }
+      const stamp = { moved_from_task_id: e.taskId, moved_at: new Date().toISOString(), moved_by: currentUserId };
+
+      if (minutes === e.minutes) {
+        const { error } = await counting(
+          supabase.from("time_entries").update({ task_id: keysTaskId, ...stamp }).eq("id", e.id),
+        );
+        if (error) {
+          noteWriteError("writeDownToKeys move", error);
+          return false;
+        }
+        setTimeEntries((prev) =>
+          prev.map((x) => (x.id === e.id ? { ...x, taskId: keysTaskId, movedFromTaskId: e.taskId } : x)),
+        );
+        setEntrySums((prev) => prev.map((x) => (x.id === e.id ? { ...x, taskId: keysTaskId } : x)));
+        return true;
+      }
+
+      const ins = await counting(
+        supabase
+          .from("time_entries")
+          .insert({
+            task_id: keysTaskId,
+            user_id: e.userId,
+            date: e.date,
+            minutes,
+            description: e.description,
+            ...stamp,
+          })
+          .select()
+          .single(),
+      );
+      if (ins.error || !ins.data) {
+        noteWriteError("writeDownToKeys insert", ins.error ?? { message: "insert failed" });
+        return false;
+      }
+      const { error } = await counting(
+        supabase.from("time_entries").update({ minutes: e.minutes - minutes }).eq("id", e.id),
+      );
+      if (error) {
+        // ⚠️ Say so loudly: the hours are now counted TWICE until somebody fixes it,
+        // which is the failure direction chosen above — visible, not lost.
+        noteWriteError("writeDownToKeys shrink", error);
+        return false;
+      }
+      applyEntryLocally(mapTimeEntry(ins.data));
+      setTimeEntries((prev) =>
+        prev.map((x) => (x.id === e.id ? { ...x, minutes: e.minutes - minutes } : x)),
+      );
+      setEntrySums((prev) =>
+        prev.map((x) => (x.id === e.id ? { ...x, minutes: e.minutes - minutes } : x)),
+      );
+      return true;
+    },
+    [supabase, currentUserId, counting, noteWriteError, applyEntryLocally],
+  );
+
   const approveRequest = useCallback(
     async (requestId: string, input: ApproveRequestInput): Promise<string | null> => {
       const request = taskRequests.find((r) => r.id === requestId);
@@ -3556,7 +3702,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reorderTimelineTasks,
       addAttachment,
       removeAttachment,
-      addTimeEntry, loadDayEntries,
+      addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys,
       updateTimeEntry,
       deleteTimeEntry,
       moveTimeEntries,
@@ -3596,7 +3742,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

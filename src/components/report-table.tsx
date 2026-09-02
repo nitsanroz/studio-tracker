@@ -9,6 +9,18 @@ import { ContextMenu } from "@/components/ui";
 import { currentPeriodIndex } from "@/lib/report-period-focus";
 import type { ReportSnapshot } from "@/lib/types";
 
+/** One hours cell, named well enough for a caller to fetch the log rows behind it. */
+export type InspectableCell = {
+  taskId: string;
+  taskTitle: string;
+  /** inclusive date window this cell totals */
+  from: string;
+  to: string;
+  minutes: number;
+  /** what the column is called on screen, e.g. "9 Aug – 15 Aug" or "August" */
+  label: string;
+};
+
 /** Column keys: "estimate", "total", or `p:{index}` for payment periods. */
 
 export function columnKey(i: number): string {
@@ -76,6 +88,8 @@ export function ReportTable({
   onEditColumnDates,
   clientCutoff,
   periodIndex = null,
+  onInspectCell,
+  onLeaveCell,
   hideEmptyRows = false,
   foldedSections,
   onToggleSection,
@@ -130,6 +144,17 @@ export function ReportTable({
   onToggleSection?: (name: string) => void;
   /** click / drag hour cells and show what they add up to */
   selectable?: boolean;
+  /**
+   * Hovering an hours cell asks the caller to show what is behind the number —
+   * who logged it and what they wrote.
+   *
+   * ⚠️⚠️ ADMIN ONLY, AND IT IS THE PROP ITSELF THAT ENFORCES THAT. The public
+   * client report renders this same component; it simply does not pass this, so
+   * there is no flag to get wrong and no designer's name or description can reach
+   * a client through here. Do NOT give it a default.
+   */
+  onInspectCell?: (cell: InspectableCell, rect: DOMRect) => void;
+  onLeaveCell?: () => void;
 }) {
   const [editingCol, setEditingCol] = useState<number | null>(null);
   const hiddenCols = new Set(hiddenColumns);
@@ -274,6 +299,23 @@ export function ReportTable({
 
   // "Period" (green) = hours inside the FOCUSED billing period, like the Excel
   const periodTotal = visibleTasks.reduce((s, t) => s + focusMinutes(t), 0);
+
+  /**
+   * Hover handlers for an hours cell — nothing at all when the caller did not ask
+   * to inspect (the client's report), so a client's DOM carries no listeners.
+   *
+   * ⚠️ A CELL WITH NO HOURS IS NOT INSPECTABLE. There is nothing behind a dash, and
+   * a popover that opens to say "no entries" on every empty cell of a 200-column
+   * table would make the table unusable to move a pointer across.
+   */
+  const inspectProps = (cell: InspectableCell) =>
+    onInspectCell && cell.minutes > 0
+      ? {
+          onMouseEnter: (e: React.MouseEvent<HTMLTableCellElement>) =>
+            onInspectCell(cell, e.currentTarget.getBoundingClientRect()),
+          onMouseLeave: () => onLeaveCell?.(),
+        }
+      : {};
 
   const num = "px-2 py-1.5 text-right tabular-nums whitespace-nowrap";
 
@@ -973,6 +1015,14 @@ export function ReportTable({
                           <td
                             key={p.key}
                             {...cellProps(r, ci)}
+                            {...inspectProps({
+                              taskId: t.id,
+                              taskTitle: t.title,
+                              from: p.from,
+                              to: p.to,
+                              minutes: minutesAt(t, p.index),
+                              label: p.label,
+                            })}
                             className={`${num} ${colCls(p.key)} ${divCls(p.index)} ${
                               selectable ? "cursor-cell select-none" : "text-muted"
                             } ${
@@ -990,7 +1040,17 @@ export function ReportTable({
                           </td>
                         ))}
                         {focusPeriod && (
-                          <td className={`${num} bg-green-50 font-medium text-green-900`}>
+                          <td
+                            className={`${num} bg-green-50 font-medium text-green-900`}
+                            {...inspectProps({
+                              taskId: t.id,
+                              taskTitle: t.title,
+                              from: focusPeriod.from,
+                              to: focusPeriod.to,
+                              minutes: focusMinutes(t),
+                              label: focusPeriod.label,
+                            })}
+                          >
                             {fmtH(focusMinutes(t))}
                           </td>
                         )}
