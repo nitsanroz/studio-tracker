@@ -22,6 +22,14 @@ import { formatSize } from "@/lib/uploads";
 import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
 import { EditableTextCell } from "./editable-cell";
 import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
+import {
+  useKeysWriteDown,
+  KeysButton,
+  KeysField,
+  useKeysTaskWriteDown,
+  KeysTaskButton,
+  KeysTaskPanel,
+} from "./keys-write-down";
 import { BriefModal } from "./brief-modal";
 import { LinksEditor, type LinksEditorHandle } from "./links-editor";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
@@ -407,7 +415,6 @@ export function TaskPanel() {
     timeEntries,
     tags,
     taskTypes,
-    freshEntryId,
     updateTask,
     addComment,
     deleteComment,
@@ -1102,7 +1109,7 @@ export function TaskPanel() {
             <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
               {/* 37px = the rendered height of a px-3 py-2 text-sm row, so the tile
                   is square and flush with the lines below it */}
-              <div className="flex">
+              <div className="flex items-center gap-2 pr-2">
                 <button
                   onClick={() => setEntryModal({ entry: null })}
                   title="Log time on this task"
@@ -1110,95 +1117,33 @@ export function TaskPanel() {
                 >
                   <Plus size={16} />
                 </button>
+                {/* The task-level write-down: no row to choose, but a designer to.
+                    ⚠️ Scoped to the WHOLE task, unlike the client report's card,
+                    which is scoped to the week column it was opened from. */}
+                <TaskKeysControl taskId={task.id} entries={entries} />
               </div>
               {entries.length === 0 && (
                 <div className="px-3 py-2.5 text-sm text-faint">No time logged yet.</div>
               )}
-              {entries.map((e) => {
-                const user = profiles.find((p) => p.id === e.userId) ?? null;
-                // Same as the comments below: a recovered entry names its author in
-                // legacy_author_name because that person has no account here.
-                const author = user?.name ?? e.legacyAuthorName ?? "";
-                // Rows you may not change are NOT interactive at all — no pointer,
-                // no hover, no handler. An editor you can open but not use is worse
-                // than none.
-                const clickable = canEditEntry(e, isAdmin, currentUserId);
-                return (
-                  <div
-                    key={e.id}
-                    role={clickable ? "button" : undefined}
-                    tabIndex={clickable ? 0 : undefined}
-                    onClick={clickable ? () => setEntryModal({ entry: e }) : undefined}
-                    onKeyDown={
-                      clickable
-                        ? (ev) => {
-                            if (ev.key === "Enter" || ev.key === " ") {
-                              ev.preventDefault();
-                              setEntryModal({ entry: e });
-                            }
-                          }
-                        : undefined
-                    }
-                    // ⚠️ 3A: the row you just logged flashes once. It lands in a
-                    // DATE-SORTED list, so without this an hour logged on an old
-                    // date appears somewhere off-screen with nothing to say so.
-                    className={`flex items-center gap-2.5 px-3 py-2 text-sm ${
-                      clickable ? "cursor-pointer hover:bg-background" : ""
-                    } ${e.id === freshEntryId ? "row-flash" : ""}`}
-                  >
-                    {isAdmin && (
-                      <input
-                        type="checkbox"
-                        checked={selectedEntries.has(e.id)}
-                        onClick={(ev) => ev.stopPropagation()}
-                        onChange={(ev) =>
+              {entries.map((e) => (
+                <TimeLogRow
+                  key={e.id}
+                  entry={e}
+                  selected={selectedEntries.has(e.id)}
+                  onSelect={
+                    isAdmin
+                      ? (on) =>
                           setSelectedEntries((prev) => {
                             const next = new Set(prev);
-                            if (ev.target.checked) next.add(e.id);
+                            if (on) next.add(e.id);
                             else next.delete(e.id);
                             return next;
                           })
-                        }
-                        className="shrink-0"
-                        title="Select for moving"
-                      />
-                    )}
-                    {/* A recovered entry has no profile to draw, so the avatar
-                        falls back to a dashed "?" — and its own tooltip has to
-                        carry the author, since an inner title wins over a
-                        wrapper's. `author` is the stored provenance string for
-                        rows that name nobody ("(from finance plan)"), which is
-                        still more use than the word "Unassigned". */}
-                    <Avatar
-                      profile={user}
-                      size={22}
-                      emptyTitle={author || "Author not recorded — recovered history"}
-                    />
-                    <span
-                      className={`w-14 shrink-0 text-xs ${e.dateEstimated ? "text-faint italic" : "text-muted"}`}
-                      // The hours are the studio's own recorded figure; only the day
-                      // is inferred. Showing it plainly would present a guess as a fact.
-                      title={
-                        e.dateEstimated
-                          ? "Date estimated from this task's activity window — the hours are from the task's own recorded total"
-                          : undefined
-                      }
-                    >
-                      {formatDate(e.date)}
-                      {e.dateEstimated ? "*" : ""}
-                    </span>
-                    <span className="w-14 shrink-0 font-medium tabular-nums">{formatHours(e.minutes)}</span>
-                    <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
-                      {e.description || <span className="text-faint italic">no description</span>}
-                    </span>
-                    {e.movedFromTaskId && (
-                      <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700" title="Moved from another task">
-                        moved
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                      : undefined
+                  }
+                  onOpen={() => setEntryModal({ entry: e })}
+                />
+              ))}
               {/* The remainder that never became entries. Without this line the rows
                   would sum to less than the headline with no explanation, which is
                   exactly how a figure loses people's trust. */}
@@ -1375,5 +1320,156 @@ export function TaskPanel() {
 
       {editingBrief && <BriefModal task={task} onClose={() => setEditingBrief(false)} />}
     </>
+  );
+}
+
+/**
+ * One line of the task's own time list.
+ *
+ * Extracted from the pane so it can call `useKeysWriteDown` — a hook, in what was
+ * a `map` — and so each row's write-down field opens independently of its
+ * neighbours.
+ */
+function TimeLogRow({
+  entry: e,
+  selected,
+  onSelect,
+  onOpen,
+}: {
+  entry: TimeEntry;
+  selected: boolean;
+  /** omitted for a member: selecting rows is for the admin "move to another task" */
+  onSelect?: (on: boolean) => void;
+  onOpen: () => void;
+}) {
+  const { profiles, currentUserId, freshEntryId } = useData();
+  const isAdmin = useIsAdmin();
+  const user = profiles.find((p) => p.id === e.userId) ?? null;
+  // Same as the comments elsewhere: a recovered entry names its author in
+  // legacy_author_name because that person has no account here.
+  const author = user?.name ?? e.legacyAuthorName ?? "";
+  // Rows you may not change are NOT interactive at all — no pointer, no hover, no
+  // handler. An editor you can open but not use is worse than none.
+  const clickable = canEditEntry(e, isAdmin, currentUserId);
+  const keys = useKeysWriteDown(e);
+  return (
+    <div>
+      <div
+        role={clickable ? "button" : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        onClick={clickable ? onOpen : undefined}
+        onKeyDown={
+          clickable
+            ? (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                  ev.preventDefault();
+                  onOpen();
+                }
+              }
+            : undefined
+        }
+        // ⚠️ 3A: the row you just logged flashes once. It lands in a DATE-SORTED
+        // list, so without this an hour logged on an old date appears somewhere
+        // off-screen with nothing to say so.
+        className={`group flex items-center gap-2.5 px-3 py-2 text-sm ${
+          clickable ? "cursor-pointer hover:bg-background" : ""
+        } ${e.id === freshEntryId ? "row-flash" : ""}`}
+      >
+        {onSelect && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onClick={(ev) => ev.stopPropagation()}
+            onChange={(ev) => onSelect(ev.target.checked)}
+            className="shrink-0"
+            title="Select for moving"
+          />
+        )}
+        {/* A recovered entry has no profile to draw, so the avatar falls back to a
+            dashed "?" — and its own tooltip has to carry the author, since an inner
+            title wins over a wrapper's. `author` is the stored provenance string
+            for rows that name nobody ("(from finance plan)"), which is still more
+            use than the word "Unassigned". */}
+        <Avatar
+          profile={user}
+          size={22}
+          emptyTitle={author || "Author not recorded — recovered history"}
+        />
+        <span
+          className={`w-14 shrink-0 text-xs ${e.dateEstimated ? "text-faint italic" : "text-muted"}`}
+          // The hours are the studio's own recorded figure; only the day is
+          // inferred. Showing it plainly would present a guess as a fact.
+          title={
+            e.dateEstimated
+              ? "Date estimated from this task's activity window — the hours are from the task's own recorded total"
+              : undefined
+          }
+        >
+          {formatDate(e.date)}
+          {e.dateEstimated ? "*" : ""}
+        </span>
+        <span className="w-14 shrink-0 font-medium tabular-nums">{formatHours(e.minutes)}</span>
+        <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
+          {e.description || <span className="text-faint italic">no description</span>}
+        </span>
+        {e.movedFromTaskId && (
+          <span
+            className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700"
+            title="Moved from another task"
+          >
+            moved
+          </span>
+        )}
+        {/* Hover-revealed: this list is read far more often than it is written
+            down from, and a lit control on every row competes with the hours.
+            ⚠️ Except while its OWN field is open — the pointer has usually left
+            the row by then, and a toggle that vanishes leaves the field looking
+            like it has no way back. */}
+        <span
+          className={`shrink-0 focus-within:opacity-100 group-hover:opacity-100 ${
+            keys.open ? "" : "opacity-0"
+          }`}
+        >
+          <KeysButton state={keys} label={false} />
+        </span>
+      </div>
+      <div className="px-3">
+        <KeysField state={keys} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The task-level write-down, in its own component because the pane returns early
+ * when it has no task and a hook may not be called after that.
+ */
+function TaskKeysControl({ taskId, entries }: { taskId: string; entries: TimeEntry[] }) {
+  const { profiles } = useData();
+  /**
+   * ⚠️ ITEMISED, NON-LEGACY, AUTHORED rows only. Recovered history has no real
+   * per-day meaning, and a row naming nobody cannot be written down against a
+   * person — so this can offer less than the headline total, which is correct:
+   * the headline includes the pre-Everhour remainder, and that is nobody's hours.
+   */
+  const byUser = new Map<string, number>();
+  for (const e of entries) {
+    if (e.legacy || !e.userId || e.minutes <= 0) continue;
+    byUser.set(e.userId, (byUser.get(e.userId) ?? 0) + e.minutes);
+  }
+  const options = [...byUser.entries()]
+    .map(([userId, minutes]) => ({
+      userId,
+      name: profiles.find((p) => p.id === userId)?.name ?? "Unknown",
+      minutes,
+    }))
+    .sort((a, b) => b.minutes - a.minutes);
+  const keys = useKeysTaskWriteDown({ taskId, options });
+  if (!keys.available) return null;
+  return (
+    <div className="min-w-0 flex-1">
+      <KeysTaskButton state={keys} />
+      <KeysTaskPanel state={keys} />
+    </div>
   );
 }

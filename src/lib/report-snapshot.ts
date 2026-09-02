@@ -11,10 +11,15 @@ import type {
 /**
  * Sun–Sat week buckets covering the given entries; only weeks that HAVE hours.
  *
- * `after` (exclusive) starts the walk on the day following it, so a run appended
- * to a hand-edited column list cannot overlap the column it follows. Only the
- * FIRST bucket can be partial that way; every later one lands on Sun–Sat again,
- * because the cursor moves to the day after a week's end.
+ * `cuts` are dates a column may not span INTO — see `periodCuts`. A week holding
+ * one is split there, so no column ever straddles a billing-period boundary.
+ *
+ * ⚠️ THESE ARE THE ONLY COLUMNS A REPORT HAS. There used to be a per-client
+ * hand-edited list on top (`report_links.custom_weeks`) and it is gone: once the
+ * periods cut the weeks, an override was a second way to say the same thing — one
+ * that could disagree with the periods, double-count an overlap, or freeze a
+ * client's timeline on the day somebody nudged a date. Move a period boundary to
+ * move a column break.
  *
  * ⚠️ THE CURSOR IS A `Date`, ADVANCED WITH THE CALENDAR-BASED `shiftDays`, AND IS
  * NEVER RE-DERIVED FROM A STRING. The version that froze this page for two hours
@@ -26,30 +31,41 @@ import type {
  */
 export function buildWeeks(
   entries: EntrySum[],
-  after?: string,
+  cuts: string[] = [],
 ): { label: string; from: string; to: string }[] {
-  const pool = after ? entries.filter((e) => e.date > after) : entries;
-  if (pool.length === 0) return [];
-  const dates = pool.map((e) => e.date).sort();
+  if (entries.length === 0) return [];
+  const dates = entries.map((e) => e.date).sort();
   const last = dates[dates.length - 1];
   const weeks: { label: string; from: string; to: string }[] = [];
 
-  let cur = after ? shiftDays(parseISO(after), 1) : startOfWeek(parseISO(dates[0]));
+  let cur = startOfWeek(parseISO(dates[0]));
   // `dates` is sorted and `from` only moves forward, so one pointer answers "does
   // this week hold hours?" for every bucket in a single pass. It used to be a
   // `pool.some(...)` rescan per week — 238 columns × several thousand entries.
   let i = 0;
+  const sortedCuts = [...cuts].sort();
   while (toISODate(cur) <= last) {
     const from = toISODate(cur);
-    // `startOfWeek` matters only on the first turn, when `after` can drop the
-    // cursor mid-week; from then on `cur` is already a Sunday by construction.
-    const end = shiftDays(startOfWeek(cur), 6);
-    const to = toISODate(end);
+    // `startOfWeek` matters after a period cut, which drops the cursor mid-week;
+    // otherwise `cur` is already a Sunday by construction.
+    const weekEnd = toISODate(shiftDays(startOfWeek(cur), 6));
+    /**
+     * ⚠️⚠️ A COLUMN STOPS AT A BILLING-PERIOD BOUNDARY. A period that ends
+     * mid-week used to leave one week column belonging to two periods at once —
+     * so the columns on screen could not add up to the period total beneath them
+     * (Visitt's January: 204h of visible columns against a 216.5h period), and
+     * the green Period column had to be computed by DATE to stay honest (v1.44.0).
+     * Splitting the bucket means the arithmetic agrees on both axes.
+     * ⚠️ The cursor then continues INSIDE the same week, so two cuts in one week
+     * produce three columns rather than swallowing the second.
+     */
+    const cut = sortedCuts.find((c) => c > from && c <= weekEnd);
+    const to = cut ? toISODate(shiftDays(parseISO(cut), -1)) : weekEnd;
     while (i < dates.length && dates[i] < from) i++;
     if (i < dates.length && dates[i] <= to) {
       weeks.push({ label: shortRangeLabel(from, to), from, to });
     }
-    cur = shiftDays(end, 1);
+    cur = shiftDays(parseISO(to), 1);
     // ⚠️ The cursor MUST move forward. It is correct that it does — `shiftDays` is
     // calendar-based — but this loop once ran forever on a date-arithmetic bug and
     // froze the whole tab for two hours with no console error and an idle CPU. A
@@ -63,6 +79,23 @@ export function buildWeeks(
 }
 
 /**
+ * The dates a week column may not run INTO: every period's first day, and the day
+ * after every period's last.
+ *
+ * ⚠️ BOTH ENDS, because periods need not be contiguous. Anchor's August ends 19/8
+ * while September starts 21/8, so 20 Aug belongs to no period at all — cutting
+ * only at each `dateFrom` would leave that orphan day inside the column before it.
+ */
+export function periodCuts(periods: BillingPeriod[]): string[] {
+  const cuts = new Set<string>();
+  for (const p of periods) {
+    cuts.add(p.dateFrom);
+    cuts.add(toISODate(shiftDays(parseISO(p.dateTo), 1)));
+  }
+  return [...cuts].sort();
+}
+
+/**
  * Freeze a client's approved hours into a snapshot for publishing.
  * Only billable tasks appear (keys/internal tasks are non-billable by
  * convention), and only if they have logged hours or an estimate.
@@ -73,8 +106,6 @@ export function buildReportSnapshot(
   tasks: Task[],
   entrySums: EntrySum[],
   periods: BillingPeriod[],
-  /** admin-edited column ranges; falls back to auto week buckets */
-  customWeeks?: { label: string; from: string; to: string }[] | null,
   /**
    * Inclusive cut-off: hours logged AFTER this date are left out of the report
    * entirely.
@@ -109,23 +140,10 @@ export function buildReportSnapshot(
     (e) => taskIds.has(e.taskId) && (!through || e.date <= through),
   );
   /**
-   * ⚠️ A HAND-EDITED COLUMN LIST IS AN OVERRIDE, NOT A FREEZE, and it used to be
-   * a freeze. `handleEditColumnDates` snapshots the whole rendered list into
-   * `report_links.custom_weeks`, so the first time anyone nudged one column's
-   * dates the report's timeline stopped at that day — for good. DualBird had 55
-   * stored columns ending in July while August already held 33h, and there was
-   * no way to add a column, so the work was simply unreportable.
-   * Now the stored list keeps its edits and the weeks after its last column are
-   * appended automatically, which also means the next date edit persists them.
+   * ⚠️ Sun–Sat weeks, cut at every billing-period boundary, and nothing else —
+   * see `buildWeeks` for why the hand-edited override was removed.
    */
-  // `reduce` rather than `at(-1)`, because a hand-edited list need not have stayed
-  // chronological. `""` seeds it: every ISO date sorts above it.
-  // A stored column that starts past the cut-off has nothing in it — see `through`.
-  const storedWeeks = (customWeeks ?? []).filter((w) => !through || w.from <= through);
-  const lastStored = storedWeeks.length
-    ? storedWeeks.reduce((max, w) => (w.to > max ? w.to : max), "")
-    : undefined;
-  const weeks = [...storedWeeks, ...buildWeeks(clientEntries, lastStored)];
+  const weeks = buildWeeks(clientEntries, periodCuts(sorted));
 
   for (const e of clientEntries) {
     totalByTask.set(e.taskId, (totalByTask.get(e.taskId) ?? 0) + e.minutes);

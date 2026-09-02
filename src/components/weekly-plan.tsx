@@ -725,6 +725,15 @@ function PlanCell({
 }) {
   const { movePlanEntryToCell } = useData();
   const [over, setOver] = useState(false);
+  /**
+   * Which chip the pointer is about to insert above, and whether it would land
+   * after it (dropped on its lower half).
+   *
+   * ⚠️ Kept per CELL rather than per chip so only one insertion line can ever be
+   * showing — a line under one chip and above the next describes the same slot
+   * twice.
+   */
+  const [at, setAt] = useState<{ id: string; after: boolean } | null>(null);
 
   const hasAbsence = entries.some((e) => e.type === "absence");
   const target: CellTarget = { date, columnId, label };
@@ -738,12 +747,18 @@ function PlanCell({
             setOver(true);
           }
         },
-        onDragLeave: () => setOver(false),
+        onDragLeave: () => {
+          setOver(false);
+          setAt(null);
+        },
         onDrop: (e: DragEvent) => {
           e.preventDefault();
           setOver(false);
+          setAt(null);
           const id = e.dataTransfer.getData("text/plan-entry");
-          // dropping into someone else's column also reassigns the task to them
+          // dropping on the cell's empty space appends; dropping on a chip is
+          // handled by the chip itself, which stops this from firing too
+          // ⚠️ dropping into someone else's column also reassigns the task to them
           if (id) movePlanEntryToCell(id, { date, columnId });
         },
       }
@@ -780,7 +795,59 @@ function PlanCell({
       {entries
         .filter((e) => e.type !== "absence")
         .map((e) => (
-          <div key={e.id} className="relative z-10">
+          <div
+            key={e.id}
+            className="relative z-10"
+            // ⚠️ Each chip is its own drop target, which is the whole fix for
+            // "dragging within a day only works downwards": the cell-level drop
+            // appends, so an upward drag landed back at the bottom. The top/bottom
+            // half of the chip decides which side of it the entry goes.
+            onDragOver={
+              canEdit
+                ? (ev) => {
+                    if (!ev.dataTransfer.types.includes("text/plan-entry")) return;
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.dataTransfer.dropEffect = "move";
+                    const box = ev.currentTarget.getBoundingClientRect();
+                    setOver(false);
+                    setAt({ id: e.id, after: ev.clientY > box.top + box.height / 2 });
+                  }
+                : undefined
+            }
+            onDrop={
+              canEdit
+                ? (ev) => {
+                    ev.preventDefault();
+                    // ⚠️ or the cell's own handler runs straight after and appends
+                    // the entry we have just placed.
+                    ev.stopPropagation();
+                    const id = ev.dataTransfer.getData("text/plan-entry");
+                    const drop = at;
+                    setAt(null);
+                    setOver(false);
+                    if (!id || id === e.id) return;
+                    // "after this chip" is "before the one below it"; nothing below
+                    // means append, which is what a null anchor does.
+                    const list = entries.filter((x) => x.type !== "absence");
+                    const i = list.findIndex((x) => x.id === e.id);
+                    const anchor =
+                      drop?.after
+                        ? (list.slice(i + 1).find((x) => x.id !== id)?.id ?? null)
+                        : e.id;
+                    movePlanEntryToCell(id, { date, columnId }, { beforeId: anchor });
+                  }
+                : undefined
+            }
+          >
+            {/* where it will land, drawn in the gap rather than on the chip */}
+            {at?.id === e.id && (
+              <span
+                className={`pointer-events-none absolute inset-x-0 z-20 h-0.5 rounded-full bg-brand ${
+                  at.after ? "-bottom-1" : "-top-1"
+                }`}
+              />
+            )}
             <EntryChip
               entry={e}
               canEdit={canEdit}

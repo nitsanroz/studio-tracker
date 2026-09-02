@@ -15,6 +15,15 @@ import { useMemberPortraits } from "@/lib/use-member-portraits";
 import { Tabs } from "@/components/ui";
 import { PeriodStepper } from "@/components/period-stepper";
 import { PercentRing } from "@/components/charts";
+import {
+  addEntry,
+  billablePct as billableShare,
+  keysPct,
+  keysTaskIds,
+  newSplit,
+  splitTitle,
+  type HoursSplit,
+} from "@/lib/hours-split";
 import { MemberTable, type MemberRow } from "./member-table";
 
 type Layout = "cards" | "table";
@@ -140,9 +149,9 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 
 // ── page ────────────────────────────────────────────────────────────────────
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card" title={title}>
       <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
       <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
     </div>
@@ -150,7 +159,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function TeamPage() {
-  const { profiles, tasks, entrySumsAll } = useData();
+  const { profiles, tasks, entrySumsAll, clients } = useData();
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
   const [showDeactivated, setShowDeactivated] = useState(false);
@@ -191,7 +200,10 @@ export default function TeamPage() {
 
   const statsByUser = useMemo(() => {
     const billableTaskIds = new Set(tasks.filter((t) => t.billable).map((t) => t.id));
-    const map = new Map<string, { total: number; billable: number }>();
+    // ⚠️ Keys hours are the slice of the NON-billable part that was written down
+    // before a client report — see lib/hours-split.ts for why it earns a colour.
+    const keysIds = keysTaskIds(clients);
+    const map = new Map<string, HoursSplit>();
     // entrySumsAll, not entrySums: a member page is a HISTORICAL record, so it
     // should show the pre-Everhour hours too — that is the whole point of having
     // former staff here. The home page keeps using the legacy-free list, so
@@ -199,31 +211,49 @@ export default function TeamPage() {
     for (const e of entrySumsAll) {
       if (range && (e.date < range.from || e.date > range.to)) continue;
       if (!e.userId) continue; // recovered row whose author has no profile at all
-      const row = map.get(e.userId) ?? { total: 0, billable: 0 };
-      row.total += e.minutes;
-      if (billableTaskIds.has(e.taskId)) row.billable += e.minutes;
-      map.set(e.userId, row);
+      map.set(
+        e.userId,
+        addEntry(map.get(e.userId) ?? newSplit(), e.minutes, {
+          billable: billableTaskIds.has(e.taskId),
+          keys: keysIds.has(e.taskId),
+        }),
+      );
     }
     return map;
-  }, [entrySumsAll, tasks, range]);
+  }, [entrySumsAll, tasks, clients, range]);
 
   const activeMembers = useMemo(() => profiles.filter((p) => p.active), [profiles]);
 
   const teamStats = useMemo(() => {
     // aggregate over active members only, so the row matches the panel below
-    let total = 0;
-    let billable = 0;
+    /**
+     * ⚠️ ADMINS ARE OUT OF THE BILLABLE SHARE, not just off their own cards.
+     * Nitsan's call, and the tile is the reason it matters: an admin logs almost
+     * entirely internal time, so leaving them in the denominator drags the
+     * studio's headline share down by a fact about the people who don't do
+     * client work. Their HOURS still count in the total beside it, which is why
+     * `all.total` and the share are accumulated separately.
+     */
+    const all = newSplit();
+    let hours = 0;
     for (const p of activeMembers) {
       const s = statsByUser.get(p.id);
       if (!s) continue;
-      total += s.total;
-      billable += s.billable;
+      hours += s.total;
+      if (p.role === "admin") continue;
+      all.total += s.total;
+      all.billable += s.billable;
+      all.keys += s.keys;
+      all.other += s.other;
     }
     return {
-      total,
-      billablePct: total > 0 ? Math.round((billable / total) * 100) : null,
+      total: hours,
+      split: all,
+      billablePct: billableShare(all),
       activeCount: activeMembers.length,
-      avgPerMember: activeMembers.length > 0 ? total / activeMembers.length : 0,
+      // ⚠️ Still per MEMBER, admins included — this one is about how much the
+      // studio logged per head, not about billability.
+      avgPerMember: activeMembers.length > 0 ? hours / activeMembers.length : 0,
     };
   }, [statsByUser, activeMembers]);
 
@@ -251,7 +281,14 @@ export default function TeamPage() {
     return {
       profile: p,
       minutes: st?.total ?? 0,
-      billablePct: st && st.total > 0 ? Math.round((st.billable / st.total) * 100) : null,
+      // ⚠️ null for an admin, not 0 — see the strip on the admin home for why the
+      // share is withheld for them while the hours stay.
+      billablePct: p.role === "admin" ? null : st ? billableShare(st) : null,
+      keysPct: st ? keysPct(st) : 0,
+      splitTitle:
+        p.role === "admin"
+          ? "Admins aren't measured on billable share"
+          : splitTitle(st ?? newSplit(), p.name),
       openTasks: activeTaskByUser.get(p.id) ?? 0,
       email: memberEmails[p.id],
       tenure: p.startDate ? tenureShort(p.startDate) : null,
@@ -329,6 +366,7 @@ export default function TeamPage() {
         <Stat
           label="Billable share"
           value={teamStats.billablePct == null ? "–" : `${teamStats.billablePct}%`}
+          title={`Designers only — admins are left out. ${splitTitle(teamStats.split)}`}
         />
         <Stat label="Active members" value={String(teamStats.activeCount)} />
         <Stat label="Avg hours / member" value={formatHoursAvg(teamStats.avgPerMember)} />
@@ -342,7 +380,7 @@ export default function TeamPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {team.map((p) => {
           const s = statsByUser.get(p.id);
-          const pct = s && s.total > 0 ? Math.round((s.billable / s.total) * 100) : null;
+          const pct = p.role === "admin" ? null : s ? billableShare(s) : null;
           const openTasks = activeTaskByUser.get(p.id) ?? 0;
           const email = memberEmails[p.id];
           return (
@@ -401,14 +439,24 @@ export default function TeamPage() {
                     <div className="text-base font-semibold tabular-nums">{openTasks}</div>
                     <div className="text-[10px] text-muted">Tasks</div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {pct == null ? (
-                      <span className="text-base font-semibold tabular-nums text-muted">–</span>
-                    ) : (
-                      <PercentRing pct={pct} size={38} label={`${pct}% billable`} />
-                    )}
-                    <div className="text-[10px] text-muted">Billable</div>
-                  </div>
+                  {/* ⚠️ Absent entirely for an admin rather than showing a dash:
+                      a dash in a labelled "Billable" slot reads as missing data,
+                      when the truth is that the figure does not apply. */}
+                  {p.role !== "admin" && (
+                    <div className="flex items-center gap-1.5">
+                      {pct == null ? (
+                        <span className="text-base font-semibold tabular-nums text-muted">–</span>
+                      ) : (
+                        <PercentRing
+                          pct={pct}
+                          keys={keysPct(s ?? newSplit())}
+                          size={38}
+                          label={splitTitle(s ?? newSplit(), p.name)}
+                        />
+                      )}
+                      <div className="text-[10px] text-muted">Billable</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Link>

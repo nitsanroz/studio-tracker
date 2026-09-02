@@ -307,8 +307,14 @@ export interface ReportLink {
   publishedAt: string | null;
   hiddenColumns: string[];
   hiddenTaskIds: string[];
-  /** admin-edited column date ranges; null = auto week buckets */
-  customWeeks: { label: string; from: string; to: string }[] | null;
+  /**
+   * ⚠️ `report_links.custom_weeks` IS NO LONGER READ, and the column is left in
+   * the database on purpose rather than dropped: four clients still carry a stored
+   * list (Baseline 143 columns, DualBird 60, Visitt 30, Anchor 6) and it is the
+   * only record of the hand-edited columns their older PUBLISHED snapshots were
+   * built with. Report columns are now Sun–Sat weeks cut at every billing-period
+   * boundary and nothing else — see `buildWeeks`.
+   */
   /**
    * The day this report's hours were counted up to, inclusive; null = everything.
    *

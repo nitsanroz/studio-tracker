@@ -3,8 +3,15 @@
 import { useEffect, useState } from "react";
 import { formatHoursShort, formatDayMonth } from "@/lib/format";
 import { useData } from "@/lib/store";
-import { formatHoursDecimal } from "@/lib/format";
 import { Avatar } from "@/components/ui";
+import {
+  useKeysWriteDown,
+  KeysButton,
+  KeysField,
+  useKeysTaskWriteDown,
+  KeysTaskButton,
+  KeysTaskPanel,
+} from "@/components/keys-write-down";
 import type { InspectableCell } from "@/components/report-table";
 import type { TimeEntry } from "@/lib/types";
 
@@ -26,30 +33,16 @@ const GAP = 8;
 export function CellInspector({
   cell,
   rect,
-  keysTaskId,
   onEnter,
   onLeave,
 }: {
   cell: InspectableCell;
   /** the hovered cell's box, in viewport coordinates */
   rect: DOMRect;
-  /**
-   * The client's Keys task, or null when none is set — see `Client.keysTaskId`.
-   *
-   * ⚠️ Null HIDES the write-down entirely rather than disabling it: an admin who
-   * has not chosen a keys task has nowhere for the hours to go, and a control that
-   * explains itself only after a click is worse than one that is not there.
-   * ⚠️ Also null when the hovered cell IS the keys task, since writing keys hours
-   * down to themselves is a no-op the caller must not offer.
-   */
-  keysTaskId: string | null;
   onEnter: () => void;
   onLeave: () => void;
 }) {
-  const { profiles, loadCellEntries, writeDownToKeys } = useData();
-  /** which entry's write-down field is open, and what has been typed into it */
-  const [writing, setWriting] = useState<{ id: string; hours: string } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { profiles, loadCellEntries } = useData();
   const key = `${cell.taskId}|${cell.from}|${cell.to}`;
   const [loaded, setLoaded] = useState<{ key: string; rows: TimeEntry[] } | null>(null);
   /**
@@ -111,25 +104,19 @@ export function CellInspector({
   const total = split.reduce((n, s) => n + s.minutes, 0);
 
   /**
-   * ⚠️⚠️ THE TYPED FIGURE IS HOURS AND THE STORE TAKES MINUTES — and the rounding
-   * is where a write-down would otherwise lie. `1.6` hours is 96 minutes exactly;
-   * a value that does not land on a whole minute is REFUSED rather than rounded,
-   * because rounding down under-bills the studio by a minute a time and rounding up
-   * over-bills the client, and neither is a decision this field should make quietly.
+   * The card-level write-down, scoped to THIS CELL's dates — so "two of Nadav's
+   * hours that week" cannot quietly reach into a different week's rows.
+   * ⚠️ Fed from `split`, the same figures drawn on the bar above it, so the picker
+   * can never offer hours the card is not showing.
    */
-  const commitWriteDown = async (e: TimeEntry) => {
-    if (!keysTaskId || !writing || busy) return;
-    const hours = Number(writing.hours.trim());
-    const minutes = hours * 60;
-    if (!Number.isFinite(hours) || hours <= 0 || !Number.isInteger(minutes) || minutes > e.minutes) return;
-    setBusy(true);
-    const ok = await writeDownToKeys(e.id, minutes, keysTaskId);
-    setBusy(false);
-    if (ok) {
-      setWriting(null);
-      setReloads((n) => n + 1);
-    }
-  };
+  const taskKeys = useKeysTaskWriteDown({
+    taskId: cell.taskId,
+    options: split
+      .filter((s) => s.userId)
+      .map((s) => ({ userId: s.userId as string, name: s.name, minutes: s.minutes })),
+    range: { from: cell.from, to: cell.to },
+    onMoved: () => setReloads((n) => n + 1),
+  });
 
   /**
    * ⚠️ FLIPPED RATHER THAN CLIPPED. These cells sit in a horizontally scrolling
@@ -207,78 +194,20 @@ export function CellInspector({
             ))}
           </ul>
 
+          {taskKeys.available && (
+            <div className="mt-2">
+              <KeysTaskButton state={taskKeys} />
+              <KeysTaskPanel state={taskKeys} />
+            </div>
+          )}
+
           {/* The rows themselves. ⚠️ Scrolls at a fixed height rather than growing:
               a task with forty entries in one week would otherwise make a card
               taller than the screen, which cannot be scrolled to on hover. */}
           <div className="mt-2.5 max-h-40 overflow-y-auto border-t border-border pt-2">
             <ul className="flex flex-col gap-1.5">
               {(entries ?? []).map((e) => (
-                <li key={e.id} className="text-[11px] leading-snug">
-                  <div className="flex items-baseline gap-2">
-                    <span className="shrink-0 text-faint">{formatDayMonth(e.date)}</span>
-                    <span className="min-w-0 flex-1 truncate font-medium">
-                      {profiles.find((p) => p.id === e.userId)?.name ??
-                        e.legacyAuthorName ??
-                        "Unknown"}
-                    </span>
-                    <span className="shrink-0 tabular-nums">{formatHoursShort(e.minutes)}</span>
-                    {/* ⚠️ Per ROW, not per cell, and that is the whole point: a
-                        write-down is "this person's four hours on Tuesday were
-                        slow", and a cell-level control would make the studio
-                        choose whose hours to cut after the fact. */}
-                    {keysTaskId && (
-                      <button
-                        onClick={() =>
-                          setWriting((w) =>
-                            w?.id === e.id
-                              ? null
-                              : { id: e.id, hours: formatHoursDecimal(e.minutes) },
-                          )
-                        }
-                        title="Move some of these hours to the client's Keys task, so they are not billed"
-                        className={`shrink-0 rounded px-1 text-[10px] font-semibold ${
-                          writing?.id === e.id
-                            ? "bg-brand text-white"
-                            : "text-faint hover:bg-background hover:text-brand"
-                        }`}
-                      >
-                        keys
-                      </button>
-                    )}
-                  </div>
-                  {writing?.id === e.id && (
-                    <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-background px-1.5 py-1">
-                      <input
-                        autoFocus
-                        value={writing.hours}
-                        onChange={(ev) => setWriting({ id: e.id, hours: ev.target.value })}
-                        onKeyDown={(ev) => {
-                          if (ev.key === "Escape") setWriting(null);
-                          if (ev.key === "Enter") void commitWriteDown(e);
-                        }}
-                        className="w-12 rounded border border-border bg-surface px-1 py-0.5 text-right text-[11px] tabular-nums outline-none focus:border-brand"
-                      />
-                      <span className="text-[10px] text-muted">
-                        h of {formatHoursDecimal(e.minutes)} → Keys
-                      </span>
-                      <button
-                        onClick={() => void commitWriteDown(e)}
-                        disabled={busy}
-                        className="ml-auto rounded-md bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white disabled:opacity-50"
-                      >
-                        {busy ? "Moving…" : "Move"}
-                      </button>
-                    </div>
-                  )}
-                  {/* ⚠️ Not truncated to one line: the description is the reason to
-                      open this card at all, and "Fixed the thing the client asked
-                      about on…" cut at 40 characters answers nothing. */}
-                  {e.description?.trim() ? (
-                    <div className="text-muted">{e.description}</div>
-                  ) : (
-                    <div className="text-faint">no description</div>
-                  )}
-                </li>
+                <InspectorLogRow key={e.id} entry={e} onMoved={() => setReloads((n) => n + 1)} />
               ))}
             </ul>
           </div>
@@ -297,3 +226,44 @@ export function CellInspector({
  * off the card rather than remembered.
  */
 const BAR = ["bg-brand", "bg-brand-dark", "bg-success", "bg-warning", "bg-faint"];
+
+/**
+ * One log row: day, who, hours, and the write-down.
+ *
+ * Its own component because `useKeysWriteDown` is a hook and these rows are a
+ * `map` — and because each row's field has to open independently of its
+ * neighbours.
+ */
+function InspectorLogRow({ entry, onMoved }: { entry: TimeEntry; onMoved: () => void }) {
+  const { profiles } = useData();
+  /**
+   * ⚠️ The card RE-READS after a move rather than patching its rows: a split
+   * changes one row here and adds another on a different task, and a hand-patched
+   * list would disagree with the cell's own total until the next poll.
+   */
+  const keys = useKeysWriteDown(entry, onMoved);
+  return (
+    <li className="text-[11px] leading-snug">
+      <div className="flex items-baseline gap-2">
+        <span className="shrink-0 text-faint">{formatDayMonth(entry.date)}</span>
+        <span className="min-w-0 flex-1 truncate font-medium">
+          {profiles.find((p) => p.id === entry.userId)?.name ?? entry.legacyAuthorName ?? "Unknown"}
+        </span>
+        <span className="shrink-0 tabular-nums">{formatHoursShort(entry.minutes)}</span>
+        {/* ⚠️ Per ROW, not per cell, and that is the whole point: a write-down is
+            "this person's four hours on Tuesday were slow", and a cell-level
+            control would make the studio choose whose hours to cut afterwards. */}
+        <KeysButton state={keys} label={false} />
+      </div>
+      <KeysField state={keys} />
+      {/* ⚠️ Not truncated to one line: the description is the reason to open this
+          card at all, and "Fixed the thing the client asked about on…" cut at 40
+          characters answers nothing. */}
+      {entry.description?.trim() ? (
+        <div className="text-muted">{entry.description}</div>
+      ) : (
+        <div className="text-faint">no description</div>
+      )}
+    </li>
+  );
+}

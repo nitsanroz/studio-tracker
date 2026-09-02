@@ -10,6 +10,7 @@ import { loggableMembers } from "@/lib/members";
 import { formatHoursShort, parseDuration } from "@/lib/format";
 import { Modal, ModalClose } from "./ui";
 import { LogTimeForm } from "./log-time-form";
+import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
 
 /** Who may change an entry at all. Also re-asserted inside, never trusted from the caller. */
@@ -47,6 +48,28 @@ export function TimeEntryModal({
   const [description, setDescription] = useState(entry?.description ?? "");
   const [date, setDate] = useState(entry?.date ?? "");
   const [userId, setUserId] = useState(entry?.userId ?? currentUserId);
+  /**
+   * ⚠️ Called BEFORE the `!entry` early return, as hooks must be — the hook takes
+   * a null entry and simply reports itself unavailable.
+   * ⚠️ On a successful move the modal CLOSES rather than re-rendering with a
+   * corrected figure: the entry's minutes have changed underneath the fields, and
+   * an editor still showing the old duration would write it straight back on Save.
+   * `onSaved` carries the new figure out for the one caller that holds its own copy
+   * of the row (the reports page's period list).
+   */
+  const keys = useKeysWriteDown(
+    entry,
+    (moved) => {
+      if (!entry) return;
+      onSaved?.({
+        minutes: entry.minutes - moved,
+        description: entry.description,
+        date: entry.date,
+      });
+      onClose();
+    },
+    "md",
+  );
 
   if (!entry) {
     return (
@@ -155,6 +178,19 @@ export function TimeEntryModal({
           />
         </label>
       </div>
+
+      {keys.available && (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="w-20 shrink-0 text-muted">Keys</span>
+            <KeysButton state={keys} />
+            <span className="min-w-0 flex-1 text-xs text-muted">
+              Move hours to {keys.keysTaskTitle} so they are not billed
+            </span>
+          </div>
+          <KeysField state={keys} />
+        </div>
+      )}
 
       {editable && (
         <div className="mt-4 flex items-center justify-between">

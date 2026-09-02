@@ -97,7 +97,6 @@ describe("canonicalReportLink", () => {
       publishedAt: null,
       hiddenColumns: [],
       hiddenTaskIds: [],
-      customWeeks: null,
       viewFlags: null,
       ...over,
     }) as ReportLink;

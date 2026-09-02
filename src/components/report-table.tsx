@@ -67,9 +67,14 @@ type ReportTask = ReportSnapshot["sections"][number]["tasks"][number];
  * a title row above the dates names the period.
  * `editable` shows hide/show toggles (admin preview); otherwise hidden
  * rows/columns are simply not rendered unless `revealHidden` is true.
- * `periodsEditable` additionally allows editing column dates, creating a
- * period divider (hover plus between column titles) and dragging an existing
- * divider to another column.
+ * `periodsEditable` additionally allows creating a period divider (hover plus
+ * between column titles) and dragging an existing divider to another column.
+ *
+ * ⚠️ COLUMN DATES ARE NOT EDITABLE, and that is deliberate as of the release that
+ * removed it: the columns are Sun–Sat weeks CUT AT EVERY BILLING-PERIOD BOUNDARY,
+ * so the periods already shape them and a second, per-client override was one more
+ * way to say the same thing — one that could also be wrong. Editing a period's
+ * dates is the way to change where a column breaks.
  */
 export function ReportTable({
   snapshot,
@@ -85,7 +90,6 @@ export function ReportTable({
   onAddBoundary,
   onMoveBoundary,
   onTogglePeriodHidden,
-  onEditColumnDates,
   clientCutoff,
   periodIndex = null,
   onInspectCell,
@@ -115,7 +119,6 @@ export function ReportTable({
   /** batch hide/show all column keys of a period */
   onTogglePeriodHidden?: (keys: string[], hide: boolean) => void;
   /** change a column's date range */
-  onEditColumnDates?: (colIndex: number, patch: { from: string; to: string }) => void;
   /**
    * The CLIENT's cut-off date, when this table is the editor's preview.
    *
@@ -156,7 +159,6 @@ export function ReportTable({
   onInspectCell?: (cell: InspectableCell, rect: DOMRect) => void;
   onLeaveCell?: () => void;
 }) {
-  const [editingCol, setEditingCol] = useState<number | null>(null);
   const hiddenCols = new Set(hiddenColumns);
   const hiddenTasks = new Set(hiddenTaskIds);
   const showCol = (key: string) => editable || revealHidden || !hiddenCols.has(key);
@@ -770,44 +772,10 @@ export function ReportTable({
                   clientSeesLess(p.to)
                     ? ` — the client's copy is cut off at ${clientCutoff}, so it holds fewer hours than this`
                     : ""
-                }${periodsEditable ? " — click the dates to edit this column's range" : ""}`}
+                }`}
                 {...dropProps(p.index)}
               >
-                {periodsEditable && editingCol === p.index ? (
-                  <span
-                    className="flex flex-col items-end gap-0.5"
-                    onBlur={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget as Node | null))
-                        setEditingCol(null);
-                    }}
-                    onKeyDown={(e) => e.key === "Escape" && setEditingCol(null)}
-                  >
-                    <input
-                      type="date"
-                      autoFocus
-                      defaultValue={p.from}
-                      onChange={(e) =>
-                        e.target.value && onEditColumnDates?.(p.index, { from: e.target.value, to: p.to })
-                      }
-                      className="rounded border border-border bg-surface px-1 py-0.5 text-[10px] font-normal normal-case tracking-normal outline-none focus:border-brand"
-                    />
-                    <input
-                      type="date"
-                      defaultValue={p.to}
-                      onChange={(e) =>
-                        e.target.value && onEditColumnDates?.(p.index, { from: p.from, to: e.target.value })
-                      }
-                      className="rounded border border-border bg-surface px-1 py-0.5 text-[10px] font-normal normal-case tracking-normal outline-none focus:border-brand"
-                    />
-                  </span>
-                ) : (
-                  <span
-                    onClick={() => periodsEditable && setEditingCol(p.index)}
-                    className={periodsEditable ? "cursor-pointer rounded px-0.5 hover:bg-background" : ""}
-                  >
-                    {p.label}
-                  </span>
-                )}
+                <span>{p.label}</span>
                 {/* ⚠️ A tooltip alone is not enough here — this column's hours are
                     in the preview's Total but not in the client's. Say so on the
                     face of it. */}

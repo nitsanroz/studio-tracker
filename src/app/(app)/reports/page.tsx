@@ -28,6 +28,7 @@ import { LogTimeForm } from "@/components/log-time-form";
 import { TimeEntryModal } from "@/components/time-entry-modal";
 import { PeriodStepper } from "@/components/period-stepper";
 import { HBar, MultiLineChart, SplitBar } from "@/components/charts";
+import { keysTaskIds, splitTitle, type HoursSplit } from "@/lib/hours-split";
 
 interface ReportEntry {
   id: string; // "" for rows added locally this session (not editable until reload)
@@ -199,12 +200,30 @@ function TaskHoursModal({
 function RangeStats({
   enriched,
   profiles,
+  clients,
 }: {
   enriched: (ReportEntry & { task?: { billable: boolean } })[];
   profiles: ReturnType<typeof useData>["profiles"];
+  /**
+   * ⚠️ The CLIENTS, not a ready-made Set of keys task ids. A `Set` held in a
+   * `useMemo` and threaded around made the React Compiler refuse to preserve the
+   * memo below it — so the whole period re-aggregated on every render. Each memo
+   * builds its own set from this array instead; it is a dozen entries.
+   */
+  clients: ReturnType<typeof useData>["clients"];
 }) {
-  const total = enriched.reduce((s, e) => s + e.minutes, 0);
-  const billable = enriched.reduce((s, e) => s + (e.task?.billable ? e.minutes : 0), 0);
+  const { total, billable, keysMinutes } = useMemo(() => {
+    const keysIds = keysTaskIds(clients);
+    let total = 0;
+    let billable = 0;
+    let keysMinutes = 0;
+    for (const e of enriched) {
+      total += e.minutes;
+      if (e.task?.billable) billable += e.minutes;
+      else if (keysIds.has(e.task_id)) keysMinutes += e.minutes;
+    }
+    return { total, billable, keysMinutes };
+  }, [enriched, clients]);
   const productivity = total > 0 ? Math.round((billable / total) * 100) : null;
 
   const byUser = useMemo(() => {
@@ -212,24 +231,40 @@ function RangeStats({
     // long before the current roster). Dropping them — as a `.filter(r => r.profile)`
     // used to — left their hours in the period total but missing from these bars, so
     // the breakdown silently failed to add up. They are grouped by their raw name.
-    const map = new Map<string, { minutes: number; billable: number }>();
+    /**
+     * ⚠️ Accumulated in place with plain fields rather than through
+     * `addEntry` — the React Compiler could not preserve this `useMemo` when the
+     * loop body allocated a new split per entry ("existing memoization could not
+     * be preserved"), which would re-aggregate a whole period on every render.
+     * The split is assembled once, below, where it is actually needed.
+     */
+    const keysIds = keysTaskIds(clients);
+    const map = new Map<string, { minutes: number; billable: number; keys: number }>();
     for (const e of enriched) {
       const key = e.user_id ?? `name:${e.legacy_author_name || "Unknown"}`;
-      const row = map.get(key) ?? { minutes: 0, billable: 0 };
+      const row = map.get(key) ?? { minutes: 0, billable: 0, keys: 0 };
       row.minutes += e.minutes;
       if (e.task?.billable) row.billable += e.minutes;
+      else if (keysIds.has(e.task_id)) row.keys += e.minutes;
       map.set(key, row);
     }
     return [...map.entries()]
       .map(([id, v]) => ({
         profile: id.startsWith("name:") ? undefined : profiles.find((p) => p.id === id),
         formerName: id.startsWith("name:") ? id.slice(5) : null,
-        ...v,
+        split: {
+          total: v.minutes,
+          billable: v.billable,
+          keys: v.keys,
+          other: v.minutes - v.billable - v.keys,
+        } satisfies HoursSplit,
+        minutes: v.minutes,
+        billable: v.billable,
       }))
       .filter((r) => r.profile || r.formerName)
       .sort((a, b) => b.minutes - a.minutes)
       .slice(0, 6);
-  }, [enriched, profiles]);
+  }, [enriched, profiles, clients]);
   const maxUser = byUser[0]?.minutes ?? 0;
 
   // per-day within short ranges, per-month otherwise
@@ -261,11 +296,26 @@ function RangeStats({
           billable share in this period
         </div>
         <div className="mt-2">
-          <SplitBar billable={billable} nonBillable={total - billable} maxMinutes={total} />
+          <SplitBar
+            billable={billable}
+            nonBillable={total - billable}
+            keys={keysMinutes}
+            maxMinutes={total}
+            title={splitTitle({
+              total,
+              billable,
+              keys: keysMinutes,
+              other: total - billable - keysMinutes,
+            })}
+          />
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-faint">
           <span>{formatHoursShort(billable)} billable</span>
-          <span>{formatHoursShort(total - billable)} non-bill.</span>
+          {/* named out loud rather than left as a colour to decode */}
+          {keysMinutes > 0 && (
+            <span className="text-danger">{formatHoursShort(keysMinutes)} keys</span>
+          )}
+          <span>{formatHoursShort(total - billable - keysMinutes)} non-bill.</span>
         </div>
       </div>
 
@@ -296,18 +346,25 @@ function RangeStats({
         >
           Hours by user
         </h3>
-        {byUser.map(({ profile, formerName, minutes, billable }) => (
+        {byUser.map(({ profile, formerName, minutes, billable, split }) => (
           <HBar
             key={profile?.id ?? `former:${formerName}`}
             // solid blue = billable, washed-out blue tail = non-billable; the exact
             // hours live in the segment tooltips rather than crowding the row
+            // ⚠️ An admin gets HBar's own plain bar: no split, because a billable
+            // share computed over an admin's few internal entries says nothing
+            // true about them. Their hours are still drawn at full length.
             bar={
-              <SplitBar
-                billable={billable}
-                nonBillable={minutes - billable}
-                maxMinutes={maxUser}
-                tone="blue"
-              />
+              profile?.role === "admin" ? undefined : (
+                <SplitBar
+                  billable={billable}
+                  nonBillable={minutes - billable}
+                  keys={split.keys}
+                  maxMinutes={maxUser}
+                  tone="blue"
+                  title={splitTitle(split, profile?.name ?? formerName ?? undefined)}
+                />
+              )
             }
             label={
               profile ? (
@@ -324,7 +381,11 @@ function RangeStats({
             }
             right={
               <span
-                title={`${formatHoursShort(billable)} billable · ${formatHoursShort(minutes - billable)} non-billable · ${formatHoursShort(minutes)} total`}
+                title={
+                  profile?.role === "admin"
+                    ? `${formatHoursShort(minutes)} — admins aren't measured on billable share`
+                    : splitTitle(split, profile?.name ?? formerName ?? undefined)
+                }
               >
                 {formatHoursShort(minutes)}
               </span>
@@ -416,17 +477,20 @@ export default function ReportsPage() {
   }, [entries, taskById, clientById, clientFilter, designerFilter, billableFilter]);
 
   const byClient = useMemo(() => {
-    const map = new Map<string, { billable: number; total: number }>();
+    // ⚠️ Built here rather than shared from a memo — see RangeStats' `clients` prop
+    const keysIds = keysTaskIds(clients);
+    const map = new Map<string, { billable: number; total: number; keys: number }>();
     for (const e of enriched) {
-      const row = map.get(e.client!.id) ?? { billable: 0, total: 0 };
+      const row = map.get(e.client!.id) ?? { billable: 0, total: 0, keys: 0 };
       row.total += e.minutes;
       if (e.task?.billable) row.billable += e.minutes;
+      else if (keysIds.has(e.task_id)) row.keys += e.minutes;
       map.set(e.client!.id, row);
     }
     return [...map.entries()]
       .map(([id, v]) => ({ client: clientById.get(id)!, ...v }))
       .sort((a, b) => b.total - a.total);
-  }, [enriched, clientById]);
+  }, [enriched, clientById, clients]);
 
   /** client → sections → tasks with minutes (for expanded rows). */
   const clientBreakdown = useMemo(() => {
@@ -597,7 +661,7 @@ export default function ReportsPage() {
               Client
             </span>
           </span>
-          <span className="w-40" title="Billable (blue) vs non-billable (grey) hours">
+          <span className="w-40" title="Billable (blue), written down to Keys (red), other non-billable (grey)">
             Billable split
           </span>
           <span className="w-20 text-right" title="Hours on billable tasks in the range">
@@ -610,7 +674,7 @@ export default function ReportsPage() {
             Total
           </span>
         </div>
-        {byClient.map(({ client, billable, total }) => {
+        {byClient.map(({ client, billable, total, keys }) => {
           const isOpen = expanded.has(client.id);
           const breakdown = clientBreakdown.get(client.id);
           return (
@@ -636,7 +700,12 @@ export default function ReportsPage() {
                   <SplitBar
                     billable={billable}
                     nonBillable={total - billable}
+                    keys={keys}
                     maxMinutes={maxClientTotal}
+                    title={splitTitle(
+                      { total, billable, keys, other: total - billable - keys },
+                      client.name,
+                    )}
                   />
                 </span>
                 <span className="w-20 text-right font-medium tabular-nums">
@@ -712,7 +781,7 @@ export default function ReportsPage() {
 
       {/* ── stats for the selected period + filters ── */}
       <div className="w-full shrink-0 lg:w-[360px]">
-        <RangeStats enriched={enriched} profiles={profiles} />
+        <RangeStats enriched={enriched} profiles={profiles} clients={clients} />
       </div>
       </div>
 

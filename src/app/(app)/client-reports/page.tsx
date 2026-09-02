@@ -600,7 +600,6 @@ function PublishWorkspace() {
   useEffect(() => clearInspectTimer, []);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [hiddenTaskIds, setHiddenTaskIds] = useState<string[]>([]);
-  const [customWeeks, setCustomWeeks] = useState<{ label: string; from: string; to: string }[] | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -755,7 +754,6 @@ function PublishWorkspace() {
     const link = links.get(selectedClient.id);
     setHiddenColumns(link?.hiddenColumns ?? []);
     setHiddenTaskIds(link?.hiddenTaskIds ?? []);
-    setCustomWeeks(link?.customWeeks ?? null);
     // ⚠️⚠️ SEED ONLY, NEVER OVERWRITE — see `views`. A link published before hands
     // the draft its cut-off and pills; a client already opened this session keeps
     // the draft it has, so neither a tab switch nor a `links` refresh undoes a pick.
@@ -970,11 +968,10 @@ function PublishWorkspace() {
             tasks,
             entrySumsAll,
             billingPeriods.filter((p) => p.clientId === selectedClient.id),
-            customWeeks,
             cutoff,
           )
         : null,
-    [selectedClient, sections, tasks, entrySumsAll, billingPeriods, customWeeks],
+    [selectedClient, sections, tasks, entrySumsAll, billingPeriods],
   );
   const preview = useMemo(() => buildFor(previewThrough), [buildFor, previewThrough]);
   const publishable = useMemo(() => buildFor(through || null), [buildFor, through]);
@@ -1044,35 +1041,6 @@ function PublishWorkspace() {
     updateBillingPeriod(p.id, { dateTo: col.to });
     const next = clientPeriods[periodIndex + 1];
     if (next) updateBillingPeriod(next.id, { dateFrom: shiftDaysIso(col.to, 1) });
-  }
-
-  /** change a column's date range; persisted per client on its report link */
-  async function handleEditColumnDates(colIndex: number, patch: { from: string; to: string }) {
-    if (!preview?.weeks || !selectedClient) return;
-    // ⚠️ NORMALISE AND CLAMP, because `buildReportSnapshot` adds an entry's minutes
-    // to EVERY column whose range contains its date. An overlap therefore counts the
-    // same hours twice and the week cells stop summing to the row's Total — on a
-    // report a client reads. Visitt had a column edited to 2–25 Jul that swallowed
-    // three whole weeks, 57h double-counted. An inverted pair matches nothing and
-    // shows a dash for ever, so swap it rather than store it.
-    const [rawFrom, rawTo] = patch.from <= patch.to ? [patch.from, patch.to] : [patch.to, patch.from];
-    const prev = preview.weeks[colIndex - 1];
-    const following = preview.weeks[colIndex + 1];
-    const from = prev && rawFrom <= prev.to ? shiftDaysIso(prev.to, 1) : rawFrom;
-    const to = following && rawTo >= following.from ? shiftDaysIso(following.from, -1) : rawTo;
-    if (from > to) return; // clamped to nothing: neighbours leave no room, so refuse
-    const next = preview.weeks.map((w, i) =>
-      i === colIndex ? { from, to, label: shortRangeLabel(from, to) } : w,
-    );
-    setCustomWeeks(next);
-    const link = await ensureLink(selectedClient.id);
-    if (!link) return;
-    const { error } = await supabase
-      .from("report_links")
-      .update({ custom_weeks: next })
-      .eq("id", link.id);
-    if (error) console.error("save custom columns failed", error.message);
-    else setLinks((prev) => new Map(prev).set(selectedClient.id, { ...link, customWeeks: next }));
   }
 
   function showToast(msg: string) {
@@ -1578,9 +1546,10 @@ function PublishWorkspace() {
             </div>
             <p className="mb-2 text-[11px] text-faint">
               Preview — eye toggles hide rows/columns from the client&apos;s view, + between column
-              titles ends a payment period there, drag a divider to move it, click column dates to
-              edit them. Click or drag the hour cells to total them. Publishing freezes this exact
-              data.
+              titles ends a payment period there, drag a divider to move it. Columns are weeks cut
+              at every payment-period boundary, so a period&apos;s dates decide where they break.
+              Click or drag the hour cells to total them; hover one to see who logged it. Publishing
+              freezes this exact data.
             </p>
             <ReportTable
               snapshot={preview}
@@ -1606,7 +1575,6 @@ function PublishWorkspace() {
                   hide ? [...new Set([...prev, ...keys])] : prev.filter((k) => !keys.includes(k)),
                 )
               }
-              onEditColumnDates={handleEditColumnDates}
               clientCutoff={through || null}
             />
           </div>
@@ -1731,13 +1699,10 @@ function PublishWorkspace() {
         <CellInspector
           cell={inspect.cell}
           rect={inspect.rect}
-          /* ⚠️ Withheld when the hovered cell IS the keys task — writing keys hours
-             down to themselves is a no-op, and offering it invites the click. */
-          keysTaskId={
-            selectedClient?.keysTaskId && selectedClient.keysTaskId !== inspect.cell.taskId
-              ? selectedClient.keysTaskId
-              : null
-          }
+          /* ⚠️ The keys task is NOT threaded from here any more: `useKeysWriteDown`
+             resolves it from the entry's own task → client, so every surface that
+             lists a task's hours applies the same rules — including withholding it
+             when the row is already ON the keys task. */
           onEnter={clearInspectTimer}
           onLeave={closeInspect}
         />

@@ -35,6 +35,15 @@ import { WeekTimesheet } from "./week-timesheet";
 import { MobileLogTimeSheet } from "./mobile-log-time";
 import { MemberWeekHours } from "./member-week-hours";
 import { dailyTargetMinutes } from "@/lib/members";
+import {
+  addEntry,
+  billablePct,
+  keysPct,
+  keysTaskIds,
+  newSplit,
+  splitTitle,
+  type HoursSplit,
+} from "@/lib/hours-split";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { Profile, TimeEntry } from "@/lib/types";
 
@@ -1313,42 +1322,56 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
   // hours. About a third of those old entries DO name a person; the rest name
   // nobody, and `unattributed` below owns up to that instead of quietly shrinking
   // the studio's total.
-  const { entrySumsAll, tasks, profiles } = useData();
+  const { entrySumsAll, tasks, profiles, clients } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   const { rows, unattributed } = useMemo(() => {
-    const per = new Map<string, { min: number; bil: number }>();
+    // ⚠️ Built inside the memo, not shared from one of its own: a `Set` held in a
+    // separate `useMemo` and read here made the React Compiler refuse to preserve
+    // this one, which re-aggregates every entry in the period on every render.
+    const keysIds = keysTaskIds(clients);
+    const per = new Map<string, HoursSplit>();
     // no billable filter in this loop: `pct` below is the billable SHARE and has to
-    // keep all hours as its denominator, so both figures are always accumulated
-    const orphan = { min: 0, bil: 0 };
+    // keep all hours as its denominator, so every part is always accumulated
+    let orphan = newSplit();
     for (const e of entrySumsAll) {
       const task = taskById.get(e.taskId);
       if (filter.clientId && task?.clientId !== filter.clientId) continue;
       if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
-      const r = e.userId ? (per.get(e.userId) ?? { min: 0, bil: 0 }) : orphan;
-      r.min += e.minutes;
-      if (task?.billable) r.bil += e.minutes;
-      if (e.userId) per.set(e.userId, r);
+      const kind = { billable: !!task?.billable, keys: keysIds.has(e.taskId) };
+      if (e.userId) per.set(e.userId, addEntry(per.get(e.userId) ?? newSplit(), e.minutes, kind));
+      else orphan = addEntry(orphan, e.minutes, kind);
     }
     // Archived people are NOT filtered out: the pane describes a period, and
     // someone who left in March did log hours in March. `min > 0` below is the real
     // gate — an archived designer with nothing in the period still doesn't appear.
     const rows = profiles
       .map((p) => {
-        const r = per.get(p.id) ?? { min: 0, bil: 0 };
+        const r = per.get(p.id) ?? newSplit();
         // The bar is the billable SHARE, so it stays over all hours even when the
         // page shows billable only — otherwise every designer reads a flat 100%.
         return {
           p,
-          min: filter.billableOnly ? r.bil : r.min,
-          pct: r.min > 0 ? Math.round((r.bil / r.min) * 100) : 0,
+          min: filter.billableOnly ? r.billable : r.total,
+          pct: billablePct(r) ?? 0,
+          split: r,
+          /**
+           * ⚠️ ADMINS GET NO BILLABLE SHARE, and their HOURS still show. Nitsan's
+           * call: an admin barely logs against client tasks and never gets hours
+           * written down, so a share computed over their handful of internal
+           * entries reads as a terrible number about a person it does not
+           * describe. `Office` is a shared ADMIN account that does log real hours
+           * (v0.99.3), which is why the hours themselves must not be hidden with
+           * the percentage.
+           */
+          share: p.role !== "admin",
           archived: !p.active,
         };
       })
       .filter((x) => x.min > 0)
       .sort((a, b) => b.min - a.min);
-    return { rows, unattributed: filter.billableOnly ? orphan.bil : orphan.min };
-  }, [entrySumsAll, taskById, profiles, filter]);
+    return { rows, unattributed: filter.billableOnly ? orphan.billable : orphan.total };
+  }, [entrySumsAll, taskById, clients, profiles, filter]);
 
   if (rows.length === 0) return null;
 
@@ -1382,14 +1405,15 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
           and only two people per screen. Laid on their side the same four facts
           take one row each, so the whole studio fits without scrolling. */}
       <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-3 sm:gap-2.5 lg:grid-cols-5 xl:grid-cols-7">
-        {rows.map(({ p, min, pct, archived }) => (
+        {rows.map(({ p, min, pct, split, share, archived }) => (
           <Link
             key={p.id}
             href={`/team/${p.id}`}
             title={
-              archived
-                ? `${p.name} — ${p.endDate ? `left ${p.endDate}` : "no longer in the studio"}, but logged these hours in the period`
-                : p.name
+              (share ? splitTitle(split, p.name) : `${p.name} — ${formatHoursShort(split.total)}`) +
+              (archived
+                ? `\n${p.endDate ? `left ${p.endDate}` : "no longer in the studio"}, but logged these hours in the period`
+                : "")
             }
             // dashed border rather than a dimmed card: the hours are as real as
             // anyone else's, it's the person who is no longer on the roster
@@ -1405,12 +1429,22 @@ function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
               {archived && <span className="shrink-0 font-normal text-faint">·&nbsp;past</span>}
             </span>
             <span className="shrink-0 text-[11px] tabular-nums text-muted sm:text-[10px]">
-              {formatHoursShort(min)} · {pct}%
+              {formatHoursShort(min)}
+              {share && ` · ${pct}%`}
             </span>
-            {/* A fixed 56px on the row; full width once it sits under the name. */}
-            <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-border sm:w-full">
-              <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
-            </div>
+            {/* A fixed 56px on the row; full width once it sits under the name.
+                ⚠️ Red = the keys share, i.e. billable work written down before a
+                client report. It sits between the billable head and the plain
+                non-billable tail, so the bar still reads left-to-right as
+                "charged → written down → internal". */}
+            {share && (
+              <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-border sm:w-full">
+                <div className="flex h-full">
+                  <div className="h-full bg-brand" style={{ width: `${pct}%` }} />
+                  <div className="h-full bg-danger" style={{ width: `${keysPct(split)}%` }} />
+                </div>
+              </div>
+            )}
           </Link>
         ))}
       </div>

@@ -7,6 +7,7 @@ import { formatFeedDate, formatHours, formatHoursShort, parseDuration } from "@/
 import { loggableMembers } from "@/lib/members";
 import { Avatar, ClientChip, Modal, ModalClose, TaskNameLink } from "./ui";
 import { LogTimeForm } from "./log-time-form";
+import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
 
 // Extracted from the Time Feed page so the admin home's week timesheet opens
@@ -26,6 +27,11 @@ export function EntryEditRow({
   const [description, setDescription] = useState(entry.description);
   const [date, setDate] = useState(entry.date);
   const user = profiles.find((p) => p.id === entry.userId) ?? null;
+  // ⚠️ The duration field is seeded once, so a write-down has to correct it here
+  // or the row keeps showing the pre-move figure and Save would write it back.
+  const keys = useKeysWriteDown(entry, (moved) =>
+    setDuration(formatHoursShort(entry.minutes - moved)),
+  );
 
   const minutes = parseDuration(duration);
   const dirty =
@@ -39,7 +45,8 @@ export function EntryEditRow({
   }
 
   return (
-    <div className="group flex items-center gap-2 border-b border-border py-2 last:border-b-0">
+    <div className="border-b border-border py-2 last:border-b-0">
+    <div className="group flex items-center gap-2">
       {leading ?? <Avatar profile={user} size={24} />}
       <input
         value={duration}
@@ -70,6 +77,7 @@ export function EntryEditRow({
           Save
         </button>
       )}
+      <KeysButton state={keys} label={false} />
       <button
         // the row is passed so an entry outside the feed window keeps its undo
         onClick={() => deleteTimeEntry(entry.id, entry)}
@@ -78,6 +86,8 @@ export function EntryEditRow({
       >
         <Trash2 size={13} />
       </button>
+    </div>
+    <KeysField state={keys} />
     </div>
   );
 }

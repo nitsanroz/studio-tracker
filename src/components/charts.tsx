@@ -37,33 +37,56 @@ export function HBar({
   );
 }
 
-/** Stacked billable/non-billable bar. Values in minutes. */
+/**
+ * Stacked billable / keys / non-billable bar. Values in minutes.
+ *
+ * ⚠️ `keys` IS PART OF `nonBillable`, not extra on top — it is the slice of it
+ * that was written down to a client's Keys task, drawn in red between the two so
+ * the bar still totals what it always did. See `lib/hours-split.ts` for why that
+ * distinction is worth a colour: those hours were billable work the studio chose
+ * not to charge for, which says something quite different from internal time.
+ * ⚠️ Pass `title` to describe the WHOLE bar; the segments keep their own tooltips
+ * for the case where the bar is all there is.
+ */
 export function SplitBar({
   billable,
   nonBillable,
+  keys = 0,
   maxMinutes,
   /** the non-billable tail — "blue" keeps it in the brand as a washed-out
    *  continuation of the same bar, "grey" reads as a separate quantity */
   tone = "grey",
+  title,
 }: {
   billable: number;
   nonBillable: number;
+  keys?: number;
   maxMinutes: number;
   tone?: "grey" | "blue";
+  title?: string;
 }) {
-  const pctA = maxMinutes > 0 ? (billable / maxMinutes) * 100 : 0;
-  const pctB = maxMinutes > 0 ? (nonBillable / maxMinutes) * 100 : 0;
+  const pc = (n: number) => (maxMinutes > 0 ? (n / maxMinutes) * 100 : 0);
+  // never let a bad caller draw more red than there is non-billable time
+  const red = Math.max(0, Math.min(keys, nonBillable));
+  const rest = nonBillable - red;
   return (
-    <div className="flex h-2 overflow-hidden rounded-full bg-border">
+    <div className="flex h-2 overflow-hidden rounded-full bg-border" title={title}>
       <div
         className="h-full bg-brand"
-        style={{ width: `${pctA}%` }}
-        title={`Billable ${formatHoursShort(billable)}`}
+        style={{ width: `${pc(billable)}%` }}
+        title={title ? undefined : `Billable ${formatHoursShort(billable)}`}
       />
+      {red > 0 && (
+        <div
+          className="h-full bg-danger"
+          style={{ width: `${pc(red)}%` }}
+          title={title ? undefined : `Keys (written down) ${formatHoursShort(red)}`}
+        />
+      )}
       <div
         className={`h-full ${tone === "blue" ? "bg-brand/30" : "bg-gray-400"}`}
-        style={{ width: `${pctB}%` }}
-        title={`Non-billable ${formatHoursShort(nonBillable)}`}
+        style={{ width: `${pc(rest)}%` }}
+        title={title ? undefined : `Other non-billable ${formatHoursShort(rest)}`}
       />
     </div>
   );
@@ -311,20 +334,32 @@ export function PieChart({
  * Single-value progress ring (donut gauge). `pct` 0–100, drawn clockwise from
  * the top over a faint track, with the rounded percentage in the centre.
  * Used for the studio billable-share on the admin home.
+ *
+ * ⚠️ `keys` adds a RED arc immediately after the brand one — the share written
+ * down to a client's Keys task. The centre figure stays the BILLABLE percentage
+ * and nothing about it moves: the red is describing the remainder, not competing
+ * with the headline. See `lib/hours-split.ts`.
+ * ⚠️ `label` is both the accessible name and a real hover tooltip (`<title>`),
+ * which is where the three-way split belongs — it used to be aria-only, so the
+ * text was written and never shown to anybody using a pointer.
  */
 export function PercentRing({
   pct,
+  keys = 0,
   size = 88,
   label,
 }: {
   pct: number;
+  keys?: number;
   size?: number;
   label?: string;
 }) {
   const clamped = Math.max(0, Math.min(100, pct));
+  const red = Math.max(0, Math.min(100 - clamped, keys));
   const R = 15.915; // 2πR ≈ 100 → dash values read directly as percentages
   return (
     <svg viewBox="0 0 42 42" width={size} height={size} role="img" aria-label={label ?? `${Math.round(clamped)}%`}>
+      {label && <title>{label}</title>}
       <circle cx="21" cy="21" r={R} fill="none" stroke="var(--color-border)" strokeWidth="3.5" />
       <circle
         cx="21"
@@ -337,6 +372,20 @@ export function PercentRing({
         strokeDasharray={`${clamped} ${100 - clamped}`}
         strokeDashoffset="25" // start at 12 o'clock
       />
+      {red > 0 && (
+        <circle
+          cx="21"
+          cy="21"
+          r={R}
+          fill="none"
+          stroke="var(--color-danger)"
+          strokeWidth="3.5"
+          // ⚠️ No round cap on this one: a rounded end would overlap the brand arc
+          // it starts against and read as a gap in the ring.
+          strokeDasharray={`${red} ${100 - red}`}
+          strokeDashoffset={`${25 - clamped}`}
+        />
+      )}
       {/* centre readout — figure in the serif accent, "%" smaller, like the big stats */}
       <text
         x="21"

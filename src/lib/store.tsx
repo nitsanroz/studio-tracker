@@ -30,6 +30,8 @@ import {
   mapTimeEntry,
   taskPatchToRow,
   updateWithOptional,
+  isMissingSchema,
+  DbError,
   type DbRow,
 } from "./db";
 import { assembleTaskBrief, readSubmission } from "./brief";
@@ -293,13 +295,21 @@ interface Store {
    * restoring every field it touched.
    */
   updatePlanEntry: (entryId: string, patch: PlanEntryPatch) => void;
-  movePlanEntry: (entryId: string, target: { date: string | null; columnId: string }) => void;
+  movePlanEntry: (
+    entryId: string,
+    target: { date: string | null; columnId: string },
+    place?: { beforeId: string | null },
+  ) => void;
   /**
    * The weekly plan's drop target: move the entry, and when it lands in a
    * DIFFERENT person's column, reassign the underlying task to them — as one
    * undo step. Falls back to a plain move when there is nobody to reassign to.
    */
-  movePlanEntryToCell: (entryId: string, target: { date: string | null; columnId: string }) => void;
+  movePlanEntryToCell: (
+    entryId: string,
+    target: { date: string | null; columnId: string },
+    place?: { beforeId: string | null },
+  ) => void;
   deletePlanEntry: (entryId: string) => void;
   addPlanColumn: (name: string) => void;
   updatePlanColumn: (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => void;
@@ -326,6 +336,14 @@ interface Store {
   loadCellEntries: (taskId: string, from: string, to: string) => Promise<TimeEntry[]>;
   /** move `minutes` of one entry onto the client's non-billable Keys task — see `writeDownToKeys` */
   writeDownToKeys: (entryId: string, minutes: number, keysTaskId: string) => Promise<boolean>;
+  /** the same, for one designer's hours on a task rather than one entry — see `writeDownMemberToKeys` */
+  writeDownMemberToKeys: (
+    taskId: string,
+    userId: string,
+    minutes: number,
+    keysTaskId: string,
+    range?: { from: string; to: string },
+  ) => Promise<boolean>;
   /**
    * `userId` reassigns the entry to another member — admins only. RLS refuses it
    * for members anyway: `own time update`'s USING clause constrains the very
@@ -2030,6 +2048,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, taskGroups, record, wrote],
   );
 
+  /**
+   * A new client, with the non-billable Keys task every client needs.
+   *
+   * ⚠️⚠️ THE KEYS TASK IS CREATED HERE, AND THAT IS THE ONLY WAY IT CAN BE
+   * RELIABLE. Every client the studio bills has a "«Client» Keys" task — it is
+   * where hours are written down to before a client report (migration 0037) — and
+   * for the first fourteen clients somebody made it by hand. A client without one
+   * silently has NO write-down control anywhere in the app, which reads as the
+   * feature being broken rather than as a task being missing.
+   * ⚠️ `billable: false` explicitly, NOT inherited from the client: `addTask`
+   * copies the client's flag, and a new client is billable, so a keys task created
+   * that way would keep billing the client — the exact opposite of a write-down.
+   * ⚠️ The task and the pointer are BEST-EFFORT, and deliberately not fatal: the
+   * client row is already committed by then, and failing the whole creation over
+   * the keys task would lose a client somebody just typed. Either half can be
+   * fixed later from the Keys-task picker on Client Reports.
+   */
   const addClient = useCallback(
     async (name: string, color: string, billingPeriodNote?: string): Promise<Client | null> => {
       const { data, error } = await counting(
@@ -2043,11 +2078,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
         noteWriteError("addClient", error);
         return null;
       }
-      const client = mapClient(data);
+      let client = mapClient(data);
+
+      const keys = await counting(
+        supabase
+          .from("tasks")
+          .insert({
+            client_id: client.id,
+            title: `${name} Keys`,
+            billable: false,
+            position: 1,
+          })
+          .select()
+          .single(),
+      );
+      if (keys.error || !keys.data) {
+        noteWriteError("addClient keys task", keys.error ?? { message: "keys task not created" });
+      } else {
+        setTasks((prev) => [...prev, mapTask(keys.data, tagNameById)]);
+        // 0037's column goes through `updateWithOptional` for the reason
+        // `updateClient` documents: a missing column on a WRITE is PGRST204 and
+        // fails the whole statement.
+        const res = await updateWithOptional(
+          supabase,
+          "clients",
+          { id: client.id },
+          {},
+          { keys_task_id: keys.data.id as string },
+        );
+        if (res.error) noteWriteError("addClient keys pointer", res.error);
+        else if (!res.degraded) client = { ...client, keysTaskId: keys.data.id as string };
+      }
+
       setClients((prev) => [...prev, client]);
       return client;
     },
-    [supabase, noteWriteError, counting],
+    [supabase, noteWriteError, counting, tagNameById],
   );
 
   const patchProfileLocal = useCallback((profileId: string, patch: Partial<Profile>) => {
@@ -2417,31 +2483,118 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, planEntries, record, asOneStep, wrote, plannedTaskToReopen],
   );
 
+  /**
+   * Move a plan entry to a cell, optionally to a PLACE in that cell.
+   *
+   * ⚠️⚠️ WITHOUT `place` THIS APPENDS, AND THAT USED TO BE THE ONLY BEHAVIOUR —
+   * which is why dragging a chip within one day "only worked downwards". Every
+   * in-cell drop set `position = max + 1`, so a chip dragged down landed last and
+   * looked correct, while one dragged UP also landed last and looked broken.
+   *
+   * ⚠️ `place` IS AN OBJECT, and `{ beforeId: null }` is NOT the same as omitting
+   * it: the object means "put it exactly here", with a null anchor meaning last in
+   * the cell, and it takes the densifying path whose undo restores every position
+   * it touched. Omitting it is the old plain append — which is right for a drop on
+   * a cell's empty space or a paste, and whose undo only has a cell to restore.
+   * Dropping on the LOWER half of the last chip is exactly the case that made this
+   * distinction necessary: it means "last", not "append and forget".
+   *
+   * ⚠️ IT DENSIFIES THE WHOLE DESTINATION CELL 1..n, exactly as `reorderTask` and
+   * `reorderSection` do, and for the same reason: the plan's entries were written
+   * by the sheet importer and a cell can be entirely `position = 0`, so "insert
+   * before X" has no gap to open. Renumbering is what makes the placement mean
+   * anything.
+   * ⚠️ Absences are renumbered along with the chips even though they render
+   * absolutely and are never a drop target — leaving them out would let an absence
+   * and a chip hold the same position, and then their order depends on the array.
+   */
   const movePlanEntry = useCallback(
-    (entryId: string, target: { date: string | null; columnId: string }) => {
+    (
+      entryId: string,
+      target: { date: string | null; columnId: string },
+      place?: { beforeId: string | null },
+    ) => {
       const before = planEntries.find((e) => e.id === entryId);
-      if (before) {
+      if (!before) return;
+      const inCell = planEntries
+        .filter(
+          (e) => e.columnId === target.columnId && e.date === target.date && e.id !== entryId,
+        )
+        .sort((a, b) => a.position - b.position);
+
+      if (!place) {
         const prev = { date: before.date, columnId: before.columnId };
         record({
           undo: () => methodsRef.current?.movePlanEntry(entryId, prev),
           redo: () => methodsRef.current?.movePlanEntry(entryId, target),
         });
+        const position = Math.max(-1, ...inCell.map((e) => e.position)) + 1;
+        setPlanEntries((prev) =>
+          prev.map((e) => (e.id === entryId ? { ...e, ...target, position } : e)),
+        );
+        supabase
+          .from("plan_entries")
+          .update({ date: target.date, column_id: target.columnId, position })
+          .eq("id", entryId)
+          .then(wrote("movePlanEntry"));
+        return;
       }
-      const position =
-        Math.max(
-          -1,
-          ...planEntries
-            .filter((e) => e.columnId === target.columnId && e.date === target.date && e.id !== entryId)
-            .map((e) => e.position),
-        ) + 1;
+
+      const at = place.beforeId ? inCell.findIndex((e) => e.id === place.beforeId) : -1;
+      // a null anchor means last; an unknown one (a stale drop after a refresh)
+      // also lands last rather than failing
+      const idx = at < 0 ? inCell.length : at;
+      const next = [...inCell.slice(0, idx), before, ...inCell.slice(idx)];
+      const changed = next
+        .map((e, i) => ({ id: e.id, position: i + 1, was: e.position }))
+        .filter((r) => r.position !== r.was || r.id === entryId);
+      if (changed.length === 0) return;
+
+      const prevPos = new Map(changed.map((r) => [r.id, r.was]));
+      const back = { date: before.date, columnId: before.columnId };
+      record({
+        undo: () => {
+          setPlanEntries((prev) =>
+            prev.map((e) =>
+              prevPos.has(e.id)
+                ? { ...e, position: prevPos.get(e.id)!, ...(e.id === entryId ? back : {}) }
+                : e,
+            ),
+          );
+          for (const [id, position] of prevPos) {
+            supabase
+              .from("plan_entries")
+              .update(
+                id === entryId
+                  ? { position, date: back.date, column_id: back.columnId }
+                  : { position },
+              )
+              .eq("id", id)
+              .then(wrote("movePlanEntry undo"));
+          }
+        },
+        redo: () => methodsRef.current?.movePlanEntry(entryId, target, place),
+      });
+
+      const posById = new Map(changed.map((r) => [r.id, r.position]));
       setPlanEntries((prev) =>
-        prev.map((e) => (e.id === entryId ? { ...e, ...target, position } : e)),
+        prev.map((e) =>
+          posById.has(e.id)
+            ? { ...e, position: posById.get(e.id)!, ...(e.id === entryId ? target : {}) }
+            : e,
+        ),
       );
-      supabase
-        .from("plan_entries")
-        .update({ date: target.date, column_id: target.columnId, position })
-        .eq("id", entryId)
-        .then(wrote("movePlanEntry"));
+      for (const { id, position } of changed) {
+        supabase
+          .from("plan_entries")
+          .update(
+            id === entryId
+              ? { position, date: target.date, column_id: target.columnId }
+              : { position },
+          )
+          .eq("id", id)
+          .then(wrote("movePlanEntry"));
+      }
     },
     [supabase, planEntries, record, wrote],
   );
@@ -2460,14 +2613,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
    * clear the assignee: unscheduled is not unassigned.
    */
   const movePlanEntryToCell = useCallback(
-    (entryId: string, target: { date: string | null; columnId: string }) => {
+    (
+      entryId: string,
+      target: { date: string | null; columnId: string },
+      /**
+       * Where in the cell it goes: `{ beforeId }` names the chip it lands above,
+       * or null for last. Omitted = appended, the plain cell-level drop.
+       */
+      place?: { beforeId: string | null },
+    ) => {
       const entry = planEntries.find((e) => e.id === entryId);
       const col = planColumns.find((c) => c.id === target.columnId);
       const task = entry?.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
       const to = col?.type === "member" ? col.profileId : null;
 
       if (!entry || !task || !to || entry.columnId === target.columnId || task.assigneeId === to) {
-        movePlanEntry(entryId, target);
+        movePlanEntry(entryId, target, place);
         return;
       }
       const back = { date: entry.date, columnId: entry.columnId };
@@ -2478,12 +2639,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             methodsRef.current?.updateTask(task.id, { assigneeId: wasAssignedTo });
             methodsRef.current?.movePlanEntry(entryId, back);
           },
-          redo: () => methodsRef.current?.movePlanEntryToCell(entryId, target),
+          redo: () => methodsRef.current?.movePlanEntryToCell(entryId, target, place),
         },
         () => {
           // Both read their own pre-call snapshots, so running them in one tick is
           // safe; the two setStates batch into a single commit.
-          movePlanEntry(entryId, target);
+          movePlanEntry(entryId, target, place);
           methodsRef.current?.updateTask(task.id, { assigneeId: to });
         },
       );
@@ -3426,6 +3587,87 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, currentUserId, counting, noteWriteError, applyEntryLocally],
   );
 
+  /**
+   * Write a number of hours down for ONE DESIGNER on a task, without naming a
+   * particular log line.
+   *
+   * ⚠️ WHY THIS EXISTS BESIDE THE PER-ROW VERSION: the studio's own sentence is
+   * "three of Nadav's hours on this task were slow", not "45 minutes off the entry
+   * dated the 13th". Making somebody pick a row first means choosing whose
+   * Tuesday to dock before they have decided anything, and a person's hours are
+   * usually spread over several rows anyway.
+   *
+   * ⚠️ IT CONSUMES OLDEST FIRST, and the order is stated because it is arbitrary
+   * in outcome and not in provenance: the client's bill drops by the same amount
+   * whichever rows give it up, but the `moved_from_task_id` trail has to land
+   * somewhere, and the earliest hours in the range are the ones a "this took
+   * longer than it should have" judgement is usually about.
+   *
+   * ⚠️ IT REFUSES rather than moving what it can when the figure exceeds what that
+   * person actually logged in range — a partial write-down that silently stopped
+   * short would leave the report right and the studio's intention lost.
+   *
+   * ⚠️ Each row goes through `writeDownToKeys`, so every guard there applies per
+   * row: whole minutes, re-read before writing, insert-then-shrink, provenance
+   * stamped. This is a loop over that, not a second implementation of it.
+   * ⚠️ NOT ATOMIC. A failure part way leaves the earlier rows moved, which is
+   * visible in the next report and is the same "prefer the failure you can see"
+   * trade `writeDownToKeys` itself makes.
+   */
+  const writeDownMemberToKeys = useCallback(
+    async (
+      taskId: string,
+      userId: string,
+      minutes: number,
+      keysTaskId: string,
+      range?: { from: string; to: string },
+    ): Promise<boolean> => {
+      const ask = (withLegacy: boolean) => {
+        let q = supabase
+          .from("time_entries")
+          .select(withLegacy ? "id, minutes, legacy" : "id, minutes")
+          .eq("task_id", taskId)
+          .eq("user_id", userId)
+          .gt("minutes", 0)
+          .order("date")
+          .order("id");
+        if (range) q = q.gte("date", range.from).lte("date", range.to);
+        return q;
+      };
+      // The ladder the whole app uses for this column: `legacy` predates 0016, and
+      // a missing column must not take the query down with it.
+      let res = await ask(true);
+      if (res.error && isMissingSchema(new DbError("time_entries", res.error.message, res.error.code)))
+        res = await ask(false);
+      if (res.error || !res.data) {
+        noteWriteError("writeDownMemberToKeys read", res.error ?? { message: "no entries found" });
+        return false;
+      }
+      // ⚠️ Recovered history is skipped: its hours were reconstructed from a task
+      // title rather than logged, so splitting one says nothing true about a day.
+      const rows = (res.data as unknown as { id: string; minutes: number; legacy?: boolean }[]).filter(
+        (r) => !r.legacy,
+      );
+      const available = rows.reduce((n, r) => n + r.minutes, 0);
+      if (!Number.isInteger(minutes) || minutes <= 0 || minutes > available) {
+        noteWriteError("writeDownMemberToKeys", {
+          message: `that person has ${available} minutes on this task, so ${minutes} cannot be moved`,
+        });
+        return false;
+      }
+      let left = minutes;
+      for (const r of rows) {
+        if (left <= 0) break;
+        const take = Math.min(left, r.minutes);
+        const ok = await writeDownToKeys(r.id, take, keysTaskId);
+        if (!ok) return false;
+        left -= take;
+      }
+      return true;
+    },
+    [supabase, noteWriteError, writeDownToKeys],
+  );
+
   const approveRequest = useCallback(
     async (requestId: string, input: ApproveRequestInput): Promise<string | null> => {
       const request = taskRequests.find((r) => r.id === requestId);
@@ -3702,7 +3944,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reorderTimelineTasks,
       addAttachment,
       removeAttachment,
-      addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys,
+      addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys,
       updateTimeEntry,
       deleteTimeEntry,
       moveTimeEntries,
@@ -3742,7 +3984,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
     ],
   );
 

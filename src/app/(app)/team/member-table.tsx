@@ -18,6 +18,10 @@ export interface MemberRow {
   profile: Profile;
   minutes: number;
   billablePct: number | null;
+  /** the share written down to a client's Keys task — drawn red inside the ring */
+  keysPct: number;
+  /** the three-way split as a hover line, built by `splitTitle` */
+  splitTitle: string;
   openTasks: number;
   email?: string;
   tenure: string | null;
@@ -79,7 +83,7 @@ export function MemberTable({ rows, periodLabel }: { rows: MemberRow[]; periodLa
           </span>
         </div>
 
-        {rows.map(({ profile: p, minutes, billablePct, openTasks, email, tenure }) => (
+        {rows.map(({ profile: p, minutes, billablePct, keysPct, splitTitle, openTasks, email, tenure }) => (
           // the whole row is the link, so nothing inside may be a link of its own
           <Link
             key={p.id}
@@ -119,12 +123,15 @@ export function MemberTable({ rows, periodLabel }: { rows: MemberRow[]; periodLa
             <span className="tabular-nums text-muted" style={cell("open")}>
               {openTasks || <span className="text-faint">–</span>}
             </span>
-            <span className="flex items-center gap-1.5" style={cell("billable")}>
+            {/* ⚠️ The number is still the BILLABLE share and nothing else — the
+                red arc describes the remainder, and the tooltip carries the
+                three-way split. */}
+            <span className="flex items-center gap-1.5" style={cell("billable")} title={splitTitle}>
               {billablePct == null ? (
                 <span className="text-faint">–</span>
               ) : (
                 <>
-                  <PercentRing pct={billablePct} size={24} />
+                  <PercentRing pct={billablePct} keys={keysPct} size={24} label={splitTitle} />
                   <span className="text-xs tabular-nums text-muted">{billablePct}%</span>
                 </>
               )}
