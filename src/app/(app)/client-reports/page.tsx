@@ -34,7 +34,7 @@ import { MiniColumns } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import type { InspectableCell } from "@/components/report-table";
 import { CellInspector } from "@/components/cell-inspector";
-import { Modal, ModalClose } from "@/components/ui";
+import { InfoDot, Modal, ModalClose } from "@/components/ui";
 import { toggleIn } from "@/lib/toggle";
 import {
   currentPeriodIndex,
@@ -141,6 +141,28 @@ function PaymentPeriods({ client }: { client: Client }) {
    * ⚠️ The billable filter is the safety rule, not a convenience — a billable
    * destination cannot reduce a bill.
    */
+  /**
+   * ⚠️⚠️ THE KEYS-TASK PICKER IS ONLY RENDERED WHEN IT NEEDS ATTENTION, and that
+   * is Nitsan's call — *"im not sure i need Keys task at all in client reports
+   * page"*. He is right that in normal operation it is a control nobody touches:
+   * every billable client has one, and `addClient` creates one for each new client.
+   * It stays reachable for the case that would otherwise be unfixable from the UI:
+   * `clients.keys_task_id` is `on delete set null` (0037), so deleting a task can
+   * quietly leave a client with no write-down destination — and the write-down is
+   * HIDDEN when there is none, so the feature would simply be gone with nothing on
+   * screen saying why.
+   * ⚠️ A pointer at a task that has been made BILLABLE counts as broken too: a
+   * billable destination cannot reduce a bill, so the write-down would move hours
+   * and change nothing.
+   */
+  const keysTask = client.keysTaskId ? tasks.find((t) => t.id === client.keysTaskId) : null;
+  /**
+   * ⚠️ An INTERNAL client is never asked for one. Studio, OFFF tlv and
+   * Imported / Unsorted are `billable: false`, so there is no bill to reduce and
+   * every task on them is already non-billable — a prompt there is pure noise on a
+   * client whose report nobody sends.
+   */
+  const keysNeedsAttention = client.billable && (!keysTask || keysTask.billable);
   const keysCandidates = tasks
     .filter((t) => t.clientId === client.id && !t.billable)
     .sort((a, b) => {
@@ -431,24 +453,38 @@ function PaymentPeriods({ client }: { client: Client }) {
                 ⚠️ It lists only NON-BILLABLE tasks of this client. A billable
                 destination cannot reduce a bill, so offering one is offering a
                 mistake; if a client's keys task is missing here, its `billable` flag
-                is what to fix. */}
-            <div title="Where hovering an hours cell can write hours down to. Only this client's non-billable tasks are offered, because a billable destination cannot reduce a bill.">
-              <div className="text-[11px] font-medium text-muted">Keys task</div>
-              <div className="mt-0.5">
-                <select
-                  value={client.keysTaskId ?? ""}
-                  onChange={(e) => updateClient(client.id, { keysTaskId: e.target.value || null })}
-                  className="w-full rounded-md border border-border bg-surface px-1 py-0.5 text-sm outline-none focus:border-brand"
-                >
-                  <option value="">none — write-down off</option>
-                  {keysCandidates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.title}
-                    </option>
-                  ))}
-                </select>
+                is what to fix.
+                ⚠️ Amber, and it says what is broken: this is the only state in which
+                it appears, so it is a repair rather than a setting. */}
+            {keysNeedsAttention && (
+              // ⚠️ Its OWN full-width row, not a fifth column: the four figures
+              // beside it fill the grid exactly, and a select squeezed into 92px of
+              // a 504px pane shows about two words of a task title.
+              <div
+                className="col-span-4 rounded-lg border border-warning/40 bg-warning/5 p-2"
+                title="This client has no valid Keys task, so hours cannot be written down on its report. Only this client's non-billable tasks are offered, because a billable destination cannot reduce a bill."
+              >
+                <div className="text-[11px] font-medium text-warning">
+                  {keysTask
+                    ? "This client's Keys task is billable — hours written down to it would still be charged. Pick another:"
+                    : "No Keys task, so hours can't be written down on this report. Pick one:"}
+                </div>
+                <div className="mt-1">
+                  <select
+                    value={client.keysTaskId ?? ""}
+                    onChange={(e) => updateClient(client.id, { keysTaskId: e.target.value || null })}
+                    className="w-full rounded-md border border-warning bg-surface px-1 py-0.5 text-sm outline-none focus:border-brand"
+                  >
+                    <option value="">none — write-down off</option>
+                    {keysCandidates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
             <div title="Tasks with hours logged in the current payment period">
               <div className="text-[11px] font-medium text-muted">Active tasks</div>
               <div className="mt-0.5 text-2xl font-semibold tabular-nums">
@@ -646,8 +682,19 @@ function PublishWorkspace() {
       }
     }
     for (const [cid] of links) activeIds.add(cid);
+    /**
+     * ⚠️ INTERNAL CLIENTS ARE NOT OFFERED — Nitsan: *"studio is not needed in
+     * client reports page at all"*, and it generalises: `billable: false` means
+     * Studio, OFFF tlv and Imported / Unsorted, none of which anybody invoices.
+     * Their tabs were permanently there (Studio logs more hours than any real
+     * client, so the 90-day recency rule always let it in) offering a report with
+     * no billable task in it — the table renders only billable tasks, so it was a
+     * tab that could never say anything.
+     * ⚠️ It also means `client.billable` is always true on this page, which is why
+     * the keys-task prompt can be read as "this client needs one".
+     */
     return clients
-      .filter((c) => !c.archived && activeIds.has(c.id))
+      .filter((c) => !c.archived && c.billable && activeIds.has(c.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [clients, entrySumsAll, taskClient, links]);
 
@@ -1239,43 +1286,17 @@ function PublishWorkspace() {
                 "Never published — clients see nothing until you publish."
               )}
             </span>
-            {/*
-              ⚠️ IT SITS BESIDE PUBLISH, NOT IN THE FILTER PILLS ABOVE, and the
-              placement is the point: the pills only change what the STUDIO is
-              looking at, while this changes the hours the client is billed against.
-              Different kind of control, so it lives with the button that commits it.
-              ⚠️ Clearing it means "everything", which is the pre-feature behaviour.
-            */}
-            <label
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ${
-                throughIsStale
-                  ? "border-amber-500 bg-amber-50 text-amber-900"
-                  : "border-border bg-surface text-muted"
-              }`}
-              title="Count hours up to and including this day. Defaults to the end of the last complete week, so publishing on a Sunday afternoon does not pull in the new week's hours."
-            >
-              <span className="whitespace-nowrap">Hours through</span>
-              <input
-                type="date"
-                value={through}
-                onChange={(e) => setThrough(e.target.value)}
-                className="rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-brand"
-              />
-            </label>
-            {/* ⚠️ Placed AFTER the field and before Publish, so it is read on the
-                way to the button that commits it. See `throughIsStale`. */}
-            {throughIsStale && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
-                a week behind — the last complete week ended {formatDayMonth(weekEnd)}
-                <button
-                  onClick={() => setThrough(weekEnd)}
-                  className="rounded-md border border-amber-500 px-1.5 py-0.5 font-semibold text-amber-900 hover:bg-amber-100"
-                  title="Scope this report to the end of the last complete week"
-                >
-                  use {formatDayMonth(weekEnd)}
-                </button>
-              </span>
-            )}
+            {/* ⚠️⚠️ "Hours through" USED TO SIT HERE AND IS NOW ONLY IN THE PUBLISH
+                CHECKLIST — Nitsan: *"do i need Hours through outside? as i define
+                it on the popup after i press publish button"*. He is right, and it
+                is a true duplicate rather than two views of one thing: the PREVIEW
+                is built to today (`preview`) and only `publishable` is cut at
+                `through`, so this field never changed anything on screen — it
+                changed what the next publish would contain, which is exactly what
+                the checklist is for. The staleness warning and its `use ‹date›`
+                button moved with it, so they are still read on the way to the
+                button that commits them. `throughIsStale` is still computed for
+                the dialog. */}
             <button
               onClick={copyLink}
               className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:border-brand hover:text-brand"
@@ -1383,7 +1404,13 @@ function PublishWorkspace() {
               <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
               <div className="absolute right-0 top-full z-40 max-h-72 w-56 overflow-y-auto rounded-2xl border border-border bg-surface shadow-card p-1 shadow-xl">
                 {clients
-                  .filter((c) => !c.archived && (hiddenTabs.includes(c.id) || !candidates.some((x) => x.id === c.id)))
+                  .filter(
+                    (c) =>
+                      !c.archived &&
+                      // same rule as the strip: an internal client has no report
+                      c.billable &&
+                      (hiddenTabs.includes(c.id) || !candidates.some((x) => x.id === c.id)),
+                  )
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((c) => (
                     <button
@@ -1540,17 +1567,41 @@ function PublishWorkspace() {
                   {foldedSections.length > 1 ? "s" : ""}
                 </button>
               )}
-              <span className="ml-auto text-[11px] text-faint">
-                These only change your view — the eye icons are what the client sees
+              {/* ⚠️⚠️ TWO PARAGRAPHS OF INSTRUCTIONS USED TO SIT HERE, above the
+                  table, on every visit — Nitsan: *"lets hide all explanations
+                  above the table in a (i) button"*. They are read once and then
+                  they are furniture, on the page the studio invoices from, where
+                  the table wants the height. ⚠️ The ONE line that is not
+                  instructions stays out loud: what the filters do and do not
+                  change is a claim about what a client will see, and hiding it
+                  behind a dot is how somebody publishes a view thinking they had
+                  narrowed it.
+                  ⚠️ `align="right"` — the dot sits at the pane's right edge, so a
+                  card hanging left-to-right would open off the screen. */}
+              <span className="ml-auto flex items-center gap-1.5 text-[11px] text-faint">
+                These only change your view
+                <InfoDot title="Working in this table" align="right">
+                  <p>
+                    <strong>The eye icons are what the client sees</strong> — these filter pills only
+                    change your own view.
+                  </p>
+                  <p className="mt-1.5">
+                    {/* ⚠️ Explicit `{" "}`: JSX drops the whitespace at a line break that
+                        follows a tag, so this rendered as "+between". */}
+                    Press <strong>+</strong>{" "}
+                    between two column titles to end a payment period there, and drag a divider to
+                    move it. Columns are weeks cut at every
+                    payment-period boundary, so a period&apos;s dates decide where they break, and
+                    every day of a defined period gets a column even with nothing logged in it.
+                  </p>
+                  <p className="mt-1.5">
+                    Click or drag the hour cells to total them. Hover one to see who logged it, read
+                    their notes, and write hours down to this client&apos;s Keys task.
+                  </p>
+                  <p className="mt-1.5">Publishing freezes exactly what is on screen.</p>
+                </InfoDot>
               </span>
             </div>
-            <p className="mb-2 text-[11px] text-faint">
-              Preview — eye toggles hide rows/columns from the client&apos;s view, + between column
-              titles ends a payment period there, drag a divider to move it. Columns are weeks cut
-              at every payment-period boundary, so a period&apos;s dates decide where they break.
-              Click or drag the hour cells to total them; hover one to see who logged it. Publishing
-              freezes this exact data.
-            </p>
             <ReportTable
               snapshot={preview}
               hiddenColumns={hiddenColumns}

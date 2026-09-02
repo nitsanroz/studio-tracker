@@ -77,8 +77,80 @@ describe("buildWeeks", () => {
     expect(weeks.map((w) => `${w.from}..${w.to}`)).toEqual(["2026-08-16..2026-08-22"]);
   });
 
-  it("returns nothing when there are no entries", () => {
+  /**
+   * Nitsan's rule, and the report that produced it: *"theres a week missing in
+   * baseline"*. A bucket used to need hours to exist, so a quiet week in the middle
+   * of a month read as though a week of the report had gone missing — which on a
+   * page a client reads is a completely different claim from "we logged nothing
+   * that week".
+   */
+  it("keeps an empty week that falls inside a billing period", () => {
+    // as the app calls it: the cuts and the cover come from the SAME periods, so a
+    // bucket that pokes out of the period is trimmed at its edge
+    const august = { dateFrom: "2026-08-01", dateTo: "2026-08-31" } as BillingPeriod;
+    const cover = [{ from: august.dateFrom, to: august.dateTo }];
+    // hours on either side of the Sun 9 – Sat 15 week, none in it
+    const weeks = buildWeeks([e("2026-08-05"), e("2026-08-19")], periodCuts([august]), cover);
+    expect(weeks.map((w) => `${w.from}..${w.to}`)).toEqual([
+      "2026-08-01..2026-08-01", // 1 Aug is a Saturday — the period's own first day
+      "2026-08-02..2026-08-08",
+      "2026-08-09..2026-08-15", // ← the week that used to go missing
+      "2026-08-16..2026-08-22",
+      "2026-08-23..2026-08-29",
+      "2026-08-30..2026-08-31",
+    ]);
+  });
+
+  it("covers a period's whole span, before the first logged hour and after the last", () => {
+    const august = { dateFrom: "2026-08-01", dateTo: "2026-08-31" } as BillingPeriod;
+    const weeks = buildWeeks([e("2026-08-19")], periodCuts([august]), [
+      { from: august.dateFrom, to: august.dateTo },
+    ]);
+    expect(weeks[0].from).toBe("2026-08-01");
+    expect(weeks[weeks.length - 1].to).toBe("2026-08-31");
+    // and every day of the period is in exactly one column
+    const days = weeks.reduce((n, w) => n + (Date.parse(w.to) - Date.parse(w.from)) / 864e5 + 1, 0);
+    expect(days).toBe(31);
+  });
+
+  it("still leaves out an empty week that no period covers", () => {
+    // the skipping he does want: a stretch with no period over it
+    const cover = [{ from: "2026-08-16", to: "2026-08-31" }];
+    const weeks = buildWeeks([e("2026-08-05"), e("2026-08-19")], [], cover);
+    expect(weeks.map((w) => w.from)).toEqual([
+      "2026-08-02", // has hours
+      "2026-08-16", // in the period
+      "2026-08-23", // in the period, no hours
+      "2026-08-30", // in the period, no hours
+    ]);
+  });
+
+  it("obeys the period cuts while filling, so a covered week still splits", () => {
+    const cuts = periodCuts([
+      { dateFrom: "2026-08-01", dateTo: "2026-08-19" } as BillingPeriod,
+      { dateFrom: "2026-08-20", dateTo: "2026-08-31" } as BillingPeriod,
+    ]);
+    const cover = [
+      { from: "2026-08-01", to: "2026-08-19" },
+      { from: "2026-08-20", to: "2026-08-31" },
+    ];
+    const weeks = buildWeeks([e("2026-08-03")], cuts, cover);
+    expect(weeks.map((w) => `${w.from}..${w.to}`)).toContain("2026-08-16..2026-08-19");
+    expect(weeks.map((w) => `${w.from}..${w.to}`)).toContain("2026-08-20..2026-08-22");
+  });
+
+  it("returns nothing when there are no entries and no periods", () => {
     expect(buildWeeks([])).toEqual([]);
+  });
+
+  it("draws a period's columns even with no hours at all", () => {
+    // a client billed for a month they have not been worked on yet: the columns
+    // exist and read zero, rather than the report looking like it has no scope
+    const weeks = buildWeeks([], [], [{ from: "2026-08-02", to: "2026-08-15" }]);
+    expect(weeks.map((w) => `${w.from}..${w.to}`)).toEqual([
+      "2026-08-02..2026-08-08",
+      "2026-08-09..2026-08-15",
+    ]);
   });
 
 });

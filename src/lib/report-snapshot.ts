@@ -9,7 +9,26 @@ import type {
 } from "./types";
 
 /**
- * Sun–Sat week buckets covering the given entries; only weeks that HAVE hours.
+ * Sun–Sat week buckets, cut at every billing-period boundary.
+ *
+ * A bucket is emitted when it HAS HOURS or when it falls inside one of `cover` —
+ * the billing periods.
+ *
+ * ⚠️⚠️ EVERY DAY OF A DEFINED PERIOD GETS A COLUMN, EVEN WITH NOTHING LOGGED IN
+ * IT, and that is Nitsan's rule: *"make sure all days and weeks are created inside
+ * a biling period and nothing is missing, dont allow days to be missed only allow
+ * skipping days or months in the defined billing periods"*. Until this, a bucket
+ * needed hours to exist at all — so a quiet week in the middle of a period simply
+ * was not there, and Baseline's report read as though a week of the month had gone
+ * missing. A skipped stretch is now only ever something the STUDIO chose by not
+ * defining a period over it; inside a period the calendar is continuous.
+ * ⚠️ A zero column is information, not noise: on a report a client reads, "we
+ * logged nothing that week" and "that week is not in this report" are completely
+ * different claims, and the old behaviour could not tell them apart.
+ *
+ * ⚠️ Days with hours but NO period still get their column — that is what keeps
+ * years of pre-period history visible, and it is why this is a union rather than
+ * "the periods decide everything".
  *
  * `cuts` are dates a column may not span INTO — see `periodCuts`. A week holding
  * one is split there, so no column ever straddles a billing-period boundary.
@@ -32,13 +51,28 @@ import type {
 export function buildWeeks(
   entries: EntrySum[],
   cuts: string[] = [],
+  /** spans every day of which must have a column — the billing periods */
+  cover: { from: string; to: string }[] = [],
 ): { label: string; from: string; to: string }[] {
-  if (entries.length === 0) return [];
   const dates = entries.map((e) => e.date).sort();
-  const last = dates[dates.length - 1];
+  const spans = [...cover].sort((a, b) => a.from.localeCompare(b.from));
+  const firstDay = [dates[0], spans[0]?.from].filter(Boolean).sort()[0];
+  /**
+   * ⚠️ The walk ends at the later of the last logged day and the last period's
+   * end. A period that runs into the future therefore gets its remaining weeks as
+   * empty columns — which is the point: they are days the client is being billed
+   * for. `buildReportSnapshot`'s `through` cut-off is what trims them back when a
+   * report is scoped, and it is applied to `cover` before this is called.
+   */
+  const lastDay = [dates[dates.length - 1], spans[spans.length - 1]?.to]
+    .filter(Boolean)
+    .sort()
+    .pop();
+  if (!firstDay || !lastDay) return [];
+  const last = lastDay;
   const weeks: { label: string; from: string; to: string }[] = [];
 
-  let cur = startOfWeek(parseISO(dates[0]));
+  let cur = startOfWeek(parseISO(firstDay));
   // `dates` is sorted and `from` only moves forward, so one pointer answers "does
   // this week hold hours?" for every bucket in a single pass. It used to be a
   // `pool.some(...)` rescan per week — 238 columns × several thousand entries.
@@ -62,7 +96,11 @@ export function buildWeeks(
     const cut = sortedCuts.find((c) => c > from && c <= weekEnd);
     const to = cut ? toISODate(shiftDays(parseISO(cut), -1)) : weekEnd;
     while (i < dates.length && dates[i] < from) i++;
-    if (i < dates.length && dates[i] <= to) {
+    const hasHours = i < dates.length && dates[i] <= to;
+    // `to` never crosses a period boundary (the cut above), so an overlap here
+    // means the whole bucket sits inside that period.
+    const inPeriod = spans.some((p) => p.from <= to && p.to >= from);
+    if (hasHours || inPeriod) {
       weeks.push({ label: shortRangeLabel(from, to), from, to });
     }
     cur = shiftDays(parseISO(to), 1);
@@ -142,8 +180,16 @@ export function buildReportSnapshot(
   /**
    * ⚠️ Sun–Sat weeks, cut at every billing-period boundary, and nothing else —
    * see `buildWeeks` for why the hand-edited override was removed.
+   *
+   * ⚠️ The periods are ALSO what fills the calendar in: every day of a defined
+   * period gets a column whether or not anything was logged in it. Clipped to the
+   * cut-off first, or a report scoped to last Saturday would still carry empty
+   * columns for the rest of the period — the thing `through` exists to keep out.
    */
-  const weeks = buildWeeks(clientEntries, periodCuts(sorted));
+  const cover = sorted
+    .map((p) => ({ from: p.dateFrom, to: through && p.dateTo > through ? through : p.dateTo }))
+    .filter((p) => p.from <= p.to);
+  const weeks = buildWeeks(clientEntries, periodCuts(sorted), cover);
 
   for (const e of clientEntries) {
     totalByTask.set(e.taskId, (totalByTask.get(e.taskId) ?? 0) + e.minutes);
