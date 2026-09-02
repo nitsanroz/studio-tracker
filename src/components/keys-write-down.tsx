@@ -148,7 +148,11 @@ export function KeysButton({ state, label = true }: { state: KeysWriteDownState;
       }}
       title={`Move some of these hours to ${state.keysTaskTitle}, so they are not billed`}
       aria-pressed={state.open}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md border font-semibold ${
+      // ⚠️ 44px tall on a phone, the floor this app has held since v1.15.0 and
+      // restored once already (v1.32.3) — from `md` up it is the tight desktop
+      // size it was designed at. The `sm` variant only ever renders on
+      // desktop-gated surfaces, but it costs nothing to be right either way.
+      className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border font-semibold md:min-h-0 ${
         sm ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
       } ${
         state.open
@@ -347,7 +351,7 @@ export function KeysTaskButton({ state }: { state: KeysTaskState }) {
       }}
       title={`Move a number of one designer's hours to ${state.keysTaskTitle}, so they are not billed`}
       aria-pressed={state.open}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold ${
+      className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold md:min-h-0 ${
         state.open
           ? "border-brand bg-brand text-white"
           : "border-border bg-surface text-muted hover:border-brand hover:text-brand"

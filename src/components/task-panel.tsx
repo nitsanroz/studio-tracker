@@ -1424,9 +1424,14 @@ function TimeLogRow({
             down from, and a lit control on every row competes with the hours.
             ⚠️ Except while its OWN field is open — the pointer has usually left
             the row by then, and a toggle that vanishes leaves the field looking
-            like it has no way back. */}
+            like it has no way back.
+            ⚠️⚠️ NOT RENDERED AT ALL BELOW `md`: a phone has no hover, so this was
+            a control that existed and could never be revealed. Tapping the row
+            opens the entry editor, which carries its own Keys row — a full-size
+            target instead of a 25×17px one wedged beside a 300px row, which is
+            the same call `logged-day.tsx` makes about its edit affordance. */}
         <span
-          className={`shrink-0 focus-within:opacity-100 group-hover:opacity-100 ${
+          className={`hidden shrink-0 focus-within:opacity-100 group-hover:opacity-100 md:inline-flex ${
             keys.open ? "" : "opacity-0"
           }`}
         >
