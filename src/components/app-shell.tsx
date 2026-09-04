@@ -172,19 +172,37 @@ function ThemeInit() {
  * without it there'd be no way to tell working from broken.
  */
 function SyncDot() {
-  const { refreshing, lastSyncedAt, refresh } = useData();
+  const { refreshing, lastSyncedAt, pollingPaused, refresh } = useData();
   const when = lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "not yet";
+  /*
+    ⚠️ The paused state has to be VISIBLE, because a dot that looks identical
+    whether or not the app is still polling is a dot that quietly lies. Polling
+    stops after IDLE_AFTER_MS untouched (an open tab costs ~110 MB/hour, which
+    is what put the org over its egress allowance), and the figures on screen
+    are then as of `lastSyncedAt` rather than a minute old.
+
+    Deliberately quiet about it: a hollow ring rather than a warning colour, and
+    the explanation in the tooltip. Nothing is wrong, nothing needs doing, and
+    the next click or keystroke resumes it — so this is a status, not an alert.
+  */
+  const title = pollingPaused
+    ? `Updated ${when} — paused while you're away, click to refresh`
+    : `Updated ${when} — click to refresh now`;
   return (
     <button
       onClick={refresh}
-      title={`Updated ${when} — click to refresh now`}
-      aria-label="Refresh data"
+      title={title}
+      aria-label={pollingPaused ? "Refresh data (updates paused)" : "Refresh data"}
       className="flex size-6 shrink-0 items-center justify-center rounded-full hover:bg-black/5"
     >
       <span
-        className={`size-1.5 rounded-full bg-brand transition-opacity ${
-          refreshing ? "animate-pulse opacity-70" : "opacity-20"
-        }`}
+        className={
+          pollingPaused
+            ? "size-1.5 rounded-full border border-brand opacity-40"
+            : `size-1.5 rounded-full bg-brand transition-opacity ${
+                refreshing ? "animate-pulse opacity-70" : "opacity-20"
+              }`
+        }
       />
     </button>
   );

@@ -435,6 +435,76 @@ export function mergeTimeEntries(
 }
 
 /**
+ * Whether the interval should fetch at all on this tick.
+ *
+ * ⚠️ THIS IS AN EGRESS CONTROL, and the numbers behind it are measured, not
+ * guessed. A tab merely OPEN costs ~110 MB per hour in polling (6 cold ticks at
+ * 7.7 MB, 18 tasks ticks at 2.9 MB, 36 hot ticks at 0.37 MB). One person leaving
+ * the tracker on a second monitor for a working day therefore spends ~880 MB —
+ * a fifth of the org's whole 5 GB monthly allowance, without touching it. That
+ * is what put the studio at 284% of its allowance and got the project cut off
+ * with a 402 on 4 Sep. Measured workdays after the tier fixes still averaged
+ * 280 MB against a 233 MB/day budget, and the gap is idling.
+ *
+ * `hidden` was already handled — a background tab fetches nothing. The gap this
+ * closes is the tab that is VISIBLE and ignored: on screen, nobody touching it,
+ * polling all afternoon.
+ *
+ * ⚠️ Pausing is only safe because waking is immediate: the first pointer move,
+ * key or scroll refreshes at once (cold, if the pause outlasted
+ * COLD_AFTER_AWAY_MS), so nobody can act on figures that went stale while they
+ * were away. Without that wake this would be a correctness bug, not a saving.
+ */
+export function pollDecision(a: {
+  /** document.hidden — another tab, or the window minimised */
+  hidden: boolean;
+  /** since the last pointer/key/scroll/focus event in this tab */
+  msSinceActivity: number;
+  /** how long a visible tab may sit untouched before polling stops */
+  idleAfterMs: number;
+}): "poll" | "skip-hidden" | "skip-idle" {
+  if (a.hidden) return "skip-hidden";
+  if (a.msSinceActivity >= a.idleAfterMs) return "skip-idle";
+  return "poll";
+}
+
+/**
+ * What a tick's `pollDecision` means for the idle state — the transition, kept
+ * apart from the DOM so it can be tested without waiting fifteen real minutes.
+ *
+ * ⚠️ Extracted because the end-to-end behaviour is impractical to observe: the
+ * dev preview reloads the page (Fast Refresh), reports `document.hidden` while
+ * the pane is off screen, and slows the tick tenfold, and each of those alone
+ * defeats the test. What remains unverified by test is only the DOM listener
+ * registration itself.
+ *
+ * `announce` fires ONCE per pause, not per tick — a paused tab keeps deciding
+ * "skip-idle" every minute and must not re-render on each.
+ * `catchUp` fires ONCE on waking, and is the half that makes pausing safe at
+ * all: without it a woken tab would show whatever it held when it fell asleep.
+ */
+export function idleTransition(
+  paused: boolean,
+  decision: ReturnType<typeof pollDecision>,
+): { paused: boolean; announce: boolean; catchUp: boolean } {
+  if (decision === "skip-idle") {
+    return { paused: true, announce: !paused, catchUp: false };
+  }
+  // ⚠️ A hidden tab must NOT clear the pause, and must not catch up either:
+  // nobody is looking, and coming back to the tab fires its own focus event.
+  if (decision === "skip-hidden") return { paused, announce: false, catchUp: false };
+  return { paused: false, announce: false, catchUp: false };
+}
+
+/**
+ * Waking from idle, on the first pointer/key/scroll. Separate from the tick
+ * above because it is driven by input, not by the clock.
+ */
+export function wakeTransition(paused: boolean): { paused: boolean; catchUp: boolean } {
+  return paused ? { paused: false, catchUp: true } : { paused: false, catchUp: false };
+}
+
+/**
  * Whether a refresh response that has just landed may be applied.
  *
  * ⚠️ This is the rule behind "I changed something and it jumped back", so it is

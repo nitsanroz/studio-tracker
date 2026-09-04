@@ -5,7 +5,10 @@ import {
   fetchTasks,
   fingerprint,
   historyEpochShouldMove,
+  idleTransition,
+  pollDecision,
   refreshVerdict,
+  wakeTransition,
 } from "./snapshot";
 import type { HotSnapshot } from "./snapshot";
 import type { EntrySum } from "./types";
@@ -328,5 +331,115 @@ describe("historyEpochShouldMove", () => {
   it("does not move on a quiet tick", () => {
     expect(historyEpochShouldMove({ printChanged: false, wroteSincePrint: false })).toBe(false);
     expect(historyEpochShouldMove({ printChanged: false, wroteSincePrint: true })).toBe(false);
+  });
+});
+
+// ── whether to poll at all ───────────────────────────────────────────────
+// An open tab costs ~110 MB/hour in polling, so a tracker left on a second
+// monitor for a working day spends ~880 MB of a 5 GB monthly allowance without
+// anyone touching it. That is what got the project cut off with a 402. These
+// cases are the rule that stops it, and the 15-minute threshold is only safe
+// because waking is immediate — see `catchUp` in store.tsx.
+
+const IDLE = 15 * 60_000;
+const decide = (over: Partial<Parameters<typeof pollDecision>[0]> = {}) =>
+  pollDecision({ hidden: false, msSinceActivity: 0, idleAfterMs: IDLE, ...over });
+
+describe("pollDecision", () => {
+  it("polls a tab someone is using", () => {
+    expect(decide()).toBe("poll");
+    expect(decide({ msSinceActivity: 60_000 })).toBe("poll");
+  });
+
+  it("keeps polling through an ordinary pause in work", () => {
+    // Reading a brief, a phone call, a conversation over a desk. The threshold
+    // has to sit well beyond these or people would notice it.
+    expect(decide({ msSinceActivity: 14 * 60_000 })).toBe("poll");
+  });
+
+  it("stops once the tab has been untouched for the full interval", () => {
+    expect(decide({ msSinceActivity: IDLE })).toBe("skip-idle");
+    expect(decide({ msSinceActivity: 8 * 3_600_000 })).toBe("skip-idle");
+  });
+
+  it("hidden beats idle, and is reported separately", () => {
+    // Different reasons, and the store treats them differently: a hidden tab
+    // says nothing to the user, while an idle one dims the sync dot.
+    expect(decide({ hidden: true })).toBe("skip-hidden");
+    expect(decide({ hidden: true, msSinceActivity: IDLE })).toBe("skip-hidden");
+  });
+
+  it("is exclusive at the boundary, so the threshold can't be off by a tick", () => {
+    expect(decide({ msSinceActivity: IDLE - 1 })).toBe("poll");
+    expect(decide({ msSinceActivity: IDLE })).toBe("skip-idle");
+  });
+});
+
+// ── the idle state machine ───────────────────────────────────────────────
+// The transitions, which are what a browser test would have exercised and
+// couldn't: the dev preview reloads the page, reports document.hidden while the
+// pane is off screen, and slows the tick tenfold. Two properties matter — the
+// pause is announced ONCE however long it lasts, and waking ALWAYS catches up.
+
+describe("idleTransition", () => {
+  it("a used tab is not paused and says nothing", () => {
+    expect(idleTransition(false, "poll")).toEqual({ paused: false, announce: false, catchUp: false });
+  });
+
+  it("announces the pause exactly once, not on every later tick", () => {
+    // A paused tab keeps deciding skip-idle every minute; re-announcing would
+    // re-render the whole app once a minute for as long as it sits there.
+    expect(idleTransition(false, "skip-idle")).toEqual({
+      paused: true,
+      announce: true,
+      catchUp: false,
+    });
+    expect(idleTransition(true, "skip-idle")).toEqual({
+      paused: true,
+      announce: false,
+      catchUp: false,
+    });
+  });
+
+  it("a hidden tab neither pauses nor un-pauses", () => {
+    // ⚠️ Both directions. Hiding must not claim "paused while you're away" —
+    // nobody is looking — and it must not clear a pause that was already set,
+    // or hiding and showing a tab would silently resume polling forever.
+    expect(idleTransition(false, "skip-hidden")).toEqual({
+      paused: false,
+      announce: false,
+      catchUp: false,
+    });
+    expect(idleTransition(true, "skip-hidden")).toEqual({
+      paused: true,
+      announce: false,
+      catchUp: false,
+    });
+  });
+
+  it("resuming clears the pause without announcing anything", () => {
+    // The clock alone can't wake it — only input can, via wakeTransition — so a
+    // "poll" decision while paused should never happen, and if it does the state
+    // must land un-paused rather than stuck.
+    expect(idleTransition(true, "poll")).toEqual({
+      paused: false,
+      announce: false,
+      catchUp: false,
+    });
+  });
+});
+
+describe("wakeTransition", () => {
+  it("waking from a pause catches up", () => {
+    // THE property that makes pausing safe. Without this a woken tab would show
+    // whatever it held when it fell asleep, which is the silent-staleness bug
+    // this whole change is supposed to avoid.
+    expect(wakeTransition(true)).toEqual({ paused: false, catchUp: true });
+  });
+
+  it("ordinary input on a live tab fetches nothing", () => {
+    // This runs on every pointermove. If it asked for a refresh, moving the
+    // mouse would hammer the database.
+    expect(wakeTransition(false)).toEqual({ paused: false, catchUp: false });
   });
 });

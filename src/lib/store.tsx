@@ -44,8 +44,11 @@ import {
   fingerprint,
   mergeTasks,
   mergeTimeEntries,
+  idleTransition,
+  pollDecision,
   historyEpochShouldMove,
   refreshVerdict,
+  wakeTransition,
   type ColdSnapshot,
   type HotCtx,
   type HotSnapshot,
@@ -422,6 +425,12 @@ interface Store {
   dismissNotice: () => void;
   /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
   refreshing: boolean;
+  /**
+   * Polling has stopped because nobody has touched this tab for IDLE_AFTER_MS.
+   * Surfaced so the sync dot can stop implying the figures are live — the data
+   * is as of `lastSyncedAt`, and any interaction resumes immediately.
+   */
+  pollingPaused: boolean;
   /** epoch ms of the last successful sync, for the indicator's tooltip. */
   lastSyncedAt: number | null;
   /** Force a refresh now (the interval and tab-focus do this automatically). */
@@ -493,6 +502,31 @@ const FOCUS_MAX_STALE_MS = 5 * 60_000;
 const FOCUS_MIN_GAP_MS = 20_000;
 /** Coming back after this long is worth a full refresh, not just the hot half. */
 const COLD_AFTER_AWAY_MS = 5 * 60_000;
+/**
+ * How long a VISIBLE tab may sit untouched before polling stops entirely.
+ *
+ * ⚠️ The single largest remaining egress lever, and the arithmetic is measured:
+ * an open tab costs ~110 MB/hour in polling, so one person leaving the tracker
+ * on a second monitor for a working day spends ~880 MB — a fifth of the org's
+ * 5 GB monthly allowance without touching it. `document.hidden` already covered
+ * background tabs; this covers the tab that is on screen and ignored, which is
+ * how the studio reached 284% of its allowance and was cut off with a 402.
+ *
+ * 15 minutes because it must be far longer than any pause in real work — reading
+ * a brief, a phone call, a conversation over a desk — so that nobody ever
+ * notices it. Waking is instant on the first pointer/key/scroll, and cold if the
+ * pause outran COLD_AFTER_AWAY_MS, so no one can act on stale figures.
+ */
+const IDLE_AFTER_MS = idleAfterMs();
+function idleAfterMs(): number {
+  // ⚠️ Verifying this at 15 minutes a cycle is impractical, and an unverified
+  // idle-stop fails as PERMANENTLY STALE DATA — so dev may shorten it, the same
+  // affordance NEXT_PUBLIC_FULL_REFRESH gives the tick above. Gated on NODE_ENV,
+  // so production is provably 15 minutes whatever the environment says.
+  const override =
+    process.env.NODE_ENV === "development" ? Number(process.env.NEXT_PUBLIC_IDLE_AFTER_MS) : 0;
+  return override > 0 ? override : 15 * 60_000;
+}
 /** How long an in-flight write blocks a refresh before we assume it leaked. */
 const WRITE_SETTLE_MS = 15_000;
 
@@ -704,6 +738,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
   /** What `fetchHot` needs from the cold half; kept in a ref so refresh() is stable. */
   const coldCtxRef = useRef<HotCtx>({ tagNames: new Map(), projectClient: new Map() });
   const openTaskIdRef = useRef<string | null>(null);
+  /**
+   * Last pointer/key/scroll/focus in this tab — drives IDLE_AFTER_MS. Seeded
+   * when the polling effect arms rather than here: `Date.now()` during render is
+   * impure, and boot is the honest start of the idle clock anyway — a slow boot
+   * shouldn't spend the user's first minutes of grace before the app is usable.
+   */
+  const lastActivityRef = useRef(0);
+  /** Whether polling is currently paused, as a ref so the interval can read it. */
+  const idleRef = useRef(false);
+  /**
+   * The same flag as state, so the sync dot can say so. Set ONLY on the two
+   * transitions, never per tick or per mouse move — this must not re-render the
+   * whole app on pointermove.
+   */
+  const [pollingPaused, setPollingPaused] = useState(false);
 
   // In-flight optimistic writes. A refresh must not land between the local
   // setState and the server commit, or the user's own edit flickers backwards.
@@ -1281,9 +1330,61 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading || bootError) return; // boot owns the first load
+    lastActivityRef.current = Date.now(); // the app just became usable
     let ticks = 0;
+
+    /**
+     * Bring the screen up to date after a gap. Shared by tab-focus and by waking
+     * from idle, because they are the same event as far as the data goes: time
+     * passed without fetching, and the user is now looking.
+     */
+    const catchUp = (reason: string) => {
+      if (document.hidden) return;
+      const since = Date.now() - (lastSyncedRef.current ?? 0);
+      // macOS fires focus on every window switch; don't refetch for an alt-tab
+      if (since < FOCUS_MIN_GAP_MS) return;
+      void refreshRef.current?.({ cold: since > COLD_AFTER_AWAY_MS, reason });
+    };
+
+    /** Leave the idle state, if we were in it, and catch up. */
+    const wake = (reason: string) => {
+      const t = wakeTransition(idleRef.current);
+      if (!t.catchUp) return false;
+      idleRef.current = t.paused;
+      setPollingPaused(t.paused);
+      console.debug("[poll] resumed —", reason);
+      catchUp(reason);
+      return true;
+    };
+
+    /**
+     * ⚠️ Hot path: this runs on every pointermove. It must stay a timestamp
+     * write plus one boolean read — no setState, no work — or the app re-renders
+     * continuously while the mouse moves.
+     */
+    const onActivity = () => {
+      lastActivityRef.current = Date.now();
+      wake("woke");
+    };
+
     const id = setInterval(() => {
-      if (document.hidden) return; // nothing to look at, nothing to fetch
+      const decision = pollDecision({
+        hidden: document.hidden,
+        msSinceActivity: Date.now() - lastActivityRef.current,
+        idleAfterMs: IDLE_AFTER_MS,
+      });
+      // Announce the pause once, so the sync dot can stop claiming to be live.
+      // `hidden` deliberately does NOT set this: nobody is looking at a
+      // background tab, and it resumes the moment they come back to it.
+      const t = idleTransition(idleRef.current, decision);
+      if (t.announce) {
+        console.debug("[poll] paused — untouched for", Math.round(IDLE_AFTER_MS / 1000), "s");
+      }
+      if (t.paused !== idleRef.current) {
+        idleRef.current = t.paused;
+        setPollingPaused(t.paused);
+      }
+      if (decision !== "poll") return;
       ticks++;
       void refreshRef.current?.({
         cold: ticks % COLD_EVERY_N_TICKS === 0,
@@ -1291,17 +1392,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
         reason: "interval",
       });
     }, HOT_INTERVAL_MS);
+
     const onFocus = () => {
-      if (document.hidden) return;
-      const since = Date.now() - (lastSyncedRef.current ?? 0);
-      // macOS fires focus on every window switch; don't refetch for an alt-tab
-      if (since < FOCUS_MIN_GAP_MS) return;
-      void refreshRef.current?.({ cold: since > COLD_AFTER_AWAY_MS, reason: "focus" });
+      lastActivityRef.current = Date.now();
+      // Coming back to the tab is activity AND a focus event; `wake` catches up
+      // when we were idle, and this covers the ordinary case when we weren't.
+      if (!wake("woke")) catchUp("focus");
     };
+
+    // capture + passive: some components stopPropagation, and none of these
+    // handlers ever calls preventDefault.
+    const ACTIVITY = ["pointerdown", "pointermove", "keydown", "wheel", "touchstart", "scroll"];
+    for (const e of ACTIVITY) {
+      document.addEventListener(e, onActivity, { passive: true, capture: true });
+    }
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
     return () => {
       clearInterval(id);
+      for (const e of ACTIVITY) {
+        document.removeEventListener(e, onActivity, { capture: true });
+      }
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onFocus);
     };
@@ -3977,6 +4088,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dismissNotice,
       freshEntryId,
       refreshing,
+      pollingPaused,
       lastSyncedAt,
       refresh: refreshNow,
       bootError,
@@ -3984,7 +4096,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [
       loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
       currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, lastSyncedAt, refreshNow, bootError,
+      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, pollingPaused, lastSyncedAt, refreshNow, bootError,
     ],
   );
 
