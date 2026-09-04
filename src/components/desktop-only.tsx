@@ -29,21 +29,17 @@ type Entry = { label: string; why: string; toHref: string; toLabel: string };
  * drawer with no entry here renders its real (broken) page on a phone.
  */
 const DESKTOP_ONLY: Array<[string, Entry]> = [
+  // ⚠️ `/plan` was here until the phone build landed and is deliberately GONE,
+  // not commented out: `plan-mobile.tsx` gives it a real one — a day at a time,
+  // people down the page, editable through pickers instead of drags. The card
+  // used to say "work is scheduled by dragging, which isn't a phone gesture",
+  // which was true of the GRID and not of the plan.
   // ⚠️ `/clients` and `/clients/[id]` were both here until v1.14.0 and are
-  // deliberately GONE, not commented out: `client-mobile.tsx` gives each of them
+  // deliberately GONE for the same reason: `client-mobile.tsx` gives each of them
   // a real phone build. The client page's phone build is the TASK LIST ONLY —
   // its Timeline and Board tabs simply aren't offered there, which is a choice
   // made inside that component rather than a route-level block, because the rest
   // of the page is genuinely useful on a phone.
-  [
-    "/plan",
-    {
-      label: "Weekly plan",
-      why: "It is a fixed grid — one 175px column per designer, about 1,850px across — and work is scheduled by dragging, which isn't a phone gesture.",
-      toHref: "/my-tasks",
-      toLabel: "My tasks",
-    },
-  ],
   [
     "/feed",
     {

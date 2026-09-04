@@ -53,7 +53,10 @@ const DRAWER_MS = 200;
 // real, broken page.
 const NAV = [
   { href: "/", label: "Home", Icon: House, mobile: true },
-  { href: "/plan", label: "Weekly Plan", Icon: CalendarDays, mobile: false },
+  // `mobile: true` since the plan's phone build — a day at a time, people down
+  // the page (`plan-mobile.tsx`), so it is in the drawer and has no
+  // `desktop-only.tsx` entry any more.
+  { href: "/plan", label: "Weekly Plan", Icon: CalendarDays, mobile: true },
   { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig, mobile: true },
   { href: "/feed", label: "Time Feed", Icon: History, mobile: false },
   { href: "/settings", label: "Settings", Icon: Settings, mobile: true },
