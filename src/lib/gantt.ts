@@ -6,7 +6,7 @@
  * editable one on the client page and the read-only one behind a share link —
  * and a client looking at a published plan has to see the same bars, on the
  * same days, as the person who scheduled them. Every one of these functions was
- * previously private to `client-timeline.tsx`; copying them would have been a
+ * previously private to `client-timeline`; copying them would have been a
  * silent invitation for the two to drift a day apart.
  */
 
@@ -221,7 +221,7 @@ export function ticksFor(
  * The date window a chart spans: where it starts, and how many days it covers.
  *
  * ⚠️ ONE IMPLEMENTATION FOR BOTH CHARTS, AND THAT IS THE POINT. This was
- * duplicated in `client-timeline.tsx` and `public-gantt-view.tsx`, and the
+ * duplicated in `client-timeline` and `public-gantt-view.tsx`, and the
  * copies drifted exactly as this module's own header warns: v1.12.1 taught the
  * PUBLIC one that milestone dates widen the window — a launch is routinely set
  * after the last task's due date — and the studio's own copy never learned it,

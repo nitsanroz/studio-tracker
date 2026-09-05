@@ -715,7 +715,7 @@ const MONTH_NAMES = [
  * row border cut across it and the result was a dashed column of smudges — which
  * is what Nitsan called "holes".
  *
- * ⚠️ `client-timeline.tsx` already learned exactly this and says so at its
+ * ⚠️ `client-timeline/` already learned exactly this and says so at its
  * `shadow.x` layer: "ONE shadow for the whole pinned column, not one per row …
  * each row's bottom border cut across it, so what should have been a single soft
  * edge came out as a column of separate smudges with ticks between them." These
@@ -751,7 +751,7 @@ export function WeeklyPlan() {
    * soon as the grid CAN scroll sideways at all, whatever the current position.
    *
    * ⚠️ WHY x IGNORES scrollLeft: v1.40.0 gated it on `scrollLeft > 0`, copying
-   * `client-timeline.tsx`'s "silent until something is behind it". Measured on the
+   * `client-timeline/index.tsx`'s "silent until something is behind it". Measured on the
    * real grid, the whole horizontal overflow is about **189px** — so the studio
    * sits at scrollLeft 0 essentially always, and Nitsan reported the shadow
    * missing twice because for him it never rendered. The mechanism was fine; the
@@ -790,7 +790,7 @@ export function WeeklyPlan() {
      * wrapper measured 814px against a 1323px table — the header's shadow simply
      * stopped partway across, and the missing strip grew as you scrolled right.
      * That is the "shadow is trimmed here" Nitsan photographed at the Freelancers
-     * column. `client-timeline.tsx` avoids it by giving its wrapper an explicit
+     * column. `client-timeline/index.tsx` avoids it by giving its wrapper an explicit
      * `width: leftW + chartW`; ours is measured, because the column count and the
      * rail width both move.
      */
@@ -1274,7 +1274,7 @@ export function WeeklyPlan() {
             </table>
             {/*
               ONE gradient for the whole pinned column, not one per row — the
-              lesson `client-timeline.tsx` records at its own `shadow.x` layer.
+              lesson `client-timeline/index.tsx` records at its own `shadow.x` layer.
               Per-row, every cell border cut across the shadow and it rendered as
               a dashed column of smudges. This runs unbroken from the top of the
               header to the last row, OVER the borders rather than between them.
