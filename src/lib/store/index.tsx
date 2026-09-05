@@ -87,6 +87,7 @@ import { useBillingActions } from "./billing";
 import { useDevItemActions } from "./dev-items";
 import { useTimelineActions } from "./timeline";
 import { useLinkActions } from "./links";
+import { guardPreview } from "./preview-guard";
 
 /** Re-exported so `@/lib/store` keeps the surface it has always had. */
 export { withGroupInvariant };
@@ -1905,12 +1906,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  /**
+   * `?viewAs=` is a preview, and this is the line that enforces it — see
+   * ./preview-guard.ts for what went wrong when nothing did.
+   *
+   * ⚠️ Only what leaves through the Provider is guarded. `methodsRef` below keeps
+   * the UNGUARDED value on purpose: it is how the domains reach each other (an
+   * undo step calling `deleteTimeEntry`, a plan drag reassigning a task), and
+   * stubbing it would be guarding the machinery twice over. Nothing internal can
+   * start on its own — every public entry point is already blocked.
+   */
+  const exposed = useMemo(
+    () => guardPreview(value, viewAsProfile ? viewAsProfile.name : null),
+    [value, viewAsProfile],
+  );
+
   // history actions look methods up here — always the freshest closures
   useEffect(() => {
     methodsRef.current = value;
   }, [value]);
 
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+  return <StoreContext.Provider value={exposed}>{children}</StoreContext.Provider>;
 }
 
 export function useData(): Store {
