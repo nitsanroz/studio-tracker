@@ -10,19 +10,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createClient } from "./supabase/client";
+import { createClient } from "../supabase/client";
 import {
   isServiceBlocked,
-  mapBillingPeriod,
   mapClient,
   mapComment,
-  mapDayState,
-  mapDevItem,
-  mapLink,
-  mapTimelineMark,
   mapTaskType,
-  mapPlanColumn,
-  mapPlanEntry,
   mapSection,
   mapTaskGroup,
   mapTag,
@@ -30,12 +23,8 @@ import {
   mapTimeEntry,
   taskPatchToRow,
   updateWithOptional,
-  isMissingSchema,
-  DbError,
   type DbRow,
-} from "./db";
-import { assembleTaskBrief, readSubmission } from "./brief";
-import { needsReview } from "./brief-diff";
+} from "../db";
 import {
   fetchCold,
   fetchFull,
@@ -52,22 +41,18 @@ import {
   type ColdSnapshot,
   type HotCtx,
   type HotSnapshot,
-} from "./snapshot";
-import { toISODate } from "./format";
+} from "../snapshot";
 import type {
-  AbsenceType,
   Attachment,
   BillingPeriod,
   Client,
   DayState,
   DevItem,
-  DevStatus,
   EntrySum,
   UserEntrySum,
   Link,
   PlanColumn,
   PlanEntry,
-  PlanEntryType,
   Profile,
   Section,
   Tag,
@@ -77,539 +62,36 @@ import type {
   TaskType,
   TimeEntry,
   TimelineMark,
+} from "../types";
+
+import {
+  type HistoryAction,
+  type Store,
+  type TaskRequest,
 } from "./types";
+import {
+  COLD_AFTER_AWAY_MS,
+  COLD_EVERY_N_TICKS,
+  FOCUS_MAX_STALE_MS,
+  FOCUS_MIN_GAP_MS,
+  HOT_INTERVAL_MS,
+  IDLE_AFTER_MS,
+  TASKS_EVERY_N_TICKS,
+  WRITE_SETTLE_MS,
+} from "./refresh-cadence";
+import { inversePatch, mapTaskRequest, withGroupInvariant } from "./helpers";
+import { usePlanActions } from "./plan";
+import { useRequestActions } from "./requests";
+import { useKeysWriteDown } from "./keys-write-down";
+import { useTimeEntryActions } from "./time-entries";
+import { useBillingActions } from "./billing";
+import { useDevItemActions } from "./dev-items";
+import { useTimelineActions } from "./timeline";
+import { useLinkActions } from "./links";
 
-export interface TaskRequest {
-  id: string;
-  clientId: string | null;
-  suggestedClientId: string | null;
-  submitterName: string;
-  submitterEmail: string;
-  title: string;
-  brief: string;
-  requestedDueDate: string | null;
-  budgetHours: number | null;
-  status: "pending" | "approved" | "rejected";
-  createdTaskId: string | null;
-  createdAt: string;
-  answers: Record<string, unknown> | null;
-  /**
-   * When an admin acknowledged it, and when the client was told (0028).
-   *
-   * ⚠️ Two stamps, not one. If Resend is down the request must still register
-   * as seen — otherwise a failed email leaves it looking untouched and the next
-   * admin acknowledges it all over again. `clientNotifiedAt` is the one that
-   * guarantees the client is never mailed twice.
-   */
-  seenAt: string | null;
-  seenBy: string | null;
-  clientNotifiedAt: string | null;
-  /**
-   * When the CLIENT last changed this brief after sending it (0029).
-   *
-   * ⚠️ The queue must surface it: an admin who has already read a brief — or
-   * already pressed "we've seen it" — would otherwise be working from text the
-   * client has since rewritten.
-   */
-  editedAt: string | null;
-  /**
-   * The client's answers as the studio last acknowledged them, and when (0030).
-   *
-   * ⚠️ This is the BASELINE a revision is diffed against — not the task's text,
-   * which is the studio's own words and not a version of the client's answers at
-   * all. Written when a brief is marked seen or approved; never written by a
-   * client edit, or the comparison it exists for would be erased.
-   */
-  answersAck: Record<string, unknown> | null;
-  ackedAt: string | null;
-}
-
-export interface ApproveRequestInput {
-  clientId: string;
-  sectionId: string | null;
-  assigneeId: string | null;
-  title: string;
-  estimateHours: number | null;
-  dueDate: string | null;
-}
-
-export interface NewPlanEntry {
-  date: string | null;
-  columnId: string;
-  type: PlanEntryType;
-  taskId?: string | null;
-  text?: string;
-  clientId?: string | null;
-  absenceType?: AbsenceType | null;
-}
-
-/** What a plan entry may be changed INTO — see `updatePlanEntry`. */
-export interface PlanEntryPatch {
-  type?: PlanEntryType;
-  taskId?: string | null;
-  text?: string;
-  clientId?: string | null;
-  absenceType?: AbsenceType | null;
-}
-
-/** The one place a `PlanEntryPatch` field is paired with its column name. */
-const PLAN_ENTRY_FIELDS: { key: keyof PlanEntryPatch; col: string }[] = [
-  { key: "type", col: "type" },
-  { key: "taskId", col: "task_id" },
-  { key: "text", col: "text" },
-  { key: "clientId", col: "client_id" },
-  { key: "absenceType", col: "absence_type" },
-];
-
-export interface TimeEntryPatch {
-  minutes?: number;
-  description?: string;
-  date?: string;
-  /** admin-only: move the entry to another member */
-  userId?: string;
-}
-
-interface Store {
-  loading: boolean;
-  profiles: Profile[];
-  clients: Client[];
-  sections: Section[];
-  /** subject-level containers inside a section (0027); [] before the migration */
-  taskGroups: TaskGroup[];
-  tags: Tag[];
-  tasks: Task[];
-  comments: TaskComment[];
-  attachments: Attachment[];
-  timeEntries: TimeEntry[];
-  /**
-   * Slim rows for time entries (no description) — for aggregations.
-   * EXCLUDES pre-Everhour backfill: use this for anything personal or
-   * time-series (my hours, days worked, the feed timesheet, per-member totals).
-   */
-  entrySums: UserEntrySum[];
-  /**
-   * Every entry including the recovered pre-Everhour history. Use for
-   * CLIENT-FACING and per-task totals — client stats, reports, task hours —
-   * where the 2020–2022 work is real and belongs in the number.
-   */
-  entrySumsAll: EntrySum[];
-  currentUserId: string;
-  /** Name of the member an admin is previewing as (?viewAs=…), null when off. */
-  viewingAs: string | null;
-  openTaskId: string | null;
-  planColumns: PlanColumn[];
-  planEntries: PlanEntry[];
-  billingPeriods: BillingPeriod[];
-  dayStates: DayState[];
-  links: Link[];
-  /** kinds of work with their colours (0024); the Timeline paints bars with these */
-  taskTypes: TaskType[];
-  /** true once this task's lazily-loaded brief has arrived and is safe to edit */
-  briefLoaded: (taskId: string) => boolean;
-  devItems: DevItem[];
-
-  openTask: (taskId: string | null) => void;
-  updateTask: (taskId: string, patch: Partial<Task>) => void;
-  /**
-   * Apply one patch to many tasks in a single write, as ONE undo step.
-   * Moving between clients must also set `sectionId` (a section belongs to
-   * exactly one client, so the old id would strand the tasks).
-   */
-  updateTasksBulk: (taskIds: string[], patch: Partial<Task>) => void;
-  /** Per-task patches as ONE undo step — see the implementation's note. */
-  updateTasksVaried: (items: { id: string; patch: Partial<Task> }[]) => void;
-  timelineMarks: TimelineMark[];
-  addTimelineMark: (clientId: string, onDate: string, title: string) => void;
-  updateTimelineMark: (id: string, patch: { title?: string; onDate?: string }) => void;
-  deleteTimelineMark: (id: string) => void;
-  /** Undo counterpart of updateTasksBulk: restores each task's own prior values. */
-  restoreTasksBulk: (items: { id: string; patch: Partial<Task> }[]) => void;
-  /** `groupId` overrules `sectionId` when given — the group decides the section. */
-  addTask: (
-    clientId: string,
-    sectionId: string | null,
-    title: string,
-    groupId?: string | null,
-  ) => void;
-  addTaskNear: (
-    anchorTaskId: string,
-    where: "before" | "after",
-    title: string,
-    opts?: { copyDates?: boolean },
-  ) => void;
-  /** Hard-delete a task. CASCADES to its time entries — confirm with the user first. */
-  deleteTask: (taskId: string) => void;
-  /** Hard-delete many tasks. CASCADES to time entries — confirm with the user first. */
-  deleteTasksBulk: (taskIds: string[]) => void;
-  addSection: (clientId: string, name: string) => void;
-  updateSection: (sectionId: string, patch: Partial<Pick<Section, "name">>) => void;
-  /** No-ops (with a visible write error) if the section still contains tasks or groups. */
-  deleteSection: (sectionId: string) => void;
-  /**
-   * Move `movedId` before `beforeId` within its own CONTAINER — the same section
-   * AND the same group; null = to the end.
-   */
-  reorderTask: (movedId: string, beforeId: string | null) => void;
-  /** Move a section before another within its own client; null = to the end. */
-  reorderSection: (movedId: string, beforeId: string | null) => void;
-  /** Resolves with the created group so a caller can file tasks into it. */
-  addTaskGroup: (
-    clientId: string,
-    sectionId: string | null,
-    name: string,
-  ) => Promise<TaskGroup | null>;
-  updateTaskGroup: (groupId: string, patch: Partial<Pick<TaskGroup, "name">>) => void;
-  /**
-   * Create a group from an existing selection and file all of it in — the
-   * "gather these into a group" gesture.
-   *
-   * Resolves to null on success, or to a sentence explaining why not: every task
-   * has to already share ONE client and ONE section, because a group belongs to a
-   * single section and moving the tasks to make that true would be a second,
-   * unasked-for change.
-   */
-  groupTasksIntoNew: (taskIds: string[], name: string) => Promise<string | null>;
-  /**
-   * Remove a group. `withTasks` false (the default) DISSOLVES it — the tasks move
-   * up to the section — and true deletes them with it.
-   *
-   * ⚠️ `withTasks` CASCADES to time entries and is not undoable. The caller must
-   * confirm, and must refuse when any task carries logged hours.
-   */
-  deleteTaskGroup: (groupId: string, opts?: { withTasks?: boolean }) => void;
-  /** Move a group before another within its own section; null = to the end. */
-  reorderTaskGroup: (movedId: string, beforeId: string | null) => void;
-  addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
-  patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
-  /** local-only; for values an API route already persisted with the service key */
-  patchClientLocal: (clientId: string, patch: Partial<Client>) => void;
-  updateProfile: (profileId: string, patch: Partial<Profile>) => void;
-  updateClient: (clientId: string, patch: Partial<Client>) => void;
-  addTaskType: (name: string, color: string) => void;
-  updateTaskType: (typeId: string, patch: Partial<Pick<TaskType, "name" | "color">>) => void;
-  deleteTaskType: (typeId: string) => void;
-  addTag: (name: string, color: string) => void;
-  updateTag: (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => void;
-  deleteTag: (tagId: string) => void;
-  addPlanEntry: (input: NewPlanEntry) => void;
-  /**
-   * Change what an existing plan entry IS — a free-text note becomes a real task,
-   * an absence changes kind, a note's wording or client changes. One undo step,
-   * restoring every field it touched.
-   */
-  updatePlanEntry: (entryId: string, patch: PlanEntryPatch) => void;
-  movePlanEntry: (
-    entryId: string,
-    target: { date: string | null; columnId: string },
-    place?: { beforeId: string | null },
-  ) => void;
-  /**
-   * The weekly plan's drop target: move the entry, and when it lands in a
-   * DIFFERENT person's column, reassign the underlying task to them — as one
-   * undo step. Falls back to a plain move when there is nobody to reassign to.
-   */
-  movePlanEntryToCell: (
-    entryId: string,
-    target: { date: string | null; columnId: string },
-    place?: { beforeId: string | null },
-  ) => void;
-  deletePlanEntry: (entryId: string) => void;
-  addPlanColumn: (name: string) => void;
-  updatePlanColumn: (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => void;
-  movePlanColumn: (columnId: string, direction: -1 | 1) => void;
-  deletePlanColumn: (columnId: string) => void;
-  addComment: (taskId: string, body: string) => void;
-  /** admin-only in the UI; undo restores the row with its original id and timestamp */
-  deleteComment: (id: string) => void;
-  /** Timeline row order (0023) — pass the FULL list of shown ids in their new order */
-  reorderTimelineTasks: (orderedIds: string[]) => void;
-  addAttachment: (attachment: Attachment) => void;
-  removeAttachment: (id: string) => void;
-  /** Resolves to the inserted entry (or null) so a caller can edit it immediately. */
-  addTimeEntry: (
-    taskId: string,
-    minutes: number,
-    description: string,
-    date?: string,
-    userId?: string,
-  ) => Promise<TimeEntry | null>;
-  /** One member's entries for one date. `timeEntries` only holds the recent 400. */
-  loadDayEntries: (userId: string, dateIso: string) => Promise<TimeEntry[]>;
-  /** the log rows behind one hours cell of the client report — see `loadCellEntries` */
-  loadCellEntries: (taskId: string, from: string, to: string) => Promise<TimeEntry[]>;
-  /** move `minutes` of one entry onto the client's non-billable Keys task — see `writeDownToKeys` */
-  writeDownToKeys: (entryId: string, minutes: number, keysTaskId: string) => Promise<boolean>;
-  /** the same, for one designer's hours on a task rather than one entry — see `writeDownMemberToKeys` */
-  writeDownMemberToKeys: (
-    taskId: string,
-    userId: string,
-    minutes: number,
-    keysTaskId: string,
-    range?: { from: string; to: string },
-  ) => Promise<boolean>;
-  /**
-   * `userId` reassigns the entry to another member — admins only. RLS refuses it
-   * for members anyway: `own time update`'s USING clause constrains the very
-   * column being changed, and Postgres reuses it as the check on the new row.
-   */
-  updateTimeEntry: (entryId: string, patch: TimeEntryPatch) => void;
-  /** `known` lets a caller holding the full row keep undo working for an entry outside the feed window. */
-  deleteTimeEntry: (entryId: string, known?: TimeEntry) => void;
-  moveTimeEntries: (entryIds: string[], fromTaskId: string, toTaskId: string) => void;
-  addBillingPeriod: (input: Omit<BillingPeriod, "id" | "position" | "paid">) => void;
-  updateBillingPeriod: (id: string, patch: Partial<BillingPeriod>) => void;
-  deleteBillingPeriod: (id: string) => void;
-  addDayState: (dateFrom: string, dateTo: string, label: string) => void;
-  deleteDayState: (id: string) => void;
-  /** `owner` is exactly one of taskId / clientId — see the DB CHECK in 0022 */
-  addLink: (owner: { taskId: string } | { clientId: string }, title: string, url: string) => void;
-  updateLink: (id: string, patch: { title?: string; url?: string }) => void;
-  deleteLink: (id: string) => void;
-  addDevItem: (text: string) => void;
-  updateDevItem: (id: string, patch: { text?: string; status?: DevStatus }) => void;
-  deleteDevItem: (id: string) => void;
-  taskRequests: TaskRequest[];
-  /** Resolves to the new task's id, so the caller can open its pane. */
-  approveRequest: (requestId: string, input: ApproveRequestInput) => Promise<string | null>;
-  rejectRequest: (requestId: string) => void;
-  deleteRequest: (requestId: string) => void;
-  markRequestSeen: (requestId: string) => Promise<{ ok: boolean; error?: string }>;
-  /**
-   * Briefs a client has changed since the studio last acknowledged them.
-   *
-   * ⚠️ Derived ONCE here rather than by each consumer. The shell's badge, the
-   * home-page banner and the queue all ask the same question, and three copies of
-   * `taskRequests.filter(needsReview)` is how a badge comes to disagree with the
-   * list it points at — the same reason `task-rollup.ts` and `taskMinutesDone` were
-   * extracted in earlier releases.
-   */
-  updatedRequests: TaskRequest[];
-  /** "I've read the client's changes" — re-baselines the diff, nothing more. */
-  markRevisionReviewed: (requestId: string) => void;
-  taskMinutes: (taskId: string) => number;
-  /** Undo/redo the last data actions (max 10). Also on cmd/ctrl+Z (+shift). */
-  undo: () => void;
-  redo: () => void;
-  /** Set when a background write to Supabase fails; the UI surfaces a banner. */
-  writeError: string | null;
-  dismissWriteError: () => void;
-  /**
-   * Supabase is refusing every request because the organization is over its
-   * egress quota (HTTP 402). Distinct from `writeError` — nothing the user did
-   * failed, and reloading will not help — and distinct from an ordinary refresh
-   * failure, which stays silent on purpose. See `isServiceBlocked`.
-   */
-  serviceBlocked: boolean;
-  /**
-   * A neutral, informational message — currently only "that undo expired".
-   * Deliberately NOT writeError: that banner is about failed saves and says
-   * "reload", neither of which applies here.
-   */
-  /**
-   * The row created most recently, for ~600ms.
-   *
-   * ⚠️ A time entry lands in a DATE-SORTED list, not at the bottom, so this is
-   * what answers "which one is mine, and where did it go?" — read by any list
-   * that renders entries and turned into the 400ms `row-flash` (Nitsan's variant
-   * 3A). It is state, not a callback through six hosts, precisely so every
-   * surface that shows entries can flash without being wired individually.
-   *
-   * ⚠️ It CLEARS ITSELF after 600ms — longer than the animation, so the class is
-   * definitely gone before a re-render could restart it, and short enough that a
-   * refresh arriving later cannot re-flash a row from minutes ago.
-   */
-  freshEntryId: string | null;
-  notice: string | null;
-  /** Say something neutral to the user — a refusal or an explanation, not an error. */
-  showNotice: (text: string) => void;
-  dismissNotice: () => void;
-  /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
-  refreshing: boolean;
-  /**
-   * Polling has stopped because nobody has touched this tab for IDLE_AFTER_MS.
-   * Surfaced so the sync dot can stop implying the figures are live — the data
-   * is as of `lastSyncedAt`, and any interaction resumes immediately.
-   */
-  pollingPaused: boolean;
-  /** epoch ms of the last successful sync, for the indicator's tooltip. */
-  lastSyncedAt: number | null;
-  /** Force a refresh now (the interval and tab-focus do this automatically). */
-  refresh: () => void;
-  /**
-   * Set when the initial load failed. Distinct from `writeError`: there is no
-   * data at all, so the UI must not render an empty state that reads as "the
-   * studio has nothing" — see AppShell.
-   */
-  bootError: string | null;
-}
-
-interface HistoryAction {
-  undo: () => void;
-  redo: () => void;
-  /**
-   * Which refresh generation this step was recorded against. An undo whose epoch
-   * has moved on would push a value captured BEFORE a colleague's change back to
-   * the server — silently reverting their edit. See `undo`.
-   */
-  epoch: number;
-}
-
-// ── background refresh cadence ──────────────────────────────────────────
-/**
- * ⚠️⚠️ DEVELOPMENT POLLS TEN TIMES SLOWER, AND THIS IS AN EGRESS FIX, NOT A
- * CONVENIENCE. Measured 2026-08-27: one open tab costs **~72 MB/hour** at the
- * production cadence, and a dev server points at the LIVE studio project — so a
- * three-hour build session with a tab open spent ~216 MB of the studio's 5 GB
- * allowance on nobody's work. Against a routine studio day of ~100 MB that is
- * the largest single line in the bill, and separating the two by pointing dev at
- * its own Supabase project is **not available**: the org is on the Free plan,
- * which allows 2 projects, and both are in use (`studio-tracker`, `Lomdoni`).
- * So the traffic is cut where it is generated instead.
- *
- * ⚠️ PRODUCTION IS PROVABLY UNTOUCHED — `NODE_ENV` is `"production"` in the
- * built app, so the multiplier is 1 there and this whole block folds away.
- * ⚠️ Set **`NEXT_PUBLIC_FULL_REFRESH=1`** to restore the real cadence in dev,
- * which is REQUIRED when verifying anything about refresh, staleness or the
- * write-vs-refresh races in `refreshVerdict` — at 10 minutes a tick those are
- * untestable, and a slow tick looks exactly like a broken one.
- */
-const DEV_SLOWDOWN =
-  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_FULL_REFRESH !== "1" ? 10 : 1;
-/** Hot poll. A minute is inside "my colleague sees my drag soon" for the plan. */
-const HOT_INTERVAL_MS = 60_000 * DEV_SLOWDOWN;
-/** Studio structure (people, clients, sections, tags) every 10th hot tick. */
-const COLD_EVERY_N_TICKS = 10;
-/**
- * Every task in the studio, every 3rd hot tick.
- *
- * ⚠️ This is an EGRESS budget, not a guess. The tasks query is ~2.5 MB and was
- * 88% of what a 60-second tick cost; the studio is at 200% of Supabase's 5 GB
- * free allowance with restrictions due 12 Sep, and fitting the tier needs about
- * 233 MB per working day against the ~440 MB measured after the entries moved
- * to cold. Three minutes is the slowest cadence that still reads as "live" for
- * a colleague's rename or reassignment; your OWN edits are optimistic and
- * instant regardless, and the plan grid stays on the 60-second tier.
- */
-const TASKS_EVERY_N_TICKS = 3;
-/**
- * How long focus in a field may hold a background refresh off.
- *
- * Long enough that ordinary typing is never interrupted, short enough that a
- * cursor left in a box cannot freeze the studio's data. See the ⚠️ in `refresh`.
- */
-const FOCUS_MAX_STALE_MS = 5 * 60_000;
-/** Don't refetch for an alt-tab. */
-const FOCUS_MIN_GAP_MS = 20_000;
-/** Coming back after this long is worth a full refresh, not just the hot half. */
-const COLD_AFTER_AWAY_MS = 5 * 60_000;
-/**
- * How long a VISIBLE tab may sit untouched before polling stops entirely.
- *
- * ⚠️ The single largest remaining egress lever, and the arithmetic is measured:
- * an open tab costs ~110 MB/hour in polling, so one person leaving the tracker
- * on a second monitor for a working day spends ~880 MB — a fifth of the org's
- * 5 GB monthly allowance without touching it. `document.hidden` already covered
- * background tabs; this covers the tab that is on screen and ignored, which is
- * how the studio reached 284% of its allowance and was cut off with a 402.
- *
- * 15 minutes because it must be far longer than any pause in real work — reading
- * a brief, a phone call, a conversation over a desk — so that nobody ever
- * notices it. Waking is instant on the first pointer/key/scroll, and cold if the
- * pause outran COLD_AFTER_AWAY_MS, so no one can act on stale figures.
- */
-const IDLE_AFTER_MS = idleAfterMs();
-function idleAfterMs(): number {
-  // ⚠️ Verifying this at 15 minutes a cycle is impractical, and an unverified
-  // idle-stop fails as PERMANENTLY STALE DATA — so dev may shorten it, the same
-  // affordance NEXT_PUBLIC_FULL_REFRESH gives the tick above. Gated on NODE_ENV,
-  // so production is provably 15 minutes whatever the environment says.
-  const override =
-    process.env.NODE_ENV === "development" ? Number(process.env.NEXT_PUBLIC_IDLE_AFTER_MS) : 0;
-  return override > 0 ? override : 15 * 60_000;
-}
-/** How long an in-flight write blocks a refresh before we assume it leaked. */
-const WRITE_SETTLE_MS = 15_000;
-
-/** prev values of exactly the patched keys — the inverse patch for undo */
-function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T> {
-  const prev: Partial<T> = {};
-  for (const k of Object.keys(patch) as (keyof T)[]) prev[k] = before[k];
-  return prev;
-}
-
-/**
- * Keeps `groupId` and `sectionId` in agreement — the one thing migration 0027
- * cannot express as a constraint. A composite FK would need
- * `task_groups(section_id, id)` to be unique, which forbids the null-section
- * case outright, so the rule lives here instead and every reader stays
- * defensive about it.
- *
- * Filing a task INTO a group implies its section; moving a task to another
- * SECTION takes it out of a group that lives elsewhere.
- *
- * ⚠️ Applied to the PATCH, before it is recorded — so `inversePatch` sees both
- * keys and a single ⌘Z puts both back. Normalising after the fact would leave an
- * undo step that restores the section and strands the group.
- */
-export function withGroupInvariant(
-  before: Task,
-  patch: Partial<Task>,
-  groups: TaskGroup[],
-): Partial<Task> {
-  if ("groupId" in patch) {
-    const g = patch.groupId ? groups.find((x) => x.id === patch.groupId) : null;
-    // The group is the more specific statement, so it decides the section — a
-    // `sectionId` already in the patch is overruled rather than trusted, since
-    // the two cannot both be right. An unknown id is left alone: the read paths
-    // treat it as ungrouped, which is the safe degradation.
-    //
-    // ⚠️ COMPARED AGAINST THE SECTION THE PATCH IS ASKING FOR, not just the one
-    // the task is leaving. Reading only `before.sectionId` meant a patch naming a
-    // group AND a conflicting section passed through untouched whenever the
-    // group already sat in the task's current section — storing the task in a
-    // group that lives somewhere else, which is the exact state this function
-    // exists to make impossible. No caller does that today; every reader
-    // tolerates it by rendering the task loose, so a future one would break the
-    // invariant silently and the symptom would be a task quietly falling out of
-    // its group.
-    const wanted = "sectionId" in patch ? (patch.sectionId ?? null) : before.sectionId;
-    if (g && g.sectionId !== wanted) return { ...patch, sectionId: g.sectionId };
-    return patch;
-  }
-  if ("sectionId" in patch && before.groupId) {
-    const g = groups.find((x) => x.id === before.groupId);
-    if (!g || g.sectionId !== patch.sectionId) return { ...patch, groupId: null };
-  }
-  return patch;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- DB-boundary row mapper (return type is explicit)
-const mapTaskRequest = (r: any): TaskRequest => ({
-  id: r.id,
-  clientId: r.client_id,
-  suggestedClientId: r.suggested_client_id ?? null,
-  submitterName: r.submitter_name,
-  submitterEmail: r.submitter_email,
-  title: r.title,
-  brief: r.brief ?? "",
-  requestedDueDate: r.requested_due_date,
-  budgetHours: r.client_approved_budget_hours == null ? null : Number(r.client_approved_budget_hours),
-  status: r.status,
-  createdTaskId: r.created_task_id,
-  createdAt: r.created_at,
-  answers: r.answers ?? null,
-  // ?? null, not r.seen_at: before 0028 the columns don't exist and the row
-  // simply lacks the keys. The queue then reads as "nothing acknowledged yet",
-  // which is exactly right.
-  seenAt: r.seen_at ?? null,
-  seenBy: r.seen_by ?? null,
-  clientNotifiedAt: r.client_notified_at ?? null,
-  // Same `?? null` reasoning as above, for 0029: an unapplied migration leaves
-  // the key absent, which reads as "never edited".
-  editedAt: r.edited_at ?? null,
-  answersAck: r.answers_ack ?? null,
-  ackedAt: r.acked_at ?? null,
-});
+/** Re-exported so `@/lib/store` keeps the surface it has always had. */
+export { withGroupInvariant };
+export type { TaskRequest };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -2446,424 +1928,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, clients, record, wrote],
   );
 
-  /** Re-insert a deleted plan entry with its original id (undo support). */
-  const restorePlanEntry = useCallback(
-    (entry: PlanEntry) => {
-      setPlanEntries((prev) => [...prev.filter((e) => e.id !== entry.id), entry]);
-      supabase
-        .from("plan_entries")
-        .insert({
-          id: entry.id,
-          date: entry.date,
-          column_id: entry.columnId,
-          position: entry.position,
-          type: entry.type,
-          task_id: entry.taskId,
-          text: entry.text,
-          client_id: entry.clientId,
-          absence_type: entry.absenceType,
-        })
-        .then(wrote("restorePlanEntry"));
-    },
-    [supabase, wrote],
-  );
-
-  /**
-   * Putting a task in the plan says someone is going to work on it, so a task
-   * that was marked done is reopened when it is planned — the studio's rule, and
-   * the reason the plan's search offers completed tasks at all. Returns the task
-   * (with its previous status) when it needs reopening, so the caller can fold
-   * that into ONE undo step with whatever put it in the plan; null otherwise.
-   *
-   * It lives here rather than in the modal because every route a task takes into
-   * the plan goes through `addPlanEntry` or `updatePlanEntry` — including paste —
-   * so the rule cannot be bypassed by adding a new caller.
-   */
-  const plannedTaskToReopen = useCallback(
-    (taskId: string | null | undefined) => {
-      if (!taskId) return null;
-      const task = tasks.find((t) => t.id === taskId);
-      return task && task.status === "done" ? task : null;
-    },
-    [tasks],
-  );
-
-  const addPlanEntry = useCallback(
-    (input: NewPlanEntry) => {
-      const position =
-        Math.max(
-          -1,
-          ...planEntries
-            .filter((e) => e.columnId === input.columnId && e.date === input.date)
-            .map((e) => e.position),
-        ) + 1;
-      counting(
-        supabase
-          .from("plan_entries")
-          .insert({
-            date: input.date,
-            column_id: input.columnId,
-            position,
-            type: input.type,
-            task_id: input.taskId ?? null,
-            text: input.text ?? "",
-            client_id: input.clientId ?? null,
-            absence_type: input.absenceType ?? null,
-          })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addPlanEntry", error);
-            return;
-          }
-          const entry = mapPlanEntry(data);
-          setPlanEntries((prev) => [...prev, entry]);
-          const reopen = plannedTaskToReopen(input.taskId);
-          const action = {
-            undo: () => {
-              methodsRef.current?.deletePlanEntry(entry.id);
-              if (reopen) methodsRef.current?.updateTask(reopen.id, { status: reopen.status });
-            },
-            redo: () => {
-              restorePlanEntry(entry);
-              // restorePlanEntry re-inserts the row verbatim and knows nothing
-              // about the reopen rule, so redo has to reapply it
-              if (reopen) methodsRef.current?.updateTask(reopen.id, { status: "todo" });
-            },
-          };
-          if (!reopen) {
-            record(action);
-            return;
-          }
-          // the row is already in; only the reopen still has to run under the
-          // same history step
-          asOneStep(action, () => {
-            methodsRef.current?.updateTask(reopen.id, { status: "todo" });
-          });
-        });
-    },
-    [supabase, planEntries, record, asOneStep, restorePlanEntry, noteWriteError, plannedTaskToReopen, counting],
-  );
-
-  const updatePlanEntry = useCallback(
-    (entryId: string, patch: PlanEntryPatch) => {
-      const before = planEntries.find((e) => e.id === entryId);
-      if (!before) return;
-
-      // One pass builds all three shapes from ONE field list: the DB row (the
-      // camelCase/snake_case mapping lives here and nowhere else — the same trap
-      // `updateTimeEntry` fell into), the local patch, and the inverse for undo.
-      // Only fields the patch actually names are touched, so an undo can never
-      // reset something the caller left alone.
-      const prev: PlanEntryPatch = {};
-      const local: PlanEntryPatch = {};
-      const row: Record<string, unknown> = {};
-      for (const f of PLAN_ENTRY_FIELDS) {
-        const v = patch[f.key];
-        if (v === undefined) continue;
-        (prev as Record<string, unknown>)[f.key] = before[f.key];
-        (local as Record<string, unknown>)[f.key] = v;
-        row[f.col] = v;
-      }
-      if (Object.keys(row).length === 0) return;
-
-      const apply = () => {
-        setPlanEntries((p) => p.map((e) => (e.id === entryId ? { ...e, ...local } : e)));
-        supabase.from("plan_entries").update(row).eq("id", entryId).then(wrote("updatePlanEntry"));
-      };
-      const reopen = plannedTaskToReopen(patch.taskId);
-      const action = {
-        undo: () => {
-          methodsRef.current?.updatePlanEntry(entryId, prev);
-          if (reopen) methodsRef.current?.updateTask(reopen.id, { status: reopen.status });
-        },
-        redo: () => methodsRef.current?.updatePlanEntry(entryId, patch),
-      };
-      if (!reopen) {
-        record(action);
-        apply();
-        return;
-      }
-      asOneStep(action, () => {
-        apply();
-        methodsRef.current?.updateTask(reopen.id, { status: "todo" });
-      });
-    },
-    [supabase, planEntries, record, asOneStep, wrote, plannedTaskToReopen],
-  );
-
-  /**
-   * Move a plan entry to a cell, optionally to a PLACE in that cell.
-   *
-   * ⚠️⚠️ WITHOUT `place` THIS APPENDS, AND THAT USED TO BE THE ONLY BEHAVIOUR —
-   * which is why dragging a chip within one day "only worked downwards". Every
-   * in-cell drop set `position = max + 1`, so a chip dragged down landed last and
-   * looked correct, while one dragged UP also landed last and looked broken.
-   *
-   * ⚠️ `place` IS AN OBJECT, and `{ beforeId: null }` is NOT the same as omitting
-   * it: the object means "put it exactly here", with a null anchor meaning last in
-   * the cell, and it takes the densifying path whose undo restores every position
-   * it touched. Omitting it is the old plain append — which is right for a drop on
-   * a cell's empty space or a paste, and whose undo only has a cell to restore.
-   * Dropping on the LOWER half of the last chip is exactly the case that made this
-   * distinction necessary: it means "last", not "append and forget".
-   *
-   * ⚠️ IT DENSIFIES THE WHOLE DESTINATION CELL 1..n, exactly as `reorderTask` and
-   * `reorderSection` do, and for the same reason: the plan's entries were written
-   * by the sheet importer and a cell can be entirely `position = 0`, so "insert
-   * before X" has no gap to open. Renumbering is what makes the placement mean
-   * anything.
-   * ⚠️ Absences are renumbered along with the chips even though they render
-   * absolutely and are never a drop target — leaving them out would let an absence
-   * and a chip hold the same position, and then their order depends on the array.
-   */
-  const movePlanEntry = useCallback(
-    (
-      entryId: string,
-      target: { date: string | null; columnId: string },
-      place?: { beforeId: string | null },
-    ) => {
-      const before = planEntries.find((e) => e.id === entryId);
-      if (!before) return;
-      const inCell = planEntries
-        .filter(
-          (e) => e.columnId === target.columnId && e.date === target.date && e.id !== entryId,
-        )
-        .sort((a, b) => a.position - b.position);
-
-      if (!place) {
-        const prev = { date: before.date, columnId: before.columnId };
-        record({
-          undo: () => methodsRef.current?.movePlanEntry(entryId, prev),
-          redo: () => methodsRef.current?.movePlanEntry(entryId, target),
-        });
-        const position = Math.max(-1, ...inCell.map((e) => e.position)) + 1;
-        setPlanEntries((prev) =>
-          prev.map((e) => (e.id === entryId ? { ...e, ...target, position } : e)),
-        );
-        supabase
-          .from("plan_entries")
-          .update({ date: target.date, column_id: target.columnId, position })
-          .eq("id", entryId)
-          .then(wrote("movePlanEntry"));
-        return;
-      }
-
-      const at = place.beforeId ? inCell.findIndex((e) => e.id === place.beforeId) : -1;
-      // a null anchor means last; an unknown one (a stale drop after a refresh)
-      // also lands last rather than failing
-      const idx = at < 0 ? inCell.length : at;
-      const next = [...inCell.slice(0, idx), before, ...inCell.slice(idx)];
-      const changed = next
-        .map((e, i) => ({ id: e.id, position: i + 1, was: e.position }))
-        .filter((r) => r.position !== r.was || r.id === entryId);
-      if (changed.length === 0) return;
-
-      const prevPos = new Map(changed.map((r) => [r.id, r.was]));
-      const back = { date: before.date, columnId: before.columnId };
-      record({
-        undo: () => {
-          setPlanEntries((prev) =>
-            prev.map((e) =>
-              prevPos.has(e.id)
-                ? { ...e, position: prevPos.get(e.id)!, ...(e.id === entryId ? back : {}) }
-                : e,
-            ),
-          );
-          for (const [id, position] of prevPos) {
-            supabase
-              .from("plan_entries")
-              .update(
-                id === entryId
-                  ? { position, date: back.date, column_id: back.columnId }
-                  : { position },
-              )
-              .eq("id", id)
-              .then(wrote("movePlanEntry undo"));
-          }
-        },
-        redo: () => methodsRef.current?.movePlanEntry(entryId, target, place),
-      });
-
-      const posById = new Map(changed.map((r) => [r.id, r.position]));
-      setPlanEntries((prev) =>
-        prev.map((e) =>
-          posById.has(e.id)
-            ? { ...e, position: posById.get(e.id)!, ...(e.id === entryId ? target : {}) }
-            : e,
-        ),
-      );
-      for (const { id, position } of changed) {
-        supabase
-          .from("plan_entries")
-          .update(
-            id === entryId
-              ? { position, date: target.date, column_id: target.columnId }
-              : { position },
-          )
-          .eq("id", id)
-          .then(wrote("movePlanEntry"));
-      }
-    },
-    [supabase, planEntries, record, wrote],
-  );
-
-  /**
-   * What the weekly plan's cells actually call. Reassigns the task ONLY when all
-   * of these hold — otherwise it is a plain move:
-   *  · the entry is task-linked (free text and absences carry no task)
-   *  · the column actually changed (another day in the same column is not a
-   *    reassignment)
-   *  · the target column is a real person — `type: "member"` WITH a profileId, so
-   *    "Studio", "Waiting list" and name-only columns like "Freelancers" are out
-   *  · the task isn't already theirs
-   *
-   * Dragging OUT of someone into Studio or the waiting list deliberately does NOT
-   * clear the assignee: unscheduled is not unassigned.
-   */
-  const movePlanEntryToCell = useCallback(
-    (
-      entryId: string,
-      target: { date: string | null; columnId: string },
-      /**
-       * Where in the cell it goes: `{ beforeId }` names the chip it lands above,
-       * or null for last. Omitted = appended, the plain cell-level drop.
-       */
-      place?: { beforeId: string | null },
-    ) => {
-      const entry = planEntries.find((e) => e.id === entryId);
-      const col = planColumns.find((c) => c.id === target.columnId);
-      const task = entry?.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
-      const to = col?.type === "member" ? col.profileId : null;
-
-      if (!entry || !task || !to || entry.columnId === target.columnId || task.assigneeId === to) {
-        movePlanEntry(entryId, target, place);
-        return;
-      }
-      const back = { date: entry.date, columnId: entry.columnId };
-      const wasAssignedTo = task.assigneeId;
-      asOneStep(
-        {
-          undo: () => {
-            methodsRef.current?.updateTask(task.id, { assigneeId: wasAssignedTo });
-            methodsRef.current?.movePlanEntry(entryId, back);
-          },
-          redo: () => methodsRef.current?.movePlanEntryToCell(entryId, target, place),
-        },
-        () => {
-          // Both read their own pre-call snapshots, so running them in one tick is
-          // safe; the two setStates batch into a single commit.
-          movePlanEntry(entryId, target, place);
-          methodsRef.current?.updateTask(task.id, { assigneeId: to });
-        },
-      );
-    },
-    [planEntries, planColumns, tasks, movePlanEntry, asOneStep],
-  );
-
-  const deletePlanEntry = useCallback(
-    (entryId: string) => {
-      const before = planEntries.find((e) => e.id === entryId);
-      if (before) {
-        record({
-          undo: () => restorePlanEntry(before),
-          redo: () => methodsRef.current?.deletePlanEntry(entryId),
-        });
-      }
-      setPlanEntries((prev) => prev.filter((e) => e.id !== entryId));
-      supabase
-        .from("plan_entries")
-        .delete()
-        .eq("id", entryId)
-        .then(wrote("deletePlanEntry"));
-    },
-    [supabase, planEntries, record, restorePlanEntry, wrote],
-  );
-
-  const addPlanColumn = useCallback(
-    (name: string) => {
-      const memberCols = planColumns.filter((c) => c.type !== "waiting_list");
-      const position = Math.max(0, ...memberCols.map((c) => c.position)) + 1;
-      counting(
-        supabase
-          .from("plan_columns")
-          .insert({ name, type: "member", position })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addPlanColumn", error);
-            return;
-          }
-          setPlanColumns((prev) => [...prev, mapPlanColumn(data)]);
-        });
-    },
-    [supabase, planColumns, noteWriteError, counting],
-  );
-
-  const updatePlanColumn = useCallback(
-    (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => {
-      const prev = planColumns;
-      setPlanColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, ...patch } : c)));
-      supabase
-        .from("plan_columns")
-        .update(patch)
-        .eq("id", columnId)
-        .then((res) => {
-          wrote("updatePlanColumn")(res);
-          if (res.error) setPlanColumns(prev); // e.g. `hidden` migration not applied yet
-        });
-    },
-    [supabase, planColumns, wrote],
-  );
-
-  const movePlanColumn = useCallback(
-    (columnId: string, direction: -1 | 1) => {
-      const ordered = planColumns
-        .filter((c) => c.type !== "waiting_list")
-        .sort((a, b) => a.position - b.position);
-      const idx = ordered.findIndex((c) => c.id === columnId);
-      const swapWith = ordered[idx + direction];
-      if (idx < 0 || !swapWith) return;
-      const a = ordered[idx];
-      setPlanColumns((cols) =>
-        cols.map((c) =>
-          c.id === a.id
-            ? { ...c, position: swapWith.position }
-            : c.id === swapWith.id
-              ? { ...c, position: a.position }
-              : c,
-        ),
-      );
-      supabase
-        .from("plan_columns")
-        .update({ position: swapWith.position })
-        .eq("id", a.id)
-        .then(wrote("movePlanColumn"));
-      supabase
-        .from("plan_columns")
-        .update({ position: a.position })
-        .eq("id", swapWith.id)
-        .then(wrote("movePlanColumn"));
-    },
-    [supabase, planColumns, wrote],
-  );
-
-  const deletePlanColumn = useCallback(
-    (columnId: string) => {
-      setPlanColumns((prev) => prev.filter((c) => c.id !== columnId));
-      setPlanEntries((prev) => prev.filter((e) => e.columnId !== columnId));
-      supabase
-        .from("plan_columns")
-        .delete()
-        .eq("id", columnId)
-        .then(wrote("deletePlanColumn"));
-    },
-    [supabase, wrote],
-  );
+  // ── weekly plan ───────────────────────────────────────────────────────
+  // Lifted into ./plan.ts — see the note at the top of that file for why the
+  // deps arrive as an object and the result is memoized.
+  const plan = usePlanActions({
+    supabase,
+    planEntries,
+    planColumns,
+    tasks,
+    setPlanEntries,
+    setPlanColumns,
+    record,
+    wrote,
+    noteWriteError,
+    methodsRef,
+    counting,
+    asOneStep,
+  });
 
   const addComment = useCallback(
     (taskId: string, body: string) => {
@@ -2938,1044 +2019,108 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const removeAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   }, []);
+  // ── time entries ─────────────────────────────────────────
+  // Lifted into ./time-entries.ts — see ./plan.ts for why deps arrive as an object.
+  const entries = useTimeEntryActions({
+    supabase,
+    timeEntries,
+    setTimeEntries,
+    entrySumsAll,
+    setEntrySums,
+    currentUserId,
+    markFresh,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-  const applyEntryLocally = useCallback((entry: TimeEntry) => {
-    setTimeEntries((prev) => [entry, ...prev.filter((e) => e.id !== entry.id)]);
-    setEntrySums((prev) => [
-      {
-        id: entry.id,
-        taskId: entry.taskId,
-        userId: entry.userId,
-        date: entry.date,
-        minutes: entry.minutes,
-        legacy: entry.legacy,
-        dateEstimated: entry.dateEstimated,
-      },
-      ...prev.filter((e) => e.id !== entry.id),
-    ]);
-  }, []);
 
-  /**
-   * Re-insert a deleted time entry with its original id (undo support).
-   *
-   * It MUST carry `legacy` and its companions. This used to write only
-   * id/task/user/date/minutes/description, so undoing the deletion of a recovered
-   * pre-Everhour entry brought it back as an ORDINARY one — and its hours then
-   * leaked into days-worked, tenure, "my hours" and the feed timesheet, which is
-   * exactly what the flag exists to prevent.
-   */
-  const restoreTimeEntry = useCallback(
-    (entry: TimeEntry) => {
-      applyEntryLocally(entry);
-      supabase
-        .from("time_entries")
-        .insert({
-          id: entry.id,
-          task_id: entry.taskId,
-          user_id: entry.userId,
-          date: entry.date,
-          minutes: entry.minutes,
-          description: entry.description,
-          legacy: entry.legacy ?? false,
-          date_estimated: entry.dateEstimated ?? false,
-          legacy_author_name: entry.legacyAuthorName ?? null,
-          moved_from_task_id: entry.movedFromTaskId,
-        })
-        .then(wrote("restoreTimeEntry"));
-    },
-    [supabase, applyEntryLocally, wrote],
-  );
+  // ── billing periods & studio days off ─────────────────────────────────────────
+  // Lifted into ./billing.ts — see ./plan.ts for why deps arrive as an object.
+  const billing = useBillingActions({
+    supabase,
+    billingPeriods,
+    setBillingPeriods,
+    setDayStates,
+    currentUserId,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-  /** Resolves to the inserted entry, so a caller can edit it without a reload. */
-  const addTimeEntry = useCallback(
-    async (
-      taskId: string,
-      minutes: number,
-      description: string,
-      date?: string,
-      userId?: string,
-    ): Promise<TimeEntry | null> => {
-      const { data, error } = await counting(
-        supabase
-          .from("time_entries")
-          .insert({
-            task_id: taskId,
-            // admins may log hours for another member (e.g. from the timesheet day popup)
-            user_id: userId ?? currentUserId,
-            date: date ?? toISODate(new Date()),
-            minutes,
-            description,
-          })
-          .select()
-          .single(),
-      );
-      if (error) {
-        noteWriteError("addTimeEntry", error);
-        return null;
-      }
-      const entry = mapTimeEntry(data);
-      applyEntryLocally(entry);
-      markFresh(entry.id);
-      record({
-        undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
-        redo: () => restoreTimeEntry(entry),
-      });
-      return entry;
-    },
-    [supabase, currentUserId, applyEntryLocally, record, restoreTimeEntry, noteWriteError, counting, markFresh],
-  );
+  // ── in-development list ─────────────────────────────────────────
+  // Lifted into ./dev-items.ts — see ./plan.ts for why deps arrive as an object.
+  const devItemActions = useDevItemActions({
+    supabase,
+    devItems,
+    setDevItems,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-  /**
-   * One member's entries for one day, straight from the DB.
-   *
-   * The store's `timeEntries` is only the most recent 400 rows studio-wide, so
-   * it cannot answer "what did I log on 3 March" — hence a real query. It lives
-   * here rather than in the component so the Supabase client and the row
-   * mappers stay behind one boundary; "Log my hours" used to open its own
-   * client and call mapTimeEntry itself.
-   */
-  const loadDayEntries = useCallback(
-    async (userId: string, dateIso: string): Promise<TimeEntry[]> => {
-      const { data, error } = await supabase
-        .from("time_entries")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", dateIso)
-        .not("minutes", "is", null)
-        .order("created_at");
-      if (error) {
-        console.error("loadDayEntries failed", error.message);
-        return [];
-      }
-      return (data ?? []).map(mapTimeEntry);
-    },
-    [supabase],
-  );
 
-  /**
-   * The individual log rows behind ONE hours cell of the client report.
-   *
-   * ⚠️⚠️ A NARROW SELECT AND A DATE WINDOW, BOTH DELIBERATE. `timeEntries` in this
-   * store is only the newest 400 rows studio-wide, so the descriptions behind a
-   * week column from March are simply not in memory — and `loadTaskExtras` would
-   * fetch that task's comments, attachments, brief and EVERY entry it has, to show
-   * five rows. Egress is this project's tightest constraint (see the v1.31.0 note),
-   * and this fires on HOVER, so it asks for the five columns it renders and only
-   * the dates on screen.
-   *
-   * ⚠️ Returned, not merged into state: nothing else needs these rows, and merging
-   * would race the background refresh for no benefit. The caller caches per cell.
-   */
-  const loadCellEntries = useCallback(
-    async (taskId: string, from: string, to: string): Promise<TimeEntry[]> => {
-      const { data, error } = await supabase
-        .from("time_entries")
-        .select("id, task_id, user_id, legacy_author_name, date, minutes, description")
-        .eq("task_id", taskId)
-        .gte("date", from)
-        .lte("date", to)
-        .not("minutes", "is", null)
-        .order("date");
-      if (error) {
-        console.error("loadCellEntries failed", error.message);
-        return [];
-      }
-      return (data ?? []).map(mapTimeEntry);
-    },
-    [supabase],
-  );
+  // ── client timeline: task order and marks ─────────────────────────────────────────
+  // Lifted into ./timeline.ts — see ./plan.ts for why deps arrive as an object.
+  const timeline = useTimelineActions({
+    supabase,
+    tasks,
+    setTasks,
+    timelineMarks,
+    setTimelineMarks,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-  const updateTimeEntry = useCallback(
-    (entryId: string, patch: TimeEntryPatch) => {
-      // full row if loaded; the slim sums row covers minutes/date-only patches
-      const before =
-        timeEntries.find((e) => e.id === entryId) ??
-        ("description" in patch ? undefined : entrySumsAll.find((e) => e.id === entryId));
-      if (before) {
-        const prev: TimeEntryPatch = {};
-        if ("minutes" in patch) prev.minutes = before.minutes;
-        if ("date" in patch) prev.date = before.date;
-        if ("description" in patch) prev.description = (before as TimeEntry).description;
-        // without this an undo would leave the reassignment in place
-        if ("userId" in patch) prev.userId = before.userId ?? undefined;
-        record({
-          undo: () => methodsRef.current?.updateTimeEntry(entryId, prev),
-          redo: () => methodsRef.current?.updateTimeEntry(entryId, patch),
-        });
-      }
-      setTimeEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...patch } : e)));
-      if (patch.minutes != null || patch.date != null || patch.userId != null) {
-        // entrySums is the per-person source behind days-worked, tenure, the week
-        // timesheet and "avg / designer", so a reassignment has to reach it too
-        setEntrySums((prev) =>
-          prev.map((e) =>
-            e.id === entryId
-              ? {
-                  ...e,
-                  ...(patch.minutes != null && { minutes: patch.minutes }),
-                  ...(patch.date != null && { date: patch.date }),
-                  ...(patch.userId != null && { userId: patch.userId }),
-                }
-              : e,
-          ),
-        );
-      }
-      // Built explicitly: this used to pass `patch` straight to .update() and got
-      // away with it only because minutes/description/date are spelled the same
-      // in camelCase and snake_case. `userId` is not.
-      const row: DbRow = {};
-      if ("minutes" in patch) row.minutes = patch.minutes;
-      if ("description" in patch) row.description = patch.description;
-      if ("date" in patch) row.date = patch.date;
-      if ("userId" in patch) row.user_id = patch.userId;
-      supabase
-        .from("time_entries")
-        .update(row)
-        .eq("id", entryId)
-        .then(wrote("updateTimeEntry"));
-    },
-    [supabase, timeEntries, entrySumsAll, record, wrote],
-  );
+  // ── reference links (0022) ─────────────────────────────────────────
+  // Lifted into ./links.ts — see ./plan.ts for why deps arrive as an object.
+  const linkActions = useLinkActions({
+    supabase,
+    links,
+    setLinks,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
+  // ── moving hours, and writing them down to a client's Keys task ─────────────────────────────────────────
+  // Lifted into ./keys-write-down.ts — see ./plan.ts for why deps arrive as an object.
+  const keysWriteDown = useKeysWriteDown({
+    supabase,
+    setTimeEntries,
+    setEntrySums,
+    currentUserId,
+    entries,
+    wrote,
+    noteWriteError,
+    counting,
+  });
+  // ── intake requests ─────────────────────────────────────────
+  // Lifted into ./requests.ts — see ./plan.ts for why deps arrive as an object.
+  const requests = useRequestActions({
+    supabase,
+    tagNameById,
+    setLinks,
+    setTasks,
+    clients,
+    taskRequests,
+    setTaskRequests,
+    currentUserId,
+    wrote,
+    noteWriteError,
+    counting,
+  });
 
-  const deleteTimeEntry = useCallback(
-    (entryId: string, known?: TimeEntry) => {
-      /**
-       * ⚠️ AN UNDO IS ONLY OFFERED WHEN THE WHOLE ROW IS IN HAND.
-       *
-       * This used to fall back to the slim `entrySumsAll` row with
-       * `description: ""` and `movedFromTaskId: null` hardcoded — and
-       * `restoreTimeEntry` faithfully writes back whatever it is given, so ⌘Z
-       * put the entry back with its description ERASED, in an app where a
-       * description is mandatory on every entry. The typed text was gone from
-       * the database with nothing said.
-       *
-       * `timeEntries` holds only the newest 400 rows plus whatever `openTask`
-       * loaded, while the three day surfaces render from `loadDayEntries`, which
-       * returns its rows to the caller WITHOUT merging them into store state —
-       * so deleting an entry older than the feed window hit that path every
-       * time. Those callers pass the row they already hold as `known`; when
-       * neither is available the delete still happens and no undo is recorded,
-       * because no undo is better than one that silently rewrites the entry.
-       */
-      const before = timeEntries.find((e) => e.id === entryId) ?? known;
-      if (before) {
-        record({
-          undo: () => restoreTimeEntry(before),
-          redo: () => methodsRef.current?.deleteTimeEntry(entryId, before),
-        });
-      }
-      setTimeEntries((prev) => prev.filter((e) => e.id !== entryId));
-      setEntrySums((prev) => prev.filter((e) => e.id !== entryId));
-      supabase
-        .from("time_entries")
-        .delete()
-        .eq("id", entryId)
-        .then(wrote("deleteTimeEntry"));
-    },
-    [supabase, timeEntries, record, restoreTimeEntry, wrote],
-  );
-
-  /** Re-insert a deleted billing period with its original id (undo support). */
-  const restoreBillingPeriod = useCallback(
-    (p: BillingPeriod) => {
-      setBillingPeriods((prev) =>
-        [...prev.filter((x) => x.id !== p.id), p].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
-      );
-      supabase
-        .from("client_billing_periods")
-        .insert({
-          id: p.id,
-          client_id: p.clientId,
-          label: p.label,
-          date_from: p.dateFrom,
-          date_to: p.dateTo,
-          hour_cap: p.hourCap,
-          advance_hours: p.advanceHours,
-          position: p.position,
-          // omit `paid: false` so the insert also works before migration 0010
-          ...(p.paid && { paid: true }),
-        })
-        .then(wrote("restoreBillingPeriod"));
-    },
-    [supabase, wrote],
-  );
-
-  const addBillingPeriod = useCallback(
-    (input: Omit<BillingPeriod, "id" | "position" | "paid">) => {
-      const position =
-        Math.max(0, ...billingPeriods.filter((p) => p.clientId === input.clientId).map((p) => p.position)) + 1;
-      counting(
-        supabase
-          .from("client_billing_periods")
-          .insert({
-            client_id: input.clientId,
-            label: input.label,
-            date_from: input.dateFrom,
-            date_to: input.dateTo,
-            hour_cap: input.hourCap,
-            advance_hours: input.advanceHours,
-            position,
-          })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addBillingPeriod", error);
-            return;
-          }
-          const period = mapBillingPeriod(data);
-          setBillingPeriods((prev) =>
-            [...prev, period].sort((a, b) => a.dateFrom.localeCompare(b.dateFrom)),
-          );
-          record({
-            undo: () => methodsRef.current?.deleteBillingPeriod(period.id),
-            redo: () => restoreBillingPeriod(period),
-          });
-        });
-    },
-    [supabase, billingPeriods, record, restoreBillingPeriod, noteWriteError, counting],
-  );
-
-  const updateBillingPeriod = useCallback(
-    (id: string, patch: Partial<BillingPeriod>) => {
-      const before = billingPeriods.find((p) => p.id === id);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateBillingPeriod(id, prev),
-          redo: () => methodsRef.current?.updateBillingPeriod(id, patch),
-        });
-      }
-      setBillingPeriods((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-      const row: Record<string, unknown> = {};
-      if ("label" in patch) row.label = patch.label;
-      if ("dateFrom" in patch) row.date_from = patch.dateFrom;
-      if ("dateTo" in patch) row.date_to = patch.dateTo;
-      if ("hourCap" in patch) row.hour_cap = patch.hourCap;
-      if ("advanceHours" in patch) row.advance_hours = patch.advanceHours;
-      if ("paid" in patch) row.paid = patch.paid;
-      supabase
-        .from("client_billing_periods")
-        .update(row)
-        .eq("id", id)
-        .then(wrote("updateBillingPeriod"));
-    },
-    [supabase, billingPeriods, record, wrote],
-  );
-
-  const deleteBillingPeriod = useCallback(
-    (id: string) => {
-      const before = billingPeriods.find((p) => p.id === id);
-      if (before) {
-        record({
-          undo: () => restoreBillingPeriod(before),
-          redo: () => methodsRef.current?.deleteBillingPeriod(id),
-        });
-      }
-      setBillingPeriods((prev) => prev.filter((p) => p.id !== id));
-      supabase
-        .from("client_billing_periods")
-        .delete()
-        .eq("id", id)
-        .then(wrote("deleteBillingPeriod"));
-    },
-    [supabase, billingPeriods, record, restoreBillingPeriod, wrote],
-  );
-
-  const addDayState = useCallback(
-    (dateFrom: string, dateTo: string, label: string) => {
-      counting(
-        supabase
-          .from("plan_day_states")
-          .insert({ date_from: dateFrom, date_to: dateTo, label, created_by: currentUserId })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addDayState", error);
-            return;
-          }
-          setDayStates((prev) => [...prev, mapDayState(data)]);
-        });
-    },
-    [supabase, currentUserId, noteWriteError, counting],
-  );
-
-  const deleteDayState = useCallback(
-    (id: string) => {
-      setDayStates((prev) => prev.filter((d) => d.id !== id));
-      supabase
-        .from("plan_day_states")
-        .delete()
-        .eq("id", id)
-        .then(wrote("deleteDayState"));
-    },
-    [supabase, wrote],
-  );
-
-  const addDevItem = useCallback(
-    (text: string) => {
-      const position = Math.max(0, ...devItems.map((d) => d.position)) + 1;
-      counting(
-        supabase
-          .from("dev_items")
-          .insert({ text, position })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addDevItem", error);
-            return;
-          }
-          setDevItems((prev) => [...prev, mapDevItem(data)]);
-        });
-    },
-    [supabase, devItems, noteWriteError, counting],
-  );
-
-  const updateDevItem = useCallback(
-    (id: string, patch: { text?: string; status?: DevStatus }) => {
-      const before = devItems.find((d) => d.id === id);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateDevItem(id, prev),
-          redo: () => methodsRef.current?.updateDevItem(id, patch),
-        });
-      }
-      setDevItems((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-      supabase
-        .from("dev_items")
-        .update(patch)
-        .eq("id", id)
-        .then(wrote("updateDevItem"));
-    },
-    [supabase, devItems, record, wrote],
-  );
-
-  const deleteDevItem = useCallback(
-    (id: string) => {
-      setDevItems((prev) => prev.filter((d) => d.id !== id));
-      supabase
-        .from("dev_items")
-        .delete()
-        .eq("id", id)
-        .then(wrote("deleteDevItem"));
-    },
-    [supabase, wrote],
-  );
-
-  /**
-   * Row order on the client Timeline (0023). Mirrors `reorderSection`: dense
-   * `1..n` renumbering over the tasks the caller is showing, only changed rows
-   * written, one undo step recording the prior numbers.
-   *
-   * `orderedIds` is the FULL list the Timeline renders, already in its new
-   * order — the component owns the sort (date fallback for never-dragged rows),
-   * so the store doesn't need to reproduce it and the two can't disagree.
-   */
-  const reorderTimelineTasks = useCallback(
-    (orderedIds: string[]) => {
-      const byId = new Map(tasks.map((t) => [t.id, t]));
-      const changed = orderedIds
-        .map((id, i) => ({ id, position: i + 1, was: byId.get(id)?.timelinePosition ?? null }))
-        .filter((r) => byId.has(r.id) && r.position !== r.was);
-      if (changed.length === 0) return;
-
-      const prevById = new Map(changed.map((r) => [r.id, r.was]));
-      const applyLocal = (m: Map<string, number | null>) =>
-        setTasks((prev) =>
-          prev.map((t) => (m.has(t.id) ? { ...t, timelinePosition: m.get(t.id)! } : t)),
-        );
-
-      record({
-        undo: () => {
-          applyLocal(prevById);
-          for (const [id, timeline_position] of prevById) {
-            supabase
-              .from("tasks")
-              .update({ timeline_position })
-              .eq("id", id)
-              .then(wrote("reorderTimelineTasks undo"));
-          }
-        },
-        redo: () => methodsRef.current?.reorderTimelineTasks(orderedIds),
-      });
-
-      applyLocal(new Map(changed.map((r) => [r.id, r.position as number | null])));
-      for (const { id, position } of changed) {
-        supabase
-          .from("tasks")
-          .update({ timeline_position: position })
-          .eq("id", id)
-          .then(wrote("reorderTimelineTasks"));
-      }
-    },
-    [supabase, tasks, record, wrote],
-  );
-
-  // ── reference links (0022) ────────────────────────────────────────────
-  // `owner` is exactly one of taskId / clientId — the DB has a CHECK saying so,
-  // and the two RLS policies differ (task links are member-writable like the
-  // brief they sit under; client links are admin-only).
-  /**
-   * Timeline milestones. Creating one is NOT undoable, like everything else that
-   * creates a row here; renaming, moving and deleting are.
-   */
-  const addTimelineMark = useCallback(
-    (clientId: string, onDate: string, title: string) => {
-      counting(
-        supabase
-          .from("timeline_marks")
-          .insert({ client_id: clientId, on_date: onDate, title })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addTimelineMark", error);
-            return;
-          }
-          setTimelineMarks((prev) => [...prev, mapTimelineMark(data)]);
-        });
-    },
-    [supabase, noteWriteError, counting],
-  );
-
-  const updateTimelineMark = useCallback(
-    (id: string, patch: { title?: string; onDate?: string }) => {
-      const before = timelineMarks.find((m) => m.id === id);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateTimelineMark(id, prev),
-          redo: () => methodsRef.current?.updateTimelineMark(id, patch),
-        });
-      }
-      setTimelineMarks((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-      const row: Record<string, unknown> = {};
-      if (patch.title !== undefined) row.title = patch.title;
-      if (patch.onDate !== undefined) row.on_date = patch.onDate;
-      supabase.from("timeline_marks").update(row).eq("id", id).then(wrote("updateTimelineMark"));
-    },
-    [supabase, timelineMarks, record, wrote],
-  );
-
-  const deleteTimelineMark = useCallback(
-    (id: string) => {
-      const gone = timelineMarks.find((m) => m.id === id);
-      // Re-inserted WITH ITS ORIGINAL ID, or the undo would create a different
-      // mark and a redo of the delete would miss it. Same rule as links.
-      if (gone) {
-        record({
-          undo: () => {
-            setTimelineMarks((prev) =>
-              prev.some((m) => m.id === gone.id) ? prev : [...prev, gone],
-            );
-            supabase
-              .from("timeline_marks")
-              .insert({
-                id: gone.id,
-                client_id: gone.clientId,
-                on_date: gone.onDate,
-                title: gone.title,
-              })
-              .then(wrote("restoreTimelineMark"));
-          },
-          redo: () => methodsRef.current?.deleteTimelineMark(id),
-        });
-      }
-      setTimelineMarks((prev) => prev.filter((m) => m.id !== id));
-      supabase.from("timeline_marks").delete().eq("id", id).then(wrote("deleteTimelineMark"));
-    },
-    [supabase, timelineMarks, record, wrote],
-  );
-
-  const addLink = useCallback(
-    (owner: { taskId: string } | { clientId: string }, title: string, url: string) => {
-      const scope =
-        "taskId" in owner
-          ? { task_id: owner.taskId, client_id: null }
-          : { task_id: null, client_id: owner.clientId };
-      const siblings = links.filter((l) =>
-        "taskId" in owner ? l.taskId === owner.taskId : l.clientId === owner.clientId,
-      );
-      const position = Math.max(0, ...siblings.map((l) => l.position)) + 1;
-      counting(
-        supabase
-          .from("links")
-          .insert({ ...scope, title, url, position })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addLink", error);
-            return;
-          }
-          setLinks((prev) => [...prev, mapLink(data)]);
-        });
-    },
-    [supabase, links, noteWriteError, counting],
-  );
-
-  const updateLink = useCallback(
-    (id: string, patch: { title?: string; url?: string }) => {
-      const before = links.find((l) => l.id === id);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateLink(id, prev),
-          redo: () => methodsRef.current?.updateLink(id, patch),
-        });
-      }
-      setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-      supabase.from("links").update(patch).eq("id", id).then(wrote("updateLink"));
-    },
-    [supabase, links, record, wrote],
-  );
-
-  const deleteLink = useCallback(
-    (id: string) => {
-      const gone = links.find((l) => l.id === id);
-      // Undo re-inserts the row WITH ITS ORIGINAL ID. Without that, the row the
-      // undo creates is a different link, and a redo of the delete would miss it.
-      if (gone) {
-        record({
-          undo: () => {
-            setLinks((prev) => (prev.some((l) => l.id === gone.id) ? prev : [...prev, gone]));
-            supabase
-              .from("links")
-              .insert({
-                id: gone.id,
-                task_id: gone.taskId,
-                client_id: gone.clientId,
-                title: gone.title,
-                url: gone.url,
-                position: gone.position,
-              })
-              .then(wrote("restoreLink"));
-          },
-          redo: () => methodsRef.current?.deleteLink(id),
-        });
-      }
-      setLinks((prev) => prev.filter((l) => l.id !== id));
-      supabase.from("links").delete().eq("id", id).then(wrote("deleteLink"));
-    },
-    [supabase, links, record, wrote],
-  );
-
-  const moveTimeEntries = useCallback(
-    (entryIds: string[], fromTaskId: string, toTaskId: string) => {
-      const idSet = new Set(entryIds);
-      setTimeEntries((prev) =>
-        prev.map((e) =>
-          idSet.has(e.id) ? { ...e, taskId: toTaskId, movedFromTaskId: fromTaskId } : e,
-        ),
-      );
-      setEntrySums((prev) =>
-        prev.map((e) => (idSet.has(e.id) ? { ...e, taskId: toTaskId } : e)),
-      );
-      supabase
-        .from("time_entries")
-        .update({
-          task_id: toTaskId,
-          moved_from_task_id: fromTaskId,
-          moved_at: new Date().toISOString(),
-          moved_by: currentUserId,
-        })
-        .in("id", entryIds)
-        .then(wrote("moveTimeEntries"));
-    },
-    [supabase, currentUserId, wrote],
-  );
-
-  /**
-   * Write hours down to the client's non-billable "Keys" task.
-   *
-   * ⚠️⚠️ THIS IS THE ONE PLACE THE STUDIO REDUCES WHAT A CLIENT IS CHARGED, so it
-   * is built to keep the ledger honest rather than to be convenient. Nitsan:
-   * *"basicly i reduce hours to be charged by clent for a certain task because for
-   * example he worked slowly"* — and his ruling on the shape: SPLIT the entry, keep
-   * the hours as the designer's own.
-   *
-   * ⚠️ THE HOURS ARE MOVED, NEVER DELETED, AND THE TOTAL NEVER CHANGES. `n === all`
-   * re-points the whole entry; anything less splits it into a billable remainder and
-   * a non-billable piece, so `before === after` for that person, that day and that
-   * client. A write-down that quietly reduced somebody's logged time would make the
-   * designer look slower than they were AND lose the record of the work.
-   *
-   * ⚠️ THE SPLIT INSERTS FIRST AND SHRINKS SECOND. In the other order a failure
-   * between the two writes loses the hours outright; this way it duplicates them,
-   * which is visible in the next report and recoverable by hand. Prefer the failure
-   * you can see.
-   *
-   * ⚠️ Provenance rides along in `moved_from_task_id`/`moved_at`/`moved_by`, the
-   * same three columns `moveTimeEntries` stamps — so a keys row can always be traced
-   * back to the task it was billed against.
-   *
-   * ⚠️ NOT UNDOABLE, deliberately, and the precedent is `moveTimeEntries`: undoing a
-   * split means re-merging two rows one of which may have been edited since, and a
-   * ⌘Z that silently re-bills a client is worse than none. The reverse is one more
-   * write-down in the other direction, which is why the caller shows both tasks.
-   */
-  const writeDownToKeys = useCallback(
-    async (entryId: string, minutes: number, keysTaskId: string): Promise<boolean> => {
-      const row = await supabase
-        .from("time_entries")
-        .select("id, task_id, user_id, date, minutes, description")
-        .eq("id", entryId)
-        .single();
-      if (row.error || !row.data) {
-        noteWriteError("writeDownToKeys read", row.error ?? { message: "entry not found" });
-        return false;
-      }
-      const e = mapTimeEntry(row.data);
-      // ⚠️ Re-checked against the row we just read, not against what the screen
-      // showed: the card's rows come from a fetch that may be minutes old.
-      if (!Number.isInteger(minutes) || minutes <= 0 || minutes > e.minutes) {
-        noteWriteError("writeDownToKeys", {
-          message: `that entry holds ${e.minutes} minutes, so ${minutes} cannot be moved`,
-        });
-        return false;
-      }
-      const stamp = { moved_from_task_id: e.taskId, moved_at: new Date().toISOString(), moved_by: currentUserId };
-
-      if (minutes === e.minutes) {
-        const { error } = await counting(
-          supabase.from("time_entries").update({ task_id: keysTaskId, ...stamp }).eq("id", e.id),
-        );
-        if (error) {
-          noteWriteError("writeDownToKeys move", error);
-          return false;
-        }
-        setTimeEntries((prev) =>
-          prev.map((x) => (x.id === e.id ? { ...x, taskId: keysTaskId, movedFromTaskId: e.taskId } : x)),
-        );
-        setEntrySums((prev) => prev.map((x) => (x.id === e.id ? { ...x, taskId: keysTaskId } : x)));
-        return true;
-      }
-
-      const ins = await counting(
-        supabase
-          .from("time_entries")
-          .insert({
-            task_id: keysTaskId,
-            user_id: e.userId,
-            date: e.date,
-            minutes,
-            description: e.description,
-            ...stamp,
-          })
-          .select()
-          .single(),
-      );
-      if (ins.error || !ins.data) {
-        noteWriteError("writeDownToKeys insert", ins.error ?? { message: "insert failed" });
-        return false;
-      }
-      const { error } = await counting(
-        supabase.from("time_entries").update({ minutes: e.minutes - minutes }).eq("id", e.id),
-      );
-      if (error) {
-        // ⚠️ Say so loudly: the hours are now counted TWICE until somebody fixes it,
-        // which is the failure direction chosen above — visible, not lost.
-        noteWriteError("writeDownToKeys shrink", error);
-        return false;
-      }
-      applyEntryLocally(mapTimeEntry(ins.data));
-      setTimeEntries((prev) =>
-        prev.map((x) => (x.id === e.id ? { ...x, minutes: e.minutes - minutes } : x)),
-      );
-      setEntrySums((prev) =>
-        prev.map((x) => (x.id === e.id ? { ...x, minutes: e.minutes - minutes } : x)),
-      );
-      return true;
-    },
-    [supabase, currentUserId, counting, noteWriteError, applyEntryLocally],
-  );
-
-  /**
-   * Write a number of hours down for ONE DESIGNER on a task, without naming a
-   * particular log line.
-   *
-   * ⚠️ WHY THIS EXISTS BESIDE THE PER-ROW VERSION: the studio's own sentence is
-   * "three of Nadav's hours on this task were slow", not "45 minutes off the entry
-   * dated the 13th". Making somebody pick a row first means choosing whose
-   * Tuesday to dock before they have decided anything, and a person's hours are
-   * usually spread over several rows anyway.
-   *
-   * ⚠️ IT CONSUMES OLDEST FIRST, and the order is stated because it is arbitrary
-   * in outcome and not in provenance: the client's bill drops by the same amount
-   * whichever rows give it up, but the `moved_from_task_id` trail has to land
-   * somewhere, and the earliest hours in the range are the ones a "this took
-   * longer than it should have" judgement is usually about.
-   *
-   * ⚠️ IT REFUSES rather than moving what it can when the figure exceeds what that
-   * person actually logged in range — a partial write-down that silently stopped
-   * short would leave the report right and the studio's intention lost.
-   *
-   * ⚠️ Each row goes through `writeDownToKeys`, so every guard there applies per
-   * row: whole minutes, re-read before writing, insert-then-shrink, provenance
-   * stamped. This is a loop over that, not a second implementation of it.
-   * ⚠️ NOT ATOMIC. A failure part way leaves the earlier rows moved, which is
-   * visible in the next report and is the same "prefer the failure you can see"
-   * trade `writeDownToKeys` itself makes.
-   */
-  const writeDownMemberToKeys = useCallback(
-    async (
-      taskId: string,
-      userId: string,
-      minutes: number,
-      keysTaskId: string,
-      range?: { from: string; to: string },
-    ): Promise<boolean> => {
-      const ask = (withLegacy: boolean) => {
-        let q = supabase
-          .from("time_entries")
-          .select(withLegacy ? "id, minutes, legacy" : "id, minutes")
-          .eq("task_id", taskId)
-          .eq("user_id", userId)
-          .gt("minutes", 0)
-          .order("date")
-          .order("id");
-        if (range) q = q.gte("date", range.from).lte("date", range.to);
-        return q;
-      };
-      // The ladder the whole app uses for this column: `legacy` predates 0016, and
-      // a missing column must not take the query down with it.
-      let res = await ask(true);
-      if (res.error && isMissingSchema(new DbError("time_entries", res.error.message, res.error.code)))
-        res = await ask(false);
-      if (res.error || !res.data) {
-        noteWriteError("writeDownMemberToKeys read", res.error ?? { message: "no entries found" });
-        return false;
-      }
-      // ⚠️ Recovered history is skipped: its hours were reconstructed from a task
-      // title rather than logged, so splitting one says nothing true about a day.
-      const rows = (res.data as unknown as { id: string; minutes: number; legacy?: boolean }[]).filter(
-        (r) => !r.legacy,
-      );
-      const available = rows.reduce((n, r) => n + r.minutes, 0);
-      if (!Number.isInteger(minutes) || minutes <= 0 || minutes > available) {
-        noteWriteError("writeDownMemberToKeys", {
-          message: `that person has ${available} minutes on this task, so ${minutes} cannot be moved`,
-        });
-        return false;
-      }
-      let left = minutes;
-      for (const r of rows) {
-        if (left <= 0) break;
-        const take = Math.min(left, r.minutes);
-        const ok = await writeDownToKeys(r.id, take, keysTaskId);
-        if (!ok) return false;
-        left -= take;
-      }
-      return true;
-    },
-    [supabase, noteWriteError, writeDownToKeys],
-  );
-
-  const approveRequest = useCallback(
-    async (requestId: string, input: ApproveRequestInput): Promise<string | null> => {
-      const request = taskRequests.find((r) => r.id === requestId);
-      if (!request) return null;
-
-      // What the client attached. Files and their own "+ Add link" rows become
-      // real `links` on the task below, so the brief copied across is assembled
-      // WITHOUT them — otherwise every Supabase storage URL lands in the text as
-      // well, which is the noise migration 0022 exists to remove.
-      const submission = readSubmission(request.answers);
-      const attachments = submission ? [...submission.files.map((f) => ({ title: f.name, url: f.url })), ...submission.links] : [];
-      const brief = submission ? assembleTaskBrief(submission.answers) : request.brief;
-
-      const { data: task, error } = await counting(
-        supabase
-          .from("tasks")
-          .insert({
-            client_id: input.clientId,
-            section_id: input.sectionId,
-            title: input.title,
-            brief,
-            status: "todo",
-            assignee_id: input.assigneeId,
-            due_date: input.dueDate,
-            billable: clients.find((c) => c.id === input.clientId)?.billable ?? true,
-            estimate_hours: input.estimateHours,
-          })
-          .select()
-          .single(),
-      );
-      if (error) {
-        noteWriteError("approveRequest", error);
-        throw new Error(error.message);
-      }
-      // ⚠️ `answers_ack`/`acked_at` ride along (0030): approving IS acknowledging,
-      // and from here on the studio's own words live on the task — so a later
-      // client revision has to be measured against what was approved, not
-      // against the task text. Optional, so an unapplied migration cannot break
-      // APPROVING, which is the queue's whole purpose.
-      const { error: approveErr } = await updateWithOptional(
-        supabase,
-        "task_requests",
-        { id: requestId },
-        { status: "approved", created_task_id: task.id, client_id: input.clientId },
-        { answers_ack: request.answers ?? {}, acked_at: new Date().toISOString() },
-      );
-      if (approveErr) noteWriteError("approveRequest", approveErr);
-      // The attachments, as titled links on the new task — the same rows the
-      // studio's own "+ Add link" writes, so they render and edit identically.
-      // ⚠️ Best-effort ON PURPOSE: the task exists and the request is approved
-      // by this point, and failing the whole approval because one link row
-      // wouldn't insert would leave the queue and the task list disagreeing.
-      // The URLs are still in the request's own brief if anything goes wrong.
-      if (attachments.length) {
-        const { data: rows, error: linkError } = await counting(
-          supabase
-            .from("links")
-            .insert(
-              attachments.map((a, i) => ({
-                task_id: task.id,
-                client_id: null,
-                title: a.title,
-                url: a.url,
-                position: i + 1,
-              })),
-            )
-            .select(),
-        );
-        if (linkError) noteWriteError("approveRequest links", linkError);
-        else if (rows) setLinks((prev) => [...prev, ...rows.map(mapLink)]);
-      }
-
-      setTasks((prev) => [...prev, mapTask(task, tagNameById)]);
-      setTaskRequests((prev) =>
-        prev.map((r) =>
-          r.id === requestId ? { ...r, status: "approved" as const, createdTaskId: task.id } : r,
-        ),
-      );
-      return task.id as string;
-    },
-    [supabase, taskRequests, tagNameById, clients, noteWriteError, counting],
-  );
-
-  /**
-   * Drop a submission for good. Admin-only by RLS (0001's "admin all"), and
-   * there is no undo — it is one row plus whatever the client typed into it.
-   *
-   * ⚠️ The uploaded FILES are left in the `intake` bucket. An approved request
-   * has already turned them into links on a live task, and deleting the request
-   * must not break those. A few orphaned objects behind a deleted submission is
-   * the cheaper mistake by a wide margin.
-   */
-  const deleteRequest = useCallback(
-    (requestId: string) => {
-      setTaskRequests((prev) => prev.filter((r) => r.id !== requestId));
-      supabase
-        .from("task_requests")
-        .delete()
-        .eq("id", requestId)
-        .then(wrote("deleteRequest"));
-    },
-    [supabase, wrote],
-  );
-
-  /**
-   * Tell the client a person has read their brief, and record that we did.
-   *
-   * Goes through an API route rather than writing here, for two reasons the
-   * browser can't satisfy: the Resend key is server-only, and the route is what
-   * enforces "mail the client at most once" by checking `client_notified_at`
-   * inside the same request that sets it.
-   */
-  const markRequestSeen = useCallback(
-    async (requestId: string): Promise<{ ok: boolean; error?: string }> => {
-      const res = await fetch("/api/intake/seen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId }),
-      }).catch(() => null);
-      const body = (await res?.json().catch(() => null)) as
-        | { seenAt?: string; clientNotifiedAt?: string | null; error?: string }
-        | null;
-      if (!res?.ok) return { ok: false, error: body?.error ?? "Couldn't send the confirmation." };
-      setTaskRequests((prev) =>
-        prev.map((r) =>
-          r.id === requestId
-            ? {
-                ...r,
-                seenAt: body?.seenAt ?? new Date().toISOString(),
-                seenBy: currentUserId,
-                clientNotifiedAt: body?.clientNotifiedAt ?? r.clientNotifiedAt,
-                // The route snapshots the answers it acknowledged (0030); mirror
-                // it locally so the "updated" badge clears without a refetch.
-                answersAck: r.answers,
-                ackedAt: body?.seenAt ?? new Date().toISOString(),
-              }
-            : r,
-        ),
-      );
-      return { ok: true };
-    },
-    [currentUserId],
-  );
-
-  /**
-   * "I've read the client's changes" — snapshots the current answers as the new
-   * baseline, so the UPDATED badge clears and the next revision is measured from
-   * here.
-   *
-   * ⚠️ It writes NOTHING but the snapshot. It does not touch the task, the
-   * status, or `seen_at`: reviewing a revision is not the same act as approving
-   * the brief or telling the client anything, and folding those together is how
-   * an admin would end up approving a change they had only glanced at.
-   */
-  const updatedRequests = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
-
-  const markRevisionReviewed = useCallback(
-    (requestId: string) => {
-      const req = taskRequests.find((r) => r.id === requestId);
-      if (!req) return;
-      const now = new Date().toISOString();
-      setTaskRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, answersAck: r.answers, ackedAt: now } : r)),
-      );
-      // ⚠️ Both columns are 0030's, so BOTH are optional here — this call had no
-      // schema guard at all until the cleanup pass caught it, which would have
-      // meant a red write-error banner on every click in the window before the
-      // migration ran. With nothing required, a pending migration makes this a
-      // no-op rather than a failure.
-      void updateWithOptional(
-        supabase,
-        "task_requests",
-        { id: requestId },
-        {},
-        { answers_ack: req.answers ?? {}, acked_at: now },
-      ).then(({ error }) => {
-        if (error) noteWriteError("markRevisionReviewed", error);
-      });
-    },
-    // `wrote` is gone with the chained call it wrapped; `noteWriteError` replaces
-    // it and belongs here in its place.
-    [supabase, taskRequests, noteWriteError],
-  );
-
-  const rejectRequest = useCallback(
-    (requestId: string) => {
-      setTaskRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status: "rejected" as const } : r)),
-      );
-      supabase
-        .from("task_requests")
-        .update({ status: "rejected" })
-        .eq("id", requestId)
-        .then(wrote("rejectRequest"));
-    },
-    [supabase, wrote],
-  );
 
   const taskMinutes = useCallback(
     (taskId: string) => minutesByTask.get(taskId) ?? 0,
@@ -4005,9 +2150,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dayStates,
       links,
       timelineMarks,
-      addTimelineMark,
-      updateTimelineMark,
-      deleteTimelineMark,
       taskTypes,
       briefLoaded: isBriefLoaded,
       devItems,
@@ -4041,42 +2183,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addTag,
       updateTag,
       deleteTag,
-      addPlanEntry,
-      updatePlanEntry,
-      movePlanEntry,
-      movePlanEntryToCell,
-      deletePlanEntry,
-      addPlanColumn,
-      updatePlanColumn,
-      movePlanColumn,
-      deletePlanColumn,
+      // ...plan.ts — the domain's eleven methods arrive as one object, which is
+      // also why the dependency list below names `plan` once rather than each.
+      ...plan,
+      ...linkActions,
+      ...timeline,
+      ...devItemActions,
+      ...billing,
+      ...entries,
+      ...keysWriteDown,
+      ...requests,
       addComment,
       deleteComment,
-      reorderTimelineTasks,
       addAttachment,
       removeAttachment,
-      addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys,
-      updateTimeEntry,
-      deleteTimeEntry,
-      moveTimeEntries,
-      addBillingPeriod,
-      updateBillingPeriod,
-      deleteBillingPeriod,
-      addDayState,
-      deleteDayState,
-      addLink,
-      updateLink,
-      deleteLink,
-      addDevItem,
-      updateDevItem,
-      deleteDevItem,
       taskRequests,
-      approveRequest,
-      rejectRequest,
-      deleteRequest,
-      markRequestSeen,
-      markRevisionReviewed,
-      updatedRequests,
       taskMinutes,
       undo,
       redo,
@@ -4094,9 +2215,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       bootError,
     }),
     [
-      loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments, timeEntries, entrySums, entrySumsAll,
-      currentUserId, viewAsProfile, openTaskId, planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, addTimelineMark, updateTimelineMark, deleteTimelineMark, taskTypes, isBriefLoaded, devItems,
-      openTask, updateTask, updateTasksBulk, updateTasksVaried, restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection, deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup, groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal, patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType, deleteTaskType, addTag, updateTag, deleteTag, addPlanEntry, updatePlanEntry, movePlanEntry, movePlanEntryToCell, deletePlanEntry, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn, addComment, deleteComment, reorderTimelineTasks, addAttachment, removeAttachment, addTimeEntry, loadDayEntries, loadCellEntries, writeDownToKeys, writeDownMemberToKeys, updateTimeEntry, deleteTimeEntry, moveTimeEntries, addBillingPeriod, updateBillingPeriod, deleteBillingPeriod, addDayState, deleteDayState, addLink, updateLink, deleteLink, addDevItem, updateDevItem, deleteDevItem, taskRequests, approveRequest, rejectRequest, deleteRequest, markRequestSeen, markRevisionReviewed, updatedRequests, taskMinutes, undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId, refreshing, pollingPaused, lastSyncedAt, refreshNow, bootError,
+      loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments,
+      timeEntries, entrySums, entrySumsAll, currentUserId, viewAsProfile, openTaskId,
+      planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, taskTypes,
+      isBriefLoaded, devItems, openTask, updateTask, updateTasksBulk, updateTasksVaried,
+      restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection,
+      deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup,
+      groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal,
+      patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType,
+      deleteTaskType, addTag, updateTag, deleteTag, plan, addComment, deleteComment,
+      addAttachment, removeAttachment, taskRequests, taskMinutes, undo, redo, writeError,
+      dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId,
+      refreshing, pollingPaused, lastSyncedAt, refreshNow, bootError, linkActions, timeline,
+      devItemActions, billing, entries, keysWriteDown, requests,
     ],
   );
 
