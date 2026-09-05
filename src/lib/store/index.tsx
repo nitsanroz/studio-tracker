@@ -13,16 +13,12 @@ import {
 import { createClient } from "../supabase/client";
 import {
   isServiceBlocked,
-  mapClient,
   mapComment,
-  mapTaskType,
   mapSection,
   mapTaskGroup,
-  mapTag,
   mapTask,
   mapTimeEntry,
   taskPatchToRow,
-  updateWithOptional,
   type DbRow,
 } from "../db";
 import {
@@ -81,6 +77,9 @@ import {
 } from "./refresh-cadence";
 import { inversePatch, mapTaskRequest, withGroupInvariant } from "./helpers";
 import { usePlanActions } from "./plan";
+import { useClientActions } from "./clients";
+import { useTaxonomyActions } from "./taxonomy";
+import { useCommentActions } from "./comments";
 import { useRequestActions } from "./requests";
 import { useKeysWriteDown } from "./keys-write-down";
 import { useTimeEntryActions } from "./time-entries";
@@ -1641,292 +1640,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [supabase, taskGroups, record, wrote],
   );
 
-  /**
-   * A new client, with the non-billable Keys task every client needs.
-   *
-   * ⚠️⚠️ THE KEYS TASK IS CREATED HERE, AND THAT IS THE ONLY WAY IT CAN BE
-   * RELIABLE. Every client the studio bills has a "«Client» Keys" task — it is
-   * where hours are written down to before a client report (migration 0037) — and
-   * for the first fourteen clients somebody made it by hand. A client without one
-   * silently has NO write-down control anywhere in the app, which reads as the
-   * feature being broken rather than as a task being missing.
-   * ⚠️ `billable: false` explicitly, NOT inherited from the client: `addTask`
-   * copies the client's flag, and a new client is billable, so a keys task created
-   * that way would keep billing the client — the exact opposite of a write-down.
-   * ⚠️ The task and the pointer are BEST-EFFORT, and deliberately not fatal: the
-   * client row is already committed by then, and failing the whole creation over
-   * the keys task would lose a client somebody just typed. Either half can be
-   * fixed later from the Keys-task picker on Client Reports.
-   */
-  const addClient = useCallback(
-    async (name: string, color: string, billingPeriodNote?: string): Promise<Client | null> => {
-      const { data, error } = await counting(
-        supabase
-          .from("clients")
-          .insert({ name, color, billing_period_note: billingPeriodNote ?? "" })
-          .select()
-          .single(),
-      );
-      if (error) {
-        noteWriteError("addClient", error);
-        return null;
-      }
-      let client = mapClient(data);
+  // ── tags & task types ─────────────────────────────────────────
+  // Lifted into ./taxonomy.ts — see ./plan.ts for why deps arrive as an object.
+  const taxonomy = useTaxonomyActions({
+    supabase,
+    tagRows,
+    setTagRows,
+    taskTypes,
+    setTaskTypes,
+    setTasks,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-      const keys = await counting(
-        supabase
-          .from("tasks")
-          .insert({
-            client_id: client.id,
-            title: `${name} Keys`,
-            billable: false,
-            position: 1,
-          })
-          .select()
-          .single(),
-      );
-      if (keys.error || !keys.data) {
-        noteWriteError("addClient keys task", keys.error ?? { message: "keys task not created" });
-      } else {
-        setTasks((prev) => [...prev, mapTask(keys.data, tagNameById)]);
-        // 0037's column goes through `updateWithOptional` for the reason
-        // `updateClient` documents: a missing column on a WRITE is PGRST204 and
-        // fails the whole statement.
-        const res = await updateWithOptional(
-          supabase,
-          "clients",
-          { id: client.id },
-          {},
-          { keys_task_id: keys.data.id as string },
-        );
-        if (res.error) noteWriteError("addClient keys pointer", res.error);
-        else if (!res.degraded) client = { ...client, keysTaskId: keys.data.id as string };
-      }
+  // ── clients & member profiles ─────────────────────────────────────────
+  // Lifted into ./clients.ts — see ./plan.ts for why deps arrive as an object.
+  const clientActions = useClientActions({
+    supabase,
+    clients,
+    setClients,
+    profiles,
+    setProfiles,
+    setTasks,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+    tagNameById,
+    setNotice,
+  });
 
-      setClients((prev) => [...prev, client]);
-      return client;
-    },
-    [supabase, noteWriteError, counting, tagNameById],
-  );
-
-  const patchProfileLocal = useCallback((profileId: string, patch: Partial<Profile>) => {
-    setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
-  }, []);
-
-  /**
-   * Local-only client patch, for a value an API ROUTE has already written with
-   * the service key (the client-icon upload). Calling `updateClient` instead
-   * would issue a second, redundant write — and record an undo step for a change
-   * the store never made.
-   */
-  const patchClientLocal = useCallback((clientId: string, patch: Partial<Client>) => {
-    setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
-  }, []);
-
-  const updateProfile = useCallback(
-    (profileId: string, patch: Partial<Profile>) => {
-      const before = profiles.find((p) => p.id === profileId);
-      // An end date and `active` are two halves of one fact, and migration 0020
-      // enforces the first half in the DB (a trigger). Mirror it here so the UI
-      // doesn't briefly disagree with the row, and close the other direction too:
-      // restoring somebody has to clear the date, or the trigger just re-archives
-      // them and the button looks broken.
-      if (patch.endDate) patch = { ...patch, active: false };
-      else if (patch.active === true && before?.endDate) patch = { ...patch, endDate: null };
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateProfile(profileId, prev),
-          redo: () => methodsRef.current?.updateProfile(profileId, patch),
-        });
-      }
-      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
-      const row: Record<string, unknown> = {};
-      if ("name" in patch) row.name = patch.name;
-      if ("role" in patch) row.role = patch.role;
-      if ("active" in patch) row.active = patch.active;
-      if ("startDate" in patch) row.start_date = patch.startDate;
-      if ("endDate" in patch) row.end_date = patch.endDate;
-      if ("capacityHoursWeek" in patch) row.capacity_hours_week = patch.capacityHoursWeek;
-      supabase
-        .from("profiles")
-        .update(row)
-        .eq("id", profileId)
-        .then(wrote("updateProfile"));
-    },
-    [supabase, profiles, record, wrote],
-  );
-
-  // ── task types (0024) ─────────────────────────────────────────────────
-  // Simpler than tags in one respect: tasks reference a type by ID, so a rename
-  // needs no cascade. `deleteTaskType` relies on the FK's ON DELETE SET NULL
-  // rather than clearing tasks itself — but local state has to be swept too, or
-  // the pane keeps showing a type that no longer exists until the next refresh.
-  const addTaskType = useCallback(
-    (name: string, color: string) => {
-      const position = Math.max(0, ...taskTypes.map((t) => t.position)) + 1;
-      counting(
-        supabase
-          .from("task_types")
-          .insert({ name, color, position })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addTaskType", error);
-            return;
-          }
-          setTaskTypes((prev) => [...prev, mapTaskType(data)]);
-        });
-    },
-    [supabase, taskTypes, noteWriteError, counting],
-  );
-
-  const updateTaskType = useCallback(
-    (typeId: string, patch: Partial<Pick<TaskType, "name" | "color">>) => {
-      const before = taskTypes.find((t) => t.id === typeId);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateTaskType(typeId, prev),
-          redo: () => methodsRef.current?.updateTaskType(typeId, patch),
-        });
-      }
-      setTaskTypes((prev) => prev.map((t) => (t.id === typeId ? { ...t, ...patch } : t)));
-      supabase.from("task_types").update(patch).eq("id", typeId).then(wrote("updateTaskType"));
-    },
-    [supabase, taskTypes, record, wrote],
-  );
-
-  const deleteTaskType = useCallback(
-    (typeId: string) => {
-      setTaskTypes((prev) => prev.filter((t) => t.id !== typeId));
-      setTasks((prev) => prev.map((t) => (t.typeId === typeId ? { ...t, typeId: null } : t)));
-      supabase.from("task_types").delete().eq("id", typeId).then(wrote("deleteTaskType"));
-    },
-    [supabase, wrote],
-  );
-
-  const addTag = useCallback(
-    (name: string, color: string) => {
-      const position = Math.max(0, ...tagRows.map((_, i) => i + 1)) + 1;
-      counting(
-        supabase
-          .from("tags")
-          .insert({ name, color, position })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addTag", error);
-            return;
-          }
-          setTagRows((prev) => [...prev, mapTag(data)]);
-        });
-    },
-    [supabase, tagRows, noteWriteError, counting],
-  );
-
-  const updateTag = useCallback(
-    (tagId: string, patch: Partial<Pick<Tag, "name" | "color">>) => {
-      const beforeTag = tagRows.find((t) => t.id === tagId);
-      if (beforeTag) {
-        const prev = inversePatch(beforeTag, patch);
-        record({
-          undo: () => methodsRef.current?.updateTag(tagId, prev),
-          redo: () => methodsRef.current?.updateTag(tagId, patch),
-        });
-      }
-      const oldName = tagRows.find((t) => t.id === tagId)?.name;
-      setTagRows((prev) => prev.map((t) => (t.id === tagId ? { ...t, ...patch } : t)));
-      // tasks carry tag NAMES — keep them in sync on rename
-      if (patch.name && oldName && patch.name !== oldName) {
-        setTasks((prev) => prev.map((t) => (t.tag === oldName ? { ...t, tag: patch.name! } : t)));
-      }
-      supabase
-        .from("tags")
-        .update(patch)
-        .eq("id", tagId)
-        .then(wrote("updateTag"));
-    },
-    [supabase, tagRows, record, wrote],
-  );
-
-  const deleteTag = useCallback(
-    (tagId: string) => {
-      const name = tagRows.find((t) => t.id === tagId)?.name;
-      setTagRows((prev) => prev.filter((t) => t.id !== tagId));
-      if (name) setTasks((prev) => prev.map((t) => (t.tag === name ? { ...t, tag: null } : t)));
-      supabase
-        .from("tags")
-        .delete()
-        .eq("id", tagId)
-        .then(wrote("deleteTag"));
-    },
-    [supabase, tagRows, wrote],
-  );
-
-  const updateClient = useCallback(
-    (clientId: string, patch: Partial<Client>) => {
-      // billable flips cascade to tasks — too side-effectful to undo cleanly
-      const before = "billable" in patch ? undefined : clients.find((c) => c.id === clientId);
-      if (before) {
-        const prev = inversePatch(before, patch);
-        record({
-          undo: () => methodsRef.current?.updateClient(clientId, prev),
-          redo: () => methodsRef.current?.updateClient(clientId, patch),
-        });
-      }
-      setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, ...patch } : c)));
-      const row: Record<string, unknown> = {};
-      if ("name" in patch) row.name = patch.name;
-      if ("color" in patch) row.color = patch.color;
-      if ("archived" in patch) row.archived = patch.archived;
-      if ("billingPeriodNote" in patch) row.billing_period_note = patch.billingPeriodNote;
-      if ("billable" in patch) row.billable = patch.billable;
-      if ("invoiceNote" in patch) row.invoice_note = patch.invoiceNote;
-      /**
-       * ⚠️ 0033's two columns go through `updateWithOptional`, not into `row`.
-       * A missing column on a WRITE is reported by PostgREST as PGRST204 and
-       * fails the WHOLE update — so folding `hour_cap`/`report_notes` in here
-       * would mean that, before that SQL is run, renaming a client or marking it
-       * internal silently failed too. The optional pair is dropped and the rest
-       * retried instead. See `updateWithOptional` for why this must never be used
-       * for a value the app then relies on.
-       */
-      const optional: Record<string, unknown> = {};
-      if ("hourCap" in patch) optional.hour_cap = patch.hourCap;
-      if ("reportNotes" in patch) optional.report_notes = patch.reportNotes;
-      // 0037. Optional for the same reason as the two above: a missing column on a
-      // WRITE is PGRST204 and fails the whole update, which would break renaming a
-      // client until the migration runs.
-      if ("keysTaskId" in patch) optional.keys_task_id = patch.keysTaskId;
-      const tail = wrote("updateClient");
-      void updateWithOptional(supabase, "clients", { id: clientId }, row, optional).then((res) => {
-        tail(res);
-        // ⚠️ Say so rather than leaving local state claiming a value the database
-        // does not have — it would look saved until the next refresh took it away.
-        if (res.degraded && Object.keys(optional).length) {
-          setNotice("The cap, notes and keys task weren't saved — migration 0033/0037 hasn't been run yet.");
-        }
-      });
-      // Marking a client internal makes all its existing tasks non-billable.
-      // The reverse is NOT mass-applied (keys tasks etc. must stay non-billable).
-      if (patch.billable === false) {
-        setTasks((prev) =>
-          prev.map((t) => (t.clientId === clientId ? { ...t, billable: false } : t)),
-        );
-        supabase
-          .from("tasks")
-          .update({ billable: false })
-          .eq("client_id", clientId)
-          .then(wrote("updateClient tasks-billable"));
-      }
-    },
-    [supabase, clients, record, wrote],
-  );
 
   // ── weekly plan ───────────────────────────────────────────────────────
   // Lifted into ./plan.ts — see the note at the top of that file for why the
@@ -1945,80 +1692,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     counting,
     asOneStep,
   });
+  // ── task comments & attachments ─────────────────────────────────────────
+  // Lifted into ./comments.ts — see ./plan.ts for why deps arrive as an object.
+  const commentActions = useCommentActions({
+    supabase,
+    comments,
+    setComments,
+    setAttachments,
+    currentUserId,
+    record,
+    wrote,
+    noteWriteError,
+    counting,
+    methodsRef,
+  });
 
-  const addComment = useCallback(
-    (taskId: string, body: string) => {
-      const optimistic: TaskComment = {
-        id: `tmp-${Date.now()}`,
-        taskId,
-        userId: currentUserId,
-        body,
-        createdAt: new Date().toISOString(),
-      };
-      setComments((prev) => [...prev, optimistic]);
-      counting(
-        supabase
-          .from("task_comments")
-          .insert({ task_id: taskId, user_id: currentUserId, body })
-          .select()
-          .single(),
-      )
-        .then(({ data, error }) => {
-          if (error) {
-            noteWriteError("addComment", error);
-            return;
-          }
-          setComments((prev) => prev.map((c) => (c.id === optimistic.id ? mapComment(data) : c)));
-        });
-    },
-    [supabase, currentUserId, noteWriteError, counting],
-  );
-
-  /**
-   * Admin-only in the UI. Undo re-inserts the row WITH ITS ORIGINAL ID and its
-   * original `created_at`, so a restored comment lands back in its place in the
-   * thread rather than jumping to the bottom — the thread is ordered by time,
-   * and an imported 2019 comment reappearing under today's would be a lie about
-   * when it was said. `author_name` is carried too: 2,175 of the 2,397 imported
-   * comments have no profile, and it's the only record of who wrote them.
-   */
-  const deleteComment = useCallback(
-    (id: string) => {
-      const gone = comments.find((c) => c.id === id);
-      if (gone) {
-        record({
-          undo: () => {
-            setComments((prev) =>
-              prev.some((c) => c.id === gone.id) ? prev : [...prev, gone],
-            );
-            supabase
-              .from("task_comments")
-              .insert({
-                id: gone.id,
-                task_id: gone.taskId,
-                user_id: gone.userId,
-                body: gone.body,
-                created_at: gone.createdAt,
-                author_name: gone.authorName ?? null,
-              })
-              .then(wrote("restoreComment"));
-          },
-          redo: () => methodsRef.current?.deleteComment(id),
-        });
-      }
-      setComments((prev) => prev.filter((c) => c.id !== id));
-      supabase.from("task_comments").delete().eq("id", id).then(wrote("deleteComment"));
-    },
-    [supabase, comments, record, wrote],
-  );
-
-  const addAttachment = useCallback((attachment: Attachment) => {
-    setAttachments((prev) => [...prev, attachment]);
-  }, []);
-
-  const removeAttachment = useCallback((id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
-  }, []);
   // ── time entries ─────────────────────────────────────────
   // Lifted into ./time-entries.ts — see ./plan.ts for why deps arrive as an object.
   const entries = useTimeEntryActions({
@@ -2172,17 +1860,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       groupTasksIntoNew,
       deleteTaskGroup,
       reorderTaskGroup,
-      addClient,
-      patchProfileLocal,
-      patchClientLocal,
-      updateProfile,
-      updateClient,
-      addTaskType,
-      updateTaskType,
-      deleteTaskType,
-      addTag,
-      updateTag,
-      deleteTag,
       // ...plan.ts — the domain's eleven methods arrive as one object, which is
       // also why the dependency list below names `plan` once rather than each.
       ...plan,
@@ -2193,10 +1870,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ...entries,
       ...keysWriteDown,
       ...requests,
-      addComment,
-      deleteComment,
-      addAttachment,
-      removeAttachment,
+      ...commentActions,
+      ...taxonomy,
+      ...clientActions,
       taskRequests,
       taskMinutes,
       undo,
@@ -2221,13 +1897,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       isBriefLoaded, devItems, openTask, updateTask, updateTasksBulk, updateTasksVaried,
       restoreTasksBulk, addTask, deleteTask, deleteTasksBulk, addSection, updateSection,
       deleteSection, reorderTask, reorderSection, addTaskGroup, updateTaskGroup,
-      groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, addClient, patchProfileLocal,
-      patchClientLocal, updateProfile, updateClient, addTaskType, updateTaskType,
-      deleteTaskType, addTag, updateTag, deleteTag, plan, addComment, deleteComment,
-      addAttachment, removeAttachment, taskRequests, taskMinutes, undo, redo, writeError,
-      dismissWriteError, serviceBlocked, notice, showNotice, dismissNotice, freshEntryId,
-      refreshing, pollingPaused, lastSyncedAt, refreshNow, bootError, linkActions, timeline,
-      devItemActions, billing, entries, keysWriteDown, requests,
+      groupTasksIntoNew, deleteTaskGroup, reorderTaskGroup, plan, taskRequests, taskMinutes,
+      undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice,
+      dismissNotice, freshEntryId, refreshing, pollingPaused, lastSyncedAt, refreshNow,
+      bootError, linkActions, timeline, devItemActions, billing, entries, keysWriteDown,
+      requests, taxonomy, commentActions, clientActions,
     ],
   );
 
