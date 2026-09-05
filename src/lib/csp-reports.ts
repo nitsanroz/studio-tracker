@@ -129,6 +129,31 @@ type ModernReport = {
 };
 
 /**
+ * Longest we store any single reported field.
+ *
+ * ⚠️ THESE THREE STRINGS ARE ATTACKER-CONTROLLED AND THE ENDPOINT IS OPEN. Stored
+ * verbatim, one caller could put ~15KB (the body limit) into a `documentUri` that
+ * still passes `keepViolation` — its origin only has to be ours, the path can be
+ * anything — and repeat it under 50 distinct signatures. That is a ~750KB
+ * `app_settings` row which EVERY subsequent POST then reads before deciding
+ * whether to write, so an unauthenticated request would cost most of a megabyte
+ * of egress. Egress is this project's tightest constraint and the org is shared
+ * with two other products; the site was 402'd off the air on 2026-09-04.
+ *
+ * 200 is well past any real directive, origin or path worth reading in the viewer,
+ * and it bounds the whole store at roughly 50 × 600B ≈ 40KB — which is why there
+ * is no separate cap on the serialised row: the signature cap and this one
+ * together already bound it.
+ */
+const MAX_FIELD = 200;
+
+/** Trim, and refuse to carry more than `MAX_FIELD` characters into the store. */
+function clamp(raw: string | undefined): string {
+  const v = (raw ?? "").trim();
+  return v.length > MAX_FIELD ? v.slice(0, MAX_FIELD) : v;
+}
+
+/**
  * Normalise either report format into `Violation[]`.
  *
  * ⚠️ BOTH FORMATS ARE LIVE AND WE NEED BOTH. Chrome sends the Reporting API shape
@@ -141,12 +166,12 @@ type ModernReport = {
 export function parseReports(payload: unknown): Violation[] {
   const out: Violation[] = [];
   const push = (directive?: string, blocked?: string, documentUri?: string) => {
-    const d = (directive ?? "").trim();
+    const d = clamp(directive);
     if (!d) return;
     out.push({
       directive: d,
-      blocked: (blocked ?? "").trim() || "unknown",
-      documentUri: (documentUri ?? "").trim(),
+      blocked: clamp(blocked) || "unknown",
+      documentUri: clamp(documentUri),
     });
   };
 

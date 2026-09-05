@@ -266,3 +266,66 @@ describe("mergeReports", () => {
     );
   });
 });
+
+describe("field length caps", () => {
+  // The endpoint is unauthenticated and the store is ONE jsonb row that every
+  // subsequent POST reads. Uncapped, a caller could put most of the 16KB body
+  // limit into a documentUri that still passes keepViolation — its origin only
+  // has to be ours — and repeat it under 50 distinct signatures, turning each
+  // later request into a ~750KB read. These cases pin the bound.
+  const long = "x".repeat(5000);
+
+  it("truncates an over-long documentUri", () => {
+    const [v] = parseReports({
+      "csp-report": {
+        "effective-directive": "img-src",
+        "blocked-uri": "https://cdn.example.com/a.png",
+        "document-uri": `https://tracker.studionmore.com/${long}`,
+      },
+    });
+    expect(v.documentUri.length).toBeLessThanOrEqual(200);
+    expect(v.documentUri.startsWith("https://tracker.studionmore.com/")).toBe(true);
+  });
+
+  it("truncates an over-long directive and blocked value", () => {
+    const [v] = parseReports({
+      "csp-report": {
+        "effective-directive": long,
+        "blocked-uri": long,
+        "document-uri": "https://tracker.studionmore.com/plan",
+      },
+    });
+    expect(v.directive.length).toBeLessThanOrEqual(200);
+    expect(v.blocked.length).toBeLessThanOrEqual(200);
+  });
+
+  it("bounds the whole store, not just one field", () => {
+    // 50 distinct signatures, every field at its cap, is the worst case the
+    // signature cap allows. Well under the ~750KB an uncapped row could reach.
+    let store = EMPTY_STORE;
+    for (let i = 0; i < 80; i++) {
+      const [v] = parseReports({
+        "csp-report": {
+          "effective-directive": `d${i}-${long}`,
+          "blocked-uri": `https://h${i}.example.com/${long}`,
+          "document-uri": `https://tracker.studionmore.com/${long}`,
+        },
+      });
+      store = mergeReports(store, [v], new Date()).store;
+    }
+    expect(store.items.length).toBeLessThanOrEqual(50);
+    expect(JSON.stringify(store).length).toBeLessThan(80_000);
+  });
+
+  it("leaves an ordinary report untouched", () => {
+    const [v] = parseReports({
+      "csp-report": {
+        "effective-directive": "font-src",
+        "blocked-uri": "https://fonts.gstatic.com/s/rubik.woff2",
+        "document-uri": "https://tracker.studionmore.com/plan",
+      },
+    });
+    expect(v.directive).toBe("font-src");
+    expect(v.documentUri).toBe("https://tracker.studionmore.com/plan");
+  });
+});

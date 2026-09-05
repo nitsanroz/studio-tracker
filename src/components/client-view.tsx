@@ -95,11 +95,27 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
 
     let total = 0;
     let billable = 0;
+    /**
+     * ⚠️ RECOVERED ENTRIES THAT *DO* HAVE A DATE WERE INVISIBLE HERE. The caption
+     * below has always reported `unattributed` — the task-level `legacy_hours`
+     * remainder, i.e. the part with no day at all — so a client whose recovered
+     * history came through as DATED legacy entries read as if every hour in its
+     * total had been logged by a person in this app. That is most of the
+     * recovery: 3,994.90h landed as dated entries against 3,953.75h of
+     * remainder, and the later passes added ~33,000h more, nearly all dated.
+     *
+     * Both are reconstructions and the caption now says so. They stay separate
+     * numbers because they degrade differently: a dated legacy entry has a real
+     * (sometimes estimated) day and often an author, the remainder has neither
+     * and is excluded from the charts below.
+     */
+    let legacyDated = 0;
     const byMonth = new Map<string, number>();
     const byUser = new Map<string, number>();
     for (const e of entrySumsAll) {
       if (!clientTaskIds.has(e.taskId)) continue;
       total += e.minutes;
+      if (e.legacy) legacyDated += e.minutes;
       if (billableTaskIds.has(e.taskId)) billable += e.minutes;
       const month = e.date.slice(0, 7);
       byMonth.set(month, (byMonth.get(month) ?? 0) + e.minutes);
@@ -127,6 +143,9 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
     return {
       total: total + unattributed,
       unattributed,
+      legacyDated,
+      /** Everything in `total` that was reconstructed rather than logged here. */
+      recovered: legacyDated + unattributed,
       // Same basis as `total`: both sides of the share now include the recovered
       // hours, so the percentage answers "how much of this client's work is
       // billable" rather than "how much of the ITEMISED part is".
@@ -153,12 +172,21 @@ function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: bo
           <div className="mt-0.5 text-xl font-semibold tabular-nums">
             {formatHoursShort(stats.total)}
           </div>
-          {stats.unattributed > 0 && (
+          {stats.recovered > 0 && (
             <div
               className="mt-0.5 text-[11px] text-faint"
-              title="Hours recovered from the pre-Everhour Asana history that couldn't be attributed to a person or a date. Included in the total above, but not in the charts below."
+              title={
+                "Reconstructed from the pre-Everhour Asana history rather than logged in this app.\n\n" +
+                (stats.legacyDated > 0
+                  ? `${formatHoursShort(stats.legacyDated)} has a day (sometimes estimated from the task's activity window) and appears in the charts below.\n`
+                  : "") +
+                (stats.unattributed > 0
+                  ? `${formatHoursShort(stats.unattributed)} has no day or author at all — counted in the total above, left out of the charts below.\n`
+                  : "") +
+                "\nBefore quoting this figure to a client, treat the recovered part as approximate."
+              }
             >
-              incl. {formatHoursShort(stats.unattributed)} pre-Everhour
+              incl. {formatHoursShort(stats.recovered)} recovered
             </div>
           )}
         </div>

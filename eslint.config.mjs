@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // ⚠️ NOT a default — this one is ours. `NEXT_BUILD_DIR=.next-build` (see
+    // CLAUDE.md) keeps the build gate out of a running dev server's `.next`,
+    // but re-listing the defaults here REPLACED them, so nothing ignored the
+    // new directory. ESLint then walked the minified bundle and reported 576
+    // "errors" + 8,414 warnings over the real source tree's 0 and ~14 — which
+    // made a genuine lint regression unfindable and the exit code meaningless.
+    ".next-build/**",
   ]),
   {
     // The React Compiler rule set (eslint-plugin-react-hooks v6) is advisory:

@@ -211,6 +211,18 @@ export function CellInspector({
               ))}
             </ul>
           </div>
+
+          {/* ⚠️ ONE FOOTNOTE FOR THE CARD, not a tooltip per row. The asterisk is
+              only useful if its meaning is on screen: this card is read right
+              before a bill goes out, and hovering a row to discover that a date
+              was inferred is not a thing anyone does under time pressure. Only
+              rendered when the card actually contains one. */}
+          {(entries ?? []).some((e) => e.dateEstimated) && (
+            <p className="mt-1.5 text-[10px] leading-snug text-faint">
+              * date estimated from the task&apos;s activity window — the hours are
+              recorded, the day they fell on is inferred.
+            </p>
+          )}
         </>
       )}
     </div>
@@ -245,7 +257,23 @@ function InspectorLogRow({ entry, onMoved }: { entry: TimeEntry; onMoved: () => 
   return (
     <li className="text-[11px] leading-snug">
       <div className="flex items-baseline gap-2">
-        <span className="shrink-0 text-faint">{formatDayMonth(entry.date)}</span>
+        {/* ⚠️ THE ASTERISK IS NOT DECORATION — this card is what the studio reads
+            immediately before publishing a client's bill, and a date recovered
+            from a task's activity window used to render here identically to a
+            timestamp somebody actually logged this week. `task-panel.tsx` has
+            marked estimates since v0.99.34; this surface, the one that decides
+            money, did not. Same convention deliberately: faint italic + "*". */}
+        <span
+          className={`shrink-0 ${entry.dateEstimated ? "italic text-faint" : "text-faint"}`}
+          title={
+            entry.dateEstimated
+              ? "Date estimated from this task's activity window — the hours are from the task's own recorded total"
+              : undefined
+          }
+        >
+          {formatDayMonth(entry.date)}
+          {entry.dateEstimated ? "*" : ""}
+        </span>
         <span className="min-w-0 flex-1 truncate font-medium">
           {profiles.find((p) => p.id === entry.userId)?.name ?? entry.legacyAuthorName ?? "Unknown"}
         </span>

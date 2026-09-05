@@ -54,17 +54,26 @@ function admin() {
 /**
  * Origins whose pages we accept reports about.
  *
- * ⚠️ The REQUEST's own origin is included so this works on localhost and on
- * preview deployments; `appOrigin()` is included so production is covered even if
- * a request arrives with an odd Host. Both are ours — see `src/lib/app-origin.ts`
- * for why a Host header alone is not trusted in this codebase.
+ * ⚠️ IN PRODUCTION THIS IS `appOrigin()` ALONE. The request's own origin comes
+ * from the Host header, which this codebase does not trust anywhere else — see
+ * `src/lib/app-origin.ts`. Accepting it here let a caller forge BOTH halves of
+ * the check: send `Host: whatever` and a `documentUri` on that host, and reports
+ * about someone else's site fill the store until the signature cap is full, at
+ * which point our own violations are dropped and the alarm this endpoint exists
+ * to be is off.
+ *
+ * ⚠️ Outside production it is still included, because localhost and preview
+ * deployments have no other way to match. A preview that should keep its own
+ * reports sets `NEXT_PUBLIC_APP_URL`, exactly as app-origin.ts already advises.
  */
 function allowedOrigins(req: NextRequest): string[] {
   const set = new Set<string>([appOrigin()]);
-  try {
-    set.add(new URL(req.url).origin);
-  } catch {
-    /* keep appOrigin only */
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      set.add(new URL(req.url).origin);
+    } catch {
+      /* keep appOrigin only */
+    }
   }
   return [...set];
 }
@@ -112,9 +121,51 @@ async function replaceRow(
   return !!data?.length;
 }
 
+/**
+ * Per-source throttle, checked BEFORE the database is touched.
+ *
+ * ⚠️ THE READ IS THE EXPENSIVE PART. Every accepted POST reads the whole store
+ * row before deciding whether to write, so the existing write-throttle does not
+ * bound what a flood costs — only what it stores. One source repeating a
+ * *known* signature therefore paid nothing to store and a full row-read each
+ * time. Egress is this project's tightest constraint and the Supabase org is
+ * shared with two other products.
+ *
+ * ⚠️ IN-MEMORY, SO IT IS PER-INSTANCE AND DELIBERATELY APPROXIMATE. A real
+ * limiter would need shared state, i.e. the very database call we are trying to
+ * avoid — which would cost more than it saves. This blunts a single source
+ * hammering one instance; it is not a defence against a distributed flood, and
+ * the signature cap plus MAX_FIELD are what bound the damage in that case.
+ *
+ * The map is bounded and cleared wholesale rather than swept: entries are two
+ * numbers, and a serverless instance is short-lived anyway.
+ */
+const RATE_WINDOW_MS = 10_000;
+const RATE_MAX = 5;
+const RATE_MAX_KEYS = 500;
+const seen = new Map<string, { n: number; start: number }>();
+
+function rateLimited(req: NextRequest): boolean {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+  const now = Date.now();
+  if (seen.size > RATE_MAX_KEYS) seen.clear();
+  const hit = seen.get(ip);
+  if (!hit || now - hit.start > RATE_WINDOW_MS) {
+    seen.set(ip, { n: 1, start: now });
+    return false;
+  }
+  hit.n += 1;
+  return hit.n > RATE_MAX;
+}
+
 export async function POST(req: NextRequest) {
   // 204 on every path below. `void` the work rather than reporting it.
   const done = new NextResponse(null, { status: 204 });
+
+  if (rateLimited(req)) return done;
 
   const declared = Number(req.headers.get("content-length") ?? 0);
   if (declared > MAX_BODY) return done;
