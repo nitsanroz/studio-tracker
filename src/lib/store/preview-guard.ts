@@ -28,10 +28,23 @@ import type { Store } from "./types";
  * Store methods that stay live during a preview: reads, lazy loads, local-only
  * state patches and pure UI. Nothing here reaches Supabase with a write.
  *
- * `patchProfileLocal` / `patchClientLocal` are the two that look like writes and
- * are not — they only mirror a value an API route has ALREADY persisted with the
- * service key. Stubbing them could not un-write anything; it would just leave the
- * UI disagreeing with the database.
+ * ⚠️ FOUR OF THESE LOOK LIKE WRITES AND ARE NOT. `patchProfileLocal`,
+ * `patchClientLocal`, `addAttachment` and `removeAttachment` are pure local
+ * mirrors — each one only reflects a value an API ROUTE has ALREADY persisted
+ * with the service key. Stubbing them cannot un-write anything; it just leaves
+ * the UI disagreeing with the database.
+ *
+ * ⚠️ AND THE ATTACHMENT PAIR IS THE CASE THAT PROVES IT MATTERS, because
+ * blocking half an operation is worse than blocking none of it. `task-panel.tsx`
+ * removes the file locally and THEN calls `fetch(DELETE)`; the route authenticates
+ * the real signed-in admin, so the row and the storage object are destroyed either
+ * way. Stubbed, the notice claimed “preview only” while the file stayed on screen
+ * and the attachment was gone for good — and attachments have no undo path.
+ * The same is true in reverse for the upload. Found by the v1.50.4 code review.
+ *
+ * The residual is unchanged and is the one this guard cannot reach: an API route
+ * writing with the service key authenticates from the SERVER session, so it is
+ * outside the guard entirely. See the note at the top of this file.
  */
 const PREVIEW_ALLOWED = new Set<keyof Store>([
   "briefLoaded",
@@ -41,6 +54,8 @@ const PREVIEW_ALLOWED = new Set<keyof Store>([
   "loadCellEntries",
   "patchProfileLocal",
   "patchClientLocal",
+  "addAttachment",
+  "removeAttachment",
   "showNotice",
   "dismissNotice",
   "dismissWriteError",

@@ -14,6 +14,8 @@ function fakeStore(over: Record<string, unknown> = {}) {
     deleteTimeEntry: vi.fn(),
     openTask: vi.fn(),
     patchProfileLocal: vi.fn(),
+    addAttachment: vi.fn(),
+    removeAttachment: vi.fn(),
     showNotice: vi.fn(),
     groupTasksIntoNew: vi.fn(),
     markRequestSeen: vi.fn(),
@@ -49,6 +51,21 @@ describe("guardPreview", () => {
     guarded.patchProfileLocal("p1", { name: "x" });
     expect(store.openTask).toHaveBeenCalledWith("t1");
     expect(store.patchProfileLocal).toHaveBeenCalled();
+  });
+
+  // ⚠️ THE REGRESSION THIS PINS: these two are pure local mirrors of a write an
+  // API route has already made, and `task-panel.tsx` calls them RIGHT BEFORE its
+  // own fetch. Stubbing them blocked half the operation — the notice said
+  // "preview only" while the DELETE went through and destroyed the row and the
+  // storage object, leaving the file on screen with no undo path.
+  it("leaves the attachment mirrors callable, so a preview cannot block half a delete", () => {
+    const store = fakeStore();
+    const guarded = guardPreview(store, "Nadav");
+    guarded.addAttachment({ id: "a1" } as never);
+    guarded.removeAttachment("a1");
+    expect(store.addAttachment).toHaveBeenCalled();
+    expect(store.removeAttachment).toHaveBeenCalledWith("a1");
+    expect(store.showNotice).not.toHaveBeenCalled();
   });
 
   it("passes non-function values straight through", () => {
