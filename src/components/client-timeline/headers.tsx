@@ -65,7 +65,7 @@ export function TimelineHeader({
 
       z-[22] over the rows' own sticky name block (z-20): scrolling down must not
       slide task names over the column titles — and BELOW the client page's own
-      sticky header, which has to clear it. The scale is in client-view.tsx.
+      sticky header, which has to clear it. The scale is in client-view/index.tsx.
     */
     <div
       className={`sticky top-0 z-[22] border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}

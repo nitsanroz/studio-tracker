@@ -1076,7 +1076,7 @@ export function ReportTable({
           screenshot). 21 is the number that means something: the pinned lead cells
           are `z-20` and this must stay above them, and nothing between 21 and 30
           exists in this table. **Anything on this page that opens OVER the table
-          must therefore sit above 21** — see the z-scale note in `client-view.tsx`
+          must therefore sit above 21** — see the z-scale note in `client-view/index.tsx`
           for the same lesson learned the hard way there. */}
       <div
         ref={proxyRef}

@@ -946,7 +946,7 @@ function Shell({ children }: { children: ReactNode }) {
         than as a bar at the top of the page: the app header is `sticky top-0`
         and the client page pins its own header at `top-14`, so anything that
         pushes the layout down would knock that alignment out — see the z-index
-        and sticky table in client-view.tsx.
+        and sticky table in client-view/index.tsx.
       */}
       {/* ⚠️ ABOVE the serviceBlocked banner in the DOM but they never both show:
           serviceBlocked means the quota already ran out, at which point a "you are
