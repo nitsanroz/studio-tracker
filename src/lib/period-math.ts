@@ -1,6 +1,7 @@
 // Date/bucket arithmetic for the home page's period selector and charts.
 //
-// Extracted from dashboard.tsx so it can be tested without rendering the app.
+// Extracted from the home page (now `components/dashboard/`) so it can be tested
+// without rendering the app.
 // Every function that needs the current date takes `now` as its last argument,
 // defaulting to `new Date()` — same pattern as `presetRange` in date-ranges.ts.
 // That default is the only reason these were untestable before, and the working
