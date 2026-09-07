@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildReportSnapshot, buildWeeks, periodCuts } from "./report-snapshot";
-import type { BillingPeriod, Client, EntrySum, Section, Task } from "./types";
+import type { BillingPeriod, Client, EntrySum, Section, Task, TaskGroup } from "./types";
 
 const e = (date: string, minutes = 60): EntrySum =>
   ({ taskId: "t", userId: "u", date, minutes }) as EntrySum;
@@ -221,6 +221,7 @@ describe("buildReportSnapshot", () => {
     const snap = buildReportSnapshot(
       client,
       [section("s1", "Design")],
+      [],
       [task("t1", "s1"), task("t2", "s-gone")],
       [sum("t1", "2026-08-03", 60), sum("t2", "2026-08-03", 120)],
       periods,
@@ -257,6 +258,7 @@ describe("buildReportSnapshot", () => {
     const snap = buildReportSnapshot(
       client,
       [section("s1", "Design")],
+      [],
       [task("t1", "s1")],
       [
         sum("t1", "2026-08-30", 30), // Sun, inside August
@@ -282,6 +284,7 @@ describe("buildReportSnapshot", () => {
     const snap = buildReportSnapshot(
       client,
       [section("s1", "Design")],
+      [],
       [task("t1", "s1"), task("t2", "s-gone"), task("t3", null)],
       [sum("t1", "2026-08-03", 60), sum("t2", "2026-08-03", 120), sum("t3", "2026-08-04", 30)],
       periods,
@@ -298,6 +301,85 @@ describe("buildReportSnapshot", () => {
    * the row totals and the header figure. So each of these asserts a DIFFERENT
    * figure moves together — dropping any one of them is how the bug comes back.
    */
+  /**
+   * The report's row order IS the client page's order — that page is where the
+   * studio arranges its work, so the two must not disagree.
+   */
+  describe("row order follows the client page", () => {
+    const at = (id: string, sectionId: string | null, position: number, groupId: string | null) =>
+      ({ id, clientId: "c1", title: id, billable: true, pending: false, sectionId, position,
+         groupId, estimateHours: 1 }) as unknown as Task;
+    const group = (id: string, sectionId: string | null, position: number) =>
+      ({ id, clientId: "c1", sectionId, name: id, position }) as unknown as TaskGroup;
+
+    it("puts a section's groups first, in group order, then its loose tasks", () => {
+      const snap = buildReportSnapshot(
+        client,
+        [section("s1", "Design")],
+        [group("gB", "s1", 2), group("gA", "s1", 1)],
+        [
+          at("loose2", "s1", 2, null),
+          at("b1", "s1", 1, "gB"),
+          at("a2", "s1", 2, "gA"),
+          at("loose1", "s1", 1, null),
+          at("a1", "s1", 1, "gA"),
+        ],
+        [],
+        [],
+      );
+      expect(snap.sections[0].tasks.map((t) => t.id)).toEqual([
+        "a1",
+        "a2",
+        "b1",
+        "loose1",
+        "loose2",
+      ]);
+    });
+
+    /**
+     * ⚠️ The regression this exists for: `reorderTask` densifies a group's
+     * children among THEMSELVES, so two groups in one section both hold a task
+     * at position 1. A single sort on `position` interleaved them.
+     */
+    it("does not interleave two groups that share a position space", () => {
+      const snap = buildReportSnapshot(
+        client,
+        [section("s1", "Design")],
+        [group("gA", "s1", 1), group("gB", "s1", 2)],
+        [at("a1", "s1", 1, "gA"), at("b1", "s1", 1, "gB"), at("a2", "s1", 2, "gA")],
+        [],
+        [],
+      );
+      expect(snap.sections[0].tasks.map((t) => t.id)).toEqual(["a1", "a2", "b1"]);
+    });
+
+    it("renders a task whose group belongs to another section as a loose row", () => {
+      const snap = buildReportSnapshot(
+        client,
+        [section("s1", "Design")],
+        [group("gA", "s1", 1)],
+        [at("orphaned", "s1", 1, "g-elsewhere"), at("a1", "s1", 5, "gA")],
+        [],
+        [],
+      );
+      // the group's own child first, then the one pointing nowhere — and it is
+      // present rather than dropped, which is what would lose its hours
+      expect(snap.sections[0].tasks.map((t) => t.id)).toEqual(["a1", "orphaned"]);
+    });
+
+    it("puts the no-section block BEFORE the sections, as the page does", () => {
+      const snap = buildReportSnapshot(
+        client,
+        [section("s1", "Design")],
+        [],
+        [at("inSection", "s1", 1, null), at("noSection", null, 1, null)],
+        [],
+        [],
+      );
+      expect(snap.sections.map((s) => s.name)).toEqual(["Other", "Design"]);
+    });
+  });
+
   describe("through (cut-off date)", () => {
     const week2 = [
       sum("t1", "2026-08-20", 120), // Thu, inside the reported week
@@ -306,14 +388,14 @@ describe("buildReportSnapshot", () => {
 
     it("leaves out hours logged after the cut-off, in the row total", () => {
       const snap = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, "2026-08-22",
+        client, [section("s1", "Design")], [], [task("t1", "s1")], week2, periods, "2026-08-22",
       );
       expect(snap.sections[0].tasks[0].totalMinutes).toBe(120);
     });
 
     it("drops the week COLUMN the excluded hours would have created", () => {
       const snap = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, "2026-08-22",
+        client, [section("s1", "Design")], [], [task("t1", "s1")], week2, periods, "2026-08-22",
       );
       expect(snap.weeks?.some((w) => w.from === "2026-08-23")).toBe(false);
     });
@@ -323,7 +405,7 @@ describe("buildReportSnapshot", () => {
         { id: "p1", clientId: "c1", label: "August", dateFrom: "2026-08-01", dateTo: "2026-08-31" } as BillingPeriod,
       ];
       const snap = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")], week2, p, "2026-08-22",
+        client, [section("s1", "Design")], [], [task("t1", "s1")], week2, p, "2026-08-22",
       );
       const row = snap.sections[0].tasks[0];
       // the figure the client's header is built from, and the row's own total
@@ -336,10 +418,10 @@ describe("buildReportSnapshot", () => {
 
     it("changes nothing when no cut-off is given", () => {
       const withOut = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods,
+        client, [section("s1", "Design")], [], [task("t1", "s1")], week2, periods,
       );
       const withNull = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")], week2, periods, null,
+        client, [section("s1", "Design")], [], [task("t1", "s1")], week2, periods, null,
       );
       expect(withOut.sections[0].tasks[0].totalMinutes).toBe(600);
       expect(withNull.sections[0].tasks[0].totalMinutes).toBe(600);
@@ -347,7 +429,7 @@ describe("buildReportSnapshot", () => {
 
     it("is INCLUSIVE of the cut-off day itself", () => {
       const snap = buildReportSnapshot(
-        client, [section("s1", "Design")], [task("t1", "s1")],
+        client, [section("s1", "Design")], [], [task("t1", "s1")],
         [sum("t1", "2026-08-22", 60)], periods, "2026-08-22",
       );
       expect(snap.sections[0].tasks[0].totalMinutes).toBe(60);

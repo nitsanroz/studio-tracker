@@ -586,6 +586,7 @@ function PublishWorkspace() {
   const {
     clients,
     sections,
+    taskGroups,
     tasks,
     entrySumsAll,
     billingPeriods,
@@ -1012,13 +1013,14 @@ function PublishWorkspace() {
         ? buildReportSnapshot(
             selectedClient,
             sections,
+            taskGroups,
             tasks,
             entrySumsAll,
             billingPeriods.filter((p) => p.clientId === selectedClient.id),
             cutoff,
           )
         : null,
-    [selectedClient, sections, tasks, entrySumsAll, billingPeriods],
+    [selectedClient, sections, taskGroups, tasks, entrySumsAll, billingPeriods],
   );
   const preview = useMemo(() => buildFor(previewThrough), [buildFor, previewThrough]);
   const publishable = useMemo(() => buildFor(through || null), [buildFor, through]);

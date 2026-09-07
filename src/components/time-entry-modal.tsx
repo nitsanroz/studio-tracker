@@ -4,7 +4,7 @@
 // APPEND hours — there was no way to fix a typo'd figure or delete a wrong entry
 // without going to the Time Feed and finding it again.
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { loggableMembers } from "@/lib/members";
 import { formatHoursShort, parseDuration } from "@/lib/format";
@@ -48,6 +48,25 @@ export function TimeEntryModal({
   const [description, setDescription] = useState(entry?.description ?? "");
   const [date, setDate] = useState(entry?.date ?? "");
   const [userId, setUserId] = useState(entry?.userId ?? currentUserId);
+  /**
+   * The note box grows to fit the note. A long note in a one-line field shows a
+   * dozen characters through a slit and you cannot fix what you cannot read —
+   * and this popup exists to fix notes. Capped by `max-h-48`, which then scrolls.
+   * ⚠️ Before the `!entry` early return, as hooks must be; the ref is only
+   * attached in the edit branch, hence the null guard.
+   */
+  const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const el = noteRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    // ⚠️ `box-sizing: border-box` (the app-wide default) means a height of
+    // `scrollHeight` leaves the CONTENT 2px short of the box and the last line
+    // scrolls by a hair, so the border has to be added back on.
+    const border = el.offsetHeight - el.clientHeight;
+    el.style.height = `${el.scrollHeight + border}px`;
+  }, [description]);
+
   /**
    * ⚠️ Called BEFORE the `!entry` early return, as hooks must be — the hook takes
    * a null entry and simply reports itself unavailable.
@@ -169,12 +188,23 @@ export function TimeEntryModal({
         </label>
         <label className="flex items-start gap-3 text-sm">
           <span className="w-20 shrink-0 pt-2 text-muted">Note</span>
-          <input
+          <textarea
+            ref={noteRef}
+            rows={1}
             disabled={!editable}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            // A note is one line of text that may be long, not a paragraph:
+            // Enter saves, as it did when this was an `input`. Without this a
+            // textarea would quietly start storing newlines.
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                save();
+              }
+            }}
             placeholder="What did you do? (required)"
-            className={`bidi-auto min-w-0 flex-1 ${input} disabled:opacity-60`}
+            className={`bidi-auto max-h-48 min-w-0 flex-1 resize-none overflow-y-auto ${input} disabled:opacity-60`}
           />
         </label>
       </div>

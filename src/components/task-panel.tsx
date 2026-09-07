@@ -1409,7 +1409,11 @@ function TimeLogRow({
           {e.dateEstimated ? "*" : ""}
         </span>
         <span className="w-14 shrink-0 font-medium tabular-nums">{formatHours(e.minutes)}</span>
-        <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
+        {/* Hover reveals a note the row had to cut — see the reports list, same rule. */}
+        <span
+          className="bidi-auto min-w-0 flex-1 truncate text-muted"
+          title={e.description || undefined}
+        >
           {e.description || <span className="text-faint italic">no description</span>}
         </span>
         {e.movedFromTaskId && (

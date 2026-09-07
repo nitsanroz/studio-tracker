@@ -6,6 +6,7 @@ import type {
   ReportSnapshot,
   Section,
   Task,
+  TaskGroup,
 } from "./types";
 
 /**
@@ -134,6 +135,33 @@ export function periodCuts(periods: BillingPeriod[]): string[] {
 }
 
 /**
+ * A section's tasks in the order the CLIENT PAGE shows them: that section's
+ * groups first, in group order, each group's own tasks by position, then the
+ * section's loose tasks.
+ *
+ * ⚠️⚠️ NOT one sort on `position`, which is what this used to be. `reorderTask`
+ * is scoped by (client, section, group), so a group's children densify 1..n
+ * AMONG THEMSELVES — two groups in one section each hold a task at position 1,
+ * and sorting the section's tasks by position alone interleaves them into an
+ * order nobody arranged. The report then disagreed with the page the studio
+ * actually orders its work on, which is the one place that order is decided.
+ *
+ * ⚠️ A task pointing at a group that lives in another section renders LOOSE,
+ * the same rule `SectionGroup` follows — testing `groupId === null` instead
+ * would drop it from the block entirely and lose its hours from the report.
+ */
+function inClientPageOrder(list: Task[], groups: TaskGroup[]): Task[] {
+  const byPosition = (a: Task, b: Task) => a.position - b.position;
+  const known = new Set(groups.map((g) => g.id));
+  const ordered: Task[] = [];
+  for (const g of groups) {
+    ordered.push(...list.filter((t) => t.groupId === g.id).sort(byPosition));
+  }
+  ordered.push(...list.filter((t) => !t.groupId || !known.has(t.groupId)).sort(byPosition));
+  return ordered;
+}
+
+/**
  * Freeze a client's approved hours into a snapshot for publishing.
  * Only billable tasks appear (keys/internal tasks are non-billable by
  * convention), and only if they have logged hours or an estimate.
@@ -141,6 +169,8 @@ export function periodCuts(periods: BillingPeriod[]): string[] {
 export function buildReportSnapshot(
   client: Client,
   sections: Section[],
+  /** This client's task groups (0027) — see `inClientPageOrder` for why. */
+  groups: TaskGroup[],
   tasks: Task[],
   entrySums: EntrySum[],
   periods: BillingPeriod[],
@@ -216,11 +246,18 @@ export function buildReportSnapshot(
     bySection.get(key)!.push(t);
   }
 
+  /** This client's groups for one section, in position order — the page's order. */
+  const groupsIn = (sectionId: string | null) =>
+    groups
+      .filter((g) => g.clientId === client.id && g.sectionId === sectionId)
+      .sort((a, b) => a.position - b.position);
+
   const sectionBlocks: ReportSnapshot["sections"] = [];
-  const pushBlock = (name: string, list: Task[]) => {
-    const rows = list
-      .filter((t) => (totalByTask.get(t.id) ?? 0) > 0 || t.estimateHours != null)
-      .sort((a, b) => a.position - b.position)
+  const pushBlock = (name: string, list: Task[], sectionGroups: TaskGroup[]) => {
+    const rows = inClientPageOrder(
+      list.filter((t) => (totalByTask.get(t.id) ?? 0) > 0 || t.estimateHours != null),
+      sectionGroups,
+    )
       .map((t) => ({
         id: t.id,
         title: t.title,
@@ -232,7 +269,6 @@ export function buildReportSnapshot(
     if (rows.length > 0) sectionBlocks.push({ name, tasks: rows });
   };
 
-  for (const s of clientSections) pushBlock(s.name, bySection.get(s.id) ?? []);
   // ⚠️ "Other" takes the null-section tasks AND any whose sectionId matched no
   // section of this client. Without that second part such a task is in no block at
   // all, so its hours are counted into `totalByTask` and then never rendered — the
@@ -244,7 +280,10 @@ export function buildReportSnapshot(
   const orphans = [...bySection.entries()]
     .filter(([key]) => key !== null && !known.has(key))
     .flatMap(([, list]) => list);
-  pushBlock("Other", [...(bySection.get(null) ?? []), ...orphans]);
+  // ⚠️ FIRST, not last — the client page renders its no-section bucket above the
+  // sections, and this list is the report's row order.
+  pushBlock("Other", [...(bySection.get(null) ?? []), ...orphans], groupsIn(null));
+  for (const s of clientSections) pushBlock(s.name, bySection.get(s.id) ?? [], groupsIn(s.id));
 
   return {
     clientName: client.name,

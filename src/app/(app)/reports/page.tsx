@@ -134,7 +134,12 @@ function TaskHoursModal({
                 <span className="w-14 shrink-0 font-semibold tabular-nums">
                   {formatHours(e.minutes)}
                 </span>
-                <span className="bidi-auto min-w-0 flex-1 truncate text-muted">
+                {/* A note is one line in a fixed-width cell, so a long one is cut —
+                    hover reveals the whole thing rather than making the row taller. */}
+                <span
+                  className="bidi-auto min-w-0 flex-1 truncate text-muted"
+                  title={e.description || undefined}
+                >
                   {e.description || <span className="italic text-faint">no description</span>}
                 </span>
               </div>

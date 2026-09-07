@@ -77,7 +77,9 @@ export function LoggedEntryRow({
           </span>
         </span>
         {entry.description && (
-          <span className="bidi-auto line-clamp-2 text-xs text-muted">{entry.description}</span>
+          <span className="bidi-auto line-clamp-2 text-xs text-muted" title={entry.description}>
+            {entry.description}
+          </span>
         )}
       </span>
       <span className="shrink-0 text-sm tabular-nums text-muted">
