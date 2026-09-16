@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { RulerTip } from "@/components/client-timeline/tooltip";
 import {
   BAR_H,
   BAR_LABEL_MIN_PX,
@@ -26,6 +27,7 @@ import {
   chartWindow,
   parseISO,
   shiftDays,
+  tickTooltip,
   ticksFor,
   toISO,
   workDaysBetween,
@@ -134,6 +136,12 @@ export function PublicGanttView({
   milestones: PublicGanttMark[];
 }) {
   const [zoom, setZoom] = useState<Zoom>("day");
+  /**
+   * The ruler's hover chip: which day the pointer is over, and where to hang the
+   * chip. Anchored on the DAY rather than on the pointer — see the handler.
+   */
+  const [hoverDay, setHoverDay] = useState<number | null>(null);
+  const [tipAt, setTipAt] = useState<{ x: number; y: number } | null>(null);
   const STICKY_W = useStickyWidth();
   // Day zoom on a phone shows five days, which reads as an empty plan. Only on
   // MOUNT — rotating the device must not overrule a zoom the reader picked.
@@ -227,15 +235,26 @@ export function PublicGanttView({
     return new Date(n.getFullYear(), n.getMonth(), n.getDate());
   }, []);
 
-  const off = useMemo(() => {
+  /**
+   * Off days, and — for the ones that have one — the NAME the weekly plan gave
+   * them. Fri/Sat arrive here unnamed, so the map's keys are exactly the days
+   * that are shut for a reason: the studio's chart draws and names those in
+   * brand blue and this one has to agree, because the client is reading the
+   * same plan.
+   */
+  const { off, offLabel } = useMemo(() => {
     const dates = new Set<string>();
+    const labels = new Map<string, string>();
     for (const d of offDays) {
       const from = parseISO(d.from);
       const span = daysBetween(from, parseISO(d.to));
-      for (let i = 0; i <= Math.min(span, 400); i++)
-        dates.add(toISO(shiftDays(from, i)));
+      for (let i = 0; i <= Math.min(span, 400); i++) {
+        const iso = toISO(shiftDays(from, i));
+        dates.add(iso);
+        if (d.label.trim()) labels.set(iso, d.label.trim());
+      }
     }
-    return dates;
+    return { off: dates, offLabel: labels };
   }, [offDays]);
 
   /** Every row's resolved dates. A task with no start is a DEADLINE, not a one-day job. */
@@ -281,6 +300,35 @@ export function PublicGanttView({
   const pxPerDay = PX_PER_DAY[zoom];
   const chartW = totalDays * pxPerDay;
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
+  const dayZoom = zoom === "day";
+  /**
+   * What the hover chip says — resolved from the tick the pointer is INSIDE, not
+   * from the day itself, so at week and month zoom it describes the whole span
+   * rather than one day of it.
+   */
+  const hoveredTick =
+    hoverDay === null
+      ? null
+      : (ticks.find((t) => {
+          const first = Math.round(t.left / pxPerDay);
+          return hoverDay >= first && hoverDay < first + Math.round(t.width / pxPerDay);
+        }) ?? null);
+  /**
+   * ⚠️ A holiday's NAME beats the weekday, and only at day zoom — one tick is one
+   * day there, whereas a week tick spanning a holiday would be naming a day the
+   * reader is not pointing at.
+   */
+  const hoverHoliday =
+    dayZoom && hoverDay !== null ? (offLabel.get(toISO(shiftDays(from, hoverDay))) ?? null) : null;
+  const tipText =
+    hoverHoliday ??
+    (hoveredTick
+      ? tickTooltip(
+          shiftDays(from, Math.round(hoveredTick.left / pxPerDay)),
+          zoom,
+          Math.round(hoveredTick.width / pxPerDay),
+        )
+      : null);
   const bodyH = rows.reduce((h, g) => {
     let out = h + SECTION_H;
     if (collapsed.has(g.key)) return out;
@@ -377,10 +425,12 @@ export function PublicGanttView({
   }
 
   const shade = pxPerDay >= SHADE_MIN_PX_PER_DAY;
-  const offCols: number[] = [];
+  const offCols: { left: number; holiday: boolean }[] = [];
   if (shade) {
     for (let d = 0; d < totalDays; d++) {
-      if (!isWorkDay(shiftDays(from, d), off)) offCols.push(d * pxPerDay);
+      const date = shiftDays(from, d);
+      if (!isWorkDay(date, off))
+        offCols.push({ left: d * pxPerDay, holiday: offLabel.has(toISO(date)) });
     }
   }
 
@@ -547,6 +597,19 @@ export function PublicGanttView({
                 shadow.y ? "shadow-[0_5px_8px_-6px_rgba(0,0,0,0.14)]" : ""
               }`}
             >
+              {/* ⚠️ NOT a `title` attribute. A native tooltip waits about a
+                  second and opens BELOW the pointer, where the cursor covers the
+                  one word it exists to show. This paints instantly and above,
+                  and is portalled + `fixed` because the chart's scroller clips
+                  both axes. Same component as the studio's own ruler. */}
+              {tipAt && tipText && (
+                <RulerTip
+                  x={tipAt.x}
+                  y={tipAt.y}
+                  text={tipText}
+                  tone={hoverHoliday ? "holiday" : "plain"}
+                />
+              )}
               <div className="relative flex h-7 items-center">
                 <span
                   className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface pl-3 text-[10px] font-medium uppercase tracking-wide text-faint"
@@ -554,11 +617,33 @@ export function PublicGanttView({
                 >
                   <span className="flex-1">Task</span>
                 </span>
-                <span className="relative h-full flex-1 border-l border-border">
+                <span
+                  className="relative h-full flex-1 border-l border-border"
+                  onMouseMove={(e) => {
+                    const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    const day = Math.floor((e.clientX - box.left) / pxPerDay);
+                    setHoverDay(day);
+                    /**
+                     * ⚠️ Anchored on the DAY, not on `e.clientX`. Following the
+                     * pointer would mean a setState on every pixel of travel
+                     * across a ruler that can be 4,000px wide.
+                     */
+                    const x = box.left + (day + 0.5) * pxPerDay;
+                    setTipAt((prev) =>
+                      prev && prev.x === x && prev.y === box.top ? prev : { x, y: box.top },
+                    );
+                  }}
+                  onMouseLeave={() => {
+                    setHoverDay(null);
+                    setTipAt(null);
+                  }}
+                >
                   {ticks.map((t) => {
+                    const date = shiftDays(from, Math.round(t.left / pxPerDay));
                     const isToday =
                       zoom === "day" &&
                       Math.round(t.left / pxPerDay) === daysBetween(from, today);
+                    const isHoliday = dayZoom && offLabel.has(toISO(date));
                     return (
                     <span
                       key={t.left}
@@ -566,13 +651,11 @@ export function PublicGanttView({
                         t.boundary
                           ? "border-l border-foreground/15 font-semibold text-foreground"
                           : `tabular-nums ${
-                              zoom === "day" &&
-                              !isWorkDay(
-                                shiftDays(from, Math.round(t.left / pxPerDay)),
-                                off,
-                              )
-                                ? "text-faint/60"
-                                : "text-muted"
+                              isHoliday
+                                ? "font-semibold text-brand"
+                                : dayZoom && !isWorkDay(date, off)
+                                  ? "text-faint/60"
+                                  : "text-muted"
                             }`
                       }`}
                       style={{ left: t.left, width: t.width }}
@@ -624,22 +707,31 @@ export function PublicGanttView({
                   style={{ left: 0, width: Math.min(todayLeft, chartW) }}
                 />
               )}
-              {offCols.map((left) => (
+              {/* ⚠️ A holiday is deliberately NOT styled like a weekend. Fri/Sat
+                  are the studio's normal shape and stay the grey wash; a closure
+                  is a fact about that week which changes what can be scheduled
+                  into it, so it takes the brand tint the plan already gives it. */}
+              {offCols.map((c) => (
                 <div
-                  key={left}
-                  className="absolute top-0 h-full bg-foreground/[0.045]"
-                  style={{ left, width: pxPerDay }}
+                  key={c.left}
+                  className={`absolute top-0 h-full ${
+                    c.holiday ? "bg-brand/[0.09]" : "bg-foreground/[0.045]"
+                  }`}
+                  style={{ left: c.left, width: pxPerDay }}
                 />
               ))}
               {ticks.map((t) => (
                 <div
                   key={t.left}
-                  className={`absolute top-0 h-full border-l ${
+                  className={`absolute top-0 h-full ${
                     t.boundary
-                      ? "border-foreground/15"
+                      ? "border-l border-foreground/15"
                       : t.weekStart
-                        ? "border-foreground/[0.07]"
-                        : "border-border/40"
+                        ? // Thicker after Saturday: the week is the unit a reader
+                          // counts a plan in, so its edge should not be the same
+                          // weight as the six day rules inside it.
+                          "border-l-2 border-foreground/10"
+                        : "border-l border-border/40"
                   }`}
                   style={{ left: t.left }}
                 />

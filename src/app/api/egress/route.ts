@@ -12,7 +12,8 @@ import {
 } from "@/lib/egress";
 
 /**
- * Admin-only: how much of the org's 5 GB egress allowance this cycle has used.
+ * Admin-only: how much of the org's monthly egress allowance this cycle has used.
+ * The ceiling itself is `ALLOWANCE_BYTES` — 250 GB on the Pro plan since 2026-09-16.
  *
  * ⚠️ AN ESTIMATE, AND THE UI MUST SAY SO — read the header of `src/lib/egress.ts`
  * for why (Supabase has no public egress endpoint; this is request counts × a
@@ -20,7 +21,7 @@ import {
  *
  * ⚠️ THE QUOTA IS PER ORGANISATION, NOT PER PROJECT, which is why both project
  * refs are polled and summed. `Lomdoni` shares the org with `studio-tracker` and
- * its traffic counts against the same 5 GB — 850 requests over the week this was
+ * its traffic counts against the same allowance — 850 requests over the week this was
  * built, so it is negligible today and would be invisible if it stopped being so.
  *
  * ⚠️ IT POLLS AT MOST EVERY `POLL_EVERY_HOURS`, not on every page load. Each poll

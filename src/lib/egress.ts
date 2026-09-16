@@ -1,6 +1,6 @@
 /**
- * Estimating the org's Supabase egress against the 5 GB free allowance, so the
- * studio hears about 80% before a client hears about 402.
+ * Estimating the org's Supabase egress against the plan's monthly allowance, so the
+ * studio hears about 80% before the bill does.
  *
  * ⚠️⚠️ WHY THIS IS AN ESTIMATE AND NOT A READING, stated first because everything
  * below depends on it. **Supabase's public API has no egress endpoint.** Every
@@ -36,8 +36,21 @@
  * somebody looks at the dashboard is what keeps the drift bounded.
  */
 
-/** The free tier's monthly egress allowance. */
-export const ALLOWANCE_BYTES = 5 * 1024 ** 3;
+/**
+ * The org's monthly egress allowance — **the PRO plan's 250 GB since 2026-09-16**,
+ * when Nitsan confirmed the org is no longer on the free tier.
+ *
+ * ⚠️ It was `5 * 1024 ** 3` (the free tier) for the whole of this file's life, and
+ * the banner went on measuring against 5 GB after the upgrade — telling him 51% of
+ * an allowance he had already replaced, and advising him to raise a plan he had
+ * already raised. A ceiling nobody updates is worse than no ceiling: it cries wolf
+ * every cycle until the alert is ignored, which is exactly when it matters.
+ *
+ * ⚠️ CONFIRM THIS AGAINST THE INVOICE if the plan changes again. There is no API to
+ * read it (see the header — every usage/billing path 404s), so this number is typed
+ * by hand and nothing here can notice when it is wrong.
+ */
+export const ALLOWANCE_BYTES = 250 * 1024 ** 3;
 
 /**
  * ⚠️ Measured, not assumed — see the header. Change it only with a new dashboard

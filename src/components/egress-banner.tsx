@@ -3,16 +3,25 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useIsAdmin } from "@/lib/store";
-import type { CycleProjection, EgressLevel } from "@/lib/egress";
+import { ALLOWANCE_BYTES, type CycleProjection, type EgressLevel } from "@/lib/egress";
 
 /**
- * Warns admins at 80% and 95% of the org's 5 GB monthly egress allowance.
+ * Warns admins at 80% and 95% of the org's monthly egress allowance.
  *
- * ⚠️ WHY IT EXISTS: when the allowance runs out Supabase returns 402 and **every
- * client report link, the intake form and the shared Gantt go dead** — all three
- * read through the service role. v1.19.12 built a banner for that moment; this one
- * exists so the moment does not arrive unannounced. Nitsan asked for exactly 80%
+ * ⚠️ WHY IT EXISTS: going over the allowance USED TO mean Supabase returned 402 and
+ * **every client report link, the intake form and the shared Gantt went dead** — all
+ * three read through the service role. v1.19.12 built a banner for that moment; this
+ * one exists so the moment does not arrive unannounced. Nitsan asked for exactly 80%
  * and 95%.
+ *
+ * ⚠️ ON A PAID PLAN THE CLIFF IS A BILL, NOT AN OUTAGE — overage is charged per GB
+ * rather than refused — so the `critical` copy says that instead of promising an
+ * outage that will not happen. The free-tier wording is still the right warning for
+ * the day somebody downgrades, and is one string away.
+ *
+ * ⚠️ THE NUMBER IN THE COPY IS DERIVED FROM `ALLOWANCE_BYTES`, never retyped. It was
+ * written out as "5 GB" here AND hardcoded there, so raising the plan on 2026-09-16
+ * would have left this sentence quoting a ceiling the maths no longer used.
  *
  * ⚠️ IT SAYS "ESTIMATE", AND THAT WORDING IS NOT MODESTY. Supabase publishes no
  * egress endpoint, so the figure is request counts × a bytes-per-request factor
@@ -88,6 +97,7 @@ export function EgressBanner() {
   const critical = info.level === "critical";
   const stale = info.level === "stale";
   const gb = (info.bytes / 1024 ** 3).toFixed(2);
+  const allowanceGb = Math.round(ALLOWANCE_BYTES / 1024 ** 3);
 
   function hide() {
     setDismissed(true);
@@ -118,12 +128,13 @@ export function EgressBanner() {
         ) : (
           <>
             <span className="font-semibold">
-              Roughly {gb} GB of the 5 GB monthly allowance used — about {Math.round(info.pct)}%.
+              Roughly {gb} GB of the {allowanceGb} GB monthly allowance used — about{" "}
+              {Math.round(info.pct)}%.
             </span>
             <span className="text-white/85">
               {critical
-                ? "Past this the database starts refusing requests: client report links, the intake form and the shared plan all stop working. "
-                : "Worth raising the plan before it runs out. "}
+                ? "Past this the plan bills overage per GB — and on the free tier it would instead refuse requests, taking client report links, the intake form and the shared plan down with it. "
+                : "Worth knowing before the cycle closes. "}
               This is an <strong>estimate</strong> from request counts, not a meter — check the real
               figure before acting. Cycle {info.cycle.start} → {info.cycle.end}.
             </span>
