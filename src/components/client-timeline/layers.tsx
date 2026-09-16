@@ -240,7 +240,7 @@ export function GridLayer({
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   // At 3px a day the stripes would be denser than the data sitting on them.
   const shade = pxPerDay >= SHADE_MIN_PX_PER_DAY;
-  const offDays: { left: number; title: string }[] = [];
+  const offDays: { left: number; title: string; holiday: boolean }[] = [];
   if (shade) {
     for (let d = 0; d < totalDays; d++) {
       const date = shiftDays(from, d);
@@ -249,6 +249,8 @@ export function GridLayer({
       offDays.push({
         left: d * pxPerDay,
         title: offLabel.get(iso) ?? (date.getDay() === 5 ? "Friday — weekend" : "Saturday — weekend"),
+        // A named closure from the weekly plan, as against the ordinary weekend.
+        holiday: offLabel.has(iso),
       });
     }
   }
@@ -260,9 +262,16 @@ export function GridLayer({
       aria-hidden
     >
       {offDays.map((d) => (
+        // ⚠️ A HOLIDAY IS BLUE, THE WEEKEND STAYS GREY, and the difference is
+        // the point: Fri/Sat are the studio's normal shape and should read as
+        // background, while a closure is a fact about this particular week that
+        // changes what can be scheduled into it. Blue because that is how the
+        // weekly plan — where these days are declared — already marks them.
         <div
           key={d.left}
-          className="absolute top-0 h-full bg-foreground/[0.045]"
+          className={`absolute top-0 h-full ${
+            d.holiday ? "bg-brand/[0.09]" : "bg-foreground/[0.045]"
+          }`}
           style={{ left: d.left, width: pxPerDay }}
           title={d.title}
         />
@@ -279,12 +288,16 @@ export function GridLayer({
         // difference you had to be told about to see.
         <div
           key={t.left}
-          className={`absolute top-0 h-full border-l ${
+          // ⚠️ The week boundary is 2px rather than a stronger colour: it is the
+          // Sat→Sun edge, so at day zoom it is the line you count weeks off, and
+          // widening it reads as a division where more alpha would just read as
+          // another day rule that happens to be darker.
+          className={`absolute top-0 h-full ${
             t.boundary
-              ? "border-foreground/[0.18]"
+              ? "border-l border-foreground/[0.18]"
               : t.weekStart
-                ? "border-foreground/10"
-                : "border-border/40"
+                ? "border-l-2 border-foreground/10"
+                : "border-l border-border/40"
           }`}
           style={{ left: t.left }}
         />

@@ -10,7 +10,7 @@
  * silent invitation for the two to drift a day apart.
  */
 
-import { MONTH_NAMES_SHORT, parseISO, shiftDays } from "./format";
+import { DAY_NAMES, MONTH_NAMES_SHORT, parseISO, shiftDays } from "./format";
 
 /**
  * Re-exported so the Gantt's callers keep importing their date helpers from here.
@@ -96,6 +96,49 @@ export function dateRangeLabel(start: Date, due: Date, hasStart: boolean): strin
     return `${day(start)} – ${day(due)} ${mon(due)}`;
   }
   return `${day(start)} ${mon(start)} – ${day(due)} ${mon(due)}`;
+}
+
+const MONTH_NAMES_LONG = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/**
+ * What a ruler tick says on hover — the weekday, which its own label can never
+ * tell you.
+ *
+ * ⚠️ A tick's label is a bare day NUMBER at day zoom, and at a month boundary it
+ * is the month's name printed in place of that number ("SEP" where the 14th
+ * should be). So the one thing a reader most often wants from a date on a plan —
+ * is that a Sunday? — is the one thing the ruler cannot say.
+ *
+ * ⚠️ AT DAY ZOOM IT IS THE WEEKDAY AND NOTHING ELSE, which is Nitsan's ask and is
+ * also the whole answer: the day number sits directly under the pointer and the
+ * month runs along the same row, so repeating either spends a wider chip on
+ * something already on screen.
+ *
+ * ⚠️ At the other zooms it describes the tick's WHOLE SPAN instead, because a
+ * tick is not always a day — week zoom covers seven and month zoom a calendar
+ * month, and a single weekday there would be true of a date the reader is not
+ * pointing at. `days` is how many days this tick covers.
+ */
+export function tickTooltip(date: Date, zoom: Zoom, days: number): string {
+  const short = (d: Date) => DAY_NAMES[d.getDay()].slice(0, 3);
+  const dm = (d: Date) => `${d.getDate()} ${MONTH_NAMES_SHORT[d.getMonth()]}`;
+  if (zoom === "month") return `${MONTH_NAMES_LONG[date.getMonth()]} ${date.getFullYear()}`;
+  if (days <= 1) return DAY_NAMES[date.getDay()];
+  const end = shiftDays(date, days - 1);
+  return `${short(date)} ${dm(date)} – ${short(end)} ${dm(end)} ${end.getFullYear()}`;
 }
 
 /* ── working-day calendar ─────────────────────────────────────────────────

@@ -922,6 +922,7 @@ export function ClientTimeline({
                 zoom={zoom}
                 pxPerDay={pxPerDay}
                 off={offDates}
+                offLabel={offLabel}
                 hidden={hiddenCols}
                 shadow={shadow}
                 canAddMark={isAdmin}

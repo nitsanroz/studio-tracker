@@ -10,9 +10,9 @@
 import { EditableTextCell } from "../editable-cell";
 import { GROUP_BAR_COLOR, GROUP_LAYER_COLORS, GROUP_LINE_TOP, SECTION_BAR_COLOR, SECTION_BAR_TOP, SHADOW_Y, STICKY_W, TL_COLS, TODAY_TAIL } from "./shared";
 import type { Block, Group, TlCol } from "./shared";
-import { HoverTip, TipHead, TipRow } from "./tooltip";
+import { HoverTip, RulerTip, TipHead, TipRow } from "./tooltip";
 import { formatHoursDecimal } from "@/lib/format";
-import { BAR_LABEL_MIN_PX, GROUP_BAR_H, GROUP_H, GROUP_LAYERS, GROUP_LAYER_INSET, GROUP_LAYER_STEP, SECTION_BAR_H, SECTION_H, TIP_H, TIP_MIN_W, TIP_W, dateRangeLabel, daysBetween, isWorkDay, shiftDays, ticksFor } from "@/lib/gantt";
+import { BAR_LABEL_MIN_PX, GROUP_BAR_H, GROUP_H, GROUP_LAYERS, GROUP_LAYER_INSET, GROUP_LAYER_STEP, SECTION_BAR_H, SECTION_H, TIP_H, TIP_MIN_W, TIP_W, dateRangeLabel, daysBetween, isWorkDay, shiftDays, tickTooltip, ticksFor, toISO } from "@/lib/gantt";
 import type { Zoom } from "@/lib/gantt";
 import type { Rollup } from "@/lib/task-rollup";
 import { ChevronDown, ChevronRight, Layers, Pencil } from "lucide-react";
@@ -26,6 +26,7 @@ export function TimelineHeader({
   zoom,
   pxPerDay,
   off,
+  offLabel,
   hidden,
   shadow,
   canAddMark,
@@ -39,6 +40,8 @@ export function TimelineHeader({
   zoom: Zoom;
   pxPerDay: number;
   off: Set<string>;
+  /** date → the weekly plan's own name for that whole-studio day off. */
+  offLabel: Map<string, string>;
   hidden: Set<string>;
   shadow: { x: boolean; y: boolean };
   canAddMark: boolean;
@@ -54,6 +57,36 @@ export function TimelineHeader({
   const { ticks } = ticksFor(from, totalDays, zoom, pxPerDay);
   const dayZoom = zoom === "day";
   const head = "shrink-0 text-[10px] font-medium uppercase tracking-wide text-faint";
+  /** Where the hover chip hangs: the centre of the hovered day, the ruler's top. */
+  const [tipAt, setTipAt] = useState<{ x: number; y: number } | null>(null);
+  /**
+   * What that chip says — resolved from the tick the pointer is INSIDE, not from
+   * the day itself, so at week and month zoom it describes the whole span rather
+   * than one day of it.
+   */
+  const hovered =
+    hoverDay === null
+      ? null
+      : (ticks.find((t) => {
+          const first = Math.round(t.left / pxPerDay);
+          return hoverDay >= first && hoverDay < first + Math.round(t.width / pxPerDay);
+        }) ?? null);
+  /**
+   * ⚠️ A holiday's NAME beats the weekday, and only at day zoom — one tick is
+   * one day there, whereas a week tick spanning a holiday would be naming a day
+   * the reader is not pointing at. It comes from the weekly plan, so the chart
+   * and the plan cannot disagree about which days the studio is shut.
+   */
+  const holiday = dayZoom && hoverDay !== null ? (offLabel.get(toISO(shiftDays(from, hoverDay))) ?? null) : null;
+  const tipText =
+    holiday ??
+    (hovered
+      ? tickTooltip(
+          shiftDays(from, Math.round(hovered.left / pxPerDay)),
+          zoom,
+          Math.round(hovered.width / pxPerDay),
+        )
+      : null);
 
   return (
     /*
@@ -70,6 +103,7 @@ export function TimelineHeader({
     <div
       className={`sticky top-0 z-[22] border-b border-border bg-surface ${shadow.y ? SHADOW_Y : ""}`}
     >
+      {tipAt && tipText && <RulerTip x={tipAt.x} y={tipAt.y} text={tipText} tone={holiday ? "holiday" : "plain"} />}
       <div className="relative flex h-6 items-center">
         <span
           className="sticky left-0 z-10 flex h-full shrink-0 items-center bg-surface"
@@ -97,9 +131,22 @@ export function TimelineHeader({
           }`}
           onMouseMove={(e) => {
             const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            onHoverDay(Math.floor((e.clientX - box.left) / pxPerDay));
+            const day = Math.floor((e.clientX - box.left) / pxPerDay);
+            onHoverDay(day);
+            /**
+             * ⚠️ Anchored on the DAY, not on `e.clientX`. Following the pointer
+             * would mean a setState on every pixel of mouse travel across a
+             * ruler that can be 4,000px wide; this one changes only when the day
+             * under the pointer does, which is the same cadence `onHoverDay`
+             * already runs at.
+             */
+            const x = box.left + (day + 0.5) * pxPerDay;
+            setTipAt((prev) => (prev && prev.x === x && prev.y === box.top ? prev : { x, y: box.top }));
           }}
-          onMouseLeave={() => onHoverDay(null)}
+          onMouseLeave={() => {
+            onHoverDay(null);
+            setTipAt(null);
+          }}
           onClick={(e) => {
             if (!canAddMark) return;
             const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -113,6 +160,7 @@ export function TimelineHeader({
           {ticks.map((t) => {
             const date = shiftDays(from, Math.round(t.left / pxPerDay));
             const nonWork = dayZoom && !isWorkDay(date, off);
+            const isHoliday = dayZoom && offLabel.has(toISO(date));
             // The tick the pointer is over — by RANGE, not by index, so it also
             // works at week and month zoom where one tick covers many days.
             const first = Math.round(t.left / pxPerDay);
@@ -145,7 +193,12 @@ export function TimelineHeader({
                         // label names the START of its span, and centring it
                         // would point at the wrong date.
                         dayZoom ? "justify-center" : ""
-                      } ${nonWork ? "text-faint/60" : "text-muted"}`
+                        // ⚠️ A HOLIDAY is not merely a non-working day: the
+                        // weekend is the studio's normal shape and reads as
+                        // background, while a closure is a fact about THIS week
+                        // that changes what can be scheduled. So it takes the
+                        // brand colour rather than the faint one.
+                      } ${isHoliday ? "font-semibold text-brand" : nonWork ? "text-faint/60" : "text-muted"}`
                 }`}
                 style={
                   t.boundary
