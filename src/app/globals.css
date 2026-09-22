@@ -288,6 +288,23 @@ b,
   -webkit-mask-size: contain;
 }
 
+/* Just the "&" glyph, cropped out of the same logo artwork the two mask
+ * classes above use (bounding box measured with getBBox(): x 317.59–409.68,
+ * full height) — for the sidebar folded to its icon rail, where there's no
+ * room for "&more" either. MASK LONGHANDS, same trap as `.brand-wordmark`. */
+.brand-amp {
+  display: inline-block;
+  aspect-ratio: 92.09 / 113.296;
+  mask-image: url("/brand/logo-amp.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  -webkit-mask-image: url("/brand/logo-amp.svg");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+}
+
 .brand-wordmark {
   display: inline-block;
   aspect-ratio: 693.24 / 113.296;

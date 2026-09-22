@@ -711,13 +711,17 @@ function Shell({ children }: { children: ReactNode }) {
         <div
           className={`relative flex items-center pb-4 pt-5 ${folded ? "justify-center px-1" : "gap-2 px-4"}`}
         >
-          <Link
-            href="/"
-            aria-label="Studio&more"
-            className={`leading-none ${folded ? "text-[26px]" : "text-[28px]"}`}
-            style={{ color: "var(--sb-fg)", fontWeight: 700 }}
-          >
-            {folded ? "&" : <>&amp;more</>}
+          {/* The real logo artwork's crops (.brand-amp / .brand-ampmore),
+              not typeset text standing in for them — same masks the public
+              report page already uses for "&more", now used here too.
+              `var(--sb-fg)` (not a fixed brand-blue) so the mark still
+              contrasts against the sidebar in every theme, including
+              "electric" where the sidebar itself IS brand blue. */}
+          <Link href="/" aria-label="Studio&more" className="shrink-0">
+            <span
+              className={folded ? "brand-amp w-5" : "brand-ampmore w-24"}
+              style={{ backgroundColor: "var(--sb-fg)" }}
+            />
           </Link>
           <button
             onClick={() => setFolded((f) => !f)}
