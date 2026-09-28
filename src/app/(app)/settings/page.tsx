@@ -7,6 +7,7 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { Tabs, TagBadge } from "@/components/ui";
+import { CandidateSettings } from "@/components/candidate-settings";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ClientMarkModal } from "@/components/client-mark-picker";
 import { MemberPictures } from "@/components/picture-editor";
@@ -712,7 +713,14 @@ function MyDetails() {
   );
 }
 
-type SettingsTab = "pictures" | "details" | "password" | "clients" | "studio" | "intake";
+type SettingsTab =
+  | "pictures"
+  | "details"
+  | "password"
+  | "clients"
+  | "studio"
+  | "intake"
+  | "hiring";
 const TAB_KEY = "settings.tab";
 
 /**
@@ -734,6 +742,11 @@ const ADMIN_TABS = [
   // is about the ONE surface clients see and the mail that goes back to them,
   // which is a different job from the studio's task types and statuses.
   { value: "intake" as const, label: "Intake form" },
+  // Also its own tab: "Studio setup" is about how the studio's own WORK is
+  // labelled, and this is about hiring. A control that renames a client-facing
+  // task type should not sit beside one that retires a question you ask a
+  // stranger in an interview.
+  { value: "hiring" as const, label: "Hiring" },
 ];
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
@@ -1007,6 +1020,8 @@ export default function SettingsPage() {
       {/* One column, not the two-up grid the Studio tab uses: the email editor
           is several times taller than the form card, so side by side would put
           a card and a column of empty space next to each other. */}
+      {tab === "hiring" && isAdmin && <CandidateSettings />}
+
       {tab === "intake" && isAdmin && (
         <div className="flex max-w-[860px] flex-col gap-4">
           <IntakeSettings />

@@ -20,6 +20,7 @@ import {
   Sparkles,
   SquareCheckBig,
   Users,
+  UserRoundSearch,
   UsersRound,
   X,
   type LucideIcon,
@@ -72,6 +73,10 @@ const NAV = [
     mobile: false,
   },
   { href: "/team", label: "Team", Icon: UsersRound, adminOnly: true, mobile: true },
+  // Hiring. `mobile: false` and a matching `desktop-only.tsx` entry: the board
+  // is columns of cards side by side and the candidate page is a two-column
+  // dossier — neither survives 375px, and neither is phone work.
+  { href: "/candidates", label: "Candidates", Icon: UserRoundSearch, adminOnly: true, mobile: false },
 ];
 
 /**
