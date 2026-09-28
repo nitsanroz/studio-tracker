@@ -8,14 +8,16 @@
 // get their own card, so where the two of them disagreed survives — a single
 // shared scorecard would let whoever typed last overwrite the other's reading.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Archive,
+  ChevronDown,
   ChevronLeft,
   ExternalLink,
   FileText,
+  Globe,
   Link2,
   Mail,
   MoreHorizontal,
@@ -194,6 +196,141 @@ function LinkedInMark({ size = 12 }: { size?: number }) {
 }
 
 /**
+ * WHERE THE APPLICATION CAME FROM — a chip you pick, not a box you type in.
+ *
+ * ⚠️ IT WAS FREE TEXT AND SHOULD NOT HAVE BEEN — Nitsan, 2026-09-28. There
+ * are three answers: they found the post on LinkedIn, they wrote to
+ * jobs@nmore.co, or they came through the site. A text box invites "linkedin",
+ * "LinkedIn.com", "li" and "thru linked in" for the same fact, and then the
+ * question this field exists to answer — which channel is actually bringing
+ * people in — cannot be counted.
+ *
+ * ⚠️ THE SELECT IS INVISIBLE AND COVERS THE WHOLE CHIP. It is a real
+ * <select>, so the keyboard and the screen reader get a real control and the
+ * platform draws its own menu; the chip is only its face. Do not swap it for a
+ * div with a click handler.
+ *
+ * ⚠️ A STORED VALUE THAT IS NOT ONE OF THE THREE GETS ITS OWN OPTION rather
+ * than being dropped. 270 imported rows say "Asana import" — provenance of the
+ * ROW, not of the person — and a select whose value is missing from its options
+ * renders as something else entirely, which is how a field silently rewrites
+ * itself the first time anybody opens the menu.
+ */
+/**
+ * A CHIP THAT IS REALLY A <select>. Two fields in the meta row use it — where
+ * the application came from, and which role they are up for — and they must
+ * look the same, because they read as one row of facts about one person.
+ *
+ * ⚠️ BOTH EMPTY STATES ARE THE SAME CHIP — Nitsan, 2026-09-28: "no role chip
+ * state should look like other no state chip". They drifted because I built
+ * them a day apart, one as a chip and one as a bare select, and the meta row
+ * ended up with two different ways of saying "nothing here yet" side by side.
+ * One component is the fix; two matching class strings would drift again.
+ *
+ * ⚠️ THE SELECT IS INVISIBLE AND COVERS THE WHOLE CHIP. It is a real
+ * <select>, so the keyboard and the screen reader get a real control and the
+ * platform draws its own menu; the chip is only its face. Do not swap it for a
+ * div with a click handler.
+ */
+function ChipSelect({
+  value,
+  label,
+  icon,
+  placeholder,
+  ariaLabel,
+  onPick,
+  children,
+}: {
+  value: string | null;
+  /** What to show when something IS chosen — the option's own wording. */
+  label: string;
+  /** Shown only when something is chosen; see the empty-state note below. */
+  icon?: React.ReactNode;
+  placeholder: string;
+  ariaLabel: string;
+  onPick: (next: string | null) => void;
+  children: React.ReactNode;
+}) {
+  const set = Boolean(value);
+  return (
+    <span
+      className={`relative inline-flex items-center gap-1.5 rounded-full border py-1 pl-2.5 pr-2 text-[11.5px] ${
+        set
+          ? "border-border bg-surface text-muted"
+          : "border-dashed border-border-strong text-faint hover:border-brand hover:text-brand"
+      }`}
+    >
+      {/* ⚠️ NO ICON ON THE EMPTY STATE. The one that used to sit on "Where
+          from" was a generic link glyph on a field that has nothing to do with
+          links — Nitsan called it irrelevant and he was right. An icon earns
+          its place by saying WHICH channel, or WHICH role; with nothing picked
+          it has nothing to say. */}
+      {set && icon && <span className="flex shrink-0 items-center">{icon}</span>}
+      {set ? label : placeholder}
+      <ChevronDown size={12} strokeWidth={1.75} className="shrink-0 opacity-60" />
+      <select
+        value={value ?? ""}
+        onChange={(e) => onPick(e.target.value || null)}
+        aria-label={ariaLabel}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      >
+        {children}
+      </select>
+    </span>
+  );
+}
+
+/**
+ * WHERE THE APPLICATION CAME FROM — a chip you pick, not a box you type in.
+ *
+ * ⚠️ IT WAS FREE TEXT AND SHOULD NOT HAVE BEEN — Nitsan, 2026-09-28. There
+ * are three answers: they found the post on LinkedIn, they wrote to
+ * jobs@nmore.co, or they came through the site. A text box invites "linkedin",
+ * "LinkedIn.com", "li" and "thru linked in" for the same fact, and then the
+ * question this field exists to answer — which channel is actually bringing
+ * people in — cannot be counted.
+ *
+ * ⚠️ A STORED VALUE THAT IS NOT ONE OF THE THREE GETS ITS OWN OPTION rather
+ * than being dropped. 270 imported rows say "Asana import" — provenance of the
+ * ROW, not of the person — and a select whose value is missing from its options
+ * renders as something else entirely, which is how a field silently rewrites
+ * itself the first time anybody opens the menu.
+ */
+const SOURCES = [
+  { value: "LinkedIn", icon: <LinkedInMark /> },
+  { value: "Email", icon: <Mail size={12} strokeWidth={1.75} /> },
+  { value: "Website", icon: <Globe size={12} strokeWidth={1.75} /> },
+];
+
+function SourceChip({
+  value,
+  onPick,
+}: {
+  value: string | null;
+  onPick: (next: string | null) => void;
+}) {
+  const known = SOURCES.find((s) => s.value === value);
+  return (
+    <ChipSelect
+      value={value}
+      label={`from ${value}`}
+      icon={known?.icon}
+      placeholder="Where from"
+      ariaLabel="Where the application came from"
+      onPick={onPick}
+    >
+      <option value="">Not set</option>
+      {SOURCES.map((s) => (
+        <option key={s.value} value={s.value}>
+          {s.value}
+        </option>
+      ))}
+      {value && !known && <option value={value}>{value}</option>}
+    </ChipSelect>
+  );
+}
+
+/**
  * A contact detail: click the value to copy it, hover for a pencil to change it.
  *
  * ⚠️ CLICK COPIES, THE PENCIL EDITS — Nitsan's shape, and the right way round.
@@ -246,7 +383,13 @@ function ContactField({
               e.currentTarget.blur();
             }
           }}
-          className="w-40 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] hover:border-border focus:border-border focus:bg-surface focus:outline-none"
+          /* ⚠️ NARROW WHEN IT IS ONLY A PLACEHOLDER, WIDE WHILE TYPING. Two
+             empty 160px boxes reading "Phone" and "Email" were what pushed the
+             meta group onto a second line at 1440px — an empty field was
+             claiming more of the row than a filled one does. */
+          className={`rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] hover:border-border focus:border-border focus:bg-surface focus:outline-none ${
+            editing ? "w-44" : "w-28"
+          }`}
         />
       </span>
     );
@@ -307,6 +450,29 @@ export default function CandidatePage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  /**
+   * ⚠️ ARRIVING FROM "ADD CANDIDATE": the cursor belongs in the name field,
+   * with the placeholder SELECTED so the first keystroke replaces it — Nitsan
+   * asked for exactly that. Landing on a page called "New candidate" and having
+   * to find the name to change it is the whole friction the button removes.
+   *
+   * ⚠️ `window.location.search`, not `useSearchParams`, which would force
+   * this page into a Suspense boundary for one throwaway flag.
+   *
+   * ⚠️ IT FIRES ONCE. `focused` latches, so a later reload (every save calls
+   * one) cannot yank the cursor out of whatever field is being typed in.
+   */
+  const nameRef = useRef<HTMLInputElement>(null);
+  const focused = useRef(false);
+  const ready = Boolean(detail);
+  useEffect(() => {
+    if (!ready || focused.current) return;
+    if (!new URLSearchParams(window.location.search).has("new")) return;
+    focused.current = true;
+    nameRef.current?.focus();
+    nameRef.current?.select();
+  }, [ready]);
 
   const reload = useCallback(async () => {
     try {
@@ -454,13 +620,19 @@ export default function CandidatePage() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <input
+              ref={nameRef}
               defaultValue={c.name}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v && v !== c.name) void run(() => updateCandidate(c.id, { name: v }, currentUserId));
               }}
               className="bidi-auto min-w-0 max-w-full rounded-md border border-transparent px-1 font-serif-accent text-[32px] leading-tight hover:border-border focus:border-border focus:outline-none"
-              style={{ width: `${Math.max(8, c.name.length + 1)}ch` }}
+              /* ⚠️ 0.8ch PER CHARACTER, NOT 1ch. `ch` is the width of a "0",
+                 and in this serif at 32px that is 21px against an average
+                 glyph of about 15 — so a 22-character name reserved 489px for
+                 340px of text and shoved the meta group onto a second line.
+                 0.8 still leaves ~15% slack, measured, so nothing crops. */
+              style={{ width: `calc(${Math.max(8, c.name.length + 1)}ch * 0.8)` }}
             />
             {/* Nitsan: phone and mail beside the name — they are what you came
                 to the page for as often as anything below. */}
@@ -476,51 +648,89 @@ export default function CandidatePage() {
               placeholder="Email"
               onCommit={(v) => void run(() => updateCandidate(c.id, { email: v }, currentUserId))}
             />
-          </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-muted">
-            {/* ⚠️ NO CALENDAR ICON OF OUR OWN. I added a lucide one and Nitsan
-                had asked for the opposite — the glyph beside a date is not
-                needed at all, and the browser already draws one. Two calendars
-                on one field was the wrong reading of "show it only on hover". */}
-            <label className="group/d flex items-center gap-1.5">
-              <span className="text-faint">Applied</span>
-              {/* ⚠️ The browser's own calendar glyph is hidden until hover — it
-                  is a second calendar icon sitting beside the one above, on a
-                  field that is read far more often than it is changed. The same
-                  trick `QUIET_FIELD` uses in the task pane. */}
-              <input
-                type="date"
-                defaultValue={c.appliedOn ?? ""}
-                onChange={(e) =>
-                  void run(() => updateCandidate(c.id, { appliedOn: e.target.value || null }, currentUserId))
-                }
-                className={`rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 ${DATE_FIELD}`}
+            {/* ⚠️ ONE ROW, NOT TWO — Nitsan, 2026-09-28: "all these should
+                be in same div". Name, phone, mail, the applied date and the
+                two chips are one sentence about one person, and splitting
+                them over two lines spent a whole band of the page on a gap.
+                They still WRAP as a group on a narrow window; what changed
+                is that the break is no longer forced at full width. */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-muted">
+              {/* ⚠️ NO CALENDAR ICON OF OUR OWN. I added a lucide one and Nitsan
+                  had asked for the opposite — the glyph beside a date is not
+                  needed at all, and the browser already draws one. Two calendars
+                  on one field was the wrong reading of "show it only on hover". */}
+              <label className="group/d flex items-center gap-1.5">
+                <span className="text-faint">Applied</span>
+                {/* ⚠️ The browser's own calendar glyph is hidden until hover — it
+                    is a second calendar icon sitting beside the one above, on a
+                    field that is read far more often than it is changed. The same
+                    trick `QUIET_FIELD` uses in the task pane. */}
+                <input
+                  type="date"
+                  defaultValue={c.appliedOn ?? ""}
+                  onChange={(e) =>
+                    void run(() => updateCandidate(c.id, { appliedOn: e.target.value || null }, currentUserId))
+                  }
+                  /* ⚠️ −20px ON THE INDICATOR, NOT A NARROWER FIELD — Nitsan,
+                     2026-09-28, asked for 20px out of the gap. Chrome sizes a
+                     date input to 119px here and reserves ~35px of slack past
+                     the digits, which is where that gap comes from. Setting an
+                     explicit width is what CROPPED A DIGIT last time (94px);
+                     pulling the indicator left eats the slack instead, and the
+                     field shrinks to 99px on its own with every segment intact. */
+                  className={`rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:-ml-5 ${DATE_FIELD}`}
+                />
+              </label>
+              <SourceChip
+                value={c.source}
+                onPick={(v) => void run(() => updateCandidate(c.id, { source: v }, currentUserId))}
               />
-            </label>
-            <ContactField
-              icon={<Link2 size={13} strokeWidth={1.75} />}
-              value={c.source}
-              placeholder="Where from"
-              onCommit={(v) => void run(() => updateCandidate(c.id, { source: v }, currentUserId))}
-            />
-            {c.status === "on_hold" && (
-              <span className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11.5px]">
-                <PauseCircle size={12} /> On hold
-              </span>
-            )}
-            {c.status === "archived" && (
-              <span className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px]">
-                <Archive size={12} /> Archived
-                {stage && <span className="text-faint">· reached {stage.name}</span>}
-              </span>
-            )}
-            {role && (
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full" style={{ backgroundColor: role.color }} />
-                {role.name}
-              </span>
-            )}
+              {c.status === "on_hold" && (
+                <span className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11.5px]">
+                  <PauseCircle size={12} /> On hold
+                </span>
+              )}
+              {c.status === "archived" && (
+                <span className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px]">
+                  <Archive size={12} /> Archived
+                  {stage && <span className="text-faint">· reached {stage.name}</span>}
+                </span>
+              )}
+              {/* ⚠️ THE ROLE IS SET HERE AND NOWHERE ELSE — Nitsan, 2026-09-28:
+                  "i'm not sure i have an option to set, edit a role of a
+                  candidate". He was right: this was a read-only span, drawn ONLY
+                  when a role was already set, so the one field the Asana import
+                  could never fill was the one field the app gave you no way to
+                  fill either. An empty state that renders as nothing is not a
+                  quiet control, it is a missing one.
+
+                  ⚠️ IT STAYS IN THE META ROW, not beside Owner and Stage. His
+                  own words: a role is "more like a tag", the studio hires
+                  designers and rarely two kinds at once. A third select in the
+                  loud cluster would claim it matters as much as who is holding
+                  the person, which is the opposite of what he asked for when he
+                  had the board filter made shy. */}
+              <ChipSelect
+                value={c.roleId}
+                label={role?.name ?? ""}
+                icon={
+                  role && (
+                    <span className="size-2 rounded-full" style={{ backgroundColor: role.color }} />
+                  )
+                }
+                placeholder="No role"
+                ariaLabel="Role"
+                onPick={(v) => void run(() => updateCandidate(c.id, { roleId: v }, currentUserId))}
+              >
+                <option value="">No role</option>
+                {vocab.roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </ChipSelect>
+            </div>
           </div>
 
           {/* ── files and links ── */}

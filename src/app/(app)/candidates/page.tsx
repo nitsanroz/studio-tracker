@@ -19,6 +19,7 @@ import { loadBoard, loadVocabulary, type BoardCounts, type Vocabulary } from "@/
 import { createCandidate, moveToStage } from "@/lib/candidates/actions";
 import {
   formatScore,
+  NEW_CANDIDATE_NAME,
   scoreTone,
   type Candidate,
   type CandidateStatus,
@@ -169,7 +170,6 @@ export default function CandidatesPage() {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState("");
 
   // ⚠️ The dragged id is a REF, not state. The element deciding whether to
   // accept a drop is a different component from the one being dragged, and
@@ -310,21 +310,34 @@ export default function CandidatesPage() {
     [rows, currentUserId],
   );
 
-  const submitNew = useCallback(async () => {
-    const name = newName.trim();
-    if (!name || !vocab) return;
+  /**
+   * ⚠️ STRAIGHT TO THEIR PAGE, NOT INTO A DIALOG — Nitsan offered either and
+   * left the choice to me. The dossier ALREADY holds every field a new
+   * candidate needs: phone, mail, role, where they came from, links, the CV,
+   * the application text. A popup would be a second, smaller copy of it that
+   * still dumps you on the page afterwards, and two places to type the same
+   * facts is how the two drift apart.
+   *
+   * ⚠️ THE ROW IS CREATED FIRST AND NAMED "New candidate". Everything on that
+   * page saves against an id, so there has to be a row before there is a page.
+   * The cost is honest: abandon it and a card called "New candidate" is sitting
+   * on the board where you can see it and delete it — not a silent empty row.
+   */
+  const addCandidate = useCallback(async () => {
+    if (!vocab || adding) return;
+    setAdding(true);
     try {
       const id = await createCandidate(
-        { name, stageId: vocab.stages[0]?.id ?? null },
+        { name: NEW_CANDIDATE_NAME, stageId: vocab.stages[0]?.id ?? null },
         currentUserId,
       );
-      setNewName("");
-      setAdding(false);
-      router.push(`/candidates/${id}`);
+      // `?new=1` is what tells their page to put the cursor in the name field.
+      router.push(`/candidates/${id}?new=1`);
     } catch (e) {
+      setAdding(false);
       setError(e instanceof Error ? e.message : "Could not add the candidate.");
     }
-  }, [newName, vocab, currentUserId, router]);
+  }, [vocab, adding, currentUserId, router]);
 
   if (!isAdmin) {
     return (
@@ -352,20 +365,25 @@ export default function CandidatesPage() {
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {/* ⚠️ ONE QUIET DROPDOWN, NOT A ROW OF CHIPS. A role here is a TAG —
-              the studio hires designers and rarely two kinds at once — so five
+          {/* ⚠️ ONE DROPDOWN, NOT A ROW OF CHIPS. A role here is a TAG — the
+              studio hires designers and rarely two kinds at once — so five
               chips permanently across the top spent the loudest row on the page
-              on a control almost nobody touches. It stays borderless and muted
-              while it says "All roles", and only takes the brand tint once it
-              is actually hiding somebody: a filter you cannot see is how a board
-              comes to look emptier than it is. */}
+              on a control almost nobody touches.
+
+              ⚠️ IT IS AN OUTLINE CHIP AT REST — Nitsan, 2026-09-28. It used to
+              be borderless until you hovered it, which made it the only control
+              in a row of chips with no edge of its own: next to "On hold" and
+              "Archive" it read as a stray word rather than something you could
+              press. Same shape and resting colours as those two now; the brand
+              tint still means it is ACTUALLY hiding somebody, because a filter
+              you cannot see is how a board comes to look emptier than it is. */}
           <select
             value={roleFilter ?? "all"}
             onChange={(e) => setRoleFilter(e.target.value === "all" ? null : e.target.value)}
             aria-label="Filter by role"
-            className={`h-8 cursor-pointer rounded-lg border px-2 text-[12.5px] ${
+            className={`h-7 cursor-pointer rounded-full border px-2 text-[11.5px] ${
               roleFilter === null
-                ? "border-transparent bg-transparent text-muted hover:border-border hover:bg-surface"
+                ? "border-border bg-surface text-muted"
                 : "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
             }`}
           >
@@ -447,54 +465,14 @@ export default function CandidatesPage() {
           </div>
 
           <button
-            onClick={() => setAdding(true)}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white"
+            onClick={() => void addCandidate()}
+            disabled={adding || !vocab}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50"
           >
-            <Plus size={16} strokeWidth={2} /> Add candidate
+            <Plus size={16} strokeWidth={2} /> {adding ? "Adding…" : "Add candidate"}
           </button>
         </div>
       </div>
-
-      {adding && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void submitNew();
-          }}
-          className="mt-4 flex items-center gap-2 rounded-xl border border-border bg-surface p-3 shadow-card"
-        >
-          <input
-            autoFocus
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setAdding(false);
-                setNewName("");
-              }
-            }}
-            placeholder="Their name — everything else goes on their page"
-            className="min-h-11 flex-1 rounded-lg border border-border px-3 text-sm sm:min-h-0 sm:py-2"
-          />
-          <button
-            type="submit"
-            disabled={!newName.trim()}
-            className="h-9 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-40"
-          >
-            Add
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAdding(false);
-              setNewName("");
-            }}
-            className="h-9 rounded-lg border border-border px-3 text-[13px]"
-          >
-            Cancel
-          </button>
-        </form>
-      )}
 
       {error && (
         <div className="mt-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">

@@ -233,3 +233,11 @@ export function scoreTone(value: number | null): "none" | "low" | "mid" | "high"
 export function isOnBoard(c: Candidate): boolean {
   return c.status === "active";
 }
+
+/**
+ * What a candidate is called between "Add candidate" and typing their name.
+ *
+ * ⚠️ SHARED so the board and the dossier agree: the board creates the row
+ * with it, and their page selects it so the first keystroke replaces it.
+ */
+export const NEW_CANDIDATE_NAME = "New candidate";
