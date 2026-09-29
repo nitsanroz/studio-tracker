@@ -609,21 +609,24 @@ export default function CandidatePage() {
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   /**
-   * Which interviews are folded shut.
+   * Which interviews the reader has opened or shut BY HAND.
    *
-   * ⚠️ FOLDED-BY-EXCEPTION — a set of what is CLOSED, not of what is open — so
-   * an interview added while you are reading appears expanded rather than
-   * hidden behind a chevron nobody pressed. Same shape as the client table's
-   * `collapsed` set, and like that one it is per-visit rather than stored: a
+   * ⚠️⚠️ AN OVERRIDE MAP, NOT A SET OF FOLDED IDS, AND THE DIFFERENCE IS LOAD
+   * BEARING. The default is now computed — everything shut except the latest
+   * (Nitsan, 2026-09-29: "its the recent more relevant one") — so a set of
+   * closed ids would have to be SEEDED, and the only place to seed it is an
+   * effect keyed on the loaded detail. `run()` reloads after EVERY write,
+   * including setting a single score, so that effect would re-fold a card
+   * while somebody was scoring in it. Deriving the default and remembering
+   * only the explicit toggles cannot do that: nothing writes this map except a
+   * press on the chevron.
+   *
+   * ⚠️ Per-visit rather than stored, like the client table's folded sections: a
    * fold is how you read a page today, not a preference about this candidate.
    */
-  const [folded, setFolded] = useState<Set<string>>(new Set());
-  const toggleFold = useCallback((id: string) => {
-    setFolded((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
+  const [openOverride, setOpenOverride] = useState<Map<string, boolean>>(new Map());
+  const toggleFold = useCallback((id: string, wasOpen: boolean) => {
+    setOpenOverride((prev) => new Map(prev).set(id, !wasOpen));
   }, []);
 
   /**
@@ -786,6 +789,22 @@ export default function CandidatePage() {
   // What it is not is a meeting, so it does not render as one and is not
   // counted as one.
   const { application, interviews } = splitApplicationReview(detail.interviews);
+  /**
+   * The most recent interview — the one that stays open.
+   *
+   * ⚠️ ORDERED BY WHEN IT HAPPENED (`heldOn`), FALLING BACK TO WHEN THE CARD
+   * WAS MADE, which is the rule `overallScore` already weights by. The two must
+   * agree: the card left open should be the one carrying the most weight in the
+   * figure at the top, or the page would open on one reading and headline
+   * another. It also means an interview you have just ADDED is the latest
+   * thing known and opens itself, which is what you want a beat before filling
+   * it in.
+   */
+  const latestInterviewId =
+    interviews.length === 0
+      ? null
+      : interviews.reduce((a, b) => ((a.heldOn ?? a.createdAt) > (b.heldOn ?? b.createdAt) ? a : b))
+          .id;
   const stage = vocab.stages.find((s) => s.id === c.stageId) ?? null;
   const overall = overallScore(detail.interviews);
   const scoredCount = detail.interviews.filter((i) => Object.keys(i.scores).length > 0).length;
@@ -1317,7 +1336,7 @@ export default function CandidatePage() {
           {interviews.map((iv) => {
             const who = iv.interviewerId ? profileById.get(iv.interviewerId) : null;
             const avg = interviewAverage(iv.scores);
-            const shut = folded.has(iv.id);
+            const shut = !(openOverride.get(iv.id) ?? iv.id === latestInterviewId);
             const scored = Object.keys(iv.scores).length;
             return (
               <div key={iv.id} className="rounded-xl border border-border bg-surface p-4 shadow-card">
@@ -1383,7 +1402,7 @@ export default function CandidatePage() {
                       A fold that hid the number would just be a delete you can
                       undo. */}
                   <button
-                    onClick={() => toggleFold(iv.id)}
+                    onClick={() => toggleFold(iv.id, !shut)}
                     aria-expanded={!shut}
                     aria-label={shut ? `Open this ${iv.kind.toLowerCase()}` : `Fold this ${iv.kind.toLowerCase()} away`}
                     title={shut ? "Open" : "Fold away"}
