@@ -53,6 +53,16 @@ export interface ScoreSubject {
   position: number;
   /** Retired subjects still render on old scorecards; see 0039. */
   active: boolean;
+  /**
+   * Whether this subject can be judged from the submission alone — the mail,
+   * the CV and the portfolio, before anybody has spoken to them.
+   *
+   * ⚠️ FALSE FOR "PERSONALITY" AND TRUE FOR EVERYTHING ELSE (0040), because a
+   * portfolio is not a person: communication, energy and fit are readings of
+   * someone you have met. The application scorecard shows only the subjects
+   * where this is true — see `APPLICATION_REVIEW_KIND`.
+   */
+  fromSubmission: boolean;
   params: ScoreParam[];
 }
 
@@ -232,6 +242,41 @@ export function scoreTone(value: number | null): "none" | "low" | "mid" | "high"
  */
 export function isOnBoard(c: Candidate): boolean {
   return c.status === "active";
+}
+
+/**
+ * The reserved `kind` of the one scorecard that is not an interview.
+ *
+ * ⚠️ A ROW IN `candidate_interviews` ON PURPOSE, not a second scoring
+ * mechanism. It holds the same thing an interview holds — one person's numbers
+ * against the studio's parameters — so it reuses the same table, the same
+ * `candidate_scores` upsert and the same averages. What it is NOT is a card you
+ * add: `splitApplicationReview` lifts it out of the interview list, the
+ * candidate page draws it beside the application text, and the row is created
+ * lazily by the first score anybody gives.
+ *
+ * ⚠️ IT SORTS FIRST AND SO WEIGHS LEAST in `overallScore`, which is the right
+ * answer and comes out of the existing rule rather than a special case: the
+ * weights go by `heldOn`, and this row is dated when they applied. A judgement
+ * formed from a PDF should not outrank one formed across a desk.
+ */
+export const APPLICATION_REVIEW_KIND = "Application review";
+
+/**
+ * The application scorecard, and the interviews that are actually interviews.
+ *
+ * ⚠️ TAKES THE FIRST MATCH AND LEAVES ANY OTHERS IN THE LIST. Before 0040 the
+ * kind was one option in a free picker, so a board could hold two rows labelled
+ * this way; dropping the extras would hide numbers somebody recorded. The
+ * first one gets the application card, the rest stay visible as ordinary
+ * scorecards where they can be read, re-labelled or deleted.
+ */
+export function splitApplicationReview(all: Interview[]): {
+  application: Interview | null;
+  interviews: Interview[];
+} {
+  const application = all.find((i) => i.kind === APPLICATION_REVIEW_KIND) ?? null;
+  return { application, interviews: all.filter((i) => i !== application) };
 }
 
 /**

@@ -15,6 +15,7 @@
 // route down.
 
 import { createClient } from "../supabase/client";
+import { MISSING_SCHEMA_CODES } from "../db";
 import type {
   Candidate,
   CandidateComment,
@@ -30,6 +31,7 @@ import type {
   ScoreParam,
   ScoreSubject,
 } from "./types";
+import { APPLICATION_REVIEW_KIND } from "./types";
 
 type Row = Record<string, unknown>;
 
@@ -142,12 +144,34 @@ export interface Vocabulary {
  * somebody removes that parameter in Settings. Callers building a NEW card
  * filter on `active` themselves.
  */
+/**
+ * The scoring subjects, stepping down one column if 0040 has not been applied.
+ *
+ * ⚠️⚠️ NAMING A COLUMN THAT DOES NOT EXIST FAILS THE WHOLE SELECT, and this
+ * one is inside the `Promise.all` that the candidate page and the board both
+ * wait on — so before the ladder existed, an unapplied 0040 rendered as
+ * "Could not load this candidate" on every dossier. Measured, not reasoned
+ * about: that is exactly what it did.
+ *
+ * ⚠️ It steps down ONLY on a missing-schema code. Any other failure must
+ * propagate — a network blip read as "the column is gone" would quietly show
+ * Personality on every application scorecard with nothing saying why.
+ */
+async function subjectRows(sb: ReturnType<typeof createClient>) {
+  const full = await sb
+    .from("candidate_score_subjects")
+    .select("id,name,position,active,from_submission")
+    .order("position");
+  if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
+  return sb.from("candidate_score_subjects").select("id,name,position,active").order("position");
+}
+
 export async function loadVocabulary(): Promise<Vocabulary> {
   const sb = createClient();
   const [stages, roles, subjects, params] = await Promise.all([
     sb.from("candidate_stages").select("id,name,position").order("position"),
     sb.from("candidate_roles").select("id,name,color,position").order("position"),
-    sb.from("candidate_score_subjects").select("id,name,position,active").order("position"),
+    subjectRows(sb),
     sb
       .from("candidate_score_params")
       .select("id,subject_id,name,position,active")
@@ -180,6 +204,10 @@ export async function loadVocabulary(): Promise<Vocabulary> {
       name: str(s.name),
       position: num(s.position),
       active: s.active !== false,
+      // Absent means true — the column is `default true` (0040), and a client
+      // reading a project where the migration has not landed yet should show
+      // every subject rather than hide the studio's scoring vocabulary.
+      fromSubmission: s.from_submission !== false,
       params: bySubject.get(str(s.id)) ?? [],
     })),
   };
@@ -229,7 +257,7 @@ export async function loadBoard(
   const [links, comments, interviews] = await Promise.all([
     sb.from("candidate_links").select("candidate_id").in("candidate_id", ids),
     sb.from("candidate_comments").select("candidate_id").in("candidate_id", ids),
-    sb.from("candidate_interviews").select("id,candidate_id").in("candidate_id", ids),
+    sb.from("candidate_interviews").select("id,candidate_id,kind").in("candidate_id", ids),
   ]);
 
   const tally = (rowsIn: Row[] | null) => {
@@ -242,7 +270,13 @@ export async function loadBoard(
   };
   const linkN = tally(links.data as Row[] | null);
   const commentN = tally(comments.data as Row[] | null);
-  const interviewN = tally(interviews.data as Row[] | null);
+  // ⚠️ THE APPLICATION REVIEW IS NOT AN INTERVIEW ON THE CARD. It is a reading
+  // of the portfolio, so "2 interviews" on a board card would claim two
+  // conversations that never happened. Its SCORES still count below — the
+  // opinion is real, the meeting is not.
+  const interviewN = tally(
+    ((interviews.data ?? []) as Row[]).filter((r) => str(r.kind) !== APPLICATION_REVIEW_KIND),
+  );
 
   // Scores hang off the INTERVIEW, so the candidate they belong to has to be
   // walked back through the interview ids we just read.
@@ -338,7 +372,8 @@ export async function loadCandidate(id: string): Promise<CandidateDetail | null>
   const counts = {
     linkCount: (links.data ?? []).length,
     commentCount: (comments.data ?? []).length,
-    interviewCount: mapped.length,
+    // Same rule as the board — see the ⚠️ in `loadBoard`.
+    interviewCount: mapped.filter((i) => i.kind !== APPLICATION_REVIEW_KIND).length,
   };
   // Every score the person has been given, across every interview. Flat rather
   // than a mean of means: two interviews scored on 4 and 11 parameters are not

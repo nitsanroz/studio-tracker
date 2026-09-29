@@ -41,6 +41,7 @@ import {
   deleteCandidate,
   moveToStage,
   removeInterview,
+  scoreApplication,
   removeLink,
   setScore,
   setStatus,
@@ -57,27 +58,28 @@ import {
   type CandidateDetail,
   type CandidateLinkKind,
   type CandidateRole,
-  type Interview,
+  splitApplicationReview,
   type ScoreSubject,
 } from "@/lib/candidates/types";
 
 /**
  * What kind of meeting a scorecard describes.
  *
- * ⚠️ "Application review" IS ONE OF THEM, and that is the whole reason the list
- * exists rather than a free-text box. Reading a CV, a portfolio and a covering
- * mail is a moment where somebody forms a judgement and can score it — the same
- * shape as an interview, so it reuses the same card instead of growing a second
- * scoring mechanism beside it. It also lands first in the timeline by itself,
- * because it happens first.
+ * ⚠️ "Application review" IS DELIBERATELY NOT HERE ANY MORE. Reading a CV, a
+ * portfolio and a covering mail is still scored on the same card and still
+ * stored in the same table — but it is not a meeting, and it is no longer a
+ * card you add: the grid lives beside the application text and its row is
+ * created by the first score. Offering the kind here would let a second one be
+ * made by hand, which is the state `splitApplicationReview` then has to
+ * tolerate rather than the one it should invite.
  *
  * ⚠️ The column is TEXT, not an enum, and the picker tolerates a value it does
  * not know: the Asana import writes the board's own column names as the kind,
  * and a `<select>` that silently dropped an unrecognised one would rewrite the
- * label on an interview that happened two years ago.
+ * label on an interview that happened two years ago — which is also what keeps
+ * an old second "Application review" readable if one exists.
  */
 const INTERVIEW_KINDS = [
-  "Application review",
   "Phone interview",
   "Zoom interview",
   "Physical interview",
@@ -103,17 +105,17 @@ const TONE: Record<string, string> = {
  */
 function SubjectColumn({
   subject,
-  interview,
+  scores,
   onSet,
 }: {
   subject: ScoreSubject;
-  interview: Interview;
+  /** ⚠️ THE SCORES, NOT AN INTERVIEW — the application scorecard draws this
+      grid before any interview row exists. */
+  scores: Record<string, number>;
   onSet: (paramId: string, value: number | null) => void;
 }) {
-  const avg = subjectAverage(subject, interview.scores);
-  const params = subject.params.filter(
-    (p) => p.active || typeof interview.scores[p.id] === "number",
-  );
+  const avg = subjectAverage(subject, scores);
+  const params = subject.params.filter((p) => p.active || typeof scores[p.id] === "number");
   if (params.length === 0) return null;
   return (
     <div className="min-w-0">
@@ -126,7 +128,7 @@ function SubjectColumn({
         </span>
       </div>
       {params.map((p) => {
-        const v = interview.scores[p.id];
+        const v = scores[p.id];
         return (
           <div key={p.id} className="flex items-center gap-2 py-0.5 text-[12.5px]">
             <span className="min-w-0 flex-1 truncate text-muted" title={p.name}>
@@ -733,10 +735,20 @@ export default function CandidatePage() {
     );
   if (!detail || !vocab) return <p className="py-10 text-sm text-danger">{error}</p>;
 
-  const { candidate: c, links, interviews, comments, events } = detail;
+  const { candidate: c, links, comments, events } = detail;
+  // ⚠️ THE APPLICATION SCORECARD IS LIFTED OUT OF THE INTERVIEW LIST, but stays
+  // in `detail.interviews` for every SCORING figure below: it is an opinion,
+  // and `overallScore` already weighs it least because it is dated earliest.
+  // What it is not is a meeting, so it does not render as one and is not
+  // counted as one.
+  const { application, interviews } = splitApplicationReview(detail.interviews);
   const stage = vocab.stages.find((s) => s.id === c.stageId) ?? null;
-  const overall = overallScore(interviews);
-  const scoredCount = interviews.filter((i) => Object.keys(i.scores).length > 0).length;
+  const overall = overallScore(detail.interviews);
+  const scoredCount = detail.interviews.filter((i) => Object.keys(i.scores).length > 0).length;
+  /** The subjects a portfolio can actually answer — see `fromSubmission`. */
+  const submissionSubjects = vocab.subjects.filter((s) => s.fromSubmission);
+  const applicationScores = application?.scores ?? {};
+  const applicationAvg = interviewAverage(applicationScores);
   const cv = links.filter((l) => l.kind === "cv");
   const others = links.filter((l) => l.kind !== "cv");
 
@@ -1003,7 +1015,7 @@ export default function CandidatePage() {
             <div className="mt-1 text-[11px] uppercase tracking-wider text-faint">
               {overall === null
                 ? "not scored yet"
-                : `across ${scoredCount} ${scoredCount === 1 ? "interview" : "interviews"}`}
+                : `across ${scoredCount} ${scoredCount === 1 ? "reading" : "readings"}`}
             </div>
           </div>
 
@@ -1110,6 +1122,12 @@ export default function CandidatePage() {
                         const bits = [
                           interviews.length &&
                             `${interviews.length} interview${interviews.length === 1 ? "" : "s"}`,
+                          // ⚠️ NAMED SEPARATELY, because it is no longer counted
+                          // as an interview anywhere — so without this line the
+                          // one thing the delete destroys silently is the read
+                          // somebody actually recorded.
+                          Object.keys(application?.scores ?? {}).length &&
+                            "the application scorecard",
                           comments.length &&
                             `${comments.length} message${comments.length === 1 ? "" : "s"}`,
                           links.length &&
@@ -1153,10 +1171,19 @@ export default function CandidatePage() {
       {/* ── body ── */}
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_400px]">
         <div className="flex flex-col gap-3">
-          {/* application */}
+          {/* application — the text they sent, and the studio's first read of it */}
           <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-            <div className="mb-2 text-[12px] font-medium uppercase tracking-wider text-faint">
-              Application
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="text-[12px] font-medium uppercase tracking-wider text-faint">
+                Application
+              </span>
+              {c.appliedOn && (
+                <span className="text-[11px] text-faint">applied {formatDate(c.appliedOn)}</span>
+              )}
+              <span className={`ml-auto text-sm font-semibold ${TONE[scoreTone(applicationAvg)]}`}>
+                {formatScore(applicationAvg)}
+                <span className="ml-1 text-[11px] font-normal text-faint">first read</span>
+              </span>
             </div>
             <textarea
               defaultValue={c.applicationText ?? ""}
@@ -1169,6 +1196,33 @@ export default function CandidatePage() {
               }
               className="bidi-auto w-full resize-y rounded-md border border-transparent bg-transparent p-1 text-[12.5px] leading-relaxed text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
             />
+
+            {/* ⚠️ ALWAYS HERE, NEVER ADDED. A judgement formed from the mail, the
+                CV and the portfolio is one you have already made by the time you
+                finish reading — so it is a grid to fill in, not a card to opt
+                into. The row behind it is created by the first score. */}
+            {submissionSubjects.length > 0 && (
+              <div className="mt-3 grid gap-x-5 border-t border-border pt-3 sm:grid-cols-2">
+                {submissionSubjects.map((s) => (
+                  <SubjectColumn
+                    key={s.id}
+                    subject={s}
+                    scores={applicationScores}
+                    onSet={(paramId, value) =>
+                      void run(() =>
+                        scoreApplication(c.id, paramId, value, c.appliedOn, currentUserId),
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
+            {/* ⚠️ Said out loud rather than left as an absence, because the
+                missing column is the one somebody will look for. */}
+            <p className="mt-2 text-[11px] leading-snug text-faint">
+              Only what a submission can answer — a portfolio is not a person, so the subjects that
+              need a conversation are on the interviews below.
+            </p>
           </div>
 
           {/* interviews */}
@@ -1273,7 +1327,7 @@ export default function CandidatePage() {
                     <SubjectColumn
                       key={s.id}
                       subject={s}
-                      interview={iv}
+                      scores={iv.scores}
                       onSet={(paramId, value) => void run(() => setScore(iv.id, paramId, value, c.id))}
                     />
                   ))}
@@ -1293,23 +1347,6 @@ export default function CandidatePage() {
             >
               <Plus size={16} strokeWidth={2} /> Add an interview
             </button>
-            {/* ⚠️ Its own button rather than one more option in the picker,
-                because it is the step people forget to record: the judgement
-                formed from the mail, the CV and the portfolio, before anybody
-                has spoken to them. Same card, same subjects — leave the ones
-                that need a conversation blank and they simply do not count. */}
-            {!interviews.some((i) => i.kind === "Application review") && (
-              <button
-                onClick={() =>
-                  void run(() =>
-                    addInterview(c.id, "Application review", c.appliedOn, currentUserId, currentUserId),
-                  )
-                }
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong p-4 text-[13px] text-muted hover:border-brand hover:text-brand"
-              >
-                <Plus size={16} strokeWidth={2} /> Score the application
-              </button>
-            )}
           </div>
         </div>
 

@@ -4,6 +4,8 @@ import {
   interviewAverage,
   overallScore,
   isOnBoard,
+  splitApplicationReview,
+  APPLICATION_REVIEW_KIND,
   scoreTone,
   subjectAverage,
   type Candidate,
@@ -28,6 +30,7 @@ const subject = (params: string[]): ScoreSubject => ({
   name: "Personality",
   position: 1,
   active: true,
+  fromSubmission: false,
   params: params.map((id, i) => ({
     id,
     subjectId: "s1",
@@ -206,5 +209,41 @@ describe("overallScore", () => {
     const undated: Interview = { ...iv("2026-09-25", { a: 10 }), heldOn: null };
     const r = overallScore([iv("2026-09-01", { a: 4 }), undated]);
     expect(r).toBe(8); // (4·1 + 10·2) / 3
+  });
+});
+
+describe("splitApplicationReview", () => {
+  const app = (): Interview => ({ ...iv("2026-01-01", { p1: 8 }), kind: APPLICATION_REVIEW_KIND });
+
+  it("lifts the application scorecard out of the interview list", () => {
+    const a = app();
+    const phone = iv("2026-02-01", { p1: 6 });
+    const split = splitApplicationReview([a, phone]);
+    expect(split.application).toBe(a);
+    expect(split.interviews).toEqual([phone]);
+  });
+
+  it("reports no application when there is none", () => {
+    const phone = iv("2026-02-01", { p1: 6 });
+    const split = splitApplicationReview([phone]);
+    expect(split.application).toBeNull();
+    expect(split.interviews).toEqual([phone]);
+  });
+
+  // ⚠️ The kind was a free picker option before 0040, so a board can hold two.
+  // Dropping the extra would hide numbers somebody recorded.
+  it("keeps a second application-review row visible as an ordinary scorecard", () => {
+    const first = app();
+    const second: Interview = { ...app(), id: "second" };
+    const split = splitApplicationReview([first, second]);
+    expect(split.application).toBe(first);
+    expect(split.interviews).toEqual([second]);
+  });
+
+  // The application is an opinion and must still weigh in the headline figure;
+  // it is the interview LIST it leaves, not the scoring.
+  it("leaves the caller free to score the full set", () => {
+    const all = [app(), iv("2026-02-01", { p1: 2 })];
+    expect(overallScore(all)).toBeCloseTo((8 * 1 + 2 * 2) / 3);
   });
 });

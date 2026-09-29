@@ -73,7 +73,7 @@ export class DbError extends Error {
  * failing. That is the right trade for an optional column and the wrong one for
  * anything load-bearing: don't use this to skip something that must be written.
  */
-const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204"]);
+export const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204"]);
 
 /** True when the query failed because the schema lacks something, not because the request failed. */
 export function isMissingSchema(e: unknown): boolean {

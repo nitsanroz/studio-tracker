@@ -16,6 +16,7 @@
 // being in the order it claims.
 
 import { createClient } from "../supabase/client";
+import { APPLICATION_REVIEW_KIND } from "./types";
 import type { CandidateLinkKind, CandidateOutcome, CandidateStatus } from "./types";
 
 /** Anything that failed loudly enough to tell the user about. */
@@ -300,6 +301,61 @@ export async function setScore(
     fail("save the score", error);
   }
   await touch(candidateId);
+}
+
+/**
+ * One parameter of the APPLICATION scorecard — creating the row if it is the
+ * first score anybody has given.
+ *
+ * ⚠️ LAZY, AND THAT IS THE WHOLE POINT OF THE RELEASE. Scoring the application
+ * used to mean pressing "Score the application" to add a card; a judgement you
+ * have already formed by the time you finish reading their portfolio is not
+ * something you opt in to recording. The grid is simply THERE beside the
+ * application text, and the row appears the moment a number does — so a
+ * candidate nobody scored carries no empty scorecard, and the interview count
+ * on their board card still means conversations.
+ *
+ * ⚠️ DATED `appliedOn` rather than today. `overallScore` weighs by `heldOn`,
+ * so dating it when we read them keeps it the EARLIEST reading and therefore
+ * the lightest — which is right, and falls out of the existing rule instead of
+ * being a special case. A null applied date leaves `held_on` null, and
+ * `overallScore` then falls back to `createdAt`, which is still earlier than
+ * any interview that follows.
+ *
+ * ⚠️ CLEARING THE LAST SCORE LEAVES THE ROW. An empty scorecard renders as an
+ * empty scorecard — the same thing it looked like before the first click — and
+ * deleting it here would race the next keystroke.
+ */
+export async function scoreApplication(
+  candidateId: string,
+  paramId: string,
+  value: number | null,
+  appliedOn: string | null,
+  actorId: string | null,
+) {
+  const sb = createClient();
+  const { data: existing, error: findErr } = await sb
+    .from("candidate_interviews")
+    .select("id")
+    .eq("candidate_id", candidateId)
+    .eq("kind", APPLICATION_REVIEW_KIND)
+    .order("created_at")
+    .limit(1);
+  fail("read the application scorecard", findErr);
+
+  let interviewId = (existing ?? [])[0]?.id as string | undefined;
+  if (!interviewId) {
+    // Nothing to create if the first thing anybody does is clear a blank.
+    if (value === null) return;
+    interviewId = await addInterview(
+      candidateId,
+      APPLICATION_REVIEW_KIND,
+      appliedOn,
+      null,
+      actorId,
+    );
+  }
+  await setScore(interviewId, paramId, value, candidateId);
 }
 
 // ── discussion ────────────────────────────────────────────────────────────
