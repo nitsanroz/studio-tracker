@@ -53,8 +53,10 @@ import {
   overallScore,
   scoreTone,
   subjectAverage,
+  NEW_CANDIDATE_PARAM,
   type CandidateDetail,
   type CandidateLinkKind,
+  type CandidateRole,
   type Interview,
   type ScoreSubject,
 } from "@/lib/candidates/types";
@@ -166,25 +168,57 @@ const MENU_TITLE = "flex items-center gap-2 text-[13px] leading-none";
 /** 14px icon + the 8px gap above it, so the note starts under the title. */
 const MENU_NOTE = "pl-[22px] text-[11px] leading-snug text-faint";
 
+/** Type and horizontal metrics for the two auto-sized fields in the header. */
+const NAME_BOX = "rounded-md border border-transparent px-1 font-serif-accent text-[32px] leading-tight";
+const CONTACT_BOX = "rounded border border-transparent px-1 py-0.5 text-[13px]";
+
 /**
  * A date field whose picker glyph sits next to the number rather than adrift
  * from it, and stays out of sight until you reach for it.
+ *
+ * `"tight"` pulls the glyph in against the digits, for a bare field in a line
+ * of prose; `"boxed"` leaves it at the right edge, where the field has a
+ * border of its own to sit against.
  *
  * ⚠️ THE GAP WAS THE GLYPH'S OWN MARGIN, NOT SLACK IN THE FIELD — and I got
  * that wrong first time round. I measured the date text with a canvas (67px),
  * compared it to the input's 123px and concluded there were ~48px going spare,
  * so I pinned the width to 94px. That clipped the last digit, because a canvas
  * measure is not how a browser lays out date SEGMENTS: asked directly, it wants
- * **119px** for this font. So there was only ever 4px of slack, and zeroing
- * `::-webkit-calendar-picker-indicator`'s margin and padding is the whole fix.
+ * **119px** for this font. So there was only ever 4px of slack, and the fix is
+ * entirely in `::-webkit-calendar-picker-indicator`'s own box.
  *
  * ⚠️ NO EXPLICIT WIDTH. It would have to be re-tuned for every font size and
  * date locale this field ever renders in, and being one pixel short crops a
  * digit — which is exactly what happened.
+ *
+ * ⚠️⚠️ THE MARGIN IS SET HERE AND NOWHERE ELSE, AND IT IS A PARAMETER RATHER
+ * THAN A DEFAULT A CALLER OVERRIDES. It briefly was the latter: this constant
+ * set `m-0` while the Applied field set `-ml-5` on the same element — two
+ * utilities, one property, identical specificity, so the winner was decided by
+ * Tailwind's emit order and not by anything written here. Making the caller
+ * supply the margin instead would have fixed the collision by handing every
+ * future call site an undocumented obligation: forget it and the browser's
+ * 20px gap comes back silently. One owner, one utility per element, chosen in
+ * JavaScript where you can see it.
  */
-const DATE_FIELD =
-  "[&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:p-0 " +
+/**
+ * ⚠️ EVERY CLASS NAME BELOW IS SPELLED OUT IN FULL, and the repetition is the
+ * price of that. Tailwind finds utilities by scanning this file as TEXT, so a
+ * name assembled at runtime — `${prefix}-ml-5` — is never generated and the
+ * rule simply does not exist in the stylesheet. Do not factor the shared
+ * `[&::-webkit-calendar-picker-indicator]:` prefix out into a variable.
+ */
+const DATE_GLYPH =
+  "[&::-webkit-calendar-picker-indicator]:my-0 [&::-webkit-calendar-picker-indicator]:mr-0 " +
+  "[&::-webkit-calendar-picker-indicator]:p-0 " +
   "[&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-60";
+
+function dateField(pull: "tight" | "boxed"): string {
+  return pull === "tight"
+    ? `[&::-webkit-calendar-picker-indicator]:-ml-5 ${DATE_GLYPH}`
+    : `[&::-webkit-calendar-picker-indicator]:ml-0 ${DATE_GLYPH}`;
+}
 
 /** LinkedIn's mark. Lucide dropped brand icons, so this is drawn here. */
 function LinkedInMark({ size = 12 }: { size?: number }) {
@@ -195,27 +229,6 @@ function LinkedInMark({ size = 12 }: { size?: number }) {
   );
 }
 
-/**
- * WHERE THE APPLICATION CAME FROM — a chip you pick, not a box you type in.
- *
- * ⚠️ IT WAS FREE TEXT AND SHOULD NOT HAVE BEEN — Nitsan, 2026-09-28. There
- * are three answers: they found the post on LinkedIn, they wrote to
- * jobs@nmore.co, or they came through the site. A text box invites "linkedin",
- * "LinkedIn.com", "li" and "thru linked in" for the same fact, and then the
- * question this field exists to answer — which channel is actually bringing
- * people in — cannot be counted.
- *
- * ⚠️ THE SELECT IS INVISIBLE AND COVERS THE WHOLE CHIP. It is a real
- * <select>, so the keyboard and the screen reader get a real control and the
- * platform draws its own menu; the chip is only its face. Do not swap it for a
- * div with a click handler.
- *
- * ⚠️ A STORED VALUE THAT IS NOT ONE OF THE THREE GETS ITS OWN OPTION rather
- * than being dropped. 270 imported rows say "Asana import" — provenance of the
- * ROW, not of the person — and a select whose value is missing from its options
- * renders as something else entirely, which is how a field silently rewrites
- * itself the first time anybody opens the menu.
- */
 /**
  * A CHIP THAT IS REALLY A <select>. Two fields in the meta row use it — where
  * the application came from, and which role they are up for — and they must
@@ -254,7 +267,13 @@ function ChipSelect({
   const set = Boolean(value);
   return (
     <span
-      className={`relative inline-flex items-center gap-1.5 rounded-full border py-1 pl-2.5 pr-2 text-[11.5px] ${
+      /* ⚠️ `focus-within:border-brand` IS NOT DECORATION. The real <select> is
+         `opacity-0`, which hides the browser's own focus ring with it — so
+         without this the keyboard lands on this control and NOTHING on screen
+         changes, twice in a row, on two chips that sit side by side. The chip
+         has to wear the focus the select cannot show. Same treatment
+         `task-autocomplete` and `task-panel` use. */
+      className={`relative inline-flex items-center gap-1.5 rounded-full border py-1 pl-2.5 pr-2 text-[11.5px] focus-within:border-brand focus-within:text-brand ${
         set
           ? "border-border bg-surface text-muted"
           : "border-dashed border-border-strong text-faint hover:border-brand hover:text-brand"
@@ -331,6 +350,120 @@ function SourceChip({
 }
 
 /**
+ * Which role they are up for — the same chip as `SourceChip`, and deliberately
+ * the same SHAPE of component so the meta row has one pattern rather than one
+ * component and one inlined copy of it.
+ *
+ * ⚠️ THE STALE-VALUE GUARD IS THE REASON THIS EXISTS RATHER THAN BEING
+ * INLINED. A `<select>` whose value is missing from its options does not show
+ * nothing — it shows the FIRST option, so a role deleted in Settings while
+ * this page was open would silently read as "No role" while the chip face went
+ * blank. Both chips now carry that guard in one place each, written once.
+ */
+function RoleChip({
+  roleId,
+  roles,
+  onPick,
+}: {
+  roleId: string | null;
+  roles: CandidateRole[];
+  onPick: (next: string | null) => void;
+}) {
+  const role = roles.find((r) => r.id === roleId);
+  const label = role?.name ?? "Role removed";
+  return (
+    <ChipSelect
+      value={roleId}
+      label={label}
+      icon={role && <span className="size-2 rounded-full" style={{ backgroundColor: role.color }} />}
+      placeholder="No role"
+      ariaLabel="Role"
+      onPick={onPick}
+    >
+      <option value="">No role</option>
+      {roles.map((r) => (
+        <option key={r.id} value={r.id}>
+          {r.name}
+        </option>
+      ))}
+      {roleId && !role && <option value={roleId}>{label}</option>}
+    </ChipSelect>
+  );
+}
+
+/**
+ * An <input> exactly as wide as what is in it, never wider.
+ *
+ * ⚠⚠ THIS REPLACED TWO DIFFERENT GUESSES AT THE SAME QUESTION, made in the
+ * same header row on the same day. The name field counted characters
+ * (`1ch` each, then `0.8ch` each) and the contact fields stepped between two
+ * fixed widths on focus — and both were wrong for the same reason: there is no
+ * constant that is right for "Yuval", a Hebrew name, "+972…" and
+ * firstname.lastname@example.com at once. An empty 160px box reading "Phone"
+ * claimed more of the row than a filled one does, which is what forced the
+ * meta group onto a second line.
+ *
+ * ⚠️ HOW: the mirror span below holds the same text in the same type, the
+ * grid cell takes ITS width, and the input lies on top and fills it. Exact in
+ * any script, no measurement, no constant to re-tune when the font changes.
+ *
+ * ⚠️ BOTH CHILDREN WEAR `box`, and that is the whole invariant. They must
+ * agree on type and horizontal box metrics or the caret sits a pixel or two
+ * off its own text — so the class is passed ONCE and applied to both, rather
+ * than written twice at the call site and kept in step by hand.
+ *
+ * ⚠️ `field-sizing: content` is the one-line version of this and is NOT
+ * usable: Safari is most of the studio (CLAUDE.md) and does not ship it.
+ *
+ * ⚠️ The mirror follows the input as you TYPE, through the DOM rather than
+ * through state — a keystroke should not re-render the page, and the input is
+ * uncontrolled everywhere it is used.
+ */
+function AutoWidthInput({
+  box,
+  className = "",
+  minWidth,
+  inputRef,
+  onInput,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  /** Type and horizontal metrics, applied to the mirror AND the input. */
+  box: string;
+  /** Floor, so an empty field is still a target you can click. */
+  minWidth: string;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+}) {
+  const mirror = useRef<HTMLSpanElement>(null);
+  const shown = String(props.defaultValue ?? props.value ?? "") || (props.placeholder ?? "");
+  return (
+    /**
+     * ⚠️ THE INPUT IS TAKEN OUT OF FLOW, and it has to be. Side by side in a
+     * grid cell the input still contributes its OWN intrinsic width to the
+     * track — a browser default of about 20 characters, which `min-w-0` does
+     * not suppress — so an empty field measured 136px instead of the 45px its
+     * placeholder needs, and the header wrapped exactly as before. Absolute
+     * positioning makes the mirror the only thing the box is measured from.
+     */
+    <span className="relative inline-block max-w-full" style={{ minWidth }}>
+      <span ref={mirror} aria-hidden className={`block invisible whitespace-pre ${box}`}>
+        {shown}
+      </span>
+      <input
+        {...props}
+        ref={inputRef}
+        onInput={(e) => {
+          if (mirror.current) {
+            mirror.current.textContent = e.currentTarget.value || (props.placeholder ?? "");
+          }
+          onInput?.(e);
+        }}
+        className={`absolute inset-0 w-full min-w-0 ${box} ${className}`}
+      />
+    </span>
+  );
+}
+
+/**
  * A contact detail: click the value to copy it, hover for a pencil to change it.
  *
  * ⚠️ CLICK COPIES, THE PENCIL EDITS — Nitsan's shape, and the right way round.
@@ -367,7 +500,9 @@ function ContactField({
     return (
       <span className="inline-flex items-center gap-1.5 text-muted">
         <span className="shrink-0 text-faint">{icon}</span>
-        <input
+        <AutoWidthInput
+          box={CONTACT_BOX}
+          minWidth="4rem"
           autoFocus={editing}
           defaultValue={value ?? ""}
           placeholder={placeholder}
@@ -383,13 +518,7 @@ function ContactField({
               e.currentTarget.blur();
             }
           }}
-          /* ⚠️ NARROW WHEN IT IS ONLY A PLACEHOLDER, WIDE WHILE TYPING. Two
-             empty 160px boxes reading "Phone" and "Email" were what pushed the
-             meta group onto a second line at 1440px — an empty field was
-             claiming more of the row than a filled one does. */
-          className={`rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] hover:border-border focus:border-border focus:bg-surface focus:outline-none ${
-            editing ? "w-44" : "w-28"
-          }`}
+          className="bg-transparent hover:border-border focus:border-border focus:bg-surface focus:outline-none"
         />
       </span>
     );
@@ -468,10 +597,25 @@ export default function CandidatePage() {
   const ready = Boolean(detail);
   useEffect(() => {
     if (!ready || focused.current) return;
-    if (!new URLSearchParams(window.location.search).has("new")) return;
+    if (!new URLSearchParams(window.location.search).has(NEW_CANDIDATE_PARAM)) return;
     focused.current = true;
     nameRef.current?.focus();
     nameRef.current?.select();
+    /**
+     * ⚠️ SPEND THE FLAG. Left in the URL it fires again on every later
+     * reload of this page — and what it does is SELECT THE WHOLE NAME, so
+     * somebody who reopens a candidate an hour later is one stray keystroke
+     * away from replacing a saved name, which `onBlur` then writes.
+     *
+     * ⚠️ `history.replaceState`, not `router.replace`: this only needs the
+     * address bar tidied, and re-entering the route would re-run the page for
+     * a flag it has already consumed.
+     */
+    try {
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch {
+      // Nothing depends on it; the flag is already spent in `focused`.
+    }
   }, [ready]);
 
   const reload = useCallback(async () => {
@@ -591,7 +735,6 @@ export default function CandidatePage() {
 
   const { candidate: c, links, interviews, comments, events } = detail;
   const stage = vocab.stages.find((s) => s.id === c.stageId) ?? null;
-  const role = vocab.roles.find((r) => r.id === c.roleId) ?? null;
   const overall = overallScore(interviews);
   const scoredCount = interviews.filter((i) => Object.keys(i.scores).length > 0).length;
   const cv = links.filter((l) => l.kind === "cv");
@@ -619,20 +762,16 @@ export default function CandidatePage() {
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <input
-              ref={nameRef}
+            <AutoWidthInput
+              box={NAME_BOX}
+              minWidth="6ch"
+              inputRef={nameRef}
               defaultValue={c.name}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v && v !== c.name) void run(() => updateCandidate(c.id, { name: v }, currentUserId));
               }}
-              className="bidi-auto min-w-0 max-w-full rounded-md border border-transparent px-1 font-serif-accent text-[32px] leading-tight hover:border-border focus:border-border focus:outline-none"
-              /* ⚠️ 0.8ch PER CHARACTER, NOT 1ch. `ch` is the width of a "0",
-                 and in this serif at 32px that is 21px against an average
-                 glyph of about 15 — so a 22-character name reserved 489px for
-                 340px of text and shoved the meta group onto a second line.
-                 0.8 still leaves ~15% slack, measured, so nothing crops. */
-              style={{ width: `calc(${Math.max(8, c.name.length + 1)}ch * 0.8)` }}
+              className="bidi-auto hover:border-border focus:border-border focus:outline-none"
             />
             {/* Nitsan: phone and mail beside the name — they are what you came
                 to the page for as often as anything below. */}
@@ -679,7 +818,7 @@ export default function CandidatePage() {
                      explicit width is what CROPPED A DIGIT last time (94px);
                      pulling the indicator left eats the slack instead, and the
                      field shrinks to 99px on its own with every segment intact. */
-                  className={`rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:-ml-5 ${DATE_FIELD}`}
+                  className={`rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 ${dateField("tight")}`}
                 />
               </label>
               <SourceChip
@@ -711,25 +850,11 @@ export default function CandidatePage() {
                   loud cluster would claim it matters as much as who is holding
                   the person, which is the opposite of what he asked for when he
                   had the board filter made shy. */}
-              <ChipSelect
-                value={c.roleId}
-                label={role?.name ?? ""}
-                icon={
-                  role && (
-                    <span className="size-2 rounded-full" style={{ backgroundColor: role.color }} />
-                  )
-                }
-                placeholder="No role"
-                ariaLabel="Role"
+              <RoleChip
+                roleId={c.roleId}
+                roles={vocab.roles}
                 onPick={(v) => void run(() => updateCandidate(c.id, { roleId: v }, currentUserId))}
-              >
-                <option value="">No role</option>
-                {vocab.roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </ChipSelect>
+              />
             </div>
           </div>
 
@@ -1095,7 +1220,7 @@ export default function CandidatePage() {
                     type="date"
                     defaultValue={iv.heldOn ?? ""}
                     onChange={(e) => void run(() => updateInterview(iv.id, c.id, { heldOn: e.target.value || null }))}
-                    className={`rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted ${DATE_FIELD}`}
+                    className={`rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted ${dateField("boxed")}`}
                     aria-label="When"
                   />
                   {/* ⚠️ The figure and the delete travel TOGETHER in their own

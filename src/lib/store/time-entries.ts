@@ -140,7 +140,7 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
   /**
    * One member's entries for one day, straight from the DB.
    *
-   * The store's `timeEntries` is only the most recent 400 rows studio-wide, so
+   * The store's `timeEntries` is only the most recent 1000 rows studio-wide, so
    * it cannot answer "what did I log on 3 March" — hence a real query. It lives
    * here rather than in the component so the Supabase client and the row
    * mappers stay behind one boundary; "Log my hours" used to open its own
@@ -168,7 +168,7 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
    * The individual log rows behind ONE hours cell of the client report.
    *
    * ⚠️⚠️ A NARROW SELECT AND A DATE WINDOW, BOTH DELIBERATE. `timeEntries` in this
-   * store is only the newest 400 rows studio-wide, so the descriptions behind a
+   * store is only the newest 1000 rows studio-wide, so the descriptions behind a
    * week column from March are simply not in memory — and `loadTaskExtras` would
    * fetch that task's comments, attachments, brief and EVERY entry it has, to show
    * five rows. Egress is this project's tightest constraint (see the v1.31.0 note),
@@ -261,7 +261,7 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
        * description is mandatory on every entry. The typed text was gone from
        * the database with nothing said.
        *
-       * `timeEntries` holds only the newest 400 rows plus whatever `openTask`
+       * `timeEntries` holds only the newest 1000 rows plus whatever `openTask`
        * loaded, while the three day surfaces render from `loadDayEntries`, which
        * returns its rows to the caller WITHOUT merging them into store state —
        * so deleting an entry older than the feed window hit that path every

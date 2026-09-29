@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   fetchCold,
+  fetchEntrySums,
   fetchHot,
   fetchTasks,
   fingerprint,
@@ -95,12 +96,31 @@ function recordingClient() {
 }
 
 describe("refresh tiers", () => {
-  it("a hot tick reads time_entries ONLY as the 400-row feed window", async () => {
+  it("a hot tick reads time_entries ONLY as the 1000-row feed window", async () => {
     const { sb, calls } = recordingClient();
     await fetchHot(sb);
     const te = calls.filter((c) => c.table === "time_entries");
     expect(te).toHaveLength(1);
-    expect(te[0].limit).toBe(400);
+    expect(te[0].limit).toBe(1000);
+  });
+
+  /**
+   * ⚠️ THE POINT OF THIS ONE IS THE LADDER, NOT THE CADENCE. `fetchEntrySums`
+   * exists so the totals can run on their own tick, and the tempting way to
+   * write it was a second copy of the column-degradation ladder. A copy that
+   * drifts drops `legacy`, and without that flag ~4,000h of 2016–2022 backfill
+   * reads as ordinary logged time in days-worked, tenure, "my hours" and the
+   * feed timesheet. One query, asking for the full column set.
+   */
+  it("the entry-sums tier asks for the full column set, once", async () => {
+    const { sb, calls } = recordingClient();
+    await fetchEntrySums(sb);
+    const te = calls.filter((c) => c.table === "time_entries");
+    expect(te).toHaveLength(1);
+    expect(te[0].columns).toContain("legacy");
+    expect(te[0].columns).toContain("date_estimated");
+    // Never the feed: this tier is the whole table's totals, not a window.
+    expect(te[0].limit).toBeNull();
   });
 
   it("a hot tick does not touch tasks at all", async () => {
@@ -206,7 +226,7 @@ describe("fingerprint", () => {
   });
 
   it("notices recent activity from the feed alone, at the hot cadence", () => {
-    // Why the 400-row window is folded in: it's the only view of time entries a
+    // Why the 1000-row window is folded in: it's the only view of time entries a
     // hot tick has, and recent rows are the only ones an undo step can target.
     const a = hot({ timeEntries: [{ id: "e1", minutes: 60 }] } as Partial<HotSnapshot>);
     const b = hot({

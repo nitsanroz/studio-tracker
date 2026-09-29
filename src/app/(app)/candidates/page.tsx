@@ -20,6 +20,7 @@ import { createCandidate, moveToStage } from "@/lib/candidates/actions";
 import {
   formatScore,
   NEW_CANDIDATE_NAME,
+  NEW_CANDIDATE_PARAM,
   scoreTone,
   type Candidate,
   type CandidateStatus,
@@ -58,6 +59,46 @@ const SORT_DIR: Record<SortKey, "asc" | "desc"> = {
 };
 
 const LAYOUT_KEY = "candidates.layout";
+
+/**
+ * How he likes looking at the LIVE board, or "board" if nothing is stored.
+ *
+ * ⚠️ ONE READER, because there are two callers — the mount restore and the
+ * return from Archive — and they were separate copies with the fallback
+ * spelled out twice. Change the key or add a third layout, update one of them,
+ * and coming back from the archive quietly discards a saved preference that a
+ * fresh page load still honours.
+ *
+ * ⚠️ NEVER CALL THIS DURING RENDER: localStorage does not exist on the
+ * server, and reading it while rendering is what produces a hydration
+ * mismatch. An effect or an event handler only.
+ */
+function storedLayout(): "board" | "list" {
+  try {
+    const v = localStorage.getItem(LAYOUT_KEY);
+    if (v === "list" || v === "board") return v;
+  } catch {
+    // A private window or blocked site data. The default is fine.
+  }
+  return "board";
+}
+
+/**
+ * ⚠️ THE WRITER LIVES BESIDE THE READER, and only the LIVE board's choice is
+ * ever written. Picking list while reading the archive is about the archive;
+ * storing it would quietly change how the board opens tomorrow — which is the
+ * same argument the reader makes, and the reason both halves belong together.
+ * Split across the file, a change to the key or the value set fixes one and
+ * silently strands the other.
+ */
+function storeLayout(next: "board" | "list", view: CandidateStatus): void {
+  if (view !== "active") return;
+  try {
+    localStorage.setItem(LAYOUT_KEY, next);
+  } catch {
+    // Not worth telling anybody about; the choice just won't stick.
+  }
+}
 
 /** How long ago, in the shorthand the board reads in. */
 function ago(iso: string): string {
@@ -198,22 +239,46 @@ export default function CandidatesPage() {
    * localStorage. Traced rather than banked: 36 → 37.
    */
   useEffect(() => {
-    try {
-      const v = localStorage.getItem(LAYOUT_KEY);
-      if (v === "list" || v === "board") setLayout(v);
-    } catch {
-      // A private window or blocked site data. The default is fine.
-    }
+    setLayout(storedLayout());
   }, []);
+
+  /**
+   * ⚠⚠ THE VOCABULARY IS FETCHED ONCE PER VISIT, NOT ONCE PER VIEW. It used
+   * to share the board's effect, which is keyed on `view` — so every
+   * Active ↔ On hold ↔ Archive click re-read stages, roles, subjects AND
+   * parameters, four selects that cannot vary by view, for five round trips
+   * where one was needed.
+   *
+   * ⚠️ EGRESS IS THIS PROJECT'S TIGHTEST CONSTRAINT (CLAUDE.md: 200% of the
+   * allowance and a hard 402 that took the client report links down). Toggling
+   * a filter is a thing somebody does idly, a dozen times in a sitting, which
+   * makes "small and per-click" exactly the shape that got us there.
+   */
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const v = await loadVocabulary();
+        if (!alive) return;
+        setVocab(v);
+      } catch (e) {
+        if (!alive) return;
+        setError(e instanceof Error ? e.message : "Could not load the board.");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!isAdmin) return;
     let alive = true;
     void (async () => {
       try {
-        const [v, b] = await Promise.all([loadVocabulary(), loadBoard(view)]);
+        const b = await loadBoard(view);
         if (!alive) return;
-        setVocab(v);
         setRows(b.candidates);
         setCounts(b.counts);
         setError(null);
@@ -311,6 +376,22 @@ export default function CandidatesPage() {
   );
 
   /**
+   * ⚠️ ARCHIVE AND ON HOLD OPEN AS A LIST — Nitsan, 2026-09-28. The board is
+   * for candidates still moving through it; the archive is 270 people and a
+   * grid of 270 cards is a wall, not a view. The list shows stage, owner,
+   * score and last activity in one line each and can be sorted, which is what
+   * you actually want when you are looking somebody up months later.
+   *
+   * ⚠️ IT ONLY SETS THE LAYOUT, NEVER STORES IT — see `storeLayout`. Coming
+   * back to Active restores whatever is saved, so the override lasts exactly as
+   * long as the detour does.
+   */
+  const switchView = (next: CandidateStatus) => {
+    setView(next);
+    setLayout(next === "active" ? storedLayout() : "list");
+  };
+
+  /**
    * ⚠️ STRAIGHT TO THEIR PAGE, NOT INTO A DIALOG — Nitsan offered either and
    * left the choice to me. The dossier ALREADY holds every field a new
    * candidate needs: phone, mail, role, where they came from, links, the CV,
@@ -331,8 +412,8 @@ export default function CandidatesPage() {
         { name: NEW_CANDIDATE_NAME, stageId: vocab.stages[0]?.id ?? null },
         currentUserId,
       );
-      // `?new=1` is what tells their page to put the cursor in the name field.
-      router.push(`/candidates/${id}?new=1`);
+      // The flag is what tells their page to put the cursor in the name field.
+      router.push(`/candidates/${id}?${NEW_CANDIDATE_PARAM}=1`);
     } catch (e) {
       setAdding(false);
       setError(e instanceof Error ? e.message : "Could not add the candidate.");
@@ -403,7 +484,7 @@ export default function CandidatesPage() {
               board "To Reject" was a column holding 140 of 271 cards — the
               widest thing on screen was the one nobody wanted to read. */}
           <button
-            onClick={() => setView(view === "on_hold" ? "active" : "on_hold")}
+            onClick={() => switchView(view === "on_hold" ? "active" : "on_hold")}
             aria-pressed={view === "on_hold"}
             className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] ${
               view === "on_hold"
@@ -414,7 +495,7 @@ export default function CandidatesPage() {
             <PauseCircle size={13} strokeWidth={1.75} /> On hold · {counts.onHold}
           </button>
           <button
-            onClick={() => setView(view === "archived" ? "active" : "archived")}
+            onClick={() => switchView(view === "archived" ? "active" : "archived")}
             aria-pressed={view === "archived"}
             className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] ${
               view === "archived"
@@ -448,11 +529,7 @@ export default function CandidatesPage() {
                 key={k}
                 onClick={() => {
                   setLayout(k);
-                  try {
-                    localStorage.setItem(LAYOUT_KEY, k);
-                  } catch {
-                    // Not worth telling anybody about; the choice just won't stick.
-                  }
+                  storeLayout(k, view);
                 }}
                 aria-pressed={layout === k}
                 className={`px-3 py-1.5 capitalize ${

@@ -8,41 +8,56 @@
 
 // ── background refresh cadence ──────────────────────────────────────────
 /**
- * ⚠️⚠️ DEVELOPMENT POLLS TEN TIMES SLOWER, AND THIS IS AN EGRESS FIX, NOT A
- * CONVENIENCE. Measured 2026-08-27: one open tab costs **~72 MB/hour** at the
- * production cadence, and a dev server points at the LIVE studio project — so a
- * three-hour build session with a tab open spent ~216 MB of the studio's 5 GB
- * allowance on nobody's work. Against a routine studio day of ~100 MB that is
- * the largest single line in the bill, and separating the two by pointing dev at
- * its own Supabase project is **not available**: the org is on the Free plan,
- * which allows 2 projects, and both are in use (`studio-tracker`, `Lomdoni`).
- * So the traffic is cut where it is generated instead.
+ * Kept as a named dial at 1 — dev and production now poll identically.
  *
- * ⚠️ PRODUCTION IS PROVABLY UNTOUCHED — `NODE_ENV` is `"production"` in the
- * built app, so the multiplier is 1 there and this whole block folds away.
- * ⚠️ Set **`NEXT_PUBLIC_FULL_REFRESH=1`** to restore the real cadence in dev,
- * which is REQUIRED when verifying anything about refresh, staleness or the
- * write-vs-refresh races in `refreshVerdict` — at 10 minutes a tick those are
- * untestable, and a slow tick looks exactly like a broken one.
+ * ⚠️ IT WAS 10 IN DEVELOPMENT, and that was an egress fix rather than a
+ * preference: a dev server points at the LIVE studio project, one open tab cost
+ * ~72 MB/hour, and a three-hour build session spent ~216 MB of a **5 GB**
+ * monthly allowance on nobody's work. Against Pro's 250 GB that same session is
+ * ~0.1%, and the tax was never free: at a 10-minute tick, refresh, staleness
+ * and the write-vs-refresh races in `refreshVerdict` are untestable, and a slow
+ * tick looks exactly like a broken one.
+ *
+ * ⚠️ If the org ever drops back to a small allowance this is the first thing
+ * to put back: `process.env.NODE_ENV === "development" ? 10 : 1`.
  */
-export const DEV_SLOWDOWN =
-  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_FULL_REFRESH !== "1" ? 10 : 1;
+export const DEV_SLOWDOWN = 1;
 /** Hot poll. A minute is inside "my colleague sees my drag soon" for the plan. */
 export const HOT_INTERVAL_MS = 60_000 * DEV_SLOWDOWN;
-/** Studio structure (people, clients, sections, tags) every 10th hot tick. */
+/**
+ * Studio structure (people, clients, sections, tags) every 10th hot tick.
+ *
+ * Left at 10 deliberately: people, clients, sections and tags change a few
+ * times a WEEK, so a faster tick would buy nothing anybody could notice.
+ */
 export const COLD_EVERY_N_TICKS = 10;
 /**
- * Every task in the studio, every 3rd hot tick.
+ * Every task in the studio, every hot tick.
  *
- * ⚠️ This is an EGRESS budget, not a guess. The tasks query is ~2.5 MB and was
- * 88% of what a 60-second tick cost; the studio is at 200% of Supabase's 5 GB
- * free allowance with restrictions due 12 Sep, and fitting the tier needs about
- * 233 MB per working day against the ~440 MB measured after the entries moved
- * to cold. Three minutes is the slowest cadence that still reads as "live" for
- * a colleague's rename or reassignment; your OWN edits are optimistic and
- * instant regardless, and the plan grid stays on the 60-second tier.
+ * ⚠️ IT WAS 3 (three minutes), and that was an EGRESS budget rather than a
+ * judgement about freshness: the query is ~3.2 MB today and was 88% of what a
+ * 60-second tick cost, while the studio sat at 200% of a 5 GB allowance with
+ * restrictions due 12 Sep 2026. What it bought was a colleague's rename or
+ * reassignment taking up to three minutes to show up on your screen.
+ *
+ * ⚠️ BACK TO EVERY TICK BECAUSE THE CEILING MOVED (Pro, 250 GB) — measured
+ * 2026-09-29, the whole studio runs at ~6 GB a month, about 2.3% of the
+ * allowance. THE TIER MACHINERY STAYS: this is a number, so going back is
+ * editing one digit rather than restoring a mechanism.
  */
-export const TASKS_EVERY_N_TICKS = 3;
+export const TASKS_EVERY_N_TICKS = 1;
+
+/**
+ * Every time entry's totals, every hot tick.
+ *
+ * ⚠️ The other half of the same story: ~5 MB over 25 pages, moved to the
+ * 10-minute cold tier on 2026-08-13 because pulling ten years of history every
+ * minute per open tab was the single largest driver of the 402. What it cost
+ * was that every total on the site — client hours, task hours, dashboards,
+ * weekly timesheets — could be ten minutes behind, which is what had people
+ * hitting Refresh to be sure. See `fetchEntrySums`.
+ */
+export const SUMS_EVERY_N_TICKS = 1;
 /**
  * How long focus in a field may hold a background refresh off.
  *

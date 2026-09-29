@@ -6,7 +6,8 @@
 // every poll is a full-table read — which is how the studio reached 200% of
 // Supabase's 5 GB egress allowance.
 //
-//   HOT   (60s)   plan entries, the 400-row activity feed, intake, dev items.
+//   HOT   (60s)   plan entries, the 1000-row activity feed, intake, dev items,
+//                 every task, and every entry's totals.
 //                 Small, and the plan is dragged while colleagues watch.
 //   TASKS (~3min) every task in the studio. ~2.5 MB, and it WAS hot — 88% of
 //                 what a tick cost after the entries moved off. See fetchTasks.
@@ -68,6 +69,54 @@ import type {
 /* eslint-disable @typescript-eslint/no-explicit-any -- DB boundary; the exported shapes are explicit */
 type Sb = SupabaseClient<any, any, any>;
 
+/**
+ * Per-row time-entry totals for the WHOLE table.
+ *
+ * ⚠️ THE LADDER STEPS DOWN ONE COLUMN AT A TIME, AND ONLY ON A GENUINELY
+ * MISSING COLUMN. Collapsing straight to the base set on any failure would drop
+ * `legacy` as well, and without that flag the ~4,000h of 2016–2022 backfill
+ * reads as ordinary logged time — it would land in days-worked, tenure, "my
+ * hours" and the feed timesheet, which is precisely what the flag prevents. A
+ * network blip must not be mistaken for an unapplied migration.
+ *
+ * ⚠️ ONE IMPLEMENTATION, TWO CALLERS. `fetchCold` takes it as part of the
+ * studio's structure on boot; `fetchEntrySums` is the same query on its own
+ * cadence. Copying the ladder to give it a second caller would be copying the
+ * thing the ladder exists to protect.
+ */
+async function entrySumRows(sb: Sb): Promise<DbRow[]> {
+  const cols = "id, task_id, user_id, date, minutes";
+  for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
+    try {
+      return await fetchAll<DbRow>(sb, "time_entries", `${cols}${extra}`, (q) =>
+        q.not("minutes", "is", null),
+      );
+    } catch (e) {
+      if (!isMissingSchema(e)) throw e;
+    }
+  }
+  throw new Error("time_entries: could not load with any known column set");
+}
+
+/**
+ * The same totals, fetched on their own tick.
+ *
+ * ⚠⚠ THIS QUERY WAS THE 2026-08-13 EGRESS FIX — ~5 MB over 25 pages, pulled
+ * every 60 seconds per open tab, which is how the studio reached 200% of a 5 GB
+ * allowance. It went to the 10-minute cold tier, and the cost was staleness:
+ * every total on the site — client hours, task hours, dashboards, timesheets —
+ * could be up to ten minutes behind, which is what had people hitting Refresh.
+ *
+ * ⚠️ IT IS BACK ON A FAST TICK BECAUSE THE CEILING MOVED, not because the
+ * query got cheaper: the allowance is 250 GB (Pro) against the 5 GB that forced
+ * the move, and the measured cost of this at 60s is ~10–14 GB a month against a
+ * studio total now running at ~6 GB. `SUMS_EVERY_N_TICKS` is the dial — raise
+ * it, do not move the query, if the figures ever say so.
+ */
+export async function fetchEntrySums(sb: Sb): Promise<EntrySum[]> {
+  return (await entrySumRows(sb)).map(mapEntrySum);
+}
+
 /** Studio structure. Changes a few times a week. */
 export interface ColdSnapshot {
   profiles: Profile[];
@@ -105,7 +154,7 @@ export interface ColdSnapshot {
 /** Work in flight. Changes minute to minute. */
 export interface HotSnapshot {
   planEntries: PlanEntry[];
-  /** the recent-400 feed window */
+  /** the recent-1000 feed window */
   timeEntries: TimeEntry[];
   taskRequests: DbRow[];
   devItems: DevItem[];
@@ -181,33 +230,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     // rendered before this existed, so an empty list is the correct fallback —
     // and `tasks.group_id` falls away on its own rung of the hot ladder.
     optionalTable(fetchAll<DbRow>(sb, "task_groups", "*")),
-    // ⚠️ Moved here from `fetchHot` character-for-character. The ladder below
-    // steps down ONE column at a time and ONLY on a genuinely missing column —
-    // see the file header. Do not simplify it because it now lives on the cold
-    // tier; the reason it exists is unchanged.
-    (async () => {
-      const cols = "id, task_id, user_id, date, minutes";
-      const notNull = "minutes";
-      // Degrade ONE column at a time. Collapsing straight to `cols` on any
-      // failure would drop `legacy` as well, and without that flag the
-      // ~4,000h of 2016–2022 backfill reads as ordinary logged time — it
-      // would land in days-worked, tenure, "my hours" and the feed timesheet,
-      // which is precisely what the flag exists to prevent.
-      for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
-        try {
-          return await fetchAll<DbRow>(sb, "time_entries", `${cols}${extra}`, (q) =>
-            q.not(notNull, "is", null),
-          );
-        } catch (e) {
-          // A missing column means the migration isn't applied — step down.
-          // Any other failure must NOT be read as "the column is gone",
-          // or a network blip drops the `legacy` flag and the backfill
-          // leaks into every personal figure on the site.
-          if (!isMissingSchema(e)) throw e;
-        }
-      }
-      throw new Error("time_entries: could not load with any known column set");
-    })(),
+    entrySumRows(sb),
   ]);
 
   const projectClient = new Map<string, string>(
@@ -301,7 +324,21 @@ export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
       .not("minutes", "is", null)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(400),
+      /**
+       * ⚠️ 1000 IS THE SERVER'S CEILING, NOT A PREFERENCE. PostgREST caps a
+       * single response at `max-rows` (1000 here) and says nothing about it —
+       * asking for 5000 returns 1000 with a 200, so a larger number here would
+       * read as a bigger window while changing nothing at all. Going past this
+       * means PAGING, five requests a tick, which is not worth it.
+       *
+       * ⚠️ It was 400. Measured 2026-09-29: 400 rows = 0.18 MB and reaches back
+       * about 8 weeks; 1000 rows = 0.43 MB and reaches back about 4 months. The
+       * extra 0.25 MB a tick buys descriptions being IN MEMORY for the span most
+       * client reports are read over, so the per-cell hover fetch in
+       * `loadCellEntries` mostly stops firing — it is a net egress saving on any
+       * day somebody reads a report, not just a nicety.
+       */
+      .limit(1000),
     // Returns [] for designers (RLS: admins only)
     sb.from("task_requests").select("*").order("created_at", { ascending: false }),
     // ⚠️ `optionalTable`, not a bare `.catch(() => [])`. This one was missed by
@@ -371,7 +408,7 @@ function hash(s: string): number {
  * ⚠️ Both must come from the last SERVER response, never from local state — a
  * user's own optimistic edit is not somebody else's change.
  *
- * The 400-row feed window is folded in on every tick, so recent time-entry
+ * The 1000-row feed window is folded in on every tick, so recent time-entry
  * activity — the only kind an undo step can target — stays detectable at the
  * hot cadence.
  */
@@ -413,7 +450,7 @@ export function mergeTasks(fresh: Task[], prev: Task[]): Task[] {
 }
 
 /**
- * The feed window is the newest 400 rows, but `openTask` also loads every entry
+ * The feed window is the newest 1000 rows, but `openTask` also loads every entry
  * for one task — those older rows live in the same list and must survive a
  * refresh. `entrySums` is the whole table, so it's the authority on what still
  * exists: an out-of-window row missing from it was deleted elsewhere.

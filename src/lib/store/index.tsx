@@ -19,6 +19,7 @@ import {
 } from "../db";
 import {
   fetchCold,
+  fetchEntrySums,
   fetchFull,
   fetchHot,
   fetchTasks,
@@ -68,6 +69,7 @@ import {
   FOCUS_MIN_GAP_MS,
   HOT_INTERVAL_MS,
   IDLE_AFTER_MS,
+  SUMS_EVERY_N_TICKS,
   TASKS_EVERY_N_TICKS,
   WRITE_SETTLE_MS,
 } from "./refresh-cadence";
@@ -212,7 +214,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const printWriteSeqRef = useRef(0);
   const lastSyncedRef = useRef<number | null>(null);
   const refreshRef = useRef<
-    ((opts?: { cold?: boolean; tasks?: boolean; reason?: string }) => void) | null
+    ((opts?: { cold?: boolean; tasks?: boolean; sums?: boolean; reason?: string }) => void) | null
   >(null);
   /** What `fetchHot` needs from the cold half; kept in a ref so refresh() is stable. */
   const coldCtxRef = useRef<HotCtx>({ tagNames: new Map(), projectClient: new Map() });
@@ -462,6 +464,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return map;
   }, [entrySumsAll]);
 
+  /**
+   * The entry totals alone, from their own tick.
+   *
+   * ⚠️ THE REF IS WRITTEN SYNCHRONOUSLY, for the same reason `applyCold` does
+   * it: `applyHot` and `fingerprint` both read `entrySumsRef` in the same pass,
+   * before a state update has committed. A tier that updated only the state
+   * would leave the print comparing this tick's feed against the last tick's
+   * totals — which reads as somebody else's edit and retires undo every minute.
+   */
+  const applySums = useCallback((sums: EntrySum[]) => {
+    setEntrySums(sums);
+    entrySumsRef.current = sums;
+  }, []);
+
   // ── initial load ──────────────────────────────────────────────────────
   const applyCold = useCallback((c: ColdSnapshot) => {
     setProfiles(c.profiles);
@@ -650,7 +666,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   //  · land while an optimistic write is in flight — it would overwrite the
   //    user's own edit with the pre-edit server row
   const refresh = useCallback(
-    async (opts: { cold?: boolean; tasks?: boolean; reason?: string } = {}) => {
+    async (opts: { cold?: boolean; tasks?: boolean; sums?: boolean; reason?: string } = {}) => {
       if (refreshInFlight.current) return;
       /**
        * Defer rather than clobber: a fresh snapshot landing between an optimistic
@@ -690,13 +706,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // A cold refresh (boot, manual, back after 5+ minutes away) always takes
         // the tasks too — those are the moments someone is asking for the truth.
         const wantTasks = opts.tasks || opts.cold;
-        const [freshTasks, hot] = await Promise.all([
+        // A cold tick has just brought the totals with it; asking again would be
+        // the same ~5 MB twice in one pass.
+        const wantSums = Boolean(opts.sums) && !opts.cold;
+        const [freshTasks, freshSums, hot] = await Promise.all([
           wantTasks
             ? fetchTasks(supabase, {
                 tagNames: coldCtxRef.current.tagNames,
                 projectClient: coldCtxRef.current.projectClient,
               })
             : null,
+          wantSums ? fetchEntrySums(supabase) : null,
           fetchHot(supabase),
         ]);
         // Is this response still younger than what's on screen? See `refreshVerdict`
@@ -720,7 +740,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // expired and RLS returned nothing. Applying it would blank the app.
         //
         // ⚠️ `tasks` used to be the canary and no longer arrives on every tick,
-        // so two ticks in three need a different one. The 400-row feed AND the
+        // so two ticks in three need a different one. The 1000-row feed AND the
         // plan being simultaneously empty cannot happen in a studio with ten
         // years of history — but either alone can (a quiet planning week), which
         // is why this is an AND.
@@ -735,6 +755,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         refreshQueued.current = false;
         if (cold) applyCold(cold);
         if (freshTasks) applyTasks(freshTasks);
+        // ⚠️ BEFORE `applyHot`, which merges the 1000-row feed against these.
+        if (freshSums) applySums(freshSums);
         applyHot(hot);
 
         // Whatever wasn't refetched on this tick is passed through unchanged, so
@@ -797,7 +819,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setRefreshing(false);
       }
     },
-    [supabase, applyCold, applyTasks, applyHot, loadTaskExtras, writesBusy, focusInEditor],
+    [supabase, applyCold, applyTasks, applySums, applyHot, loadTaskExtras, writesBusy, focusInEditor],
   );
   useEffect(() => {
     refreshRef.current = refresh;
@@ -868,6 +890,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       void refreshRef.current?.({
         cold: ticks % COLD_EVERY_N_TICKS === 0,
         tasks: ticks % TASKS_EVERY_N_TICKS === 0,
+        sums: ticks % SUMS_EVERY_N_TICKS === 0,
         reason: "interval",
       });
     }, HOT_INTERVAL_MS);

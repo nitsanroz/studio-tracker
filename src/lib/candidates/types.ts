@@ -241,3 +241,15 @@ export function isOnBoard(c: Candidate): boolean {
  * with it, and their page selects it so the first keystroke replaces it.
  */
 export const NEW_CANDIDATE_NAME = "New candidate";
+
+/**
+ * The query flag the board sets and their page consumes, to put the cursor in
+ * the name field on arrival.
+ *
+ * ⚠️ A ONE-SHOT INTENT, NOT ADDRESSABLE STATE — which is what makes it
+ * different from `task-panel`'s `?task=`. That one names something worth
+ * keeping in a shareable link; this one SELECTS THE WHOLE NAME, so replaying it
+ * on a later reload leaves a saved name one keystroke from being replaced. The
+ * page strips it as soon as it has used it.
+ */
+export const NEW_CANDIDATE_PARAM = "new";
