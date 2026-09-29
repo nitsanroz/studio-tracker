@@ -30,6 +30,8 @@ import {
   Upload,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { useIsNarrow } from "@/lib/use-is-narrow";
+import { MobileSheet } from "@/components/mobile-sheet";
 import { Avatar } from "@/components/ui";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
 import { formatDate } from "@/lib/format";
@@ -146,8 +148,14 @@ function SubjectColumn({
                 TONE[scoreTone(typeof v === "number" ? v : null)]
               }`}
             >
+              {/* ⚠️ "" IS NOT 0, AND THE TEST BELOW RELIES ON THAT. An empty
+                  value clears the score and DELETES the row — absent means
+                  "not scored" and counts toward no average — while 0 is a real
+                  reading that counts as a zero. The guard is `e.target.value ?
+                  …` and it works because the string "0" is truthy; a numeric
+                  check would collapse the two and silently delete every zero. */}
               <option value="">—</option>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
@@ -609,6 +617,14 @@ export default function CandidatePage() {
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   /**
+   * ⚠️ THE EDIT SHEET IS PHONE-ONLY AND `isNarrow` IS WHAT DECIDES IT, not a
+   * `md:hidden`. The point is that only ONE of the two presentations exists at
+   * a time — CSS would mount both, which for the link form and the CV upload
+   * would mean two file inputs and two half-typed forms in the document.
+   */
+  const [editOpen, setEditOpen] = useState(false);
+  const isNarrow = useIsNarrow();
+  /**
    * Which interviews the reader has opened or shut BY HAND.
    *
    * ⚠️⚠️ AN OVERRIDE MAP, NOT A SET OF FOLDED IDS, AND THE DIFFERENCE IS LOAD
@@ -840,61 +856,25 @@ export default function CandidatePage() {
     </>
   );
 
+  const role = c.roleId ? (vocab.roles.find((r) => r.id === c.roleId) ?? null) : null;
   const cv = links.filter((l) => l.kind === "cv");
   const others = links.filter((l) => l.kind !== "cv");
 
-  return (
-    <div className="mx-auto max-w-[1500px]">
-      <Link
-        href="/candidates"
-        className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-foreground"
-      >
-        <ChevronLeft size={14} strokeWidth={1.75} /> Candidates
-      </Link>
-
-      {error && (
-        <div className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
-          {error}
-        </div>
-      )}
-
-      {/* ── header ─────────────────────────────────────────────────────────
-          Full width, three bands: who they are and how to reach them, then the
-          files, then the actions. The one figure worth seeing from across the
-          room sits on the right. */}
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            {/* ⚠️ ITS OWN LINE BELOW `md`. The name auto-sizes to its text, so
-                at 375px an empty "Phone" placeholder floated up beside it and
-                the two read as one field. Above md the wrapper is `w-auto` and
-                the original single wrapping row is unchanged. */}
-            {/* ⚠️ `md:contents` — above md the wrapper leaves the layout and the
-                name is a direct child of the wrapping row again, exactly as it
-                was. Below it, the name gets a row to itself and the score
-                follows immediately, instead of arriving four rows of chips
-                later at the bottom of the header.
-
-                ⚠️ THE TWO ARE STACKED, NOT SIDE BY SIDE, AND THAT WAS MEASURED.
-                Sharing the line left the name 233px against the ~250px that
-                "Hadar Lozon" needs at 40px — and an `<input>` cannot ellipsize,
-                it scrolls, so the last letter was simply cut off with nothing
-                to say so. Studio names run median 12 characters, so that would
-                have clipped the ordinary case, not an outlier. */}
-            <div className="w-full md:contents">
-            <AutoWidthInput
-              box={NAME_BOX}
-              minWidth="6ch"
-              inputRef={nameRef}
-              defaultValue={c.name}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== c.name) void run(() => updateCandidate(c.id, { name: v }, currentUserId));
-              }}
-              className="bidi-auto hover:border-border focus:border-border focus:outline-none"
-            />
-              <div className="mt-1 md:hidden">{scoreFigure}</div>
-            </div>
+  /**
+   * Everything about the person that is EDITED rather than read — the two
+   * contact fields and the meta row (applied, where from, role).
+   *
+   * ⚠️⚠️ HOISTED SO IT CAN BE RENDERED IN ONE OF TWO PLACES, NEVER BOTH.
+   * On a desktop it sits in the header beside the name. On a phone it moves
+   * wholesale into the edit sheet, and the header shows a read-only summary
+   * instead — Nitsan, 2026-09-29: the inline pencils and trash icons were
+   * spending a third of a 375px header on affordances, when what a phone
+   * mostly does with this page is READ it. Declared once and rendered under
+   * an `isNarrow` branch, so unlike the wordmark and the score figure there
+   * is no second copy that can drift.
+   */
+  const detailFields = (
+    <>
             {/* Nitsan: phone and mail beside the name — they are what you came
                 to the page for as often as anything below. */}
             <ContactField
@@ -978,8 +958,11 @@ export default function CandidatePage() {
                 onPick={(v) => void run(() => updateCandidate(c.id, { roleId: v }, currentUserId))}
               />
             </div>
-          </div>
+    </>
+  );
 
+  const filesAndLinks = (
+    <>
           {/* ── files and links ── */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {[...cv, ...others].map((l) => {
@@ -1109,6 +1092,154 @@ export default function CandidatePage() {
               </>
             )}
           </div>
+    </>
+  );
+
+  return (
+    <div className="mx-auto max-w-[1500px]">
+      <Link
+        href="/candidates"
+        className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-foreground"
+      >
+        <ChevronLeft size={14} strokeWidth={1.75} /> Candidates
+      </Link>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
+          {error}
+        </div>
+      )}
+
+      {/* ── header ─────────────────────────────────────────────────────────
+          Full width, three bands: who they are and how to reach them, then the
+          files, then the actions. The one figure worth seeing from across the
+          room sits on the right. */}
+      <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {/* ⚠️ ITS OWN LINE BELOW `md`. The name auto-sizes to its text, so
+                at 375px an empty "Phone" placeholder floated up beside it and
+                the two read as one field. Above md the wrapper is `w-auto` and
+                the original single wrapping row is unchanged. */}
+            {/* ⚠️ `md:contents` — above md the wrapper leaves the layout and the
+                name is a direct child of the wrapping row again, exactly as it
+                was. Below it, the name gets a row to itself and the score
+                follows immediately, instead of arriving four rows of chips
+                later at the bottom of the header.
+
+                ⚠️ THE TWO ARE STACKED, NOT SIDE BY SIDE, AND THAT WAS MEASURED.
+                Sharing the line left the name 233px against the ~250px that
+                "Hadar Lozon" needs at 40px — and an `<input>` cannot ellipsize,
+                it scrolls, so the last letter was simply cut off with nothing
+                to say so. Studio names run median 12 characters, so that would
+                have clipped the ordinary case, not an outlier. */}
+            <div className="w-full md:contents">
+            <AutoWidthInput
+              box={NAME_BOX}
+              minWidth="6ch"
+              inputRef={nameRef}
+              defaultValue={c.name}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v && v !== c.name) void run(() => updateCandidate(c.id, { name: v }, currentUserId));
+              }}
+              className="bidi-auto hover:border-border focus:border-border focus:outline-none"
+            />
+              <div className="mt-1 md:hidden">{scoreFigure}</div>
+            </div>
+            {!isNarrow && detailFields}
+          </div>
+
+          {!isNarrow && filesAndLinks}
+
+          {/* ── the phone's read-only summary ──
+              ⚠️ A SEPARATE, DELIBERATELY DIFFERENT PRESENTATION, not the same
+              markup with the controls hidden. Phone and email become `tel:` and
+              `mailto:` links, which is the single most useful thing this page
+              can offer on a phone and is not something the editable version can
+              do — its value IS a copy button. Everything here is a fact; every
+              way to change one is behind the button at the end. */}
+          {isNarrow && (
+            <div className="mt-3 flex flex-col gap-2 text-[13px]">
+              {(c.phone || c.email) && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {c.phone && (
+                    <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-foreground">
+                      <Phone size={13} strokeWidth={1.75} className="shrink-0 text-faint" />
+                      {c.phone}
+                    </a>
+                  )}
+                  {c.email && (
+                    <a href={`mailto:${c.email}`} className="flex min-w-0 items-center gap-1.5 text-foreground">
+                      <Mail size={13} strokeWidth={1.75} className="shrink-0 text-faint" />
+                      <span className="truncate">{c.email}</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12.5px] text-muted">
+                {c.appliedOn && (
+                  <span>
+                    <span className="text-faint">Applied</span> {formatDate(c.appliedOn)}
+                  </span>
+                )}
+                {c.source && <span>{c.source}</span>}
+                {role && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: role.color }}
+                      aria-hidden
+                    />
+                    {role.name}
+                  </span>
+                )}
+              </div>
+
+              {/* The files stay TAPPABLE here — opening a CV is most of what
+                  this page is for on a phone — they simply lose their trash. */}
+              {[...cv, ...others].length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {[...cv, ...others].map((l) => {
+                    const safe = isSafeUrl(l.url) || l.url.startsWith("/api/");
+                    return safe ? (
+                      <a
+                        key={l.id}
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[12px] text-muted"
+                      >
+                        {l.kind === "cv" ? (
+                          <FileText size={12} strokeWidth={1.75} />
+                        ) : (
+                          <ExternalLink size={12} strokeWidth={1.75} />
+                        )}
+                        {l.title}
+                      </a>
+                    ) : (
+                      <span
+                        key={l.id}
+                        className="flex min-h-11 items-center rounded-full border border-border px-3 text-[12px] text-faint line-through"
+                        title={l.url}
+                      >
+                        {l.title}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <button
+                onClick={() => setEditOpen(true)}
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface text-[13px] font-medium"
+              >
+                <Pencil size={14} strokeWidth={1.75} /> Edit details &amp; files
+              </button>
+            </div>
+          )}
+
         </div>
 
         {/* ── the figure, and the controls under it ──
@@ -1607,6 +1738,26 @@ export default function CandidatePage() {
           </div>
         </div>
       </div>
+
+      {/* ── the phone's edit sheet ──
+          ⚠️ IT HOLDS THE SAME CONTROLS THE DESKTOP HEADER DOES, moved rather
+          than rebuilt — see `detailFields`. Everything inside commits on its own
+          (blur, change, submit) exactly as it does at a desk, so the sheet needs
+          no Save: there is nothing it could save that has not been written
+          already, and a Save button that did nothing would be worse than none.
+          ⚠️ The name is NOT in here — it is the page's title and is edited in
+          place, where you can see what you are changing.
+          ⚠️ `title` is the sheet's ARIA LABEL and is never drawn — MobileSheet
+          shows no heading — so it is written for a screen reader, with the word
+          "and" rather than the ampersand the button uses. */}
+      {isNarrow && editOpen && (
+        <MobileSheet title="Edit details and files" onClose={() => setEditOpen(false)}>
+          <div className="flex flex-col gap-5 pb-2">
+            {detailFields}
+            {filesAndLinks}
+          </div>
+        </MobileSheet>
+      )}
     </div>
   );
 }

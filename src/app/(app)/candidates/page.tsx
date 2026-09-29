@@ -117,7 +117,12 @@ function ScorePill({ value }: { value: number | null }) {
   const tone = scoreTone(value);
   return (
     <span
-      className={`inline-flex h-5 shrink-0 items-center rounded-md px-1.5 text-[11.5px] font-semibold ${TONE[tone]}`}
+      /* ⚠️ DOUBLE SIZE ON A PHONE, and it has to move with the name — Nitsan,
+         2026-09-29, asked for both at 200%. They are the two things you scan a
+         list of candidates by, and at 11.5px beside a 15px name they read as
+         footnotes on a screen you hold at arm's length. Above `md` the card is
+         a 224px board column where those sizes are already right. */
+      className={`inline-flex h-10 shrink-0 items-center rounded-md px-1.5 text-[23px] font-semibold md:h-5 md:text-[11.5px] ${TONE[tone]}`}
       title={value === null ? "Not scored yet" : `Average of every score so far`}
     >
       {formatScore(value)}
@@ -165,25 +170,37 @@ function CandidateCard({
           its gap indented every name by 22px to explain a gesture nobody needs
           telling about on a board. The names line up now. */}
       <div className="flex items-start gap-2">
-        <span className="bidi-auto min-w-0 flex-1 text-[15px] font-medium leading-tight">
+        <span className="bidi-auto min-w-0 flex-1 text-[30px] font-medium leading-tight md:text-[15px]">
           {c.name}
         </span>
         <ScorePill value={c.avgScore} />
       </div>
-      {roleName && (
-        <span className="flex items-center gap-1.5 text-[11.5px] text-muted">
-          <span
-            className="size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: roleColor }}
-            aria-hidden
-          />
-          {roleName}
-        </span>
-      )}
-      {stageName && (
-        <span className="bidi-auto w-fit rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
-          {stageName}
-        </span>
+
+      {/* ⚠️ ROLE LEFT, STAGE RIGHT, ONE LINE, ONE HEIGHT — Nitsan, 2026-09-29.
+          The stage still reads as sitting under the grade because it is
+          right-aligned to the same edge; what changed is that the role came up
+          to join it instead of holding a line of its own. They are the two
+          TAGS on the card, so they are set as a matched pair — the role used to
+          be a bare dot and a word, which beside a bordered chip read as a
+          different kind of thing rather than the same kind. */}
+      {(roleName || stageName) && (
+        <div className="flex items-center gap-2">
+          {roleName && (
+            <span className="flex min-w-0 items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
+              <span
+                className="size-2 shrink-0 rounded-full"
+                style={{ backgroundColor: roleColor }}
+                aria-hidden
+              />
+              <span className="truncate">{roleName}</span>
+            </span>
+          )}
+          {stageName && (
+            <span className="bidi-auto ml-auto shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
+              {stageName}
+            </span>
+          )}
+        </div>
       )}
       <div className="flex items-center gap-1.5 text-[11px] text-faint">
         {ownerPhoto ? (
