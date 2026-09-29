@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Archive, PauseCircle, Plus, Search, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "@/components/ui";
 import { loadBoard, loadVocabulary, type BoardCounts, type Vocabulary } from "@/lib/candidates/data";
@@ -130,6 +131,7 @@ function CandidateCard({
   roleColor,
   ownerName,
   ownerPhoto,
+  stageName,
   draggable,
   onDragStart,
   onDragEnd,
@@ -139,6 +141,13 @@ function CandidateCard({
   roleColor: string;
   ownerName: string | null;
   ownerPhoto: Profile | null;
+  /**
+   * ⚠️ ONLY THE PHONE LIST PASSES THIS. On the board the column heading IS the
+   * stage, so printing it on every card would repeat the heading twenty times
+   * down a column; in a flat list there is no heading and it is the one thing
+   * missing from the card.
+   */
+  stageName?: string | null;
   draggable: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -169,6 +178,11 @@ function CandidateCard({
             aria-hidden
           />
           {roleName}
+        </span>
+      )}
+      {stageName && (
+        <span className="bidi-auto w-fit rounded-full border border-border px-2 py-0.5 text-[11px] text-muted">
+          {stageName}
         </span>
       )}
       <div className="flex items-center gap-1.5 text-[11px] text-faint">
@@ -205,6 +219,16 @@ export default function CandidatesPage() {
    * which way somebody likes looking at a board.
    */
   const [layout, setLayout] = useState<"board" | "list">("board");
+  /**
+   * ⚠️ A PHONE IS ALWAYS THE LIST, AND IT MUST NOT WRITE THE STORED KEY.
+   * The board is columns of cards side by side with dragging between them —
+   * neither of which a 375px screen can offer — so `effectiveLayout` overrides
+   * the preference for the render WITHOUT touching it, exactly as the archive
+   * and on-hold views do (v1.52.1). Someone who likes the board on their laptop
+   * still gets it there after looking something up on their phone.
+   */
+  const isNarrow = useIsNarrow();
+  const effectiveLayout = isNarrow ? "list" : layout;
   const [sort, setSort] = useState<SortKey>("activity");
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -445,7 +469,14 @@ export default function CandidatesPage() {
           </p>
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        {/* ⚠️ TWO GROUPS BELOW `md`, ONE FLAT ROW ABOVE IT. The wrappers carry
+            `md:contents`, so from md up they leave the layout entirely and the
+            original single wrapping row is byte-identical — the same trick
+            `MyWeek` and the plan's entry modal use. At 375px a single
+            `flex-wrap` row put the search between two chips and stranded the
+            divider on a line of its own. */}
+        <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto">
+          <div className="flex w-full gap-2 overflow-x-auto md:contents">
           {/* ⚠️ ONE DROPDOWN, NOT A ROW OF CHIPS. A role here is a TAG — the
               studio hires designers and rarely two kinds at once — so five
               chips permanently across the top spent the loudest row on the page
@@ -462,7 +493,7 @@ export default function CandidatesPage() {
             value={roleFilter ?? "all"}
             onChange={(e) => setRoleFilter(e.target.value === "all" ? null : e.target.value)}
             aria-label="Filter by role"
-            className={`h-7 cursor-pointer rounded-full border px-2 text-[11.5px] ${
+            className={`h-11 shrink-0 cursor-pointer rounded-full border px-2 text-[11.5px] md:h-7 ${
               roleFilter === null
                 ? "border-border bg-surface text-muted"
                 : "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
@@ -486,7 +517,7 @@ export default function CandidatesPage() {
           <button
             onClick={() => switchView(view === "on_hold" ? "active" : "on_hold")}
             aria-pressed={view === "on_hold"}
-            className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] ${
+            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] md:h-7 ${
               view === "on_hold"
                 ? "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
                 : "border-border bg-surface text-muted"
@@ -497,7 +528,7 @@ export default function CandidatesPage() {
           <button
             onClick={() => switchView(view === "archived" ? "active" : "archived")}
             aria-pressed={view === "archived"}
-            className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] ${
+            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] md:h-7 ${
               view === "archived"
                 ? "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
                 : "border-border bg-surface text-muted"
@@ -506,15 +537,18 @@ export default function CandidatesPage() {
             <Archive size={13} strokeWidth={1.75} /> Archive · {counts.archived}
           </button>
 
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+          </div>
 
-          <label className="flex h-8 items-center gap-2 rounded-lg border border-border bg-surface px-2.5">
+          <span className="mx-1 hidden h-5 w-px bg-border md:block" aria-hidden />
+
+          <div className="flex w-full gap-2 md:contents">
+          <label className="flex h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 md:h-8 md:flex-none">
             <Search size={15} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Name, email, source"
-              className="w-40 bg-transparent text-[13px] outline-none placeholder:text-faint"
+              className="w-full bg-transparent text-[13px] outline-none placeholder:text-faint md:w-40"
             />
             {query && (
               <button onClick={() => setQuery("")} aria-label="Clear the search">
@@ -523,7 +557,10 @@ export default function CandidatesPage() {
             )}
           </label>
 
-          <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
+          {/* ⚠️ Hidden on a phone rather than disabled: offering "Board" and
+              then refusing it is worse than not offering it, and the list is
+              not a fallback here — it is the phone's real shape. */}
+          <div className="hidden overflow-hidden rounded-lg border border-border bg-surface text-[12.5px] md:flex">
             {(["board", "list"] as const).map((k) => (
               <button
                 key={k}
@@ -544,10 +581,13 @@ export default function CandidatesPage() {
           <button
             onClick={() => void addCandidate()}
             disabled={adding || !vocab}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50 md:h-8"
           >
-            <Plus size={16} strokeWidth={2} /> {adding ? "Adding…" : "Add candidate"}
+            <Plus size={16} strokeWidth={2} />{" "}
+            <span className="md:hidden">{adding ? "Adding…" : "Add"}</span>
+            <span className="hidden md:inline">{adding ? "Adding…" : "Add candidate"}</span>
           </button>
+          </div>
         </div>
       </div>
 
@@ -559,7 +599,7 @@ export default function CandidatesPage() {
 
       {busy && <p className="mt-8 text-sm text-muted">Loading…</p>}
 
-      {!busy && view !== "active" && layout === "board" && (
+      {!busy && view !== "active" && effectiveLayout === "board" && (
         <div className="mt-5">
           <p className="mb-3 text-sm text-muted">
             {view === "archived"
@@ -587,7 +627,7 @@ export default function CandidatesPage() {
         </div>
       )}
 
-      {!busy && view === "active" && layout === "board" && (
+      {!busy && view === "active" && effectiveLayout === "board" && (
         <div className="mt-5 flex items-start gap-3 overflow-x-auto pb-4">
           {stages.map((s) => {
             const list = byStage.get(s.id) ?? [];
@@ -678,7 +718,50 @@ export default function CandidatesPage() {
           ⚠️ The board answers WHERE everyone is; only this answers WHICH. With
           271 candidates in the archive, "every Motion Designer who scored above
           8" is a question a column of cards cannot be asked at all. */}
-      {!busy && layout === "list" && (
+      {/* ── the phone list ──
+          ⚠️ IT REUSES `CandidateCard`, IT IS NOT A SECOND ROW MARKUP. The board
+          card already holds exactly what a phone row wants — name, score, role,
+          who is holding them, how long since anything happened — and a separate
+          narrow row would be one more place for those five facts to drift. The
+          table below is 860px of fixed columns, which on a 375px screen is a
+          sideways scroll through five columns to read one person. */}
+      {!busy && effectiveLayout === "list" && isNarrow && (
+        <div className="mt-4 flex flex-col gap-2">
+          {/* The table sorts from its own headings; a card stack has none, so
+              the sort has to become a control of its own or a phone is stuck
+              with whatever order the last desktop visit chose. */}
+          <label className="flex items-center gap-2 text-[12px] text-muted">
+            Sort by
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="min-h-11 flex-1 rounded-lg border border-border bg-surface px-2 text-[13px]"
+            >
+              <option value="activity">Last activity</option>
+              <option value="name">Name</option>
+              <option value="score">Score</option>
+              <option value="stage">Stage</option>
+            </select>
+          </label>
+          {sorted.map((c) => (
+            <CandidateCard
+              key={c.id}
+              c={c}
+              roleName={c.roleId ? (roleById.get(c.roleId)?.name ?? null) : null}
+              roleColor={c.roleId ? (roleById.get(c.roleId)?.color ?? "#6b7280") : "#6b7280"}
+              ownerName={c.ownerId ? (profileById.get(c.ownerId)?.name ?? null) : null}
+              ownerPhoto={c.ownerId ? (profileById.get(c.ownerId) ?? null) : null}
+              stageName={c.stageId ? (stageById.get(c.stageId)?.name ?? null) : null}
+              draggable={false}
+              onDragStart={() => {}}
+              onDragEnd={() => {}}
+            />
+          ))}
+          {sorted.length === 0 && <p className="py-6 text-sm text-faint">Nobody matches that.</p>}
+        </div>
+      )}
+
+      {!busy && effectiveLayout === "list" && !isNarrow && (
         <div className="mt-5 overflow-x-auto rounded-xl border border-border bg-surface shadow-card">
           <table className="w-full min-w-[860px] border-separate border-spacing-0 text-left text-[13px]">
             <thead>
@@ -785,7 +868,7 @@ export default function CandidatesPage() {
         </div>
       )}
 
-      {!busy && view === "active" && layout === "board" && counts.active === 0 && (
+      {!busy && view === "active" && effectiveLayout === "board" && counts.active === 0 && (
         <p className="mt-8 text-sm text-faint">
           Nobody in play. Add a candidate, or bring the Asana history across.
         </p>

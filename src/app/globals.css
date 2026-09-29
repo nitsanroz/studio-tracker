@@ -339,12 +339,24 @@ b,
    viewport meta, is deliberately NOT used — iOS honours it inconsistently and
    it breaks WCAG 1.4.4 by disabling pinch-zoom for everyone. */
 @media (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]),
-  select,
-  textarea {
+  input:not([type="checkbox"]):not([type="radio"]):not(.keeps-font-size),
+  select:not(.keeps-font-size),
+  textarea:not(.keeps-font-size) {
     font-size: 16px;
   }
 }
+
+/* ⚠️ THE ESCAPE HATCH ABOVE, AND WHEN IT IS SAFE TO USE.
+   The rule is meant as a FLOOR — iOS zooms the page when a focused field is
+   UNDER 16px — but it is written as a fixed size, so it also CAPS anything
+   larger. That went unnoticed for a year because nothing on a phone wanted a
+   big field, and then the candidate's name did: authored at 40px, it rendered
+   at 16px inside a box the mirror span had sized for 40, so the name was small
+   and adrift in its own field (v1.55.0).
+
+   `.keeps-font-size` is only ever correct on a field whose own size is ALREADY
+   16px or more on a phone — below that it re-opens the zoom the rule exists to
+   prevent, and there is nothing here that can check it for you. */
 
 /* ────────────────────────────────────────────────────────────────────────────
    MOTION

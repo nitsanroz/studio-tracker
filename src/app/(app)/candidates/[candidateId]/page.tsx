@@ -130,7 +130,7 @@ function SubjectColumn({
       {params.map((p) => {
         const v = scores[p.id];
         return (
-          <div key={p.id} className="flex items-center gap-2 py-0.5 text-[12.5px]">
+          <div key={p.id} className="flex items-center gap-2 py-0.5 text-[13px] md:text-[12.5px]">
             <span className="min-w-0 flex-1 truncate text-muted" title={p.name}>
               {p.name}
             </span>
@@ -138,7 +138,11 @@ function SubjectColumn({
               value={typeof v === "number" ? String(v) : ""}
               onChange={(e) => onSet(p.id, e.target.value ? Number(e.target.value) : null)}
               aria-label={`${subject.name} — ${p.name}`}
-              className={`w-11 cursor-pointer appearance-none rounded bg-transparent py-0.5 text-right text-[12.5px] font-semibold hover:bg-background ${
+              /* ⚠️ 44px tall on a phone — this is the control the whole
+                 section exists to use, and at 24px it was the smallest target
+                 on the page. The WIDTH stays: the column is a list of numbers
+                 and a wider box would pull each one away from its label. */
+              className={`h-11 w-11 cursor-pointer appearance-none rounded bg-transparent py-0.5 text-right text-[12.5px] font-semibold hover:bg-background md:h-auto ${
                 TONE[scoreTone(typeof v === "number" ? v : null)]
               }`}
             >
@@ -171,8 +175,19 @@ const MENU_TITLE = "flex items-center gap-2 text-[13px] leading-none";
 const MENU_NOTE = "pl-[22px] text-[11px] leading-snug text-faint";
 
 /** Type and horizontal metrics for the two auto-sized fields in the header. */
-const NAME_BOX = "rounded-md border border-transparent px-1 font-serif-accent text-[32px] leading-tight";
-const CONTACT_BOX = "rounded border border-transparent px-1 py-0.5 text-[13px]";
+/**
+ * ⚠️ BIGGER ON A PHONE THAN ON A LAPTOP, WHICH IS THE OPPOSITE OF THE USUAL
+ * RULE — Nitsan, 2026-09-29: "on mobile make name of candidate bigger
+ * significantly". It is right here: on a desktop the name shares the top of the
+ * page with the score, the contacts, the files and the controls, so 32px is
+ * already the largest thing in a crowded band. On a 375px screen those all fall
+ * onto separate lines and the name has a row to itself, where 32px reads as one
+ * more line rather than as the title of the page.
+ */
+const NAME_BOX =
+  "keeps-font-size rounded-md border border-transparent px-1 font-serif-accent " +
+  "text-[40px] leading-tight md:text-[32px]";
+const CONTACT_BOX = "min-h-11 rounded border border-transparent px-1 py-0.5 text-[13px] md:min-h-0";
 
 /**
  * A date field whose picker glyph sits next to the number rather than adrift
@@ -211,10 +226,19 @@ const CONTACT_BOX = "rounded border border-transparent px-1 py-0.5 text-[13px]";
  * rule simply does not exist in the stylesheet. Do not factor the shared
  * `[&::-webkit-calendar-picker-indicator]:` prefix out into a variable.
  */
+/**
+ * ⚠️ THE GLYPH IS ALWAYS VISIBLE BELOW `md`, AND THAT IS NOT A STYLE CHOICE.
+ * Hiding it until hover is right on a laptop — it is a second calendar icon on
+ * a field that is read far more often than it is changed — but a touch screen
+ * never hovers, so on a phone the only affordance for opening the picker was
+ * one that could not be triggered. `max-md:` wins over the `hover:` rule by
+ * source order, so the two do not fight.
+ */
 const DATE_GLYPH =
   "[&::-webkit-calendar-picker-indicator]:my-0 [&::-webkit-calendar-picker-indicator]:mr-0 " +
   "[&::-webkit-calendar-picker-indicator]:p-0 " +
-  "[&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-60";
+  "[&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-60 " +
+  "max-md:[&::-webkit-calendar-picker-indicator]:opacity-60";
 
 function dateField(pull: "tight" | "boxed"): string {
   return pull === "tight"
@@ -275,7 +299,7 @@ function ChipSelect({
          changes, twice in a row, on two chips that sit side by side. The chip
          has to wear the focus the select cannot show. Same treatment
          `task-autocomplete` and `task-panel` use. */
-      className={`relative inline-flex items-center gap-1.5 rounded-full border py-1 pl-2.5 pr-2 text-[11.5px] focus-within:border-brand focus-within:text-brand ${
+      className={`relative inline-flex min-h-11 items-center gap-1.5 rounded-full border py-1 pl-2.5 pr-2 text-[11.5px] focus-within:border-brand focus-within:text-brand md:min-h-0 ${
         set
           ? "border-border bg-surface text-muted"
           : "border-dashed border-border-strong text-faint hover:border-brand hover:text-brand"
@@ -546,7 +570,7 @@ function ContactField({
           }
         }}
         title="Click to copy"
-        className="rounded px-1 py-0.5 text-[13px] text-foreground hover:bg-brand-soft"
+        className="min-h-11 rounded px-1 py-0.5 text-[13px] text-foreground hover:bg-brand-soft md:min-h-0"
       >
         {copied ? <span className="text-success">Copied</span> : value}
       </button>
@@ -554,7 +578,10 @@ function ContactField({
         onClick={() => setEditing(true)}
         aria-label={`Edit ${placeholder.toLowerCase()}`}
         title="Edit"
-        className="rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-foreground group-hover/f:opacity-100"
+        /* ⚠️ ALWAYS SHOWN BELOW `md`. A touch screen never hovers, so the only
+           way to EDIT a phone number rather than copy it was an affordance that
+           could not be revealed — the contact value itself is a copy button. */
+        className="flex size-11 items-center justify-center rounded text-faint opacity-100 transition-opacity hover:text-foreground md:size-auto md:p-0.5 md:opacity-0 md:group-hover/f:opacity-100"
       >
         <Pencil size={11} strokeWidth={1.75} />
       </button>
@@ -581,6 +608,23 @@ export default function CandidatePage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /**
+   * Which interviews are folded shut.
+   *
+   * ⚠️ FOLDED-BY-EXCEPTION — a set of what is CLOSED, not of what is open — so
+   * an interview added while you are reading appears expanded rather than
+   * hidden behind a chevron nobody pressed. Same shape as the client table's
+   * `collapsed` set, and like that one it is per-visit rather than stored: a
+   * fold is how you read a page today, not a preference about this candidate.
+   */
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  const toggleFold = useCallback((id: string) => {
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }, []);
 
   /**
    * ⚠️ ARRIVING FROM "ADD CANDIDATE": the cursor belongs in the name field,
@@ -749,6 +793,34 @@ export default function CandidatePage() {
   const submissionSubjects = vocab.subjects.filter((s) => s.fromSubmission);
   const applicationScores = application?.scores ?? {};
   const applicationAvg = interviewAverage(applicationScores);
+  /**
+   * ⚠️ ONE DEFINITION, TWO PLACES — the trap this codebase has paid for three
+   * times (the `.brand-wordmark` instances in v1.32.1 and v1.12.1). A single
+   * DOM order cannot serve both shapes: on a desktop the figure heads the
+   * right-hand cluster it shares with Owner and Stage, while on a phone that
+   * cluster falls below the files and the figure would arrive four rows under
+   * the name it belongs with. Declared once so the two cannot drift.
+   */
+  const scoreFigure = (
+    <>
+      {/* ⚠️ SMALLER THAN THE NAME ON A PHONE AND BIGGER THAN IT ON A LAPTOP,
+          and both are right. On a desktop the figure has to carry across a
+          1500px page full of chips and controls. On a 375px line it sits
+          directly beside the name, where at 44px it read as the headline and
+          the person read as its caption. */}
+      <div
+        className={`font-serif-accent text-[32px] leading-none md:text-[44px] ${TONE[scoreTone(overall)]}`}
+      >
+        {formatScore(overall)}
+      </div>
+      <div className="mt-1 text-[10px] uppercase tracking-wider text-faint md:text-[11px]">
+        {overall === null
+          ? "not scored yet"
+          : `across ${scoredCount} ${scoredCount === 1 ? "reading" : "readings"}`}
+      </div>
+    </>
+  );
+
   const cv = links.filter((l) => l.kind === "cv");
   const others = links.filter((l) => l.kind !== "cv");
 
@@ -774,6 +846,23 @@ export default function CandidatePage() {
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {/* ⚠️ ITS OWN LINE BELOW `md`. The name auto-sizes to its text, so
+                at 375px an empty "Phone" placeholder floated up beside it and
+                the two read as one field. Above md the wrapper is `w-auto` and
+                the original single wrapping row is unchanged. */}
+            {/* ⚠️ `md:contents` — above md the wrapper leaves the layout and the
+                name is a direct child of the wrapping row again, exactly as it
+                was. Below it, the name gets a row to itself and the score
+                follows immediately, instead of arriving four rows of chips
+                later at the bottom of the header.
+
+                ⚠️ THE TWO ARE STACKED, NOT SIDE BY SIDE, AND THAT WAS MEASURED.
+                Sharing the line left the name 233px against the ~250px that
+                "Hadar Lozon" needs at 40px — and an `<input>` cannot ellipsize,
+                it scrolls, so the last letter was simply cut off with nothing
+                to say so. Studio names run median 12 characters, so that would
+                have clipped the ordinary case, not an outlier. */}
+            <div className="w-full md:contents">
             <AutoWidthInput
               box={NAME_BOX}
               minWidth="6ch"
@@ -785,6 +874,8 @@ export default function CandidatePage() {
               }}
               className="bidi-auto hover:border-border focus:border-border focus:outline-none"
             />
+              <div className="mt-1 md:hidden">{scoreFigure}</div>
+            </div>
             {/* Nitsan: phone and mail beside the name — they are what you came
                 to the page for as often as anything below. */}
             <ContactField
@@ -830,7 +921,7 @@ export default function CandidatePage() {
                      explicit width is what CROPPED A DIGIT last time (94px);
                      pulling the indicator left eats the slack instead, and the
                      field shrinks to 99px on its own with every segment intact. */
-                  className={`rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 ${dateField("tight")}`}
+                  className={`min-h-11 rounded border border-transparent px-1 py-0.5 hover:border-border focus:border-border focus:outline-none group-hover/d:[&::-webkit-calendar-picker-indicator]:opacity-60 md:min-h-0 ${dateField("tight")}`}
                 />
               </label>
               <SourceChip
@@ -901,7 +992,9 @@ export default function CandidatePage() {
                   <button
                     onClick={() => void run(() => removeLink(l.id, c.id))}
                     aria-label={`Remove ${l.title}`}
-                    className="rounded-full p-1 text-faint opacity-0 hover:text-danger group-hover:opacity-100"
+                    /* Same rule as the contact pencil: revealed on hover at a
+                       desk, always there on a phone, which has no hover. */
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full text-faint opacity-100 hover:text-danger md:size-auto md:p-1 md:opacity-0 md:group-hover:opacity-100"
                   >
                     <Trash2 size={12} strokeWidth={1.75} />
                   </button>
@@ -930,7 +1023,7 @@ export default function CandidatePage() {
                   value={linkKind}
                   onChange={(e) => setLinkKind(e.target.value as CandidateLinkKind)}
                   aria-label="What kind of link"
-                  className="rounded border border-border bg-surface px-1.5 py-1 text-[12px]"
+                  className="min-h-11 rounded border border-border bg-surface px-1.5 py-1 text-[12px] md:min-h-0"
                 >
                   <option value="portfolio">Portfolio</option>
                   <option value="cv">CV</option>
@@ -941,18 +1034,18 @@ export default function CandidatePage() {
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="Paste the address"
-                  className="w-56 rounded border border-border px-2 py-1 text-[12px]"
+                  className="min-h-11 w-full rounded border border-border px-2 py-1 text-[12px] md:min-h-0 md:w-56"
                 />
                 <input
                   value={linkTitle}
                   onChange={(e) => setLinkTitle(e.target.value)}
                   placeholder="Label (optional)"
-                  className="w-36 rounded border border-border px-2 py-1 text-[12px]"
+                  className="min-h-11 w-full rounded border border-border px-2 py-1 text-[12px] md:min-h-0 md:w-36"
                 />
                 <button
                   type="submit"
                   disabled={!linkUrl.trim()}
-                  className="h-7 rounded-md bg-brand px-2.5 text-[12px] font-medium text-white disabled:opacity-40"
+                  className="h-11 flex-1 rounded-md bg-brand px-2.5 text-[12px] font-medium text-white disabled:opacity-40 md:h-7 md:flex-none"
                 >
                   Add
                 </button>
@@ -963,7 +1056,7 @@ export default function CandidatePage() {
                     setLinkTitle("");
                     setLinkUrl("");
                   }}
-                  className="h-7 rounded-md border border-border px-2 text-[12px]"
+                  className="h-11 flex-1 rounded-md border border-border px-2 text-[12px] md:h-7 md:flex-none"
                 >
                   Cancel
                 </button>
@@ -971,7 +1064,7 @@ export default function CandidatePage() {
             ) : (
               <>
                 <label
-                  className={`flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] hover:border-brand hover:text-brand ${
+                  className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] hover:border-brand hover:text-brand md:min-h-0 ${
                     uploading ? "opacity-50" : "text-muted"
                   }`}
                 >
@@ -990,7 +1083,7 @@ export default function CandidatePage() {
                 </label>
                 <button
                   onClick={() => setAddingLink(true)}
-                  className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] text-muted hover:border-brand hover:text-brand"
+                  className="flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] text-muted hover:border-brand hover:text-brand md:min-h-0"
                 >
                   <Link2 size={12} strokeWidth={1.75} /> Add a link
                 </button>
@@ -1007,25 +1100,20 @@ export default function CandidatePage() {
             ⚠️ THE CONTROLS SIT WITH IT RATHER THAN IN A BAR BENEATH A RULE.
             Nitsan's call: a full-width row under a divider read as a toolbar
             for the whole page, when it only ever acts on this one person. */}
-        <div className="flex shrink-0 flex-col items-end gap-3">
-          <div className="text-right">
-            <div className={`font-serif-accent text-[44px] leading-none ${TONE[scoreTone(overall)]}`}>
-              {formatScore(overall)}
-            </div>
-            <div className="mt-1 text-[11px] uppercase tracking-wider text-faint">
-              {overall === null
-                ? "not scored yet"
-                : `across ${scoredCount} ${scoredCount === 1 ? "reading" : "readings"}`}
-            </div>
-          </div>
+        {/* ⚠️ FULL WIDTH AND LEFT-ALIGNED ON A PHONE. Right-aligned in a 375px
+            column the figure sat alone above a stack of right-edged selects,
+            which reads as three separate things rather than one cluster about
+            this person. */}
+        <div className="flex w-full shrink-0 flex-col items-start gap-3 md:w-auto md:items-end">
+          <div className="hidden text-right md:block">{scoreFigure}</div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
             <select
               value={c.ownerId ?? ""}
               onChange={(e) =>
                 void run(() => updateCandidate(c.id, { ownerId: e.target.value || null }, currentUserId))
               }
-              className="h-9 rounded-lg border border-border bg-surface px-2 text-[13px]"
+              className="h-11 w-full min-w-0 rounded-lg border border-border bg-surface px-2 text-[13px] md:h-9 md:w-auto"
               aria-label="Who is holding this candidate"
             >
               <option value="">Unassigned</option>
@@ -1043,7 +1131,7 @@ export default function CandidatePage() {
                   const st = vocab.stages.find((x) => x.id === e.target.value);
                   if (st) void run(() => moveToStage(c.id, st.id, st.name, currentUserId));
                 }}
-                className="h-9 rounded-lg border border-[#c9d6fb] bg-brand-soft px-2 text-[13px] font-medium text-brand-dark"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-[#c9d6fb] bg-brand-soft px-2 text-[13px] font-medium text-brand-dark md:h-9 md:flex-none"
                 aria-label="Stage"
               >
                 {vocab.stages.map((st) => (
@@ -1055,7 +1143,7 @@ export default function CandidatePage() {
             ) : (
               <button
                 onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
-                className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px]"
+                className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] md:h-9 md:flex-none"
               >
                 <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
               </button>
@@ -1072,7 +1160,7 @@ export default function CandidatePage() {
                 onClick={() => setMenuOpen((v) => !v)}
                 aria-label="More actions"
                 aria-expanded={menuOpen}
-                className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:text-foreground"
+                className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:text-foreground md:size-9"
               >
                 <MoreHorizontal size={16} strokeWidth={1.75} />
               </button>
@@ -1229,6 +1317,8 @@ export default function CandidatePage() {
           {interviews.map((iv) => {
             const who = iv.interviewerId ? profileById.get(iv.interviewerId) : null;
             const avg = interviewAverage(iv.scores);
+            const shut = folded.has(iv.id);
+            const scored = Object.keys(iv.scores).length;
             return (
               <div key={iv.id} className="rounded-xl border border-border bg-surface p-4 shadow-card">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1241,7 +1331,7 @@ export default function CandidatePage() {
                     value={iv.kind}
                     onChange={(e) => void run(() => updateInterview(iv.id, c.id, { kind: e.target.value }))}
                     aria-label="What kind of interview"
-                    className="rounded border border-transparent bg-transparent px-1 py-1 text-sm font-medium hover:border-border focus:border-border focus:outline-none"
+                    className="min-h-11 rounded border border-transparent bg-transparent px-1 py-1 text-sm font-medium hover:border-border focus:border-border focus:outline-none md:min-h-0"
                   >
                     {(INTERVIEW_KINDS.includes(iv.kind)
                       ? INTERVIEW_KINDS
@@ -1257,7 +1347,7 @@ export default function CandidatePage() {
                     onChange={(e) =>
                       void run(() => updateInterview(iv.id, c.id, { interviewerId: e.target.value || null }))
                     }
-                    className="rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted"
+                    className="min-h-11 rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted md:min-h-0"
                     aria-label="Who ran it"
                   >
                     <option value="">Who ran it</option>
@@ -1274,7 +1364,7 @@ export default function CandidatePage() {
                     type="date"
                     defaultValue={iv.heldOn ?? ""}
                     onChange={(e) => void run(() => updateInterview(iv.id, c.id, { heldOn: e.target.value || null }))}
-                    className={`rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted ${dateField("boxed")}`}
+                    className={`min-h-11 rounded border border-border bg-surface px-1.5 py-1 text-[12px] text-muted md:min-h-0 ${dateField("boxed")}`}
                     aria-label="When"
                   />
                   {/* ⚠️ The figure and the delete travel TOGETHER in their own
@@ -1287,6 +1377,24 @@ export default function CandidatePage() {
                     {formatScore(avg)}
                     <span className="ml-1 text-[11px] font-normal text-faint">average</span>
                   </span>
+                  {/* ⚠️ THE AVERAGE STAYS VISIBLE WHEN FOLDED, and that is what
+                      makes folding worth having: the figure is the reason to
+                      keep a card on screen, the eleven rows behind it are not.
+                      A fold that hid the number would just be a delete you can
+                      undo. */}
+                  <button
+                    onClick={() => toggleFold(iv.id)}
+                    aria-expanded={!shut}
+                    aria-label={shut ? `Open this ${iv.kind.toLowerCase()}` : `Fold this ${iv.kind.toLowerCase()} away`}
+                    title={shut ? "Open" : "Fold away"}
+                    className="flex size-11 items-center justify-center rounded text-faint hover:text-foreground md:size-auto md:p-1.5"
+                  >
+                    <ChevronDown
+                      size={15}
+                      strokeWidth={1.75}
+                      className={`transition-transform ${shut ? "-rotate-90" : ""}`}
+                    />
+                  </button>
                   {/* ⚠️ Confirmed, because it takes the scores with it — the
                       interview's rows cascade (0039) and there is no undo in
                       this section by design. */}
@@ -1305,33 +1413,61 @@ export default function CandidatePage() {
                     }}
                     aria-label={`Delete this ${iv.kind}`}
                     title="Delete this interview"
-                    className="rounded p-1.5 text-faint hover:text-danger"
+                    className="flex size-11 items-center justify-center rounded text-faint hover:text-danger md:size-auto md:p-1.5"
                   >
                     <Trash2 size={14} strokeWidth={1.75} />
                   </button>
                   </span>
                 </div>
 
-                <textarea
-                  defaultValue={iv.summary ?? ""}
-                  placeholder="What you heard. A few lines is plenty — the scores carry the rest."
-                  rows={3}
-                  onBlur={(e) =>
-                    void run(() => updateInterview(iv.id, c.id, { summary: e.target.value.trim() || null }))
-                  }
-                  className="bidi-auto mt-2.5 w-full resize-y rounded-md border border-transparent bg-transparent p-1 text-[12.5px] leading-relaxed text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
-                />
-
-                <div className="mt-3 grid gap-x-5 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {vocab.subjects.map((s) => (
-                    <SubjectColumn
-                      key={s.id}
-                      subject={s}
-                      scores={iv.scores}
-                      onSet={(paramId, value) => void run(() => setScore(iv.id, paramId, value, c.id))}
+                {/* ⚠️ THE BODY IS UNMOUNTED WHEN FOLDED, NOT HIDDEN WITH CSS,
+                    and the summary textarea is why: it is UNCONTROLLED
+                    (`defaultValue`, committing on blur), so keeping it in the
+                    DOM behind `hidden` would leave a half-typed note alive and
+                    invisible, saving on some later blur nobody could see coming.
+                    Unmounting is safe because the chevron is a BUTTON: pressing
+                    it moves focus off the textarea, which fires `onBlur` and
+                    commits, and only then does the fold take the element away. */}
+                {!shut && (
+                  <>
+                    <textarea
+                      defaultValue={iv.summary ?? ""}
+                      placeholder="What you heard. A few lines is plenty — the scores carry the rest."
+                      rows={3}
+                      onBlur={(e) =>
+                        void run(() => updateInterview(iv.id, c.id, { summary: e.target.value.trim() || null }))
+                      }
+                      className="bidi-auto mt-2.5 w-full resize-y rounded-md border border-transparent bg-transparent p-1 text-[12.5px] leading-relaxed text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
                     />
-                  ))}
-                </div>
+
+                    <div className="mt-3 grid gap-x-5 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {vocab.subjects.map((s) => (
+                        <SubjectColumn
+                          key={s.id}
+                          subject={s}
+                          scores={iv.scores}
+                          onSet={(paramId, value) => void run(() => setScore(iv.id, paramId, value, c.id))}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* ⚠️ A FOLDED CARD SAYS WHAT IS BEHIND IT. Without this the
+                    summary and the scores vanish with nothing standing in for
+                    them, which reads as an empty interview rather than a
+                    closed one — the failure the client table's folded sections
+                    already solved by keeping their subtotals. */}
+                {shut && (
+                  <p className="mt-2 text-[12px] text-faint">
+                    {[
+                      scored > 0 && `${scored} score${scored === 1 ? "" : "s"}`,
+                      iv.summary?.trim() && "a summary",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Nothing recorded yet"}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -1413,11 +1549,13 @@ export default function CandidatePage() {
                 rows={2}
                 placeholder="Write a message…"
                 className="w-full resize-y rounded-lg border border-border bg-surface px-2.5 py-2 text-[12.5px]"
+                /* The 16px floor that stops iOS zooming on focus is a global
+                   rule in globals.css (v1.12.0) — nothing to repeat here. */
               />
               <button
                 type="submit"
                 disabled={!draft.trim()}
-                className="mt-2 h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+                className="mt-2 h-11 w-full rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40 md:h-8 md:w-auto"
               >
                 Post
               </button>

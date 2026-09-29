@@ -68,15 +68,6 @@ const DESKTOP_ONLY: Array<[string, Entry]> = [
     },
   ],
   [
-    "/candidates",
-    {
-      label: "Candidates",
-      why: "The board is columns of cards side by side, and a candidate's page sets two interviews' scorecards against each other.",
-      toHref: "/",
-      toLabel: "Home",
-    },
-  ],
-  [
     "/team/",
     {
       label: "Member details",
