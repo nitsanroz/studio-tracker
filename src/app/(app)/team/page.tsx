@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Plus, Table2, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { periodRange, rangeLabel, TEAM_RANGES, type PeriodKey } from "@/lib/period-math";
+import { periodRange, presenceFraction, rangeLabel, TEAM_RANGES, type PeriodKey } from "@/lib/period-math";
 import { toISODate } from "@/lib/format";
 import { formatHoursAvg, formatHoursShort } from "@/lib/format";
 import { useMemberEmails } from "@/lib/use-member-emails";
@@ -149,11 +149,23 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
 
 // ── page ────────────────────────────────────────────────────────────────────
 
-function Stat({ label, value, title }: { label: string; value: string; title?: string }) {
+function Stat({
+  label,
+  value,
+  title,
+  sub,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+  /** A short qualifier under the figure — for when the number needs a caveat to be read correctly. */
+  sub?: string | null;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card" title={title}>
       <div className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</div>
       <div className="mt-1 font-serif-accent text-2xl tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 text-[11px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
@@ -162,7 +174,6 @@ export default function TeamPage() {
   const { profiles, tasks, entrySumsAll, clients } = useData();
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
-  const [showDeactivated, setShowDeactivated] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const memberEmails = useMemberEmails(isAdmin);
   const portraits = useMemberPortraits();
@@ -198,12 +209,13 @@ export default function TeamPage() {
   const range = useMemo(() => periodRange(rangeKey, periodOffset), [rangeKey, periodOffset]);
   const periodLabel = rangeLabel(rangeKey, periodOffset);
 
-  const statsByUser = useMemo(() => {
+  const { map: statsByUser, spans: entrySpans } = useMemo(() => {
     const billableTaskIds = new Set(tasks.filter((t) => t.billable).map((t) => t.id));
     // ⚠️ Keys hours are the slice of the NON-billable part that was written down
     // before a client report — see lib/hours-split.ts for why it earns a colour.
     const keysIds = keysTaskIds(clients);
     const map = new Map<string, HoursSplit>();
+    const spans = new Map<string, { first: string; last: string }>();
     // entrySumsAll, not entrySums: a member page is a HISTORICAL record, so it
     // should show the pre-Everhour hours too — that is the whole point of having
     // former staff here. The home page keeps using the legacy-free list, so
@@ -211,6 +223,12 @@ export default function TeamPage() {
     for (const e of entrySumsAll) {
       if (range && (e.date < range.from || e.date > range.to)) continue;
       if (!e.userId) continue; // recovered row whose author has no profile at all
+      const span = spans.get(e.userId);
+      if (!span) spans.set(e.userId, { first: e.date, last: e.date });
+      else {
+        if (e.date < span.first) span.first = e.date;
+        if (e.date > span.last) span.last = e.date;
+      }
       map.set(
         e.userId,
         addEntry(map.get(e.userId) ?? newSplit(), e.minutes, {
@@ -219,13 +237,30 @@ export default function TeamPage() {
         }),
       );
     }
-    return map;
+    return { map, spans };
   }, [entrySumsAll, tasks, clients, range]);
 
-  const activeMembers = useMemo(() => profiles.filter((p) => p.active), [profiles]);
+  /**
+   * Who is on the page: everyone still here, plus every former member who logged
+   * in the selected period.
+   *
+   * ⚠️ THERE IS NO "SHOW ARCHIVED" TICKBOX ANY MORE — Nitsan, 2026-09-30: an
+   * archived card is dimmed anyway, so it can simply appear when the period is
+   * one they worked in. A period's answer includes the people who did the work
+   * in it, and a checkbox that hid them made stepping back to March show a team
+   * with a hole where somebody now gone had been. It also retired the wall of
+   * 49 ex-staff cards that ticking the box used to produce on "All time".
+   *
+   * ⚠️ `statsByUser` has a key only for somebody with an ENTRY in range, so this
+   * is "logged anything then" rather than "net hours are non-zero" — a former
+   * member whose recorded reductions net to exactly zero still did work.
+   */
+  const shownMembers = useMemo(
+    () => profiles.filter((p) => p.active || statsByUser.has(p.id)),
+    [profiles, statsByUser],
+  );
 
   const teamStats = useMemo(() => {
-    // aggregate over active members only, so the row matches the panel below
     /**
      * ⚠️ ADMINS ARE OUT OF THE BILLABLE SHARE, not just off their own cards.
      * Nitsan's call, and the tile is the reason it matters: an admin logs almost
@@ -233,11 +268,43 @@ export default function TeamPage() {
      * studio's headline share down by a fact about the people who don't do
      * client work. Their HOURS still count in the total beside it, which is why
      * `all.total` and the share are accumulated separately.
+     *
+     * ⚠️ THESE TILES NOW COUNT EVERYONE ON THE PAGE, former members included.
+     * They used to total active members only "so the row matches the panel
+     * below", which stopped being true the moment a departed designer's card
+     * could sit in that panel: the Hours tile would have read lower than the
+     * cards beneath it added up to. Hours that were logged in a period are that
+     * period's hours whoever has since left.
      */
     const all = newSplit();
     let hours = 0;
-    for (const p of activeMembers) {
+    let archivedCount = 0;
+    /**
+     * ⚠️ THE AVERAGE IS DIVIDED BY MEMBER-TIME, NOT BY HEADS — Nitsan,
+     * 2026-09-30: "only part of the month if the start/end date of a designer
+     * falls in that month". Somebody who joined on the 20th, or left on the 10th,
+     * counts as a fraction of a member. See `presenceFraction` for how the
+     * window is built when the declared dates are missing, which for former
+     * members they nearly always are.
+     */
+    let memberTime = 0;
+    const today = toISODate(new Date());
+    for (const p of shownMembers) {
       const s = statsByUser.get(p.id);
+      if (!p.active) archivedCount++;
+      const span = entrySpans.get(p.id);
+      memberTime += range
+        ? presenceFraction({
+            from: range.from,
+            to: range.to,
+            asOf: today,
+            startDate: p.startDate,
+            endDate: p.endDate,
+            firstEntry: span?.first ?? null,
+            lastEntry: span?.last ?? null,
+            active: p.active,
+          })
+        : 1; // All time has no period to prorate over
       if (!s) continue;
       hours += s.total;
       if (p.role === "admin") continue;
@@ -250,12 +317,14 @@ export default function TeamPage() {
       total: hours,
       split: all,
       billablePct: billableShare(all),
-      activeCount: activeMembers.length,
+      memberCount: shownMembers.length,
+      archivedCount,
+      memberTime,
       // ⚠️ Still per MEMBER, admins included — this one is about how much the
       // studio logged per head, not about billability.
-      avgPerMember: activeMembers.length > 0 ? hours / activeMembers.length : 0,
+      avgPerMember: memberTime > 0 ? hours / memberTime : 0,
     };
-  }, [statsByUser, activeMembers]);
+  }, [statsByUser, entrySpans, shownMembers, range]);
 
   const activeTaskByUser = useMemo(() => {
     const m = new Map<string, number>();
@@ -270,9 +339,7 @@ export default function TeamPage() {
     return <p className="text-sm text-muted">This page is for admins only.</p>;
   }
 
-  const team = profiles
-    .filter((p) => showDeactivated || p.active)
-    .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  const team = [...shownMembers].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
 
   // Built from statsByUser / activeTaskByUser, exactly like the cards below, so
   // the two layouts can never show different numbers for the same person.
@@ -297,22 +364,9 @@ export default function TeamPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
-      {/* Stacks below `sm`, same reason as the intake queue's header: a
-          no-wrap `justify-between` row made the subtitle and the checkbox
-          squeeze each other, and "Show archived" broke mid-phrase. */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
-        <div>
-          <h1 className="font-serif-accent text-3xl">The team</h1>
-          <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
-        </div>
-        <label className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-muted sm:min-h-0">
-          <input
-            type="checkbox"
-            checked={showDeactivated}
-            onChange={(e) => setShowDeactivated(e.target.checked)}
-          />
-          Show archived
-        </label>
+      <div>
+        <h1 className="font-serif-accent text-3xl">The team</h1>
+        <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -368,8 +422,25 @@ export default function TeamPage() {
           value={teamStats.billablePct == null ? "–" : `${teamStats.billablePct}%`}
           title={`Designers only — admins are left out. ${splitTitle(teamStats.split)}`}
         />
-        <Stat label="Active members" value={String(teamStats.activeCount)} />
-        <Stat label="Avg hours / member" value={formatHoursAvg(teamStats.avgPerMember)} />
+        <Stat
+          label="Members"
+          value={String(teamStats.memberCount)}
+          sub={teamStats.archivedCount > 0 ? `${teamStats.archivedCount} since left` : null}
+          title="Everyone still here, plus former members who logged hours in this period."
+        />
+        <Stat
+          label="Avg hours / member"
+          value={formatHoursAvg(teamStats.avgPerMember)}
+          // ⚠️ Said out loud whenever the head count and the member-time differ,
+          // because a figure divided by 6.4 while the tile above says 8 looks
+          // like an arithmetic error to anyone who does not know why.
+          sub={
+            Math.abs(teamStats.memberTime - teamStats.memberCount) > 0.05
+              ? `pro rata — ${teamStats.memberTime.toFixed(1)} of ${teamStats.memberCount} members' time`
+              : null
+          }
+          title="Total hours divided by member-time: someone who joined or left part way through the period counts as the fraction of it they were here."
+        />
       </div>
 
       {/* Portrait left, everything else stacked left-aligned beside it — wider

@@ -304,3 +304,76 @@ export function cutoffIsStale(through: string | null | undefined, asOf: Date): b
   if (!through) return false; // blank means "everything", which is never stale
   return through < lastCompleteWeekEnd(asOf);
 }
+
+/**
+ * How much of a period a person was part of the studio, 0–1 — the denominator
+ * for "average hours per member".
+ *
+ * A designer who joined on the 20th, or left on the 10th, did not have a whole
+ * month to log hours in, and dividing the studio's total by a head count that
+ * treats them as a full member understates everybody else (Nitsan, 2026-09-30:
+ * "would expect to include only part of the month if the start/end date of a
+ * designer falls in that month").
+ *
+ * ⚠️⚠️ THE DECLARED DATES CANNOT BE TRUSTED ON THEIR OWN, and the real data is
+ * why. Measured 2026-09-30: of 49 archived profiles, **47 have no end date and
+ * 21 of the 25 with an account have no start date** — the end dates are being
+ * filled in by hand later (0020). So a rule that read only `start_date` and
+ * `end_date` would treat nearly every former member as present for the whole
+ * period. The window is therefore built from what is DECLARED where it exists
+ * and from what was LOGGED where it does not:
+ *
+ *   • start — the declared start, else the period's start for someone still
+ *     here, else their first entry in the period.
+ *   • end — the declared end, else the period's end for someone still here,
+ *     else their last entry in the period.
+ *   • and the window is always WIDENED to cover every entry they logged, so a
+ *     start date that is wrong in the future cannot leave hours in the total
+ *     with no time in the denominator.
+ *
+ * ⚠️ The last-entry fallback is a LOWER BOUND on when somebody left — a former
+ * member who logged nothing in their final fortnight reads as having left a
+ * fortnight earlier. That biases the average slightly up, is bounded by how
+ * often people log, and disappears the day their end date is entered.
+ *
+ * ⚠️ The period is cut at `asOf`: mid-month, everybody has had fifteen days to
+ * log, not thirty, and a designer who left on the 10th was there for 10 of those
+ * 15 rather than 10 of 30. Without the cut the current period would flatter
+ * every departure.
+ *
+ * ⚠️ Calendar days, not working days. The studio week is Sun–Thu, so the two
+ * agree closely over anything longer than a week, and a start date on a Friday
+ * should not be a special case.
+ *
+ * Returns 1 when there is no period to prorate over (All time, or a period that
+ * has not begun) — the caller passes no `from`/`to` for All time.
+ */
+export function presenceFraction(o: {
+  from: string;
+  to: string;
+  /** Today. Required: a default of `new Date()` is the bug (see `daysCoveredInPeriod`). */
+  asOf: string;
+  startDate: string | null;
+  endDate: string | null;
+  /** Their earliest / latest entry INSIDE the period, or null if they logged nothing in it. */
+  firstEntry: string | null;
+  lastEntry: string | null;
+  /** Still a current member — an open-ended window rather than one bounded by activity. */
+  active: boolean;
+}): number {
+  const periodEnd = o.to < o.asOf ? o.to : o.asOf;
+  if (periodEnd < o.from) return 1;
+  const periodDays = daysBetween(parseISO(o.from), parseISO(periodEnd)) + 1;
+
+  let start = o.startDate ?? (o.active ? o.from : (o.firstEntry ?? o.from));
+  let end = o.endDate ?? (o.active ? periodEnd : (o.lastEntry ?? periodEnd));
+  if (o.firstEntry && o.firstEntry < start) start = o.firstEntry;
+  if (o.lastEntry && o.lastEntry > end) end = o.lastEntry;
+
+  if (start < o.from) start = o.from;
+  if (end > periodEnd) end = periodEnd;
+  if (end < start) return 0;
+
+  const days = daysBetween(parseISO(start), parseISO(end)) + 1;
+  return Math.min(1, days / periodDays);
+}

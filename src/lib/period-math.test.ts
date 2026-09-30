@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { toISODate } from "./format";
 import { presetRange } from "./date-ranges";
 import {
+  presenceFraction,
   bucketProjection,
   bucketize,
   comparablePrevRange,
@@ -416,5 +417,74 @@ describe("lastCompleteWeekEnd / cutoffIsStale", () => {
   it("does not flag a cut-off at or ahead of the last complete week", () => {
     expect(cutoffIsStale("2026-08-29", new Date(2026, 7, 30))).toBe(false);
     expect(cutoffIsStale("2026-09-02", new Date(2026, 7, 30))).toBe(false);
+  });
+});
+
+describe("presenceFraction", () => {
+  // September has 30 days. `asOf` is after it unless a test says otherwise.
+  const sep = { from: "2026-09-01", to: "2026-09-30", asOf: "2026-10-15" };
+  const base = { ...sep, startDate: null, endDate: null, firstEntry: null, lastEntry: null, active: true };
+
+  it("is 1 for someone here the whole period", () => {
+    expect(presenceFraction({ ...base, startDate: "2025-01-01" })).toBe(1);
+  });
+
+  it("counts only the days after a mid-period start", () => {
+    // 21 Sep → 30 Sep inclusive is 10 of 30 days
+    expect(presenceFraction({ ...base, startDate: "2026-09-21" })).toBeCloseTo(10 / 30);
+  });
+
+  it("counts only the days up to a declared end", () => {
+    expect(presenceFraction({ ...base, active: false, startDate: "2025-01-01", endDate: "2026-09-10" })).toBeCloseTo(
+      10 / 30,
+    );
+  });
+
+  // The real data: 47 of 49 archived profiles have no end date, so the window
+  // has to come from what they logged.
+  it("falls back to the first and last entry when an archived member has no dates", () => {
+    expect(
+      presenceFraction({ ...base, active: false, firstEntry: "2026-09-01", lastEntry: "2026-09-10" }),
+    ).toBeCloseTo(10 / 30);
+  });
+
+  it("uses the declared start with a last-entry end when only the end is missing", () => {
+    expect(
+      presenceFraction({ ...base, active: false, startDate: "2026-09-05", lastEntry: "2026-09-14" }),
+    ).toBeCloseTo(10 / 30);
+  });
+
+  it("widens the window to cover hours logged outside the declared dates", () => {
+    // start date says 21 Sep but they logged from the 11th: 20 days, not 10 —
+    // otherwise hours would sit in the total with no time in the denominator.
+    expect(presenceFraction({ ...base, startDate: "2026-09-21", firstEntry: "2026-09-11" })).toBeCloseTo(20 / 30);
+  });
+
+  it("treats a current member with no start date as present for the whole period", () => {
+    expect(presenceFraction({ ...base })).toBe(1);
+  });
+
+  it("cuts the period at today, so a departure is not flattered mid-period", () => {
+    // as of the 15th only 15 days exist; someone who left on the 10th was there for 10 of them
+    const f = presenceFraction({
+      ...base,
+      asOf: "2026-09-15",
+      active: false,
+      startDate: "2025-01-01",
+      endDate: "2026-09-10",
+    });
+    expect(f).toBeCloseTo(10 / 15);
+  });
+
+  it("is 0 for someone who has not started and logged nothing", () => {
+    expect(presenceFraction({ ...base, startDate: "2026-11-01" })).toBe(0);
+  });
+
+  it("never exceeds 1", () => {
+    expect(presenceFraction({ ...base, startDate: "2020-01-01", endDate: "2030-01-01" })).toBe(1);
+  });
+
+  it("is 1 when the period has not begun, so nothing is divided by zero", () => {
+    expect(presenceFraction({ ...base, asOf: "2026-08-01" })).toBe(1);
   });
 });
