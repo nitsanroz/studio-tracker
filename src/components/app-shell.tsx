@@ -21,6 +21,7 @@ import {
   SquareCheckBig,
   Users,
   UserRoundSearch,
+  Handshake,
   UsersRound,
   X,
   type LucideIcon,
@@ -77,6 +78,10 @@ const NAV = [
   // is columns of cards side by side and the candidate page is a two-column
   // dossier — neither survives 375px, and neither is phone work.
   { href: "/candidates", label: "Candidates", Icon: UserRoundSearch, adminOnly: true, mobile: true },
+  // The sales pipeline. `mobile: false` with a `desktop-only.tsx` entry — a
+  // drag board of stage columns, desktop first (Nitsan's standing rule: settle
+  // desktop, then discuss mobile).
+  { href: "/leads", label: "Leads", Icon: Handshake, adminOnly: true, mobile: false },
 ];
 
 /**

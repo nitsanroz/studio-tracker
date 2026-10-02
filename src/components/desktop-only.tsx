@@ -1,6 +1,6 @@
 "use client";
 
-// Six routes are deliberately not built for a phone, and this is what they show
+// A handful of routes are deliberately not built for a phone, and this is what they show
 // there instead of a broken grid.
 //
 // ⚠️ It renders INSIDE the shell, in place of the page body only — the header,
@@ -63,6 +63,15 @@ const DESKTOP_ONLY: Array<[string, Entry]> = [
     {
       label: "Client reports",
       why: "Publishing a report freezes numbers a client will read — not something to do one-handed.",
+      toHref: "/",
+      toLabel: "Home",
+    },
+  ],
+  [
+    "/leads",
+    {
+      label: "Leads",
+      why: "The pipeline is a board of stage columns you drag deals between.",
       toHref: "/",
       toLabel: "Home",
     },

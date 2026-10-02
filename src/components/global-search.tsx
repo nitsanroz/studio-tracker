@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
-import { useData } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
+import { loadLeadIndex } from "@/lib/leads/data";
 import { namesClient, useClientsByRecency } from "./task-autocomplete";
 import { ClientChip } from "./ui";
 
 interface Result {
-  kind: "task" | "client";
+  kind: "task" | "client" | "lead";
   id: string;
   label: string;
   sub: string;
@@ -19,6 +20,17 @@ interface Result {
 export function GlobalSearch() {
   const router = useRouter();
   const { tasks, clients, profiles, openTask } = useData();
+  const isAdmin = useIsAdmin();
+  /**
+   * Leads, for admins only — fetched once, the first time the box is focused.
+   * ⚠️ Not in the store: see `src/lib/leads/types.ts`. Null = not asked yet.
+   */
+  const [leadIndex, setLeadIndex] = useState<{ id: string; company: string; domain: string | null }[] | null>(null);
+  const wantLeads = () => {
+    if (!isAdmin || leadIndex !== null) return;
+    setLeadIndex([]);
+    void loadLeadIndex().then(setLeadIndex);
+  };
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -84,6 +96,14 @@ export function GlobalSearch() {
         }
         if (out.length >= 4) break;
       }
+      let leadsShown = 0;
+      for (const l of leadIndex ?? []) {
+        if (leadsShown >= 3) break;
+        if (l.company.toLowerCase().includes(q) || (l.domain ?? "").includes(q)) {
+          out.push({ kind: "lead", id: l.id, label: l.company, sub: "Lead" });
+          leadsShown++;
+        }
+      }
     }
     const matching = tasks
       .filter(
@@ -104,7 +124,7 @@ export function GlobalSearch() {
       });
     }
     return out.slice(0, 14);
-  }, [query, clientId, tasks, clients, profiles]);
+  }, [query, clientId, tasks, clients, profiles, leadIndex]);
 
   function choose(r: Result) {
     setOpen(false);
@@ -114,6 +134,7 @@ export function GlobalSearch() {
     // shows through is closed by then, so nothing would say why.
     setClientId("");
     if (r.kind === "task") openTask(r.id);
+    else if (r.kind === "lead") router.push(`/leads/${r.id}`);
     else router.push(`/clients/${r.id}`);
   }
 
@@ -153,7 +174,10 @@ export function GlobalSearch() {
             setOpen(true);
             setHighlight(0);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            wantLeads();
+          }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();

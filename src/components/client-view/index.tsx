@@ -18,6 +18,7 @@ import { CollapseChevron, Tabs } from "../ui";
 import { ClientAvatar } from "../client-avatar";
 import { ClientInfoModal } from "../client-info-modal";
 import { ClientNotes } from "../client-notes";
+import { ClientContacts } from "../client-contacts";
 import { ClientTimeline, timelineHint, type Zoom } from "../client-timeline";
 import { NO_TYPE, ShowMenu } from "../show-menu";
 import {
@@ -613,6 +614,7 @@ export function ClientView({ clientId }: { clientId: string }) {
               Admins edit them in place; members see the same panes read-only. */}
           <div className="min-w-0">
             <ClientNotes client={client} />
+            <ClientContacts clientId={clientId} />
           </div>
           <div className="min-w-0">
             <ClientStats clientId={clientId} inTab />

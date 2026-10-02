@@ -7,7 +7,7 @@ import { ClientAvatar, CLIENT_ICONS, CLIENT_ICON_NAMES } from "./client-avatar";
 import type { Client } from "@/lib/types";
 
 /** The studio's client palette — the same hues the clients list already assigns. */
-const CLIENT_COLORS = [
+export const CLIENT_COLORS = [
   "#06112f", "#0b43ed", "#1d32c8", "#6181e8", "#00a5b5", "#0f9d58",
   "#7c3aed", "#c026d3", "#e11d48", "#ea580c", "#ca8a04", "#6b7280",
 ];

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { Tabs, TagBadge } from "@/components/ui";
 import { CandidateSettings } from "@/components/candidate-settings";
+import { LeadSettings } from "@/components/lead-settings";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ClientMarkModal } from "@/components/client-mark-picker";
 import { MemberPictures } from "@/components/picture-editor";
@@ -720,7 +721,8 @@ type SettingsTab =
   | "clients"
   | "studio"
   | "intake"
-  | "hiring";
+  | "hiring"
+  | "leads";
 const TAB_KEY = "settings.tab";
 
 /**
@@ -747,6 +749,9 @@ const ADMIN_TABS = [
   // task type should not sit beside one that retires a question you ask a
   // stranger in an interview.
   { value: "hiring" as const, label: "Hiring" },
+  // Selling, like hiring, is its own job: stages, lost reasons and the
+  // website form's webhook.
+  { value: "leads" as const, label: "Leads" },
 ];
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
@@ -1021,6 +1026,7 @@ export default function SettingsPage() {
           is several times taller than the form card, so side by side would put
           a card and a column of empty space next to each other. */}
       {tab === "hiring" && isAdmin && <CandidateSettings />}
+      {tab === "leads" && isAdmin && <LeadSettings />}
 
       {tab === "intake" && isAdmin && (
         <div className="flex max-w-[860px] flex-col gap-4">
