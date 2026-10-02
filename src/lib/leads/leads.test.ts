@@ -40,6 +40,7 @@ const stage = (stallDays: number | null, kind: LeadStage["kind"] = "open"): Lead
   position: 1,
   kind,
   stallDays,
+  ruleKey: null,
 });
 
 describe("quietWorkDays", () => {

@@ -60,6 +60,24 @@ export interface LeadStage {
   kind: LeadStageKind;
   /** Business days of silence before the Stalled flag; null = never. */
   stallDays: number | null;
+  /**
+   * Which built-in rule stage this is (0044) — how the suggestion rules find
+   * "Offer sent" after somebody renames it. Null for stages added later.
+   */
+  ruleKey: StageRuleKey | null;
+}
+
+export type StageRuleKey = "relevant" | "discovery" | "offer_prep" | "offer_sent" | "negotiation";
+
+export type SuggestionRule = "offer_sent" | "client_replied" | "meeting_booked" | "offer_accepted" | "offer_declined";
+
+export interface LeadSuggestion {
+  id: string;
+  leadId: string;
+  rule: SuggestionRule;
+  toStageId: string;
+  reason: string;
+  createdAt: string;
 }
 
 export interface LostReason {
@@ -173,6 +191,8 @@ export interface LeadEvent {
 
 export interface LeadDetail {
   lead: Lead;
+  /** Pending stage suggestions (0044), newest first. */
+  suggestions: LeadSuggestion[];
   contacts: LeadContact[];
   offers: LeadOffer[];
   threads: LeadThread[];

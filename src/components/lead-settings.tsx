@@ -8,8 +8,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Copy, GripVertical, Mail, Plus, Trash2 } from "lucide-react";
-import { loadGmailStatus, loadInboundToken, loadVocabulary, type GmailStatus, type Vocabulary } from "@/lib/leads/data";
 import {
+  loadGmailStatus,
+  loadInboundToken,
+  loadMailSettings,
+  loadVocabulary,
+  type GmailStatus,
+  type Vocabulary,
+} from "@/lib/leads/data";
+import { useData } from "@/lib/store";
+import {
+  saveMailSetting,
   addLostReason,
   addStage,
   removeLostReason,
@@ -49,6 +58,69 @@ const KIND_TAG: Record<string, string> = {
   won: "bg-[#eaf6ee] text-[#12693d]",
   lost: "bg-background text-muted",
 };
+
+/**
+ * Who gets the morning email and the "offer waiting for review" alert.
+ *
+ * ⚠️ NOTHING SAVED MEANS EVERY ADMIN — the default the mail routes apply —
+ * so the boxes start ticked until somebody changes them.
+ */
+function MailCard() {
+  const { profiles } = useData();
+  const admins = profiles.filter((p) => p.active && p.role === "admin").sort((a, b) => a.name.localeCompare(b.name));
+  const [saved, setSaved] = useState<{ digest: string[] | null; approvers: string[] | null } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void loadMailSettings().then((v) => alive && setSaved(v));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!saved) return null;
+  const all = admins.map((a) => a.id);
+  const row = (key: "digest_recipients" | "approver_ids", title: string, note: string) => {
+    const current = (key === "digest_recipients" ? saved.digest : saved.approvers) ?? all;
+    return (
+      <div className="mt-3">
+        <div className="text-[12.5px] font-medium">{title}</div>
+        <div className="text-[11.5px] text-faint">{note}</div>
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+          {admins.map((a) => (
+            <label key={a.id} className="flex items-center gap-1.5 text-[12.5px]">
+              <input
+                type="checkbox"
+                checked={current.includes(a.id)}
+                onChange={async (e) => {
+                  const next = e.target.checked ? [...current, a.id] : current.filter((x) => x !== a.id);
+                  setErr(null);
+                  try {
+                    await saveMailSetting(key, next);
+                    setSaved((p) => (p ? { ...p, [key === "digest_recipients" ? "digest" : "approvers"]: next } : p));
+                  } catch (ex) {
+                    setErr(ex instanceof Error ? ex.message : "Could not save.");
+                  }
+                }}
+              />
+              {a.name}
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div className={CARD}>
+      <h3 className={HEAD}>Emails</h3>
+      <p className={NOTE}>Sent from notifications@studionmore.com. Nothing is sent on a day with nothing to report.</p>
+      {row("digest_recipients", "Morning email", "Sun–Thu ~7:00 — replies owed, steps due, suggestions waiting.")}
+      {row("approver_ids", "Offer waiting for review", "When an offer is set to In review. The person who set it isn't emailed.")}
+      {err && <p className="mt-2 text-[12px] text-danger">{err}</p>}
+    </div>
+  );
+}
 
 /** What `/api/gmail/callback` reports back in `?gmail=`. */
 const GMAIL_RESULT: Record<string, { ok: boolean; text: string }> = {
@@ -337,6 +409,7 @@ export function LeadSettings() {
 
       <div className="flex flex-col gap-4">
         <GmailCard />
+        <MailCard />
         <div className={CARD}>
           <h3 className={HEAD}>Lost reasons</h3>
           <p className={NOTE}>Asked when a lead moves to Lost. Removing one leaves its leads lost, untagged.</p>

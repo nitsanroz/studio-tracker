@@ -18,7 +18,14 @@ import { AlarmClock, ChevronRight, MailWarning, Plus, Search, X } from "lucide-r
 import { useData, useIsAdmin } from "@/lib/store";
 import { Avatar } from "@/components/ui";
 import { formatDate } from "@/lib/format";
-import { loadBoard, loadStoredRate, loadVocabulary, refreshRate, type Vocabulary } from "@/lib/leads/data";
+import {
+  loadBoard,
+  loadPendingSuggestions,
+  loadStoredRate,
+  loadVocabulary,
+  refreshRate,
+  type Vocabulary,
+} from "@/lib/leads/data";
 import { createLead, moveLead } from "@/lib/leads/actions";
 import { formatIls, formatMoney, isStale, toIls, usdQuote, type StoredRate } from "@/lib/leads/fx";
 import { daysInStage, isOverdue, isStalled } from "@/lib/leads/stalled";
@@ -30,18 +37,20 @@ import {
   type Lead,
   type LeadSource,
   type LeadStage,
+  type LeadSuggestion,
+  type LostReason,
 } from "@/lib/leads/types";
 import { LostModal, WinModal } from "@/components/leads/stage-modals";
 
 const LAYOUT_KEY = "leads.layout";
 
 /** See `storedLayout` in candidates/page.tsx — effect or handler only, never render. */
-type Layout = "today" | "board" | "list";
+type Layout = "today" | "board" | "list" | "summary";
 
 function storedLayout(): Layout {
   try {
     const v = localStorage.getItem(LAYOUT_KEY);
-    if (v === "list" || v === "board" || v === "today") return v;
+    if (v === "list" || v === "board" || v === "today" || v === "summary") return v;
   } catch {
     // Private window / blocked storage. The default is fine.
   }
@@ -172,6 +181,117 @@ function LeadCard({
   );
 }
 
+function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <div className="text-[11.5px] uppercase tracking-wide text-faint">{label}</div>
+      <div className="mt-1 text-[22px] font-medium">{value}</div>
+      {sub && <div className="text-[12px] text-muted">{sub}</div>}
+    </div>
+  );
+}
+
+/**
+ * The pipeline at a glance (PRD US24) — counting what is already stored, no AI.
+ *
+ * ⚠️ "DAYS TO WIN" COUNTS ONLY LEADS THAT WERE WORKED IN THE APP — a lead
+ * whose `won_at` equals its `created_at` came from the Sheet import already
+ * won, and averaging those zeros in would claim the studio closes deals the
+ * same day they arrive.
+ */
+function PipelineSummary({
+  leads,
+  stageById,
+  reasons,
+  ils,
+  now,
+}: {
+  leads: Lead[];
+  stageById: Map<string, LeadStage>;
+  reasons: LostReason[];
+  ils: (l: Lead) => number | null;
+  now: Date;
+}) {
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const yearAgo = new Date(now.getTime() - 365 * 86_400_000).toISOString();
+  const kindOf = (l: Lead) => (l.stageId ? stageById.get(l.stageId)?.kind : undefined) ?? "open";
+  const openStages = [...stageById.values()].filter((s) => s.kind === "open").sort((a, b) => a.position - b.position);
+
+  const byStage = openStages.map((s) => {
+    const list = leads.filter((l) => l.stageId === s.id);
+    return { stage: s, count: list.length, value: list.reduce((n, l) => n + (ils(l) ?? 0), 0) };
+  });
+  const openTotal = byStage.reduce((n, r) => n + r.value, 0);
+  const max = Math.max(1, ...byStage.map((r) => r.value));
+
+  const won = leads.filter((l) => kindOf(l) === "won");
+  const lost = leads.filter((l) => kindOf(l) === "lost");
+  const wonMonth = won.filter((l) => l.stageChangedAt >= monthStart);
+  const lostMonth = lost.filter((l) => l.stageChangedAt >= monthStart);
+  const worked = won.filter((l) => l.wonAt && new Date(l.wonAt).getTime() - new Date(l.createdAt).getTime() > 86_400_000);
+  const avgDays = worked.length
+    ? Math.round(
+        worked.reduce((n, l) => n + (new Date(l.wonAt!).getTime() - new Date(l.createdAt).getTime()) / 86_400_000, 0) /
+          worked.length,
+      )
+    : null;
+  const lostYear = lost.filter((l) => l.stageChangedAt >= yearAgo);
+  const reasonCounts = reasons
+    .map((r) => ({ name: r.name, n: lostYear.filter((l) => l.lostReasonId === r.id).length }))
+    .concat([{ name: "No reason", n: lostYear.filter((l) => !l.lostReasonId).length }])
+    .filter((r) => r.n > 0)
+    .sort((a, b) => b.n - a.n);
+
+  return (
+    <div className="mt-5 flex flex-col gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Tile label="Open pipeline" value={formatIls(openTotal)} sub={`${byStage.reduce((n, r) => n + r.count, 0)} leads`} />
+        <Tile
+          label="Won this month"
+          value={String(wonMonth.length)}
+          sub={formatIls(wonMonth.reduce((n, l) => n + (ils(l) ?? 0), 0))}
+        />
+        <Tile label="Lost this month" value={String(lostMonth.length)} />
+        <Tile
+          label="Avg days to win"
+          value={avgDays === null ? "—" : String(avgDays)}
+          sub={worked.length ? `across ${worked.length} won in the app` : "no deal won in the app yet"}
+        />
+      </div>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+          <h2 className="text-sm font-semibold">Open value by stage</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {byStage.map((r) => (
+              <div key={r.stage.id} className="grid grid-cols-[120px_1fr_90px] items-center gap-3 text-[12.5px]">
+                <span className="bidi-auto truncate text-muted">
+                  {r.stage.name} <span className="text-faint">{r.count}</span>
+                </span>
+                <span className="h-2 rounded-full bg-foreground/[0.06]">
+                  <span className="block h-2 rounded-full bg-brand" style={{ width: `${(r.value / max) * 100}%` }} />
+                </span>
+                <span className="text-right">{formatIls(r.value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+          <h2 className="text-sm font-semibold">Why leads were lost · last 12 months</h2>
+          <div className="mt-3 flex flex-col gap-1.5 text-[12.5px]">
+            {reasonCounts.map((r) => (
+              <div key={r.name} className="flex justify-between">
+                <span className="text-muted">{r.name}</span>
+                <span>{r.n}</span>
+              </div>
+            ))}
+            {reasonCounts.length === 0 && <p className="text-faint">Nothing lost in the last 12 months.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * What to do first this morning (PRD US23): replies we owe, next steps due,
  * leads gone quiet, leads with no next step.
@@ -184,10 +304,12 @@ function TodayList({
   leads,
   stageById,
   now,
+  suggestions,
 }: {
   leads: Lead[];
   stageById: Map<string, LeadStage>;
   now: Date;
+  suggestions: LeadSuggestion[];
 }) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const open = leads.filter((l) => {
@@ -197,7 +319,25 @@ function TodayList({
   const seen = new Set<string>();
   const take = (list: Lead[]) => list.filter((l) => !seen.has(l.id) && (seen.add(l.id), true));
 
+  // A lead with a pending suggestion is listed there first, with the reason.
+  const suggestionFor = new Map(
+    suggestions
+      .filter((sg) => {
+        const l = open.find((x) => x.id === sg.leadId);
+        return l && l.stageId !== sg.toStageId;
+      })
+      .map((sg) => [sg.leadId, sg]),
+  );
   const sections: { title: string; hint: string; rows: Lead[]; line: (l: Lead) => string }[] = [
+    {
+      title: "Suggestions",
+      hint: "Accept or dismiss on the lead.",
+      rows: take(open.filter((l) => suggestionFor.has(l.id))),
+      line: (l) => {
+        const sg = suggestionFor.get(l.id)!;
+        return `→ ${stageById.get(sg.toStageId)?.name ?? "?"} · ${sg.reason}`;
+      },
+    },
     {
       title: "Replies we owe",
       hint: "The last message on a thread came from them.",
@@ -276,6 +416,7 @@ export default function LeadsPage() {
 
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
   const [rows, setRows] = useState<Lead[]>([]);
+  const [suggestions, setSuggestions] = useState<LeadSuggestion[]>([]);
   const [rate, setRate] = useState<StoredRate | null>(null);
   const [layout, setLayout] = useState<Layout>("board");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
@@ -300,9 +441,10 @@ export default function LeadsPage() {
   }, []);
 
   const reload = useCallback(async () => {
-    const [v, b] = await Promise.all([loadVocabulary(), loadBoard()]);
+    const [v, b, sg] = await Promise.all([loadVocabulary(), loadBoard(), loadPendingSuggestions()]);
     setVocab(v);
     setRows(b);
+    setSuggestions(sg);
   }, []);
 
   useEffect(() => {
@@ -310,10 +452,16 @@ export default function LeadsPage() {
     let alive = true;
     void (async () => {
       try {
-        const [v, b, r] = await Promise.all([loadVocabulary(), loadBoard(), loadStoredRate()]);
+        const [v, b, r, sg] = await Promise.all([
+          loadVocabulary(),
+          loadBoard(),
+          loadStoredRate(),
+          loadPendingSuggestions(),
+        ]);
         if (!alive) return;
         setVocab(v);
         setRows(b);
+        setSuggestions(sg);
         setRate(r);
         setError(null);
         // The rate is refreshed in the background; totals use the stored one
@@ -545,7 +693,7 @@ export default function LeadsPage() {
           </label>
 
           <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
-            {(["today", "board", "list"] as const).map((k) => (
+            {(["today", "board", "list", "summary"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => {
@@ -576,7 +724,11 @@ export default function LeadsPage() {
       {busy && <p className="mt-8 text-sm text-muted">Loading…</p>}
 
       {!busy && vocab && layout === "today" && (
-        <TodayList leads={visible} stageById={stageById} now={now} />
+        <TodayList leads={visible} stageById={stageById} now={now} suggestions={suggestions} />
+      )}
+
+      {!busy && vocab && layout === "summary" && (
+        <PipelineSummary leads={rows} stageById={stageById} reasons={vocab.lostReasons} ils={ils} now={now} />
       )}
 
       {!busy && vocab && layout === "board" && (

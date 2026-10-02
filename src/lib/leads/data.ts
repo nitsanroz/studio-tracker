@@ -10,6 +10,7 @@
 import { createClient } from "../supabase/client";
 import { MISSING_SCHEMA_CODES } from "../db";
 import type { StoredRate } from "./fx";
+import { mapStage } from "./stage-map";
 import type {
   ClientContact,
   Currency,
@@ -22,8 +23,9 @@ import type {
   LeadOffer,
   LeadSource,
   LeadStage,
-  LeadStageKind,
+  LeadSuggestion,
   LeadThread,
+  SuggestionRule,
   LostReason,
   OfferStatus,
 } from "./types";
@@ -61,14 +63,16 @@ function check(error: { code?: string; message: string } | null) {
   throw new Error(error.message);
 }
 
-export function mapStage(r: Row): LeadStage {
-  const kind = str(r.kind);
+export { mapStage };
+
+export function mapSuggestion(r: Row): LeadSuggestion {
   return {
     id: str(r.id),
-    name: str(r.name),
-    position: num(r.position),
-    kind: (kind === "won" || kind === "lost" ? kind : "open") as LeadStageKind,
-    stallDays: nnum(r.stall_days),
+    leadId: str(r.lead_id),
+    rule: str(r.rule) as SuggestionRule,
+    toStageId: str(r.to_stage_id),
+    reason: str(r.reason),
+    createdAt: str(r.created_at),
   };
 }
 
@@ -225,8 +229,14 @@ export interface Vocabulary {
 
 export async function loadVocabulary(): Promise<Vocabulary> {
   const sb = createClient();
+  const stageRows = async () => {
+    const full = await sb.from("lead_stages").select("id,name,position,kind,stall_days,rule_key").order("position");
+    // 0044's column; before it is run the rules simply find no stages.
+    if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
+    return sb.from("lead_stages").select("id,name,position,kind,stall_days").order("position");
+  };
   const [stages, reasons] = await Promise.all([
-    sb.from("lead_stages").select("id,name,position,kind,stall_days").order("position"),
+    stageRows(),
     sb.from("lead_lost_reasons").select("id,name,position").order("position"),
   ]);
   check(stages.error);
@@ -305,6 +315,18 @@ export async function loadBoard(): Promise<Lead[]> {
   return leads;
 }
 
+/** Every pending suggestion, for the Today list. Best-effort before 0044. */
+export async function loadPendingSuggestions(): Promise<LeadSuggestion[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("lead_suggestions")
+    .select("id,lead_id,rule,to_stage_id,reason,created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return ((data ?? []) as Row[]).map(mapSuggestion);
+}
+
 export async function loadLead(id: string): Promise<LeadDetail | null> {
   const sb = createClient();
   const { data: rows, error } = await leadRows({ id });
@@ -328,8 +350,16 @@ export async function loadLead(id: string): Promise<LeadDetail | null> {
 
   const c = ((contacts.data ?? []) as Row[]).map(mapContact);
   lead.primaryContact = c[0]?.name ?? null;
+  const { data: sugg } = await sb
+    .from("lead_suggestions")
+    .select("id,lead_id,rule,to_stage_id,reason,created_at")
+    .eq("lead_id", id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
   return {
     lead,
+    suggestions: ((sugg ?? []) as Row[]).map(mapSuggestion),
     contacts: c,
     offers: ((offers.data ?? []) as Row[]).map(mapOffer),
     threads: ((threads.data ?? []) as Row[])
@@ -458,4 +488,15 @@ export async function searchGmailForLead(leadId: string): Promise<{ threads: num
   const j = (await res.json().catch(() => ({}))) as { threads?: number; accounts?: number; error?: string };
   if (!res.ok) throw new Error(j.error ?? "Gmail search failed.");
   return { threads: j.threads ?? 0, accounts: j.accounts ?? 0 };
+}
+
+/** Saved recipient lists (profile ids) — null when nothing is saved, meaning "every admin". */
+export async function loadMailSettings(): Promise<{ digest: string[] | null; approvers: string[] | null }> {
+  const sb = createClient();
+  const { data } = await sb.from("lead_settings").select("key,value").in("key", ["digest_recipients", "approver_ids"]);
+  const get = (k: string) => {
+    const v = ((data ?? []) as Row[]).find((r) => r.key === k)?.value;
+    return Array.isArray(v) ? (v as string[]) : null;
+  };
+  return { digest: get("digest_recipients"), approvers: get("approver_ids") };
 }

@@ -12,6 +12,7 @@
 
 import { createClient } from "../supabase/client";
 import { domainOf } from "./types";
+import { afterOfferStatus, type Suggestion } from "./rules";
 import type {
   Currency,
   LeadContact,
@@ -165,6 +166,7 @@ export async function moveLead(
   const sb = createClient();
   const { error } = await sb.from("leads").update(row).eq("id", leadId);
   fail("move the lead", error);
+  await supersede(leadId);
   await logEvent(
     leadId,
     to.kind === "lost" ? "lost" : from?.kind === "lost" || from?.kind === "won" ? "reopened" : "stage_change",
@@ -275,9 +277,15 @@ export interface OfferInput {
   fileName: string | null;
 }
 
-export async function addOffer(leadId: string, version: number, input: OfferInput, actorId: string | null) {
+export async function addOffer(
+  leadId: string,
+  version: number,
+  input: OfferInput,
+  actorId: string | null,
+  rules?: RuleContext,
+) {
   const sb = createClient();
-  const { error } = await sb.from("lead_offers").insert({
+  const { data: created, error } = await sb.from("lead_offers").insert({
     lead_id: leadId,
     version,
     amount: input.amount,
@@ -288,8 +296,10 @@ export async function addOffer(leadId: string, version: number, input: OfferInpu
     storage_path: input.storagePath,
     file_name: input.fileName,
     created_by: actorId,
-  });
+  }).select("id").single();
   fail("add the offer", error);
+  if (rules) await proposeSuggestion(leadId, afterOfferStatus(input.status, version, rules.current, rules.stages));
+  if (input.status === "in_review" && created) await alertOfferReview((created as { id: string }).id);
   await touch(leadId);
   await logEvent(leadId, "offer", `v${version} added`, actorId, {
     version,
@@ -304,6 +314,7 @@ export async function updateOffer(
   version: number,
   patch: Partial<OfferInput>,
   actorId: string | null,
+  rules?: RuleContext,
 ) {
   const row: Record<string, unknown> = {};
   if ("amount" in patch) row.amount = patch.amount;
@@ -318,7 +329,11 @@ export async function updateOffer(
   const { error } = await sb.from("lead_offers").update(row).eq("id", id);
   fail("save the offer", error);
   await touch(leadId);
-  if ("status" in patch) await logEvent(leadId, "offer", `v${version} → ${patch.status}`, actorId);
+  if ("status" in patch) {
+    await logEvent(leadId, "offer", `v${version} → ${patch.status}`, actorId);
+    if (rules && patch.status) await proposeSuggestion(leadId, afterOfferStatus(patch.status, version, rules.current, rules.stages));
+    if (patch.status === "in_review") await alertOfferReview(id);
+  }
 }
 
 /**
@@ -488,6 +503,7 @@ export async function markWon(
     })
     .eq("id", leadId);
   fail("mark the lead as won", error);
+  await supersede(leadId);
 
   await logEvent(
     leadId,
@@ -600,4 +616,75 @@ export async function removeLostReason(id: string) {
   const sb = createClient();
   const { error } = await sb.from("lead_lost_reasons").delete().eq("id", id);
   fail("remove the reason", error);
+}
+
+// ── stage suggestions (0044) ────────────────────────────────────────────────
+
+/**
+ * Files a suggestion for the owner to accept or dismiss.
+ *
+ * ⚠️ BEST-EFFORT AND SILENT ON A DUPLICATE: 0044 allows one pending
+ * suggestion per lead and target, and a second identical one is simply not
+ * needed — so a unique violation (or a missing table before 0044) is ignored.
+ */
+export async function proposeSuggestion(leadId: string, s: Suggestion | null) {
+  if (!s) return;
+  try {
+    const sb = createClient();
+    await sb
+      .from("lead_suggestions")
+      .insert({ lead_id: leadId, rule: s.rule, to_stage_id: s.toStageId, reason: s.reason });
+  } catch (e) {
+    console.error("[leads] suggestion not recorded", e);
+  }
+}
+
+export async function decideSuggestion(id: string, status: "accepted" | "dismissed", actorId: string | null) {
+  const sb = createClient();
+  const { error } = await sb
+    .from("lead_suggestions")
+    .update({ status, decided_at: nowIso(), decided_by: actorId })
+    .eq("id", id);
+  fail("save the decision", error);
+}
+
+/** A move by hand makes every pending suggestion for the lead stale. */
+async function supersede(leadId: string) {
+  try {
+    const sb = createClient();
+    await sb
+      .from("lead_suggestions")
+      .update({ status: "superseded", decided_at: nowIso() })
+      .eq("lead_id", leadId)
+      .eq("status", "pending");
+  } catch {
+    // Before 0044 there is nothing to supersede.
+  }
+}
+
+/** Asks the server to email the approver, once per offer (0044's `review_alerted_at`). */
+export async function alertOfferReview(offerId: string) {
+  try {
+    await fetch("/api/leads/offer-alert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offerId }),
+    });
+  } catch {
+    // Best-effort: the offer is saved and shows "In review" either way.
+  }
+}
+
+/** What the offer rules need to know about where the lead stands. */
+export interface RuleContext {
+  current: LeadStage | undefined;
+  stages: LeadStage[];
+}
+
+export async function saveMailSetting(key: "digest_recipients" | "approver_ids", profileIds: string[]) {
+  const sb = createClient();
+  const { error } = await sb
+    .from("lead_settings")
+    .upsert({ key, value: profileIds, updated_at: nowIso() }, { onConflict: "key" });
+  fail("save the email setting", error);
 }

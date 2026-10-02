@@ -17,6 +17,7 @@ import {
   ExternalLink,
   FileText,
   Globe,
+  Lightbulb,
   Mail,
   Phone,
   Plus,
@@ -53,7 +54,9 @@ import {
   updateContact,
   updateLead,
   updateOffer,
+  decideSuggestion,
   type ContactFields,
+  type RuleContext,
 } from "@/lib/leads/actions";
 import { formatIls, formatMoney, toIls, usdQuote, type StoredRate } from "@/lib/leads/fx";
 import { daysInStage, isOverdue, isStalled, quietWorkDays } from "@/lib/leads/stalled";
@@ -156,7 +159,9 @@ export default function LeadPage() {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("activity");
-  const [pending, setPending] = useState<{ from: LeadStage | null; to: LeadStage } | null>(null);
+  const [pending, setPending] = useState<{ from: LeadStage | null; to: LeadStage; suggestionId?: string } | null>(
+    null,
+  );
   const [now] = useState(() => new Date());
 
   const reload = useCallback(async () => {
@@ -243,7 +248,7 @@ export default function LeadPage() {
     );
   if (!detail || !vocab) return <p className="py-10 text-sm text-danger">{error}</p>;
 
-  const { lead: l, contacts, offers, threads, events } = detail;
+  const { lead: l, contacts, offers, threads, events, suggestions } = detail;
   const stage = vocab.stages.find((s) => s.id === l.stageId) ?? null;
   const stalled = isStalled(l, stage ?? undefined, now);
   const overdue = isOverdue(l, now);
@@ -251,6 +256,24 @@ export default function LeadPage() {
   const wonClient = l.clientId ? clients.find((c) => c.id === l.clientId) : null;
   const lostReason = l.lostReasonId ? vocab.lostReasons.find((r) => r.id === l.lostReasonId) : null;
   const valueIls = toIls(l.estValue, l.currency, quote);
+
+  /**
+   * Accepting a suggestion is the same move the stage picker makes — Won and
+   * Lost still open their modals (a client to create, a reason to give) — and
+   * the suggestion is marked accepted only once the move actually happened.
+   */
+  const acceptSuggestion = (id: string, toStageId: string) => {
+    const to = vocab.stages.find((x) => x.id === toStageId);
+    if (!to) return;
+    if (to.kind !== "open") {
+      setPending({ from: stage, to, suggestionId: id });
+      return;
+    }
+    void run(async () => {
+      await moveLead(l.id, stage, to, currentUserId);
+      await decideSuggestion(id, "accepted", currentUserId);
+    });
+  };
 
   const changeStage = (to: LeadStage) => {
     if (to.id === l.stageId) return;
@@ -392,6 +415,37 @@ export default function LeadPage() {
         </div>
       </div>
 
+      {/* ── suggestions (Phase 3, rule-based) ── */}
+      {suggestions
+        .filter((sg) => sg.toStageId !== l.stageId)
+        .map((sg) => {
+          const to = vocab.stages.find((x) => x.id === sg.toStageId);
+          return (
+            <div
+              key={sg.id}
+              className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#c9d6fb] bg-brand-soft px-3 py-2 text-[13px]"
+            >
+              <Lightbulb size={15} strokeWidth={1.75} className="shrink-0 text-brand" />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-brand-dark">Move to {to?.name ?? "?"}?</span>{" "}
+                <span className="bidi-auto text-muted">{sg.reason}</span>
+              </span>
+              <button
+                onClick={() => acceptSuggestion(sg.id, sg.toStageId)}
+                className="h-7 rounded-md bg-brand px-2.5 text-[12px] font-medium text-white"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => void run(() => decideSuggestion(sg.id, "dismissed", currentUserId))}
+                className="h-7 rounded-md border border-border bg-surface px-2.5 text-[12px] text-muted hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
+          );
+        })}
+
       {/* ── banners ── */}
       {stalled && stage && (
         <div className="mt-4 flex items-center gap-2 rounded-lg border border-[#f3dfb8] bg-[#fdf3e3] px-3 py-2 text-[13px] text-[#8a5a09]">
@@ -479,6 +533,7 @@ export default function LeadPage() {
               run={run}
               currentUserId={currentUserId}
               onError={setError}
+              rules={{ current: stage ?? undefined, stages: vocab.stages }}
             />
           )}
         </div>
@@ -569,8 +624,11 @@ export default function LeadPage() {
           reasons={vocab.lostReasons}
           onClose={() => setPending(null)}
           onDone={() => {
+            const sid = pending.suggestionId;
             setPending(null);
-            void reload();
+            void run(async () => {
+              if (sid) await decideSuggestion(sid, "accepted", currentUserId);
+            });
           }}
         />
       )}
@@ -581,8 +639,11 @@ export default function LeadPage() {
           wonStage={pending.to}
           onClose={() => setPending(null)}
           onDone={() => {
+            const sid = pending.suggestionId;
             setPending(null);
-            void reload();
+            void run(async () => {
+              if (sid) await decideSuggestion(sid, "accepted", currentUserId);
+            });
           }}
         />
       )}
@@ -1068,6 +1129,7 @@ function OffersTab({
   run,
   currentUserId,
   onError,
+  rules,
 }: {
   leadId: string;
   offers: LeadOffer[];
@@ -1077,6 +1139,7 @@ function OffersTab({
   run: (fn: () => Promise<unknown>) => Promise<void>;
   currentUserId: string;
   onError: (msg: string | null) => void;
+  rules: RuleContext;
 }) {
   const [adding, setAdding] = useState(false);
   const [amount, setAmount] = useState("");
@@ -1107,6 +1170,7 @@ function OffersTab({
             fileName: uploaded?.name ?? null,
           },
           currentUserId,
+          rules,
         ),
       );
       setAdding(false);
@@ -1137,7 +1201,7 @@ function OffersTab({
                 value={o.status}
                 onChange={(e) =>
                   void run(() =>
-                    updateOffer(o.id, leadId, o.version, { status: e.target.value as OfferStatus }, currentUserId),
+                    updateOffer(o.id, leadId, o.version, { status: e.target.value as OfferStatus }, currentUserId, rules),
                   )
                 }
                 className="rounded-full border border-border bg-surface px-2 py-0.5 text-[12px]"

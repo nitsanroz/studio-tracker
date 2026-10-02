@@ -23,6 +23,8 @@
 
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { decryptToken } from "./crypto";
+import { afterMail } from "../leads/rules";
+import { mapStage } from "../leads/stage-map";
 import {
   accessTokenFor,
   getMessageMeta,
@@ -237,6 +239,14 @@ export async function storeThread(
     row = data as { id: string; lead_id: string };
   }
 
+  // Which of these are NEW to us — the suggestion rules only look at those.
+  const { data: knownRows } = await sb
+    .from("lead_messages")
+    .select("rfc_message_id")
+    .in("rfc_message_id", msgs.map((m) => m.rfcId));
+  const known = new Set(((knownRows ?? []) as { rfc_message_id: string }[]).map((r) => r.rfc_message_id));
+  const fresh = msgs.filter((m) => !known.has(m.rfcId));
+
   const { error: me } = await sb.from("lead_messages").upsert(
     msgs.map((m) => ({
       thread_id: row!.id,
@@ -257,12 +267,54 @@ export async function storeThread(
   if (me) throw new Error(`messages: ${me.message}`);
 
   // ⚠️ AN EMAIL IS ACTIVITY — it moves the Stalled clock — but only forward.
-  const { data: lead } = await sb.from("leads").select("last_activity_at").eq("id", leadId).maybeSingle();
-  const current = (lead as { last_activity_at?: string } | null)?.last_activity_at ?? "";
+  const { data: lead } = await sb
+    .from("leads")
+    .select("last_activity_at,stage_id,stage_changed_at")
+    .eq("id", leadId)
+    .maybeSingle();
+  const l = lead as { last_activity_at?: string; stage_id?: string | null; stage_changed_at?: string } | null;
+  const current = l?.last_activity_at ?? "";
   if (last.sentAt > current) {
     await sb.from("leads").update({ last_activity_at: last.sentAt }).eq("id", leadId);
   }
+  if (fresh.length && l) await suggestFromMail(sb, leadId, l.stage_id ?? null, l.stage_changed_at ?? "", fresh);
   return leadId;
+}
+
+/**
+ * The mail rules (0044, Phase 3 lite): the client answered an offer, or a
+ * meeting got booked. Best-effort — a failed suggestion never fails the sync.
+ *
+ * ⚠️ ONLY MAIL THAT IS NEW AND AFTER THE LEAD'S LAST STAGE MOVE COUNTS. A
+ * backfill re-reads a year of mail; without the date check, the client's
+ * reply to last spring's offer would suggest Negotiation today.
+ */
+async function suggestFromMail(
+  sb: SupabaseClient,
+  leadId: string,
+  stageId: string | null,
+  stageChangedAt: string,
+  fresh: ParsedMessage[],
+) {
+  try {
+    const { data: rows, error } = await sb.from("lead_stages").select("id,name,position,kind,stall_days,rule_key");
+    if (error) return; // before 0044
+    const stages = ((rows ?? []) as Record<string, unknown>[]).map(mapStage);
+    const currentStage = stages.find((s) => s.id === stageId);
+    const after = fresh.filter((m) => m.sentAt > stageChangedAt);
+    const reply = after.filter((m) => !m.fromUs && !m.isCalendar).at(-1) ?? null;
+    const meeting = after.find((m) => m.isCalendar) ?? null;
+    const s = afterMail(currentStage, stages, {
+      replyFrom: reply ? (reply.from?.name ?? reply.from?.email ?? "The client") : null,
+      replyAt: reply?.sentAt ?? null,
+      meeting: meeting?.subject ?? null,
+    });
+    if (!s) return;
+    // A duplicate pending suggestion is refused by 0044's partial unique index — fine.
+    await sb.from("lead_suggestions").insert({ lead_id: leadId, rule: s.rule, to_stage_id: s.toStageId, reason: s.reason });
+  } catch (e) {
+    console.error("[gmail] suggestion failed", e);
+  }
 }
 
 /**
