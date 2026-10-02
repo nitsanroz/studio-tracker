@@ -7,8 +7,8 @@
 // studio's own work is labelled. Shaped after `candidate-settings.tsx`.
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, GripVertical, Plus, Trash2 } from "lucide-react";
-import { loadInboundToken, loadVocabulary, type Vocabulary } from "@/lib/leads/data";
+import { Copy, GripVertical, Mail, Plus, Trash2 } from "lucide-react";
+import { loadGmailStatus, loadInboundToken, loadVocabulary, type GmailStatus, type Vocabulary } from "@/lib/leads/data";
 import {
   addLostReason,
   addStage,
@@ -49,6 +49,135 @@ const KIND_TAG: Record<string, string> = {
   won: "bg-[#eaf6ee] text-[#12693d]",
   lost: "bg-background text-muted",
 };
+
+/** What `/api/gmail/callback` reports back in `?gmail=`. */
+const GMAIL_RESULT: Record<string, { ok: boolean; text: string }> = {
+  connected: { ok: true, text: "Gmail connected. Open leads are being searched for their history now — give it a minute." },
+  cancelled: { ok: false, text: "Gmail wasn't connected — the Google screen was closed." },
+  "bad-state": { ok: false, text: "That sign-in link had expired. Press Connect Gmail again." },
+  "no-scope": { ok: false, text: "Google didn't grant read access. Press Connect and leave the Gmail box ticked." },
+  "no-refresh-token": { ok: false, text: "Google didn't hand over a lasting token. Remove the app at myaccount.google.com → Security → Third-party access, then connect again." },
+  "wrong-domain": { ok: false, text: "Only @studionmore.com mailboxes can be connected." },
+  "not-configured": { ok: false, text: "Gmail isn't set up on the server yet — see docs/gmail-setup.md." },
+  failed: { ok: false, text: "Connecting Gmail failed. Try again; if it repeats, tell Claude." },
+};
+
+/**
+ * Connect / disconnect YOUR mailbox, and see who else has.
+ *
+ * ⚠️ EACH PERSON CONNECTS THEIR OWN. The button starts Google's consent screen
+ * for whoever is signed in here; nobody can connect a colleague's mailbox, and
+ * Disconnect only ever removes your own.
+ */
+function GmailCard() {
+  const [status, setStatus] = useState<GmailStatus | null | undefined>(undefined);
+  const [result, setResult] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const reload = useCallback(async () => setStatus(await loadGmailStatus()), []);
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const s = await loadGmailStatus();
+      if (!alive) return;
+      setStatus(s);
+      const q = new URLSearchParams(window.location.search).get("gmail");
+      if (q) {
+        setResult(q);
+        try {
+          const u = new URL(window.location.href);
+          u.searchParams.delete("gmail");
+          window.history.replaceState(null, "", u.pathname + u.search);
+        } catch {
+          // The flag is only a message.
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const mine = status?.connections.find((c) => c.profile_id === status.me) ?? null;
+  const msg = result ? GMAIL_RESULT[result] : null;
+
+  return (
+    <div className={CARD}>
+      <h3 className={`${HEAD} flex items-center gap-1.5`}>
+        <Mail size={15} strokeWidth={1.75} /> Gmail
+      </h3>
+      <p className={NOTE}>
+        Read-only. Threads with a lead&rsquo;s contacts or company domain attach to the lead by themselves, with who
+        owes the next reply. Only matching threads are stored — headers and text, never attachments. Each of you
+        connects your own mailbox.
+      </p>
+      {msg && (
+        <p className={`mt-3 rounded-lg px-3 py-2 text-[12.5px] ${msg.ok ? "bg-[#eaf6ee] text-[#12693d]" : "bg-danger/5 text-danger"}`}>
+          {msg.text}
+        </p>
+      )}
+      {status === undefined && <p className="mt-3 text-[12.5px] text-faint">Loading…</p>}
+      {status === null && <p className="mt-3 text-[12.5px] text-danger">Could not read the Gmail status.</p>}
+      {status && !status.installed && (
+        <p className="mt-3 text-[12.5px] text-warning">Run migration 0043 first.</p>
+      )}
+      {status && status.installed && !status.configured && (
+        <p className="mt-3 text-[12.5px] text-warning">
+          Waiting on the Google Cloud setup (docs/gmail-setup.md) — then Connect appears here.
+        </p>
+      )}
+      {status && status.installed && (
+        <div className="mt-3 flex flex-col gap-1.5">
+          {status.connections.map((c) => (
+            <div key={c.profile_id} className="flex items-center gap-2 text-[12.5px]">
+              <span
+                className={`size-2 shrink-0 rounded-full ${c.status === "ok" ? "bg-success" : "bg-danger"}`}
+                aria-hidden
+              />
+              <span className="font-medium">{c.email}</span>
+              <span className="text-faint">
+                {c.status === "ok"
+                  ? c.last_sync_at
+                    ? `synced ${new Date(c.last_sync_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}`
+                    : "connected"
+                  : c.status === "revoked"
+                    ? "access removed — reconnect"
+                    : `error: ${c.last_error ?? "unknown"}`}
+              </span>
+            </div>
+          ))}
+          {status.connections.length === 0 && <p className="text-[12.5px] text-faint">No mailbox connected yet.</p>}
+          {status.configured && (
+            <div className="mt-2 flex gap-2">
+              {!mine || mine.status !== "ok" ? (
+                <a
+                  href="/api/gmail/connect"
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white"
+                >
+                  <Mail size={13} /> {mine ? "Reconnect my Gmail" : "Connect my Gmail"}
+                </a>
+              ) : (
+                <button
+                  disabled={busy}
+                  onClick={async () => {
+                    if (!window.confirm(`Disconnect ${mine.email}? Threads already on leads stay there.`)) return;
+                    setBusy(true);
+                    await fetch("/api/gmail/disconnect", { method: "POST" }).catch(() => undefined);
+                    await reload();
+                    setBusy(false);
+                  }}
+                  className="h-8 rounded-lg border border-border px-3 text-[12.5px] hover:border-danger hover:text-danger disabled:opacity-50"
+                >
+                  Disconnect my Gmail
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function LeadSettings() {
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
@@ -207,6 +336,7 @@ export function LeadSettings() {
       </div>
 
       <div className="flex flex-col gap-4">
+        <GmailCard />
         <div className={CARD}>
           <h3 className={HEAD}>Lost reasons</h3>
           <p className={NOTE}>Asked when a lead moves to Lost. Removing one leaves its leads lost, untagged.</p>

@@ -18,6 +18,7 @@ import type {
   LeadDetail,
   LeadEvent,
   LeadEventKind,
+  LeadMessage,
   LeadOffer,
   LeadSource,
   LeadStage,
@@ -95,6 +96,8 @@ export function mapLead(r: Row): Lead {
     lastActivityAt: str(r.last_activity_at),
     createdAt: str(r.created_at),
     primaryContact: null,
+    gmailBackfilledAt: nstr(r.gmail_backfilled_at),
+    replyOwedSince: null,
   };
 }
 
@@ -135,6 +138,8 @@ export function mapOffer(r: Row): LeadOffer {
 }
 
 export function mapThread(r: Row): LeadThread {
+  const owed = str(r.reply_owed_by);
+  const by = str(r.matched_by);
   return {
     id: str(r.id),
     leadId: str(r.lead_id),
@@ -143,7 +148,40 @@ export function mapThread(r: Row): LeadThread {
     subject: nstr(r.subject),
     note: nstr(r.note),
     createdAt: str(r.created_at),
+    participants: Array.isArray(r.participants) ? (r.participants as string[]) : [],
+    lastMessageAt: nstr(r.last_message_at),
+    replyOwedBy: owed === "us" || owed === "them" ? owed : null,
+    messageCount: num(r.message_count),
+    digest: nstr(r.digest),
+    matchedBy: (["manual", "thread", "email", "domain"].includes(by) ? by : null) as LeadThread["matchedBy"],
   };
+}
+
+export function mapMessage(r: Row): LeadMessage {
+  return {
+    id: str(r.id),
+    threadId: str(r.thread_id),
+    fromAddr: nstr(r.from_addr),
+    fromName: nstr(r.from_name),
+    toAddrs: Array.isArray(r.to_addrs) ? (r.to_addrs as string[]) : [],
+    ccAddrs: Array.isArray(r.cc_addrs) ? (r.cc_addrs as string[]) : [],
+    subject: nstr(r.subject),
+    sentAt: nstr(r.sent_at),
+    fromUs: r.from_us === true,
+    bodyText: nstr(r.body_text),
+  };
+}
+
+/** One thread's messages, oldest first — fetched when a thread is opened, never with the board. */
+export async function loadThreadMessages(threadId: string): Promise<LeadMessage[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("lead_messages")
+    .select("id,thread_id,from_addr,from_name,to_addrs,cc_addrs,subject,sent_at,from_us,body_text")
+    .eq("thread_id", threadId)
+    .order("sent_at");
+  check(error);
+  return ((data ?? []) as Row[]).map(mapMessage);
 }
 
 export function mapEvent(r: Row): LeadEvent {
@@ -177,6 +215,8 @@ const LEAD_COLS =
   "id,company,website,domain,source,stage_id,owner_id,est_value,currency,asked_for," +
   "next_step,next_step_due,lost_reason_id,lost_note,sheet_ref,client_id,section_id,won_at," +
   "stage_changed_at,last_activity_at,created_at";
+/** 0043's column, asked for separately so the board still loads before 0043 is run. */
+const LEAD_COLS_0043 = LEAD_COLS + ",gmail_backfilled_at";
 
 export interface Vocabulary {
   stages: LeadStage[];
@@ -209,11 +249,25 @@ export async function loadVocabulary(): Promise<Vocabulary> {
  * strip both need them. If that ever stops being true, filter closed leads to
  * the last N months here — not on the page.
  */
+/**
+ * ⚠️ STEPS DOWN A RUNG WHEN 0043 IS NOT APPLIED — the same ladder the store
+ * uses: naming a missing column fails the whole select, and Phase 1 must keep
+ * working while Phase 2's migration waits to be run.
+ */
+async function leadRows(filter?: { id: string }) {
+  const sb = createClient();
+  const q = (cols: string) => {
+    const base = sb.from("leads").select(cols);
+    return filter ? base.eq("id", filter.id) : base.order("last_activity_at", { ascending: false });
+  };
+  const full = await q(LEAD_COLS_0043);
+  if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
+  return q(LEAD_COLS);
+}
+
 export async function loadBoard(): Promise<Lead[]> {
   const sb = createClient();
-  const { data, error } = await sb.from("leads").select(LEAD_COLS).order("last_activity_at", {
-    ascending: false,
-  });
+  const { data, error } = await leadRows();
   check(error);
   const leads = ((data ?? []) as unknown as Row[]).map(mapLead);
   if (leads.length === 0) return leads;
@@ -232,19 +286,38 @@ export async function loadBoard(): Promise<Lead[]> {
     if (!first.has(id)) first.set(id, str(c.name));
   }
   for (const l of leads) l.primaryContact = first.get(l.id) ?? null;
+
+  // Replies the studio owes, for the Today list. Only threads where the ball is
+  // in our court, and only their timestamps — never a subject or a body.
+  const { data: owed, error: owedErr } = await sb
+    .from("lead_threads")
+    .select("lead_id,last_message_at")
+    .eq("reply_owed_by", "us");
+  if (!owedErr) {
+    const since = new Map<string, string>();
+    for (const t of (owed ?? []) as Row[]) {
+      const id = str(t.lead_id);
+      const at = str(t.last_message_at);
+      if (at && (!since.has(id) || at < since.get(id)!)) since.set(id, at);
+    }
+    for (const l of leads) l.replyOwedSince = since.get(l.id) ?? null;
+  }
   return leads;
 }
 
 export async function loadLead(id: string): Promise<LeadDetail | null> {
   const sb = createClient();
-  const { data, error } = await sb.from("leads").select(LEAD_COLS).eq("id", id).maybeSingle();
+  const { data: rows, error } = await leadRows({ id });
   check(error);
+  const data = ((rows ?? []) as unknown as Row[])[0];
   if (!data) return null;
-  const lead = mapLead(data as unknown as Row);
+  const lead = mapLead(data);
 
   const [contacts, offers, threads, events] = await Promise.all([
     sb.from("lead_contacts").select("*").eq("lead_id", id).order("position"),
     sb.from("lead_offers").select("*").eq("lead_id", id).order("version", { ascending: false }),
+    // Sorted below rather than by `last_message_at` here: that column is 0043's,
+    // and ordering by a missing column fails the whole lead page.
     sb.from("lead_threads").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     sb.from("lead_events").select("*").eq("lead_id", id).order("at", { ascending: false }).limit(100),
   ]);
@@ -259,7 +332,9 @@ export async function loadLead(id: string): Promise<LeadDetail | null> {
     lead,
     contacts: c,
     offers: ((offers.data ?? []) as Row[]).map(mapOffer),
-    threads: ((threads.data ?? []) as Row[]).map(mapThread),
+    threads: ((threads.data ?? []) as Row[])
+      .map(mapThread)
+      .sort((a, b) => (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)),
     events: ((events.data ?? []) as Row[]).map(mapEvent),
   };
 }
@@ -346,4 +421,41 @@ export async function loadLeadIndex(): Promise<{ id: string; company: string; do
   });
   if (error) return [];
   return ((data ?? []) as Row[]).map((r) => ({ id: str(r.id), company: str(r.company), domain: nstr(r.domain) }));
+}
+
+export interface GmailStatus {
+  configured: boolean;
+  installed: boolean;
+  me: string;
+  connections: {
+    profile_id: string;
+    email: string;
+    status: "ok" | "error" | "revoked";
+    last_error: string | null;
+    last_sync_at: string | null;
+    watch_expires_at: string | null;
+    connected_at: string;
+  }[];
+}
+
+export async function loadGmailStatus(): Promise<GmailStatus | null> {
+  try {
+    const res = await fetch("/api/gmail/status", { cache: "no-store" });
+    if (!res.ok) return null;
+    return (await res.json()) as GmailStatus;
+  } catch {
+    return null;
+  }
+}
+
+/** Runs the 12-month mailbox search for one lead. */
+export async function searchGmailForLead(leadId: string): Promise<{ threads: number; accounts: number }> {
+  const res = await fetch("/api/gmail/backfill", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ leadId }),
+  });
+  const j = (await res.json().catch(() => ({}))) as { threads?: number; accounts?: number; error?: string };
+  if (!res.ok) throw new Error(j.error ?? "Gmail search failed.");
+  return { threads: j.threads ?? 0, accounts: j.accounts ?? 0 };
 }

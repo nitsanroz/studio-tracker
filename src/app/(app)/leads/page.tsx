@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlarmClock, ChevronRight, Plus, Search, X } from "lucide-react";
+import { AlarmClock, ChevronRight, MailWarning, Plus, Search, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { Avatar } from "@/components/ui";
 import { formatDate } from "@/lib/format";
@@ -36,17 +36,19 @@ import { LostModal, WinModal } from "@/components/leads/stage-modals";
 const LAYOUT_KEY = "leads.layout";
 
 /** See `storedLayout` in candidates/page.tsx — effect or handler only, never render. */
-function storedLayout(): "board" | "list" {
+type Layout = "today" | "board" | "list";
+
+function storedLayout(): Layout {
   try {
     const v = localStorage.getItem(LAYOUT_KEY);
-    if (v === "list" || v === "board") return v;
+    if (v === "list" || v === "board" || v === "today") return v;
   } catch {
     // Private window / blocked storage. The default is fine.
   }
   return "board";
 }
 
-function storeLayout(next: "board" | "list") {
+function storeLayout(next: Layout) {
   try {
     localStorage.setItem(LAYOUT_KEY, next);
   } catch {
@@ -120,6 +122,11 @@ function LeadCard({
     >
       <div className="flex items-start gap-2">
         <span className="bidi-auto min-w-0 flex-1 text-[15px] font-medium leading-tight">{lead.company}</span>
+        {open && lead.replyOwedSince && (
+          <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 text-[#8a5a09]">
+            <MailWarning size={14} strokeWidth={1.75} />
+          </span>
+        )}
         {stalled && <StalledBadge />}
       </div>
       {lead.primaryContact && (
@@ -165,6 +172,103 @@ function LeadCard({
   );
 }
 
+/**
+ * What to do first this morning (PRD US23): replies we owe, next steps due,
+ * leads gone quiet, leads with no next step.
+ *
+ * ⚠️ A LEAD APPEARS ONCE, IN THE FIRST LIST THAT CLAIMS IT, in that order. A
+ * lead that owes a reply is usually also stalled and often has no next step;
+ * listing it three times makes the page look three times as busy as it is.
+ */
+function TodayList({
+  leads,
+  stageById,
+  now,
+}: {
+  leads: Lead[];
+  stageById: Map<string, LeadStage>;
+  now: Date;
+}) {
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const open = leads.filter((l) => {
+    const s = l.stageId ? stageById.get(l.stageId) : undefined;
+    return !s || s.kind === "open";
+  });
+  const seen = new Set<string>();
+  const take = (list: Lead[]) => list.filter((l) => !seen.has(l.id) && (seen.add(l.id), true));
+
+  const sections: { title: string; hint: string; rows: Lead[]; line: (l: Lead) => string }[] = [
+    {
+      title: "Replies we owe",
+      hint: "The last message on a thread came from them.",
+      rows: take(
+        open.filter((l) => l.replyOwedSince).sort((a, b) => a.replyOwedSince!.localeCompare(b.replyOwedSince!)),
+      ),
+      line: (l) => `waiting since ${formatDate(l.replyOwedSince!)}`,
+    },
+    {
+      title: "Next steps due",
+      hint: "Due today or overdue.",
+      rows: take(
+        open
+          .filter((l) => l.nextStep && l.nextStepDue && l.nextStepDue <= today)
+          .sort((a, b) => a.nextStepDue!.localeCompare(b.nextStepDue!)),
+      ),
+      line: (l) => `${l.nextStep} · ${l.nextStepDue! < today ? "overdue, " : ""}due ${formatDate(l.nextStepDue!)}`,
+    },
+    {
+      title: "Gone quiet",
+      hint: "Past their stage's stall limit.",
+      rows: take(
+        open
+          .filter((l) => isStalled(l, l.stageId ? stageById.get(l.stageId) : undefined, now))
+          .sort((a, b) => a.lastActivityAt.localeCompare(b.lastActivityAt)),
+      ),
+      line: (l) => `last activity ${formatDate(l.lastActivityAt)}`,
+    },
+    {
+      title: "No next step",
+      hint: "Every open lead needs one.",
+      rows: take(open.filter((l) => !l.nextStep)),
+      line: () => "add what happens next",
+    },
+  ];
+
+  const total = sections.reduce((n, s) => n + s.rows.length, 0);
+  return (
+    <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
+      {total === 0 && <p className="text-sm text-faint">Nothing waiting on you.</p>}
+      {sections
+        .filter((s) => s.rows.length > 0)
+        .map((s) => (
+          <div key={s.title} className="rounded-xl border border-border bg-surface p-4 shadow-card">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-sm font-semibold">{s.title}</h2>
+              <span className="text-[12px] text-faint">{s.rows.length}</span>
+              <span className="ml-auto text-[11.5px] text-faint">{s.hint}</span>
+            </div>
+            <ul className="mt-2 flex flex-col">
+              {s.rows.map((l) => (
+                <li key={l.id}>
+                  <Link
+                    href={`/leads/${l.id}`}
+                    className="flex items-baseline gap-2 rounded-md px-1.5 py-1.5 hover:bg-brand-soft/50"
+                  >
+                    <span className="bidi-auto shrink-0 text-[13px] font-medium">{l.company}</span>
+                    <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{s.line(l)}</span>
+                    <span className="ml-auto shrink-0 text-[11px] text-faint">
+                      {l.stageId ? stageById.get(l.stageId)?.name : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+    </div>
+  );
+}
+
 export default function LeadsPage() {
   const isAdmin = useIsAdmin();
   const { profiles, currentUserId } = useData();
@@ -173,7 +277,7 @@ export default function LeadsPage() {
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
   const [rows, setRows] = useState<Lead[]>([]);
   const [rate, setRate] = useState<StoredRate | null>(null);
-  const [layout, setLayout] = useState<"board" | "list">("board");
+  const [layout, setLayout] = useState<Layout>("board");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [stalledOnly, setStalledOnly] = useState(false);
@@ -441,7 +545,7 @@ export default function LeadsPage() {
           </label>
 
           <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
-            {(["board", "list"] as const).map((k) => (
+            {(["today", "board", "list"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => {
@@ -470,6 +574,10 @@ export default function LeadsPage() {
         <div className="mt-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
       )}
       {busy && <p className="mt-8 text-sm text-muted">Loading…</p>}
+
+      {!busy && vocab && layout === "today" && (
+        <TodayList leads={visible} stageById={stageById} now={now} />
+      )}
 
       {!busy && vocab && layout === "board" && (
         <div className="mt-5 flex items-start gap-3 overflow-x-auto pb-4">

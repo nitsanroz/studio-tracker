@@ -1,0 +1,3 @@
+{
+  "crons": [{ "path": "/api/gmail/renew", "schedule": "30 3 * * *" }]
+}

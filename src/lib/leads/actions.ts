@@ -364,12 +364,26 @@ export async function linkThread(
     subject: subject?.trim() || null,
     created_by: actorId,
   });
+  if (error?.code === "23505") {
+    throw new LeadWriteError("link the thread", "that thread is already linked to a lead.");
+  }
   fail("link the thread", error);
   await touch(leadId);
 }
 
-export async function unlinkThread(id: string, leadId: string) {
+/**
+ * ⚠️ UNLINKING IS REMEMBERED. A thread the sync matched wrongly would come
+ * straight back on its next message, so its Gmail id goes into
+ * `lead_thread_ignores` (0043) for this lead first. Best-effort: before 0043
+ * the table does not exist and an unlink is simply a delete, as in Phase 1.
+ */
+export async function unlinkThread(id: string, leadId: string, gmailThreadId: string | null) {
   const sb = createClient();
+  if (gmailThreadId) {
+    await sb
+      .from("lead_thread_ignores")
+      .upsert({ lead_id: leadId, gmail_thread_id: gmailThreadId }, { onConflict: "lead_id,gmail_thread_id" });
+  }
   const { error } = await sb.from("lead_threads").delete().eq("id", id);
   fail("unlink the thread", error);
   await touch(leadId);

@@ -29,6 +29,8 @@ const lead = (lastActivityAt: string, extra: Partial<Lead> = {}): Lead => ({
   lastActivityAt,
   createdAt: lastActivityAt,
   primaryContact: null,
+  gmailBackfilledAt: null,
+  replyOwedSince: null,
   ...extra,
 });
 

@@ -92,6 +92,13 @@ export interface Lead {
   createdAt: string;
   /** The first contact's name, rolled up by the board query for the card. */
   primaryContact: string | null;
+  /** When the mailbox was last searched for this lead (0043). */
+  gmailBackfilledAt: string | null;
+  /**
+   * The oldest unanswered inbound email on this lead, if the studio owes a
+   * reply on any of its threads — rolled up by `loadBoard` for the Today list.
+   */
+  replyOwedSince: string | null;
 }
 
 export interface LeadContact {
@@ -131,6 +138,27 @@ export interface LeadThread {
   subject: string | null;
   note: string | null;
   createdAt: string;
+  /** Filled by the Gmail sync (0043); empty on a thread linked by hand before it. */
+  participants: string[];
+  lastMessageAt: string | null;
+  /** "us" = the last message came from outside, so the studio owes the reply. */
+  replyOwedBy: "us" | "them" | null;
+  messageCount: number;
+  digest: string | null;
+  matchedBy: "manual" | "thread" | "email" | "domain" | null;
+}
+
+export interface LeadMessage {
+  id: string;
+  threadId: string;
+  fromAddr: string | null;
+  fromName: string | null;
+  toAddrs: string[];
+  ccAddrs: string[];
+  subject: string | null;
+  sentAt: string | null;
+  fromUs: boolean;
+  bodyText: string | null;
 }
 
 export interface LeadEvent {

@@ -20,6 +20,7 @@ import {
   Mail,
   Phone,
   Plus,
+  Search,
   Trash2,
   Trophy,
   Upload,
@@ -29,7 +30,14 @@ import { Avatar, Tabs } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
 import { createClient } from "@/lib/supabase/client";
-import { loadLead, loadStoredRate, loadVocabulary, type Vocabulary } from "@/lib/leads/data";
+import {
+  loadLead,
+  loadStoredRate,
+  loadThreadMessages,
+  loadVocabulary,
+  searchGmailForLead,
+  type Vocabulary,
+} from "@/lib/leads/data";
 import {
   addContact,
   addOffer,
@@ -60,6 +68,7 @@ import {
   type LeadDetail,
   type LeadEvent,
   type LeadEventKind,
+  type LeadMessage,
   type LeadOffer,
   type LeadSource,
   type LeadStage,
@@ -450,11 +459,14 @@ export default function LeadPage() {
           )}
           {tab === "emails" && (
             <EmailsTab
+              leadId={l.id}
               threads={threads}
+              backfilledAt={l.gmailBackfilledAt}
               onLink={(url, subject) =>
                 run(() => linkThread(l.id, url, gmailThreadIdFromUrl(url), subject, currentUserId))
               }
-              onUnlink={(tid) => run(() => unlinkThread(tid, l.id))}
+              onUnlink={(t) => run(() => unlinkThread(t.id, l.id, t.gmailThreadId))}
+              onSearched={reload}
             />
           )}
           {tab === "offers" && (
@@ -798,86 +810,226 @@ function ContactsTab({
 
 // ── emails ──────────────────────────────────────────────────────────────────
 
-function EmailsTab({
-  threads,
-  onLink,
+const ago = (iso: string | null) => {
+  if (!iso) return "";
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 30 ? `${d}d ago` : formatDate(iso);
+};
+
+function OwedBadge({ by }: { by: "us" | "them" | null }) {
+  if (!by) return null;
+  return by === "us" ? (
+    <span className="shrink-0 rounded-full bg-[#fdf3e3] px-1.5 py-0.5 text-[10.5px] font-medium text-[#8a5a09]">
+      We owe a reply
+    </span>
+  ) : (
+    <span className="shrink-0 rounded-full bg-background px-1.5 py-0.5 text-[10.5px] text-muted">Waiting on them</span>
+  );
+}
+
+/** One thread, folded to its digest; opened, its messages oldest first. */
+function ThreadRow({
+  t,
   onUnlink,
 }: {
+  t: LeadDetail["threads"][number];
+  onUnlink: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<LeadMessage[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const synced = t.messageCount > 0;
+  const outside = t.participants.filter((p) => !/@(studionmore\.com|nmore\.co)$/i.test(p));
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && synced && messages === null) {
+      loadThreadMessages(t.id)
+        .then(setMessages)
+        .catch((e) => setErr(e instanceof Error ? e.message : "Could not load the messages."));
+    }
+  };
+
+  return (
+    <li className="group rounded-lg border border-border">
+      <div className="flex items-start gap-2 px-3 py-2">
+        <Mail size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-faint" />
+        <button onClick={toggle} disabled={!synced} className="min-w-0 flex-1 text-left disabled:cursor-default">
+          <span className="flex items-center gap-2">
+            <span className="bidi-auto min-w-0 truncate text-[13px] font-medium">{t.subject || "(no subject)"}</span>
+            <OwedBadge by={t.replyOwedBy} />
+          </span>
+          {synced && (
+            <span className="mt-0.5 block truncate text-[11.5px] text-faint">
+              {outside.slice(0, 3).join(", ")}
+              {outside.length > 3 ? ` +${outside.length - 3}` : ""} · {t.messageCount} message
+              {t.messageCount === 1 ? "" : "s"} · last {ago(t.lastMessageAt)}
+              {t.matchedBy && t.matchedBy !== "manual" && ` · matched by ${t.matchedBy}`}
+            </span>
+          )}
+          {t.digest && !open && (
+            <span className="bidi-auto mt-0.5 block line-clamp-1 text-[12px] text-muted">{t.digest}</span>
+          )}
+          {!synced && <span className="mt-0.5 block text-[11.5px] text-faint">Linked by hand · {formatDate(t.createdAt)}</span>}
+        </button>
+        <a
+          href={t.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open in Gmail"
+          title="Open in Gmail"
+          className="mt-0.5 shrink-0 text-faint hover:text-brand"
+        >
+          <ExternalLink size={13} />
+        </a>
+        <button
+          onClick={() => {
+            if (window.confirm("Unlink this thread from the lead? It won't be attached to this lead again.")) onUnlink();
+          }}
+          aria-label="Unlink"
+          title="Unlink — wrong lead"
+          className="mt-0.5 shrink-0 text-faint opacity-0 hover:text-danger group-hover:opacity-100"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+      {open && (
+        <div className="flex flex-col gap-3 border-t border-border/60 px-3 py-3">
+          {err && <p className="text-[12px] text-danger">{err}</p>}
+          {!err && messages === null && <p className="text-[12px] text-faint">Loading…</p>}
+          {(messages ?? []).map((m) => (
+            <div key={m.id} className={`rounded-lg px-3 py-2 ${m.fromUs ? "bg-brand-soft/50" : "bg-background"}`}>
+              <div className="mb-1 flex items-baseline gap-2 text-[11.5px]">
+                <span className="font-medium text-foreground">{m.fromName || m.fromAddr}</span>
+                {m.fromName && <span className="text-faint">{m.fromAddr}</span>}
+                <span className="ml-auto shrink-0 text-faint">{m.sentAt ? formatDate(m.sentAt) : ""}</span>
+              </div>
+              <p className="bidi-auto line-clamp-[12] whitespace-pre-wrap text-[12.5px] leading-relaxed text-muted">
+                {m.bodyText || "(no text)"}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function EmailsTab({
+  leadId,
+  threads,
+  backfilledAt,
+  onLink,
+  onUnlink,
+  onSearched,
+}: {
+  leadId: string;
   threads: LeadDetail["threads"];
+  backfilledAt: string | null;
   onLink: (url: string, subject: string | null) => Promise<void>;
-  onUnlink: (id: string) => Promise<void>;
+  onUnlink: (t: LeadDetail["threads"][number]) => Promise<void>;
+  onSearched: () => Promise<void>;
 }) {
   const [url, setUrl] = useState("");
   const [subject, setSubject] = useState("");
   const [bad, setBad] = useState(false);
+  const [byHand, setByHand] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const search = useCallback(
+    async (quiet: boolean) => {
+      setSearching(true);
+      if (!quiet) setNote(null);
+      try {
+        const r = await searchGmailForLead(leadId);
+        if (r.accounts === 0) setNote("No mailbox is connected yet — connect Gmail in Settings → Leads.");
+        else if (!quiet || r.threads > 0)
+          setNote(r.threads ? `Found ${r.threads} thread${r.threads === 1 ? "" : "s"}.` : "Nothing new in the last 12 months.");
+        await onSearched();
+      } catch (e) {
+        if (!quiet) setNote(e instanceof Error ? e.message : "Gmail search failed.");
+      } finally {
+        setSearching(false);
+      }
+    },
+    [leadId, onSearched],
+  );
+
+  // ⚠️ THE FIRST TIME THIS TAB OPENS, THE MAILBOX IS SEARCHED BY ITSELF — once
+  // per lead, then only on the button. Quiet: before Gmail is set up the route
+  // answers 503 and nothing on screen should complain about it.
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || backfilledAt) return;
+    auto.current = true;
+    void search(true);
+  }, [backfilledAt, search]);
+
   return (
     <div>
-      <p className="mb-3 text-[12px] text-muted">
-        Paste a Gmail thread&rsquo;s address to link it. Automatic matching, digests and &ldquo;who owes a
-        reply&rdquo; come with the Gmail connection.
-      </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const u = normalizeUrl(url);
-          if (!u || !isSafeUrl(u)) {
-            setBad(true);
-            return;
-          }
-          setBad(false);
-          void onLink(u, subject.trim() || null).then(() => {
-            setUrl("");
-            setSubject("");
-          });
-        }}
-        className="flex flex-wrap items-center gap-2"
-      >
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://mail.google.com/mail/u/0/#inbox/…"
-          className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
-        />
-        <input
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Subject (optional)"
-          className="bidi-auto w-48 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
-        />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
-          type="submit"
-          disabled={!url.trim()}
-          className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+          onClick={() => void search(false)}
+          disabled={searching}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-[12.5px] hover:border-brand disabled:opacity-50"
         >
-          Link
+          <Search size={13} /> {searching ? "Searching Gmail…" : "Search Gmail"}
         </button>
-      </form>
-      {bad && <p className="mt-1 text-[12px] text-danger">That address could not be read.</p>}
-      <ul className="mt-4 flex flex-col gap-1.5">
+        <span className="text-[11.5px] text-faint">
+          {backfilledAt ? `Searched ${ago(backfilledAt)} · new mail arrives on its own` : "Matches by contact email, then company domain"}
+        </span>
+        <button onClick={() => setByHand((v) => !v)} className="ml-auto text-[12px] text-muted hover:text-foreground">
+          {byHand ? "Cancel" : "Link a thread by hand"}
+        </button>
+      </div>
+      {note && <p className="mb-3 text-[12px] text-muted">{note}</p>}
+      {byHand && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const u = normalizeUrl(url);
+            if (!u || !isSafeUrl(u)) {
+              setBad(true);
+              return;
+            }
+            setBad(false);
+            void onLink(u, subject.trim() || null).then(() => {
+              setUrl("");
+              setSubject("");
+              setByHand(false);
+            });
+          }}
+          className="mb-3 flex flex-wrap items-center gap-2"
+        >
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://mail.google.com/mail/u/0/#inbox/…"
+            className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
+          />
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Subject (optional)"
+            className="bidi-auto w-48 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
+          />
+          <button
+            type="submit"
+            disabled={!url.trim()}
+            className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+          >
+            Link
+          </button>
+          {bad && <p className="w-full text-[12px] text-danger">That address could not be read.</p>}
+        </form>
+      )}
+      <ul className="flex flex-col gap-1.5">
         {threads.map((t) => (
-          <li key={t.id} className="group flex items-center gap-2 rounded-lg border border-border px-3 py-2">
-            <Mail size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
-            <a
-              href={t.url}
-              target="_blank"
-              rel="noreferrer"
-              className="bidi-auto min-w-0 flex-1 truncate text-[13px] hover:text-brand"
-            >
-              {t.subject || t.url}
-            </a>
-            <span className="shrink-0 text-[11px] text-faint">{formatDate(t.createdAt)}</span>
-            <button
-              onClick={() => {
-                if (window.confirm("Unlink this thread from the lead?")) void onUnlink(t.id);
-              }}
-              aria-label="Unlink"
-              className="text-faint opacity-0 hover:text-danger group-hover:opacity-100"
-            >
-              <Trash2 size={13} />
-            </button>
-          </li>
+          <ThreadRow key={t.id} t={t} onUnlink={() => void onUnlink(t)} />
         ))}
-        {threads.length === 0 && <p className="text-[12.5px] text-faint">No threads linked yet.</p>}
+        {threads.length === 0 && <p className="text-[12.5px] text-faint">No threads yet.</p>}
       </ul>
     </div>
   );
