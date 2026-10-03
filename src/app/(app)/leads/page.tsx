@@ -24,6 +24,7 @@ import {
   Plus,
   Search,
   Sun,
+  Trash2,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -56,6 +57,8 @@ import { LostModal, WinModal } from "@/components/leads/stage-modals";
 import { SourceIcon, StageChip, StageIcon } from "@/lib/leads/look";
 import { IconSelect } from "@/components/leads/icon-select";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
+import { loadBin } from "@/lib/leads/data";
+import { deleteLeadForGood, purgeDeletedLeads, restoreLead } from "@/lib/leads/actions";
 
 const LAYOUT_KEY = "leads.layout";
 
@@ -473,6 +476,23 @@ export default function LeadsPage() {
     setLayout(storedLayout());
   }, []);
 
+  // Undo after a delete (0047). The lead page deletes by stamping
+  // `deleted_at` and lands here with `?binned=<id>`; the banner offers Undo,
+  // and dismissing it erases the lead for good. The param is spent at once so
+  // a reload can't offer it again. Any deleted lead past its Undo window is
+  // erased on every board load.
+  const [binned, setBinned] = useState<{ id: string; company: string } | null>(null);
+  useEffect(() => {
+    void purgeDeletedLeads();
+    const id = new URLSearchParams(window.location.search).get("binned");
+    if (!id) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    void loadBin().then((list) => {
+      const hit = list.find((b) => b.id === id);
+      if (hit) setBinned({ id: hit.id, company: hit.company });
+    });
+  }, []);
+
   const reload = useCallback(async () => {
     const [v, b, sg] = await Promise.all([loadVocabulary(), loadBoard(), loadPendingSuggestions()]);
     setVocab(v);
@@ -688,6 +708,41 @@ export default function LeadsPage() {
           </button>
         </div>
       </div>
+
+      {binned && (
+        <div className="notice-in mt-3 flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
+          <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
+          <span>
+            <span className="bidi-auto font-medium">{binned.company || "The lead"}</span> was deleted.
+          </span>
+          <button
+            onClick={async () => {
+              try {
+                await restoreLead(binned.id);
+                setBinned(null);
+                await reload();
+              } catch (e) {
+                setError(e instanceof Error ? e.message : "Could not restore the lead.");
+              }
+            }}
+            className="font-medium text-brand hover:underline"
+          >
+            Undo
+          </button>
+          <button
+            onClick={() => {
+              const id = binned.id;
+              setBinned(null);
+              void deleteLeadForGood(id).catch(() => undefined);
+            }}
+            aria-label="Dismiss"
+            title="Dismiss — the lead is erased for good"
+            className="ml-auto text-faint hover:text-foreground"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── row 2: filters left · view centre · search right ──
           ⚠️ A THREE-COLUMN GRID WITH TWO EQUAL `1fr` SIDES, so the view switcher

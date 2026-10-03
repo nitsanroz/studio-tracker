@@ -35,7 +35,10 @@ export async function GET(req: NextRequest) {
 
   const [{ data: stageRows }, { data: leadRows }, { data: owed }, { data: sugg }] = await Promise.all([
     sb.from("lead_stages").select("id,name,position,kind,stall_days,rule_key"),
-    sb.from("leads").select("id,company,stage_id,next_step,next_step_due,last_activity_at,stage_changed_at"),
+    sb
+      .from("leads")
+      .select("id,company,stage_id,next_step,next_step_due,last_activity_at,stage_changed_at")
+      .is("deleted_at", null),
     sb.from("lead_threads").select("lead_id,last_message_at").eq("reply_owed_by", "us"),
     sb.from("lead_suggestions").select("lead_id,reason,to_stage_id").eq("status", "pending"),
   ]);

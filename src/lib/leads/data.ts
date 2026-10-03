@@ -102,6 +102,8 @@ export function mapLead(r: Row): Lead {
     primaryContact: null,
     gmailBackfilledAt: nstr(r.gmail_backfilled_at),
     replyOwedSince: null,
+    deletedAt: nstr(r.deleted_at),
+    deletedBy: nstr(r.deleted_by),
   };
 }
 
@@ -273,13 +275,45 @@ export async function loadVocabulary(): Promise<Vocabulary> {
  */
 async function leadRows(filter?: { id: string }) {
   const sb = createClient();
-  const q = (cols: string) => {
+  // ⚠️ The board skips binned leads (0047); a single lead is fetched whether
+  // binned or not, so its page can say "in the bin" and offer Restore.
+  const q = (cols: string, bin: boolean) => {
     const base = sb.from("leads").select(cols);
-    return filter ? base.eq("id", filter.id) : base.order("last_activity_at", { ascending: false });
+    if (filter) return base.eq("id", filter.id);
+    const ordered = base.order("last_activity_at", { ascending: false });
+    return bin ? ordered.is("deleted_at", null) : ordered;
   };
-  const full = await q(LEAD_COLS_0043);
+  const top = await q(LEAD_COLS_0043 + ",deleted_at,deleted_by", true);
+  if (!top.error || !MISSING_SCHEMA_CODES.has(top.error.code ?? "")) return top;
+  const full = await q(LEAD_COLS_0043, false);
   if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
-  return q(LEAD_COLS);
+  return q(LEAD_COLS, false);
+}
+
+export interface BinnedLead {
+  id: string;
+  company: string;
+  stageId: string | null;
+  deletedAt: string;
+  deletedBy: string | null;
+}
+
+/** The bin (0047): binned leads, most recently binned first. [] before 0047. */
+export async function loadBin(): Promise<BinnedLead[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("leads")
+    .select("id,company,stage_id,deleted_at,deleted_by")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  if (error) return [];
+  return ((data ?? []) as Row[]).map((r) => ({
+    id: str(r.id),
+    company: str(r.company),
+    stageId: nstr(r.stage_id),
+    deletedAt: str(r.deleted_at),
+    deletedBy: nstr(r.deleted_by),
+  }));
 }
 
 export async function loadBoard(): Promise<Lead[]> {
@@ -383,6 +417,7 @@ export async function leadForClient(clientId: string): Promise<{ id: string; com
     .from("leads")
     .select("id,company")
     .eq("client_id", clientId)
+    .is("deleted_at", null)
     .order("won_at", { ascending: false })
     .limit(1);
   const r = (data ?? [])[0] as Row | undefined;
@@ -453,9 +488,12 @@ export async function loadInboundToken(): Promise<string | null> {
  */
 export async function loadLeadIndex(): Promise<{ id: string; company: string; domain: string | null }[]> {
   const sb = createClient();
-  const { data, error } = await sb.from("leads").select("id,company,domain").order("last_activity_at", {
-    ascending: false,
-  });
+  const list = (bin: boolean) => {
+    const q = sb.from("leads").select("id,company,domain").order("last_activity_at", { ascending: false });
+    return bin ? q.is("deleted_at", null) : q;
+  };
+  let { data, error } = await list(true);
+  if (error && MISSING_SCHEMA_CODES.has(error.code ?? "")) ({ data, error } = await list(false));
   if (error) return [];
   return ((data ?? []) as Row[]).map((r) => ({ id: str(r.id), company: str(r.company), domain: nstr(r.domain) }));
 }

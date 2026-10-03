@@ -120,6 +120,9 @@ export interface Lead {
    * reply on any of its threads — rolled up by `loadBoard` for the Today list.
    */
   replyOwedSince: string | null;
+  /** In the bin since (0047); null for a live lead. */
+  deletedAt: string | null;
+  deletedBy: string | null;
 }
 
 export interface LeadContact {

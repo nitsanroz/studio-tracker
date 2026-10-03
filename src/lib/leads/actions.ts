@@ -176,10 +176,50 @@ export async function moveLead(
   );
 }
 
-export async function deleteLead(leadId: string) {
+/**
+ * Delete a lead, held for Undo (0047). Nothing is removed yet: the lead is
+ * stamped `deleted_at` and hidden everywhere, so Undo brings back contacts,
+ * offers, threads and estimates as they were. It is erased for good when the
+ * Undo banner is dismissed, or by `purgeDeletedLeads` once the window passes.
+ * (No bin to browse — Nitsan's call: the undo window is the safety net.)
+ */
+export async function binLead(leadId: string, actorId: string | null) {
+  const sb = createClient();
+  const { error } = await sb
+    .from("leads")
+    .update({ deleted_at: nowIso(), deleted_by: actorId })
+    .eq("id", leadId);
+  fail("move the lead to the bin", error);
+}
+
+export async function restoreLead(leadId: string) {
+  const sb = createClient();
+  const { error } = await sb.from("leads").update({ deleted_at: null, deleted_by: null }).eq("id", leadId);
+  fail("restore the lead", error);
+}
+
+/**
+ * ⚠️ THE HARD DELETE. Cascades to contacts, offers, threads, events and
+ * estimates, and cannot be undone.
+ */
+export async function deleteLeadForGood(leadId: string) {
   const sb = createClient();
   const { error } = await sb.from("leads").delete().eq("id", leadId);
   fail("delete the lead", error);
+}
+
+/** How long a deleted lead can still be undone. */
+export const UNDO_WINDOW_MS = 10 * 60_000;
+
+/**
+ * Erase every deleted lead whose Undo window has passed — run on each board
+ * load, which covers a tab closed with the banner still up. Best-effort and
+ * silent: a failure only leaves a hidden row for the next load to take.
+ */
+export async function purgeDeletedLeads() {
+  const sb = createClient();
+  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS).toISOString();
+  await sb.from("leads").delete().lt("deleted_at", cutoff);
 }
 
 // ── activity ────────────────────────────────────────────────────────────────

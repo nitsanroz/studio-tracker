@@ -7,6 +7,7 @@
 // write goes through `run()`, which saves and then reloads, so the page always
 // shows what the database holds rather than what we hoped it took.
 
+import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -54,7 +55,8 @@ import {
   addContact,
   addOffer,
   approveOffer,
-  deleteLead,
+  binLead,
+  restoreLead,
   linkThread,
   logActivity,
   moveLead,
@@ -96,6 +98,7 @@ import {
   loadEstimateSources,
   loadEstimates,
   type EstimateSource,
+  type EstimateSourcePhase,
   type EstimateSummary,
 } from "@/lib/leads/estimates-data";
 import { Modal, ModalClose } from "@/components/ui";
@@ -330,6 +333,19 @@ export default function LeadPage() {
         <div className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
       )}
 
+      {l.deletedAt && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
+          <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
+          <span>This lead was deleted — it will be erased for good within a few minutes.</span>
+          <button
+            onClick={() => void run(() => restoreLead(l.id))}
+            className="ml-auto h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white"
+          >
+            Undo
+          </button>
+        </div>
+      )}
+
       {/* ── header ── */}
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <div className="min-w-0 flex-1">
@@ -420,30 +436,32 @@ export default function LeadPage() {
             style={stageStyle(stage)}
             options={vocab.stages.map((s) => ({ value: s.id, label: s.name, icon: <StageIcon stage={s} /> }))}
           />
-          <button
-            onClick={() => {
-              const n = contacts.length + offers.length + threads.length;
-              if (
-                !window.confirm(
-                  `Delete ${l.company} for good${n ? `, with its ${contacts.length} contacts, ${offers.length} offers and ${threads.length} linked threads` : ""}? This cannot be undone — moving it to Lost keeps the history.`,
+          {!l.deletedAt && (
+            <button
+              onClick={async () => {
+                // Confirmed (Nitsan asked to keep it) even though the board
+                // offers Undo right after.
+                if (
+                  !(await askConfirm(`Delete ${l.company || "this lead"}? You can undo it from the Leads page for a few minutes.`, {
+                    action: "Delete",
+                    danger: true,
+                  }))
                 )
-              )
-                return;
-              void (async () => {
+                  return;
                 try {
-                  await deleteLead(l.id);
-                  router.push("/leads");
+                  await binLead(l.id, currentUserId);
+                  router.push(`/leads?binned=${l.id}`);
                 } catch (e) {
                   setError(e instanceof Error ? e.message : "Could not delete the lead.");
                 }
-              })();
-            }}
-            aria-label="Delete the lead"
-            title="Delete for good"
-            className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-faint hover:text-danger"
-          >
-            <Trash2 size={15} strokeWidth={1.75} />
-          </button>
+              }}
+              aria-label="Delete the lead"
+              title="Delete"
+              className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-faint hover:text-danger"
+            >
+              <Trash2 size={15} strokeWidth={1.75} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -539,8 +557,9 @@ export default function LeadPage() {
               contacts={contacts}
               onAdd={() => run(() => addContact(l.id, { name: "" }, contacts.length + 1))}
               onSave={(c, f) => run(() => updateContact(c.id, l.id, f))}
-              onRemove={(c) => {
-                if (window.confirm(`Remove ${c.name} from this lead?`)) void run(() => removeContact(c.id, l.id));
+              onRemove={async (c) => {
+                if (await askConfirm(`Remove ${c.name || "this contact"} from this lead?`, { action: "Remove", danger: true }))
+                  void run(() => removeContact(c.id, l.id));
               }}
             />
           )}
@@ -801,8 +820,8 @@ function ActivityTab({
                   )}
                   {logged.has(ev.kind) && (
                     <button
-                      onClick={() => {
-                        if (window.confirm("Remove this entry?")) void onRemove(ev.id);
+                      onClick={async () => {
+                        if (await askConfirm("Remove this entry?", { action: "Remove", danger: true })) void onRemove(ev.id);
                       }}
                       aria-label="Remove this entry"
                       className="ml-auto text-faint opacity-0 hover:text-danger group-hover:opacity-100"
@@ -994,8 +1013,9 @@ function ThreadRow({
           <ExternalLink size={13} />
         </a>
         <button
-          onClick={() => {
-            if (window.confirm("Unlink this thread from the lead? It won't be attached to this lead again.")) onUnlink();
+          onClick={async () => {
+            if (await askConfirm("Unlink this thread from the lead? It won't be attached to this lead again.", { action: "Unlink", danger: true }))
+              onUnlink();
           }}
           aria-label="Unlink"
           title="Unlink — wrong lead"
@@ -1178,64 +1198,62 @@ function EstimateSourceCard({ src, rect }: { src: EstimateSource; rect: DOMRect 
   const vertical = low
     ? { bottom: Math.max(8, window.innerHeight - rect.bottom - 8) }
     : { top: Math.max(8, rect.top - 8) };
-  const MAX_LINES = 4;
-  const maxPhase = Math.max(...src.phases.map((p) => p.hours.max), 0);
+  // The row already says the price, the hours and the phase names — so the
+  // card is the NEXT level down: every line with its own hours, plus the rate
+  // and discount the price was built from.
+  const MAX_LINES = 10;
+  const tag = (l: EstimateSourcePhase["lines"][number]) => (l.alternative ? "option" : l.optional ? "extra" : null);
   return createPortal(
     <div
       role="tooltip"
       // The finance plan's explain card (finance-admin explain-card.tsx): the
       // same navy, gradient strip and type scale, so a hover card reads the
       // same in both products.
-      className="pointer-events-none fixed z-[80] max-h-[80vh] overflow-hidden rounded-2xl bg-[#06112f] text-white shadow-2xl ring-1 ring-white/10"
+      className="pointer-events-none fixed z-[80] max-h-[85vh] overflow-hidden rounded-2xl bg-[#06112f] text-white shadow-2xl ring-1 ring-white/10"
       style={{ left, width: W, ...vertical }}
     >
       <div className="h-1 bg-gradient-to-r from-[#0b43ed] to-[#6181e8]" />
       <div className="p-3.5">
-        <div className="bidi-auto truncate text-[10px] font-medium uppercase tracking-wider text-white/50">
-          {src.company} v{src.version} ·{" "}
-          {src.status === "approved" ? "approved" : src.status === "in_review" ? "in review" : "draft"}
-        </div>
-        <div className="mt-0.5 text-2xl font-semibold leading-tight tabular-nums">{fmtNis(src.net)}</div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white/80">
-            {fmtHours(src.hours)}
+        <div className="flex items-baseline gap-2 text-[10px] font-medium uppercase tracking-wider text-white/50">
+          <span className="bidi-auto min-w-0 truncate">
+            {src.company} v{src.version}
           </span>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">+ VAT</span>
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">
-            {src.lineCount} line{src.lineCount === 1 ? "" : "s"}
+          <span className="ml-auto shrink-0 normal-case tracking-normal tabular-nums">
+            {src.rate} NIS/h{src.discountPercent ? ` · −${src.discountPercent}%` : ""}
           </span>
         </div>
         {src.changeNote && (
-          <p className="mt-2.5 rounded-lg border-l-2 border-[#6181e8] bg-[#0b43ed]/20 px-2.5 py-1.5 text-[11.5px] leading-snug text-white/90">
-            <span className="mr-1 font-semibold text-[#9db3f5]">Note</span>
+          <p className="mt-2 rounded-lg border-l-2 border-[#6181e8] bg-[#0b43ed]/20 px-2.5 py-1.5 text-[11.5px] leading-snug text-white/90">
             {src.changeNote}
           </p>
         )}
         {src.phases.length === 0 ? (
           <p className="mt-2.5 text-[11px] text-white/40">No lines yet.</p>
         ) : (
-          <ul className="mt-2.5 space-y-2.5">
+          <div className="mt-2.5 space-y-2.5">
             {src.phases.map((p, i) => (
-              <li key={i} className="text-[11px]">
-                <div className="flex justify-between gap-3">
+              <div key={i} className="text-[11px]">
+                <div className="flex justify-between gap-3 border-b border-white/10 pb-0.5">
                   <span className="bidi-auto truncate font-medium text-white/90">{p.name}</span>
-                  <span className="shrink-0 tabular-nums">{fmtHours(p.hours)}</span>
+                  <span className="shrink-0 tabular-nums text-white/60">{fmtHours(p.hours)}</span>
                 </div>
-                {maxPhase > 0 && (
-                  <div className="mt-0.5 h-1 rounded-full bg-white/10">
-                    <div className="h-1 rounded-full bg-[#6181e8]" style={{ width: `${(p.hours.max / maxPhase) * 100}%` }} />
-                  </div>
-                )}
-                <div className="bidi-auto mt-1 leading-snug text-white/55">
-                  {p.lines
-                    .slice(0, MAX_LINES)
-                    .map((l) => l.name + (l.alternative ? " (option)" : l.optional ? " (extra)" : ""))
-                    .join(" · ")}
-                  {p.lines.length > MAX_LINES && <span className="text-white/35"> · + {p.lines.length - MAX_LINES} more</span>}
-                </div>
-              </li>
+                <ul className="mt-1 space-y-0.5">
+                  {p.lines.slice(0, MAX_LINES).map((l, k) => (
+                    <li key={k} className="flex justify-between gap-3">
+                      <span className="bidi-auto min-w-0 truncate text-white/70">
+                        {l.name}
+                        {tag(l) && <span className="text-white/35"> · {tag(l)}</span>}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-white/90">{fmtHours(l.hours).replace(" hrs", "h")}</span>
+                    </li>
+                  ))}
+                  {p.lines.length > MAX_LINES && (
+                    <li className="text-white/35">+ {p.lines.length - MAX_LINES} more</li>
+                  )}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>,
@@ -1344,16 +1362,23 @@ function NewEstimateModal({
                   >
                     {option(
                       r.id,
-                      <span className="flex items-baseline gap-2">
-                        <span className="min-w-0 truncate">
-                          <span className="font-medium">{r.company}</span> v{r.version}
-                          <span className="ml-1.5 text-[11.5px] text-muted">
-                            {r.status === "approved" ? "approved" : r.status === "in_review" ? "in review" : "draft"}
+                      <span className="flex items-start gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">
+                            <span className="font-medium">{r.company}</span> v{r.version}
+                            <span className="ml-1.5 text-[11.5px] text-muted">
+                              {r.status === "approved" ? "approved" : r.status === "in_review" ? "in review" : "draft"}
+                            </span>
+                          </span>
+                          <span className="block truncate text-[11.5px] text-muted">
+                            {r.phases.map((p) => p.name).join(" · ") || "no phases"} · {formatDate(r.createdAt)}
                           </span>
                         </span>
-                        <span className="ml-auto shrink-0 text-[12px] font-medium tabular-nums">{fmtNis(r.net)}</span>
+                        <span className="shrink-0 text-right">
+                          <span className="block text-[12px] font-medium tabular-nums">{fmtNis(r.net)}</span>
+                          <span className="block text-[11.5px] tabular-nums text-muted">{fmtHours(r.hours)}</span>
+                        </span>
                       </span>,
-                      `${fmtHours(r.hours)} · ${r.phases.map((p) => p.name).join(" · ") || "no phases"} · ${formatDate(r.createdAt)}`,
                     )}
                   </div>
                 ))}
@@ -1613,8 +1638,9 @@ function OffersTab({
                   </button>
                 )}
                 <button
-                  onClick={() => {
-                    if (window.confirm(`Remove offer v${o.version}?`)) void run(() => removeOffer(o.id, leadId));
+                  onClick={async () => {
+                    if (await askConfirm(`Remove offer v${o.version}?`, { action: "Remove", danger: true }))
+                      void run(() => removeOffer(o.id, leadId));
                   }}
                   aria-label={`Remove v${o.version}`}
                   className="text-faint opacity-0 hover:text-danger group-hover:opacity-100"

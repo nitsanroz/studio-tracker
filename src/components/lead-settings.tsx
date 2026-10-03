@@ -6,6 +6,7 @@
 // ⚠️ ITS OWN TAB, like Hiring — selling is a different job from how the
 // studio's own work is labelled. Shaped after `candidate-settings.tsx`.
 
+import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, GripVertical, Mail, Plus, Trash2 } from "lucide-react";
 import {
@@ -233,7 +234,8 @@ function GmailCard() {
                 <button
                   disabled={busy}
                   onClick={async () => {
-                    if (!window.confirm(`Disconnect ${mine.email}? Threads already on leads stay there.`)) return;
+                    if (!(await askConfirm(`Disconnect ${mine.email}? Threads already on leads stay there.`, { action: "Disconnect", danger: true })))
+                      return;
                     setBusy(true);
                     await fetch("/api/gmail/disconnect", { method: "POST" }).catch(() => undefined);
                     await reload();

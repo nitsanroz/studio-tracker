@@ -382,7 +382,7 @@ async function copyInto(
 export interface EstimateSourcePhase {
   name: string;
   hours: Range;
-  lines: { name: string; optional: boolean; alternative: boolean }[];
+  lines: { name: string; optional: boolean; alternative: boolean; hours: Range }[];
 }
 
 export interface EstimateSource {
@@ -398,6 +398,8 @@ export interface EstimateSource {
   /** Counted hours and the ₪ after discount, before VAT — the figure quoted "+ VAT". */
   hours: Range;
   net: Range;
+  rate: number;
+  discountPercent: number | null;
   phases: EstimateSourcePhase[];
 }
 
@@ -409,12 +411,17 @@ export interface EstimateSource {
  */
 export async function loadEstimateSources(): Promise<EstimateSource[]> {
   const sb = createClient();
-  const { data, error } = await sb
-    .from("lead_estimates")
-    .select("id,lead_id,version,status,created_at,rate,vat_percent,discount_percent,change_note,leads(company,client_id)")
-    .order("created_at", { ascending: false });
+  // ⚠️ A binned lead's estimates are not offered as a starting point (0047);
+  // `deleted_at` is in the embed, filtered here so 0047-less DBs still list.
+  const q = (cols: string) =>
+    sb
+      .from("lead_estimates")
+      .select(`id,lead_id,version,status,created_at,rate,vat_percent,discount_percent,change_note,leads(${cols})`)
+      .order("created_at", { ascending: false });
+  let { data, error } = await q("company,client_id,deleted_at");
+  if (error) ({ data, error } = await q("company,client_id"));
   if (error) return [];
-  const rows = (data ?? []) as Row[];
+  const rows = ((data ?? []) as unknown as Row[]).filter((r) => !((r.leads ?? {}) as Row).deleted_at);
   if (rows.length === 0) return [];
   const ids = rows.map((r) => str(r.id));
   const [lineRes, phaseRes] = await Promise.all([
@@ -435,7 +442,12 @@ export async function loadEstimateSources(): Promise<EstimateSource[]> {
       hours: t.phase.get(pid ?? "") ?? { min: 0, max: 0 },
       lines: ls
         .filter((l) => (l.phaseId ?? null) === pid)
-        .map((l) => ({ name: l.name, optional: l.optional, alternative: Boolean(l.altGroup) })),
+        .map((l) => ({
+          name: l.name,
+          optional: l.optional,
+          alternative: Boolean(l.altGroup),
+          hours: t.hours.get(l.id) ?? { min: 0, max: 0 },
+        })),
     });
     const out = ps.map((p) => phaseOf(p.id, p.name));
     if (ls.some((l) => !l.phaseId || !ps.some((p) => p.id === l.phaseId))) {
@@ -443,7 +455,12 @@ export async function loadEstimateSources(): Promise<EstimateSource[]> {
       out.push({
         name: "Other",
         hours: t.phase.get("") ?? { min: 0, max: 0 },
-        lines: orphan.map((l) => ({ name: l.name, optional: l.optional, alternative: Boolean(l.altGroup) })),
+        lines: orphan.map((l) => ({
+          name: l.name,
+          optional: l.optional,
+          alternative: Boolean(l.altGroup),
+          hours: t.hours.get(l.id) ?? { min: 0, max: 0 },
+        })),
       });
     }
     return {
@@ -458,6 +475,8 @@ export async function loadEstimateSources(): Promise<EstimateSource[]> {
       lineCount: ls.length,
       hours: t.totalHours,
       net: t.net,
+      rate: nnum(r.rate) ?? 350,
+      discountPercent: nnum(r.discount_percent),
       phases: out.filter((p) => p.lines.length > 0),
     };
   });

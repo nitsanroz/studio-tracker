@@ -186,6 +186,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
       .select("lead_id, leads!inner(id, company, created_at)")
       .ilike("email", email)
       .gte("leads.created_at", cutoff)
+      .is("leads.deleted_at", null)
       .limit(1);
     const hit = (known ?? [])[0] as { lead_id?: string; leads?: { company?: string } } | undefined;
     if (hit?.lead_id) {

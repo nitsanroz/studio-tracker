@@ -111,7 +111,7 @@ export async function matchCandidates(sb: SupabaseClient, onlyLeadId?: string): 
     sb.from("lead_stages").select("id,kind"),
     onlyLeadId
       ? sb.from("leads").select("id,stage_id,domain,last_activity_at").eq("id", onlyLeadId)
-      : sb.from("leads").select("id,stage_id,domain,last_activity_at"),
+      : sb.from("leads").select("id,stage_id,domain,last_activity_at").is("deleted_at", null),
   ]);
   const kind = new Map(((stages ?? []) as { id: string; kind: string }[]).map((s) => [s.id, s.kind]));
   const leads = ((leadsRes.data ?? []) as { id: string; stage_id: string | null; domain: string | null; last_activity_at: string }[])

@@ -10,6 +10,7 @@
 // ⚠️ AN APPROVED VERSION IS READ-ONLY, in the database's actions as well as
 // here: "Save as new version" is how it changes.
 
+import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -410,8 +411,8 @@ export default function EstimatePage() {
           )}
           {e.status === "draft" && (
             <button
-              onClick={() => {
-                if (!window.confirm(`Delete estimate v${e.version}?`)) return;
+              onClick={async () => {
+                if (!(await askConfirm(`Delete estimate v${e.version}?`, { action: "Delete", danger: true }))) return;
                 void (async () => {
                   try {
                     await deleteEstimate(e.id);
@@ -493,8 +494,8 @@ export default function EstimatePage() {
                   </span>
                   {!locked && (
                     <button
-                      onClick={() => {
-                        if (window.confirm(`Remove ${p.name} and its ${lines.length} lines?`))
+                      onClick={async () => {
+                        if (await askConfirm(`Remove ${p.name} and its ${lines.length} lines?`, { action: "Remove", danger: true }))
                           void run(() => removePhase(e.id, p.id));
                       }}
                       aria-label={`Remove ${p.name}`}

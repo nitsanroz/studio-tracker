@@ -36,6 +36,8 @@ from datetime import datetime, timezone
 import openpyxl
 
 WRITE = "--write" in sys.argv
+# --only=<tab>: restrict to one tab (restoring a single deleted lead's estimate).
+ONLY = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--only=")), None)
 PATH = next(a for a in sys.argv[1:] if not a.startswith("--"))
 URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").strip('"')
 KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip('"')
@@ -517,6 +519,8 @@ def main():
         if ws.title.strip() == "Freehand":
             plan.append(("Freehand", parse_freehand_side(ws)))
 
+    if ONLY:
+        plan = [(t, e) for t, e in plan if t == ONLY]
     print(f"\n{len(plan)} estimates from {len(wb.worksheets)} tabs (Monday skipped)\n")
     bad = 0
     for tab, est in plan:
@@ -609,7 +613,9 @@ def write(plan):
     for tab, est in order:
         lead_id, company = lead_for(tab)
         note = f"Imported from sheet tab “{tab}”" + (f" ({est['label']})" if est.get("label") else "")
-        dup = rest("GET", f"lead_estimates?select=id&lead_id=eq.{lead_id}&change_note=eq.{urllib.parse.quote(note)}")
+        # ⚠️ PREFIX match: a tab with a rate note stores "<note> · <rate note>",
+        # which an exact match never finds — a re-run duplicated those.
+        dup = rest("GET", f"lead_estimates?select=id&lead_id=eq.{lead_id}&change_note=like.{urllib.parse.quote(note + '*')}")
         if dup:
             continue
         last = rest("GET", f"lead_estimates?select=version&lead_id=eq.{lead_id}&order=version.desc&limit=1")
