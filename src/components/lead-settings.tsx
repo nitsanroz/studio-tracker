@@ -17,6 +17,7 @@ import {
   type Vocabulary,
 } from "@/lib/leads/data";
 import { useData } from "@/lib/store";
+import { LibrarySettings } from "@/components/leads/library-settings";
 import {
   saveMailSetting,
   addLostReason,
@@ -481,6 +482,7 @@ export function LeadSettings() {
           )}
         </div>
       </div>
+      <LibrarySettings />
     </div>
   );
 }

@@ -78,8 +78,10 @@ import {
   type OfferStatus,
 } from "@/lib/leads/types";
 import { LostModal, WinModal } from "@/components/leads/stage-modals";
+import { createEstimate, loadEstimates, type EstimateSummary } from "@/lib/leads/estimates-data";
+import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 
-type Tab = "contacts" | "emails" | "offers" | "activity";
+type Tab = "contacts" | "emails" | "offers" | "estimates" | "activity";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
 const LABEL = "text-[12px] font-medium uppercase tracking-wider text-faint";
@@ -488,6 +490,7 @@ export default function LeadPage() {
               { value: "contacts", label: "Contacts", count: contacts.length },
               { value: "emails", label: "Emails", count: threads.length },
               { value: "offers", label: "Offers", count: offers.length },
+              { value: "estimates", label: "Estimates" },
             ]}
             className="mb-4"
           />
@@ -523,6 +526,7 @@ export default function LeadPage() {
               onSearched={reload}
             />
           )}
+          {tab === "estimates" && <EstimatesTab leadId={l.id} company={l.company} profileName={(id) => profileById.get(id)?.name ?? null} />}
           {tab === "offers" && (
             <OffersTab
               leadId={l.id}
@@ -1092,6 +1096,89 @@ function EmailsTab({
         ))}
         {threads.length === 0 && <p className="text-[12.5px] text-faint">No threads yet.</p>}
       </ul>
+    </div>
+  );
+}
+
+// ── estimates ───────────────────────────────────────────────────────────────
+
+const EST_STATUS: Record<string, string> = {
+  draft: "bg-background text-muted",
+  in_review: "bg-[#fdf3e3] text-[#8a5a09]",
+  approved: "bg-[#eaf6ee] text-[#12693d]",
+};
+
+function EstimatesTab({
+  leadId,
+  company,
+  profileName,
+}: {
+  leadId: string;
+  company: string;
+  profileName: (id: string) => string | null;
+}) {
+  const router = useRouter();
+  const { currentUserId } = useData();
+  const [list, setList] = useState<EstimateSummary[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void loadEstimates(leadId).then((v) => alive && setList(v));
+    return () => {
+      alive = false;
+    };
+  }, [leadId]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {list === null && <p className="text-[12.5px] text-faint">Loading…</p>}
+      {(list ?? []).map((e) => (
+        <Link
+          key={e.id}
+          href={`/leads/${leadId}/estimates/${e.id}`}
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border px-3 py-2.5 hover:border-brand"
+        >
+          <span className="text-[13.5px] font-medium">v{e.version}</span>
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${EST_STATUS[e.status]}`}>
+            {e.status === "in_review" ? "In review" : e.status === "approved" ? "Approved" : "Draft"}
+          </span>
+          <span className="text-[13px] tabular-nums">
+            {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
+          </span>
+          {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{e.changeNote}</span>}
+          <span className="ml-auto text-[11.5px] text-faint">
+            {e.approvedBy ? `approved by ${profileName(e.approvedBy) ?? "?"} · ` : ""}
+            {e.shareToken ? "published · " : ""}
+            {formatDate(e.createdAt)}
+          </span>
+        </Link>
+      ))}
+      {list?.length === 0 && <p className="text-[12.5px] text-faint">No estimate yet.</p>}
+      {err && <p className="text-[12px] text-danger">{err}</p>}
+      <div>
+        <button
+          disabled={creating}
+          onClick={async () => {
+            setCreating(true);
+            setErr(null);
+            try {
+              const id = await createEstimate(leadId, company, currentUserId);
+              router.push(`/leads/${leadId}/estimates/${id}`);
+            } catch (ex) {
+              setErr(ex instanceof Error ? ex.message : "Could not create the estimate.");
+              setCreating(false);
+            }
+          }}
+          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand disabled:opacity-50"
+        >
+          <Plus size={13} /> {list && list.length ? "New estimate (blank)" : "New estimate"}
+        </button>
+        {list && list.length > 0 && (
+          <p className="mt-1 text-[11.5px] text-faint">To change an existing one, open it and use “Save as new version”.</p>
+        )}
+      </div>
     </div>
   );
 }

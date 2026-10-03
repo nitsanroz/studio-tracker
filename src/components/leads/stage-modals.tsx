@@ -4,7 +4,7 @@
 // (into which client?). Shared by the board and the lead page so the two can
 // never ask different questions about the same move.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Trophy, XCircle } from "lucide-react";
 import { useData } from "@/lib/store";
 import { Modal, ModalClose } from "@/components/ui";
@@ -12,6 +12,8 @@ import { Button, Field, Input, Select, Textarea } from "@/components/primitives"
 import { CLIENT_COLORS } from "@/components/client-mark-picker";
 import { markWon, moveLead } from "@/lib/leads/actions";
 import type { Lead, LeadStage, LostReason } from "@/lib/leads/types";
+import { estimateToWork, latestApproved, type EstimateSummary } from "@/lib/leads/estimates-data";
+import { fmtHours } from "@/lib/leads/estimate";
 
 export function LostModal({
   lead,
@@ -137,24 +139,38 @@ export function WinModal({
   const [section, setSection] = useState((lead.askedFor ?? "").split("\n")[0].slice(0, 80));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The approved estimate this deal was sold on, if there is one (Phase 4). */
+  const [estimate, setEstimate] = useState<EstimateSummary | null>(null);
+  const [fromEstimate, setFromEstimate] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    void latestApproved(lead.id)
+      .then((e) => alive && setEstimate(e))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [lead.id]);
+  const useEstimate = Boolean(estimate) && fromEstimate;
 
   const canSubmit =
-    !busy && (mode === "new" ? name.trim().length > 0 : Boolean(clientId) && section.trim().length > 0);
+    !busy &&
+    (mode === "new" ? name.trim().length > 0 : Boolean(clientId) && (useEstimate || section.trim().length > 0));
 
   async function submit() {
     if (!canSubmit) return;
     setBusy(true);
     setError(null);
     try {
-      let target: { id: string; name: string; created: boolean };
+      let target: { id: string; name: string; created: boolean; billable: boolean };
       if (mode === "new") {
         const c = await addClient(name.trim(), color);
         if (!c) throw new Error("The client could not be created.");
-        target = { id: c.id, name: c.name, created: true };
+        target = { id: c.id, name: c.name, created: true, billable: c.billable };
       } else {
         const c = live.find((x) => x.id === clientId);
         if (!c) throw new Error("Pick the client.");
-        target = { id: c.id, name: c.name, created: false };
+        target = { id: c.id, name: c.name, created: false, billable: c.billable };
       }
       await markWon(
         lead.id,
@@ -163,11 +179,13 @@ export function WinModal({
         {
           clientId: target.id,
           clientName: target.name,
-          sectionName: section.trim() || null,
+          // With an estimate, its phases become the sections instead.
+          sectionName: useEstimate ? null : section.trim() || null,
           created: target.created,
         },
         currentUserId,
       );
+      if (useEstimate && estimate) await estimateToWork(estimate.id, target.id, target.billable);
       // The section was written outside the store; pull it in now rather than
       // leave the client page missing it until the next timed refresh.
       refresh();
@@ -249,6 +267,22 @@ export function WinModal({
           </Field>
         )}
 
+        {estimate && (
+          <label className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2 text-[12.5px]">
+            <input
+              type="checkbox"
+              checked={fromEstimate}
+              onChange={(e) => setFromEstimate(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Create the work from <b>estimate v{estimate.version}</b> ({fmtHours(estimate.hours)}): each phase
+              becomes a section, each line a task budgeted at the top of its range.
+            </span>
+          </label>
+        )}
+
+        {!useEstimate && (
         <Field
           label={mode === "new" ? "First section (optional)" : "New section"}
           hint={
@@ -259,6 +293,7 @@ export function WinModal({
         >
           <Input value={section} onChange={(e) => setSection(e.target.value)} className="bidi-auto" />
         </Field>
+        )}
 
         <p className="text-[12px] text-muted">
           The lead&rsquo;s contacts are copied to the client, where the team can see them.
