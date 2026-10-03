@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Inbox, PencilLine } from "lucide-react";
+import { Bell, Check, Handshake, Inbox, PencilLine } from "lucide-react";
+import type { NewLead } from "./new-leads";
 
 /**
  * Admin notification queue in the header. One place for things that are
- * waiting on a decision — currently client intake requests. The badge is the
+ * waiting on a decision — client intake requests and unopened website leads. The badge is the
  * total; nothing clears itself.
  */
 
@@ -29,9 +30,11 @@ interface Item {
 export function NotificationsBell({
   pendingIntake,
   updatedIntake = 0,
+  newLeads = [],
 }: {
   pendingIntake: number;
   updatedIntake?: number;
+  newLeads?: NewLead[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -71,9 +74,21 @@ export function NotificationsBell({
       Icon: PencilLine,
       tone: "brand",
     },
+    {
+      count: newLeads.length,
+      // One goes straight to the lead — opening it is what clears it.
+      href: newLeads.length === 1 ? `/leads/${newLeads[0].id}` : "/leads",
+      label:
+        newLeads.length === 1
+          ? `New lead: ${newLeads[0].company}`
+          : `${newLeads.length} new leads from the website`,
+      detail: "Came in through the website form",
+      Icon: Handshake,
+      tone: "brand",
+    },
   ] satisfies Item[]).filter((i) => i.count > 0);
 
-  const total = pendingIntake + updatedIntake;
+  const total = pendingIntake + updatedIntake + newLeads.length;
 
   return (
     <div className="relative" ref={ref}>
@@ -109,7 +124,7 @@ export function NotificationsBell({
           ) : (
             items.map(({ count, href, label, detail, Icon, tone }) => (
               <Link
-                key={href}
+                key={label}
                 href={href}
                 role="menuitem"
                 onClick={() => setOpen(false)}

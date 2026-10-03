@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { appOrigin } from "@/lib/app-origin";
+import { MISSING_SCHEMA_CODES } from "@/lib/db";
 import { domainOf } from "@/lib/leads/types";
 
 /**
@@ -198,6 +199,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
         meta: { via: "website_form" },
       });
       await sb.from("leads").update({ last_activity_at: now }).eq("id", hit.lead_id);
+      // Writing in again flags the lead as new (0048), so the bell says so.
+      // Its own write: before 0048 the column is missing and this one fails
+      // alone instead of taking last_activity_at down with it.
+      await sb.from("leads").update({ seen_at: null }).eq("id", hit.lead_id);
       await notify(sb, hit.lead_id, hit.leads?.company ?? company, fields, true);
       return NextResponse.json({ ok: true });
     }
@@ -211,18 +216,22 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     .limit(1)
     .maybeSingle();
 
-  const { data: lead, error } = await sb
-    .from("leads")
-    .insert({
-      company,
-      website: website || (domain ? `https://${domain}` : null),
-      domain,
-      source: "website",
-      stage_id: (stage as { id?: string } | null)?.id ?? null,
-      asked_for: message ? message.slice(0, 300) : null,
-    })
-    .select("id")
-    .single();
+  const row = {
+    company,
+    website: website || (domain ? `https://${domain}` : null),
+    domain,
+    source: "website",
+    stage_id: (stage as { id?: string } | null)?.id ?? null,
+    asked_for: message ? message.slice(0, 300) : null,
+  };
+  // `seen_at: null` is what makes it a NEW lead in the bell (0048; the column
+  // defaults to now()). ⚠️ Before 0048 is applied that column doesn't exist,
+  // so the insert is retried without it — losing a client's enquiry over an
+  // alert would be the wrong trade.
+  let { data: lead, error } = await sb.from("leads").insert({ ...row, seen_at: null }).select("id").single();
+  if (error && MISSING_SCHEMA_CODES.has(error.code ?? "")) {
+    ({ data: lead, error } = await sb.from("leads").insert(row).select("id").single());
+  }
   if (error || !lead) {
     console.error("leads inbound insert failed", error);
     return NextResponse.json({ error: "Could not save the submission" }, { status: 500 });

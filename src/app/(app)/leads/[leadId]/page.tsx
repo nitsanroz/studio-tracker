@@ -8,6 +8,7 @@
 // shows what the database holds rather than what we hoped it took.
 
 import { askConfirm } from "@/components/confirm-dialog";
+import { useNewLeads } from "@/components/new-leads";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -190,6 +191,9 @@ export default function LeadPage() {
   const router = useRouter();
   const params = useParams<{ leadId: string }>();
   const id = params.leadId;
+  // Opening a lead is what clears it from the bell and the sidebar (0048).
+  const { markSeen } = useNewLeads();
+  useEffect(() => markSeen(id), [id, markSeen]);
 
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
   const [detail, setDetail] = useState<LeadDetail | null>(null);

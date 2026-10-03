@@ -34,6 +34,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
+import { NewLeadsProvider, useNewLeads } from "./new-leads";
 import { EgressBanner } from "./egress-banner";
 import { TaskPanel } from "./task-panel";
 import { GlobalSearch } from "./global-search";
@@ -605,6 +606,7 @@ function Shell({ children }: { children: ReactNode }) {
    * changes, so the badge means "unread", not "ever edited".
    */
   const updatedIntake = updatedRequests.length;
+  const newLeads = useNewLeads().list;
 
   // Read in an effect, never in the useState initialiser: the server renders
   // this too, and reading localStorage there is a hydration mismatch. Same
@@ -786,16 +788,29 @@ function Shell({ children }: { children: ReactNode }) {
             />
           )}
           {isAdmin &&
-            NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => (
-              <NavItem
-                key={href}
-                href={href}
-                label={label}
-                Icon={Icon}
-                folded={folded}
-                active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
-              />
-            ))}
+            NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
+              const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+              // Leads lights up like Intake while a website lead is unopened.
+              const waiting = href === "/leads" ? newLeads.length : 0;
+              return (
+                <NavItem
+                  key={href}
+                  href={href}
+                  label={label}
+                  Icon={Icon}
+                  folded={folded}
+                  badge={waiting || undefined}
+                  active={active}
+                  activeStyle={
+                    active
+                      ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                      : waiting > 0
+                        ? { backgroundColor: "var(--aqua)", color: "#06112f" }
+                        : undefined
+                  }
+                />
+              );
+            })}
         </nav>
         {/* ⚠️ No avatar, no name, no role. Nitsan's note: the signed-in person is
             already named in the header's top-right menu, and repeating them at
@@ -869,7 +884,7 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2.5">
             <SyncDot />
             {isAdmin && (
-              <NotificationsBell pendingIntake={pendingIntake} updatedIntake={updatedIntake} />
+              <NotificationsBell pendingIntake={pendingIntake} updatedIntake={updatedIntake} newLeads={newLeads} />
             )}
             {/* The account chip moves into the drawer below md — see MobileDrawer. */}
             <Link
@@ -1035,7 +1050,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <DataProvider>
       <ThemeInit />
-      <Shell>{children}</Shell>
+      <NewLeadsProvider>
+        <Shell>{children}</Shell>
+      </NewLeadsProvider>
     </DataProvider>
   );
 }

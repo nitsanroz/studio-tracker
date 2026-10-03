@@ -59,6 +59,7 @@ import { IconSelect } from "@/components/leads/icon-select";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import { deletedLeadName } from "@/lib/leads/data";
 import { eraseLead, restoreLead } from "@/lib/leads/actions";
+import { useNewLeads } from "@/components/new-leads";
 
 const LAYOUT_KEY = "leads.layout";
 
@@ -123,6 +124,17 @@ function StalledBadge() {
   );
 }
 
+function NewBadge() {
+  return (
+    <span
+      title="From the website form — not opened yet"
+      className="shrink-0 rounded-full bg-brand px-1.5 py-px text-[10.5px] font-medium leading-[15px] text-white"
+    >
+      New
+    </span>
+  );
+}
+
 function LeadCard({
   lead,
   stage,
@@ -130,6 +142,7 @@ function LeadCard({
   owner,
   valueIls,
   now,
+  isNew,
   draggable,
   onDragStart,
   onDragEnd,
@@ -140,6 +153,8 @@ function LeadCard({
   owner: Parameters<typeof Avatar>[0]["profile"] | null;
   valueIls: number | null;
   now: Date;
+  /** From the website form and not opened yet (0048). */
+  isNew: boolean;
   draggable: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -157,6 +172,7 @@ function LeadCard({
     >
       <div className="flex items-start gap-2">
         <span className="bidi-auto min-w-0 flex-1 text-[15px] font-medium leading-tight">{lead.company}</span>
+        {isNew && <NewBadge />}
         {open && lead.replyOwedSince && (
           <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 text-[#8a5a09]">
             <MailWarning size={14} strokeWidth={1.75} />
@@ -448,6 +464,7 @@ function TodayList({
 export default function LeadsPage() {
   const isAdmin = useIsAdmin();
   const { profiles, currentUserId } = useData();
+  const newIds = useNewLeads().ids;
   const router = useRouter();
 
   const [vocab, setVocab] = useState<Vocabulary | null>(null);
@@ -652,6 +669,7 @@ export default function LeadsPage() {
     ownerName: l.ownerId ? (profileById.get(l.ownerId)?.name ?? null) : null,
     valueIls: ils(l),
     now,
+    isNew: newIds.has(l.id),
   });
   const dragHandlers = (l: Lead) => ({
     draggable: true,
@@ -942,6 +960,7 @@ export default function LeadsPage() {
                             <span className="bidi-auto block truncate text-[11.5px] text-faint">{l.primaryContact}</span>
                           )}
                         </span>
+                        {newIds.has(l.id) && <NewBadge />}
                         {isStalled(l, s, now) && <StalledBadge />}
                       </Link>
                     </td>
