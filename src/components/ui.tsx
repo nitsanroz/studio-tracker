@@ -234,6 +234,16 @@ const MODAL_WIDTH = {
 } as const;
 
 /**
+ * Open modals, innermost last. ⚠️ Every Modal listens for Escape on `window`,
+ * and `stopPropagation` there does NOT stop the other window listeners — they
+ * all run, outermost first. So without this, Escape on a confirm opened inside
+ * a settings popup closed BOTH. Only the topmost modal answers Escape now.
+ * Module-level on purpose: `askConfirm` renders a Modal in its own React root,
+ * and the stack has to span roots.
+ */
+const modalStack: object[] = [];
+
+/**
  * The overlay + centred card every popup in the app hand-rolled. Adds two things
  * none of them had: Escape closes, and focus moves into the card on open.
  *
@@ -302,14 +312,17 @@ export function Modal({
     closeRef.current = onClose;
   }, [onClose]);
   useEffect(() => {
+    const me = {};
+    modalStack.push(me);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeRef.current();
-      }
+      if (e.key === "Escape" && modalStack[modalStack.length - 1] === me) closeRef.current();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const i = modalStack.indexOf(me);
+      if (i >= 0) modalStack.splice(i, 1);
+    };
   }, []);
   const [overlayZ, cardZ] = layer === "raised" ? ["z-[60]", "z-[70]"] : ["z-40", "z-50"];
   return (

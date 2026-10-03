@@ -55,7 +55,7 @@ import {
   addContact,
   addOffer,
   approveOffer,
-  binLead,
+  deleteLead,
   restoreLead,
   linkThread,
   logActivity,
@@ -336,7 +336,7 @@ export default function LeadPage() {
       {l.deletedAt && (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
           <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
-          <span>This lead was deleted — it will be erased for good within a few minutes.</span>
+          <span>This lead was deleted and is hidden from the board. It will be erased for good tonight.</span>
           <button
             onClick={() => void run(() => restoreLead(l.id))}
             className="ml-auto h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white"
@@ -449,8 +449,8 @@ export default function LeadPage() {
                 )
                   return;
                 try {
-                  await binLead(l.id, currentUserId);
-                  router.push(`/leads?binned=${l.id}`);
+                  await deleteLead(l.id, currentUserId);
+                  router.push(`/leads?deleted=${l.id}`);
                 } catch (e) {
                   setError(e instanceof Error ? e.message : "Could not delete the lead.");
                 }

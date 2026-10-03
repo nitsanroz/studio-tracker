@@ -29,6 +29,8 @@ function ConfirmBox({
   danger: boolean;
   answer: (ok: boolean) => void;
 }) {
+  // ⚠️ A DANGEROUS confirm focuses CANCEL, so Enter or Space pressed out of
+  // habit can't delete anything; a harmless one focuses its action.
   return (
     // `raised`: it is often opened from inside another modal (a settings popup).
     <Modal onClose={() => answer(false)} width="md" align="center" layer="raised" labelledBy="confirm-msg">
@@ -36,11 +38,15 @@ function ConfirmBox({
         {message}
       </p>
       <div className="mt-4 flex justify-end gap-2">
-        <button onClick={() => answer(false)} className="h-8 rounded-lg border border-border px-3 text-[12.5px]">
+        <button
+          autoFocus={danger}
+          onClick={() => answer(false)}
+          className="h-8 rounded-lg border border-border px-3 text-[12.5px]"
+        >
           Cancel
         </button>
         <button
-          autoFocus
+          autoFocus={!danger}
           onClick={() => answer(true)}
           className={`h-8 rounded-lg px-3 text-[12.5px] font-medium text-white ${danger ? "bg-danger" : "bg-brand"}`}
         >
@@ -51,7 +57,16 @@ function ConfirmBox({
   );
 }
 
+/**
+ * ⚠️ One at a time: a second ask while one is open (a double-click on a
+ * trash icon) answers "no" at once instead of stacking a second dialog —
+ * which would also have run the action twice.
+ */
+let open = false;
+
 export function askConfirm(message: string, opts?: { action?: string; danger?: boolean }): Promise<boolean> {
+  if (open) return Promise.resolve(false);
+  open = true;
   return new Promise((resolve) => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -60,6 +75,7 @@ export function askConfirm(message: string, opts?: { action?: string; danger?: b
     const answer = (ok: boolean) => {
       if (done) return;
       done = true;
+      open = false;
       resolve(ok);
       // Unmount after the click that answered has finished dispatching.
       setTimeout(() => {

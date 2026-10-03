@@ -4,8 +4,8 @@
 -- live outside the store's ⌘Z). Deleting now stamps these two columns and
 -- hides the lead everywhere (board, search, digest, Gmail matching, website-
 -- form dedupe), so the board's Undo banner can bring it back. It is erased for
--- good when that banner is dismissed, or by the app once 10 minutes pass.
--- No bin to browse, by Nitsan's choice.
+-- good when that banner is dismissed, or by the nightly cron (/api/gmail/renew)
+-- once 10 minutes have passed. No bin to browse, by Nitsan's choice.
 
 alter table leads add column if not exists deleted_at timestamptz;
 alter table leads add column if not exists deleted_by uuid references profiles(id) on delete set null;

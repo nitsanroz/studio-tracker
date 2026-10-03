@@ -8,6 +8,7 @@
 // RLS, writes throw LeadWriteError.
 
 import { createClient } from "../supabase/client";
+import { MISSING_SCHEMA_CODES } from "../db";
 import { LeadWriteError, alertOfferReview } from "./actions";
 import { fmtHours, fmtNis, groupWinners, totals, type Category, type Estimate, type EstimateLine, type EstimatePhase, type Range, type ServiceItem } from "./estimate";
 
@@ -411,15 +412,16 @@ export interface EstimateSource {
  */
 export async function loadEstimateSources(): Promise<EstimateSource[]> {
   const sb = createClient();
-  // ⚠️ A binned lead's estimates are not offered as a starting point (0047);
-  // `deleted_at` is in the embed, filtered here so 0047-less DBs still list.
+  // ⚠️ A deleted lead's estimates are not offered as a starting point (0047);
+  // `deleted_at` is in the embed and filtered here. The retry without it is
+  // ONLY for a missing column — any other failure must not drop the filter.
   const q = (cols: string) =>
     sb
       .from("lead_estimates")
       .select(`id,lead_id,version,status,created_at,rate,vat_percent,discount_percent,change_note,leads(${cols})`)
       .order("created_at", { ascending: false });
   let { data, error } = await q("company,client_id,deleted_at");
-  if (error) ({ data, error } = await q("company,client_id"));
+  if (error && MISSING_SCHEMA_CODES.has(error.code ?? "")) ({ data, error } = await q("company,client_id"));
   if (error) return [];
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => !((r.leads ?? {}) as Row).deleted_at);
   if (rows.length === 0) return [];

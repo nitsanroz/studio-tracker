@@ -146,24 +146,24 @@ async function ignoredLeads(sb: SupabaseClient, gmailThreadId: string): Promise<
   return new Set(((data ?? []) as { lead_id: string }[]).map((r) => r.lead_id));
 }
 
+/** A lead_threads row plus whether its lead is deleted (0047), read in the same request. */
+type ThreadRow = { id: string; lead_id: string; leads: { deleted_at: string | null } | null };
+const THREAD_COLS = "id,lead_id,leads(deleted_at)";
+
 /** The lead_threads row this conversation already has, if any — by id, then by any shared Message-ID. */
-async function existingThread(
-  sb: SupabaseClient,
-  gmailThreadId: string,
-  rfcIds: string[],
-): Promise<{ id: string; lead_id: string } | null> {
+async function existingThread(sb: SupabaseClient, gmailThreadId: string, rfcIds: string[]): Promise<ThreadRow | null> {
   const { data: byId } = await sb
     .from("lead_threads")
-    .select("id,lead_id")
+    .select(THREAD_COLS)
     .eq("gmail_thread_id", gmailThreadId)
     .maybeSingle();
-  if (byId) return byId as { id: string; lead_id: string };
+  if (byId) return byId as unknown as ThreadRow;
   if (rfcIds.length === 0) return null;
   const { data: byMsg } = await sb.from("lead_messages").select("thread_id").in("rfc_message_id", rfcIds).limit(1);
   const tid = ((byMsg ?? [])[0] as { thread_id?: string } | undefined)?.thread_id;
   if (!tid) return null;
-  const { data: t } = await sb.from("lead_threads").select("id,lead_id").eq("id", tid).maybeSingle();
-  return (t as { id: string; lead_id: string } | null) ?? null;
+  const { data: t } = await sb.from("lead_threads").select(THREAD_COLS).eq("id", tid).maybeSingle();
+  return (t as unknown as ThreadRow | null) ?? null;
 }
 
 /**
@@ -189,7 +189,13 @@ export async function storeThread(
   const msgs: ParsedMessage[] = raw.map((m) => parseMessage(m, own));
   msgs.sort((a, b) => a.sentAt.localeCompare(b.sentAt));
 
-  let row = await existingThread(sb, gmailThreadId, msgs.map((m) => m.rfcId));
+  const found = await existingThread(sb, gmailThreadId, msgs.map((m) => m.rfcId));
+  // ⚠️ A thread already filed on a DELETED lead (0047) takes no new mail:
+  // it would bump a hidden lead's activity and then vanish with it on purge.
+  // Skipped, not re-matched — if the delete is undone, the next sync or a
+  // "Search Gmail" on the lead picks the message up.
+  if (found?.leads?.deleted_at) return null;
+  let row: { id: string; lead_id: string } | null = found;
   let leadId = row?.lead_id ?? null;
   let matchedBy: string | null = null;
 

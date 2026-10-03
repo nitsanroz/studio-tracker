@@ -57,8 +57,8 @@ import { LostModal, WinModal } from "@/components/leads/stage-modals";
 import { SourceIcon, StageChip, StageIcon } from "@/lib/leads/look";
 import { IconSelect } from "@/components/leads/icon-select";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
-import { loadBin } from "@/lib/leads/data";
-import { deleteLeadForGood, purgeDeletedLeads, restoreLead } from "@/lib/leads/actions";
+import { deletedLeadName } from "@/lib/leads/data";
+import { eraseLead, restoreLead } from "@/lib/leads/actions";
 
 const LAYOUT_KEY = "leads.layout";
 
@@ -477,19 +477,16 @@ export default function LeadsPage() {
   }, []);
 
   // Undo after a delete (0047). The lead page deletes by stamping
-  // `deleted_at` and lands here with `?binned=<id>`; the banner offers Undo,
-  // and dismissing it erases the lead for good. The param is spent at once so
-  // a reload can't offer it again. Any deleted lead past its Undo window is
-  // erased on every board load.
-  const [binned, setBinned] = useState<{ id: string; company: string } | null>(null);
+  // `deleted_at` and lands here with `?deleted=<id>`; the banner offers Undo,
+  // and dismissing it erases the lead for good (otherwise the nightly cron
+  // does). The param is spent at once so a reload can't offer it again.
+  const [deleted, setDeleted] = useState<{ id: string; company: string } | null>(null);
   useEffect(() => {
-    void purgeDeletedLeads();
-    const id = new URLSearchParams(window.location.search).get("binned");
+    const id = new URLSearchParams(window.location.search).get("deleted");
     if (!id) return;
     window.history.replaceState(null, "", window.location.pathname);
-    void loadBin().then((list) => {
-      const hit = list.find((b) => b.id === id);
-      if (hit) setBinned({ id: hit.id, company: hit.company });
+    void deletedLeadName(id).then((company) => {
+      if (company !== null) setDeleted({ id, company });
     });
   }, []);
 
@@ -709,17 +706,18 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {binned && (
+      {deleted && (
         <div className="notice-in mt-3 flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
           <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
           <span>
-            <span className="bidi-auto font-medium">{binned.company || "The lead"}</span> was deleted.
+            <span className="bidi-auto font-medium">{deleted.company || "The lead"}</span> was deleted.
           </span>
           <button
             onClick={async () => {
+              const id = deleted.id;
+              setDeleted(null);
               try {
-                await restoreLead(binned.id);
-                setBinned(null);
+                await restoreLead(id);
                 await reload();
               } catch (e) {
                 setError(e instanceof Error ? e.message : "Could not restore the lead.");
@@ -731,9 +729,9 @@ export default function LeadsPage() {
           </button>
           <button
             onClick={() => {
-              const id = binned.id;
-              setBinned(null);
-              void deleteLeadForGood(id).catch(() => undefined);
+              const id = deleted.id;
+              setDeleted(null);
+              void eraseLead(id).catch(() => undefined);
             }}
             aria-label="Dismiss"
             title="Dismiss — the lead is erased for good"

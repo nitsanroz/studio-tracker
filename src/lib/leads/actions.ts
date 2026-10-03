@@ -180,46 +180,45 @@ export async function moveLead(
  * Delete a lead, held for Undo (0047). Nothing is removed yet: the lead is
  * stamped `deleted_at` and hidden everywhere, so Undo brings back contacts,
  * offers, threads and estimates as they were. It is erased for good when the
- * Undo banner is dismissed, or by `purgeDeletedLeads` once the window passes.
- * (No bin to browse — Nitsan's call: the undo window is the safety net.)
+ * board's Undo banner is dismissed, or by the nightly cron
+ * (`purgeDeletedLeads` in `purge.ts`, run from /api/gmail/renew).
+ * `deleted_by` is written for the record only — nothing in the app reads it.
  */
-export async function binLead(leadId: string, actorId: string | null) {
+export async function deleteLead(leadId: string, actorId: string | null) {
   const sb = createClient();
   const { error } = await sb
     .from("leads")
     .update({ deleted_at: nowIso(), deleted_by: actorId })
     .eq("id", leadId);
-  fail("move the lead to the bin", error);
-}
-
-export async function restoreLead(leadId: string) {
-  const sb = createClient();
-  const { error } = await sb.from("leads").update({ deleted_at: null, deleted_by: null }).eq("id", leadId);
-  fail("restore the lead", error);
-}
-
-/**
- * ⚠️ THE HARD DELETE. Cascades to contacts, offers, threads, events and
- * estimates, and cannot be undone.
- */
-export async function deleteLeadForGood(leadId: string) {
-  const sb = createClient();
-  const { error } = await sb.from("leads").delete().eq("id", leadId);
   fail("delete the lead", error);
 }
 
-/** How long a deleted lead can still be undone. */
-export const UNDO_WINDOW_MS = 10 * 60_000;
+/**
+ * Undo a delete. ⚠️ Checks a row came back: an UPDATE that matches nothing is
+ * not an error, so without this an Undo after the lead was erased would close
+ * the banner as if it had worked.
+ */
+export async function restoreLead(leadId: string) {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("leads")
+    .update({ deleted_at: null, deleted_by: null })
+    .eq("id", leadId)
+    .select("id");
+  fail("restore the lead", error);
+  if (!data || data.length === 0) throw new LeadWriteError("restore the lead", "it has already been erased for good.");
+}
 
 /**
- * Erase every deleted lead whose Undo window has passed — run on each board
- * load, which covers a tab closed with the banner still up. Best-effort and
- * silent: a failure only leaves a hidden row for the next load to take.
+ * ⚠️ THE HARD DELETE — dismissing the Undo banner. Cascades to contacts,
+ * offers, threads, events and estimates, and cannot be undone. Only ever
+ * erases a lead that is already deleted, so a stale banner can't take a lead
+ * somebody restored in another tab.
  */
-export async function purgeDeletedLeads() {
+export async function eraseLead(leadId: string) {
   const sb = createClient();
-  const cutoff = new Date(Date.now() - UNDO_WINDOW_MS).toISOString();
-  await sb.from("leads").delete().lt("deleted_at", cutoff);
+  const { error } = await sb.from("leads").delete().eq("id", leadId).not("deleted_at", "is", null);
+  fail("erase the lead", error);
 }
 
 // ── activity ────────────────────────────────────────────────────────────────
@@ -624,7 +623,10 @@ export async function removeStage(
   const { count } = await sb
     .from("leads")
     .select("id", { count: "exact", head: true })
-    .eq("stage_id", stage.id);
+    .eq("stage_id", stage.id)
+    // A deleted lead waiting out its Undo window doesn't hold a stage it can't
+    // be seen in; if it is restored it simply comes back without one.
+    .is("deleted_at", null);
   if ((count ?? 0) > 0) {
     return {
       ok: false,
