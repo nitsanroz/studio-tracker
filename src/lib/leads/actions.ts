@@ -552,10 +552,15 @@ export async function addStage(name: string, position: number) {
   fail("add the stage", error);
 }
 
-export async function updateStage(id: string, patch: { name?: string; stallDays?: number | null }) {
+export async function updateStage(
+  id: string,
+  patch: { name?: string; stallDays?: number | null; color?: string | null; icon?: string | null },
+) {
   const row: Record<string, unknown> = {};
   if (patch.name !== undefined) row.name = patch.name.trim();
   if (patch.stallDays !== undefined) row.stall_days = patch.stallDays;
+  if (patch.color !== undefined) row.color = patch.color;
+  if (patch.icon !== undefined) row.icon = patch.icon;
   if (Object.keys(row).length === 0) return;
   const sb = createClient();
   const { error } = await sb.from("lead_stages").update(row).eq("id", id);

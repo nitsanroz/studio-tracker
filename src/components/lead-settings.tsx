@@ -17,7 +17,7 @@ import {
   type Vocabulary,
 } from "@/lib/leads/data";
 import { useData } from "@/lib/store";
-import { LibrarySettings } from "@/components/leads/library-settings";
+import { StageLookPicker } from "@/components/leads/stage-look-picker";
 import {
   saveMailSetting,
   addLostReason,
@@ -343,6 +343,7 @@ export function LeadSettings() {
               className="group flex items-center gap-1 rounded-lg border border-transparent px-1 py-0.5 hover:border-border"
             >
               <GripVertical size={14} className="shrink-0 cursor-grab text-faint opacity-0 group-hover:opacity-100" aria-hidden />
+              <StageLookPicker stage={s} onChange={(patch) => void run(() => updateStage(s.id, patch))} />
               <EditableName value={s.name} onCommit={(v) => void run(() => updateStage(s.id, { name: v }))} />
               {s.kind === "open" ? (
                 <label className="flex shrink-0 items-center gap-1 text-[11.5px] text-faint">
@@ -409,8 +410,6 @@ export function LeadSettings() {
       </div>
 
       <div className="flex flex-col gap-4">
-        <GmailCard />
-        <MailCard />
         <div className={CARD}>
           <h3 className={HEAD}>Lost reasons</h3>
           <p className={NOTE}>Asked when a lead moves to Lost. Removing one leaves its leads lost, untagged.</p>
@@ -449,40 +448,51 @@ export function LeadSettings() {
           </form>
         </div>
 
-        <div className={CARD}>
-          <h3 className={HEAD}>Website form</h3>
-          <p className={NOTE}>
-            In Framer, open the contact form&rsquo;s settings → <strong className="font-medium text-foreground">Send to
-            → Webhook</strong> and paste this address. Each submission lands on the board as a new lead in the first
-            stage and emails you both. <strong className="font-medium text-foreground">Keep it private</strong> —
-            anyone with it can add leads.
-          </p>
-          {webhook ? (
-            <div className="mt-3 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background px-2 py-1.5 text-[11.5px]">
-                {webhook}
-              </code>
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(webhook);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1400);
-                  } catch {
-                    window.prompt("Copy this:", webhook);
-                  }
-                }}
-                className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 text-[12.5px]"
-              >
-                <Copy size={13} /> {copied ? "Copied" : "Copy"}
-              </button>
-            </div>
-          ) : (
-            <p className="mt-3 text-[12.5px] text-warning">No secret found — run migration 0042.</p>
-          )}
+        <MailCard />
+      </div>
+
+      {/* ── connections ──
+          ⚠️ GROUPED APART AND LAST (Nitsan, 2026-10-03): Gmail and the website
+          webhook are TECHNICAL, set up once and rarely touched again; the cards
+          above are the pipeline's content, edited as the studio works. */}
+      <div className="lg:col-span-2">
+        <h3 className="mb-2 mt-2 text-[12px] font-medium uppercase tracking-wider text-faint">Connections</h3>
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <GmailCard />
+          <div className={CARD}>
+            <h3 className={HEAD}>Website form</h3>
+            <p className={NOTE}>
+              In Framer, open the contact form&rsquo;s settings → <strong className="font-medium text-foreground">Send to
+              → Webhook</strong> and paste this address. Each submission lands on the board as a new lead in the first
+              stage and emails you both. <strong className="font-medium text-foreground">Keep it private</strong> —
+              anyone with it can add leads.
+            </p>
+            {webhook ? (
+              <div className="mt-3 flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background px-2 py-1.5 text-[11.5px]">
+                  {webhook}
+                </code>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(webhook);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1400);
+                    } catch {
+                      window.prompt("Copy this:", webhook);
+                    }
+                  }}
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-border px-2.5 text-[12.5px]"
+                >
+                  <Copy size={13} /> {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-[12.5px] text-warning">No secret found — run migration 0042.</p>
+            )}
+          </div>
         </div>
       </div>
-      <LibrarySettings />
     </div>
   );
 }

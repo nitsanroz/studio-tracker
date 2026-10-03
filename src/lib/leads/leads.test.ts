@@ -41,6 +41,8 @@ const stage = (stallDays: number | null, kind: LeadStage["kind"] = "open"): Lead
   kind,
   stallDays,
   ruleKey: null,
+  color: null,
+  icon: null,
 });
 
 describe("quietWorkDays", () => {

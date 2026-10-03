@@ -9,8 +9,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import {
+  Info,
+  ArrowRightLeft,
+  CircleX,
+  RotateCcw,
+  Sparkles,
+  StickyNote,
+  Users,
+  type LucideIcon,
   AlarmClock,
   CheckCircle2,
   ChevronLeft,
@@ -27,6 +36,8 @@ import {
   Upload,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { IconSelect } from "@/components/leads/icon-select";
+import { SourceIcon, StageIcon, stageStyle } from "@/lib/leads/look";
 import { Avatar, Tabs } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
@@ -78,7 +89,16 @@ import {
   type OfferStatus,
 } from "@/lib/leads/types";
 import { LostModal, WinModal } from "@/components/leads/stage-modals";
-import { createEstimate, loadEstimates, type EstimateSummary } from "@/lib/leads/estimates-data";
+import { SettingsPopupButton } from "@/components/leads/settings-popup";
+import {
+  copyEstimate,
+  createEstimate,
+  loadEstimateSources,
+  loadEstimates,
+  type EstimateSource,
+  type EstimateSummary,
+} from "@/lib/leads/estimates-data";
+import { Modal, ModalClose } from "@/components/ui";
 import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 
 type Tab = "contacts" | "emails" | "offers" | "estimates" | "activity";
@@ -138,6 +158,20 @@ const EVENT_LABEL: Record<LeadEventKind, string> = {
   won: "Won",
   lost: "Lost",
   reopened: "Reopened",
+};
+
+/** One icon per activity kind — on the log form's kind switch and on each row of the log. */
+const EVENT_ICON: Record<LeadEventKind, LucideIcon> = {
+  created: Sparkles,
+  call: Phone,
+  meeting: Users,
+  note: StickyNote,
+  email: Mail,
+  stage_change: ArrowRightLeft,
+  offer: FileText,
+  won: Trophy,
+  lost: CircleX,
+  reopened: RotateCcw,
 };
 
 function eventLine(ev: LeadEvent): string | null {
@@ -338,20 +372,20 @@ export default function LeadPage() {
             </span>
             <label className="flex items-center gap-1.5">
               <span className="text-faint">Source</span>
-              <select
+              <IconSelect
                 value={l.source ?? ""}
-                onChange={(e) =>
-                  void run(() => updateLead(l.id, { source: (e.target.value || null) as LeadSource | null }))
-                }
-                className={`${QUIET} cursor-pointer`}
-              >
-                <option value="">Not set</option>
-                {SOURCES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => void run(() => updateLead(l.id, { source: (v || null) as LeadSource | null }))}
+                ariaLabel="Source"
+                className={QUIET}
+                options={[
+                  { value: "", label: "Not set" },
+                  ...SOURCES.map((s) => ({
+                    value: s.value,
+                    label: s.label,
+                    icon: <SourceIcon source={s.value} className="text-faint" />,
+                  })),
+                ]}
+              />
             </label>
             <span className="text-faint">
               Created {formatDate(l.createdAt)}
@@ -374,22 +408,18 @@ export default function LeadPage() {
               </option>
             ))}
           </select>
-          <select
+          <IconSelect
             value={l.stageId ?? ""}
-            onChange={(e) => {
-              const to = vocab.stages.find((s) => s.id === e.target.value);
+            onChange={(v) => {
+              const to = vocab.stages.find((s) => s.id === v);
               if (to) changeStage(to);
             }}
-            className="h-9 rounded-lg border border-[#c9d6fb] bg-brand-soft px-2 text-[13px] font-medium text-brand-dark"
-            aria-label="Stage"
-          >
-            {!stage && <option value="">No stage</option>}
-            {vocab.stages.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            ariaLabel="Stage"
+            placeholder="No stage"
+            className="h-9 rounded-lg border px-2.5 text-[13px] font-medium"
+            style={stageStyle(stage)}
+            options={vocab.stages.map((s) => ({ value: s.id, label: s.name, icon: <StageIcon stage={s} /> }))}
+          />
           <button
             onClick={() => {
               const n = contacts.length + offers.length + threads.length;
@@ -526,7 +556,14 @@ export default function LeadPage() {
               onSearched={reload}
             />
           )}
-          {tab === "estimates" && <EstimatesTab leadId={l.id} company={l.company} profileName={(id) => profileById.get(id)?.name ?? null} />}
+          {tab === "estimates" && (
+            <EstimatesTab
+              leadId={l.id}
+              company={l.company}
+              clientId={l.clientId}
+              profileName={(id) => profileById.get(id)?.name ?? null}
+            />
+          )}
           {tab === "offers" && (
             <OffersTab
               leadId={l.id}
@@ -697,8 +734,12 @@ function ActivityTab({
                 type="button"
                 onClick={() => setKind(k.value)}
                 aria-pressed={kind === k.value}
-                className={`px-2.5 py-1 ${kind === k.value ? "bg-brand-soft font-medium text-brand-dark" : "text-muted"}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1 ${kind === k.value ? "bg-brand-soft font-medium text-brand-dark" : "text-muted"}`}
               >
+                {(() => {
+                  const Icon = EVENT_ICON[k.value];
+                  return <Icon size={13} strokeWidth={1.75} aria-hidden />;
+                })()}
                 {k.label}
               </button>
             ))}
@@ -747,6 +788,10 @@ function ActivityTab({
               <span className="w-16 shrink-0 pt-0.5 text-[11.5px] text-faint">{formatDate(ev.at)}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 text-[12.5px]">
+                  {(() => {
+                    const Icon = EVENT_ICON[ev.kind];
+                    return Icon ? <Icon size={13} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden /> : null;
+                  })()}
                   <span className="font-medium">{EVENT_LABEL[ev.kind] ?? ev.kind}</span>
                   {line && <span className="bidi-auto text-muted">{line}</span>}
                   {who && (
@@ -1108,20 +1153,255 @@ const EST_STATUS: Record<string, string> = {
   approved: "bg-[#eaf6ee] text-[#12693d]",
 };
 
+/**
+ * "New estimate" — blank, or a copy of any estimate to edit (Nitsan,
+ * 2026-10-03): an earlier version for this lead, an estimate made for the same
+ * client, or another project's quote as a template.
+ *
+ * ⚠️ SAME CLIENT MEANS THE SAME `client_id` OR THE SAME COMPANY NAME: a
+ * returning client's earlier lead was usually never won into a client, so the
+ * name is the only thing joining them.
+ */
+/**
+ * What a "start from" estimate holds, beside the row being hovered: its total,
+ * then each phase with its hours and lines. Sits to the RIGHT of the modal
+ * (left if the window runs out) so it never covers the list being chosen from.
+ * `fixed` + portalled — the modal is a scroller and would clip it.
+ */
+function EstimateSourceCard({ src, rect }: { src: EstimateSource; rect: DOMRect }) {
+  const W = 300;
+  const right = rect.right + 12 + W <= window.innerWidth - 8;
+  const left = right ? rect.right + 12 : Math.max(8, rect.left - 12 - W);
+  // Rows in the lower half hang the card UPWARD from their bottom edge, so a
+  // tall card never runs off the foot of the window.
+  const low = rect.top > window.innerHeight / 2;
+  const vertical = low
+    ? { bottom: Math.max(8, window.innerHeight - rect.bottom - 8) }
+    : { top: Math.max(8, rect.top - 8) };
+  const MAX_LINES = 4;
+  const maxPhase = Math.max(...src.phases.map((p) => p.hours.max), 0);
+  return createPortal(
+    <div
+      role="tooltip"
+      // The finance plan's explain card (finance-admin explain-card.tsx): the
+      // same navy, gradient strip and type scale, so a hover card reads the
+      // same in both products.
+      className="pointer-events-none fixed z-[80] max-h-[80vh] overflow-hidden rounded-2xl bg-[#06112f] text-white shadow-2xl ring-1 ring-white/10"
+      style={{ left, width: W, ...vertical }}
+    >
+      <div className="h-1 bg-gradient-to-r from-[#0b43ed] to-[#6181e8]" />
+      <div className="p-3.5">
+        <div className="bidi-auto truncate text-[10px] font-medium uppercase tracking-wider text-white/50">
+          {src.company} v{src.version} ·{" "}
+          {src.status === "approved" ? "approved" : src.status === "in_review" ? "in review" : "draft"}
+        </div>
+        <div className="mt-0.5 text-2xl font-semibold leading-tight tabular-nums">{fmtNis(src.net)}</div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium tabular-nums text-white/80">
+            {fmtHours(src.hours)}
+          </span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">+ VAT</span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-white/80">
+            {src.lineCount} line{src.lineCount === 1 ? "" : "s"}
+          </span>
+        </div>
+        {src.changeNote && (
+          <p className="mt-2.5 rounded-lg border-l-2 border-[#6181e8] bg-[#0b43ed]/20 px-2.5 py-1.5 text-[11.5px] leading-snug text-white/90">
+            <span className="mr-1 font-semibold text-[#9db3f5]">Note</span>
+            {src.changeNote}
+          </p>
+        )}
+        {src.phases.length === 0 ? (
+          <p className="mt-2.5 text-[11px] text-white/40">No lines yet.</p>
+        ) : (
+          <ul className="mt-2.5 space-y-2.5">
+            {src.phases.map((p, i) => (
+              <li key={i} className="text-[11px]">
+                <div className="flex justify-between gap-3">
+                  <span className="bidi-auto truncate font-medium text-white/90">{p.name}</span>
+                  <span className="shrink-0 tabular-nums">{fmtHours(p.hours)}</span>
+                </div>
+                {maxPhase > 0 && (
+                  <div className="mt-0.5 h-1 rounded-full bg-white/10">
+                    <div className="h-1 rounded-full bg-[#6181e8]" style={{ width: `${(p.hours.max / maxPhase) * 100}%` }} />
+                  </div>
+                )}
+                <div className="bidi-auto mt-1 leading-snug text-white/55">
+                  {p.lines
+                    .slice(0, MAX_LINES)
+                    .map((l) => l.name + (l.alternative ? " (option)" : l.optional ? " (extra)" : ""))
+                    .join(" · ")}
+                  {p.lines.length > MAX_LINES && <span className="text-white/35"> · + {p.lines.length - MAX_LINES} more</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function NewEstimateModal({
+  leadId,
+  company,
+  clientId,
+  onClose,
+}: {
+  leadId: string;
+  company: string;
+  clientId: string | null;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const { currentUserId } = useData();
+  const [sources, setSources] = useState<EstimateSource[] | null>(null);
+  const [pick, setPick] = useState<string>("blank");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [hover, setHover] = useState<{ src: EstimateSource; rect: DOMRect } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void loadEstimateSources().then((v) => alive && setSources(v));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const name = company.trim().toLowerCase();
+  const groups: { title: string; rows: EstimateSource[] }[] = [
+    { title: "This lead", rows: (sources ?? []).filter((x) => x.leadId === leadId) },
+    {
+      title: "Same client",
+      rows: (sources ?? []).filter(
+        (x) => x.leadId !== leadId && ((clientId && x.clientId === clientId) || x.company.trim().toLowerCase() === name),
+      ),
+    },
+  ];
+  const used = new Set(groups.flatMap((g) => g.rows.map((r) => r.id)));
+  groups.push({ title: "Other projects", rows: (sources ?? []).filter((x) => !used.has(x.id)) });
+
+  async function start() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const id =
+        pick === "blank"
+          ? await createEstimate(leadId, company, currentUserId)
+          : await copyEstimate(pick, leadId, company, currentUserId);
+      router.push(`/leads/${leadId}/estimates/${id}`);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Could not create the estimate.");
+      setBusy(false);
+    }
+  }
+
+  const option = (value: string, title: React.ReactNode, sub?: string) => (
+    <label
+      key={value}
+      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-[13px] ${
+        pick === value ? "border-brand bg-brand-soft/40" : "border-border hover:border-brand/50"
+      }`}
+    >
+      <input type="radio" name="est-source" checked={pick === value} onChange={() => setPick(value)} className="mt-1" />
+      <span className="min-w-0 flex-1">
+        <span className="block">{title}</span>
+        {sub && <span className="block truncate text-[11.5px] text-muted">{sub}</span>}
+      </span>
+    </label>
+  );
+
+  return (
+    <Modal onClose={onClose} width="lg" align="center" className="max-h-[85vh] overflow-y-auto" labelledBy="new-est-title">
+      <div className="mb-3 flex items-center gap-2">
+        <h3 id="new-est-title" className="text-sm font-semibold">
+          New estimate for {company}
+        </h3>
+        <span className="ml-auto">
+          <ModalClose onClose={onClose} />
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {option("blank", <span className="font-medium">Blank</span>, "One empty phase; add lines from the library.")}
+        {sources === null && <p className="text-[12.5px] text-faint">Loading estimates…</p>}
+        {groups.map((g) =>
+          g.rows.length ? (
+            <div key={g.title} className="mt-2">
+              <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-faint">
+                Copy {g.title === "Other projects" ? "another project's estimate" : `from ${g.title.toLowerCase()}`}
+                <span className="ml-auto flex items-center gap-1 font-normal tracking-normal normal-case text-muted">
+                  <Info size={12} strokeWidth={1.75} aria-hidden /> Hover for details
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {g.rows.map((r) => (
+                  <div
+                    key={r.id}
+                    onMouseEnter={(e) => setHover({ src: r, rect: e.currentTarget.getBoundingClientRect() })}
+                    onMouseLeave={() => setHover(null)}
+                  >
+                    {option(
+                      r.id,
+                      <span className="flex items-baseline gap-2">
+                        <span className="min-w-0 truncate">
+                          <span className="font-medium">{r.company}</span> v{r.version}
+                          <span className="ml-1.5 text-[11.5px] text-muted">
+                            {r.status === "approved" ? "approved" : r.status === "in_review" ? "in review" : "draft"}
+                          </span>
+                        </span>
+                        <span className="ml-auto shrink-0 text-[12px] font-medium tabular-nums">{fmtNis(r.net)}</span>
+                      </span>,
+                      `${fmtHours(r.hours)} · ${r.phases.map((p) => p.name).join(" · ") || "no phases"} · ${formatDate(r.createdAt)}`,
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null,
+        )}
+        {sources?.length === 0 && (
+          <p className="mt-1 text-[12px] text-faint">No other estimates yet — once there are, any of them can be the starting point.</p>
+        )}
+      </div>
+      {pick !== "blank" && (
+        <p className="mt-3 text-[11.5px] text-muted">
+          Copies every phase, line, option and the texts into a new draft. The other company&rsquo;s name in the texts
+          is replaced with {company}; check the greeting.
+        </p>
+      )}
+      {err && <p className="mt-2 text-[12px] text-danger">{err}</p>}
+      {hover && <EstimateSourceCard src={hover.src} rect={hover.rect} />}
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="h-8 rounded-lg border border-border px-3 text-[12.5px]">
+          Cancel
+        </button>
+        <button
+          onClick={() => void start()}
+          disabled={busy}
+          className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-50"
+        >
+          {busy ? "Creating…" : pick === "blank" ? "Start blank" : "Copy and edit"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function EstimatesTab({
   leadId,
   company,
+  clientId,
   profileName,
 }: {
   leadId: string;
   company: string;
+  clientId: string | null;
   profileName: (id: string) => string | null;
 }) {
-  const router = useRouter();
-  const { currentUserId } = useData();
   const [list, setList] = useState<EstimateSummary[] | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [choosing, setChoosing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -1156,28 +1436,24 @@ function EstimatesTab({
         </Link>
       ))}
       {list?.length === 0 && <p className="text-[12.5px] text-faint">No estimate yet.</p>}
-      {err && <p className="text-[12px] text-danger">{err}</p>}
-      <div>
+      {choosing && (
+        <NewEstimateModal leadId={leadId} company={company} clientId={clientId} onClose={() => setChoosing(false)} />
+      )}
+      <div className="flex flex-wrap items-start gap-2">
+        <div>
         <button
-          disabled={creating}
-          onClick={async () => {
-            setCreating(true);
-            setErr(null);
-            try {
-              const id = await createEstimate(leadId, company, currentUserId);
-              router.push(`/leads/${leadId}/estimates/${id}`);
-            } catch (ex) {
-              setErr(ex instanceof Error ? ex.message : "Could not create the estimate.");
-              setCreating(false);
-            }
-          }}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand disabled:opacity-50"
+          onClick={() => setChoosing(true)}
+          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand"
         >
-          <Plus size={13} /> {list && list.length ? "New estimate (blank)" : "New estimate"}
+          <Plus size={13} /> New estimate…
         </button>
         {list && list.length > 0 && (
-          <p className="mt-1 text-[11.5px] text-faint">To change an existing one, open it and use “Save as new version”.</p>
+          <p className="mt-1 text-[11.5px] text-faint">Start blank or from any earlier estimate — this client&rsquo;s or another project&rsquo;s.</p>
         )}
+        </div>
+        <span className="ml-auto">
+          <SettingsPopupButton which="pricing" label="Settings" />
+        </span>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Plus, Send, Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import { loadLead } from "@/lib/leads/data";
 import {
   addLine,
@@ -353,6 +354,7 @@ export default function EstimatePage() {
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <SettingsPopupButton which="pricing" label="Settings" onClosed={() => void reload()} />
           <button
             onClick={() => {
               const note = window.prompt("What will change in the new version?", "");

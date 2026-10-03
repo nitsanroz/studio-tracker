@@ -9,7 +9,7 @@
 
 import { createClient } from "../supabase/client";
 import { LeadWriteError, alertOfferReview } from "./actions";
-import { fmtHours, fmtNis, groupWinners, totals, type Category, type Estimate, type EstimateLine, type EstimatePhase, type ServiceItem } from "./estimate";
+import { fmtHours, fmtNis, groupWinners, totals, type Category, type Estimate, type EstimateLine, type EstimatePhase, type Range, type ServiceItem } from "./estimate";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -267,13 +267,60 @@ export async function createEstimate(leadId: string, company: string, actorId: s
  * has seen) stays exactly as it was; all editing happens on the copy.
  */
 export async function newVersion(estimateId: string, changeNote: string, actorId: string | null): Promise<string> {
-  const sb = createClient();
   const src = await loadEstimate(estimateId);
   if (!src) throw new LeadWriteError("copy the estimate", "it no longer exists");
+  return copyInto(src, src.estimate.leadId, changeNote, actorId, null);
+}
+
+/**
+ * "New estimate from…" — copies ANY estimate (an earlier one for this client,
+ * or another project's as a template) into a new draft on `targetLeadId`.
+ *
+ * ⚠️ THE SOURCE'S COMPANY NAME IS SWAPPED FOR THE TARGET'S in the client-facing
+ * text (intro, timeline, closing, phase and line descriptions). A template from
+ * the Unibeam quote that still says "Hi Rivi … Unibeam" in another client's
+ * intro is the one mistake nobody would forgive; everything else is meant to be
+ * edited anyway. The greeting's NAME cannot be known and is left for editing.
+ *
+ * ⚠️ ONLY THE CONTENT TRAVELS — status, approval, the offer link and the
+ * published client page stay with the source. The copy is a draft.
+ */
+export async function copyEstimate(
+  sourceId: string,
+  targetLeadId: string,
+  targetCompany: string,
+  actorId: string | null,
+): Promise<string> {
+  const src = await loadEstimate(sourceId);
+  if (!src) throw new LeadWriteError("copy the estimate", "it no longer exists");
+  const sb = createClient();
+  const { data: srcLead } = await sb.from("leads").select("company").eq("id", src.estimate.leadId).maybeSingle();
+  const fromCompany = (srcLead as { company?: string } | null)?.company ?? "";
+  const sameLead = src.estimate.leadId === targetLeadId;
+  const note = sameLead
+    ? `Started from v${src.estimate.version}`
+    : `Started from ${fromCompany || "another estimate"} v${src.estimate.version}`;
+  return copyInto(src, targetLeadId, note, actorId, sameLead || !fromCompany ? null : { from: fromCompany, to: targetCompany });
+}
+
+function swapName(text: string | null, swap: { from: string; to: string } | null): string | null {
+  if (!text || !swap || !swap.from.trim()) return text;
+  const esc = swap.from.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(new RegExp(esc, "gi"), swap.to);
+}
+
+async function copyInto(
+  src: EstimateDetail,
+  targetLeadId: string,
+  changeNote: string,
+  actorId: string | null,
+  swap: { from: string; to: string } | null,
+): Promise<string> {
+  const sb = createClient();
   const { data: last } = await sb
     .from("lead_estimates")
     .select("version")
-    .eq("lead_id", src.estimate.leadId)
+    .eq("lead_id", targetLeadId)
     .order("version", { ascending: false })
     .limit(1);
   const version = (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
@@ -281,15 +328,15 @@ export async function newVersion(estimateId: string, changeNote: string, actorId
   const { data, error } = await sb
     .from("lead_estimates")
     .insert({
-      lead_id: e.leadId,
+      lead_id: targetLeadId,
       version,
       rate: e.rate,
       vat_percent: e.vatPercent,
       discount_percent: e.discountPercent,
       discount_note: e.discountNote,
-      intro: e.intro,
-      timeline: e.timeline,
-      closing: e.closing,
+      intro: swapName(e.intro, swap),
+      timeline: swapName(e.timeline, swap),
+      closing: swapName(e.closing, swap),
       change_note: changeNote.trim() || null,
       created_by: actorId,
     })
@@ -301,7 +348,7 @@ export async function newVersion(estimateId: string, changeNote: string, actorId
   for (const p of src.phases) {
     const { data: np, error: pe } = await sb
       .from("estimate_phases")
-      .insert({ estimate_id: id, name: p.name, description: p.description, position: p.position })
+      .insert({ estimate_id: id, name: p.name, description: swapName(p.description, swap), position: p.position })
       .select("id")
       .single();
     fail("copy a phase", pe);
@@ -314,7 +361,7 @@ export async function newVersion(estimateId: string, changeNote: string, actorId
         phase_id: l.phaseId ? (phaseMap.get(l.phaseId) ?? null) : null,
         service_item_id: l.serviceItemId,
         name: l.name,
-        description: l.description,
+        description: swapName(l.description, swap),
         category: l.category,
         kind: l.kind,
         min_hours: l.minHours,
@@ -330,6 +377,90 @@ export async function newVersion(estimateId: string, changeNote: string, actorId
     fail("copy the lines", le);
   }
   return id;
+}
+
+export interface EstimateSourcePhase {
+  name: string;
+  hours: Range;
+  lines: { name: string; optional: boolean; alternative: boolean }[];
+}
+
+export interface EstimateSource {
+  id: string;
+  leadId: string;
+  company: string;
+  clientId: string | null;
+  version: number;
+  status: Estimate["status"];
+  createdAt: string;
+  changeNote: string | null;
+  lineCount: number;
+  /** Counted hours and the ₪ after discount, before VAT — the figure quoted "+ VAT". */
+  hours: Range;
+  net: Range;
+  phases: EstimateSourcePhase[];
+}
+
+/**
+ * Every estimate in the studio, for the "start from" picker — company,
+ * version, status, its total and what it holds (phases and their lines), so
+ * a starting point can be chosen by what it contains rather than by name.
+ * Three queries for the whole studio (~35 estimates, ~500 lines).
+ */
+export async function loadEstimateSources(): Promise<EstimateSource[]> {
+  const sb = createClient();
+  const { data, error } = await sb
+    .from("lead_estimates")
+    .select("id,lead_id,version,status,created_at,rate,vat_percent,discount_percent,change_note,leads(company,client_id)")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  const rows = (data ?? []) as Row[];
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => str(r.id));
+  const [lineRes, phaseRes] = await Promise.all([
+    sb.from("estimate_lines").select("*").in("estimate_id", ids).order("position"),
+    sb.from("estimate_phases").select("id,estimate_id,name,position").in("estimate_id", ids).order("position"),
+  ]);
+  const lines = ((lineRes.data ?? []) as Row[]).map(mapLine);
+  const phases = ((phaseRes.data ?? []) as Row[]).map((r) => mapPhase(r));
+  return rows.map((r) => {
+    const lead = (r.leads ?? {}) as Row;
+    const st = str(r.status);
+    const id = str(r.id);
+    const ls = lines.filter((l) => l.estimateId === id);
+    const t = totals(ls, nnum(r.rate) ?? 350, nnum(r.vat_percent) ?? 18, nnum(r.discount_percent));
+    const ps = phases.filter((p) => p.estimateId === id).sort((a, b) => a.position - b.position);
+    const phaseOf = (pid: string | null, name: string): EstimateSourcePhase => ({
+      name,
+      hours: t.phase.get(pid ?? "") ?? { min: 0, max: 0 },
+      lines: ls
+        .filter((l) => (l.phaseId ?? null) === pid)
+        .map((l) => ({ name: l.name, optional: l.optional, alternative: Boolean(l.altGroup) })),
+    });
+    const out = ps.map((p) => phaseOf(p.id, p.name));
+    if (ls.some((l) => !l.phaseId || !ps.some((p) => p.id === l.phaseId))) {
+      const orphan = ls.filter((l) => !l.phaseId || !ps.some((p) => p.id === l.phaseId));
+      out.push({
+        name: "Other",
+        hours: t.phase.get("") ?? { min: 0, max: 0 },
+        lines: orphan.map((l) => ({ name: l.name, optional: l.optional, alternative: Boolean(l.altGroup) })),
+      });
+    }
+    return {
+      id,
+      leadId: str(r.lead_id),
+      company: str(lead.company),
+      clientId: nstr(lead.client_id),
+      version: nnum(r.version) ?? 1,
+      status: (st === "in_review" || st === "approved" ? st : "draft") as Estimate["status"],
+      createdAt: str(r.created_at),
+      changeNote: nstr(r.change_note),
+      lineCount: ls.length,
+      hours: t.totalHours,
+      net: t.net,
+      phases: out.filter((p) => p.lines.length > 0),
+    };
+  });
 }
 
 export async function updateEstimate(

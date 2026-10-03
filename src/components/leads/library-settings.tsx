@@ -87,7 +87,7 @@ export function LibrarySettings() {
   const shown = items.filter((i) => showRetired || i.active);
 
   return (
-    <div className={`${CARD} lg:col-span-2`}>
+    <div className={CARD}>
       <div className="flex flex-wrap items-baseline gap-3">
         <h3 className="text-sm font-semibold">Service library &amp; pricing</h3>
         <span className="text-xs text-muted">
@@ -146,7 +146,9 @@ export function LibrarySettings() {
                   const v = e.target.value.trim() || null;
                   if (v !== i.description) void run(() => updateLibraryItem(i.id, { description: v }));
                 }}
-                className={`${QUIET} w-full resize-y text-[12px] text-muted`}
+                // The resize corner only on hover/focus — at rest it is clutter on
+                // every row of the library (Nitsan, 2026-10-03).
+                className={`${QUIET} w-full resize-none text-[12px] text-muted hover:resize-y focus:resize-y`}
               />
             </div>
             <select

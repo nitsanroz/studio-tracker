@@ -15,5 +15,7 @@ export function mapStage(r: Row): LeadStage {
     kind: (kind === "won" || kind === "lost" ? kind : "open") as LeadStageKind,
     stallDays: stall !== null && Number.isFinite(stall) ? stall : null,
     ruleKey: typeof r.rule_key === "string" && r.rule_key ? (r.rule_key as StageRuleKey) : null,
+    color: typeof r.color === "string" && /^#[0-9a-f]{6}$/i.test(r.color) ? r.color : null,
+    icon: typeof r.icon === "string" && r.icon ? r.icon : null,
   };
 }

@@ -14,7 +14,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlarmClock, ChevronRight, MailWarning, Plus, Search, X } from "lucide-react";
+import {
+  AlarmClock,
+  ChartPie,
+  ChevronRight,
+  Columns3,
+  List,
+  MailWarning,
+  Plus,
+  Search,
+  Sun,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { Avatar } from "@/components/ui";
 import { formatDate } from "@/lib/format";
@@ -41,8 +53,19 @@ import {
   type LostReason,
 } from "@/lib/leads/types";
 import { LostModal, WinModal } from "@/components/leads/stage-modals";
+import { SourceIcon, StageChip, StageIcon } from "@/lib/leads/look";
+import { IconSelect } from "@/components/leads/icon-select";
+import { SettingsPopupButton } from "@/components/leads/settings-popup";
 
 const LAYOUT_KEY = "leads.layout";
+
+/** The view switcher's options, in order, with their icons. */
+const VIEWS: { value: "today" | "board" | "list" | "summary"; label: string; Icon: LucideIcon }[] = [
+  { value: "today", label: "Today", Icon: Sun },
+  { value: "board", label: "Board", Icon: Columns3 },
+  { value: "list", label: "List", Icon: List },
+  { value: "summary", label: "Summary", Icon: ChartPie },
+];
 
 /** See `storedLayout` in candidates/page.tsx — effect or handler only, never render. */
 type Layout = "today" | "board" | "list" | "summary";
@@ -138,8 +161,13 @@ function LeadCard({
         )}
         {stalled && <StalledBadge />}
       </div>
-      {lead.primaryContact && (
-        <span className="bidi-auto truncate text-[12px] text-muted">{lead.primaryContact}</span>
+      {(lead.primaryContact || lead.source) && (
+        <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted">
+          <span title={sourceLabel(lead.source as LeadSource | null)} className="flex">
+            <SourceIcon source={lead.source as LeadSource | null} size={12} className="text-faint" />
+          </span>
+          {lead.primaryContact && <span className="bidi-auto truncate">{lead.primaryContact}</span>}
+        </span>
       )}
       {(valueIls !== null || lead.estValue !== null) && (
         <span className="text-[12.5px] font-medium text-foreground">
@@ -263,12 +291,17 @@ function PipelineSummary({
           <h2 className="text-sm font-semibold">Open value by stage</h2>
           <div className="mt-3 flex flex-col gap-2">
             {byStage.map((r) => (
-              <div key={r.stage.id} className="grid grid-cols-[120px_1fr_90px] items-center gap-3 text-[12.5px]">
-                <span className="bidi-auto truncate text-muted">
-                  {r.stage.name} <span className="text-faint">{r.count}</span>
+              <div key={r.stage.id} className="grid grid-cols-[150px_1fr_90px] items-center gap-3 text-[12.5px]">
+                <span className="flex min-w-0 items-center gap-1.5 text-muted">
+                  <StageIcon stage={r.stage} />
+                  <span className="bidi-auto truncate">{r.stage.name}</span>
+                  <span className="text-faint">{r.count}</span>
                 </span>
                 <span className="h-2 rounded-full bg-foreground/[0.06]">
-                  <span className="block h-2 rounded-full bg-brand" style={{ width: `${(r.value / max) * 100}%` }} />
+                  <span
+                    className="block h-2 rounded-full"
+                    style={{ width: `${(r.value / max) * 100}%`, backgroundColor: r.stage.color || "var(--color-brand)" }}
+                  />
                 </span>
                 <span className="text-right">{formatIls(r.value)}</span>
               </div>
@@ -396,8 +429,8 @@ function TodayList({
                   >
                     <span className="bidi-auto shrink-0 text-[13px] font-medium">{l.company}</span>
                     <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{s.line(l)}</span>
-                    <span className="ml-auto shrink-0 text-[11px] text-faint">
-                      {l.stageId ? stageById.get(l.stageId)?.name : ""}
+                    <span className="ml-auto shrink-0">
+                      <StageChip stage={l.stageId ? stageById.get(l.stageId) : undefined} />
                     </span>
                   </Link>
                 </li>
@@ -628,6 +661,7 @@ export default function LeadsPage() {
 
   return (
     <div className="mx-auto max-w-[1500px]">
+      {/* ── row 1: title, and the page's two actions on the right ── */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <h1 className="font-serif-accent text-2xl">Leads</h1>
@@ -638,8 +672,28 @@ export default function LeadsPage() {
             {summary.wonMonth} won, {summary.lostMonth} lost this month
           </p>
         </div>
+        <div className="ml-auto flex items-center gap-2">
+          <SettingsPopupButton
+            which="leads"
+            label="Settings"
+            iconOnly
+            onClosed={() => void reload().catch((e) => setError(e instanceof Error ? e.message : "Could not reload."))}
+          />
+          <button
+            onClick={() => void addLead()}
+            disabled={adding || !vocab}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50"
+          >
+            <Plus size={16} strokeWidth={2} /> {adding ? "Adding…" : "Add lead"}
+          </button>
+        </div>
+      </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+      {/* ── row 2: filters left · view centre · search right ──
+          ⚠️ A THREE-COLUMN GRID WITH TWO EQUAL `1fr` SIDES, so the view switcher
+          sits on the page's true centre whatever the filters and search weigh. */}
+      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 justify-self-start">
           <select
             value={ownerFilter}
             onChange={(e) => setOwnerFilter(e.target.value)}
@@ -654,19 +708,20 @@ export default function LeadsPage() {
             ))}
             <option value="none">Unassigned</option>
           </select>
-          <select
+          <IconSelect
             value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            aria-label="Filter by source"
-            className={`h-7 cursor-pointer rounded-full border px-2 text-[11.5px] ${sourceFilter === "all" ? CHIP_OFF : CHIP_ON}`}
-          >
-            <option value="all">All sources</option>
-            {SOURCES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            onChange={setSourceFilter}
+            ariaLabel="Filter by source"
+            className={`h-7 rounded-full border px-2.5 text-[11.5px] ${sourceFilter === "all" ? CHIP_OFF : CHIP_ON}`}
+            options={[
+              { value: "all", label: "All sources" },
+              ...SOURCES.map((s) => ({
+                value: s.value,
+                label: s.label,
+                icon: <SourceIcon source={s.value} className="text-faint" />,
+              })),
+            ]}
+          />
           <button
             onClick={() => setStalledOnly((v) => !v)}
             aria-pressed={stalledOnly}
@@ -674,48 +729,39 @@ export default function LeadsPage() {
           >
             <AlarmClock size={13} strokeWidth={1.75} /> Stalled · {summary.stalled}
           </button>
-
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-
-          <label className="flex h-8 items-center gap-2 rounded-lg border border-border bg-surface px-2.5">
-            <Search size={15} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Company, contact, domain"
-              className="w-44 bg-transparent text-[13px] outline-none placeholder:text-faint"
-            />
-            {query && (
-              <button onClick={() => setQuery("")} aria-label="Clear the search">
-                <X size={13} className="text-faint" />
-              </button>
-            )}
-          </label>
-
-          <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
-            {(["today", "board", "list", "summary"] as const).map((k) => (
-              <button
-                key={k}
-                onClick={() => {
-                  setLayout(k);
-                  storeLayout(k);
-                }}
-                aria-pressed={layout === k}
-                className={`px-3 py-1.5 capitalize ${layout === k ? "bg-brand font-medium text-white" : "text-muted"}`}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => void addLead()}
-            disabled={adding || !vocab}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50"
-          >
-            <Plus size={16} strokeWidth={2} /> {adding ? "Adding…" : "Add lead"}
-          </button>
         </div>
+
+        <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
+          {VIEWS.map(({ value: k, label, Icon }) => (
+            <button
+              key={k}
+              onClick={() => {
+                setLayout(k);
+                storeLayout(k);
+              }}
+              aria-pressed={layout === k}
+              className={`flex items-center gap-1.5 px-3 py-1.5 ${layout === k ? "bg-brand font-medium text-white" : "text-muted hover:text-foreground"}`}
+            >
+              <Icon size={14} strokeWidth={1.75} aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <label className="flex h-8 items-center gap-2 justify-self-end rounded-lg border border-border bg-surface px-2.5">
+          <Search size={15} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Company, contact, domain"
+            className="w-44 bg-transparent text-[13px] outline-none placeholder:text-faint"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear the search">
+              <X size={13} className="text-faint" />
+            </button>
+          )}
+        </label>
       </div>
 
       {error && (
@@ -754,6 +800,7 @@ export default function LeadsPage() {
                 >
                   <ChevronRight size={14} className="text-faint" />
                   <span className="text-[11px] text-faint">{list.length}</span>
+                  <StageIcon stage={s} />
                   <span className={`bidi-auto [writing-mode:vertical-rl] ${headingClass(s.name)}`}>{s.name}</span>
                 </button>
               );
@@ -761,7 +808,10 @@ export default function LeadsPage() {
             return (
               <div key={s.id} className="w-60 shrink-0">
                 <div className="flex items-center gap-1.5 px-1 pb-2">
-                  <span className={`bidi-auto ${headingClass(s.name)}`}>{s.name}</span>
+                  <StageIcon stage={s} />
+                  <span className={`bidi-auto ${headingClass(s.name)}`} style={{ color: s.color || undefined }}>
+                    {s.name}
+                  </span>
                   <span className="text-[11px] text-faint">{list.length}</span>
                   {value > 0 && <span className="ml-auto text-[11px] text-muted">{formatIls(value)}</span>}
                   {s.kind !== "open" && (
@@ -843,7 +893,7 @@ export default function LeadsPage() {
                       </Link>
                     </td>
                     <td className="border-b border-border px-3 py-2.5 text-muted">
-                      <span className="bidi-auto">{s?.name ?? "—"}</span>
+                      <StageChip stage={s} />
                     </td>
                     <td className="border-b border-border px-3 py-2.5">
                       {owner ? (
@@ -875,7 +925,12 @@ export default function LeadsPage() {
                         "—"
                       )}
                     </td>
-                    <td className="border-b border-border px-3 py-2.5 text-muted">{sourceLabel(l.source as LeadSource | null)}</td>
+                    <td className="border-b border-border px-3 py-2.5 text-muted">
+                      <span className="flex items-center gap-1.5">
+                        <SourceIcon source={l.source as LeadSource | null} className="text-faint" />
+                        {sourceLabel(l.source as LeadSource | null)}
+                      </span>
+                    </td>
                     <td className="border-b border-border px-3 py-2.5 text-muted">{ago(l.lastActivityAt)}</td>
                   </tr>
                 );

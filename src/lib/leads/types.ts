@@ -65,6 +65,9 @@ export interface LeadStage {
    * "Offer sent" after somebody renames it. Null for stages added later.
    */
   ruleKey: StageRuleKey | null;
+  /** 0046 — a hex colour and a STAGE_ICONS key (src/lib/leads/look.tsx); null = neutral dot. */
+  color: string | null;
+  icon: string | null;
 }
 
 export type StageRuleKey = "relevant" | "discovery" | "offer_prep" | "offer_sent" | "negotiation";

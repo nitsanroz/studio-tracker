@@ -9,6 +9,8 @@ const st = (id: string, position: number, kind: LeadStage["kind"], ruleKey: Lead
   kind,
   stallDays: null,
   ruleKey,
+  color: null,
+  icon: null,
 });
 const stages = [
   st("rel", 1, "open", "relevant"),

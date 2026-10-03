@@ -229,10 +229,17 @@ export interface Vocabulary {
 
 export async function loadVocabulary(): Promise<Vocabulary> {
   const sb = createClient();
+  // A ladder: each rung drops the newest migration's columns, so the board
+  // keeps loading whichever of 0044 / 0046 has not been run yet.
   const stageRows = async () => {
-    const full = await sb.from("lead_stages").select("id,name,position,kind,stall_days,rule_key").order("position");
-    // 0044's column; before it is run the rules simply find no stages.
-    if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
+    for (const cols of [
+      "id,name,position,kind,stall_days,rule_key,color,icon",
+      "id,name,position,kind,stall_days,rule_key",
+      "id,name,position,kind,stall_days",
+    ]) {
+      const r = await sb.from("lead_stages").select(cols).order("position");
+      if (!r.error || !MISSING_SCHEMA_CODES.has(r.error.code ?? "")) return r;
+    }
     return sb.from("lead_stages").select("id,name,position,kind,stall_days").order("position");
   };
   const [stages, reasons] = await Promise.all([

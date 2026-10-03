@@ -9,6 +9,7 @@ import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links"
 import { Tabs, TagBadge } from "@/components/ui";
 import { CandidateSettings } from "@/components/candidate-settings";
 import { LeadSettings } from "@/components/lead-settings";
+import { LibrarySettings } from "@/components/leads/library-settings";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ClientMarkModal } from "@/components/client-mark-picker";
 import { MemberPictures } from "@/components/picture-editor";
@@ -722,7 +723,8 @@ type SettingsTab =
   | "studio"
   | "intake"
   | "hiring"
-  | "leads";
+  | "leads"
+  | "pricing";
 const TAB_KEY = "settings.tab";
 
 /**
@@ -752,6 +754,10 @@ const ADMIN_TABS = [
   // Selling, like hiring, is its own job: stages, lost reasons and the
   // website form's webhook.
   { value: "leads" as const, label: "Leads" },
+  // Its own tab rather than a card under Leads (Nitsan, 2026-10-03): the rate,
+  // VAT and service library are how the studio PRICES work, which outlives any
+  // one lead — and the estimate editor opens this same panel as a popup.
+  { value: "pricing" as const, label: "Pricing" },
 ];
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
@@ -1027,6 +1033,7 @@ export default function SettingsPage() {
           a card and a column of empty space next to each other. */}
       {tab === "hiring" && isAdmin && <CandidateSettings />}
       {tab === "leads" && isAdmin && <LeadSettings />}
+      {tab === "pricing" && isAdmin && <LibrarySettings />}
 
       {tab === "intake" && isAdmin && (
         <div className="flex max-w-[860px] flex-col gap-4">
