@@ -14,7 +14,7 @@ import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Plus, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import { loadLead } from "@/lib/leads/data";
@@ -31,6 +31,7 @@ import {
   removeLine,
   removePhase,
   reopenEstimate,
+  unlockEstimate,
   submitForReview,
   updateEstimate,
   updateLine,
@@ -399,6 +400,23 @@ export default function EstimatePage() {
           )}
           {locked && (
             <button
+              onClick={async () => {
+                const link = e.shareToken
+                  ? " The client link keeps showing the approved version until you re-publish."
+                  : "";
+                const ok = await askConfirm(
+                  `Edit v${e.version}? It goes back to draft and needs approving again.${link}`,
+                  { action: "Edit" },
+                );
+                if (ok) void run(() => unlockEstimate(e.id));
+              }}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[12.5px] hover:border-brand"
+            >
+              <Pencil size={14} /> Edit
+            </button>
+          )}
+          {locked && (
+            <button
               onClick={() =>
                 void run(async () => {
                   await publishEstimate(e.id, company);
@@ -456,7 +474,7 @@ export default function EstimatePage() {
       )}
       {locked && (
         <p className="mt-2 text-[12px] text-faint">
-          Approved versions are locked. Use “Save as new version” to make changes.
+          Approved versions are locked. Press Edit to change this one, or “Save as new version” to keep it as it is.
         </p>
       )}
       {error && (

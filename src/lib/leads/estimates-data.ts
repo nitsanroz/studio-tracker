@@ -694,6 +694,24 @@ export async function reopenEstimate(estimateId: string) {
   fail("reopen the estimate", error);
 }
 
+/**
+ * Unlock an APPROVED version for editing: back to draft, approval cleared, so
+ * it has to be approved again before it can be published. Nitsan's call —
+ * "Save as new version" stays for when the approved wording must be kept.
+ * ⚠️ The linked offer and a published client link are left alone: the offer
+ * records what was sent, and the client keeps reading the frozen snapshot
+ * until somebody re-publishes.
+ */
+export async function unlockEstimate(estimateId: string) {
+  const sb = createClient();
+  const { error } = await sb
+    .from("lead_estimates")
+    .update({ status: "draft", approved_by: null, approved_at: null })
+    .eq("id", estimateId)
+    .eq("status", "approved");
+  fail("unlock the estimate", error);
+}
+
 export interface PublishedEstimate {
   company: string;
   version: number;
