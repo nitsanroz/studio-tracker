@@ -445,95 +445,19 @@ export async function unlinkThread(id: string, leadId: string, gmailThreadId: st
 
 // ── winning ─────────────────────────────────────────────────────────────────
 
-export interface WinTarget {
-  /** The client the work lands under — new or existing, already resolved. */
-  clientId: string;
-  /** A new section under that client, or null to add none. */
-  sectionName: string | null;
-  /** Whether the client was created just now (only changes the history line). */
-  created: boolean;
-  clientName: string;
-}
-
 /**
- * Everything "Mark as won" does once the client exists.
- *
- * ⚠️ THE CLIENT IS CREATED BY THE CALLER, THROUGH THE STORE'S `addClient` — not
- * here — because that is the one place that also makes the client's Keys task
- * and points `keys_task_id` at it, and the store has to hear about the new
- * client anyway or the Clients page would not show it until the next refresh.
- * This function takes it from there: the section, the contacts, the lead row,
- * the history line.
- *
- * ⚠️ CONTACTS ARE COPIED, NOT MOVED. The lead keeps its own; the client gets
- * rows of its own that the team can read (0042's one `read all`). Editing one
- * afterwards does not edit the other, which is right — the person you sold to
- * and the person you work with are often not the same.
- *
- * ⚠️ A CONTACT ALREADY ON THE CLIENT (same email) IS NOT ADDED TWICE — the
- * returning-client case, where the same marketing lead is on the old and the
- * new deal.
+ * "Mark as won" — RECORDS THE WIN AND NOTHING ELSE (Nitsan, 2026-10-04).
+ * Creating the client page is its own step afterwards (`convertToClient`,
+ * from the won lead's "Create client page" button), where what to bring is
+ * picked and reviewed first. Before that, Won created the client, a section
+ * and every task in one go with no chance to look.
  */
-export async function markWon(
-  leadId: string,
-  wonStage: LeadStage,
-  from: LeadStage | null,
-  target: WinTarget,
-  actorId: string | null,
-): Promise<{ sectionId: string | null }> {
+export async function markWon(leadId: string, wonStage: LeadStage, from: LeadStage | null, actorId: string | null) {
   const sb = createClient();
-
-  let sectionId: string | null = null;
-  if (target.sectionName?.trim()) {
-    const { data: existing } = await sb
-      .from("sections")
-      .select("position")
-      .eq("client_id", target.clientId)
-      .order("position", { ascending: false })
-      .limit(1);
-    const position = (((existing ?? [])[0] as { position?: number } | undefined)?.position ?? 0) + 1;
-    const { data, error } = await sb
-      .from("sections")
-      .insert({ client_id: target.clientId, name: target.sectionName.trim(), position })
-      .select("id")
-      .single();
-    fail("add the section", error);
-    sectionId = (data as { id: string }).id;
-  }
-
-  const [{ data: leadContacts }, { data: clientContacts }] = await Promise.all([
-    sb.from("lead_contacts").select("*").eq("lead_id", leadId).order("position"),
-    sb.from("client_contacts").select("email,position").eq("client_id", target.clientId),
-  ]);
-  const have = new Set(
-    ((clientContacts ?? []) as { email: string | null }[])
-      .map((c) => c.email?.toLowerCase())
-      .filter(Boolean),
-  );
-  let pos = Math.max(0, ...((clientContacts ?? []) as { position: number }[]).map((c) => c.position));
-  const rows = ((leadContacts ?? []) as Record<string, unknown>[])
-    .filter((c) => !(typeof c.email === "string" && have.has(c.email.toLowerCase())))
-    .map((c) => ({
-      client_id: target.clientId,
-      name: c.name,
-      title: c.title,
-      email: c.email,
-      phone: c.phone,
-      linkedin: c.linkedin,
-      notes: [c.persona, c.past_connection].filter(Boolean).join(" · ") || null,
-      position: ++pos,
-    }));
-  if (rows.length > 0) {
-    const { error } = await sb.from("client_contacts").insert(rows);
-    fail("copy the contacts to the client", error);
-  }
-
   const { error } = await sb
     .from("leads")
     .update({
       stage_id: wonStage.id,
-      client_id: target.clientId,
-      section_id: sectionId,
       won_at: nowIso(),
       lost_reason_id: null,
       lost_note: null,
@@ -543,15 +467,186 @@ export async function markWon(
     .eq("id", leadId);
   fail("mark the lead as won", error);
   await supersede(leadId);
+  await logEvent(leadId, "won", null, actorId, { from: from?.name ?? null, to: wonStage.name });
+}
 
-  await logEvent(
-    leadId,
-    "won",
-    target.created ? `New client: ${target.clientName}` : `Under ${target.clientName}`,
-    actorId,
-    { from: from?.name ?? null, to: wonStage.name, clientId: target.clientId, sectionId },
+export interface ConvertTask {
+  /** The estimate line it came from — remembered so logged hours flow back (US21). */
+  lineId: string | null;
+  title: string;
+  /** `tasks.estimate_hours`. */
+  budget: number | null;
+  /** `tasks.brief` — the line's client-facing description, when brought. */
+  brief: string | null;
+}
+export interface ConvertSection {
+  name: string;
+  groups: { name: string; tasks: ConvertTask[] }[];
+  tasks: ConvertTask[];
+}
+export interface ConvertPlan {
+  leadId: string;
+  /** Already resolved — a new client is made by the caller through the store's `addClient` (Keys task). */
+  clientId: string;
+  clientName: string;
+  created: boolean;
+  billable: boolean;
+  sections: ConvertSection[];
+  /** Which lead contacts to copy to the client. */
+  contactIds: string[];
+  /** Added to the client's Overview notes (after any notes it already has). */
+  notes: string | null;
+  links: { title: string; url: string }[];
+}
+
+/**
+ * Won lead → client page: sections, task groups and tasks in the estimate's
+ * own hierarchy (phase → section, group → task group, line → task), contacts,
+ * Overview notes and links — only what the review step kept.
+ *
+ * ⚠️ APPENDS, NEVER REPLACES: sections go after the client's existing ones,
+ * notes after its existing notes, contacts skip an email already on it — so a
+ * returning client's page loses nothing.
+ *
+ * ⚠️ CONTACTS ARE COPIED, NOT MOVED. The lead keeps its own; the client gets
+ * rows the team can read (0042's one `read all`).
+ *
+ * Not transactional (browser client, sequential writes): a failure part way
+ * leaves what was written so far, visible on the client page, and says so.
+ */
+export async function convertToClient(plan: ConvertPlan, actorId: string | null): Promise<{ tasks: number }> {
+  const sb = createClient();
+  const { clientId } = plan;
+
+  const { data: lastSec } = await sb
+    .from("sections")
+    .select("position")
+    .eq("client_id", clientId)
+    .order("position", { ascending: false })
+    .limit(1);
+  let secPos = (((lastSec ?? [])[0] as { position?: number } | undefined)?.position ?? 0) + 1;
+
+  let firstSection: string | null = null;
+  let made = 0;
+  const lineTask: { lineId: string; taskId: string }[] = [];
+
+  const insertTasks = async (sectionId: string, groupId: string | null, tasks: ConvertTask[]) => {
+    if (tasks.length === 0) return;
+    const { data, error } = await sb
+      .from("tasks")
+      .insert(
+        tasks.map((t, i) => ({
+          client_id: clientId,
+          section_id: sectionId,
+          group_id: groupId,
+          title: t.title.trim() || "Untitled",
+          estimate_hours: t.budget,
+          // `tasks.brief` is NOT NULL (default '') — an item with no description is an empty brief.
+          brief: t.brief ?? "",
+          billable: plan.billable,
+          position: i + 1,
+        })),
+      )
+      .select("id");
+    fail("add the tasks", error);
+    // INSERT … RETURNING keeps the VALUES order, so row i is task i.
+    ((data ?? []) as { id: string }[]).forEach((r, i) => {
+      made++;
+      const lineId = tasks[i]?.lineId;
+      if (lineId) lineTask.push({ lineId, taskId: r.id });
+    });
+  };
+
+  for (const sec of plan.sections) {
+    const { data, error } = await sb
+      .from("sections")
+      .insert({ client_id: clientId, name: sec.name.trim() || "Section", position: secPos++ })
+      .select("id")
+      .single();
+    fail("add a section", error);
+    const sectionId = (data as { id: string }).id;
+    firstSection ??= sectionId;
+    let groupPos = 1;
+    for (const g of sec.groups) {
+      const { data: gr, error: ge } = await sb
+        .from("task_groups")
+        .insert({ client_id: clientId, section_id: sectionId, name: g.name.trim() || "Group", position: groupPos++ })
+        .select("id")
+        .single();
+      fail("add a group", ge);
+      await insertTasks(sectionId, (gr as { id: string }).id, g.tasks);
+    }
+    await insertTasks(sectionId, null, sec.tasks);
+  }
+
+  await Promise.all(
+    lineTask.map(({ lineId, taskId }) => sb.from("estimate_lines").update({ task_id: taskId }).eq("id", lineId)),
   );
-  return { sectionId };
+
+  if (plan.contactIds.length) {
+    const [{ data: leadContacts }, { data: clientContacts }] = await Promise.all([
+      sb.from("lead_contacts").select("*").in("id", plan.contactIds).order("position"),
+      sb.from("client_contacts").select("email,position").eq("client_id", clientId),
+    ]);
+    const have = new Set(
+      ((clientContacts ?? []) as { email: string | null }[]).map((c) => c.email?.toLowerCase()).filter(Boolean),
+    );
+    let pos = Math.max(0, ...((clientContacts ?? []) as { position: number }[]).map((c) => c.position));
+    const rows = ((leadContacts ?? []) as Record<string, unknown>[])
+      .filter((c) => !(typeof c.email === "string" && have.has(c.email.toLowerCase())))
+      .map((c) => ({
+        client_id: clientId,
+        name: c.name,
+        title: c.title,
+        email: c.email,
+        phone: c.phone,
+        linkedin: c.linkedin,
+        notes: [c.persona, c.past_connection].filter(Boolean).join(" · ") || null,
+        position: ++pos,
+      }));
+    if (rows.length > 0) {
+      const { error } = await sb.from("client_contacts").insert(rows);
+      fail("copy the contacts to the client", error);
+    }
+  }
+
+  if (plan.notes?.trim()) {
+    const { data: c } = await sb.from("clients").select("notes").eq("id", clientId).maybeSingle();
+    const before = ((c as { notes?: string | null } | null)?.notes ?? "").trim();
+    const { error } = await sb
+      .from("clients")
+      .update({ notes: before ? `${before}\n\n${plan.notes.trim()}` : plan.notes.trim() })
+      .eq("id", clientId);
+    fail("save the client notes", error);
+  }
+
+  if (plan.links.length) {
+    const { data: lastLink } = await sb
+      .from("links")
+      .select("position")
+      .eq("client_id", clientId)
+      .order("position", { ascending: false })
+      .limit(1);
+    let pos = (((lastLink ?? [])[0] as { position?: number } | undefined)?.position ?? 0) + 1;
+    const { error } = await sb.from("links").insert(
+      plan.links.map((l) => ({ client_id: clientId, title: l.title.trim() || l.url, url: l.url, position: pos++, created_by: actorId })),
+    );
+    fail("add the links", error);
+  }
+
+  const { error } = await sb
+    .from("leads")
+    .update({ client_id: clientId, section_id: firstSection, last_activity_at: nowIso() })
+    .eq("id", plan.leadId);
+  fail("link the lead to the client", error);
+  await logEvent(
+    plan.leadId,
+    "note",
+    `${plan.created ? "New client page" : "Added to"} ${plan.clientName}: ${plan.sections.length} section${plan.sections.length === 1 ? "" : "s"}, ${made} task${made === 1 ? "" : "s"}`,
+    actorId,
+    { clientId, sectionId: firstSection },
+  );
+  return { tasks: made };
 }
 
 // ── client contacts ─────────────────────────────────────────────────────────

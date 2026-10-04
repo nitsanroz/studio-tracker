@@ -24,6 +24,62 @@ function admin() {
 const Para = ({ text, className = "" }: { text: string | null; className?: string }) =>
   text ? <div className={`bidi-auto whitespace-pre-wrap leading-relaxed ${className}`}>{text}</div> : null;
 
+type Line = PublishedEstimate["phases"][number]["lines"][number];
+/**
+ * One run of lines; lines sharing a "choose one" group print together as options.
+ * ⚠️ HOURS ONLY — money appears once, on the total (Nitsan, 2026-10-04): a
+ * price beside every line invites haggling item by item.
+ */
+function LineList({ lines, className = "" }: { lines: Line[]; className?: string }) {
+  const seen = new Set<string>();
+  return (
+    <ol className={`flex flex-col gap-4 ${className}`}>
+      {lines.map((l, j) => {
+        if (l.altGroup) {
+          if (seen.has(l.altGroup)) return null;
+          seen.add(l.altGroup);
+          const options = lines.filter((x) => x.altGroup === l.altGroup);
+          return (
+            <li key={j}>
+              <div className="font-medium">
+                {l.altGroup} <span className="font-normal text-muted">(choose one)</span>
+              </div>
+              <div className="mt-2 flex flex-col gap-3 border-l-2 border-border pl-4">
+                {options.map((o, k) => (
+                  <div key={k}>
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span>
+                        <span className="font-medium">
+                          Option {k + 1}: {o.name}
+                        </span>
+                        {o.chosen && options.length > 1 && <span className="ml-1 text-[13px] text-brand">· Recommended</span>}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted">{fmtHours(o.hours)}</span>
+                    </div>
+                    <Para text={o.description} className="mt-0.5 text-[14px] text-muted" />
+                  </div>
+                ))}
+              </div>
+            </li>
+          );
+        }
+        return (
+          <li key={j}>
+            <div className="flex items-baseline justify-between gap-4">
+              <span>
+                <span className="font-medium">{l.name}</span>
+                {l.optional && <span className="ml-1 text-[13px] text-muted">(optional)</span>}
+              </span>
+              <span className="shrink-0 tabular-nums text-muted">{fmtHours(l.hours)}</span>
+            </div>
+            <Para text={l.description} className="mt-0.5 text-[14px] text-muted" />
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default async function PublicEstimatePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!/^[0-9a-f]{64}$/.test(token)) notFound();
@@ -34,8 +90,6 @@ export default async function PublicEstimatePage({ params }: { params: Promise<{
     .maybeSingle();
   const s = (data as { published_snapshot?: PublishedEstimate | null } | null)?.published_snapshot;
   if (!s) notFound();
-
-  const nis = (r: { min: number; max: number }) => fmtNis({ min: r.min * s.rate, max: r.max * s.rate });
 
   return (
     <main className="mx-auto w-full min-w-0 max-w-3xl px-5 py-10 text-[15px] text-foreground print:py-0">
@@ -52,60 +106,38 @@ export default async function PublicEstimatePage({ params }: { params: Promise<{
       <Para text={s.intro} className="mt-8" />
 
       {s.phases.map((p, i) => {
-        // Lines sharing an option group are printed together under "choose one".
-        const seen = new Set<string>();
+        // Groups first, each a sub-heading with its own subtotal, then the
+        // loose lines — the same order the studio's editor and the client page
+        // use (0049). A snapshot from before groups has no `group` and renders flat.
+        const segments: { group: number | null; lines: Line[] }[] = [];
+        for (const l of p.lines) {
+          const g = l.group ?? null;
+          const last = segments[segments.length - 1];
+          if (last && last.group === g) last.lines.push(l);
+          else segments.push({ group: g, lines: [l] });
+        }
         return (
           <section key={i} className="mt-10 break-inside-avoid-page">
             <h2 className="border-b border-border pb-2 text-[16px] font-semibold uppercase tracking-wide">
               {p.name}
             </h2>
             <Para text={p.description} className="mt-2 text-muted" />
-            <ol className="mt-3 flex flex-col gap-4">
-              {p.lines.map((l, j) => {
-                if (l.altGroup) {
-                  if (seen.has(l.altGroup)) return null;
-                  seen.add(l.altGroup);
-                  const options = p.lines.filter((x) => x.altGroup === l.altGroup);
-                  return (
-                    <li key={j}>
-                      <div className="font-medium">
-                        {l.altGroup} <span className="font-normal text-muted">(choose one)</span>
-                      </div>
-                      <div className="mt-2 flex flex-col gap-3 border-l-2 border-border pl-4">
-                        {options.map((o, k) => (
-                          <div key={k}>
-                            <div>
-                              <span className="font-medium">Option {k + 1}: {o.name}</span>
-                              {o.chosen && options.length > 1 && <span className="ml-1 text-[13px] text-brand">· Recommended</span>}
-                              <span className="text-muted">
-                                {" "}
-                                — {fmtHours(o.hours)} | {nis(o.hours)}
-                              </span>
-                            </div>
-                            <Para text={o.description} className="mt-0.5 text-[14px] text-muted" />
-                          </div>
-                        ))}
-                      </div>
-                    </li>
-                  );
-                }
-                return (
-                  <li key={j}>
-                    <div>
-                      <span className="font-medium">{l.name}</span>
-                      {l.optional && <span className="ml-1 text-[13px] text-muted">(optional)</span>}
-                      <span className="text-muted">
-                        {" "}
-                        — {fmtHours(l.hours)} | {nis(l.hours)}
-                      </span>
-                    </div>
-                    <Para text={l.description} className="mt-0.5 text-[14px] text-muted" />
-                  </li>
-                );
-              })}
-            </ol>
-            <p className="mt-4 font-medium">
-              {p.name} total: {fmtHours(p.hours)} | {nis(p.hours)} + VAT
+            {segments.map((seg, k) => {
+              const g = seg.group !== null ? p.groups?.[seg.group] : undefined;
+              if (!g) return <LineList key={k} lines={seg.lines} className="mt-3" />;
+              return (
+                <div key={k} className="mt-5 break-inside-avoid">
+                  <h3 className="flex flex-wrap items-baseline justify-between gap-x-3 font-semibold">
+                    <span className="bidi-auto">{g.name}</span>
+                    <span className="shrink-0 tabular-nums text-[14px] font-normal text-muted">{fmtHours(g.hours)}</span>
+                  </h3>
+                  <LineList lines={seg.lines} className="mt-2 border-l-2 border-border pl-4" />
+                </div>
+              );
+            })}
+            <p className="mt-4 flex items-baseline justify-between gap-4 border-t border-border pt-2 font-medium">
+              <span>{p.name} total</span>
+              <span className="shrink-0 tabular-nums">{fmtHours(p.hours)}</span>
             </p>
           </section>
         );
@@ -124,10 +156,11 @@ export default async function PublicEstimatePage({ params }: { params: Promise<{
             <span>−{fmtNis(s.discount)}</span>
           </div>
         )}
-        <div className="flex flex-wrap justify-between gap-2 text-[17px] font-semibold">
+        <div className="flex flex-wrap items-start justify-between gap-2 text-[17px] font-semibold">
           <span>Total estimate</span>
-          <span>
-            {fmtHours(s.totalHours)} | {fmtNis(s.net)} + VAT
+          <span className="text-right tabular-nums">
+            <span className="block text-brand">{fmtHours(s.totalHours)}</span>
+            <span className="block">{fmtNis(s.net)} + VAT</span>
           </span>
         </div>
         <p className="mt-1 text-[13px] text-muted">

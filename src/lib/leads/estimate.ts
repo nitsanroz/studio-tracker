@@ -48,6 +48,23 @@ export interface EstimateLine {
   chosen: boolean;
   position: number;
   taskId: string | null;
+  /** The subject group inside its phase (0049) — becomes a task group on conversion. */
+  groupId: string | null;
+}
+
+/** A subject inside a phase (0049) — the estimate's `task_groups`. Not the "choose one" `altGroup`. */
+export interface EstimateGroup {
+  id: string;
+  estimateId: string;
+  phaseId: string | null;
+  name: string;
+  position: number;
+}
+
+/** A titled link on the estimate's Overview (0049), carried to the client on conversion. */
+export interface EstimateLink {
+  title: string;
+  url: string;
 }
 
 export interface EstimatePhase {
@@ -79,6 +96,38 @@ export interface Estimate {
   shareToken: string | null;
   publishedAt: string | null;
   createdAt: string;
+  /** Overview (0049): internal notes and links, shaped like a client's Overview. */
+  notes: string | null;
+  links: EstimateLink[];
+}
+
+/**
+ * A phase's lines in the order they are shown — the client page's order:
+ * its groups first (by position), each group's lines by position, then the
+ * loose lines. Positions are per container (phase + group), so sorting a
+ * phase's lines by position alone would interleave groups.
+ *
+ * ⚠️ A line whose group is missing or belongs to another phase renders LOOSE,
+ * the same defensive rule the client table follows.
+ */
+export function phaseLayout(
+  phaseId: string,
+  groups: EstimateGroup[],
+  lines: EstimateLine[],
+): { groups: { group: EstimateGroup; lines: EstimateLine[] }[]; loose: EstimateLine[] } {
+  const own = groups.filter((g) => g.phaseId === phaseId).sort((a, b) => a.position - b.position);
+  const ids = new Set(own.map((g) => g.id));
+  const inPhase = lines.filter((l) => l.phaseId === phaseId).sort((a, b) => a.position - b.position);
+  return {
+    groups: own.map((group) => ({ group, lines: inPhase.filter((l) => l.groupId === group.id) })),
+    loose: inPhase.filter((l) => !l.groupId || !ids.has(l.groupId)),
+  };
+}
+
+/** `phaseLayout` flattened: every line of a phase in display order. */
+export function phaseLines(phaseId: string, groups: EstimateGroup[], lines: EstimateLine[]): EstimateLine[] {
+  const lay = phaseLayout(phaseId, groups, lines);
+  return [...lay.groups.flatMap((g) => g.lines), ...lay.loose];
 }
 
 export interface Range {

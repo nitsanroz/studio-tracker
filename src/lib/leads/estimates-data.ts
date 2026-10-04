@@ -10,7 +10,22 @@
 import { createClient } from "../supabase/client";
 import { MISSING_SCHEMA_CODES } from "../db";
 import { LeadWriteError, alertOfferReview } from "./actions";
-import { fmtHours, fmtNis, groupWinners, totals, type Category, type Estimate, type EstimateLine, type EstimatePhase, type Range, type ServiceItem } from "./estimate";
+import {
+  fmtHours,
+  fmtNis,
+  groupWinners,
+  counts,
+  phaseLayout,
+  totals,
+  type Category,
+  type Estimate,
+  type EstimateGroup,
+  type EstimateLine,
+  type EstimateLink,
+  type EstimatePhase,
+  type Range,
+  type ServiceItem,
+} from "./estimate";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -61,6 +76,27 @@ export function mapEstimate(r: Row): Estimate {
     shareToken: nstr(r.share_token),
     publishedAt: nstr(r.published_at),
     createdAt: str(r.created_at),
+    notes: nstr(r.notes),
+    links: readLinks(r.links),
+  };
+}
+
+/** `lead_estimates.links` (jsonb) — anything that isn't a {title, url} pair is dropped. */
+function readLinks(v: unknown): EstimateLink[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((x): x is { title?: unknown; url?: unknown } => typeof x === "object" && x !== null)
+    .map((x) => ({ title: str(x.title), url: str(x.url) }))
+    .filter((x) => x.url);
+}
+
+export function mapGroup(r: Row): EstimateGroup {
+  return {
+    id: str(r.id),
+    estimateId: str(r.estimate_id),
+    phaseId: nstr(r.phase_id),
+    name: str(r.name),
+    position: nnum(r.position) ?? 0,
   };
 }
 
@@ -93,12 +129,13 @@ export function mapLine(r: Row): EstimateLine {
     chosen: r.chosen !== false,
     position: nnum(r.position) ?? 0,
     taskId: nstr(r.task_id),
+    groupId: nstr(r.group_id),
   };
 }
 
 const ESTIMATE_COLS =
   "id,lead_id,version,status,rate,vat_percent,discount_percent,discount_note,intro,timeline,closing," +
-  "change_note,offer_id,approved_by,approved_at,share_token,published_at,created_at";
+  "change_note,offer_id,approved_by,approved_at,share_token,published_at,created_at,notes,links";
 
 // ── reads ───────────────────────────────────────────────────────────────────
 
@@ -154,6 +191,7 @@ export async function loadEstimates(leadId: string): Promise<EstimateSummary[]> 
 export interface EstimateDetail {
   estimate: Estimate;
   phases: EstimatePhase[];
+  groups: EstimateGroup[];
   lines: EstimateLine[];
   /** Logged hours per task, for lines that became tasks on Won (US21). */
   actual: Map<string, number>;
@@ -164,8 +202,9 @@ export async function loadEstimate(id: string): Promise<EstimateDetail | null> {
   const { data, error } = await sb.from("lead_estimates").select(ESTIMATE_COLS).eq("id", id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  const [phases, lines] = await Promise.all([
+  const [phases, groups, lines] = await Promise.all([
     sb.from("estimate_phases").select("*").eq("estimate_id", id).order("position"),
+    sb.from("estimate_groups").select("*").eq("estimate_id", id).order("position"),
     sb.from("estimate_lines").select("*").eq("estimate_id", id).order("position"),
   ]);
   const ls = ((lines.data ?? []) as Row[]).map(mapLine);
@@ -181,6 +220,7 @@ export async function loadEstimate(id: string): Promise<EstimateDetail | null> {
   return {
     estimate: mapEstimate(data as unknown as Row),
     phases: ((phases.data ?? []) as Row[]).map(mapPhase),
+    groups: ((groups.data ?? []) as Row[]).map(mapGroup),
     lines: ls,
     actual,
   };
@@ -339,6 +379,8 @@ async function copyInto(
       timeline: swapName(e.timeline, swap),
       closing: swapName(e.closing, swap),
       change_note: changeNote.trim() || null,
+      notes: e.notes,
+      links: e.links,
       created_by: actorId,
     })
     .select("id")
@@ -355,11 +397,22 @@ async function copyInto(
     fail("copy a phase", pe);
     phaseMap.set(p.id, (np as { id: string }).id);
   }
+  const groupMap = new Map<string, string>();
+  for (const g of src.groups) {
+    const { data: ng, error: ge } = await sb
+      .from("estimate_groups")
+      .insert({ estimate_id: id, phase_id: g.phaseId ? (phaseMap.get(g.phaseId) ?? null) : null, name: g.name, position: g.position })
+      .select("id")
+      .single();
+    fail("copy a group", ge);
+    groupMap.set(g.id, (ng as { id: string }).id);
+  }
   if (src.lines.length) {
     const { error: le } = await sb.from("estimate_lines").insert(
       src.lines.map((l) => ({
         estimate_id: id,
         phase_id: l.phaseId ? (phaseMap.get(l.phaseId) ?? null) : null,
+        group_id: l.groupId ? (groupMap.get(l.groupId) ?? null) : null,
         service_item_id: l.serviceItemId,
         name: l.name,
         description: swapName(l.description, swap),
@@ -512,6 +565,20 @@ export async function updateEstimate(
   fail("save the estimate", error);
 }
 
+/**
+ * The Overview's notes and links. ⚠️ NOT LOCKED BY APPROVAL, unlike every other
+ * estimate write: they are internal context that never reaches the client's
+ * quote, so adding a note to an approved version must not mean unlocking it.
+ */
+export async function updateEstimateOverview(id: string, patch: Partial<{ notes: string | null; links: EstimateLink[] }>) {
+  const row: Row = {};
+  if ("notes" in patch) row.notes = patch.notes;
+  if ("links" in patch) row.links = patch.links;
+  const sb = createClient();
+  const { error } = await sb.from("lead_estimates").update(row).eq("id", id);
+  fail("save the overview", error);
+}
+
 export async function deleteEstimate(id: string) {
   await assertEditable(id);
   const sb = createClient();
@@ -541,12 +608,19 @@ export async function removePhase(estimateId: string, id: string) {
 }
 
 /** A line from the library — or a blank one when `item` is null. */
-export async function addLine(estimateId: string, phaseId: string, item: ServiceItem | null, position: number) {
+export async function addLine(
+  estimateId: string,
+  phaseId: string,
+  item: ServiceItem | null,
+  position: number,
+  groupId: string | null = null,
+) {
   await assertEditable(estimateId);
   const sb = createClient();
   const { error } = await sb.from("estimate_lines").insert({
     estimate_id: estimateId,
     phase_id: phaseId,
+    group_id: groupId,
     service_item_id: item?.id ?? null,
     name: item?.name ?? "New line",
     description: item?.description ?? null,
@@ -611,6 +685,96 @@ export async function removeLine(estimateId: string, id: string) {
   const sb = createClient();
   const { error } = await sb.from("estimate_lines").delete().eq("id", id);
   fail("remove the line", error);
+}
+
+// ── groups and drag-to-move (0049) ──────────────────────────────────────────
+
+export async function addGroup(estimateId: string, phaseId: string, name: string) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { data: last } = await sb
+    .from("estimate_groups")
+    .select("position")
+    .eq("phase_id", phaseId)
+    .order("position", { ascending: false })
+    .limit(1);
+  const position = (((last ?? [])[0] as { position?: number } | undefined)?.position ?? 0) + 1;
+  const { error } = await sb.from("estimate_groups").insert({ estimate_id: estimateId, phase_id: phaseId, name, position });
+  fail("add the group", error);
+}
+
+export async function renameGroup(estimateId: string, id: string, name: string) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { error } = await sb.from("estimate_groups").update({ name }).eq("id", id);
+  fail("rename the group", error);
+}
+
+/** Removing a group DISSOLVES it — its lines move up to the phase (FK `on delete set null`), like a task group. */
+export async function removeGroup(estimateId: string, id: string) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { error } = await sb.from("estimate_groups").delete().eq("id", id);
+  fail("remove the group", error);
+}
+
+/** `ids` with `id` placed before `beforeId` (null or not found = last). */
+function placed(ids: string[], id: string, beforeId: string | null): string[] {
+  const rest = ids.filter((x) => x !== id);
+  const i = beforeId ? rest.indexOf(beforeId) : -1;
+  if (i < 0) rest.push(id);
+  else rest.splice(i, 0, id);
+  return rest;
+}
+
+/**
+ * Write 1..n positions. ⚠️ DENSIFIED, not gap-opened: imported lines can share
+ * a position, so "insert before X" has no gap to open — the same reason the
+ * client table's `reorderTask` renumbers.
+ */
+async function renumber(table: "estimate_phases" | "estimate_groups" | "estimate_lines", ids: string[]) {
+  const sb = createClient();
+  const results = await Promise.all(ids.map((id, i) => sb.from(table).update({ position: i + 1 }).eq("id", id)));
+  fail("save the order", results.find((r) => r.error)?.error ?? null);
+}
+
+/** Drag a line: into a phase (loose) or a group, before another line or at the end. */
+export async function moveLine(
+  estimateId: string,
+  lineId: string,
+  to: { phaseId: string; groupId: string | null; beforeId: string | null },
+) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { error } = await sb
+    .from("estimate_lines")
+    .update({ phase_id: to.phaseId, group_id: to.groupId })
+    .eq("id", lineId);
+  fail("move the line", error);
+  let q = sb.from("estimate_lines").select("id,position").eq("phase_id", to.phaseId);
+  q = to.groupId ? q.eq("group_id", to.groupId) : q.is("group_id", null);
+  const { data } = await q.order("position");
+  const ids = ((data ?? []) as { id: string }[]).map((r) => r.id);
+  await renumber("estimate_lines", placed(ids, lineId, to.beforeId));
+}
+
+/** Drag a group within its phase or into another one — its lines go with it. */
+export async function moveGroup(estimateId: string, groupId: string, to: { phaseId: string; beforeId: string | null }) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { error } = await sb.from("estimate_groups").update({ phase_id: to.phaseId }).eq("id", groupId);
+  fail("move the group", error);
+  const { error: le } = await sb.from("estimate_lines").update({ phase_id: to.phaseId }).eq("group_id", groupId);
+  fail("move the group's lines", le);
+  const { data } = await sb.from("estimate_groups").select("id").eq("phase_id", to.phaseId).order("position");
+  await renumber("estimate_groups", placed(((data ?? []) as { id: string }[]).map((r) => r.id), groupId, to.beforeId));
+}
+
+export async function movePhase(estimateId: string, phaseId: string, beforeId: string | null) {
+  await assertEditable(estimateId);
+  const sb = createClient();
+  const { data } = await sb.from("estimate_phases").select("id").eq("estimate_id", estimateId).order("position");
+  await renumber("estimate_phases", placed(((data ?? []) as { id: string }[]).map((r) => r.id), phaseId, beforeId));
 }
 
 // ── review, approval, publishing ────────────────────────────────────────────
@@ -726,6 +890,11 @@ export interface PublishedEstimate {
     name: string;
     description: string | null;
     hours: { min: number; max: number };
+    /**
+     * The phase's subject groups with their counted hours (0049). Absent from
+     * snapshots published before groups existed — those render flat.
+     */
+    groups?: { name: string; hours: { min: number; max: number } }[];
     lines: {
       name: string;
       description: string | null;
@@ -733,6 +902,12 @@ export interface PublishedEstimate {
       optional: boolean;
       altGroup: string | null;
       chosen: boolean;
+      /**
+       * Index into `groups` (0049), or null for a loose line. An index, not the
+       * name, so two groups that happen to share a name stay apart. Lines come
+       * groups-first, as on the client page.
+       */
+      group?: number | null;
     }[];
   }[];
   totalHours: { min: number; max: number };
@@ -769,22 +944,35 @@ export async function publishEstimate(estimateId: string, company: string): Prom
     intro: e.intro,
     timeline: e.timeline,
     closing: e.closing,
-    phases: d.phases.map((p) => ({
-      name: p.name,
-      description: p.description,
-      hours: t.phase.get(p.id) ?? { min: 0, max: 0 },
-      lines: d.lines
-        .filter((l) => l.phaseId === p.id)
-        .sort((a, b) => a.position - b.position)
-        .map((l) => ({
+    phases: [...d.phases].sort((a, b) => a.position - b.position).map((p) => {
+      const lay = phaseLayout(p.id, d.groups, d.lines);
+      const line = (group: number | null) => (l: EstimateLine) => ({
           name: l.name,
           description: l.description,
           hours: t.hours.get(l.id) ?? { min: 0, max: 0 },
           optional: l.optional,
           altGroup: l.altGroup,
           chosen: l.altGroup ? winners.get(l.altGroup) === l.id : true,
+          group,
+        });
+      return {
+        name: p.name,
+        description: p.description,
+        hours: t.phase.get(p.id) ?? { min: 0, max: 0 },
+        groups: lay.groups.map(({ group, lines }) => ({
+          name: group.name,
+          hours: lines.reduce(
+            (acc, l) => {
+              if (!counts(l, winners)) return acc;
+              const h = t.hours.get(l.id) ?? { min: 0, max: 0 };
+              return { min: acc.min + h.min, max: acc.max + h.max };
+            },
+            { min: 0, max: 0 },
+          ),
         })),
-    })),
+        lines: [...lay.groups.flatMap(({ lines }, gi) => lines.map(line(gi))), ...lay.loose.map(line(null))],
+      };
+    }),
     totalHours: t.totalHours,
     subtotal: t.subtotal,
     discount: t.discount,
@@ -850,65 +1038,4 @@ export async function savePricing(rate: number, vatPercent: number) {
 export async function latestApproved(leadId: string): Promise<EstimateSummary | null> {
   const list = await loadEstimates(leadId);
   return list.find((e) => e.status === "approved") ?? null;
-}
-
-/**
- * Won → work: each phase becomes a section under the client, each counted line
- * a task with its budget (`estimate_hours`), and the line remembers its task so
- * the hours logged on it flow back to the library (US21).
- *
- * ⚠️ THE BUDGET IS THE TOP OF THE RANGE. That is what the client was told to
- * expect and what the studio priced; the bottom is the hopeful case, and a
- * budget bar that goes red at the hopeful case reads as an overrun that isn't.
- *
- * ⚠️ OPTIONAL EXTRAS AND OPTIONS NOT CHOSEN DO NOT BECOME TASKS — they were not
- * sold. Percentage lines (Mobile, QA…) do, with their resolved hours.
- */
-export async function estimateToWork(estimateId: string, clientId: string, billable: boolean): Promise<number> {
-  const d = await loadEstimate(estimateId);
-  if (!d) throw new LeadWriteError("create the work", "the estimate no longer exists");
-  const sb = createClient();
-  const t = totals(d.lines, d.estimate.rate, d.estimate.vatPercent, d.estimate.discountPercent);
-  const { data: existing } = await sb
-    .from("sections")
-    .select("position")
-    .eq("client_id", clientId)
-    .order("position", { ascending: false })
-    .limit(1);
-  let secPos = (((existing ?? [])[0] as { position?: number } | undefined)?.position ?? 0) + 1;
-  let made = 0;
-  const winners = groupWinners(d.lines);
-  for (const p of d.phases) {
-    const lines = d.lines.filter(
-      (l) => l.phaseId === p.id && !l.optional && (!l.altGroup || winners.get(l.altGroup) === l.id),
-    );
-    if (lines.length === 0) continue;
-    const { data: sec, error } = await sb
-      .from("sections")
-      .insert({ client_id: clientId, name: p.name, position: secPos++ })
-      .select("id")
-      .single();
-    fail("add a section", error);
-    const sectionId = (sec as { id: string }).id;
-    let pos = 1;
-    for (const l of lines.sort((a, b) => a.position - b.position)) {
-      const h = t.hours.get(l.id);
-      const { data: task, error: te } = await sb
-        .from("tasks")
-        .insert({
-          client_id: clientId,
-          section_id: sectionId,
-          title: l.name,
-          estimate_hours: h ? Math.round(h.max * 100) / 100 : null,
-          billable,
-          position: pos++,
-        })
-        .select("id")
-        .single();
-      fail("add a task", te);
-      await sb.from("estimate_lines").update({ task_id: (task as { id: string }).id }).eq("id", l.id);
-      made++;
-    }
-  }
-  return made;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtHours, fmtNis, lineHours, totals, type EstimateLine } from "./estimate";
+import { fmtHours, fmtNis, lineHours, phaseLayout, phaseLines, totals, type EstimateGroup, type EstimateLine } from "./estimate";
 
 let n = 0;
 const line = (over: Partial<EstimateLine>): EstimateLine => ({
@@ -20,6 +20,7 @@ const line = (over: Partial<EstimateLine>): EstimateLine => ({
   chosen: true,
   position: 0,
   taskId: null,
+  groupId: null,
   ...over,
 });
 
@@ -101,5 +102,24 @@ describe("format", () => {
     expect(fmtHours({ min: 52, max: 80 })).toBe("52–80 hrs");
     expect(fmtHours({ min: 8, max: 8 })).toBe("8 hrs");
     expect(fmtNis({ min: 18200, max: 28000 })).toBe("18,200–28,000 NIS");
+  });
+});
+
+describe("phaseLayout", () => {
+  const g = (id: string, phaseId: string, position: number): EstimateGroup => ({ id, estimateId: "e", phaseId, name: id, position });
+  it("puts groups first, in order, then the loose lines — the client page's order", () => {
+    const groups = [g("gB", "p1", 2), g("gA", "p1", 1)];
+    const lines = [
+      line({ id: "loose1", position: 1 }),
+      line({ id: "b1", groupId: "gB", position: 1 }),
+      line({ id: "a2", groupId: "gA", position: 2 }),
+      line({ id: "a1", groupId: "gA", position: 1 }),
+    ];
+    expect(phaseLines("p1", groups, lines).map((l) => l.id)).toEqual(["a1", "a2", "b1", "loose1"]);
+  });
+  it("renders a line whose group is in another phase as loose, never drops it", () => {
+    const lay = phaseLayout("p1", [g("gX", "p2", 1)], [line({ id: "x", groupId: "gX" })]);
+    expect(lay.groups).toEqual([]);
+    expect(lay.loose.map((l) => l.id)).toEqual(["x"]);
   });
 });

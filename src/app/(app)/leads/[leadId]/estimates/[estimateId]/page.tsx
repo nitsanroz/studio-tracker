@@ -8,126 +8,47 @@
 // `src/lib/leads/estimate.ts`); there is nowhere to type money.
 //
 // ⚠️ AN APPROVED VERSION IS READ-ONLY, in the database's actions as well as
-// here: "Save as new version" is how it changes.
+// here: Edit (back to draft) or "Save as new version" is how it changes.
+//
+// Two tabs, like a client page: Scope (phases → groups → items, the client's
+// sections → groups → tasks — `estimate-scope.tsx`) and Overview (notes, links,
+// contacts — `estimate-overview.tsx`), so a won lead converts 1:1.
 
 import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Pencil, Send, Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { Tabs } from "@/components/ui";
+import { EstimateScope } from "@/components/leads/estimate-scope";
+import { EstimateOverview } from "@/components/leads/estimate-overview";
+import { NumField, TextField } from "@/components/leads/estimate-fields";
+import type { LeadContact } from "@/lib/leads/types";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import { loadLead } from "@/lib/leads/data";
 import {
-  addLine,
-  addPhase,
   approveEstimate,
-  chooseAlternative,
   deleteEstimate,
   loadEstimate,
   loadLibrary,
   newVersion,
   publishEstimate,
-  removeLine,
-  removePhase,
   reopenEstimate,
   unlockEstimate,
   submitForReview,
   updateEstimate,
-  updateLine,
-  updatePhase,
   type EstimateDetail,
 } from "@/lib/leads/estimates-data";
-import {
-  CATEGORIES,
-  fmtHours,
-  fmtNis,
-  groupWinners,
-  totals,
-  type Category,
-  type EstimateLine,
-  type ServiceItem,
-} from "@/lib/leads/estimate";
+import { fmtHours, fmtNis, totals, type ServiceItem } from "@/lib/leads/estimate";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
 const LABEL = "text-[12px] font-medium uppercase tracking-wider text-faint";
-const QUIET =
-  "rounded border border-transparent bg-transparent px-1 py-0.5 hover:border-border focus:border-border focus:bg-surface focus:outline-none disabled:hover:border-transparent";
-
 const STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "bg-background text-muted" },
   in_review: { label: "In review", cls: "bg-[#fdf3e3] text-[#8a5a09]" },
   approved: { label: "Approved", cls: "bg-[#eaf6ee] text-[#12693d]" },
 };
-
-/** A number field that commits on blur; empty → null. */
-function NumField({
-  value,
-  onCommit,
-  disabled,
-  className = "",
-  step = 1,
-}: {
-  value: number | null;
-  onCommit: (v: number | null) => void;
-  disabled?: boolean;
-  className?: string;
-  step?: number;
-}) {
-  return (
-    <input
-      type="number"
-      min={0}
-      step={step}
-      key={String(value)}
-      defaultValue={value ?? ""}
-      disabled={disabled}
-      onBlur={(e) => {
-        const raw = e.target.value.trim();
-        const v = raw === "" ? null : Number(raw);
-        if (v !== value && (v === null || Number.isFinite(v))) onCommit(v);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-      }}
-      className={`${QUIET} text-right tabular-nums ${className}`}
-    />
-  );
-}
-
-function TextField({
-  value,
-  onCommit,
-  disabled,
-  className = "",
-  placeholder,
-  multiline,
-  rows = 2,
-}: {
-  value: string | null;
-  onCommit: (v: string | null) => void;
-  disabled?: boolean;
-  className?: string;
-  placeholder?: string;
-  multiline?: boolean;
-  rows?: number;
-}) {
-  const common = {
-    defaultValue: value ?? "",
-    disabled,
-    placeholder,
-    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const v = e.target.value.trim() || null;
-      if (v !== (value ?? null)) onCommit(v);
-    },
-    className: `bidi-auto ${QUIET} ${className}`,
-  };
-  return multiline ? (
-    <textarea key={value ?? ""} rows={rows} {...common} />
-  ) : (
-    <input key={value ?? ""} {...common} />
-  );
-}
 
 export default function EstimatePage() {
   const isAdmin = useIsAdmin();
@@ -138,6 +59,8 @@ export default function EstimatePage() {
   const [detail, setDetail] = useState<EstimateDetail | null>(null);
   const [library, setLibrary] = useState<ServiceItem[]>([]);
   const [company, setCompany] = useState("");
+  const [contacts, setContacts] = useState<LeadContact[]>([]);
+  const [tab, setTab] = useState<"scope" | "overview">("scope");
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -148,6 +71,7 @@ export default function EstimatePage() {
       setDetail(d);
       setLibrary(lib);
       setCompany(l?.lead.company ?? "");
+      setContacts(l?.contacts ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load the estimate.");
     } finally {
@@ -191,148 +115,8 @@ export default function EstimatePage() {
   const e = detail.estimate;
   const locked = e.status === "approved";
   const approver = e.approvedBy ? profiles.find((p) => p.id === e.approvedBy) : null;
-  const shareUrl = e.shareToken ? `${typeof window !== "undefined" ? window.location.origin : ""}/estimate/${e.shareToken}` : null;
   const activeLib = library.filter((i) => i.active);
-  const money = (r: { min: number; max: number }) => fmtNis({ min: r.min * e.rate, max: r.max * e.rate });
-
-  const winners = groupWinners(detail.lines);
-  const lineRow = (l: EstimateLine) => {
-    const h = t.hours.get(l.id) ?? { min: 0, max: 0 };
-    const isWinner = Boolean(l.altGroup) && winners.get(l.altGroup!) === l.id;
-    const outOfTotal = l.optional || (l.altGroup && !isWinner);
-    const actual = l.taskId ? detail.actual.get(l.taskId) : undefined;
-    return (
-      <div
-        key={l.id}
-        className={`group grid grid-cols-[1fr_110px_150px_150px_28px] items-start gap-2 border-t border-border/60 py-2 ${
-          outOfTotal ? "opacity-60" : ""
-        }`}
-      >
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            {l.altGroup && (
-              <input
-                type="radio"
-                name={`alt-${l.altGroup}`}
-                checked={isWinner}
-                disabled={locked}
-                onChange={() => void run(() => chooseAlternative(e.id, l.altGroup!, l.id))}
-                title="The option counted in the total"
-              />
-            )}
-            <TextField
-              value={l.name}
-              disabled={locked}
-              onCommit={(v) => void run(() => updateLine(e.id, l.id, { name: v ?? "Untitled" }))}
-              className="w-full text-[13.5px] font-medium"
-            />
-          </div>
-          <TextField
-            value={l.description}
-            disabled={locked}
-            multiline
-            placeholder={locked ? "" : "Client-facing description (optional)"}
-            onCommit={(v) => void run(() => updateLine(e.id, l.id, { description: v }))}
-            className="mt-0.5 w-full resize-y text-[12px] text-muted"
-          />
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-[11.5px] text-faint">
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={l.optional}
-                disabled={locked}
-                onChange={(ev) => void run(() => updateLine(e.id, l.id, { optional: ev.target.checked }))}
-              />
-              Optional extra
-            </label>
-            <label className="flex items-center gap-1" title="Lines with the same option group are 'choose one'">
-              Option group
-              <TextField
-                value={l.altGroup}
-                disabled={locked}
-                placeholder="—"
-                // ⚠️ Joining a group is "chosen" only if nothing else in it is —
-                // otherwise both options land in the total (found in testing:
-                // workshop AND alignment session counted, 140–216h).
-                onCommit={(v) =>
-                  void run(() =>
-                    updateLine(e.id, l.id, {
-                      altGroup: v,
-                      chosen: !v || !detail.lines.some((o) => o.id !== l.id && o.altGroup === v && o.chosen),
-                    }),
-                  )
-                }
-                className="w-24 text-[11.5px]"
-              />
-            </label>
-            {actual !== undefined && (
-              <span className="text-[#12693d]">Actual: {actual.toFixed(1)} h logged</span>
-            )}
-          </div>
-        </div>
-        <select
-          value={l.category}
-          disabled={locked}
-          onChange={(ev) => void run(() => updateLine(e.id, l.id, { category: ev.target.value as Category }))}
-          className={`${QUIET} text-[12px] text-muted`}
-          aria-label="Category"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center justify-end gap-1 text-[13px]">
-          {l.kind === "percent" ? (
-            <>
-              <NumField
-                value={l.percent}
-                disabled={locked}
-                onCommit={(v) => void run(() => updateLine(e.id, l.id, { percent: v }))}
-                className="w-14"
-              />
-              <span className="text-[11.5px] text-faint">% of {l.percentOf}</span>
-            </>
-          ) : (
-            <>
-              <NumField
-                value={l.minHours}
-                disabled={locked}
-                onCommit={(v) => void run(() => updateLine(e.id, l.id, { minHours: v }))}
-                className="w-14"
-                step={0.5}
-              />
-              <span className="text-faint">–</span>
-              <NumField
-                value={l.maxHours}
-                disabled={locked}
-                onCommit={(v) => void run(() => updateLine(e.id, l.id, { maxHours: v }))}
-                className="w-14"
-                step={0.5}
-              />
-              <span className="text-[11.5px] text-faint">h</span>
-            </>
-          )}
-        </div>
-        <div className="pt-1 text-right text-[12.5px] tabular-nums">
-          {l.kind === "percent" && <div className="text-[11.5px] text-faint">{fmtHours(h)}</div>}
-          {money(h)}
-          {outOfTotal && <div className="text-[10.5px] text-faint">{l.optional ? "not in total" : "not chosen"}</div>}
-        </div>
-        {!locked && (
-          <button
-            onClick={() => void run(() => removeLine(e.id, l.id))}
-            aria-label={`Remove ${l.name}`}
-            className="pt-1 text-faint opacity-0 hover:text-danger group-hover:opacity-100"
-          >
-            <Trash2 size={13} />
-          </button>
-        )}
-      </div>
-    );
-  };
-
+  const shareUrl = e.shareToken ? `${typeof window !== "undefined" ? window.location.origin : ""}/estimate/${e.shareToken}` : null;
   return (
     <div className="mx-auto max-w-[1500px]">
       <Link
@@ -481,6 +265,21 @@ export default function EstimatePage() {
         <div className="mt-3 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
       )}
 
+      <Tabs<"scope" | "overview">
+        value={tab}
+        onChange={setTab}
+        className="mt-4"
+        items={[
+          { value: "scope", label: "Scope" },
+          { value: "overview", label: "Overview" },
+        ]}
+      />
+
+      {tab === "overview" ? (
+        <div className="mt-5">
+          <EstimateOverview detail={detail} t={t} contacts={contacts} leadId={leadId} run={run} />
+        </div>
+      ) : (
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-4">
           <div className={CARD}>
@@ -495,95 +294,7 @@ export default function EstimatePage() {
             />
           </div>
 
-          {detail.phases.map((p) => {
-            const lines = detail.lines.filter((l) => l.phaseId === p.id).sort((a, b) => a.position - b.position);
-            const sub = t.phase.get(p.id) ?? { min: 0, max: 0 };
-            return (
-              <div key={p.id} className={CARD}>
-                <div className="flex items-center gap-2">
-                  <TextField
-                    value={p.name}
-                    disabled={locked}
-                    onCommit={(v) => void run(() => updatePhase(e.id, p.id, { name: v ?? "Phase" }))}
-                    className="min-w-0 flex-1 text-[15px] font-semibold"
-                  />
-                  <span className="text-[12.5px] tabular-nums text-muted">
-                    {fmtHours(sub)} · {money(sub)}
-                  </span>
-                  {!locked && (
-                    <button
-                      onClick={async () => {
-                        if (await askConfirm(`Remove ${p.name} and its ${lines.length} lines?`, { action: "Remove", danger: true }))
-                          void run(() => removePhase(e.id, p.id));
-                      }}
-                      aria-label={`Remove ${p.name}`}
-                      className="text-faint hover:text-danger"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-                <TextField
-                  value={p.description}
-                  disabled={locked}
-                  multiline
-                  placeholder={locked ? "" : "Phase description (optional)"}
-                  onCommit={(v) => void run(() => updatePhase(e.id, p.id, { description: v }))}
-                  className="mt-1 w-full resize-y text-[12.5px] text-muted"
-                />
-                <div className="mt-2 grid grid-cols-[1fr_110px_150px_150px_28px] gap-2 text-[11px] uppercase tracking-wide text-faint">
-                  <span>Item</span>
-                  <span>Category</span>
-                  <span className="text-right">Hours</span>
-                  <span className="text-right">NIS</span>
-                  <span />
-                </div>
-                {lines.map(lineRow)}
-                {!locked && (
-                  <div className="mt-2 flex items-center gap-2 border-t border-border/60 pt-2">
-                    <select
-                      value=""
-                      onChange={(ev) => {
-                        const v = ev.target.value;
-                        if (!v) return;
-                        const item = v === "blank" ? null : (activeLib.find((i) => i.id === v) ?? null);
-                        void run(() => addLine(e.id, p.id, item, lines.length + 1));
-                      }}
-                      className="rounded-md border border-dashed border-border-strong bg-surface px-2 py-1 text-[12.5px] text-muted"
-                      aria-label="Add a line"
-                    >
-                      <option value="">+ Add a line…</option>
-                      {CATEGORIES.map((c) => {
-                        const items = activeLib.filter((i) => i.category === c.value);
-                        return items.length ? (
-                          <optgroup key={c.value} label={c.label}>
-                            {items.map((i) => (
-                              <option key={i.id} value={i.id}>
-                                {i.name}
-                                {i.kind === "percent" ? ` (+${i.percent}% of ${i.percentOf})` : ` (${i.minHours}–${i.maxHours}h)`}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ) : null;
-                      })}
-                      <option value="blank">Blank line</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {!locked && (
-            <div>
-              <button
-                onClick={() => void run(() => addPhase(e.id, `Phase ${detail.phases.length + 1}`, detail.phases.length + 1))}
-                className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 py-1 text-[12.5px] text-muted hover:border-brand hover:text-brand"
-              >
-                <Plus size={13} /> Add a phase
-              </button>
-            </div>
-          )}
+          <EstimateScope detail={detail} t={t} library={activeLib} locked={locked} run={run} />
 
           <div className={CARD}>
             <div className={LABEL}>Timeline (client-facing)</div>
@@ -659,6 +370,7 @@ export default function EstimatePage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

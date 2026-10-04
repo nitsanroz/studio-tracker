@@ -518,9 +518,9 @@ export default function LeadPage() {
             </Link>
           )}
           {!l.clientId && (
-            <button onClick={() => setPending({ from: stage, to: stage })} className="font-medium underline">
-              Create the client
-            </button>
+            <Link href={`/leads/${l.id}/convert`} className="font-medium underline">
+              Create client page
+            </Link>
           )}
         </div>
       )}
