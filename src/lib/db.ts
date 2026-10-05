@@ -56,7 +56,8 @@ export class DbError extends Error {
 }
 
 /**
- * A migration isn't applied: 42703 undefined_column · 42P01 undefined_table.
+ * A migration isn't applied: 42703 undefined_column · 42P01 undefined_table ·
+ * PGRST202 no such function (an `rpc` whose migration hasn't been run).
  *
  * ⚠️ PGRST204 is the same fact reported by a DIFFERENT LAYER, and leaving it out
  * cost a broken intake form: Postgres raises 42703 when a SELECT names an unknown
@@ -73,7 +74,7 @@ export class DbError extends Error {
  * failing. That is the right trade for an optional column and the wrong one for
  * anything load-bearing: don't use this to skip something that must be written.
  */
-export const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204"]);
+export const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204", "PGRST202"]);
 
 /** True when the query failed because the schema lacks something, not because the request failed. */
 export function isMissingSchema(e: unknown): boolean {
@@ -162,8 +163,6 @@ export interface FetchAllOptions {
    * a background refresh gains nothing from speed and should not burst.
    */
   parallel?: number;
-  /** Rows so far and the expected total (null when unknown) — for the boot progress bar. */
-  onPage?: (loaded: number, total: number | null) => void;
 }
 
 /**
@@ -191,7 +190,7 @@ export async function fetchAll<T>(
   table: string,
   columns: string,
   modify?: (q: any) => any,
-  { parallel = 1, onPage }: FetchAllOptions = {},
+  { parallel = 1 }: FetchAllOptions = {},
 ): Promise<T[]> {
   const PAGE = 1000;
   const page = (from: number, count: boolean) => {
@@ -217,8 +216,6 @@ export async function fetchAll<T>(
   const first = await page(0, parallel > 1);
   const out = rowsOf(first);
   const total: number | null = parallel > 1 ? ((first as { count?: number | null }).count ?? null) : null;
-  let loaded = out.length;
-  onPage?.(loaded, total);
   if (out.length < PAGE) return out;
   let next = PAGE;
   if (total !== null) {
@@ -241,8 +238,6 @@ export async function fetchAll<T>(
           failed = true;
           throw e;
         }
-        loaded += pages[i].length;
-        onPage?.(loaded, total);
       }
     };
     await Promise.all(Array.from({ length: Math.min(parallel, starts.length) }, worker));
@@ -257,7 +252,6 @@ export async function fetchAll<T>(
   for (let from = next; ; from += PAGE) {
     const rows = rowsOf(await page(from, false));
     out.push(...rows);
-    onPage?.(out.length, total === null ? null : Math.max(total, out.length));
     if (rows.length < PAGE) break;
   }
   return out;

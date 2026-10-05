@@ -9,6 +9,7 @@ import {
   idleTransition,
   pollDecision,
   refreshVerdict,
+  unpackEntrySums,
   wakeTransition,
 } from "./snapshot";
 import type { HotSnapshot } from "./snapshot";
@@ -66,8 +67,15 @@ describe("refreshVerdict", () => {
 
 type Call = { table: string; columns: string; limit: number | null };
 
-/** Minimal supabase-shaped stub that records what was asked for, and returns nothing. */
-function recordingClient() {
+/** What `rpc("entry_sums_packed")` answers when 0051 has not been run yet. */
+const NO_FUNCTION = { data: null, error: { message: "Could not find the function", code: "PGRST202" }, status: 404 };
+
+/**
+ * Minimal supabase-shaped stub that records what was asked for, and returns
+ * nothing. `rpc` defaults to "function missing", so the paged fallback — the
+ * ladder these tests guard — is what runs unless a test hands it a packed reply.
+ */
+function recordingClient(rpc: unknown = NO_FUNCTION) {
   const calls: Call[] = [];
   const select = (table: string, columns: string) => {
     const call: Call = { table, columns, limit: null };
@@ -91,6 +99,10 @@ function recordingClient() {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any -- ditto */
   const sb: any = {
     from: (table: string) => ({ select: (columns: string) => select(table, columns) }),
+    rpc: async (fn: string) => {
+      calls.push({ table: `rpc:${fn}`, columns: "", limit: null });
+      return rpc;
+    },
   };
   return { sb, calls };
 }
@@ -162,6 +174,45 @@ describe("refresh tiers", () => {
     // mistake the ladder exists to prevent — see the header of snapshot.ts.
     expect(te[0].columns).toContain("legacy");
     expect(te[0].columns).toContain("date_estimated");
+  });
+
+  it("takes the whole history in ONE packed call when 0051 is there, and pages nothing", async () => {
+    const packed = { tasks: ["t1"], users: ["u1"], rows: [["e1", 0, 0, "2026-10-05", 60, 0]] };
+    const { sb, calls } = recordingClient({ data: packed, error: null, status: 200 });
+    const sums = await fetchEntrySums(sb);
+    expect(calls.filter((c) => c.table === "time_entries")).toHaveLength(0);
+    expect(calls.filter((c) => c.table === "rpc:entry_sums_packed")).toHaveLength(1);
+    expect(sums).toEqual([
+      { id: "e1", taskId: "t1", userId: "u1", date: "2026-10-05", minutes: 60, legacy: false, dateEstimated: false },
+    ]);
+  });
+
+  it("REFUSES to fall back on a real failure — a 402 is not a missing function", async () => {
+    // Paging the table after a quota refusal would just fail 25 more times, and
+    // any non-schema error reaching the fallback could hide a real outage.
+    const { sb, calls } = recordingClient({ data: null, error: { message: "Payment Required" }, status: 402 });
+    await expect(fetchEntrySums(sb)).rejects.toThrow();
+    expect(calls.filter((c) => c.table === "time_entries")).toHaveLength(0);
+  });
+});
+
+describe("unpackEntrySums", () => {
+  it("restores ids from the lists, the person-less legacy row, and both flags", () => {
+    const sums = unpackEntrySums({
+      tasks: ["t1", "t2"],
+      users: ["u1"],
+      rows: [
+        ["a", 1, 0, "2026-01-02", 30, 0],
+        ["b", 0, null, "2019-05-01", 120, 1],
+        ["c", 0, null, "2018-03-01", -90, 3],
+      ],
+    });
+    expect(sums).toEqual([
+      { id: "a", taskId: "t2", userId: "u1", date: "2026-01-02", minutes: 30, legacy: false, dateEstimated: false },
+      { id: "b", taskId: "t1", userId: null, date: "2019-05-01", minutes: 120, legacy: true, dateEstimated: false },
+      // A negative row is a recorded hours REDUCTION and must survive as one.
+      { id: "c", taskId: "t1", userId: null, date: "2018-03-01", minutes: -90, legacy: true, dateEstimated: true },
+    ]);
   });
 });
 
@@ -265,7 +316,7 @@ function failingClient(failTable: string, error: { message: string; code?: strin
     };
     return chain;
   };
-  const sb: any = { from: (table: string) => ({ select: () => select(table) }) };
+  const sb: any = { from: (table: string) => ({ select: () => select(table) }), rpc: async () => NO_FUNCTION };
   /* eslint-enable @typescript-eslint/no-explicit-any */
   return sb;
 }

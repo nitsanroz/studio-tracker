@@ -215,17 +215,12 @@ describe("fetchAll paging", () => {
 
   it("asks for the pages after the first in parallel when told to, and keeps their order", async () => {
     const { sb, calls } = stub(25_300);
-    const seen: number[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = await fetchAll<{ id: string }>(sb as any, "time_entries", "*", undefined, {
-      parallel: 6,
-      onPage: (loaded) => seen.push(loaded),
-    });
+    const rows = await fetchAll<{ id: string }>(sb as any, "time_entries", "*", undefined, { parallel: 6 });
     expect(rows.length).toBe(25_300);
     expect(rows.map((r) => r.id)).toEqual(Array.from({ length: 25_300 }, (_, i) => `r${i}`));
     expect(calls.maxInFlight).toBeGreaterThan(1);
     expect(calls.maxInFlight).toBeLessThanOrEqual(6);
-    expect(seen[seen.length - 1]).toBe(25_300);
   });
 
   it("asks for no count and runs one page at a time by default (background refreshes)", async () => {

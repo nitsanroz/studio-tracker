@@ -71,7 +71,46 @@ import type {
 type Sb = SupabaseClient<any, any, any>;
 
 /**
- * Per-row time-entry totals for the WHOLE table.
+ * Per-row time-entry totals for the WHOLE table, from `entry_sums_packed()`
+ * (0051): one request, the repeated task and user ids sent once each.
+ *
+ * ⚠️ IT REPLACED ~25 PAGED REQUESTS, measured on production 2026-10-05 at
+ * ~0.5s each and ~2.8s of a 4s loading screen. Same rows, same fields — the
+ * paged ladder below stays as the fallback until the SQL is run, and the
+ * function is SECURITY INVOKER, so the caller's RLS applies exactly as before.
+ */
+async function entrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<EntrySum[]> {
+  const res = await sb.rpc("entry_sums_packed");
+  try {
+    assertOk("entry_sums_packed", res);
+    return unpackEntrySums(res.data as PackedEntrySums);
+  } catch (e) {
+    if (!isMissingSchema(e)) throw e;
+  }
+  return (await pagedEntrySumRows(sb, opts)).map(mapEntrySum);
+}
+
+/** What `entry_sums_packed()` returns. flags: 1 = legacy, 2 = date_estimated. */
+export interface PackedEntrySums {
+  tasks: string[];
+  users: string[];
+  rows: [id: string, task: number, user: number | null, date: string, minutes: number, flags: number][];
+}
+
+export function unpackEntrySums(p: PackedEntrySums): EntrySum[] {
+  return p.rows.map(([id, t, u, date, minutes, flags]) => ({
+    id,
+    taskId: p.tasks[t],
+    userId: u === null ? null : p.users[u],
+    date,
+    minutes,
+    legacy: (flags & 1) !== 0,
+    dateEstimated: (flags & 2) !== 0,
+  }));
+}
+
+/**
+ * The paged read the packed call replaced — kept as its fallback.
  *
  * ⚠️ THE LADDER STEPS DOWN ONE COLUMN AT A TIME, AND ONLY ON A GENUINELY
  * MISSING COLUMN. Collapsing straight to the base set on any failure would drop
@@ -79,13 +118,8 @@ type Sb = SupabaseClient<any, any, any>;
  * reads as ordinary logged time — it would land in days-worked, tenure, "my
  * hours" and the feed timesheet, which is precisely what the flag prevents. A
  * network blip must not be mistaken for an unapplied migration.
- *
- * ⚠️ ONE IMPLEMENTATION, TWO CALLERS. `fetchCold` takes it as part of the
- * studio's structure on boot; `fetchEntrySums` is the same query on its own
- * cadence. Copying the ladder to give it a second caller would be copying the
- * thing the ladder exists to protect.
  */
-async function entrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<DbRow[]> {
+async function pagedEntrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<DbRow[]> {
   const cols = "id, task_id, user_id, date, minutes";
   for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
     try {
@@ -117,9 +151,11 @@ async function entrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<DbRow[]> {
  * the move, and the measured cost of this at 60s is ~10–14 GB a month against a
  * studio total now running at ~6 GB. `SUMS_EVERY_N_TICKS` is the dial — raise
  * it, do not move the query, if the figures ever say so.
+ *
+ * ⚠️ ONE IMPLEMENTATION, TWO CALLERS: `fetchCold` takes the same rows on boot.
  */
 export async function fetchEntrySums(sb: Sb): Promise<EntrySum[]> {
-  return (await entrySumRows(sb)).map(mapEntrySum);
+  return entrySumRows(sb);
 }
 
 /** Studio structure. Changes a few times a week. */
@@ -194,7 +230,7 @@ function optionalTable<T>(p: Promise<T[]>): Promise<T[]> {
   });
 }
 
-/** `entries` is boot's paging for the time-entry sums; refreshes pass nothing (serial). */
+/** `entries` is boot's paging for the time-entry fallback; refreshes pass nothing (serial). */
 export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<ColdSnapshot> {
   const [
     prof,
@@ -244,7 +280,7 @@ export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<Cold
   );
   return {
     profiles: prof.map(mapProfile),
-    entrySums: sums.map(mapEntrySum),
+    entrySums: sums,
     clients: cli.map(mapClient),
     sections: sec.map((r) => mapSection(r, projectClient)),
     taskGroups: groupRows
@@ -385,64 +421,20 @@ export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
   };
 }
 
-/** Boot's progress, 0–1, for the loading screen's bar. */
-export type BootProgress = (fraction: number) => void;
-
-/**
- * Progress = rows loaded / rows expected across the two paged tables (time
- * entries and tasks — both report a count before their parallel pages go out),
- * with the last 10% held back until every boot query has resolved. No tuned
- * weights: as the tables grow the bar keeps measuring the same thing.
- */
-function bootTracker(report: BootProgress | undefined) {
-  const rows = { entries: { loaded: 0, total: 0 }, tasks: { loaded: 0, total: 0 } };
-  let pending = 3; // cold, tasks, hot
-  // ⚠️ Forward-only, and it NEEDS the guard: the two counts arrive at different
-  // times, so the denominator grows — tasks alone read 19%, then the time
-  // entries' count landed and the same rows read 6%.
-  let shown = 0;
-  const emit = () => {
-    const total = rows.entries.total + rows.tasks.total;
-    const loaded = rows.entries.loaded + rows.tasks.loaded;
-    const f = pending === 0 ? 1 : 0.9 * (total ? Math.min(1, loaded / total) : 0);
-    if (f <= shown) return;
-    shown = f;
-    report?.(f);
-  };
-  const onPage =
-    (k: keyof typeof rows): NonNullable<FetchAllOptions["onPage"]> =>
-    (loaded, total) => {
-      rows[k] = { loaded, total: total ?? Math.max(rows[k].total, loaded) };
-      emit();
-    };
-  const track = <T,>(p: Promise<T>) =>
-    p.then((v) => {
-      pending--;
-      emit();
-      return v;
-    });
-  return { onPage, track };
-}
-
-export async function fetchFull(
-  sb: Sb,
-  onProgress?: BootProgress,
-): Promise<ColdSnapshot & HotSnapshot & { tasks: Task[] }> {
-  const t = bootTracker(onProgress);
+export async function fetchFull(sb: Sb): Promise<ColdSnapshot & HotSnapshot & { tasks: Task[] }> {
   // ⚠️ ALL THREE AT ONCE. Tasks need the tag names and project→client map from
   // the cold tier to be MAPPED, not to be fetched — so the rows load beside it
-  // and are mapped after. Waiting for the cold tier first (time entries' 25
-  // pages) before even asking for tasks put the two back to back on boot.
+  // and are mapped after. Waiting for the cold tier first before even asking
+  // for tasks put the two back to back on boot.
   //
   // ⚠️ WIDTHS ARE CAPPED FOR THE DATABASE'S SAKE, not tuned for speed alone:
-  // the cold tier's ~12 small tables and the hot tier's 4 queries are already
-  // in flight, and several people opening the app at once multiply all of it.
-  // 6 lanes for the ~25 time-entry pages, 3 for the ~5 task pages keeps one
-  // boot near a dozen concurrent requests once the small ones have landed.
+  // several people opening the app at once multiply all of it. Time entries
+  // normally arrive in ONE packed call (0051) and the 13 lanes only apply to
+  // the paged fallback; tasks are ~5 pages, so 5 lanes take them in one wave.
   const [cold, taskRows, hot] = await Promise.all([
-    t.track(fetchCold(sb, { parallel: 6, onPage: t.onPage("entries") })),
-    t.track(fetchTaskRows(sb, { parallel: 3, onPage: t.onPage("tasks") })),
-    t.track(fetchHot(sb)),
+    fetchCold(sb, { parallel: 13 }),
+    fetchTaskRows(sb, { parallel: 5 }),
+    fetchHot(sb),
   ]);
   const ctx: HotCtx = {
     tagNames: new Map(cold.tags.map((t) => [t.id, t.name])),
