@@ -8,9 +8,10 @@
 // one lead. The board never drags offers, threads or the activity log along.
 
 import { createClient } from "../supabase/client";
-import { MISSING_SCHEMA_CODES } from "../db";
+import { MISSING_SCHEMA_CODES, fetchAll } from "../db";
 import type { StoredRate } from "./fx";
 import { mapStage } from "./stage-map";
+import { readNudgeSettings, type NudgeSettings } from "./nudges";
 import type {
   ClientContact,
   Currency,
@@ -103,6 +104,8 @@ export function mapLead(r: Row): Lead {
     gmailBackfilledAt: nstr(r.gmail_backfilled_at),
     replyOwedSince: null,
     deletedAt: nstr(r.deleted_at),
+    openEstimate: null,
+    waitingOffer: null,
   };
 }
 
@@ -308,20 +311,19 @@ export async function loadBoard(): Promise<Lead[]> {
   const leads = ((data ?? []) as unknown as Row[]).map(mapLead);
   if (leads.length === 0) return leads;
 
-  const { data: contacts } = await sb
-    .from("lead_contacts")
-    .select("lead_id,name,position")
-    .in(
-      "lead_id",
-      leads.map((l) => l.id),
-    )
-    .order("position");
-  const first = new Map<string, string>();
-  for (const c of (contacts ?? []) as Row[]) {
+  // ⚠️ THE WHOLE TABLE, PAGED — NOT `.in("lead_id", <every lead>)`. With 600+
+  // leads that filter is a ~25KB URL and PostgREST answers 400, which read as
+  // "no contacts" and blanked every card's contact line. The board shows every
+  // lead anyway, so filtering by id saves nothing.
+  const contacts = await fetchAll<Row>(sb, "lead_contacts", "id,lead_id,name,position").catch(() => [] as Row[]);
+  const first = new Map<string, { name: string; pos: number }>();
+  for (const c of contacts) {
     const id = str(c.lead_id);
-    if (!first.has(id)) first.set(id, str(c.name));
+    const pos = Number(c.position ?? 0);
+    const had = first.get(id);
+    if (!had || pos < had.pos) first.set(id, { name: str(c.name), pos });
   }
-  for (const l of leads) l.primaryContact = first.get(l.id) ?? null;
+  for (const l of leads) l.primaryContact = first.get(l.id)?.name ?? null;
 
   // Replies the studio owes, for the Today list. Only threads where the ball is
   // in our court, and only their timestamps — never a subject or a body.
@@ -338,7 +340,46 @@ export async function loadBoard(): Promise<Lead[]> {
     }
     for (const l of leads) l.replyOwedSince = since.get(l.id) ?? null;
   }
+  await rollUpWork(leads);
   return leads;
+}
+
+/**
+ * The newest estimate and the newest offer per lead, for the attention tips
+ * ("Finish the estimate", "Offer sent 6 days ago"). Status and dates only.
+ * ⚠️ Best-effort: a failed read means no tips, never a failed board.
+ */
+async function rollUpWork(leads: Lead[]) {
+  const sb = createClient();
+  // One lead: filter by it. The board: whole tables, paged (see loadBoard on
+  // why an id list of every lead cannot go in the URL).
+  const one = leads.length === 1 ? leads[0].id : null;
+  const read = (table: string, cols: string) =>
+    fetchAll<Row>(sb, table, cols, one ? (q) => q.eq("lead_id", one) : undefined).catch(() => [] as Row[]);
+  const [ests, offers] = await Promise.all([
+    read("lead_estimates", "id,lead_id,version,status,created_at"),
+    read("lead_offers", "id,lead_id,version,status,sent_at"),
+  ]);
+  const newest = (rows: Row[]) => {
+    const m = new Map<string, Row>();
+    for (const r of rows) {
+      const had = m.get(str(r.lead_id));
+      if (!had || Number(r.version) > Number(had.version)) m.set(str(r.lead_id), r);
+    }
+    return m;
+  };
+  const e = newest(ests);
+  const o = newest(offers);
+  for (const l of leads) {
+    const er = e.get(l.id);
+    const status = er ? str(er.status) : "";
+    l.openEstimate =
+      er && (status === "draft" || status === "in_review")
+        ? { version: Number(er.version), status, createdAt: str(er.created_at) }
+        : null;
+    const or = o.get(l.id);
+    l.waitingOffer = or && str(or.status) === "sent" ? { version: Number(or.version), sentAt: str(or.sent_at) || l.stageChangedAt } : null;
+  }
 }
 
 /** Every pending suggestion, for the Today list. Best-effort before 0044. */
@@ -383,14 +424,23 @@ export async function loadLead(id: string): Promise<LeadDetail | null> {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
+  const mappedThreads = ((threads.data ?? []) as Row[])
+    .map(mapThread)
+    .sort((a, b) => (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt));
+  // The board's roll-ups, so the lead page's tips read the same facts.
+  lead.replyOwedSince =
+    mappedThreads
+      .filter((t) => t.replyOwedBy === "us" && t.lastMessageAt)
+      .map((t) => t.lastMessageAt!)
+      .sort()[0] ?? null;
+  await rollUpWork([lead]);
+
   return {
     lead,
     suggestions: ((sugg ?? []) as Row[]).map(mapSuggestion),
     contacts: c,
     offers: ((offers.data ?? []) as Row[]).map(mapOffer),
-    threads: ((threads.data ?? []) as Row[])
-      .map(mapThread)
-      .sort((a, b) => (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)),
+    threads: mappedThreads,
     events: ((events.data ?? []) as Row[]).map(mapEvent),
   };
 }
@@ -466,23 +516,6 @@ export async function loadInboundToken(): Promise<string | null> {
   return typeof v === "string" ? v : null;
 }
 
-/**
- * The few columns global search needs — company and domain, nothing else.
- * Fetched once, lazily, the first time an ADMIN focuses the search box, so it
- * costs a designer nothing and an admin one tiny read per session.
- */
-export async function loadLeadIndex(): Promise<{ id: string; company: string; domain: string | null }[]> {
-  const sb = createClient();
-  const list = (live: boolean) => {
-    const q = sb.from("leads").select("id,company,domain").order("last_activity_at", { ascending: false });
-    return live ? q.is("deleted_at", null) : q;
-  };
-  let { data, error } = await list(true);
-  if (error && MISSING_SCHEMA_CODES.has(error.code ?? "")) ({ data, error } = await list(false));
-  if (error) return [];
-  return ((data ?? []) as Row[]).map((r) => ({ id: str(r.id), company: str(r.company), domain: nstr(r.domain) }));
-}
-
 export interface GmailStatus {
   configured: boolean;
   installed: boolean;
@@ -529,4 +562,10 @@ export async function loadMailSettings(): Promise<{ digest: string[] | null; app
     return Array.isArray(v) ? (v as string[]) : null;
   };
   return { digest: get("digest_recipients"), approvers: get("approver_ids") };
+}
+
+/** Settings → Leads → Attention tips, merged over the defaults. */
+export async function loadNudgeSettings(): Promise<NudgeSettings> {
+  const { data } = await createClient().from("lead_settings").select("value").eq("key", "nudges").maybeSingle();
+  return readNudgeSettings((data as { value?: unknown } | null)?.value);
 }

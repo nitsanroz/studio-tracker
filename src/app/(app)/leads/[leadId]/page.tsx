@@ -43,9 +43,10 @@ import { SourceIcon, StageIcon, stageStyle } from "@/lib/leads/look";
 import { Avatar, Tabs } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
-import { createClient } from "@/lib/supabase/client";
+import { leadFileHref, uploadLeadFile } from "@/lib/overview-files";
 import {
   loadLead,
+  loadNudgeSettings,
   loadStoredRate,
   loadThreadMessages,
   loadVocabulary,
@@ -103,6 +104,8 @@ import {
   type EstimateSummary,
 } from "@/lib/leads/estimates-data";
 import { Modal, ModalClose } from "@/components/ui";
+import { AttentionTip } from "@/components/leads/attention-tip";
+import { DEFAULT_NUDGES, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
 import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 
 type Tab = "contacts" | "emails" | "offers" | "estimates" | "activity";
@@ -206,6 +209,7 @@ export default function LeadPage() {
     null,
   );
   const [now] = useState(() => new Date());
+  const [nudgeRules, setNudgeRules] = useState<NudgeSettings>(DEFAULT_NUDGES);
 
   const reload = useCallback(async () => {
     try {
@@ -225,8 +229,10 @@ export default function LeadPage() {
     let alive = true;
     void (async () => {
       await reload();
-      const r = await loadStoredRate();
-      if (alive) setRate(r);
+      const [r, nr] = await Promise.all([loadStoredRate(), loadNudgeSettings().catch(() => DEFAULT_NUDGES)]);
+      if (!alive) return;
+      setRate(r);
+      setNudgeRules(nr);
     })();
     return () => {
       alive = false;
@@ -296,6 +302,15 @@ export default function LeadPage() {
   const stalled = isStalled(l, stage ?? undefined, now);
   const overdue = isOverdue(l, now);
   const open = !stage || stage.kind === "open";
+  // Each attention tip sits on the place you act on it: a reply on Emails, an
+  // estimate on Estimates, a late or missing next step on the Next step card.
+  const tips = nudgesFor(l, stage ?? undefined, nudgeRules, now);
+  const tip = (...kinds: NudgeKind[]) => tips.find((n) => kinds.includes(n.kind));
+  const tabTip = (label: string, kinds: NudgeKind[]) => (
+    <AttentionTip nudge={tip(...kinds)} leadId={l.id} className="inline-block">
+      {label}
+    </AttentionTip>
+  );
   const wonClient = l.clientId ? clients.find((c) => c.id === l.clientId) : null;
   const lostReason = l.lostReasonId ? vocab.lostReasons.find((r) => r.id === l.lostReasonId) : null;
   const valueIls = toIls(l.estValue, l.currency, quote);
@@ -538,11 +553,11 @@ export default function LeadPage() {
             value={tab}
             onChange={setTab}
             items={[
-              { value: "activity", label: "Activity", count: events.length },
+              { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length },
               { value: "contacts", label: "Contacts", count: contacts.length },
-              { value: "emails", label: "Emails", count: threads.length },
-              { value: "offers", label: "Offers", count: offers.length },
-              { value: "estimates", label: "Estimates" },
+              { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length },
+              { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length },
+              { value: "estimates", label: tabTip("Estimates", ["estimate"]) },
             ]}
             className="mb-4"
           />
@@ -605,7 +620,11 @@ export default function LeadPage() {
         {/* ── side: the deal ── */}
         <div className="flex flex-col gap-3">
           <div className={`${CARD} ${open && !l.nextStep ? "border-warning/60" : ""}`}>
-            <div className={LABEL}>Next step</div>
+            <div className={LABEL}>
+              <AttentionTip nudge={tip("overdue", "missing")} leadId={l.id} className="inline-block">
+                Next step
+              </AttentionTip>
+            </div>
             <textarea
               key={`n${l.nextStep}`}
               defaultValue={l.nextStep ?? ""}
@@ -1490,27 +1509,6 @@ function EstimatesTab({
 
 // ── offers ──────────────────────────────────────────────────────────────────
 
-/**
- * Uploads one file to the private `lead-files` bucket and returns its path.
- * The route hands out a signed URL; the bytes go straight to storage, so large
- * decks are not refused by Vercel's body limit (see /api/lead-file).
- */
-async function uploadOfferFile(leadId: string, file: File): Promise<{ path: string; name: string }> {
-  const res = await fetch("/api/lead-file", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ leadId, name: file.name, size: file.size }),
-  });
-  const j = (await res.json().catch(() => ({}))) as { path?: string; token?: string; contentType?: string; error?: string };
-  if (!res.ok || !j.path || !j.token) throw new Error(j.error ?? "Could not start the upload.");
-  const { error } = await createClient()
-    .storage.from("lead-files")
-    .uploadToSignedUrl(j.path, j.token, file, { contentType: j.contentType });
-  if (error) throw new Error(`Upload failed — ${error.message}`);
-  return { path: j.path, name: file.name };
-}
-
-const fileHref = (path: string) => `/api/lead-file?p=${encodeURIComponent(path)}`;
 
 function OffersTab({
   leadId,
@@ -1547,7 +1545,7 @@ function OffersTab({
     setSaving(true);
     onError(null);
     try {
-      const uploaded = file ? await uploadOfferFile(leadId, file) : null;
+      const uploaded = file ? { path: await uploadLeadFile(leadId, file), name: file.name } : null;
       await run(() =>
         addOffer(
           leadId,
@@ -1619,7 +1617,7 @@ function OffersTab({
               </label>
               {o.storagePath && (
                 <a
-                  href={fileHref(o.storagePath)}
+                  href={leadFileHref(o.storagePath)}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1 text-[12px] text-muted hover:text-brand"

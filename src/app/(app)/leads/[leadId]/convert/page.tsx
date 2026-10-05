@@ -16,12 +16,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Folder, FolderTree, Layers } from "lucide-react";
+import { ChevronLeft, Folder, FolderTree, Layers, Paperclip } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { Button, Field, Input, Select } from "@/components/primitives";
 import { CLIENT_COLORS } from "@/components/client-mark-picker";
 import { loadLead } from "@/lib/leads/data";
 import { convertToClient, type ConvertSection, type ConvertTask } from "@/lib/leads/actions";
+import { copyLeadFilesToClient, loadLeadFiles, type OverviewFile } from "@/lib/overview-files";
 import { loadEstimate, loadEstimates, type EstimateDetail, type EstimateSummary } from "@/lib/leads/estimates-data";
 import { counts, fmtHours, groupWinners, phaseLayout, totals, type EstimateLine } from "@/lib/leads/estimate";
 import type { LeadDetail } from "@/lib/leads/types";
@@ -122,6 +123,8 @@ export default function ConvertPage() {
   const [contactIds, setContactIds] = useState<Set<string>>(new Set());
   const [bringNotes, setBringNotes] = useState(true);
   const [linkOn, setLinkOn] = useState<Set<number>>(new Set());
+  const [files, setFiles] = useState<OverviewFile[]>([]);
+  const [fileOn, setFileOn] = useState<Set<string>>(new Set());
   /** Without an estimate: the one section the work starts under. */
   const [plainSection, setPlainSection] = useState("");
 
@@ -146,10 +149,12 @@ export default function ConvertPage() {
     let alive = true;
     void (async () => {
       try {
-        const [l, ests] = await Promise.all([loadLead(leadId), loadEstimates(leadId)]);
+        const [l, ests, fs] = await Promise.all([loadLead(leadId), loadEstimates(leadId), loadLeadFiles(leadId)]);
         if (!alive) return;
         setLead(l);
         setEstimates(ests);
+        setFiles(fs);
+        setFileOn(new Set(fs.map((f) => f.id)));
         if (l) {
           setName(l.lead.company);
           setPlainSection((l.lead.askedFor ?? "").split("\n")[0].slice(0, 80));
@@ -218,6 +223,7 @@ export default function ConvertPage() {
   const notes = bringNotes ? (estimate?.estimate.notes ?? null) : null;
   const links = (estimate?.estimate.links ?? []).filter((_, i) => linkOn.has(i));
   const pickedContacts = (lead?.contacts ?? []).filter((c) => contactIds.has(c.id));
+  const pickedFiles = files.filter((f) => fileOn.has(f.id));
   const targetName = effMode === "new" ? name.trim() : (live.find((c) => c.id === effClientId)?.name ?? "");
   const clientOk = effMode === "new" ? name.trim().length > 0 : Boolean(effClientId);
 
@@ -250,6 +256,14 @@ export default function ConvertPage() {
         },
         currentUserId,
       );
+      // ⚠️ After the client exists: the route copies storage objects into it.
+      // A failure here leaves a complete client page minus some files, so it is
+      // reported, not thrown — re-running the conversion would duplicate tasks.
+      try {
+        await copyLeadFilesToClient(target.id, pickedFiles.map((f) => f.id));
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : "The files could not be copied.");
+      }
       // Sections and tasks were written outside the store; pull them in now.
       refresh();
       router.push(`/clients/${target.id}`);
@@ -549,6 +563,24 @@ export default function ConvertPage() {
                   <span className="bidi-auto truncate">{l.title}</span>
                 </label>
               ))}
+              {files.map((f) => (
+                <label key={f.id} className="mt-1 flex items-center gap-2 text-[13px]">
+                  <input
+                    type="checkbox"
+                    checked={fileOn.has(f.id)}
+                    onChange={(e) =>
+                      setFileOn((s) => {
+                        const n = new Set(s);
+                        if (e.target.checked) n.add(f.id);
+                        else n.delete(f.id);
+                        return n;
+                      })
+                    }
+                  />
+                  <Paperclip size={12} className="shrink-0 text-faint" />
+                  <span className="bidi-auto truncate">{f.name}</span>
+                </label>
+              ))}
             </section>
             <div className="flex justify-between">
               <Button variant="ghost" onClick={() => setStep(0)}>
@@ -610,9 +642,9 @@ export default function ConvertPage() {
                 <dd className="text-right tabular-nums">{round(budgetTotal)}h</dd>
                 <dt className="text-muted">Contacts</dt>
                 <dd className="text-right tabular-nums">{pickedContacts.length}</dd>
-                <dt className="text-muted">Notes · links</dt>
+                <dt className="text-muted">Notes · links · files</dt>
                 <dd className="text-right tabular-nums">
-                  {notes ? "yes" : "no"} · {links.length}
+                  {notes ? "yes" : "no"} · {links.length} · {pickedFiles.length}
                 </dd>
               </dl>
             </section>

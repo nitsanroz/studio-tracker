@@ -116,3 +116,17 @@ export async function POST(request: NextRequest) {
     url: `/api/lead-file?p=${encodeURIComponent(data.path)}`,
   });
 }
+
+/** Removes one object — a lead's Overview file being deleted. Admins only. */
+export async function DELETE(request: NextRequest) {
+  const who = await isAdmin();
+  if (who === "none") return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  if (who !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+
+  const { path: raw } = ((await request.json().catch(() => ({}))) ?? {}) as { path?: unknown };
+  const path = safePath(typeof raw === "string" ? raw : null);
+  if (!path) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const { error } = await service().storage.from(BUCKET).remove([path]);
+  if (error) return NextResponse.json({ error: "Could not remove the file" }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}

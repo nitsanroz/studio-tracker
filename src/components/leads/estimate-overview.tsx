@@ -7,13 +7,16 @@
 // ⚠️ Notes and links are internal and are NOT locked by approval (see
 // `updateEstimateOverview`) — the scope and its prices are.
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { updateEstimateOverview, type EstimateDetail } from "@/lib/leads/estimates-data";
 import { fmtHours, fmtNis, type Totals } from "@/lib/leads/estimate";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { LeadContact } from "@/lib/leads/types";
+import { useData } from "@/lib/store";
+import { addLeadFile, leadFileHref, loadLeadFiles, removeLeadFile } from "@/lib/overview-files";
+import { OverviewFiles } from "@/components/overview-files";
 
 const CARD = "rounded-2xl border border-border bg-surface p-4 shadow-card";
 
@@ -36,6 +39,11 @@ export function EstimateOverview({
   const [url, setUrl] = useState("");
   const [bad, setBad] = useState(false);
   const phases = [...detail.phases].sort((a, b) => a.position - b.position);
+  const { currentUserId } = useData();
+  // ⚠️ The files belong to the LEAD, not this version: every estimate of the
+  // lead shows the same ones, and conversion offers them to the client.
+  const loadFiles = useCallback(() => loadLeadFiles(leadId), [leadId]);
+  const addFile = useCallback((f: File) => addLeadFile(leadId, f, currentUserId), [leadId, currentUserId]);
 
   const addLink = () => {
     const u = normalizeUrl(url);
@@ -119,6 +127,15 @@ export function EstimateOverview({
             </button>
           </form>
         </section>
+
+        <OverviewFiles
+          load={loadFiles}
+          add={addFile}
+          remove={removeLeadFile}
+          href={leadFileHref}
+          canRemove={() => true}
+          empty="No files yet — a brand book, a brief, the client's references. Carried to the client page on conversion."
+        />
 
         <section className={CARD}>
           <div className="mb-2 flex items-center">

@@ -1039,3 +1039,39 @@ export async function latestApproved(leadId: string): Promise<EstimateSummary | 
   const list = await loadEstimates(leadId);
   return list.find((e) => e.status === "approved") ?? null;
 }
+
+/**
+ * The hours of each lead's CURRENT estimate, for the board card — the newest
+ * approved version if there is one (that is the scope agreed), else the newest
+ * draft. Two queries for the whole board, and only the chosen estimates' lines.
+ */
+export async function loadBoardEstimateHours(leadIds: string[]): Promise<Map<string, Range>> {
+  const out = new Map<string, Range>();
+  if (leadIds.length === 0) return out;
+  const sb = createClient();
+  // ⚠️ Every estimate, then narrowed here: an `.in()` over every lead on the
+  // board is a URL PostgREST refuses (see loadBoard). ~40 rows.
+  const { data, error } = await sb.from("lead_estimates").select("id,lead_id,version,status,rate,vat_percent,discount_percent");
+  if (error) return out;
+  const wanted = new Set(leadIds);
+  const rank = (r: Row) => (str(r.status) === "approved" ? 100000 : 0) + Number(r.version);
+  const pick = new Map<string, Row>();
+  for (const r of (data ?? []) as Row[]) {
+    const lead = str(r.lead_id);
+    if (!wanted.has(lead)) continue;
+    const had = pick.get(lead);
+    if (!had || rank(r) > rank(had)) pick.set(lead, r);
+  }
+  const ids = [...pick.values()].map((r) => str(r.id));
+  if (ids.length === 0) return out;
+  const { data: lineRows, error: lineErr } = await sb.from("estimate_lines").select("*").in("estimate_id", ids);
+  if (lineErr) return out;
+  const lines = ((lineRows ?? []) as Row[]).map(mapLine);
+  for (const [lead, r] of pick) {
+    const ls = lines.filter((l) => l.estimateId === str(r.id));
+    if (ls.length === 0) continue;
+    const t = totals(ls, nnum(r.rate) ?? 350, nnum(r.vat_percent) ?? 18, nnum(r.discount_percent));
+    if (t.totalHours.max > 0) out.set(lead, t.totalHours);
+  }
+  return out;
+}

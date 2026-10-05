@@ -122,6 +122,10 @@ export interface Lead {
   replyOwedSince: string | null;
   /** When it was deleted, while it waits out its Undo window (0047); null for a live lead. */
   deletedAt: string | null;
+  /** The newest estimate when it is not approved yet — rolled up for the attention tips. */
+  openEstimate: { version: number; status: "draft" | "in_review"; createdAt: string } | null;
+  /** The newest offer while it is "sent" and unanswered — rolled up for the attention tips. */
+  waitingOffer: { version: number; sentAt: string } | null;
 }
 
 export interface LeadContact {

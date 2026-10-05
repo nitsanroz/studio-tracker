@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isOverdue, isStalled, quietWorkDays } from "./stalled";
 import { FX_FALLBACK_USD, isStale, latestRate, toIls, usdQuote } from "./fx";
 import { domainOf, gmailThreadIdFromUrl, type Lead, type LeadStage } from "./types";
+import { DEFAULT_NUDGES, daysSince, nudgesFor, readNudgeSettings } from "./nudges";
 
 // 2026-10-01 is a Thursday; 10-02 Fri, 10-03 Sat, 10-04 Sun, 10-05 Mon.
 const at = (d: string, t = "10:00") => new Date(`${d}T${t}:00`);
@@ -32,6 +33,8 @@ const lead = (lastActivityAt: string, extra: Partial<Lead> = {}): Lead => ({
   gmailBackfilledAt: null,
   replyOwedSince: null,
   deletedAt: null,
+  openEstimate: null,
+  waitingOffer: null,
   ...extra,
 });
 
@@ -179,5 +182,64 @@ describe("gmailThreadIdFromUrl", () => {
   it("is null for anything else", () => {
     expect(gmailThreadIdFromUrl("https://example.com/x")).toBeNull();
     expect(gmailThreadIdFromUrl("https://mail.google.com/mail/u/0/#inbox")).toBeNull();
+  });
+});
+
+describe("nudgesFor", () => {
+  const now = at("2026-10-05");
+  const kinds = (l: Lead, st = stage(null)) => nudgesFor(l, st, DEFAULT_NUDGES, now).map((n) => n.kind);
+
+  it("counts calendar days from a date or a timestamp", () => {
+    expect(daysSince("2026-10-01", now)).toBe(4);
+    expect(daysSince(at("2026-10-05", "08:00").toISOString(), now)).toBe(0);
+  });
+
+  it("puts a reply owed first", () => {
+    const l = lead(at("2026-10-05").toISOString(), {
+      nextStep: "Call",
+      nextStepDue: "2026-10-01",
+      replyOwedSince: at("2026-09-30").toISOString(),
+      primaryContact: "Dana Levi",
+    });
+    const n = nudgesFor(l, stage(null), DEFAULT_NUDGES, now);
+    expect(n.map((x) => x.kind)).toEqual(["reply", "overdue"]);
+    expect(n[0].text).toBe("Client waiting 5 days — reply");
+  });
+
+  it("waits the configured days before a reply tip", () => {
+    const l = lead(at("2026-10-05").toISOString(), { nextStep: "x", replyOwedSince: at("2026-10-04").toISOString() });
+    expect(kinds(l)).toEqual([]);
+  });
+
+  it("flags an unfinished estimate and a sent offer after their days", () => {
+    const l = lead(at("2026-10-05").toISOString(), {
+      nextStep: "x",
+      openEstimate: { version: 2, status: "draft", createdAt: at("2026-10-01").toISOString() },
+      waitingOffer: { version: 1, sentAt: at("2026-09-28").toISOString() },
+    });
+    const n = nudgesFor(l, stage(null), DEFAULT_NUDGES, now);
+    expect(n.map((x) => x.kind)).toEqual(["offer", "estimate"]);
+    expect(n[1].text).toBe("Finish the estimate (v2)");
+  });
+
+  it("says nothing on a won or lost lead, or when a kind is off", () => {
+    const l = lead(at("2026-09-01").toISOString());
+    expect(kinds(l, stage(3, "won"))).toEqual([]);
+    expect(kinds(l, stage(3))).toEqual(["stalled", "missing"]);
+    const off = { ...DEFAULT_NUDGES, missing: { on: false, days: 1 } };
+    expect(nudgesFor(l, stage(3), off, now).map((n) => n.kind)).toEqual(["stalled"]);
+  });
+
+  it("changes its key when the situation changes", () => {
+    const a = nudgesFor(lead("2026-10-05", { nextStep: "x", nextStepDue: "2026-10-01" }), stage(null), DEFAULT_NUDGES, now);
+    const b = nudgesFor(lead("2026-10-05", { nextStep: "x", nextStepDue: "2026-10-02" }), stage(null), DEFAULT_NUDGES, now);
+    expect(a[0].key).not.toBe(b[0].key);
+  });
+
+  it("merges saved settings over the defaults", () => {
+    const s = readNudgeSettings({ reply: { on: false, days: 4 }, offer: { days: -1 } });
+    expect(s.reply).toEqual({ on: false, days: 4 });
+    expect(s.offer).toEqual(DEFAULT_NUDGES.offer);
+    expect(s.missing).toEqual(DEFAULT_NUDGES.missing);
   });
 });

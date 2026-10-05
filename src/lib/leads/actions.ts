@@ -13,6 +13,7 @@
 import { createClient } from "../supabase/client";
 import { domainOf } from "./types";
 import { afterOfferStatus, type Suggestion } from "./rules";
+import type { NudgeSettings } from "./nudges";
 import type {
   Currency,
   LeadContact,
@@ -829,4 +830,11 @@ export async function saveMailSetting(key: "digest_recipients" | "approver_ids",
     .from("lead_settings")
     .upsert({ key, value: profileIds, updated_at: nowIso() }, { onConflict: "key" });
   fail("save the email setting", error);
+}
+
+export async function saveNudgeSettings(v: NudgeSettings) {
+  const { error } = await createClient()
+    .from("lead_settings")
+    .upsert({ key: "nudges", value: v, updated_at: nowIso() }, { onConflict: "key" });
+  fail("save the attention tips", error);
 }

@@ -13,13 +13,16 @@ import {
   loadGmailStatus,
   loadInboundToken,
   loadMailSettings,
+  loadNudgeSettings,
   loadVocabulary,
   type GmailStatus,
   type Vocabulary,
 } from "@/lib/leads/data";
 import { useData } from "@/lib/store";
 import { StageLookPicker } from "@/components/leads/stage-look-picker";
+import { DEFAULT_NUDGES, NUDGE_COLOR, NUDGE_KINDS, type NudgeSettings } from "@/lib/leads/nudges";
 import {
+  saveNudgeSettings,
   saveMailSetting,
   addLostReason,
   addStage,
@@ -119,6 +122,95 @@ function MailCard() {
       <p className={NOTE}>Sent from notifications@studionmore.com. Nothing is sent on a day with nothing to report.</p>
       {row("digest_recipients", "Morning email", "Sun–Thu ~7:00 — replies owed, steps due, suggestions waiting.")}
       {row("approver_ids", "Offer waiting for review", "When an offer is set to In review. The person who set it isn't emailed.")}
+      {err && <p className="mt-2 text-[12px] text-danger">{err}</p>}
+    </div>
+  );
+}
+
+/**
+ * Which situations raise an attention tip on the board and the lead page, and
+ * after how many days. Saved whole on every change — six rows, one jsonb.
+ */
+function NudgeCard() {
+  const [v, setV] = useState<NudgeSettings | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void loadNudgeSettings()
+      .catch(() => DEFAULT_NUDGES)
+      .then((x) => alive && setV(x));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!v) return null;
+  const save = async (next: NudgeSettings) => {
+    setV(next);
+    setErr(null);
+    try {
+      await saveNudgeSettings(next);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Could not save.");
+    }
+  };
+  return (
+    <div className={CARD}>
+      <h3 className={HEAD}>Attention tips</h3>
+      <p className={NOTE}>
+        Short dark tips over a lead&rsquo;s card and on its page, saying what needs doing. Each lead shows its most
+        urgent one on the board. Dismissing a tip lasts until the situation changes.
+      </p>
+      <div className="mt-3 flex flex-col divide-y divide-border/60">
+        {NUDGE_KINDS.map(({ kind, label, hint, hasDays }) => {
+          const r = v[kind];
+          return (
+            <div key={kind} className="flex items-center gap-3 py-2">
+              <label className="flex min-w-0 flex-1 items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={r.on}
+                  onChange={(e) => void save({ ...v, [kind]: { ...r, on: e.target.checked } })}
+                  className="mt-0.5"
+                />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-[13px] font-medium">
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: NUDGE_COLOR[kind] }} aria-hidden />
+                    {label}
+                  </span>
+                  <span className="block pl-4 text-[11.5px] text-faint">{hint}</span>
+                </span>
+              </label>
+              {hasDays ? (
+                <label className={`flex shrink-0 items-center gap-1.5 text-[12px] text-muted ${r.on ? "" : "opacity-40"}`}>
+                  after
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    disabled={!r.on}
+                    key={`${kind}-${r.days}`}
+                    defaultValue={r.days}
+                    onBlur={(e) => {
+                      const n = Math.max(0, Math.min(90, Math.round(Number(e.target.value))));
+                      if (Number.isFinite(n) && n !== r.days) void save({ ...v, [kind]: { ...r, days: n } });
+                      else e.target.value = String(r.days);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    className="h-7 w-14 rounded-md border border-border bg-surface px-2 text-right text-[12.5px] tabular-nums"
+                  />
+                  days
+                </label>
+              ) : (
+                <span className="shrink-0 text-[12px] text-faint">per stage</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
       {err && <p className="mt-2 text-[12px] text-danger">{err}</p>}
     </div>
   );
@@ -451,6 +543,7 @@ export function LeadSettings() {
         </div>
 
         <MailCard />
+        <NudgeCard />
       </div>
 
       {/* ── connections ──

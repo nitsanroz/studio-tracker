@@ -547,3 +547,10 @@ b,
 .plan-month-band {
   background-color: color-mix(in oklab, var(--background) 90%, var(--surface));
 }
+
+/* The lead card's dark crown: the LinkedIn mark's glyph is punched out of its
+   square in the crown's own navy, since a white glyph on a white-ish square
+   would vanish there. See LinkedInMark in src/lib/leads/look.tsx. */
+.lead-crown {
+  --li-ink: #06112f;
+}

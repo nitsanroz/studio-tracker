@@ -107,8 +107,17 @@ export function StageChip({ stage, className = "" }: { stage: LeadStage | undefi
 /** LinkedIn's mark — lucide dropped brand icons (same drawing as the candidate page). */
 function LinkedInMark({ size = 13 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden className="shrink-0">
-      <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM2.4 21.5h5.2V9.5H2.4v12zM9.9 9.5h4.98v1.64h.07c.7-1.25 2.4-2.14 4.05-2.14 4.33 0 5 2.6 5 5.98v6.52h-5.2v-5.78c0-1.38-.02-3.15-2-3.15-2 0-2.3 1.5-2.3 3.05v5.88H9.9v-12z" />
+    // ⚠️ A white mark on a FILLED rounded square (the brand's own app-icon
+    // shape) in the icon's colour, filling the full box so it carries the same
+    // visual weight as the Globe beside other names — an outline with a small
+    // mark inside read as a smaller icon than its neighbours.
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden className="shrink-0">
+      <rect x="1" y="1" width="22" height="22" rx="5" fill="currentColor" />
+      <path
+        transform="translate(4.1 4.5) scale(0.6)"
+        fill="var(--li-ink, #fff)"
+        d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM2.4 21.5h5.2V9.5H2.4v12zM9.9 9.5h4.98v1.64h.07c.7-1.25 2.4-2.14 4.05-2.14 4.33 0 5 2.6 5 5.98v6.52h-5.2v-5.78c0-1.38-.02-3.15-2-3.15-2 0-2.3 1.5-2.3 3.05v5.88H9.9v-12z"
+      />
     </svg>
   );
 }

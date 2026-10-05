@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import {
   AlarmClock,
   ChartPie,
+  ChevronDown,
   ChevronRight,
   Columns3,
   List,
@@ -25,6 +26,7 @@ import {
   Search,
   Sun,
   Trash2,
+  UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -33,6 +35,7 @@ import { Avatar } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import {
   loadBoard,
+  loadNudgeSettings,
   loadPendingSuggestions,
   loadStoredRate,
   loadVocabulary,
@@ -54,7 +57,11 @@ import {
   type LostReason,
 } from "@/lib/leads/types";
 import { LostModal, WinModal } from "@/components/leads/stage-modals";
-import { SourceIcon, StageChip, StageIcon } from "@/lib/leads/look";
+import { NEUTRAL, SourceIcon, StageChip, StageIcon } from "@/lib/leads/look";
+import { DEFAULT_NUDGES, nudgesFor, type NudgeSettings } from "@/lib/leads/nudges";
+import { loadBoardEstimateHours } from "@/lib/leads/estimates-data";
+import { fmtHours, type Range } from "@/lib/leads/estimate";
+import { AttentionTip } from "@/components/leads/attention-tip";
 import { IconSelect } from "@/components/leads/icon-select";
 import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import { deletedLeadName } from "@/lib/leads/data";
@@ -110,6 +117,15 @@ const headingClass = (label: string) =>
     ? "text-[12px] font-medium text-muted"
     : "text-[12px] font-medium uppercase tracking-wide text-muted";
 
+/** A board column: grows to share the width, shrinks to 13.5rem before the board scrolls. */
+const COLUMN = "min-w-[13.5rem] max-w-80 flex-1 basis-60";
+/**
+ * ⚠️ Each column scrolls ITSELF, inside the screen. Lost holds hundreds of
+ * cards; growing the board to fit them put its horizontal scrollbar hundreds
+ * of cards down, so whatever sat right of the view was unreachable.
+ */
+const COLUMN_BODY = "max-h-[calc(100vh-15rem)] overflow-y-auto";
+
 const CHIP_OFF = "border-border bg-surface text-muted";
 const CHIP_ON = "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark";
 
@@ -143,6 +159,7 @@ function LeadCard({
   valueIls,
   now,
   isNew,
+  hours,
   draggable,
   onDragStart,
   onDragEnd,
@@ -155,6 +172,8 @@ function LeadCard({
   now: Date;
   /** From the website form and not opened yet (0048). */
   isNew: boolean;
+  /** The current estimate's hours range, when the lead has one. */
+  hours: Range | null;
   draggable: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -170,53 +189,79 @@ function LeadCard({
       onDragEnd={onDragEnd}
       className="group flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 shadow-[0_1px_2px_rgba(6,17,47,.04)] transition-colors hover:border-brand"
     >
-      <div className="flex items-start gap-2">
-        <span className="bidi-auto min-w-0 flex-1 text-[15px] font-medium leading-tight">{lead.company}</span>
-        {isNew && <NewBadge />}
-        {open && lead.replyOwedSince && (
-          <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 text-[#8a5a09]">
-            <MailWarning size={14} strokeWidth={1.75} />
+      {/* The CROWN — who and how much — on a dark Studio-Black band, the same
+          for every stage (the column heading carries the stage colour), so it
+          reads apart from the content below. ⚠️ A fixed #06112f, not
+          `bg-foreground`: under the night theme the foreground flips light and
+          the white text on it would vanish. Two ROWS, not two columns: name ↔
+          price, then contact ↔ hours, each pair on one line. */}
+      <div className="lead-crown -mx-2.5 -mt-2.5 flex flex-col gap-1.5 rounded-t-[7px] bg-[#06112f] px-2.5 pb-2 pt-2.5 text-white">
+      <div className="flex items-baseline gap-2">
+        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <span className="bidi-auto min-w-0 text-[15px] font-medium leading-tight text-white">{lead.company}</span>
+          {isNew && <NewBadge />}
+          {open && lead.replyOwedSince && (
+            <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 self-center text-[#fcd34d]">
+              <MailWarning size={14} strokeWidth={1.75} />
+            </span>
+          )}
+          {stalled && <StalledBadge />}
+        </div>
+        {(valueIls !== null || lead.estValue !== null) && (
+          <span
+            className="shrink-0 text-[12.5px] font-medium tabular-nums text-white"
+            title={lead.currency === "USD" ? formatMoney(lead.estValue, "USD") : undefined}
+          >
+            {formatIls(valueIls)}
           </span>
         )}
-        {stalled && <StalledBadge />}
       </div>
-      {(lead.primaryContact || lead.source) && (
-        <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted">
-          <span title={sourceLabel(lead.source as LeadSource | null)} className="flex">
-            <SourceIcon source={lead.source as LeadSource | null} size={12} className="text-faint" />
+      {(lead.primaryContact || lead.source || hours) && (
+        // -mt-1: the contact belongs to the name above it, so it sits closer
+        // than the card's own gap between unrelated lines.
+        <div className="-mt-1 flex items-center gap-2 text-[12px] leading-tight">
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-white/75">
+            {(lead.primaryContact || lead.source) && (
+              <span title={sourceLabel(lead.source as LeadSource | null)} className="flex">
+                <SourceIcon source={lead.source as LeadSource | null} size={12} className="text-white/60" />
+              </span>
+            )}
+            {lead.primaryContact && <span className="bidi-auto truncate">{lead.primaryContact}</span>}
           </span>
-          {lead.primaryContact && <span className="bidi-auto truncate">{lead.primaryContact}</span>}
-        </span>
-      )}
-      {(valueIls !== null || lead.estValue !== null) && (
-        <span className="text-[12.5px] font-medium text-foreground">
-          {formatIls(valueIls)}
-          {lead.currency === "USD" && (
-            <span className="ml-1 font-normal text-faint">{formatMoney(lead.estValue, "USD")}</span>
+          {hours && (
+            <span className="shrink-0 text-[11.5px] tabular-nums text-white/75" title="Hours in the current estimate">
+              {fmtHours(hours)}
+            </span>
           )}
-        </span>
+        </div>
       )}
+      </div>
       {open && (
         // ⚠️ A MISSING NEXT STEP IS SHOWN, NOT HIDDEN — the PRD's rule is that
         // no open lead is left without an action, and an empty line reads as
         // "fine" while a named gap reads as a job.
         <span
-          className={`bidi-auto line-clamp-2 text-[11.5px] ${
-            lead.nextStep ? (overdue ? "text-danger" : "text-muted") : "italic text-warning"
+          className={`bidi-auto my-1 line-clamp-2 text-[12.5px] leading-snug ${
+            lead.nextStep ? (overdue ? "text-danger" : "text-foreground/80") : "italic text-warning"
           }`}
         >
           {lead.nextStep ?? "No next step"}
           {lead.nextStep && lead.nextStepDue && (
-            <span className={overdue ? "text-danger" : "text-faint"}> · {formatDate(lead.nextStepDue)}</span>
+            <span className={overdue ? "text-danger" : "text-muted"}> · {formatDate(lead.nextStepDue)}</span>
           )}
         </span>
       )}
       <div className="flex items-center gap-1.5 text-[11px] text-faint">
-        {owner ? (
-          <>
-            <Avatar profile={owner} size={18} />
-            <span className="truncate">{ownerName}</span>
-          </>
+        {/* A neutral chip with the first name — an avatar's colour competed
+            with the attention dot, which is the one colour a card should carry. */}
+        {owner && ownerName ? (
+          <span
+            className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border bg-background py-0.5 pl-1 pr-2 text-[11px] text-muted"
+            title={ownerName}
+          >
+            <UserRound size={12} strokeWidth={1.75} className="shrink-0 text-faint" />
+            <span className="truncate">{ownerName.split(" ")[0]}</span>
+          </span>
         ) : (
           <span>Unassigned</span>
         )}
@@ -471,6 +516,8 @@ export default function LeadsPage() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [suggestions, setSuggestions] = useState<LeadSuggestion[]>([]);
   const [rate, setRate] = useState<StoredRate | null>(null);
+  const [nudgeRules, setNudgeRules] = useState<NudgeSettings>(DEFAULT_NUDGES);
+  const [estHours, setEstHours] = useState<Map<string, Range>>(new Map());
   const [layout, setLayout] = useState<Layout>("board");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -519,13 +566,18 @@ export default function LeadsPage() {
     let alive = true;
     void (async () => {
       try {
-        const [v, b, r, sg] = await Promise.all([
+        const [v, b, r, sg, nr] = await Promise.all([
           loadVocabulary(),
           loadBoard(),
           loadStoredRate(),
           loadPendingSuggestions(),
+          loadNudgeSettings().catch(() => DEFAULT_NUDGES),
         ]);
         if (!alive) return;
+        setNudgeRules(nr);
+        // The cards' hours arrive after the board — they are a detail, and the
+        // board must not wait on estimate lines to appear.
+        void loadBoardEstimateHours(b.filter((l) => !l.deletedAt).map((l) => l.id)).then((m) => alive && setEstHours(m));
         setVocab(v);
         setRows(b);
         setSuggestions(sg);
@@ -670,6 +722,7 @@ export default function LeadsPage() {
     valueIls: ils(l),
     now,
     isNew: newIds.has(l.id),
+    hours: estHours.get(l.id) ?? null,
   });
   const dragHandlers = (l: Lead) => ({
     draggable: true,
@@ -695,7 +748,9 @@ export default function LeadsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1500px]">
+    // ⚠️ The board may use the whole screen: seven columns at a fixed 1500px
+    // left Won/Lost unfolded side by side with one cut off at the edge.
+    <div className={`mx-auto ${layout === "board" ? "max-w-[2400px]" : "max-w-[1500px]"}`}>
       {/* ── row 1: title, and the page's two actions on the right ── */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
@@ -854,60 +909,70 @@ export default function LeadsPage() {
             const list = byStage.get(s.id) ?? [];
             const value = list.reduce((sum, l) => sum + (ils(l) ?? 0), 0);
             const folded = s.kind !== "open" && !unfolded.has(s.id);
+            const tone = s.color || NEUTRAL;
+            const fold = () =>
+              setUnfolded((prev) => {
+                const next = new Set(prev);
+                if (folded) next.add(s.id);
+                else next.delete(s.id);
+                return next;
+              });
+            // ⚠️ The chevron is the FIRST thing in both shapes, so folding and
+            // unfolding never moves it out from under the pointer.
             if (folded) {
               return (
                 <button
                   key={s.id}
                   {...dropZone(s)}
-                  onClick={() => setUnfolded((prev) => new Set(prev).add(s.id))}
+                  onClick={fold}
                   title={`Show ${s.name}`}
-                  className={`flex min-h-32 w-11 shrink-0 flex-col items-center gap-2 rounded-xl py-3 transition-colors ${
-                    dropStage === s.id
-                      ? "bg-brand-soft outline outline-1 outline-brand"
-                      : s.kind === "won"
-                        ? "bg-[#eaf6ee]"
-                        : "bg-foreground/[0.035]"
+                  className={`flex min-h-32 w-11 shrink-0 flex-col items-center gap-2 rounded-xl border border-t-[3px] bg-surface py-2.5 shadow-card transition-colors hover:brightness-[0.98] ${
+                    dropStage === s.id ? "outline outline-2 outline-brand" : ""
                   }`}
+                  style={{ borderColor: `${tone}40`, borderTopColor: tone }}
                 >
-                  <ChevronRight size={14} className="text-faint" />
-                  <span className="text-[11px] text-faint">{list.length}</span>
-                  <StageIcon stage={s} />
-                  <span className={`bidi-auto [writing-mode:vertical-rl] ${headingClass(s.name)}`}>{s.name}</span>
+                  <ChevronRight size={15} className="text-muted" />
+                  <StageIcon stage={s} size={15} />
+                  <span
+                    className="min-w-5 rounded-full px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white tabular-nums"
+                    style={{ backgroundColor: tone }}
+                  >
+                    {list.length}
+                  </span>
+                  <span
+                    className={`bidi-auto [writing-mode:vertical-rl] text-[12px] font-semibold ${HAS_HEBREW.test(s.name) ? "" : "uppercase tracking-wide"}`}
+                    style={{ color: tone }}
+                  >
+                    {s.name}
+                  </span>
                 </button>
               );
             }
             return (
-              <div key={s.id} className="w-60 shrink-0">
+              <div key={s.id} className={COLUMN}>
                 <div className="flex items-center gap-1.5 px-1 pb-2">
+                  {s.kind !== "open" && (
+                    <button onClick={fold} title={`Fold ${s.name}`} aria-label={`Fold ${s.name}`} className="-ml-0.5 rounded text-muted hover:text-foreground">
+                      <ChevronDown size={15} />
+                    </button>
+                  )}
                   <StageIcon stage={s} />
                   <span className={`bidi-auto ${headingClass(s.name)}`} style={{ color: s.color || undefined }}>
                     {s.name}
                   </span>
                   <span className="text-[11px] text-faint">{list.length}</span>
                   {value > 0 && <span className="ml-auto text-[11px] text-muted">{formatIls(value)}</span>}
-                  {s.kind !== "open" && (
-                    <button
-                      onClick={() =>
-                        setUnfolded((prev) => {
-                          const next = new Set(prev);
-                          next.delete(s.id);
-                          return next;
-                        })
-                      }
-                      className="ml-1 text-[11px] text-faint hover:text-foreground"
-                    >
-                      Fold
-                    </button>
-                  )}
                 </div>
                 <div
                   {...dropZone(s)}
-                  className={`flex min-h-32 flex-col gap-2 rounded-xl p-2 transition-colors ${
+                  className={`flex min-h-32 flex-col gap-2 rounded-xl p-2 transition-colors ${COLUMN_BODY} ${
                     dropStage === s.id ? "bg-brand-soft outline outline-1 outline-brand" : "bg-foreground/[0.035]"
                   }`}
                 >
                   {list.map((l) => (
-                    <LeadCard key={l.id} {...cardProps(l)} {...dragHandlers(l)} />
+                    <AttentionTip key={l.id} nudge={nudgesFor(l, s, nudgeRules, now)[0]} leadId={l.id} className="block" place="dot" dot="-left-[5px] top-[15px]">
+                      <LeadCard {...cardProps(l)} {...dragHandlers(l)} />
+                    </AttentionTip>
                   ))}
                 </div>
               </div>
@@ -915,12 +980,12 @@ export default function LeadsPage() {
           })}
 
           {(byStage.get("") ?? []).length > 0 && (
-            <div className="w-60 shrink-0">
+            <div className={COLUMN}>
               <div className="flex items-center gap-1.5 px-1 pb-2">
                 <span className="text-[12px] font-medium uppercase tracking-wide text-warning">No stage</span>
                 <span className="text-[11px] text-faint">{(byStage.get("") ?? []).length}</span>
               </div>
-              <div className="flex min-h-32 flex-col gap-2 rounded-xl bg-warning/10 p-2">
+              <div className={`flex min-h-32 flex-col gap-2 rounded-xl bg-warning/10 p-2 ${COLUMN_BODY}`}>
                 {(byStage.get("") ?? []).map((l) => (
                   <LeadCard key={l.id} {...cardProps(l)} {...dragHandlers(l)} />
                 ))}
