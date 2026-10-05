@@ -159,7 +159,7 @@ function NudgeCard() {
     <div className={CARD}>
       <h3 className={HEAD}>Attention tips</h3>
       <p className={NOTE}>
-        Short dark tips over a lead&rsquo;s card and on its page, saying what needs doing. Each lead shows its most
+        Short tips on a lead&rsquo;s card and on its page, saying what needs doing. Each lead shows its most
         urgent one on the board. Dismissing a tip lasts until the situation changes.
       </p>
       <div className="mt-3 flex flex-col divide-y divide-border/60">
@@ -398,7 +398,7 @@ export function LeadSettings() {
   const webhook = token ? `${origin}/api/leads/inbound/${token}` : null;
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       {(error || notice) && (
         <div
           className={`rounded-lg px-3 py-2 text-sm lg:col-span-2 ${
@@ -441,7 +441,7 @@ export function LeadSettings() {
               <EditableName value={s.name} onCommit={(v) => void run(() => updateStage(s.id, { name: v }))} />
               {s.kind === "open" ? (
                 <label className="flex shrink-0 items-center gap-1 text-[11.5px] text-faint">
-                  Stall after
+                  <span className="hidden sm:inline">Stall after</span>
                   <input
                     type="number"
                     min={1}
@@ -552,7 +552,7 @@ export function LeadSettings() {
           above are the pipeline's content, edited as the studio works. */}
       <div className="lg:col-span-2">
         <h3 className="mb-2 mt-2 text-[12px] font-medium uppercase tracking-wider text-faint">Connections</h3>
-        <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <GmailCard />
           <div className={CARD}>
             <h3 className={HEAD}>Website form</h3>
