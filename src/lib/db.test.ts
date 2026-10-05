@@ -135,11 +135,23 @@ describe("canonicalReportLink", () => {
  */
 describe("fetchAll paging", () => {
   /** Records the query chain and serves `total` rows named by index. */
-  function stub(total: number) {
-    const calls: { ordered: string[]; ranges: [number, number][] } = { ordered: [], ranges: [] };
+  function stub(total: number, withCount = true, failAt?: number) {
+    const calls: {
+      ordered: string[];
+      ranges: [number, number][];
+      inFlight: number;
+      maxInFlight: number;
+      counted: number;
+    } = {
+      ordered: [],
+      ranges: [],
+      inFlight: 0,
+      maxInFlight: 0,
+      counted: 0,
+    };
     const sb = {
       from: () => ({
-        select: () => {
+        select: (_cols: string, opts?: { count?: string }) => {
           const chain: Record<string, unknown> = {};
           chain.order = (col: string) => {
             calls.ordered.push(col);
@@ -147,9 +159,19 @@ describe("fetchAll paging", () => {
           };
           chain.range = (a: number, b: number) => {
             calls.ranges.push([a, b]);
-            const rows = [];
+            const rows: { id: string }[] = [];
             for (let i = a; i <= b && i < total; i++) rows.push({ id: `r${i}` });
-            return Promise.resolve({ data: rows, error: null, status: 200 });
+            calls.inFlight++;
+            calls.maxInFlight = Math.max(calls.maxInFlight, calls.inFlight);
+            if (opts?.count) calls.counted++;
+            const count = withCount && opts?.count ? total : null;
+            const error = failAt === a ? { message: "boom", code: "500" } : null;
+            return new Promise((res) =>
+              setTimeout(() => {
+                calls.inFlight--;
+                res({ data: error ? null : rows, error, status: error ? 500 : 200, count });
+              }, 1),
+            );
           };
           return chain;
         },
@@ -189,5 +211,72 @@ describe("fetchAll paging", () => {
     const rows = await fetchAll(sb as any, "tasks", "*");
     expect(rows.length).toBe(1000);
     expect(calls.ranges.length).toBe(2); // second page comes back empty and ends it
+  });
+
+  it("asks for the pages after the first in parallel when told to, and keeps their order", async () => {
+    const { sb, calls } = stub(25_300);
+    const seen: number[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll<{ id: string }>(sb as any, "time_entries", "*", undefined, {
+      parallel: 6,
+      onPage: (loaded) => seen.push(loaded),
+    });
+    expect(rows.length).toBe(25_300);
+    expect(rows.map((r) => r.id)).toEqual(Array.from({ length: 25_300 }, (_, i) => `r${i}`));
+    expect(calls.maxInFlight).toBeGreaterThan(1);
+    expect(calls.maxInFlight).toBeLessThanOrEqual(6);
+    expect(seen[seen.length - 1]).toBe(25_300);
+  });
+
+  it("asks for no count and runs one page at a time by default (background refreshes)", async () => {
+    const { sb, calls } = stub(2500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll(sb as any, "time_entries", "*");
+    expect(rows.length).toBe(2500);
+    expect(calls.counted).toBe(0);
+    expect(calls.maxInFlight).toBe(1);
+  });
+
+  it("still pages in series when parallel is asked for but no count comes back", async () => {
+    const { sb, calls } = stub(2500, false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll(sb as any, "time_entries", "*", undefined, { parallel: 6 });
+    expect(rows.length).toBe(2500);
+    expect(calls.maxInFlight).toBe(1);
+  });
+
+  it("reads on past a full last page when rows arrive after the count", async () => {
+    // Counted 3,000 but 3,400 are there by the time the pages are read.
+    const { sb, calls } = stub(3400);
+    const lying = {
+      from: () => {
+        const q = sb.from();
+        return {
+          select: (c: string, o?: { count?: string }) => {
+            const chain = q.select(c, o) as Record<string, (...a: unknown[]) => unknown>;
+            const range = chain.range;
+            chain.range = (a: unknown, b: unknown) =>
+              (range(a, b) as Promise<Record<string, unknown>>).then((r) => (o?.count ? { ...r, count: 3000 } : r));
+            return chain;
+          },
+        };
+      },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAll<{ id: string }>(lying as any, "time_entries", "*", undefined, { parallel: 6 });
+    expect(rows.length).toBe(3400);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(3400);
+    expect(calls.ranges.map((r) => r[0])).toContain(3000);
+  });
+
+  it("stops the other lanes after a page fails", async () => {
+    const { sb, calls } = stub(25_000, true, 2000);
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fetchAll(sb as any, "time_entries", "*", undefined, { parallel: 6 }),
+    ).rejects.toThrow("boom");
+    await new Promise((r) => setTimeout(r, 30));
+    // Without the stop, all 25 pages would have been requested.
+    expect(calls.ranges.length).toBeLessThan(25);
   });
 });

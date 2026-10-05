@@ -50,7 +50,10 @@ export function EntryEditRow({
 
   return (
     <div className="border-b border-border py-2 last:border-b-0">
-    <div className="group flex items-center gap-2">
+    {/* On a phone the row wraps: the task on its own line, then the fields —
+        side by side at 343px the date was cut off and the description
+        scrolled out of view. One line from `sm` up, as before. */}
+    <div className="group flex flex-wrap items-center gap-2 sm:flex-nowrap">
       {leading ?? <Avatar profile={user} size={24} />}
       <input
         value={duration}
@@ -70,7 +73,7 @@ export function EntryEditRow({
         onChange={(e) => setDescription(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && dirty && save()}
         placeholder="What did you do? (required)"
-        className={`bidi-auto min-w-0 flex-1 rounded-md border bg-surface px-2 py-1 text-sm outline-none focus:border-brand ${
+        className={`bidi-auto min-w-0 flex-1 basis-40 rounded-md border bg-surface px-2 py-1 text-sm outline-none focus:border-brand sm:basis-auto ${
           describes ? "border-border" : "border-danger"
         }`}
       />
@@ -249,7 +252,7 @@ export function UserDayDetails({
           </div>
           <ModalClose onClose={onClose} />
         </div>
-        <div className="mt-2 flex max-h-96 flex-col overflow-y-auto">
+        <div className="mt-2 flex max-h-56 flex-col overflow-y-auto sm:max-h-96">
           {!ready && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
           {ready && entries.length === 0 && (
             <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
@@ -265,7 +268,7 @@ export function UserDayDetails({
                   // client on its own line — a bare task title ("Homepage") reads
                   // the same for half the studio's clients
                   <span
-                    className="flex w-48 shrink-0 flex-col gap-0.5 text-xs text-muted"
+                    className="flex w-full shrink-0 flex-col gap-0.5 text-xs text-muted sm:w-48"
                     title={client ? `${client.name} · ${task?.title ?? ""}` : task?.title}
                   >
                     {client && (

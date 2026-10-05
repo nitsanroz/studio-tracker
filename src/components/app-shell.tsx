@@ -42,6 +42,7 @@ import { AboutModal } from "./about-modal";
 import { MobileLogTimeSheet } from "./mobile-log-time";
 import { DesktopOnlyCard, desktopOnlyEntry } from "./desktop-only";
 import { WhatsNewModal } from "./whats-new-modal";
+import { useBootProgress } from "@/lib/store/boot-progress";
 
 // admin-only sections render LAST, below a thin divider.
 //
@@ -579,6 +580,36 @@ function MobileDrawer({
   );
 }
 
+/**
+ * The boot screen. Its own component so the ~30 progress reports re-render
+ * only this, not the Shell — see `boot-progress.ts`. The bar follows the boot
+ * fetch itself (rows as pages land), not a timer.
+ */
+function LoadingScreen() {
+  const pct = Math.round(useBootProgress() * 100);
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <span className="brand-wordmark w-48 animate-pulse bg-brand" />
+        <div
+          className="h-1.5 w-48 overflow-hidden rounded-full bg-brand/10"
+          role="progressbar"
+          aria-label="Loading the studio"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+        >
+          <div
+            className="h-full rounded-full bg-brand transition-[width] duration-150 ease-out"
+            style={{ width: `${Math.max(4, pct)}%` }}
+          />
+        </div>
+        <span className="text-sm tabular-nums text-muted">Loading the studio… {pct}%</span>
+      </div>
+    </div>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const {
@@ -637,16 +668,7 @@ function Shell({ children }: { children: ReactNode }) {
   // widen the document before the class took effect.
   const blocked = isNarrow ? desktopOnlyEntry(pathname) : null;
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <span className="brand-wordmark w-48 animate-pulse bg-brand" />
-          <span className="text-sm text-muted">Loading the studio…</span>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   // The boot query failed, so there is no data — not "no tasks", no data. An
   // empty dashboard would be a claim about the studio that we can't stand

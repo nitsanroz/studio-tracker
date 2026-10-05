@@ -28,6 +28,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   assertOk,
   fetchAll,
+  type FetchAllOptions,
   isMissingSchema,
   mapBillingPeriod,
   mapClient,
@@ -84,12 +85,16 @@ type Sb = SupabaseClient<any, any, any>;
  * cadence. Copying the ladder to give it a second caller would be copying the
  * thing the ladder exists to protect.
  */
-async function entrySumRows(sb: Sb): Promise<DbRow[]> {
+async function entrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<DbRow[]> {
   const cols = "id, task_id, user_id, date, minutes";
   for (const extra of [", legacy, date_estimated", ", legacy", ""]) {
     try {
-      return await fetchAll<DbRow>(sb, "time_entries", `${cols}${extra}`, (q) =>
-        q.not("minutes", "is", null),
+      return await fetchAll<DbRow>(
+        sb,
+        "time_entries",
+        `${cols}${extra}`,
+        (q) => q.not("minutes", "is", null),
+        opts,
       );
     } catch (e) {
       if (!isMissingSchema(e)) throw e;
@@ -189,7 +194,8 @@ function optionalTable<T>(p: Promise<T[]>): Promise<T[]> {
   });
 }
 
-export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
+/** `entries` is boot's paging for the time-entry sums; refreshes pass nothing (serial). */
+export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<ColdSnapshot> {
   const [
     prof,
     cli,
@@ -230,7 +236,7 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
     // rendered before this existed, so an empty list is the correct fallback —
     // and `tasks.group_id` falls away on its own rung of the hot ladder.
     optionalTable(fetchAll<DbRow>(sb, "task_groups", "*")),
-    entrySumRows(sb),
+    entrySumRows(sb, entries),
   ]);
 
   const projectClient = new Map<string, string>(
@@ -271,6 +277,20 @@ export async function fetchCold(sb: Sb): Promise<ColdSnapshot> {
  * subtly wrong makes rows VANISH from the UI; a slower fetch cannot.
  */
 export async function fetchTasks(sb: Sb, ctx: HotCtx): Promise<Task[]> {
+  return mapTaskRows(await fetchTaskRows(sb), ctx);
+}
+
+/**
+ * `brief` is deliberately NOT selected — it's per-task detail, fetched lazily by
+ * loadTaskExtras — so it is blanked here and mergeTasks in the store re-attaches
+ * whatever the open task had already loaded.
+ */
+function mapTaskRows(rows: DbRow[], ctx: HotCtx): Task[] {
+  return rows.map((r) => mapTask({ ...r, brief: undefined }, ctx.tagNames, ctx.projectClient));
+}
+
+/** The task rows alone — no mapping, so boot can fetch them beside `fetchCold`. */
+async function fetchTaskRows(sb: Sb, opts?: FetchAllOptions): Promise<DbRow[]> {
   const cols =
     "id, project_id, section_id, title, figma_url, status, tag_id, assignee_id, due_date, billable, estimate_hours, position, pending";
   // 0016 adds the recovered pre-Everhour history columns
@@ -303,11 +323,7 @@ export async function fetchTasks(sb: Sb, ctx: HotCtx): Promise<Task[]> {
     cols, // pre-0007
   ]) {
     try {
-      const rows = await fetchAll<DbRow>(sb, "tasks", select);
-      // `brief` is deliberately NOT selected — it's per-task detail, fetched
-      // lazily by loadTaskExtras — so it is blanked here and mergeTasks in the
-      // store re-attaches whatever the open task had already loaded.
-      return rows.map((r) => mapTask({ ...r, brief: undefined }, ctx.tagNames, ctx.projectClient));
+      return await fetchAll<DbRow>(sb, "tasks", select, undefined, opts);
     } catch (e) {
       if (!isMissingSchema(e)) throw e;
     }
@@ -369,16 +385,70 @@ export async function fetchHot(sb: Sb): Promise<HotSnapshot> {
   };
 }
 
+/** Boot's progress, 0–1, for the loading screen's bar. */
+export type BootProgress = (fraction: number) => void;
+
+/**
+ * Progress = rows loaded / rows expected across the two paged tables (time
+ * entries and tasks — both report a count before their parallel pages go out),
+ * with the last 10% held back until every boot query has resolved. No tuned
+ * weights: as the tables grow the bar keeps measuring the same thing.
+ */
+function bootTracker(report: BootProgress | undefined) {
+  const rows = { entries: { loaded: 0, total: 0 }, tasks: { loaded: 0, total: 0 } };
+  let pending = 3; // cold, tasks, hot
+  // ⚠️ Forward-only, and it NEEDS the guard: the two counts arrive at different
+  // times, so the denominator grows — tasks alone read 19%, then the time
+  // entries' count landed and the same rows read 6%.
+  let shown = 0;
+  const emit = () => {
+    const total = rows.entries.total + rows.tasks.total;
+    const loaded = rows.entries.loaded + rows.tasks.loaded;
+    const f = pending === 0 ? 1 : 0.9 * (total ? Math.min(1, loaded / total) : 0);
+    if (f <= shown) return;
+    shown = f;
+    report?.(f);
+  };
+  const onPage =
+    (k: keyof typeof rows): NonNullable<FetchAllOptions["onPage"]> =>
+    (loaded, total) => {
+      rows[k] = { loaded, total: total ?? Math.max(rows[k].total, loaded) };
+      emit();
+    };
+  const track = <T,>(p: Promise<T>) =>
+    p.then((v) => {
+      pending--;
+      emit();
+      return v;
+    });
+  return { onPage, track };
+}
+
 export async function fetchFull(
   sb: Sb,
+  onProgress?: BootProgress,
 ): Promise<ColdSnapshot & HotSnapshot & { tasks: Task[] }> {
-  const cold = await fetchCold(sb);
+  const t = bootTracker(onProgress);
+  // ⚠️ ALL THREE AT ONCE. Tasks need the tag names and project→client map from
+  // the cold tier to be MAPPED, not to be fetched — so the rows load beside it
+  // and are mapped after. Waiting for the cold tier first (time entries' 25
+  // pages) before even asking for tasks put the two back to back on boot.
+  //
+  // ⚠️ WIDTHS ARE CAPPED FOR THE DATABASE'S SAKE, not tuned for speed alone:
+  // the cold tier's ~12 small tables and the hot tier's 4 queries are already
+  // in flight, and several people opening the app at once multiply all of it.
+  // 6 lanes for the ~25 time-entry pages, 3 for the ~5 task pages keeps one
+  // boot near a dozen concurrent requests once the small ones have landed.
+  const [cold, taskRows, hot] = await Promise.all([
+    t.track(fetchCold(sb, { parallel: 6, onPage: t.onPage("entries") })),
+    t.track(fetchTaskRows(sb, { parallel: 3, onPage: t.onPage("tasks") })),
+    t.track(fetchHot(sb)),
+  ]);
   const ctx: HotCtx = {
     tagNames: new Map(cold.tags.map((t) => [t.id, t.name])),
     projectClient: cold.projectClient,
   };
-  const [tasks, hot] = await Promise.all([fetchTasks(sb, ctx), fetchHot(sb)]);
-  return { ...cold, ...hot, tasks };
+  return { ...cold, ...hot, tasks: mapTaskRows(taskRows, ctx) };
 }
 
 /* eslint-enable @typescript-eslint/no-explicit-any */

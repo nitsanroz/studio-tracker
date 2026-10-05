@@ -87,6 +87,7 @@ import { useTimelineActions } from "./timeline";
 import { useLinkActions } from "./links";
 import { useTaskActions } from "./tasks";
 import { guardPreview } from "./preview-guard";
+import { setBootProgress } from "./boot-progress";
 
 /** Re-exported so `@/lib/store` keeps the surface it has always had. */
 export { withGroupInvariant };
@@ -542,7 +543,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         window.location.href = "/login";
         return;
       }
-      const snap = await fetchFull(supabase);
+      setBootProgress(0);
+      const snap = await fetchFull(supabase, (f) => !cancelled && setBootProgress(f));
       if (cancelled) return;
       generation.current++;
       setCurrentUserId(uid);
@@ -557,6 +559,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // `printWriteSeqRef`. Boot is the one place both are set from scratch.
       printWriteSeqRef.current = writeSeq.current;
       lastSyncedRef.current = Date.now();
+      // Let the bar be SEEN at 100% before the app replaces it: set in the same
+      // batch as `loading: false`, the last frame anyone saw was ~88%, which
+      // reads as "stalled, then gave up". Two animation frames = one painted
+      // frame at 100%, ~30ms, rather than a fixed delay on every boot.
+      setBootProgress(1);
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
       setLoading(false);
     })().catch((e) => {
       console.error("store load failed", e);

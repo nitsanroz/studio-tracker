@@ -154,6 +154,18 @@ export async function updateWithOptional(
   return { error: retry.error ?? null, degraded: true };
 }
 
+export interface FetchAllOptions {
+  /**
+   * Pages in flight at once after the first. 1 (the default) is the old serial
+   * paging with NO row count asked for; above 1 the first page also asks for an
+   * exact count so the rest can go out together. Only boot passes more than 1 —
+   * a background refresh gains nothing from speed and should not burst.
+   */
+  parallel?: number;
+  /** Rows so far and the expected total (null when unknown) — for the boot progress bar. */
+  onPage?: (loaded: number, total: number | null) => void;
+}
+
 /**
  * Supabase caps selects at 1000 rows — page through everything.
  *
@@ -179,20 +191,74 @@ export async function fetchAll<T>(
   table: string,
   columns: string,
   modify?: (q: any) => any,
+  { parallel = 1, onPage }: FetchAllOptions = {},
 ): Promise<T[]> {
-  const out: T[] = [];
   const PAGE = 1000;
-  for (let from = 0; ; from += PAGE) {
+  const page = (from: number, count: boolean) => {
     let q = sb
       .from(table)
-      .select(columns)
+      .select(columns, count ? { count: "exact" } : undefined)
       .order("id")
       .range(from, from + PAGE - 1);
     if (modify) q = modify(q);
-    const { data, error, status } = await q;
-    if (error) throw new DbError(table, error.message, error.code, status);
-    out.push(...((data ?? []) as T[]));
-    if (!data || data.length < PAGE) break;
+    return q;
+  };
+  const rowsOf = (r: { data: unknown; error: { message: string; code?: string } | null; status: number }) => {
+    assertOk(table, r);
+    return (r.data ?? []) as T[];
+  };
+
+  // ⚠️ IN PARALLEL ONLY WHEN ASKED (boot). The first page then also asks for
+  // the row count, so the rest can be requested together — `time_entries` is
+  // ~25 pages, and fetched in series at ~0.1–0.4s a round trip that alone held
+  // the loading screen up for seconds. Same rows, same order, same bytes. The
+  // count is NOT asked for in serial mode: it is a COUNT(*) per call, and the
+  // background refreshes run every minute in every tab.
+  const first = await page(0, parallel > 1);
+  const out = rowsOf(first);
+  const total: number | null = parallel > 1 ? ((first as { count?: number | null }).count ?? null) : null;
+  let loaded = out.length;
+  onPage?.(loaded, total);
+  if (out.length < PAGE) return out;
+  let next = PAGE;
+  if (total !== null) {
+    const starts: number[] = [];
+    for (let from = PAGE; from < total; from += PAGE) starts.push(from);
+    const pages: T[][] = new Array(starts.length);
+    // A rolling pool, not batches: a batch waits for its slowest page before
+    // the next one starts, while a pool starts the next page the moment any
+    // finishes. ⚠️ `failed` stops the other workers after the first error —
+    // Promise.all rejects at once but cannot cancel them, and a failed boot
+    // should not go on downloading the rest of the table for nothing.
+    let cursor = 0;
+    let failed = false;
+    const worker = async () => {
+      while (!failed && cursor < starts.length) {
+        const i = cursor++;
+        try {
+          pages[i] = rowsOf(await page(starts[i], false));
+        } catch (e) {
+          failed = true;
+          throw e;
+        }
+        loaded += pages[i].length;
+        onPage?.(loaded, total);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(parallel, starts.length) }, worker));
+    out.push(...pages.flat());
+    const last = pages[pages.length - 1];
+    // A short last page is the end. A full one means rows arrived after the
+    // count was taken (or the count was an exact multiple) — fall through and
+    // keep reading in series until a page comes back short.
+    if (last && last.length < PAGE) return out;
+    next = PAGE * (starts.length + 1);
+  }
+  for (let from = next; ; from += PAGE) {
+    const rows = rowsOf(await page(from, false));
+    out.push(...rows);
+    onPage?.(out.length, total === null ? null : Math.max(total, out.length));
+    if (rows.length < PAGE) break;
   }
   return out;
 }
