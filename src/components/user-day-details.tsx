@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Users } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatFeedDate, formatHours, formatHoursShort, parseDuration } from "@/lib/format";
-import { loggableMembers } from "@/lib/members";
+import { archivedMembers, loggableMembers } from "@/lib/members";
 import { Avatar, ClientChip, Modal, ModalClose, TaskNameLink } from "./ui";
 import { LogTimeForm } from "./log-time-form";
 import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
@@ -39,9 +39,13 @@ export function EntryEditRow({
     description !== entry.description ||
     (!!date && date !== entry.date);
 
+  // A description can be edited but never emptied. An old Everhour row that
+  // never had one can still have its minutes or date fixed without inventing one.
+  const descChanged = description !== entry.description;
+  const describes = description.trim().length > 0 || !descChanged;
   function save() {
-    if (minutes == null || minutes <= 0 || !date) return;
-    updateTimeEntry(entry.id, { minutes, description, date });
+    if (minutes == null || minutes <= 0 || !date || !describes) return;
+    updateTimeEntry(entry.id, descChanged ? { minutes, description: description.trim(), date } : { minutes, date });
   }
 
   return (
@@ -65,13 +69,16 @@ export function EntryEditRow({
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && dirty && save()}
-        placeholder="Description"
-        className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-brand"
+        placeholder="What did you do? (required)"
+        className={`bidi-auto min-w-0 flex-1 rounded-md border bg-surface px-2 py-1 text-sm outline-none focus:border-brand ${
+          describes ? "border-border" : "border-danger"
+        }`}
       />
       {dirty && (
         <button
           onClick={save}
-          disabled={minutes == null || minutes <= 0 || !date}
+          disabled={minutes == null || minutes <= 0 || !date || !describes}
+          title={describes ? undefined : "Add a description"}
           className="shrink-0 rounded-md bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
         >
           Save
@@ -124,6 +131,13 @@ export function UserDayDetails({
   const profile = profiles.find((p) => p.id === targetUserId) ?? null;
   const isAdmin = useIsAdmin();
   const members = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
+  const archived = useMemo(() => archivedMembers(profiles), [profiles]);
+  /**
+   * Archived members are opt-in: a late correction for someone who has left
+   * is rare, and 20+ former names would bury the current team. Opened on an
+   * archived person's day, the list includes them from the start.
+   */
+  const [showArchived, setShowArchived] = useState(() => archived.some((p) => p.id === userId));
 
   const dayKey = `${targetUserId}|${targetDate}`;
   const ready = fetched?.key === dayKey;
@@ -165,14 +179,53 @@ export function UserDayDetails({
                   value={targetUserId}
                   onChange={(e) => setTargetUserId(e.target.value)}
                   title="Whose hours these are"
-                  className="rounded-md border border-border bg-surface px-1.5 py-1 text-sm font-medium"
+                  // ⚠️ A fixed width: a native select sizes itself to its widest
+                  // option, so adding the archived names would make it jump.
+                  className="w-44 truncate rounded-md border border-border bg-surface px-1.5 py-1 text-sm font-medium"
                 >
                   {members.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.id === currentUserId ? "Me" : p.name}
                     </option>
                   ))}
+                  {showArchived && archived.length > 0 && (
+                    <optgroup label="Archived">
+                      {archived.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
+                {archived.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Hiding the list while an archived person is chosen would
+                      // leave the select showing a value it no longer offers.
+                      if (showArchived && archived.some((p) => p.id === targetUserId)) setTargetUserId(currentUserId);
+                      setShowArchived((v) => !v);
+                    }}
+                    aria-pressed={showArchived}
+                    aria-label={showArchived ? "Hide archived members" : "Include archived members"}
+                    title={showArchived ? "Hide archived members" : "Include archived members — for correcting the hours of someone who has left"}
+                    className={`flex size-7 items-center justify-center rounded-md transition-colors ${
+                      showArchived ? "bg-brand-soft text-brand" : "text-faint hover:bg-background hover:text-foreground"
+                    }`}
+                  >
+                    <span className="relative flex">
+                      <Users size={15} strokeWidth={1.75} />
+                      {/* Off: a diagonal slash through the group, the usual "hidden" mark. */}
+                      {!showArchived && (
+                        <span
+                          aria-hidden
+                          className="absolute left-1/2 top-1/2 h-px w-[19px] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current"
+                        />
+                      )}
+                    </span>
+                  </button>
+                )}
                 <input
                   type="date"
                   value={targetDate}

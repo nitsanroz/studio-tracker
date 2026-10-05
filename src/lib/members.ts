@@ -33,3 +33,12 @@ export function loggableMembers(profiles: Profile[], meFirstId?: string | null):
 export function dailyTargetMinutes(profile: Profile | null | undefined): number {
   return profile?.capacityHoursWeek ? (profile.capacityHoursWeek / 5) * 60 : 8 * 60;
 }
+
+/**
+ * ARCHIVED members who once had an account — the opt-in extension of
+ * `loggableMembers` for an admin correcting the hours of someone who has left.
+ * Accountless pre-Everhour profiles stay out for the same reason as above.
+ */
+export function archivedMembers(profiles: Profile[]): Profile[] {
+  return profiles.filter((p) => !p.active && p.hasAccount !== false).sort((a, b) => a.name.localeCompare(b.name));
+}

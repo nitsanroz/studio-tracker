@@ -107,6 +107,14 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
       date?: string,
       userId?: string,
     ): Promise<TimeEntry | null> => {
+      // ⚠️ EVERY ENTRY NEEDS A DESCRIPTION — enforced HERE, the one door every
+      // logging surface goes through, not only in each form. Not a DB CHECK:
+      // 6,000+ Everhour-era rows have none, and a constraint would also refuse
+      // ordinary edits to them (the Keys write-down shrinks those rows).
+      if (!description.trim()) {
+        methodsRef.current?.showNotice("Add a description — what did you do in those hours?");
+        return null;
+      }
       const { data, error } = await counting(
         supabase
           .from("time_entries")
@@ -199,6 +207,12 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
 
   const updateTimeEntry = useCallback(
     (entryId: string, patch: TimeEntryPatch) => {
+      // An edit may not CLEAR a description (see addTimeEntry). Editing only the
+      // minutes of an old Everhour row that never had one stays allowed.
+      if ("description" in patch && !(patch.description ?? "").trim()) {
+        methodsRef.current?.showNotice("A time entry needs a description — it wasn't changed.");
+        return;
+      }
       // full row if loaded; the slim sums row covers minutes/date-only patches
       const before =
         timeEntries.find((e) => e.id === entryId) ??

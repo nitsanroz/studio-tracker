@@ -31,10 +31,16 @@ export function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id
   }
 
   function save() {
-    if (minutes == null || minutes <= 0) return;
-    updateTimeEntry(entry.id, { minutes, description });
+    // A description can be edited but never emptied; an untouched blank one
+    // (an old Everhour row) still lets the minutes be fixed.
+    const changed = description !== entry.description;
+    if (minutes == null || minutes <= 0 || (changed && !description.trim())) return;
+    updateTimeEntry(entry.id, changed ? { minutes, description: description.trim() } : { minutes });
     setEditing(false);
   }
+
+  // Emptied by the person editing (an untouched blank from Everhour is allowed).
+  const blankDesc = description !== entry.description && !description.trim();
 
   if (editing) {
     return (
@@ -58,12 +64,14 @@ export function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && save()}
-          placeholder="Description"
-          className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-brand"
+          placeholder="What did you do? (required)"
+          className={`bidi-auto min-w-0 flex-1 rounded-md border bg-surface px-2 py-1 text-sm outline-none focus:border-brand ${
+            blankDesc ? "border-danger" : "border-border"
+          }`}
         />
         <button
           onClick={save}
-          disabled={minutes == null || minutes <= 0}
+          disabled={minutes == null || minutes <= 0 || blankDesc}
           className="shrink-0 rounded-md bg-brand px-2 py-1 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
         >
           Save
