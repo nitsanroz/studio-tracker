@@ -564,7 +564,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // reads as "stalled, then gave up". Two animation frames = one painted
       // frame at 100%, ~30ms, rather than a fixed delay on every boot.
       bar.done();
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // ⚠️ Raced with a timeout: a hidden tab runs no animation frames at all,
+      // so a boot started in a background tab sat at 100% until it was shown.
+      await Promise.race([
+        new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+        new Promise((r) => setTimeout(r, 100)),
+      ]);
       if (cancelled) return;
       setLoading(false);
     })().catch((e) => {

@@ -402,6 +402,14 @@ function MoveEntriesModal({
  *  longer leaves it mounted and invisible, swallowing clicks. */
 const PANE_MS = 260;
 
+/** Width for the budget field: fits "285", "197.5" or "1234.5" without slack. */
+function budgetWidth(hours: number | null): string {
+  const text = hours == null ? "" : String(hours);
+  const digits = Math.max(1, text.replace(/\D/g, "").length);
+  const point = text.includes(".") ? 0.45 : 0;
+  return `calc(${digits + point}ch + 8px)`;
+}
+
 export function TaskPanel() {
   const {
     openTaskId,
@@ -890,11 +898,18 @@ export function TaskPanel() {
                 </span>
                 <span className="text-2xl text-faint">/</span>
                 {canEditFields ? (
+                  // ⚠️ Sized to its own value, not a fixed `w-16`: at 64px a
+                  // 24px "11.25" was cropped to "11.2", and budgets run to 285h.
+                  // `ch` is the width of a "0" and the digits are tabular, so
+                  // one ch per digit, a little for the point, plus the box's
+                  // own padding and border. The spinner is hidden because it
+                  // ate a third of the box.
                   <input
                     type="number"
                     min={0}
                     step={0.5}
-                    className="w-16 rounded-md border border-transparent bg-transparent text-2xl font-semibold tabular-nums hover:border-border focus:border-brand focus:outline-none"
+                    style={{ width: budgetWidth(task.estimateHours) }}
+                    className="rounded-md border border-transparent bg-transparent px-0.5 text-2xl font-semibold tabular-nums [appearance:textfield] hover:border-border focus:border-brand focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     value={task.estimateHours ?? ""}
                     placeholder="–"
                     title="Budget in hours"
@@ -905,7 +920,7 @@ export function TaskPanel() {
                     }
                   />
                 ) : (
-                  <span className="w-16 text-2xl font-semibold tabular-nums">
+                  <span className="text-2xl font-semibold tabular-nums">
                     {task.estimateHours ?? "–"}
                   </span>
                 )}

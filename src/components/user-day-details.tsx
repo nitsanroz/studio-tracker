@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trash2, Users } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatFeedDate, formatHours, formatHoursShort, parseDuration } from "@/lib/format";
-import { archivedMembers, loggableMembers } from "@/lib/members";
 import { Avatar, ClientChip, Modal, ModalClose, TaskNameLink } from "./ui";
 import { LogTimeForm } from "./log-time-form";
+import { MemberSelect } from "./member-select";
 import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
 
@@ -120,7 +120,7 @@ export function UserDayDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, profiles, timeEntries, loadDayEntries, currentUserId } = useData();
+  const { tasks, clients, profiles, timeEntries, loadDayEntries } = useData();
   const [targetUserId, setTargetUserId] = useState(userId);
   const [targetDate, setTargetDate] = useState(date);
   /**
@@ -133,14 +133,6 @@ export function UserDayDetails({
   const [fetched, setFetched] = useState<{ key: string; rows: TimeEntry[] } | null>(null);
   const profile = profiles.find((p) => p.id === targetUserId) ?? null;
   const isAdmin = useIsAdmin();
-  const members = useMemo(() => loggableMembers(profiles, currentUserId), [profiles, currentUserId]);
-  const archived = useMemo(() => archivedMembers(profiles), [profiles]);
-  /**
-   * Archived members are opt-in: a late correction for someone who has left
-   * is rare, and 20+ former names would bury the current team. Opened on an
-   * archived person's day, the list includes them from the start.
-   */
-  const [showArchived, setShowArchived] = useState(() => archived.some((p) => p.id === userId));
 
   const dayKey = `${targetUserId}|${targetDate}`;
   const ready = fetched?.key === dayKey;
@@ -178,57 +170,12 @@ export function UserDayDetails({
               // from "Add new hours" lands on today/self and almost always needs
               // to change one of them.
               <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                <select
+                <MemberSelect
                   value={targetUserId}
-                  onChange={(e) => setTargetUserId(e.target.value)}
+                  onChange={setTargetUserId}
                   title="Whose hours these are"
-                  // ⚠️ A fixed width: a native select sizes itself to its widest
-                  // option, so adding the archived names would make it jump.
-                  className="w-44 truncate rounded-md border border-border bg-surface px-1.5 py-1 text-sm font-medium"
-                >
-                  {members.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.id === currentUserId ? "Me" : p.name}
-                    </option>
-                  ))}
-                  {showArchived && archived.length > 0 && (
-                    <optgroup label="Archived">
-                      {archived.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-                {archived.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Hiding the list while an archived person is chosen would
-                      // leave the select showing a value it no longer offers.
-                      if (showArchived && archived.some((p) => p.id === targetUserId)) setTargetUserId(currentUserId);
-                      setShowArchived((v) => !v);
-                    }}
-                    aria-pressed={showArchived}
-                    aria-label={showArchived ? "Hide archived members" : "Include archived members"}
-                    title={showArchived ? "Hide archived members" : "Include archived members — for correcting the hours of someone who has left"}
-                    className={`flex size-7 items-center justify-center rounded-md transition-colors ${
-                      showArchived ? "bg-brand-soft text-brand" : "text-faint hover:bg-background hover:text-foreground"
-                    }`}
-                  >
-                    <span className="relative flex">
-                      <Users size={15} strokeWidth={1.75} />
-                      {/* Off: a diagonal slash through the group, the usual "hidden" mark. */}
-                      {!showArchived && (
-                        <span
-                          aria-hidden
-                          className="absolute left-1/2 top-1/2 h-px w-[19px] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current"
-                        />
-                      )}
-                    </span>
-                  </button>
-                )}
+                  className="rounded-md border border-border bg-surface px-1.5 py-1 text-sm font-medium"
+                />
                 <input
                   type="date"
                   value={targetDate}

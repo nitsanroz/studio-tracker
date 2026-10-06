@@ -6,10 +6,10 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { loggableMembers } from "@/lib/members";
 import { formatHoursShort, parseDuration } from "@/lib/format";
 import { Modal, ModalClose } from "./ui";
 import { LogTimeForm } from "./log-time-form";
+import { MemberSelect } from "./member-select";
 import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
 
@@ -42,7 +42,6 @@ export function TimeEntryModal({
 }) {
   const { profiles, currentUserId, updateTimeEntry, deleteTimeEntry } = useData();
   const isAdmin = useIsAdmin();
-  const members = loggableMembers(profiles, currentUserId);
 
   const [duration, setDuration] = useState(entry ? formatHoursShort(entry.minutes) : "");
   const [description, setDescription] = useState(entry?.description ?? "");
@@ -171,13 +170,7 @@ export function TimeEntryModal({
         <label className="flex items-center gap-3 text-sm">
           <span className="w-20 shrink-0 text-muted">Member</span>
           {isAdmin && editable ? (
-            <select value={userId} onChange={(e) => setUserId(e.target.value)} className={input}>
-              {members.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.id === currentUserId ? "Me" : p.name}
-                </option>
-              ))}
-            </select>
+            <MemberSelect value={userId ?? currentUserId} onChange={setUserId} className={input} />
           ) : (
             <span className="px-1 py-1.5">
               {profiles.find((p) => p.id === entry.userId)?.name ??

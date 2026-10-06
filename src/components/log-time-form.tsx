@@ -14,9 +14,9 @@
 
 import { useState } from "react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { loggableMembers } from "@/lib/members";
 import { parseDuration, toISODate } from "@/lib/format";
 import { TaskAutocomplete } from "./task-autocomplete";
+import { MemberSelect } from "./member-select";
 import type { TimeEntry } from "@/lib/types";
 
 /** Thumb-sized shortcuts for the durations the studio actually logs most. */
@@ -42,9 +42,8 @@ export function LogTimeForm({
   autoFocus?: boolean;
   onAdded?: (entry: TimeEntry | null) => void;
 }) {
-  const { addTimeEntry, profiles, currentUserId } = useData();
+  const { addTimeEntry, currentUserId } = useData();
   const isAdmin = useIsAdmin();
-  const members = loggableMembers(profiles, currentUserId);
 
   const [taskId, setTaskId] = useState<string | null>(fixedTaskId ?? null);
   const [duration, setDuration] = useState("");
@@ -146,18 +145,9 @@ export function LogTimeForm({
         {/* Admins log for whoever actually did the work, on whatever day they did
             it. Members get neither control — they can only log for themselves. */}
         {isAdmin && !fixedUserId && (
-          <select
-            value={forUserId}
-            onChange={(e) => setForUserId(e.target.value)}
-            title="Who these hours are for"
-            className={input}
-          >
-            {members.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id === currentUserId ? "Me" : p.name}
-              </option>
-            ))}
-          </select>
+          // `w-32`: with the archived toggle beside it, the 176px default
+          // pushed the date onto its own line in the Log time popup.
+          <MemberSelect value={forUserId} onChange={setForUserId} className={input} width="w-32" />
         )}
         {isAdmin && !fixedDate && (
           <input
