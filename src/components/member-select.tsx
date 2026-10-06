@@ -66,6 +66,7 @@ export function MemberSelect({
       {archived.length > 0 && (
         <button
           type="button"
+          // 44px on a phone (the app's tap floor since v1.15.0), 28px from md up.
           onClick={() => {
             // Hiding the list while an archived person is chosen would leave the
             // select showing a value it no longer offers.
@@ -79,7 +80,7 @@ export function MemberSelect({
               ? "Hide archived members"
               : "Include archived members — for correcting the hours of someone who has left"
           }
-          className={`flex size-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+          className={`flex size-11 shrink-0 items-center justify-center rounded-md transition-colors md:size-7 ${
             showArchived ? "bg-brand-soft text-brand" : "text-faint hover:bg-background hover:text-foreground"
           }`}
         >

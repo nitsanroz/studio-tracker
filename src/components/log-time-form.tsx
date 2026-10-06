@@ -145,9 +145,10 @@ export function LogTimeForm({
         {/* Admins log for whoever actually did the work, on whatever day they did
             it. Members get neither control — they can only log for themselves. */}
         {isAdmin && !fixedUserId && (
-          // `w-32`: with the archived toggle beside it, the 176px default
-          // pushed the date onto its own line in the Log time popup.
-          <MemberSelect value={forUserId} onChange={setForUserId} className={input} width="w-32" />
+          // Narrower than the 176px default so the date stays on this line: `w-32`
+          // in the 448px Log time popup, `w-28` on a phone where the archived
+          // toggle grows to its 44px tap size.
+          <MemberSelect value={forUserId} onChange={setForUserId} className={input} width="w-28 md:w-32" />
         )}
         {isAdmin && !fixedDate && (
           <input

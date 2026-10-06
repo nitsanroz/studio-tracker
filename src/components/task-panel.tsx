@@ -927,7 +927,9 @@ export function TaskPanel() {
                 <span className="self-end pb-1 text-xs text-muted">h</span>
               </span>
               {task.estimateHours != null && (
-                <span className="min-w-0 flex-1">
+                // Desktop only: on a phone the red/blue figure already says it,
+                // and beside a four-digit "1234.75 / 1234.5h" the bar ran off the pane.
+                <span className="hidden min-w-0 flex-1 md:block">
                   {/* label="none": the numbers are already spelled out above it */}
                   <BudgetBar
                     doneMinutes={doneMinutes}
