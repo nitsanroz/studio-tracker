@@ -45,7 +45,7 @@ appended after a real token silently shadows it and every API call 401s.
 | `backfill-from-finance.mjs` | **done once** | +18,509h from the billing record. Top-up not replace (`max(0, finance − already)` per client-year), so a re-run now plans 0.02h. |
 | `create-former-staff.mjs` | **done once** | Created 24 accountless profiles and relinked their entries/comments. |
 | `merge-renamed-clients.mjs` | **done once** | Double → Donsplus. |
-| `merge-finance-client-names.mjs` | **⚠️ PENDING** | The Ravin monthly rename never ran — the classifier blocked the write. Re-run with `--apply`. Its `client_rates` rows *were* renamed. |
+| `merge-finance-client-names.mjs` | **done once** | Ravin merged 2026-10-12 (4 "Raven" Web-sub-account rows + 1 rate row; all re-locked `final`). A re-run finds nothing to rename. |
 | `import-finance-2016.mjs` | **done once** | 2016 was absent from the finance DB entirely. Insert-only against locked finance tables. |
 | `restore-unsorted.mjs` | **break-glass** | Rebuilt 627 tasks from the committed `data/` dumps after the incident. Inserts/upserts only, dry-run by default. Harmless to run, meaningless unless data was lost. |
 
