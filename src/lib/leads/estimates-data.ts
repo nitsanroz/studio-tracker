@@ -26,6 +26,7 @@ import {
   type Range,
   type ServiceItem,
 } from "./estimate";
+import type { ImportedEstimate, ImportedItem } from "./estimate-import";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v : "");
@@ -273,6 +274,108 @@ async function assertEditable(estimateId: string) {
 }
 
 /** v1 of a lead's estimate: studio rate and VAT, one empty phase. */
+const defaultIntro = (company: string, rate: number) =>
+  `Hi,\n\nThanks again for the conversation. Below is our estimated scope, pricing and timeline for ${company}.\n\nWe work on an hourly basis (${rate} NIS + VAT per hour); ranges are refined once content is final.`;
+
+async function nextVersion(leadId: string): Promise<number> {
+  const { data: last } = await createClient()
+    .from("lead_estimates")
+    .select("version")
+    .eq("lead_id", leadId)
+    .order("version", { ascending: false })
+    .limit(1);
+  return (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
+}
+
+/**
+ * A new draft built from an estimate worked out in a Claude conversation and
+ * read by `parseImport` (estimate-import.ts). Same shape as a blank or copied
+ * estimate: the studio's current rate and VAT, a draft, positions per container.
+ *
+ * Items whose name matches a library item (case-insensitive) are linked to it, so
+ * the library's "Actual (avg)" keeps learning from imported estimates too.
+ * ⚠️ `timeframe` is written only when set — see `copyInto` for why.
+ * Not transactional, like `copyInto`: a failure part way leaves a partial DRAFT,
+ * which is visible and deletable, never a published or approved one.
+ */
+export async function createEstimateFromImport(
+  leadId: string,
+  company: string,
+  imp: ImportedEstimate,
+  actorId: string | null,
+): Promise<string> {
+  const sb = createClient();
+  const [pricing, library] = await Promise.all([loadPricing(), loadLibrary()]);
+  const libByName = new Map(library.map((i) => [i.name.trim().toLowerCase(), i.id]));
+  const { data, error } = await sb
+    .from("lead_estimates")
+    .insert({
+      lead_id: leadId,
+      version: await nextVersion(leadId),
+      rate: pricing.rate,
+      vat_percent: pricing.vatPercent,
+      discount_percent: imp.discountPercent ?? 0,
+      intro: imp.intro ?? defaultIntro(company, pricing.rate),
+      closing: imp.closing,
+      change_note: "Imported from a Claude conversation",
+      created_by: actorId,
+    })
+    .select("id")
+    .single();
+  fail("create the estimate", error);
+  const id = (data as { id: string }).id;
+  const row = (it: ImportedItem, phaseId: string, groupId: string | null, position: number) => ({
+    estimate_id: id,
+    phase_id: phaseId,
+    group_id: groupId,
+    service_item_id: libByName.get(it.name.trim().toLowerCase()) ?? null,
+    name: it.name,
+    description: it.description,
+    category: it.category,
+    kind: it.kind,
+    min_hours: it.minHours,
+    max_hours: it.maxHours,
+    percent: it.percent,
+    percent_of: it.percentOf,
+    optional: it.optional,
+    alt_group: it.chooseOne,
+    chosen: it.chosen,
+    position,
+  });
+  for (const [pi, p] of imp.phases.entries()) {
+    const { data: np, error: pe } = await sb
+      .from("estimate_phases")
+      .insert({
+        estimate_id: id,
+        name: p.name,
+        description: p.description,
+        position: pi + 1,
+        ...(p.timeframe ? { timeframe: p.timeframe } : {}),
+      })
+      .select("id")
+      .single();
+    fail("add a section", pe);
+    const phaseId = (np as { id: string }).id;
+    const lines: ReturnType<typeof row>[] = [];
+    for (const [gi, g] of p.groups.entries()) {
+      const { data: ng, error: ge } = await sb
+        .from("estimate_groups")
+        .insert({ estimate_id: id, phase_id: phaseId, name: g.name, position: gi + 1 })
+        .select("id")
+        .single();
+      fail("add a group", ge);
+      const groupId = (ng as { id: string }).id;
+      g.items.forEach((it, k) => lines.push(row(it, phaseId, groupId, k + 1)));
+    }
+    p.items.forEach((it, k) => lines.push(row(it, phaseId, null, k + 1)));
+    if (lines.length) {
+      const { error: le } = await sb.from("estimate_lines").insert(lines);
+      fail("add the items", le);
+    }
+  }
+  return id;
+}
+
 export async function createEstimate(leadId: string, company: string, actorId: string | null): Promise<string> {
   const sb = createClient();
   const pricing = await loadPricing();
@@ -290,7 +393,7 @@ export async function createEstimate(leadId: string, company: string, actorId: s
       version,
       rate: pricing.rate,
       vat_percent: pricing.vatPercent,
-      intro: `Hi,\n\nThanks again for the conversation. Below is our estimated scope, pricing and timeline for ${company}.\n\nWe work on an hourly basis (${pricing.rate} NIS + VAT per hour); ranges are refined once content is final.`,
+      intro: defaultIntro(company, pricing.rate),
       created_by: actorId,
     })
     .select("id")

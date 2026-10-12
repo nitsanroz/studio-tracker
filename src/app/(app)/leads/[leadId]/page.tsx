@@ -26,8 +26,10 @@ import {
   CheckCircle2,
   ChevronLeft,
   ExternalLink,
+  FilePlus2,
   FileText,
   Globe,
+  History,
   Lightbulb,
   Mail,
   Phone,
@@ -97,6 +99,7 @@ import { SettingsPopupButton } from "@/components/leads/settings-popup";
 import {
   copyEstimate,
   createEstimate,
+  createEstimateFromImport,
   loadEstimateSources,
   loadEstimates,
   type EstimateSource,
@@ -105,6 +108,8 @@ import {
 } from "@/lib/leads/estimates-data";
 import { Modal, ModalClose } from "@/components/ui";
 import { AttentionTip } from "@/components/leads/attention-tip";
+import { EstimateImportPanel } from "@/components/leads/estimate-import-panel";
+import type { ImportedEstimate } from "@/lib/leads/estimate-import";
 import { DEFAULT_NUDGES, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
 import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 
@@ -1302,6 +1307,9 @@ function NewEstimateModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [hover, setHover] = useState<{ src: EstimateSource; rect: DOMRect } | null>(null);
+  // "From a Claude conversation": the estimate the import panel read, or null while
+  // nothing valid has been pasted. The panel reads; this modal is what writes.
+  const [imported, setImported] = useState<ImportedEstimate | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -1331,7 +1339,9 @@ function NewEstimateModal({
       const id =
         pick === "blank"
           ? await createEstimate(leadId, company, currentUserId)
-          : await copyEstimate(pick, leadId, company, currentUserId);
+          : pick === "import"
+            ? await createEstimateFromImport(leadId, company, imported!, currentUserId)
+            : await copyEstimate(pick, leadId, company, currentUserId);
       router.push(`/leads/${leadId}/estimates/${id}`);
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : "Could not create the estimate.");
@@ -1339,35 +1349,90 @@ function NewEstimateModal({
     }
   }
 
-  const option = (value: string, title: React.ReactNode, sub?: string) => (
+  // "Based on past estimates" is a mode: `pick` is "copy" until a version is chosen,
+  // then that version's id. The list of versions only shows in that mode (Nitsan).
+  const copying = pick !== "blank" && pick !== "import";
+  const option = (
+    value: string,
+    title: React.ReactNode,
+    sub?: string,
+    o: { checked?: boolean; onSelect?: () => void; name?: string } = {},
+  ) => {
+    const checked = o.checked ?? pick === value;
+    return (
     <label
       key={value}
       className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-[13px] ${
-        pick === value ? "border-brand bg-brand-soft/40" : "border-border hover:border-brand/50"
+        checked ? "border-brand bg-brand-soft/40" : "border-border hover:border-brand/50"
       }`}
     >
-      <input type="radio" name="est-source" checked={pick === value} onChange={() => setPick(value)} className="mt-1" />
+      <input
+        type="radio"
+        name={o.name ?? "est-source"}
+        checked={checked}
+        onChange={o.onSelect ?? (() => setPick(value))}
+        className="mt-1"
+      />
       <span className="min-w-0 flex-1">
         <span className="block">{title}</span>
         {sub && <span className="block truncate text-[11.5px] text-muted">{sub}</span>}
       </span>
     </label>
-  );
+    );
+  };
 
   return (
     <Modal onClose={onClose} width="lg" align="center" className="max-h-[85vh] overflow-y-auto" labelledBy="new-est-title">
-      <div className="mb-3 flex items-center gap-2">
-        <h3 id="new-est-title" className="text-sm font-semibold">
-          New estimate for {company}
-        </h3>
-        <span className="ml-auto">
-          <ModalClose onClose={onClose} />
-        </span>
+      {/* The three ways to start, pinned at the top while the content below scrolls,
+          and drawn as cards so they read as the CHOICE rather than as one more row of
+          the version list underneath (Nitsan). `-mx-4 -mt-4` bleeds the bar over the
+          Modal's p-4 so content scrolling under it never shows at its edges. */}
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-3 border-b border-border bg-surface px-4 pb-3 pt-4">
+        <div className="mb-3 flex items-center gap-2">
+          <h3 id="new-est-title" className="text-sm font-semibold">
+            New estimate for {company}
+          </h3>
+          <span className="ml-auto">
+            <ModalClose onClose={onClose} />
+          </span>
+        </div>
+        <div role="radiogroup" aria-label="How to start" className="grid grid-cols-3 gap-2">
+          {(
+            [
+              { key: "blank", Icon: FilePlus2, title: "Blank", sub: "Build it from the library" },
+              { key: "import", Icon: Sparkles, title: "From Claude", sub: "Paste a conversation's estimate" },
+              { key: "copy", Icon: History, title: "Past estimates", sub: "Start from an earlier version" },
+            ] as const
+          ).map(({ key, Icon, title, sub }) => {
+            const on = key === "copy" ? copying : pick === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => (key === "copy" ? !copying && setPick("copy") : setPick(key))}
+                className={`flex flex-col items-start gap-1.5 rounded-xl border-2 p-3 text-left transition-colors ${
+                  on ? "border-brand bg-brand text-white" : "border-border bg-background/60 hover:border-brand/40 hover:bg-brand-soft/40"
+                }`}
+              >
+                <Icon size={18} strokeWidth={1.75} aria-hidden className={on ? "text-white" : "text-brand"} />
+                <span className="text-[13.5px] font-medium leading-tight">{title}</span>
+                <span className={`text-[11.5px] leading-snug ${on ? "text-white/80" : "text-muted"}`}>{sub}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <div className="flex flex-col gap-2">
-        {option("blank", <span className="font-medium">Blank</span>, "One empty phase; add lines from the library.")}
-        {sources === null && <p className="text-[12.5px] text-faint">Loading estimates…</p>}
-        {groups.map((g) =>
+        {pick === "import" && <EstimateImportPanel company={company} onParsed={setImported} />}
+        {pick === "blank" && (
+          <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-[12.5px] text-muted">
+            One empty section to start; add items from the service library.
+          </p>
+        )}
+        {copying && sources === null && <p className="text-[12.5px] text-faint">Loading estimates…</p>}
+        {copying && groups.map((g) =>
           g.rows.length ? (
             <div key={g.title} className="mt-2">
               <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-faint">
@@ -1402,6 +1467,8 @@ function NewEstimateModal({
                           <span className="block text-[11.5px] tabular-nums text-muted">{fmtHours(r.hours)}</span>
                         </span>
                       </span>,
+                      undefined,
+                      { name: "est-copy-source" },
                     )}
                   </div>
                 ))}
@@ -1409,11 +1476,11 @@ function NewEstimateModal({
             </div>
           ) : null,
         )}
-        {sources?.length === 0 && (
+        {copying && sources?.length === 0 && (
           <p className="mt-1 text-[12px] text-faint">No other estimates yet — once there are, any of them can be the starting point.</p>
         )}
       </div>
-      {pick !== "blank" && (
+      {copying && (
         <p className="mt-3 text-[11.5px] text-muted">
           Copies every phase, line, option and the texts into a new draft. The other company&rsquo;s name in the texts
           is replaced with {company}; check the greeting.
@@ -1427,10 +1494,10 @@ function NewEstimateModal({
         </button>
         <button
           onClick={() => void start()}
-          disabled={busy}
+          disabled={busy || (pick === "import" && !imported) || pick === "copy"}
           className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-50"
         >
-          {busy ? "Creating…" : pick === "blank" ? "Start blank" : "Copy and edit"}
+          {busy ? "Creating…" : pick === "blank" ? "Start blank" : pick === "import" ? "Create draft" : "Copy and edit"}
         </button>
       </div>
     </Modal>
