@@ -2,7 +2,7 @@
 
 Most of this directory is **archaeology**: one-off scripts that reconstructed
 ~86,000 hours of pre-Everhour history in July 2026. They have already run. The
-only complete account of what each one did is the working log in `CLAUDE.md`,
+only complete account of what each one did is the working log in `docs/working-log.md`,
 which is long, so this table is the short answer to "can I run this?".
 
 Read the status column before running anything. Re-running a **done-once**

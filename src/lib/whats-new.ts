@@ -1,6 +1,6 @@
 // Release notes the team actually sees, in the app, once per version.
 //
-// The working log in CLAUDE.md is written for whoever picks the project up next
+// The working log (docs/working-log.md) is written for whoever picks the project up next
 // — it is long, technical, and full of things nobody logging their hours needs
 // to know. This is the other half: two or three sentences per release about
 // what CHANGED FOR YOU, and nothing else.
