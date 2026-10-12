@@ -17,7 +17,7 @@
 // unreadable during `dragover` — the same reason as the client table's.
 
 import { useState, type DragEvent } from "react";
-import { ChevronDown, ChevronRight, FolderPlus, GripVertical, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronRight, FolderPlus, GripVertical, Plus, Trash2 } from "lucide-react";
 import { askConfirm } from "@/components/confirm-dialog";
 import {
   addGroup,
@@ -205,11 +205,14 @@ export function EstimateScope({
               moveLine(e.id, d.id, { phaseId, groupId, beforeId: edge === "before" ? l.id : nextAfter(container, l.id, d.id) }),
             ),
         )}
-        className={`group/row ${COLS} items-start border-t border-border/60 bg-surface py-2 ${mark(key)} ${outOfTotal ? "opacity-60" : ""}`}
+        className={`group/row ${COLS} mt-1.5 items-start rounded-lg bg-background px-2 py-1.5 ${mark(key)} ${outOfTotal ? "opacity-60" : ""}`}
       >
         {locked ? <span /> : <Grip label={`Move ${l.name}`} onStart={begin({ kind: "line", id: l.id })} onEnd={end} />}
         <div className={`min-w-0 ${groupId ? "pl-5" : ""}`}>
-          <div className="flex items-center gap-1.5">
+          {/* Two lines per item, not three: the per-item switches share the description's
+              line instead of a row of their own (Nitsan: "they dont need to be that high
+              boxes"). */}
+          <div className="flex items-center gap-2">
             {l.altGroup && (
               <input
                 type="radio"
@@ -224,29 +227,36 @@ export function EstimateScope({
               value={l.name}
               disabled={locked}
               onCommit={(v) => void run(() => updateLine(e.id, l.id, { name: v ?? "Untitled" }))}
-              className="w-full text-[13.5px] font-medium"
+              className="min-w-0 flex-1 text-[15px] font-medium"
             />
           </div>
-          <TextField
-            value={l.description}
-            disabled={locked}
-            multiline
-            placeholder={locked ? "" : "Client-facing description (optional)"}
-            onCommit={(v) => void run(() => updateLine(e.id, l.id, { description: v }))}
-            className="mt-0.5 w-full resize-y text-[12px] text-muted"
-          />
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-[11.5px] text-faint">
-            <label className="flex items-center gap-1">
+          {/* Description with the two per-item switches at its right end, so the NAME line
+              is the name alone at full width (a long name was cut off beside them). */}
+          <div className="flex items-start gap-2">
+            <TextField
+              value={l.description}
+              disabled={locked}
+              multiline
+              // One line unless the text needs more (up to 4); resize-y stays for longer notes.
+              rows={Math.min(4, Math.max(1, (l.description ?? "").split("\n").length + Math.floor((l.description ?? "").length / 110)))}
+              placeholder={locked ? "" : "Client-facing description (optional)"}
+              onCommit={(v) => void run(() => updateLine(e.id, l.id, { description: v }))}
+              className="min-w-0 flex-1 resize-y text-[12px] leading-snug text-muted"
+            />
+            <label className="flex shrink-0 items-center gap-1 pt-0.5 text-[11.5px] text-faint">
               <input
                 type="checkbox"
                 checked={l.optional}
                 disabled={locked}
                 onChange={(ev) => void run(() => updateLine(e.id, l.id, { optional: ev.target.checked }))}
               />
-              Optional extra
+              Optional
             </label>
-            <label className="flex items-center gap-1" title="Items with the same option group are 'choose one'">
-              Choose-one group
+            <label
+              className="flex shrink-0 items-center gap-1 pt-0.5 text-[11.5px] text-faint"
+              title="Items with the same choose-one group are alternatives — the client picks one"
+            >
+              Choose-one
               <TextField
                 value={l.altGroup}
                 disabled={locked}
@@ -262,11 +272,13 @@ export function EstimateScope({
                     }),
                   )
                 }
-                className="w-24 text-[11.5px]"
+                className="w-20 text-[11.5px]"
               />
             </label>
-            {actual !== undefined && <span className="text-[#12693d]">Actual: {actual.toFixed(1)} h logged</span>}
           </div>
+          {actual !== undefined && (
+            <div className="text-[11.5px] text-[#12693d]">Actual: {actual.toFixed(1)} h logged</div>
+          )}
         </div>
         <select
           value={l.category}
@@ -367,6 +379,19 @@ export function EstimateScope({
                 onCommit={(v) => void run(() => updatePhase(e.id, p.id, { name: v ?? "Phase" }))}
                 className="min-w-0 flex-1 text-[15px] font-semibold"
               />
+              {/* Shown beside the section title on the client page (0053). */}
+              {(!locked || p.timeframe) && (
+                <label className="flex shrink-0 items-center gap-1 text-[12.5px] text-muted" title="Estimated timeframe, shown to the client beside this section">
+                  <CalendarDays size={13} aria-hidden />
+                  <TextField
+                    value={p.timeframe}
+                    disabled={locked}
+                    placeholder="Timeframe, e.g. 2–3 weeks"
+                    onCommit={(v) => void run(() => updatePhase(e.id, p.id, { timeframe: v }))}
+                    className="w-44 text-[12.5px]"
+                  />
+                </label>
+              )}
               <span className="text-[12.5px] tabular-nums text-muted">
                 {fmtHours(sub)} · {money(sub)}
               </span>
@@ -391,7 +416,7 @@ export function EstimateScope({
               onCommit={(v) => void run(() => updatePhase(e.id, p.id, { description: v }))}
               className="mt-1 w-full resize-y text-[12.5px] text-muted"
             />
-            <div className={`mt-2 ${COLS} text-[11px] uppercase tracking-wide text-faint`}>
+            <div className={`mt-2 ${COLS} px-2 text-[11px] uppercase tracking-wide text-faint`}>
               <span />
               <span>Item</span>
               <span>Category</span>

@@ -186,7 +186,7 @@ export default function EstimatePage() {
             <button
               onClick={async () => {
                 const link = e.shareToken
-                  ? " The client link keeps showing the approved version until you re-publish."
+                  ? " The link you sent keeps showing the approved version; publishing again creates a new link."
                   : "";
                 const ok = await askConfirm(
                   `Edit v${e.version}? It goes back to draft and needs approving again.${link}`,
@@ -215,14 +215,24 @@ export default function EstimatePage() {
           )}
           {locked && (
             <button
-              onClick={() =>
+              onClick={async () => {
+                // Every publish is a new link (0053), so a re-publish says so: the
+                // link already sent keeps showing the earlier offer.
+                if (
+                  e.shareToken &&
+                  !(await askConfirm(
+                    "Publish a new link? The link you already sent keeps showing the earlier offer — send the client the new one.",
+                    { action: "Publish new link" },
+                  ))
+                )
+                  return;
                 void run(async () => {
-                  await publishEstimate(e.id, company);
-                })
-              }
+                  await publishEstimate(e.id, company, currentUserId);
+                });
+              }}
               className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white"
             >
-              <ExternalLink size={14} /> {e.shareToken ? "Re-publish" : "Publish client link"}
+              <ExternalLink size={14} /> {e.shareToken ? "Publish new link" : "Publish client link"}
             </button>
           )}
           {e.status === "draft" && (
@@ -318,18 +328,11 @@ export default function EstimatePage() {
 
           <EstimateScope detail={detail} t={t} library={activeLib} locked={locked} run={run} />
 
+          {/* No "Timeline" field any more (Nitsan, 2026-10-12): each section carries its own
+              timeframe beside its title on the client page. `lead_estimates.timeline`
+              keeps whatever older estimates hold; nothing renders it. */}
           <div className={CARD}>
-            <div className={LABEL}>Timeline (client-facing)</div>
-            <TextField
-              value={e.timeline}
-              disabled={locked}
-              multiline
-              rows={4}
-              placeholder={locked ? "" : "Phase 1, about 6 weeks: …"}
-              onCommit={(v) => void run(() => updateEstimate(e.id, { timeline: v }))}
-              className="mt-1 w-full resize-y text-[13px] leading-relaxed"
-            />
-            <div className={`${LABEL} mt-3`}>Closing</div>
+            <div className={LABEL}>Closing</div>
             <TextField
               value={e.closing}
               disabled={locked}

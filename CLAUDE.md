@@ -57,7 +57,7 @@ These four gates (tsc, eslint, test, build) are the release checklist in **Deplo
 - **UI conventions:** pages cap at `max-w-[1500px]`; admin nav items render last under a divider; English UI with Hebrew/RTL content via `.bidi-auto` (`unicode-bidi: plaintext`); icons = lucide-react 20px strokeWidth 1.75; weekly-plan shades Fri+Sat as weekend.
 
 ## Migrations (`supabase/migrations/`)
-**All of 0001–0052 are applied** (0018–0052 spot-checked against the live schema 2026-10-12). Long-form notes per migration: [`docs/migrations.md`](docs/migrations.md), each file's header comment, and the working log.
+**All of 0001–0053 are applied** (0018–0053 checked against the live schema 2026-10-12). Long-form notes per migration: [`docs/migrations.md`](docs/migrations.md), each file's header comment, and the working log.
 
 | # | What | Note |
 |---|---|---|
@@ -80,6 +80,7 @@ These four gates (tsc, eslint, test, build) are the release checklist in **Deplo
 | 0039–0041 | Candidate tracking; application scoring; score 0 allowed | All admin-only |
 | 0042–0049 | Leads, Gmail sync, suggestions, estimates, stage look, soft delete, seen, estimate groups | All admin-only except `client_contacts` (read all) |
 | 0050–0052 | Overview files; `entry_sums_packed()`; `time_entries.traced_from` | |
+| 0053 | `estimate_publications` (every publish = its own link + frozen snapshot); `estimate_phases.timeframe` | `lead_estimates.share_token`/`published_snapshot` mirror the LATEST publication |
 
 - **Migrations are applied by the user in the Supabase SQL editor** — not by Claude. When you add one, tell the user to run it (and note whether it must run *before* deploying). A new **task** column must be added to the 0011 trigger's list, or it is member-writable.
 - **`data/*.sql` are NOT migrations and must never be numbered like them** — they are one-off data scripts run in the SQL editor, named for what they do (e.g. `data/task-titles-cleanup.sql`). Numbering one `0019_…` once collided with the real 0019.

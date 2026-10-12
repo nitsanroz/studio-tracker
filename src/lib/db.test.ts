@@ -11,6 +11,12 @@ describe("isMissingSchema", () => {
     expect(isMissingSchema(new DbError("links", "relation does not exist", "42P01"))).toBe(true);
   });
 
+  // What PostgREST actually returns for a table that does not exist yet — 42P01 above
+  // never reaches the client through it. Measured against the live project 2026-10-12.
+  it("recognises PostgREST's missing-table code", () => {
+    expect(isMissingSchema(new DbError("estimate_publications", "Could not find the table", "PGRST205"))).toBe(true);
+  });
+
   /**
    * ⚠️ The one this suite exists for. Postgres raises 42703 for a SELECT, but an
    * INSERT or UPDATE is refused a layer earlier by PostgREST with PGRST204 — so a

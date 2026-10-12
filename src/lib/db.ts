@@ -74,7 +74,10 @@ export class DbError extends Error {
  * failing. That is the right trade for an optional column and the wrong one for
  * anything load-bearing: don't use this to skip something that must be written.
  */
-export const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204", "PGRST202"]);
+// ⚠️ PGRST205 is how PostgREST reports a missing TABLE ("Could not find the table in the
+// schema cache") — measured 2026-10-12. 42P01 is the Postgres code and never reaches the
+// client through PostgREST, so without PGRST205 every "table not created yet" fallback threw.
+export const MISSING_SCHEMA_CODES = new Set(["42703", "42P01", "PGRST204", "PGRST202", "PGRST205"]);
 
 /** True when the query failed because the schema lacks something, not because the request failed. */
 export function isMissingSchema(e: unknown): boolean {

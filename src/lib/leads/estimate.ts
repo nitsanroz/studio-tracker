@@ -72,6 +72,8 @@ export interface EstimatePhase {
   estimateId: string;
   name: string;
   description: string | null;
+  /** Free-text timeframe shown beside the section title on the client page (0053). Null before 0053. */
+  timeframe: string | null;
   position: number;
 }
 

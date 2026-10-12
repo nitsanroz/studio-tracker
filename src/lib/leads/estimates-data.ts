@@ -106,6 +106,7 @@ export function mapPhase(r: Row): EstimatePhase {
     estimateId: str(r.estimate_id),
     name: str(r.name),
     description: nstr(r.description),
+    timeframe: nstr(r.timeframe),
     position: nnum(r.position) ?? 0,
   };
 }
@@ -391,7 +392,15 @@ async function copyInto(
   for (const p of src.phases) {
     const { data: np, error: pe } = await sb
       .from("estimate_phases")
-      .insert({ estimate_id: id, name: p.name, description: swapName(p.description, swap), position: p.position })
+      // `timeframe` only when set: before 0053 the column does not exist, and naming it
+      // in an insert fails the whole copy (PGRST204) — but it is always null then.
+      .insert({
+        estimate_id: id,
+        name: p.name,
+        description: swapName(p.description, swap),
+        position: p.position,
+        ...(p.timeframe ? { timeframe: p.timeframe } : {}),
+      })
       .select("id")
       .single();
     fail("copy a phase", pe);
@@ -593,7 +602,11 @@ export async function addPhase(estimateId: string, name: string, position: numbe
   fail("add the phase", error);
 }
 
-export async function updatePhase(estimateId: string, id: string, patch: { name?: string; description?: string | null }) {
+export async function updatePhase(
+  estimateId: string,
+  id: string,
+  patch: { name?: string; description?: string | null; timeframe?: string | null },
+) {
   await assertEditable(estimateId);
   const sb = createClient();
   const { error } = await sb.from("estimate_phases").update(patch).eq("id", id);
@@ -889,6 +902,8 @@ export interface PublishedEstimate {
   phases: {
     name: string;
     description: string | null;
+    /** Free-text estimated timeframe (0053). Absent from snapshots published before it. */
+    timeframe?: string | null;
     hours: { min: number; max: number };
     /**
      * The phase's subject groups with their counted hours (0049). Absent from
@@ -925,8 +940,18 @@ export interface PublishedEstimate {
  * ⚠️ A SNAPSHOT, LIKE THE CLIENT REPORTS. Editing the estimate afterwards (in a
  * new version) never changes the page a client already has; publishing the new
  * version gives it its own link.
+ *
+ * ⚠️⚠️ EVERY PUBLISH MINTS A NEW LINK (0053, Nitsan 2026-10-12: "every new offer
+ * should be a unique url"). Re-publishing used to reuse `share_token` and
+ * overwrite the snapshot, so a link already in a client's inbox silently turned
+ * into the next offer. Each publish now inserts its own `estimate_publications`
+ * row and the earlier links keep showing what they were sent with;
+ * `lead_estimates.share_token`/`published_snapshot` mirror the LATEST one, which
+ * is what the app shows and opens. Before 0053 is applied the insert reports a
+ * missing table and this falls back to the old reuse-the-link behaviour, so
+ * publishing never breaks over a migration that has not run.
  */
-export async function publishEstimate(estimateId: string, company: string): Promise<string> {
+export async function publishEstimate(estimateId: string, company: string, publishedBy?: string | null): Promise<string> {
   const d = await loadEstimate(estimateId);
   if (!d) throw new LeadWriteError("publish", "the estimate no longer exists");
   const e = d.estimate;
@@ -958,6 +983,7 @@ export async function publishEstimate(estimateId: string, company: string): Prom
       return {
         name: p.name,
         description: p.description,
+        timeframe: p.timeframe,
         hours: t.phase.get(p.id) ?? { min: 0, max: 0 },
         groups: lay.groups.map(({ group, lines }) => ({
           name: group.name,
@@ -979,8 +1005,16 @@ export async function publishEstimate(estimateId: string, company: string): Prom
     net: t.net,
     publishedAt: now,
   };
-  const token = e.shareToken ?? crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const sb = createClient();
+  const fresh = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const pub = await sb
+    .from("estimate_publications")
+    .insert({ estimate_id: estimateId, token: fresh, snapshot: snap, published_at: now, published_by: publishedBy ?? null });
+  // Only a missing table (0053 not run) may fall back to reusing the old link;
+  // any other failure must surface, or a client could be sent a link that 404s.
+  const legacy = !!pub.error && MISSING_SCHEMA_CODES.has(pub.error.code ?? "");
+  if (pub.error && !legacy) fail("publish the estimate", pub.error);
+  const token = legacy ? (e.shareToken ?? fresh) : fresh;
   const { error } = await sb
     .from("lead_estimates")
     .update({ share_token: token, published_snapshot: snap, published_at: now })
