@@ -1463,25 +1463,42 @@ function EstimatesTab({
     <div className="flex flex-col gap-2">
       {list === null && <p className="text-[12.5px] text-faint">Loading…</p>}
       {(list ?? []).map((e) => (
-        <Link
+        // ⚠️ A container, not one big Link: the client-link button is an anchor
+        // too, and an <a> inside an <a> is invalid HTML (the browser re-parents
+        // it — the same family as the nested-button bug in v1.18.0).
+        <div
           key={e.id}
-          href={`/leads/${leadId}/estimates/${e.id}`}
-          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border px-3 py-2.5 hover:border-brand"
+          className="flex items-center rounded-lg border border-border hover:border-brand"
         >
-          <span className="text-[13.5px] font-medium">v{e.version}</span>
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${EST_STATUS[e.status]}`}>
-            {e.status === "in_review" ? "In review" : e.status === "approved" ? "Approved" : "Draft"}
-          </span>
-          <span className="text-[13px] tabular-nums">
-            {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
-          </span>
-          {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{e.changeNote}</span>}
-          <span className="ml-auto text-[11.5px] text-faint">
-            {e.approvedBy ? `approved by ${profileName(e.approvedBy) ?? "?"} · ` : ""}
-            {e.shareToken ? "published · " : ""}
-            {formatDate(e.createdAt)}
-          </span>
-        </Link>
+          <Link
+            href={`/leads/${leadId}/estimates/${e.id}`}
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5"
+          >
+            <span className="text-[13.5px] font-medium">v{e.version}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${EST_STATUS[e.status]}`}>
+              {e.status === "in_review" ? "In review" : e.status === "approved" ? "Approved" : "Draft"}
+            </span>
+            <span className="text-[13px] tabular-nums">
+              {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
+            </span>
+            {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{e.changeNote}</span>}
+            <span className="ml-auto text-[11.5px] text-faint">
+              {e.approvedBy ? `approved by ${profileName(e.approvedBy) ?? "?"} · ` : ""}
+              {formatDate(e.createdAt)}
+            </span>
+          </Link>
+          {e.shareToken && (
+            <a
+              href={`/estimate/${e.shareToken}`}
+              target="_blank"
+              rel="noreferrer"
+              title="Open the page the client sees — the version last published"
+              className="mr-2 flex shrink-0 items-center gap-1 rounded-full border border-[#cde8d6] bg-[#eaf6ee] px-2.5 py-1 text-[12px] text-[#12693d] hover:border-[#12693d]"
+            >
+              <ExternalLink size={12} /> Client link
+            </a>
+          )}
+        </div>
       ))}
       {list?.length === 0 && <p className="text-[12.5px] text-faint">No estimate yet.</p>}
       {choosing && (

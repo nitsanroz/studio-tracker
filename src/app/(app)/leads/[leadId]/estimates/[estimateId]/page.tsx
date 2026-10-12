@@ -199,6 +199,20 @@ export default function EstimatePage() {
               <Pencil size={14} /> Edit
             </button>
           )}
+          {/* Shown whenever a link exists, not only while approved: after Edit puts
+              the estimate back to draft the client still reads the published
+              snapshot, which is exactly when it is worth checking what they see. */}
+          {e.shareToken && (
+            <a
+              href={`/estimate/${e.shareToken}`}
+              target="_blank"
+              rel="noreferrer"
+              title="Open the page the client sees — the version last published"
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[12.5px] hover:border-brand"
+            >
+              <ExternalLink size={14} /> Open client link
+            </a>
+          )}
           {locked && (
             <button
               onClick={() =>
@@ -254,6 +268,14 @@ export default function EstimatePage() {
           >
             <Copy size={12} /> {copied ? "Copied" : "Copy"}
           </button>
+          <a
+            href={shareUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-0.5 hover:border-brand"
+          >
+            <ExternalLink size={12} /> Open
+          </a>
         </div>
       )}
       {locked && (
