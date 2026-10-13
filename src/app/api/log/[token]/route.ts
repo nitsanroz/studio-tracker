@@ -135,6 +135,24 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
     logClientIds.length ? sb.from("clients").select("id, name, color, icon, icon_url").in("id", logClientIds) : Promise.resolve({ data: [] }),
     logTaskIds.length ? sb.from("tasks").select("id, title").in("id", logTaskIds) : Promise.resolve({ data: [] }),
   ]);
+  // Every month he has, newest first — hours, that month's rate, the bill —
+  // for the months pane. Turned-down rows are out, as everywhere on his page.
+  const [{ data: allLogs }, { data: allCharges }] = await Promise.all([
+    sb.from("freelancer_logs").select("date, minutes").eq("profile_id", f.profile_id).neq("status", "rejected"),
+    sb.from("freelancer_charges").select("date, amount, currency").eq("profile_id", f.profile_id).neq("status", "rejected"),
+  ]);
+  const perMonth = new Map<string, { minutes: number; charges: { amount: number; currency: string; status: string }[] }>();
+  const bucket = (d: string) => {
+    const m = perMonth.get(d.slice(0, 7)) ?? { minutes: 0, charges: [] };
+    perMonth.set(d.slice(0, 7), m);
+    return m;
+  };
+  for (const l of allLogs ?? []) bucket(l.date as string).minutes += l.minutes;
+  for (const c of allCharges ?? []) bucket(c.date as string).charges.push({ amount: Number(c.amount), currency: c.currency, status: "approved" });
+  const months = [...perMonth]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([p, m]) => ({ period: p, ...monthBill(m.minutes / 60, terms(f), m.charges) }));
+
   // Each client as the tracker's chip draws it — the logo signed here, since
   // his page has no session to fetch it through the app's file proxy.
   type ClientRow = { id: string; name: string; color: string; icon: string | null; icon_url: string | null };
@@ -175,6 +193,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       editable: c.status === "pending" && c.source !== "sheet" && c.date >= editableFrom(),
     })),
     terms: t,
+    months,
     logs: rows.map((l) => ({
       id: l.id,
       date: l.date,

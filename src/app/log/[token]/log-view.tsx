@@ -65,6 +65,7 @@ interface Data {
     currency: string;
   };
   terms: { rateHigh: number; rateLow: number; hoursLow: number; hoursHigh: number };
+  months: { period: string; hours: number; rate: number; total: number; extras: number; otherExtras: { currency: string; amount: number }[] }[];
   logs: Log[];
   charges: ChargeRow[];
   deliverables: { id: string; title: string; url: string; date: string }[];
@@ -218,7 +219,10 @@ export function FreelancerLogView({ token }: { token: string }) {
             />
           )}
         </div>
-        <Deliverables data={data} api={api} onChanged={reload} />
+        <div className="space-y-4">
+          <Months data={data} onPick={setPeriod} />
+          <Deliverables data={data} api={api} onChanged={reload} />
+        </div>
       </div>
     </Shell>
   );
@@ -515,6 +519,48 @@ function AddButton({ saving, label, onClick }: { saving: boolean; label: string;
     >
       {label === "Add" && <Plus size={15} />} {saving ? "Saving…" : label}
     </button>
+  );
+}
+
+/** Every month he has, newest first: hours, that month's rate, the bill —
+ * click one to open it. */
+function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
+  const cur = data.summary.currency;
+  const short = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1].slice(0, 3)} ${p.slice(2, 4)}`;
+  return (
+    <aside className="rounded-2xl border border-border bg-surface p-3 text-sm shadow-card">
+      <h2 className="mb-1 px-1 text-base font-medium">Months</h2>
+      <div className="max-h-[360px] overflow-auto">
+        <table className="w-full tabular-nums">
+          <thead className="sticky top-0 bg-surface">
+            <tr className="text-[11px] uppercase tracking-wide text-faint">
+              <th className="px-1 py-1 text-left font-medium">Month</th>
+              <th className="px-1 py-1 text-right font-medium">Hours</th>
+              <th className="px-1 py-1 text-right font-medium">Rate</th>
+              <th className="px-1 py-1 text-right font-medium">Bill</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.months.map((m) => (
+              <tr
+                key={m.period}
+                onClick={() => onPick(m.period)}
+                className={`cursor-pointer ${m.period === data.period ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
+                title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
+              >
+                <td className="whitespace-nowrap rounded-l-md px-1 py-1">{short(m.period)}</td>
+                <td className="px-1 py-1 text-right">{hrs(m.hours)}</td>
+                <td className="px-1 py-1 text-right text-muted">{money(m.rate, cur)}</td>
+                <td className="whitespace-nowrap rounded-r-md px-1 py-1 text-right">
+                  {money(m.total, cur)}
+                  {m.otherExtras.map((o) => ` + ${money(o.amount, o.currency)}`).join("")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </aside>
   );
 }
 

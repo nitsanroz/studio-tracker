@@ -439,46 +439,56 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
 }
 
 /** Every month he has, newest first: hours, that month's rate, the bill. Click
- * one to open it; a dot marks a month with something waiting for review. */
+ * one to open it; a dot marks a month with something waiting for review. A real
+ * table, so every number sits under its column. */
 function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
   const cur = data.freelancer.terms.currency;
   const total = data.months.reduce((t, m) => t + m.total, 0);
   return (
     <aside className="rounded-2xl border border-border bg-surface p-3 text-sm shadow-card">
-      <h2 className="mb-1.5 px-1 font-medium">Months</h2>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 px-1 pb-1 text-[11px] uppercase tracking-wide text-faint">
-        <span>Month</span>
-        <span className="text-right">Hours</span>
-        <span className="text-right">Rate</span>
-        <span className="text-right">Bill</span>
-      </div>
-      <ul className="max-h-[420px] overflow-auto">
-        {data.months.map((m) => (
-          <li key={m.period}>
-            <button
-              onClick={() => onPick(m.period)}
-              className={`grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 rounded-md px-1 py-1 text-left tabular-nums ${
-                m.period === data.period ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"
-              }`}
-              title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
-            >
-              <span className="flex items-center gap-1.5 whitespace-nowrap">
-                {shortMonth(m.period)}
-                {m.waiting && <span className="size-1.5 rounded-full bg-warning" aria-label="Waiting for review" />}
-              </span>
-              <span className="text-right">{hrs(m.hours)}</span>
-              <span className="text-right text-muted">{money(m.rate, cur).replace(".00", "")}</span>
-              <span className="text-right">
-                {money(m.total, cur)}
-                {otherLine(m.otherExtras)}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-1 flex justify-between border-t border-border px-1 pt-1.5 text-xs text-muted">
-        <span>All months</span>
-        <span className="tabular-nums">{money(total, cur)}</span>
+      <h2 className="mb-1 px-1 font-medium">Months</h2>
+      <div className="max-h-[440px] overflow-auto">
+        <table className="w-full tabular-nums">
+          <thead className="sticky top-0 bg-surface">
+            <tr className="text-[11px] uppercase tracking-wide text-faint">
+              <th className="px-1 py-1 text-left font-medium">Month</th>
+              <th className="px-1 py-1 text-right font-medium">Hours</th>
+              <th className="px-1 py-1 text-right font-medium">Rate</th>
+              <th className="px-1 py-1 text-right font-medium">Bill</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.months.map((m) => (
+              <tr
+                key={m.period}
+                onClick={() => onPick(m.period)}
+                className={`cursor-pointer ${m.period === data.period ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
+                title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
+              >
+                <td className="whitespace-nowrap rounded-l-md px-1 py-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    {shortMonth(m.period)}
+                    {m.waiting && <span className="size-1.5 rounded-full bg-warning" aria-label="Waiting for review" />}
+                  </span>
+                </td>
+                <td className="px-1 py-1 text-right">{hrs(m.hours)}</td>
+                <td className="px-1 py-1 text-right text-muted">{money(m.rate, cur)}</td>
+                <td className="whitespace-nowrap rounded-r-md px-1 py-1 text-right">
+                  {money(m.total, cur)}
+                  {otherLine(m.otherExtras)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-border text-xs text-muted">
+              <td colSpan={3} className="px-1 pt-1.5">
+                All months
+              </td>
+              <td className="px-1 pt-1.5 text-right">{money(total, cur)}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </aside>
   );
