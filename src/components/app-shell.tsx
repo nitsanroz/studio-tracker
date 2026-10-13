@@ -22,6 +22,7 @@ import {
   Users,
   UserRoundSearch,
   Handshake,
+  UserRoundPen,
   UsersRound,
   X,
   type LucideIcon,
@@ -84,6 +85,9 @@ const NAV = [
   // drag board of stage columns, desktop first (Nitsan's standing rule: settle
   // desktop, then discuss mobile).
   { href: "/leads", label: "Leads", Icon: Handshake, adminOnly: true, mobile: false },
+  // Freelancers' logs waiting for review (0054). `mobile: false` with a
+  // `desktop-only.tsx` entry — filing a log on a task is desk work.
+  { href: "/freelancers", label: "Freelancers", Icon: UserRoundPen, adminOnly: true, mobile: false },
 ];
 
 /**

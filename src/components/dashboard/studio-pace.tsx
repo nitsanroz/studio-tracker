@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Clock } from "lucide-react";
 import { InfoDot } from "../ui";
 
 // The studio's pace this month against the billable hours a workday that cover
@@ -132,5 +134,32 @@ function PaceMeter({ pace, min, goal }: { pace: number | null; min: number; goal
       </div>
       <div className="h-5" />
     </div>
+  );
+}
+
+/** Freelancers' logs waiting for review (0054) — a nudge on the admin home, in
+ * the voice of the intake alert beside it. Nothing when there are none. */
+export function FreelancerLogsAlert() {
+  const [pending, setPending] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/admin/freelancers?count=1")
+      .then((r) => (r.ok ? r.json() : { pending: 0 }))
+      .then((j: { pending?: number }) => alive && setPending(j.pending ?? 0))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (pending === 0) return null;
+  return (
+    <Link
+      href="/freelancers"
+      className="flex items-center gap-2 rounded-xl border-2 border-warning/40 bg-warning/10 px-4 py-3 text-sm font-semibold hover:bg-warning/15"
+    >
+      <Clock size={16} strokeWidth={2} className="text-warning" />
+      {pending} freelancer log{pending > 1 ? "s" : ""} waiting for review
+      <ArrowRight size={15} className="ml-auto" />
+    </Link>
   );
 }

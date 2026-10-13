@@ -32,7 +32,7 @@ import { tenureSince } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StudioTeamStrip } from "./team-strip";
 import { StatTiles, UpdatedBriefsAlert } from "./tiles";
-import { StudioPace } from "./studio-pace";
+import { FreelancerLogsAlert, StudioPace } from "./studio-pace";
 
 
 
@@ -286,6 +286,8 @@ export function Dashboard() {
           <ArrowRight size={15} className="ml-auto" />
         </Link>
       )}
+
+      {isAdmin && <FreelancerLogsAlert />}
 
       {isAdmin ? (
         <>

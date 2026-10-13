@@ -77,6 +77,15 @@ const DESKTOP_ONLY: Array<[string, Entry]> = [
     },
   ],
   [
+    "/freelancers",
+    {
+      label: "Freelancers",
+      why: "Filing a freelancer's log on a task is done at a desk.",
+      toHref: "/",
+      toLabel: "Home",
+    },
+  ],
+  [
     "/team/",
     {
       label: "Member details",
