@@ -96,6 +96,28 @@ describe("hoursGoal", () => {
     expect(g.hours).toBeCloseTo(g.costs / g.rate);
   });
 
+  it("prices a sliding-rate freelancer through his terms, plus his charges, in ₪", () => {
+    // Jul–Sep: 54 workdays, 108h → 2h a workday. Mon Oct 12: 14 Sun–Thu days left (× 18/21).
+    const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];
+    const ab = {
+      name: "AB",
+      planned: 5_000,
+      terms: { currency: "EUR", rateHigh: 55, rateLow: 45, hoursLow: 50, hoursHigh: 150 },
+      fx: 3.5,
+      soFar: 40,
+      charges: 100,
+      recent: [7, 8, 9].map((month) => ({ year: 2026, month, hours: 36 })),
+      absent: [],
+    };
+    const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [], formulaFreelancers: [ab] } })!;
+    const hours = 40 + 2 * 14 * (18 / 21);
+    const rate = 55 - (10 * (hours - 50)) / 100;
+    const cost = (Math.round(hours * Math.round(rate * 100) / 100 * 100) / 100 + 100) * 3.5;
+    expect(g.freelance[0].hours).toBeCloseTo(hours);
+    expect(g.freelance[0].cost).toBeCloseTo(cost);
+    expect(g.costs).toBeCloseTo(140_000 - 5_000 + cost);
+  });
+
   it("lets project income cover part of the costs", () => {
     const g = hoursGoal([...goalPnl, row(10, LINE.projectIncome, 40_000)], 2026, new Date(2026, 9, 12))!;
     expect(g.hours).toBeCloseTo(300);

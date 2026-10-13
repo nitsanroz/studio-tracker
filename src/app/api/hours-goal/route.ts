@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/db";
-import { LINE, hoursGoal, type GoalFreelancer, type GoalInputs, type PnlMonthly } from "@/lib/hours-goal";
+import { LINE, hoursGoal, type FormulaFreelancer, type GoalFreelancer, type GoalInputs, type PnlMonthly } from "@/lib/hours-goal";
 
 /**
  * Admin-only: the studio's pace this month against the billable hours a
@@ -172,5 +172,69 @@ async function goalInputs(sb: SupabaseClient, year: number, month: number): Prom
     };
   });
   const away = [...awayByName].map(([name, dates]) => ({ name, dates: dates.sort() }));
-  return { absent, away, freelancers };
+  const formulaFreelancers = await slidingRateFreelancers(sb, year, month, startOfRange, monthEnd, absentByProfile);
+  return { absent, away, freelancers, formulaFreelancers };
+}
+
+/** Freelancers billed on a sliding rate through the tracker (AB) — finance-
+ * admin's slidingRateFreelancers (actions.ts), mirrored. Read only: his terms,
+ * his logs (not turned down), this month's charges, his planned amount
+ * (matched by profile, else by name) and the month's official rate. */
+async function slidingRateFreelancers(
+  sb: SupabaseClient,
+  year: number,
+  month: number,
+  from: string,
+  monthEnd: string,
+  absentByProfile: Map<string, string[]>,
+): Promise<FormulaFreelancer[]> {
+  const { data: people } = await sb.from("freelancers").select("profile_id, currency, rate_high, rate_low, hours_low, hours_high");
+  if (!people?.length) return [];
+  const ids = people.map((p) => p.profile_id as string);
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const [{ data: profiles }, logs, { data: charges }, { data: planRows }, { data: fxRows }] = await Promise.all([
+    sb.from("profiles").select("id, name").in("id", ids),
+    fetchAll<{ profile_id: string; date: string; minutes: number }>(sb, "freelancer_logs", "profile_id, date, minutes", (q) =>
+      q.in("profile_id", ids).neq("status", "rejected").gte("date", from).lte("date", monthEnd),
+    ),
+    sb.from("freelancer_charges").select("profile_id, amount, currency").in("profile_id", ids).neq("status", "rejected").gte("date", monthStart).lte("date", monthEnd),
+    sb.from("finance_freelance").select("person_name, profile_id, amount").eq("year", year).eq("month", month),
+    sb.from("fx_rates").select("year, month, usd_ils, eur_ils").lte("year", year).order("year", { ascending: false }).order("month", { ascending: false }),
+  ]);
+  const nameOf = new Map((profiles ?? []).map((p) => [p.id as string, p.name as string]));
+  const fxRow = (fxRows ?? []).find((r) => r.year < year || (r.year === year && r.month <= month));
+  const fxOf = (currency: string) => (currency === "ILS" ? 1 : Number((currency === "USD" ? fxRow?.usd_ils : fxRow?.eur_ils) ?? 0));
+  const [fy, fm] = [Number(from.slice(0, 4)), Number(from.slice(5, 7))];
+  const recentMonths = [0, 1, 2].map((i) => {
+    const n = fy * 12 + fm - 1 + i;
+    return { year: Math.floor(n / 12), month: (n % 12) + 1 };
+  });
+  const hoursIn = (pid: string, y: number, m: number) =>
+    logs
+      .filter((l) => l.profile_id === pid && Number(l.date.slice(0, 4)) === y && Number(l.date.slice(5, 7)) === m)
+      .reduce((t, l) => t + l.minutes / 60, 0);
+  return people
+    .map((p) => {
+      const pid = p.profile_id as string;
+      const name = nameOf.get(pid) ?? "";
+      return {
+        name,
+        planned: (planRows ?? [])
+          .filter((r) => r.profile_id === pid || (!r.profile_id && (r.person_name as string).trim().toLowerCase() === name.trim().toLowerCase()))
+          .reduce((t, r) => t + Number(r.amount), 0),
+        terms: {
+          currency: p.currency as string,
+          rateHigh: Number(p.rate_high),
+          rateLow: Number(p.rate_low),
+          hoursLow: Number(p.hours_low),
+          hoursHigh: Number(p.hours_high),
+        },
+        fx: fxOf(p.currency as string),
+        soFar: hoursIn(pid, year, month),
+        charges: (charges ?? []).filter((c) => c.profile_id === pid && c.currency === p.currency).reduce((t, c) => t + Number(c.amount), 0),
+        recent: recentMonths.map((r) => ({ ...r, hours: hoursIn(pid, r.year, r.month) })),
+        absent: absentByProfile.get(pid) ?? [],
+      };
+    })
+    .filter((f) => f.fx > 0);
 }

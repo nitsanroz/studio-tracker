@@ -7,6 +7,8 @@
 // which returns hours only — never ₪ — because tracker admins without finance
 // access (Michal) see the result.
 
+import { billFor, type RateTerms } from "./freelance-rate";
+
 /** One finance_pnl_monthly row, as the goal reads it. */
 export interface PnlMonthly {
   year: number;
@@ -76,11 +78,31 @@ export interface GoalFreelancer {
 }
 
 /** Tracker facts the goal reads (getGoalInputs). */
+/** A freelancer billed on a sliding rate through the tracker (AB): his hours
+ * come from his tracker logs, his price from his terms — not from past pay. */
+export interface FormulaFreelancer {
+  name: string;
+  /** This month's planned amount in the finance plan, ₪. */
+  planned: number;
+  terms: RateTerms;
+  /** ₪ per unit of his currency — the official rate, as finance books him. */
+  fx: number;
+  /** Hours logged so far this month (not turned down). */
+  soFar: number;
+  /** Extra charges so far this month, in his currency (another freelancer he brought in). */
+  charges: number;
+  /** Hours in each of the 3 months before. */
+  recent: { year: number; month: number; hours: number }[];
+  absent: string[];
+}
+
+/** Tracker facts the goal reads (getGoalInputs). */
 export interface GoalInputs {
   absent: AbsentByDate;
   /** Who's away and when — for naming them in the goal. */
   away: { name: string; dates: string[] }[];
   freelancers: GoalFreelancer[];
+  formulaFreelancers?: FormulaFreelancer[];
 }
 
 /** An hourly freelancer's month, costed at their pace instead of the plan. */
@@ -230,6 +252,18 @@ export function hoursGoal(
     const hours = f.soFar + (hoursBefore / daysBefore) * daysLeft;
     const rate = payBefore / hoursBefore;
     freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate, cost: hours * rate });
+  }
+  // Sliding-rate freelancers (AB): the same pace — what he's logged plus his
+  // usual hours a workday over the days left — priced through his terms (the
+  // more hours, the lower the rate), plus his extra charges, in ₪.
+  for (const f of inputs?.formulaFreelancers ?? []) {
+    const hoursBefore = f.recent.reduce((t, r) => t + r.hours, 0);
+    const daysBefore = f.recent.reduce((t, r) => t + workdaysOf(monthVals(pnl, r.year, r.month), r.year, r.month), 0);
+    const away = new Set(f.absent);
+    const daysLeft = days.filter((d) => d.date >= todayIso && !away.has(d.date)).length * scale;
+    const hours = f.soFar + (daysBefore ? hoursBefore / daysBefore : 0) * daysLeft;
+    const cost = (billFor(hours, f.terms) + f.charges) * f.fx;
+    freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate: hours ? cost / hours : 0, cost });
   }
   const costs = plannedCosts + freelance.reduce((t, f) => t + f.cost - f.planned, 0);
 
