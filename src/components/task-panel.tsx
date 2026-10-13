@@ -33,7 +33,7 @@ import {
 import { BriefModal } from "./brief-modal";
 import { LinksEditor, type LinksEditorHandle } from "./links-editor";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
-import type { Task, TimeEntry } from "@/lib/types";
+import type { Attachment, Task, TimeEntry } from "@/lib/types";
 
 /** Query param that deep-links straight to a task — what "Copy task link" writes. */
 export const TASK_PARAM = "task";
@@ -228,28 +228,80 @@ function DatesField({
   );
 }
 
+/** Asks for a signed URL, PUTs the file to storage with progress, then records it. */
+async function uploadAttachment(
+  taskId: string,
+  file: File,
+  onProgress: (pct: number) => void,
+): Promise<Attachment> {
+  const post = async (payload: object) => {
+    const res = await fetch("/api/task-attachments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId, name: file.name, ...payload }),
+    });
+    const j = (await res.json().catch(() => ({}))) as Record<string, unknown> & { error?: string };
+    if (!res.ok) throw new Error(j.error ?? `Upload failed (${res.status})`);
+    return j;
+  };
+
+  const signed = (await post({ size: file.size })) as { path: string; token: string; contentType: string };
+  // XHR rather than `uploadToSignedUrl`: fetch can't report upload progress, and
+  // a raw body (not multipart) keeps the server-chosen Content-Type on the object.
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const url = `${base}/storage/v1/object/upload/sign/task-files/${signed.path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}?token=${encodeURIComponent(signed.token)}`;
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("apikey", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    xhr.setRequestHeader("content-type", signed.contentType);
+    xhr.setRequestHeader("cache-control", "max-age=3600");
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      let msg = `Upload failed (${xhr.status})`;
+      try {
+        const j = JSON.parse(xhr.responseText) as { message?: string; error?: string };
+        msg = `Upload failed — ${j.message ?? j.error ?? xhr.status}`;
+      } catch {}
+      reject(new Error(msg));
+    };
+    xhr.onerror = () => reject(new Error("Upload failed — check your connection and try again"));
+    xhr.send(file);
+  });
+  onProgress(100);
+  return (await post({ path: signed.path, commit: true })) as unknown as Attachment;
+}
+
 function TaskAttachments({ taskId }: { taskId: string }) {
   const { attachments, addAttachment, removeAttachment } = useData();
-  const [busy, setBusy] = useState(false);
+  // Which file is going up and how far along it is; null when idle.
+  const [progress, setProgress] = useState<{ name: string; pct: number; of: string } | null>(null);
+  const busy = progress !== null;
   const [error, setError] = useState<string | null>(null);
   const files = attachments.filter((a) => a.taskId === taskId);
 
+  // ⚠️ The file goes straight to storage on a signed URL — see /api/task-attachments
+  // for why it must never be posted through the function (Vercel's 4.5MB cap).
   async function upload(fileList: FileList) {
     setError(null);
-    setBusy(true);
-    for (const file of Array.from(fileList)) {
-      const body = new FormData();
-      body.append("taskId", taskId);
-      body.append("file", file);
-      const res = await fetch("/api/task-attachments", { method: "POST", body });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Upload failed");
-        continue;
+    const list = Array.from(fileList);
+    for (const [i, file] of list.entries()) {
+      const of = list.length > 1 ? ` (${i + 1} of ${list.length})` : "";
+      setProgress({ name: file.name, pct: 0, of });
+      try {
+        addAttachment(await uploadAttachment(taskId, file, (pct) => setProgress({ name: file.name, pct, of })));
+      } catch (e) {
+        setError(`${file.name}: ${e instanceof Error ? e.message : "Upload failed"}`);
       }
-      addAttachment(json);
     }
-    setBusy(false);
+    setProgress(null);
   }
 
   async function remove(id: string) {
@@ -302,7 +354,23 @@ function TaskAttachments({ taskId }: { taskId: string }) {
             : "border-transparent text-faint group-hover/atts:border-border-strong group-hover/atts:text-muted hover:!border-brand hover:!text-brand"
         }`}
       >
-        {busy ? "Uploading…" : "+ Add files (up to 25MB each)"}
+        {progress ? (
+          <span className="flex w-full min-w-0 items-center gap-2">
+            <span className="bidi-auto min-w-0 flex-1 truncate">
+              Uploading {progress.name}
+              {progress.of}
+            </span>
+            <span className="h-1 w-20 shrink-0 overflow-hidden rounded-full bg-border">
+              <span
+                className="block h-full rounded-full bg-brand transition-[width]"
+                style={{ width: `${progress.pct}%` }}
+              />
+            </span>
+            <span className="w-8 shrink-0 text-right tabular-nums">{progress.pct}%</span>
+          </span>
+        ) : (
+          "+ Add files (up to 25MB each)"
+        )}
         <input
           type="file"
           multiple
