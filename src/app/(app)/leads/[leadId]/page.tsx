@@ -15,7 +15,12 @@ import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import {
   Info,
+  ArrowRight,
   ArrowRightLeft,
+  Briefcase,
+  CalendarClock,
+  Check,
+  UserRound,
   CircleX,
   RotateCcw,
   Sparkles,
@@ -28,7 +33,6 @@ import {
   ExternalLink,
   FilePlus2,
   FileText,
-  Globe,
   History,
   Lightbulb,
   Mail,
@@ -41,7 +45,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { IconSelect } from "@/components/leads/icon-select";
-import { SourceIcon, StageIcon, stageStyle } from "@/lib/leads/look";
+import { NEUTRAL, SourceIcon, STAGE_ICONS, StageIcon } from "@/lib/leads/look";
 import { Avatar, Tabs } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
@@ -83,6 +87,7 @@ import {
   NEW_LEAD_PARAM,
   OFFER_STATUSES,
   SOURCES,
+  sourceLabel,
   type Currency,
   type LeadContact,
   type LeadDetail,
@@ -113,10 +118,8 @@ import type { ImportedEstimate } from "@/lib/leads/estimate-import";
 import { DEFAULT_NUDGES, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
 import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 
-type Tab = "contacts" | "emails" | "offers" | "estimates" | "activity";
+type Tab = "emails" | "offers" | "estimates" | "activity";
 
-const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
-const LABEL = "text-[12px] font-medium uppercase tracking-wider text-faint";
 /** A field that looks like text until you reach for it. */
 const QUIET =
   "rounded border border-transparent bg-transparent px-1 py-0.5 hover:border-border focus:border-border focus:bg-surface focus:outline-none";
@@ -344,33 +347,35 @@ export default function LeadPage() {
     else void run(() => moveLead(l.id, stage, to, currentUserId));
   };
 
-  return (
-    <div className="mx-auto max-w-[1500px]">
-      <Link
-        href="/leads"
-        className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-foreground"
-      >
-        <ChevronLeft size={14} strokeWidth={1.75} /> Leads
-      </Link>
+  const openStages = vocab.stages.filter((s) => s.kind === "open");
+  const closedStages = vocab.stages.filter((s) => s.kind !== "open");
 
-      {error && (
-        <div className="mb-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
-      )}
+  return (
+    // ⚠️ The whole screen, like the board (v1.71.0): the tabs get the width,
+    // the deal sits in a fixed column beside them.
+    <div className="flex w-full flex-col gap-5">
+      <div>
+        <Link href="/leads" className="inline-flex items-center gap-1.5 text-[13.5px] text-muted hover:text-foreground">
+          <ChevronLeft size={16} strokeWidth={1.75} /> Leads
+        </Link>
+      </div>
+
+      {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-2.5 text-sm text-danger">{error}</div>}
 
       {l.deletedAt && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
-          <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 text-[14px] shadow-card">
+          <Trash2 size={15} strokeWidth={1.75} className="text-faint" />
           <span>This lead was deleted and is hidden from the board. It will be erased for good tonight.</span>
           <button
             onClick={() => void run(() => restoreLead(l.id))}
-            className="ml-auto h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white"
+            className="ml-auto h-9 rounded-lg bg-brand px-3.5 text-[13.5px] font-medium text-white hover:bg-brand-dark"
           >
             Undo
           </button>
         </div>
       )}
 
-      {/* ── header ── */}
+      {/* ── header: the company, what it is, and the one destructive action ── */}
       <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
         <div className="min-w-0 flex-1">
           <input
@@ -386,80 +391,33 @@ export default function LeadPage() {
               if (e.key === "Enter") e.currentTarget.blur();
             }}
             aria-label="Company"
-            className={`bidi-auto w-full max-w-2xl font-serif-accent text-[32px] leading-tight ${QUIET}`}
+            className={`bidi-auto -ml-1 w-full max-w-3xl font-serif-accent text-[36px] leading-tight ${QUIET}`}
           />
-          <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-muted">
-            <span className="flex items-center gap-1.5">
-              <Globe size={13} strokeWidth={1.75} className="text-faint" />
-              <InlineInput
-                key={`w${l.website}`}
-                value={l.website}
-                placeholder="Website"
-                onCommit={(v) => void run(() => updateLead(l.id, { website: v }))}
-                className="w-48"
-              />
-              {l.website && isSafeUrl(normalizeUrl(l.website) ?? "") && (
-                <a
-                  href={normalizeUrl(l.website) ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Open the website"
-                  className="text-faint hover:text-brand"
-                >
-                  <ExternalLink size={12} />
-                </a>
-              )}
-            </span>
-            <label className="flex items-center gap-1.5">
-              <span className="text-faint">Source</span>
-              <IconSelect
-                value={l.source ?? ""}
-                onChange={(v) => void run(() => updateLead(l.id, { source: (v || null) as LeadSource | null }))}
-                ariaLabel="Source"
-                className={QUIET}
-                options={[
-                  { value: "", label: "Not set" },
-                  ...SOURCES.map((s) => ({
-                    value: s.value,
-                    label: s.label,
-                    icon: <SourceIcon source={s.value} className="text-faint" />,
-                  })),
-                ]}
-              />
-            </label>
-            <span className="text-faint">
-              Created {formatDate(l.createdAt)}
-              {open && stage && ` · ${daysInStage(l, now)}d in ${stage.name}`}
-            </span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-muted">
+            {l.source && (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <SourceIcon source={l.source as LeadSource} size={14} className="text-faint" />
+                  {sourceLabel(l.source as LeadSource)}
+                </span>
+                <span className="text-faint">·</span>
+              </>
+            )}
+            <span>Created {formatDate(l.createdAt)}</span>
+            {open && stage && (
+              <>
+                <span className="text-faint">·</span>
+                <span>
+                  {daysInStage(l, now)}d in {stage.name}
+                </span>
+              </>
+            )}
+            <span className="text-faint">·</span>
+            <span>Last activity {formatDate(l.lastActivityAt)}</span>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <select
-            value={l.ownerId ?? ""}
-            onChange={(e) => void run(() => updateLead(l.id, { ownerId: e.target.value || null }))}
-            className="h-9 rounded-lg border border-border bg-surface px-2 text-[13px]"
-            aria-label="Owner"
-          >
-            <option value="">Unassigned</option>
-            {owners.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <IconSelect
-            value={l.stageId ?? ""}
-            onChange={(v) => {
-              const to = vocab.stages.find((s) => s.id === v);
-              if (to) changeStage(to);
-            }}
-            ariaLabel="Stage"
-            placeholder="No stage"
-            className="h-9 rounded-lg border px-2.5 text-[13px] font-medium"
-            style={stageStyle(stage)}
-            options={vocab.stages.map((s) => ({ value: s.id, label: s.name, icon: <StageIcon stage={s} /> }))}
-          />
+        <div className="flex shrink-0 items-center gap-2 pt-2">
           {!l.deletedAt && (
             <button
               onClick={async () => {
@@ -481,12 +439,67 @@ export default function LeadPage() {
               }}
               aria-label="Delete the lead"
               title="Delete"
-              className="flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-faint hover:text-danger"
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13.5px] text-muted hover:border-danger/40 hover:text-danger"
             >
-              <Trash2 size={15} strokeWidth={1.75} />
+              <Trash2 size={15} strokeWidth={1.75} /> Delete
             </button>
           )}
         </div>
+      </div>
+
+      {/* ── where it stands: the open stages as one track, then the two ways out ──
+          ⚠️ Won and Lost still ask first (a client to convert, a reason), through
+          `changeStage` — the same path the old stage picker took. */}
+      <div className="flex flex-wrap items-stretch gap-2">
+        <ol className="flex min-w-0 flex-1 overflow-x-auto rounded-xl border border-border bg-surface shadow-card [scrollbar-width:none]">
+          {openStages.map((s, i) => {
+            const at = stage?.id === s.id;
+            const idx = stage && open ? openStages.findIndex((x) => x.id === stage.id) : open ? -1 : openStages.length;
+            const passed = i < idx;
+            const color = s.color || NEUTRAL;
+            return (
+              <li key={s.id} className="min-w-[9rem] flex-1 border-l border-border first:border-l-0">
+                <button
+                  onClick={() => changeStage(s)}
+                  aria-current={at ? "step" : undefined}
+                  title={at ? `${s.name} — current stage` : `Move to ${s.name}`}
+                  className={`flex h-12 w-full items-center justify-center gap-2 px-3 text-[14px] transition-colors ${
+                    at ? "font-medium text-white" : passed ? "hover:brightness-95" : "text-muted hover:bg-background hover:text-foreground"
+                  }`}
+                  style={at ? { backgroundColor: color } : passed ? { backgroundColor: `${color}12`, color } : undefined}
+                >
+                  {at ? (
+                    <StageIconWhite stage={s} />
+                  ) : passed ? (
+                    <Check size={15} strokeWidth={2.25} aria-hidden />
+                  ) : (
+                    <StageIcon stage={s} size={15} />
+                  )}
+                  <span className="bidi-auto truncate">{s.name}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        {closedStages.map((s) => {
+          const at = stage?.id === s.id;
+          const color = s.color || NEUTRAL;
+          return (
+            <button
+              key={s.id}
+              onClick={() => changeStage(s)}
+              aria-current={at ? "step" : undefined}
+              title={at ? `${s.name} — current stage` : `Mark as ${s.name.toLowerCase()}`}
+              className={`flex h-12 items-center gap-2 rounded-xl border px-4 text-[14px] font-medium shadow-card transition-colors ${
+                at ? "text-white" : "bg-surface hover:brightness-95"
+              }`}
+              style={at ? { backgroundColor: color, borderColor: color } : { color, borderColor: `${color}55` }}
+            >
+              {at ? <StageIconWhite stage={s} /> : <StageIcon stage={s} size={15} />}
+              <span className="bidi-auto">{s.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── suggestions (Phase 3, rule-based) ── */}
@@ -497,22 +510,24 @@ export default function LeadPage() {
           return (
             <div
               key={sg.id}
-              className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#c9d6fb] bg-brand-soft px-3 py-2 text-[13px]"
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-[#c9d6fb] bg-brand-soft px-4 py-3 text-[14px]"
             >
-              <Lightbulb size={15} strokeWidth={1.75} className="shrink-0 text-brand" />
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface text-brand">
+                <Lightbulb size={16} strokeWidth={1.75} />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="font-medium text-brand-dark">Move to {to?.name ?? "?"}?</span>{" "}
                 <span className="bidi-auto text-muted">{sg.reason}</span>
               </span>
               <button
                 onClick={() => acceptSuggestion(sg.id, sg.toStageId)}
-                className="h-7 rounded-md bg-brand px-2.5 text-[12px] font-medium text-white"
+                className="h-9 rounded-lg bg-brand px-3.5 text-[13.5px] font-medium text-white hover:bg-brand-dark"
               >
                 Accept
               </button>
               <button
                 onClick={() => void run(() => decideSuggestion(sg.id, "dismissed", currentUserId))}
-                className="h-7 rounded-md border border-border bg-surface px-2.5 text-[12px] text-muted hover:text-foreground"
+                className="h-9 rounded-lg border border-border bg-surface px-3.5 text-[13.5px] text-muted hover:text-foreground"
               >
                 Dismiss
               </button>
@@ -522,159 +537,165 @@ export default function LeadPage() {
 
       {/* ── banners ── */}
       {stalled && stage && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-[#f3dfb8] bg-[#fdf3e3] px-3 py-2 text-[13px] text-[#8a5a09]">
-          <AlarmClock size={15} strokeWidth={1.75} />
-          Stalled — no activity for {quietWorkDays(l.lastActivityAt, now)} working days, past the {stage.stallDays}-day
-          limit for {stage.name}. Log a call or email to clear it.
+        <div className="flex items-center gap-3 rounded-xl border border-[#f3dfb8] bg-[#fdf3e3] px-4 py-3 text-[14px] text-[#8a5a09]">
+          <AlarmClock size={17} strokeWidth={1.75} className="shrink-0" />
+          <span>
+            <span className="font-medium">Stalled</span> — no activity for {quietWorkDays(l.lastActivityAt, now)} working
+            days, past the {stage.stallDays}-day limit for {stage.name}. Log a call or email to clear it.
+          </span>
         </div>
       )}
       {stage?.kind === "won" && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-[#cde8d6] bg-[#eaf6ee] px-3 py-2 text-[13px] text-[#12693d]">
-          <Trophy size={15} strokeWidth={1.75} />
-          Won{l.wonAt ? ` on ${formatDate(l.wonAt)}` : ""}.
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#cde8d6] bg-[#eaf6ee] px-4 py-3 text-[14px] text-[#12693d]">
+          <Trophy size={17} strokeWidth={1.75} className="shrink-0" />
+          <span className="font-medium">Won{l.wonAt ? ` on ${formatDate(l.wonAt)}` : ""}.</span>
           {l.clientId && (
-            <Link href={`/clients/${l.clientId}`} className="font-medium underline">
-              {wonClient?.name ?? "Open the client"}
+            <Link href={`/clients/${l.clientId}`} className="ml-auto flex h-9 items-center gap-1.5 rounded-lg bg-[#12693d] px-3.5 text-[13.5px] font-medium text-white hover:brightness-110">
+              Open {wonClient?.name ?? "the client"} <ArrowRight size={15} />
             </Link>
           )}
           {!l.clientId && (
-            <Link href={`/leads/${l.id}/convert`} className="font-medium underline">
-              Create client page
+            <Link href={`/leads/${l.id}/convert`} className="ml-auto flex h-9 items-center gap-1.5 rounded-lg bg-[#12693d] px-3.5 text-[13.5px] font-medium text-white hover:brightness-110">
+              Create the client page <ArrowRight size={15} />
             </Link>
           )}
         </div>
       )}
       {stage?.kind === "lost" && (
-        <div className="mt-4 rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-muted">
-          Lost{lostReason ? ` — ${lostReason.name}` : ""}
-          {l.lostNote && <span className="bidi-auto"> · {l.lostNote}</span>}
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-[14px] text-muted">
+          <CircleX size={17} strokeWidth={1.75} className="shrink-0 text-faint" />
+          <span>
+            <span className="font-medium text-foreground">Lost{lostReason ? ` — ${lostReason.name}` : ""}</span>
+            {l.lostNote && <span className="bidi-auto"> · {l.lostNote}</span>}
+          </span>
         </div>
       )}
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_360px]">
-        {/* ── main: tabs ── */}
-        <div className={CARD}>
-          <Tabs<Tab>
-            value={tab}
-            onChange={setTab}
-            items={[
-              { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length },
-              { value: "contacts", label: "Contacts", count: contacts.length },
-              { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length },
-              { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length },
-              { value: "estimates", label: tabTip("Estimates", ["estimate"]) },
-            ]}
-            className="mb-4"
-          />
-          {tab === "activity" && (
-            <ActivityTab
-              events={events}
-              profileById={profileById}
-              onLog={(kind, body, at) =>
-                run(() => logActivity(l.id, kind, body, at, l.lastActivityAt, currentUserId))
-              }
-              onRemove={(evId) => run(() => removeActivity(evId))}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
+        {/* ── main: what happened, what we sent ── */}
+        <div className="min-w-0 rounded-2xl border border-border bg-surface shadow-card">
+          <div className="border-b border-border px-5 pt-4">
+            <Tabs<Tab>
+              value={tab}
+              onChange={setTab}
+              className="gap-6! border-b-0!"
+              items={[
+                { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length },
+                { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length },
+                { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length },
+                { value: "estimates", label: tabTip("Estimates", ["estimate"]) },
+              ]}
             />
-          )}
-          {tab === "contacts" && (
-            <ContactsTab
-              contacts={contacts}
-              onAdd={() => run(() => addContact(l.id, { name: "" }, contacts.length + 1))}
-              onSave={(c, f) => run(() => updateContact(c.id, l.id, f))}
-              onRemove={async (c) => {
-                if (await askConfirm(`Remove ${c.name || "this contact"} from this lead?`, { action: "Remove", danger: true }))
-                  void run(() => removeContact(c.id, l.id));
-              }}
-            />
-          )}
-          {tab === "emails" && (
-            <EmailsTab
-              leadId={l.id}
-              threads={threads}
-              backfilledAt={l.gmailBackfilledAt}
-              onLink={(url, subject) =>
-                run(() => linkThread(l.id, url, gmailThreadIdFromUrl(url), subject, currentUserId))
-              }
-              onUnlink={(t) => run(() => unlinkThread(t.id, l.id, t.gmailThreadId))}
-              onSearched={reload}
-            />
-          )}
-          {tab === "estimates" && (
-            <EstimatesTab
-              leadId={l.id}
-              company={l.company}
-              clientId={l.clientId}
-              profileName={(id) => profileById.get(id)?.name ?? null}
-            />
-          )}
-          {tab === "offers" && (
-            <OffersTab
-              leadId={l.id}
-              offers={offers}
-              defaultCurrency={l.currency}
-              profileById={profileById}
-              quoteRate={quote.rate}
-              run={run}
-              currentUserId={currentUserId}
-              onError={setError}
-              rules={{ current: stage ?? undefined, stages: vocab.stages }}
-            />
-          )}
+          </div>
+          <div className="p-5">
+            {tab === "activity" && (
+              <ActivityTab
+                events={events}
+                profileById={profileById}
+                onLog={(kind, body, at) =>
+                  run(() => logActivity(l.id, kind, body, at, l.lastActivityAt, currentUserId))
+                }
+                onRemove={(evId) => run(() => removeActivity(evId))}
+              />
+            )}
+            {tab === "emails" && (
+              <EmailsTab
+                leadId={l.id}
+                threads={threads}
+                backfilledAt={l.gmailBackfilledAt}
+                onLink={(url, subject) =>
+                  run(() => linkThread(l.id, url, gmailThreadIdFromUrl(url), subject, currentUserId))
+                }
+                onUnlink={(t) => run(() => unlinkThread(t.id, l.id, t.gmailThreadId))}
+                onSearched={reload}
+              />
+            )}
+            {tab === "estimates" && (
+              <EstimatesTab
+                leadId={l.id}
+                company={l.company}
+                clientId={l.clientId}
+                profileName={(id) => profileById.get(id)?.name ?? null}
+              />
+            )}
+            {tab === "offers" && (
+              <OffersTab
+                leadId={l.id}
+                offers={offers}
+                defaultCurrency={l.currency}
+                profileById={profileById}
+                quoteRate={quote.rate}
+                run={run}
+                currentUserId={currentUserId}
+                onError={setError}
+                rules={{ current: stage ?? undefined, stages: vocab.stages }}
+              />
+            )}
+          </div>
         </div>
 
-        {/* ── side: the deal ── */}
-        <div className="flex flex-col gap-3">
-          <div className={`${CARD} ${open && !l.nextStep ? "border-warning/60" : ""}`}>
-            <div className={LABEL}>
+        {/* ── side: what's next, the deal, who ──
+            ⚠️ Contacts live here rather than in a tab (v1.71.0): who you're
+            talking to is what you want in view while logging a call or reading
+            a thread, not one click away from it. */}
+        <div className="flex min-w-0 flex-col gap-4">
+          <SideCard
+            Icon={CalendarClock}
+            title={
               <AttentionTip nudge={tip("overdue", "missing")} leadId={l.id} className="inline-block">
                 Next step
               </AttentionTip>
-            </div>
+            }
+            tone={open && !l.nextStep ? "warning" : overdue ? "danger" : "brand"}
+          >
             <textarea
               key={`n${l.nextStep}`}
               defaultValue={l.nextStep ?? ""}
               placeholder={open ? "Every open lead needs one — what happens next?" : "—"}
-              rows={2}
+              rows={3}
               onBlur={(e) => {
                 const v = e.target.value.trim() || null;
                 if (v !== l.nextStep) void run(() => updateLead(l.id, { nextStep: v }));
               }}
-              className={`bidi-auto mt-1 w-full resize-y text-[13.5px] ${QUIET} ${open && !l.nextStep ? "placeholder:text-warning" : ""}`}
+              className={`bidi-auto -mx-1 w-[calc(100%+0.5rem)] resize-y text-[15px] leading-relaxed ${QUIET} ${open && !l.nextStep ? "placeholder:text-warning" : ""}`}
             />
-            <label className="mt-1 flex items-center gap-2 text-[12.5px]">
-              <span className="text-faint">Due</span>
+            <label className="mt-3 flex items-center gap-2 border-t border-border pt-3 text-[14px]">
+              <span className="w-20 shrink-0 text-muted">Due</span>
               <input
                 type="date"
                 key={`d${l.nextStepDue}`}
                 defaultValue={l.nextStepDue ?? ""}
                 onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
-                className={`${QUIET} ${overdue ? "text-danger" : "text-muted"}`}
+                className={`${QUIET} ${overdue ? "text-danger" : "text-foreground"}`}
               />
-              {overdue && <span className="text-[11.5px] text-danger">overdue</span>}
+              {overdue && (
+                <span className="ml-auto rounded-full bg-danger/10 px-2 py-0.5 text-[12px] font-medium text-danger">Overdue</span>
+              )}
             </label>
-          </div>
+          </SideCard>
 
-          <div className={CARD}>
-            <div className={LABEL}>The deal</div>
-            <div className="mt-2 flex items-center gap-2">
+          <SideCard Icon={Briefcase} title="The deal">
+            <div className="text-[13.5px] text-muted">Estimated value</div>
+            <div className="flex items-center gap-1">
               <input
                 type="number"
                 min={0}
                 step={1000}
                 key={`v${l.estValue}`}
                 defaultValue={l.estValue ?? ""}
-                placeholder="Estimated value"
+                placeholder="Add a value"
+                aria-label="Estimated value"
                 onBlur={(e) => {
                   const v = e.target.value === "" ? null : Number(e.target.value);
                   if (v !== l.estValue && (v === null || Number.isFinite(v)))
                     void run(() => updateLead(l.id, { estValue: v }));
                 }}
-                className={`w-36 text-[15px] font-medium ${QUIET}`}
+                className={`-ml-1 w-44 font-serif-accent text-[30px] leading-tight placeholder:font-sans placeholder:text-[15px] placeholder:not-italic placeholder:text-faint ${QUIET}`}
               />
               <select
                 value={l.currency}
                 onChange={(e) => void run(() => updateLead(l.id, { currency: e.target.value as Currency }))}
-                className={`${QUIET} cursor-pointer text-[13px]`}
+                className={`${QUIET} cursor-pointer text-[14px] text-muted`}
                 aria-label="Currency"
               >
                 <option value="ILS">₪ ILS</option>
@@ -682,25 +703,117 @@ export default function LeadPage() {
               </select>
             </div>
             {l.currency === "USD" && l.estValue !== null && (
-              <p className="mt-1 text-[11.5px] text-faint" title="Bank of Israel rate, 5% worse">
+              <p className="mt-0.5 text-[12.5px] text-muted" title="Bank of Israel rate, 5% worse">
                 ≈ {formatIls(valueIls)} at {quote.rate.toFixed(3)}
                 {quote.date ? ` (BoI ${formatDate(quote.date)} − 5%)` : " (fallback rate)"}
               </p>
             )}
-            <div className={`mt-3 ${LABEL}`}>What they asked for</div>
-            <textarea
-              key={`a${l.askedFor}`}
-              defaultValue={l.askedFor ?? ""}
-              placeholder="Brand, website, deck…"
-              rows={3}
-              onBlur={(e) => {
-                const v = e.target.value.trim() || null;
-                if (v !== l.askedFor) void run(() => updateLead(l.id, { askedFor: v }));
+
+            <dl className="mt-4 flex flex-col divide-y divide-border border-t border-border text-[14px]">
+              <div className="flex items-center gap-2 py-2">
+                <dt className="w-20 shrink-0 text-muted">Owner</dt>
+                <dd className="min-w-0 flex-1">
+                  <select
+                    value={l.ownerId ?? ""}
+                    onChange={(e) => void run(() => updateLead(l.id, { ownerId: e.target.value || null }))}
+                    className={`${QUIET} -ml-1 max-w-full cursor-pointer`}
+                    aria-label="Owner"
+                  >
+                    <option value="">Unassigned</option>
+                    {owners.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
+              </div>
+              <div className="flex items-center gap-2 py-2">
+                <dt className="w-20 shrink-0 text-muted">Source</dt>
+                <dd className="min-w-0 flex-1">
+                  <IconSelect
+                    value={l.source ?? ""}
+                    onChange={(v) => void run(() => updateLead(l.id, { source: (v || null) as LeadSource | null }))}
+                    ariaLabel="Source"
+                    className={`${QUIET} -ml-1`}
+                    options={[
+                      { value: "", label: "Not set" },
+                      ...SOURCES.map((s) => ({
+                        value: s.value,
+                        label: s.label,
+                        icon: <SourceIcon source={s.value} className="text-faint" />,
+                      })),
+                    ]}
+                  />
+                </dd>
+              </div>
+              <div className="flex items-center gap-2 py-2">
+                <dt className="w-20 shrink-0 text-muted">Website</dt>
+                <dd className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <InlineInput
+                    key={`w${l.website}`}
+                    value={l.website}
+                    placeholder="Add a website"
+                    onCommit={(v) => void run(() => updateLead(l.id, { website: v }))}
+                    className="-ml-1 min-w-0 flex-1"
+                  />
+                  {l.website && isSafeUrl(normalizeUrl(l.website) ?? "") && (
+                    <a
+                      href={normalizeUrl(l.website) ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Open the website"
+                      className="shrink-0 text-faint hover:text-brand"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-2 border-t border-border pt-3">
+              <div className="mb-1 text-[14px] text-muted">What they asked for</div>
+              <textarea
+                key={`a${l.askedFor}`}
+                defaultValue={l.askedFor ?? ""}
+                placeholder="Brand, website, deck…"
+                rows={3}
+                onBlur={(e) => {
+                  const v = e.target.value.trim() || null;
+                  if (v !== l.askedFor) void run(() => updateLead(l.id, { askedFor: v }));
+                }}
+                className={`bidi-auto -mx-1 w-[calc(100%+0.5rem)] resize-y text-[14px] leading-relaxed ${QUIET}`}
+              />
+            </div>
+            {l.sheetRef && <p className="mt-2 text-[12.5px] text-faint">Imported from the Sheet ({l.sheetRef})</p>}
+          </SideCard>
+
+          <SideCard
+            Icon={Users}
+            title={
+              <>
+                Contacts <span className="ml-1 text-[13px] font-normal text-faint">{contacts.length}</span>
+              </>
+            }
+            action={
+              <button
+                onClick={() => void run(() => addContact(l.id, { name: "" }, contacts.length + 1))}
+                className="flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] text-brand hover:bg-brand-soft"
+              >
+                <Plus size={15} /> Add
+              </button>
+            }
+          >
+            <ContactsList
+              contacts={contacts}
+              onSave={(c, f) => run(() => updateContact(c.id, l.id, f))}
+              onRemove={async (c) => {
+                if (await askConfirm(`Remove ${c.name || "this contact"} from this lead?`, { action: "Remove", danger: true }))
+                  void run(() => removeContact(c.id, l.id));
               }}
-              className={`bidi-auto mt-1 w-full resize-y text-[13px] text-muted ${QUIET}`}
             />
-            {l.sheetRef && <p className="mt-2 text-[11px] text-faint">Imported from the Sheet ({l.sheetRef})</p>}
-          </div>
+          </SideCard>
         </div>
       </div>
 
@@ -739,6 +852,55 @@ export default function LeadPage() {
   );
 }
 
+/** A stage's icon in white, for the filled (current) step. */
+function StageIconWhite({ stage }: { stage: LeadStage }) {
+  const Icon = stage.icon ? STAGE_ICONS[stage.icon] : undefined;
+  return Icon ? (
+    <Icon size={15} strokeWidth={2} className="shrink-0" aria-hidden />
+  ) : (
+    <span className="inline-block size-2 shrink-0 rounded-full bg-white" aria-hidden />
+  );
+}
+
+const SIDE_TONE = {
+  brand: "bg-brand-soft text-brand",
+  warning: "bg-warning/10 text-warning",
+  danger: "bg-danger/10 text-danger",
+  neutral: "bg-foreground/[0.06] text-muted",
+} as const;
+
+/** A card in the lead's side column: an icon, a title, an optional action, the body. */
+function SideCard({
+  Icon,
+  title,
+  action,
+  tone = "neutral",
+  children,
+}: {
+  Icon: LucideIcon;
+  title: React.ReactNode;
+  action?: React.ReactNode;
+  tone?: keyof typeof SIDE_TONE;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`rounded-2xl border bg-surface shadow-card ${tone === "warning" ? "border-warning/50" : "border-border"}`}
+    >
+      {/* The header strip every card in the app uses (the home page's cards):
+          the title sits on its own band, ruled off from the content. */}
+      <div className="flex min-h-12 items-center gap-2.5 border-b border-border px-5 py-2.5">
+        <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${SIDE_TONE[tone]}`}>
+          <Icon size={15} strokeWidth={1.75} aria-hidden />
+        </span>
+        <h2 className="min-w-0 flex-1 font-heading text-[15px]">{title}</h2>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
 // ── activity ────────────────────────────────────────────────────────────────
 
 function ActivityTab({
@@ -771,35 +933,38 @@ function ActivityTab({
             setAt("");
           });
         }}
-        className="flex flex-col gap-2 rounded-lg border border-border p-2"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-background/60 p-3.5"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-border text-[12px]">
-            {LOGGABLE.map((k) => (
-              <button
-                key={k.value}
-                type="button"
-                onClick={() => setKind(k.value)}
-                aria-pressed={kind === k.value}
-                className={`flex items-center gap-1.5 px-2.5 py-1 ${kind === k.value ? "bg-brand-soft font-medium text-brand-dark" : "text-muted"}`}
-              >
-                {(() => {
-                  const Icon = EVENT_ICON[k.value];
-                  return <Icon size={13} strokeWidth={1.75} aria-hidden />;
-                })()}
-                {k.label}
-              </button>
-            ))}
+          <div role="radiogroup" aria-label="What happened" className="flex rounded-lg border border-border bg-surface p-0.5">
+            {LOGGABLE.map((k) => {
+              const Icon = EVENT_ICON[k.value];
+              return (
+                <button
+                  key={k.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={kind === k.value}
+                  onClick={() => setKind(k.value)}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] transition-colors ${
+                    kind === k.value ? "bg-brand-soft font-medium text-brand-dark" : "text-muted hover:text-foreground"
+                  }`}
+                >
+                  <Icon size={15} strokeWidth={1.75} aria-hidden />
+                  {k.label}
+                </button>
+              );
+            })}
           </div>
-          <label className="flex items-center gap-1.5 text-[12px] text-faint">
+          <label className="ml-auto flex items-center gap-2 text-[13.5px] text-muted">
             When
             <input
               type="date"
               value={at}
               onChange={(e) => setAt(e.target.value)}
-              className="rounded border border-border px-1 py-0.5 text-[12px] text-muted"
+              className="h-9 rounded-lg border border-border bg-surface px-2 text-[13.5px] text-foreground outline-none focus:border-brand"
             />
-            {!at && <span>(today)</span>}
+            {!at && <span className="text-faint">today</span>}
           </label>
         </div>
         <textarea
@@ -811,55 +976,62 @@ function ActivityTab({
               e.currentTarget.form?.requestSubmit();
             }
           }}
-          rows={2}
+          rows={3}
           placeholder="What was said, what was agreed…"
-          className="bidi-auto w-full resize-y rounded-md border border-border px-2 py-1.5 text-[13px]"
+          className="bidi-auto w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[14.5px] leading-relaxed outline-none placeholder:text-faint focus:border-brand"
         />
-        <div>
+        <div className="flex items-center gap-3">
+          <span className="text-[12.5px] text-faint">⌘ Enter to log</span>
           <button
             type="submit"
             disabled={!body.trim() || saving}
-            className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+            className="ml-auto h-9 rounded-lg bg-brand px-4 text-[14px] font-medium text-white hover:bg-brand-dark disabled:opacity-40"
           >
-            {saving ? "Saving…" : "Log it"}
+            {saving ? "Saving…" : `Log ${LOGGABLE.find((k) => k.value === kind)?.label.toLowerCase() ?? "it"}`}
           </button>
         </div>
       </form>
 
-      <ol className="mt-4 flex flex-col">
-        {events.map((ev) => {
+      {/* The history as a timeline: one node per event on a thin rail. */}
+      <ol className="mt-6 flex flex-col">
+        {events.map((ev, i) => {
           const who = ev.actorId ? profileById.get(ev.actorId) : null;
           const line = eventLine(ev);
+          const Icon = EVENT_ICON[ev.kind];
+          const last = i === events.length - 1;
           return (
-            <li key={ev.id} className="group flex gap-3 border-b border-border/60 py-2.5 last:border-0">
-              <span className="w-16 shrink-0 pt-0.5 text-[11.5px] text-faint">{formatDate(ev.at)}</span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[12.5px]">
-                  {(() => {
-                    const Icon = EVENT_ICON[ev.kind];
-                    return Icon ? <Icon size={13} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden /> : null;
-                  })()}
+            <li key={ev.id} className="group relative flex gap-4 pb-5 last:pb-0">
+              {!last && <span className="absolute bottom-0 left-[17px] top-9 w-px bg-border" aria-hidden />}
+              <span className="relative z-[1] flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-muted">
+                {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden />}
+              </span>
+              <div className="min-w-0 flex-1 pt-1.5">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px]">
                   <span className="font-medium">{EVENT_LABEL[ev.kind] ?? ev.kind}</span>
                   {line && <span className="bidi-auto text-muted">{line}</span>}
                   {who && (
-                    <span className="flex items-center gap-1 text-[11.5px] text-faint">
-                      · <Avatar profile={who} size={14} /> {who.name}
+                    <span className="flex items-center gap-1.5 text-[13px] text-muted">
+                      <span className="text-faint">·</span>
+                      <Avatar profile={who} size={18} /> {who.name}
                     </span>
                   )}
-                  {logged.has(ev.kind) && (
-                    <button
-                      onClick={async () => {
-                        if (await askConfirm("Remove this entry?", { action: "Remove", danger: true })) void onRemove(ev.id);
-                      }}
-                      aria-label="Remove this entry"
-                      className="ml-auto text-faint opacity-0 hover:text-danger group-hover:opacity-100"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
+                  <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-faint">
+                    {logged.has(ev.kind) && (
+                      <button
+                        onClick={async () => {
+                          if (await askConfirm("Remove this entry?", { action: "Remove", danger: true })) void onRemove(ev.id);
+                        }}
+                        aria-label="Remove this entry"
+                        className="opacity-0 hover:text-danger focus:opacity-100 group-hover:opacity-100"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                    {formatDate(ev.at)}
+                  </span>
                 </div>
                 {ev.body && (
-                  <p className="bidi-auto mt-0.5 whitespace-pre-wrap text-[12.5px] leading-relaxed text-muted">
+                  <p className="bidi-auto mt-1.5 whitespace-pre-wrap rounded-lg bg-background px-3 py-2 text-[14px] leading-relaxed text-foreground/85">
                     {ev.body}
                   </p>
                 )}
@@ -867,7 +1039,7 @@ function ActivityTab({
             </li>
           );
         })}
-        {events.length === 0 && <p className="text-[12.5px] text-faint">Nothing logged yet.</p>}
+        {events.length === 0 && <p className="text-[14px] text-faint">Nothing logged yet.</p>}
       </ol>
     </div>
   );
@@ -875,92 +1047,99 @@ function ActivityTab({
 
 // ── contacts ────────────────────────────────────────────────────────────────
 
-function ContactsTab({
+function ContactsList({
   contacts,
-  onAdd,
   onSave,
   onRemove,
 }: {
   contacts: LeadContact[];
-  onAdd: () => Promise<void>;
   onSave: (c: LeadContact, f: ContactFields) => Promise<void>;
   onRemove: (c: LeadContact) => void;
 }) {
+  if (contacts.length === 0) return <p className="text-[14px] text-faint">No contacts yet.</p>;
+  const row = (Icon: React.ReactNode, input: React.ReactNode) => (
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="flex w-4 shrink-0 justify-center text-faint">{Icon}</span>
+      {input}
+    </span>
+  );
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col divide-y divide-border">
       {contacts.map((c) => (
-        <div key={c.id} className="group rounded-lg border border-border p-3">
+        <div key={c.id} className="group flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
           <div className="flex items-start gap-2">
-            <div className="grid min-w-0 flex-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+            <div className="flex min-w-0 flex-1 flex-col">
               <InlineInput
                 value={c.name === "Unnamed" ? null : c.name}
                 placeholder="Name"
                 onCommit={(v) => void onSave(c, { name: v ?? "" })}
-                className="bidi-auto text-[14px] font-medium"
+                className="bidi-auto -ml-1 text-[15px] font-medium"
               />
               <InlineInput
                 value={c.title}
                 placeholder="Title"
                 onCommit={(v) => void onSave(c, { title: v })}
-                className="bidi-auto text-[13px] text-muted"
-              />
-              <span className="flex items-center gap-1.5">
-                <Mail size={13} strokeWidth={1.75} className="shrink-0 text-faint" />
-                <InlineInput
-                  value={c.email}
-                  placeholder="Email"
-                  type="email"
-                  onCommit={(v) => void onSave(c, { email: v })}
-                  className="min-w-0 flex-1 text-[13px]"
-                />
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Phone size={13} strokeWidth={1.75} className="shrink-0 text-faint" />
-                <InlineInput
-                  value={c.phone}
-                  placeholder="Phone"
-                  onCommit={(v) => void onSave(c, { phone: v })}
-                  className="min-w-0 flex-1 text-[13px]"
-                />
-              </span>
-              <InlineInput
-                value={c.linkedin}
-                placeholder="LinkedIn"
-                onCommit={(v) => void onSave(c, { linkedin: v })}
-                className="text-[12.5px] text-muted"
-              />
-              <InlineInput
-                value={c.persona}
-                placeholder="Persona"
-                onCommit={(v) => void onSave(c, { persona: v })}
-                className="bidi-auto text-[12.5px] text-muted"
-              />
-              <InlineInput
-                value={c.pastConnection}
-                placeholder="Past connection"
-                onCommit={(v) => void onSave(c, { pastConnection: v })}
-                className="bidi-auto text-[12.5px] text-muted sm:col-span-2"
+                className="bidi-auto -ml-1 text-[13.5px] text-muted"
               />
             </div>
             <button
               onClick={() => onRemove(c)}
               aria-label={`Remove ${c.name}`}
-              className="text-faint opacity-0 hover:text-danger group-hover:opacity-100"
+              className="mt-1 text-faint opacity-0 hover:text-danger focus:opacity-100 group-hover:opacity-100"
             >
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </button>
+          </div>
+          <div className="mt-1 flex flex-col gap-0.5 text-[14px]">
+            {row(
+              <Mail size={14} strokeWidth={1.75} />,
+              <InlineInput
+                value={c.email}
+                placeholder="Email"
+                type="email"
+                onCommit={(v) => void onSave(c, { email: v })}
+                className="min-w-0 flex-1"
+              />,
+            )}
+            {row(
+              <Phone size={14} strokeWidth={1.75} />,
+              <InlineInput
+                value={c.phone}
+                placeholder="Phone"
+                onCommit={(v) => void onSave(c, { phone: v })}
+                className="min-w-0 flex-1"
+              />,
+            )}
+            {row(
+              <SourceIcon source="linkedin" size={13} />,
+              <InlineInput
+                value={c.linkedin}
+                placeholder="LinkedIn"
+                onCommit={(v) => void onSave(c, { linkedin: v })}
+                className="min-w-0 flex-1 text-muted"
+              />,
+            )}
+            {row(
+              <UserRound size={14} strokeWidth={1.75} />,
+              <InlineInput
+                value={c.persona}
+                placeholder="Persona"
+                onCommit={(v) => void onSave(c, { persona: v })}
+                className="bidi-auto min-w-0 flex-1 text-muted"
+              />,
+            )}
+            {row(
+              <History size={14} strokeWidth={1.75} />,
+              <InlineInput
+                value={c.pastConnection}
+                placeholder="Past connection"
+                onCommit={(v) => void onSave(c, { pastConnection: v })}
+                className="bidi-auto min-w-0 flex-1 text-muted"
+              />,
+            )}
           </div>
         </div>
       ))}
-      {contacts.length === 0 && <p className="text-[12.5px] text-faint">No contacts yet.</p>}
-      <div>
-        <button
-          onClick={() => void onAdd()}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand"
-        >
-          <Plus size={13} /> Add a contact
-        </button>
-      </div>
     </div>
   );
 }
@@ -976,11 +1155,11 @@ const ago = (iso: string | null) => {
 function OwedBadge({ by }: { by: "us" | "them" | null }) {
   if (!by) return null;
   return by === "us" ? (
-    <span className="shrink-0 rounded-full bg-[#fdf3e3] px-1.5 py-0.5 text-[10.5px] font-medium text-[#8a5a09]">
+    <span className="shrink-0 rounded-full bg-[#fdf3e3] px-1.5 py-0.5 text-[11.5px] font-medium text-[#8a5a09]">
       We owe a reply
     </span>
   ) : (
-    <span className="shrink-0 rounded-full bg-background px-1.5 py-0.5 text-[10.5px] text-muted">Waiting on them</span>
+    <span className="shrink-0 rounded-full bg-background px-1.5 py-0.5 text-[11.5px] text-muted">Waiting on them</span>
   );
 }
 
@@ -1014,11 +1193,11 @@ function ThreadRow({
         <Mail size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-faint" />
         <button onClick={toggle} disabled={!synced} className="min-w-0 flex-1 text-left disabled:cursor-default">
           <span className="flex items-center gap-2">
-            <span className="bidi-auto min-w-0 truncate text-[13px] font-medium">{t.subject || "(no subject)"}</span>
+            <span className="bidi-auto min-w-0 truncate text-[14px] font-medium">{t.subject || "(no subject)"}</span>
             <OwedBadge by={t.replyOwedBy} />
           </span>
           {synced && (
-            <span className="mt-0.5 block truncate text-[11.5px] text-faint">
+            <span className="mt-0.5 block truncate text-[12.5px] text-faint">
               {outside.slice(0, 3).join(", ")}
               {outside.length > 3 ? ` +${outside.length - 3}` : ""} · {t.messageCount} message
               {t.messageCount === 1 ? "" : "s"} · last {ago(t.lastMessageAt)}
@@ -1026,9 +1205,9 @@ function ThreadRow({
             </span>
           )}
           {t.digest && !open && (
-            <span className="bidi-auto mt-0.5 block line-clamp-1 text-[12px] text-muted">{t.digest}</span>
+            <span className="bidi-auto mt-0.5 block line-clamp-1 text-[13px] text-muted">{t.digest}</span>
           )}
-          {!synced && <span className="mt-0.5 block text-[11.5px] text-faint">Linked by hand · {formatDate(t.createdAt)}</span>}
+          {!synced && <span className="mt-0.5 block text-[12.5px] text-faint">Linked by hand · {formatDate(t.createdAt)}</span>}
         </button>
         <a
           href={t.url}
@@ -1054,16 +1233,16 @@ function ThreadRow({
       </div>
       {open && (
         <div className="flex flex-col gap-3 border-t border-border/60 px-3 py-3">
-          {err && <p className="text-[12px] text-danger">{err}</p>}
-          {!err && messages === null && <p className="text-[12px] text-faint">Loading…</p>}
+          {err && <p className="text-[13px] text-danger">{err}</p>}
+          {!err && messages === null && <p className="text-[13px] text-faint">Loading…</p>}
           {(messages ?? []).map((m) => (
             <div key={m.id} className={`rounded-lg px-3 py-2 ${m.fromUs ? "bg-brand-soft/50" : "bg-background"}`}>
-              <div className="mb-1 flex items-baseline gap-2 text-[11.5px]">
+              <div className="mb-1 flex items-baseline gap-2 text-[12.5px]">
                 <span className="font-medium text-foreground">{m.fromName || m.fromAddr}</span>
                 {m.fromName && <span className="text-faint">{m.fromAddr}</span>}
                 <span className="ml-auto shrink-0 text-faint">{m.sentAt ? formatDate(m.sentAt) : ""}</span>
               </div>
-              <p className="bidi-auto line-clamp-[12] whitespace-pre-wrap text-[12.5px] leading-relaxed text-muted">
+              <p className="bidi-auto line-clamp-[12] whitespace-pre-wrap text-[13.5px] leading-relaxed text-muted">
                 {m.bodyText || "(no text)"}
               </p>
             </div>
@@ -1131,18 +1310,18 @@ function EmailsTab({
         <button
           onClick={() => void search(false)}
           disabled={searching}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-[12.5px] hover:border-brand disabled:opacity-50"
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-[13.5px] hover:border-brand disabled:opacity-50"
         >
           <Search size={13} /> {searching ? "Searching Gmail…" : "Search Gmail"}
         </button>
-        <span className="text-[11.5px] text-faint">
+        <span className="text-[12.5px] text-faint">
           {backfilledAt ? `Searched ${ago(backfilledAt)} · new mail arrives on its own` : "Matches by contact email, then company domain"}
         </span>
-        <button onClick={() => setByHand((v) => !v)} className="ml-auto text-[12px] text-muted hover:text-foreground">
+        <button onClick={() => setByHand((v) => !v)} className="ml-auto text-[13px] text-muted hover:text-foreground">
           {byHand ? "Cancel" : "Link a thread by hand"}
         </button>
       </div>
-      {note && <p className="mb-3 text-[12px] text-muted">{note}</p>}
+      {note && <p className="mb-3 text-[13px] text-muted">{note}</p>}
       {byHand && (
         <form
           onSubmit={(e) => {
@@ -1165,29 +1344,29 @@ function EmailsTab({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://mail.google.com/mail/u/0/#inbox/…"
-            className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
+            className="min-w-0 flex-1 rounded-md border border-border px-2 py-1.5 text-[13.5px]"
           />
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject (optional)"
-            className="bidi-auto w-48 rounded-md border border-border px-2 py-1.5 text-[12.5px]"
+            className="bidi-auto w-48 rounded-md border border-border px-2 py-1.5 text-[13.5px]"
           />
           <button
             type="submit"
             disabled={!url.trim()}
-            className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+            className="h-9 rounded-lg bg-brand px-3 text-[13.5px] font-medium text-white disabled:opacity-40"
           >
             Link
           </button>
-          {bad && <p className="w-full text-[12px] text-danger">That address could not be read.</p>}
+          {bad && <p className="w-full text-[13px] text-danger">That address could not be read.</p>}
         </form>
       )}
       <ul className="flex flex-col gap-1.5">
         {threads.map((t) => (
           <ThreadRow key={t.id} t={t} onUnlink={() => void onUnlink(t)} />
         ))}
-        {threads.length === 0 && <p className="text-[12.5px] text-faint">No threads yet.</p>}
+        {threads.length === 0 && <p className="text-[13.5px] text-faint">No threads yet.</p>}
       </ul>
     </div>
   );
@@ -1362,7 +1541,7 @@ function NewEstimateModal({
     return (
     <label
       key={value}
-      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-[13px] ${
+      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 text-[14px] ${
         checked ? "border-brand bg-brand-soft/40" : "border-border hover:border-brand/50"
       }`}
     >
@@ -1375,7 +1554,7 @@ function NewEstimateModal({
       />
       <span className="min-w-0 flex-1">
         <span className="block">{title}</span>
-        {sub && <span className="block truncate text-[11.5px] text-muted">{sub}</span>}
+        {sub && <span className="block truncate text-[12.5px] text-muted">{sub}</span>}
       </span>
     </label>
     );
@@ -1417,8 +1596,8 @@ function NewEstimateModal({
                 }`}
               >
                 <Icon size={18} strokeWidth={1.75} aria-hidden className={on ? "text-white" : "text-brand"} />
-                <span className="text-[13.5px] font-medium leading-tight">{title}</span>
-                <span className={`text-[11.5px] leading-snug ${on ? "text-white/80" : "text-muted"}`}>{sub}</span>
+                <span className="text-[14.5px] font-medium leading-tight">{title}</span>
+                <span className={`text-[12.5px] leading-snug ${on ? "text-white/80" : "text-muted"}`}>{sub}</span>
               </button>
             );
           })}
@@ -1427,15 +1606,15 @@ function NewEstimateModal({
       <div className="flex flex-col gap-2">
         {pick === "import" && <EstimateImportPanel company={company} onParsed={setImported} />}
         {pick === "blank" && (
-          <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-[12.5px] text-muted">
+          <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-[13.5px] text-muted">
             One empty section to start; add items from the service library.
           </p>
         )}
-        {copying && sources === null && <p className="text-[12.5px] text-faint">Loading estimates…</p>}
+        {copying && sources === null && <p className="text-[13.5px] text-faint">Loading estimates…</p>}
         {copying && groups.map((g) =>
           g.rows.length ? (
             <div key={g.title} className="mt-2">
-              <div className="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-faint">
+              <div className="mb-1 flex items-center gap-2 text-[12px] font-medium uppercase tracking-wider text-faint">
                 Copy {g.title === "Other projects" ? "another project's estimate" : `from ${g.title.toLowerCase()}`}
                 <span className="ml-auto flex items-center gap-1 font-normal tracking-normal normal-case text-muted">
                   <Info size={12} strokeWidth={1.75} aria-hidden /> Hover for details
@@ -1454,17 +1633,17 @@ function NewEstimateModal({
                         <span className="min-w-0 flex-1">
                           <span className="block truncate">
                             <span className="font-medium">{r.company}</span> v{r.version}
-                            <span className="ml-1.5 text-[11.5px] text-muted">
+                            <span className="ml-1.5 text-[12.5px] text-muted">
                               {r.status === "approved" ? "approved" : r.status === "in_review" ? "in review" : "draft"}
                             </span>
                           </span>
-                          <span className="block truncate text-[11.5px] text-muted">
+                          <span className="block truncate text-[12.5px] text-muted">
                             {r.phases.map((p) => p.name).join(" · ") || "no phases"} · {formatDate(r.createdAt)}
                           </span>
                         </span>
                         <span className="shrink-0 text-right">
-                          <span className="block text-[12px] font-medium tabular-nums">{fmtNis(r.net)}</span>
-                          <span className="block text-[11.5px] tabular-nums text-muted">{fmtHours(r.hours)}</span>
+                          <span className="block text-[13px] font-medium tabular-nums">{fmtNis(r.net)}</span>
+                          <span className="block text-[12.5px] tabular-nums text-muted">{fmtHours(r.hours)}</span>
                         </span>
                       </span>,
                       undefined,
@@ -1477,25 +1656,25 @@ function NewEstimateModal({
           ) : null,
         )}
         {copying && sources?.length === 0 && (
-          <p className="mt-1 text-[12px] text-faint">No other estimates yet — once there are, any of them can be the starting point.</p>
+          <p className="mt-1 text-[13px] text-faint">No other estimates yet — once there are, any of them can be the starting point.</p>
         )}
       </div>
       {copying && (
-        <p className="mt-3 text-[11.5px] text-muted">
+        <p className="mt-3 text-[12.5px] text-muted">
           Copies every phase, line, option and the texts into a new draft. The other company&rsquo;s name in the texts
           is replaced with {company}; check the greeting.
         </p>
       )}
-      {err && <p className="mt-2 text-[12px] text-danger">{err}</p>}
+      {err && <p className="mt-2 text-[13px] text-danger">{err}</p>}
       {hover && <EstimateSourceCard src={hover.src} rect={hover.rect} />}
       <div className="mt-4 flex justify-end gap-2">
-        <button onClick={onClose} className="h-8 rounded-lg border border-border px-3 text-[12.5px]">
+        <button onClick={onClose} className="h-9 rounded-lg border border-border px-3 text-[13.5px]">
           Cancel
         </button>
         <button
           onClick={() => void start()}
           disabled={busy || (pick === "import" && !imported) || pick === "copy"}
-          className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-50"
+          className="h-9 rounded-lg bg-brand px-3 text-[13.5px] font-medium text-white disabled:opacity-50"
         >
           {busy ? "Creating…" : pick === "blank" ? "Start blank" : pick === "import" ? "Create draft" : "Copy and edit"}
         </button>
@@ -1528,7 +1707,7 @@ function EstimatesTab({
 
   return (
     <div className="flex flex-col gap-2">
-      {list === null && <p className="text-[12.5px] text-faint">Loading…</p>}
+      {list === null && <p className="text-[13.5px] text-faint">Loading…</p>}
       {(list ?? []).map((e) => (
         // ⚠️ A container, not one big Link: the client-link button is an anchor
         // too, and an <a> inside an <a> is invalid HTML (the browser re-parents
@@ -1541,15 +1720,15 @@ function EstimatesTab({
             href={`/leads/${leadId}/estimates/${e.id}`}
             className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5"
           >
-            <span className="text-[13.5px] font-medium">v{e.version}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${EST_STATUS[e.status]}`}>
+            <span className="text-[14.5px] font-medium">v{e.version}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${EST_STATUS[e.status]}`}>
               {e.status === "in_review" ? "In review" : e.status === "approved" ? "Approved" : "Draft"}
             </span>
-            <span className="text-[13px] tabular-nums">
+            <span className="text-[14px] tabular-nums">
               {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
             </span>
-            {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{e.changeNote}</span>}
-            <span className="ml-auto text-[11.5px] text-faint">
+            {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[13px] text-muted">{e.changeNote}</span>}
+            <span className="ml-auto text-[12.5px] text-faint">
               {e.approvedBy ? `approved by ${profileName(e.approvedBy) ?? "?"} · ` : ""}
               {formatDate(e.createdAt)}
             </span>
@@ -1560,14 +1739,14 @@ function EstimatesTab({
               target="_blank"
               rel="noreferrer"
               title="Open the page the client sees — the version last published"
-              className="mr-2 flex shrink-0 items-center gap-1 rounded-full border border-[#cde8d6] bg-[#eaf6ee] px-2.5 py-1 text-[12px] text-[#12693d] hover:border-[#12693d]"
+              className="mr-2 flex shrink-0 items-center gap-1 rounded-full border border-[#cde8d6] bg-[#eaf6ee] px-2.5 py-1 text-[13px] text-[#12693d] hover:border-[#12693d]"
             >
               <ExternalLink size={12} /> Client link
             </a>
           )}
         </div>
       ))}
-      {list?.length === 0 && <p className="text-[12.5px] text-faint">No estimate yet.</p>}
+      {list?.length === 0 && <p className="text-[13.5px] text-faint">No estimate yet.</p>}
       {choosing && (
         <NewEstimateModal leadId={leadId} company={company} clientId={clientId} onClose={() => setChoosing(false)} />
       )}
@@ -1575,12 +1754,12 @@ function EstimatesTab({
         <div>
         <button
           onClick={() => setChoosing(true)}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand"
+          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[13px] text-muted hover:border-brand hover:text-brand"
         >
           <Plus size={13} /> New estimate…
         </button>
         {list && list.length > 0 && (
-          <p className="mt-1 text-[11.5px] text-faint">Start blank or from any earlier estimate — this client&rsquo;s or another project&rsquo;s.</p>
+          <p className="mt-1 text-[12.5px] text-faint">Start blank or from any earlier estimate — this client&rsquo;s or another project&rsquo;s.</p>
         )}
         </div>
         <span className="ml-auto">
@@ -1666,10 +1845,10 @@ function OffersTab({
         return (
           <div key={o.id} className="group rounded-lg border border-border p-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              <span className="text-[13px] font-medium">v{o.version}</span>
-              <span className="text-[15px] font-medium">{formatMoney(o.amount, o.currency)}</span>
+              <span className="text-[14px] font-medium">v{o.version}</span>
+              <span className="text-[16px] font-medium">{formatMoney(o.amount, o.currency)}</span>
               {o.currency === "USD" && o.amount !== null && (
-                <span className="text-[11.5px] text-faint">≈ {formatIls(o.amount * quoteRate)}</span>
+                <span className="text-[12.5px] text-faint">≈ {formatIls(o.amount * quoteRate)}</span>
               )}
               <select
                 value={o.status}
@@ -1678,7 +1857,7 @@ function OffersTab({
                     updateOffer(o.id, leadId, o.version, { status: e.target.value as OfferStatus }, currentUserId, rules),
                   )
                 }
-                className="rounded-full border border-border bg-surface px-2 py-0.5 text-[12px]"
+                className="rounded-full border border-border bg-surface px-2 py-0.5 text-[13px]"
                 aria-label="Offer status"
               >
                 {OFFER_STATUSES.map((s) => (
@@ -1687,7 +1866,7 @@ function OffersTab({
                   </option>
                 ))}
               </select>
-              <label className="flex items-center gap-1 text-[12px] text-faint">
+              <label className="flex items-center gap-1 text-[13px] text-faint">
                 Sent
                 <input
                   type="date"
@@ -1704,21 +1883,21 @@ function OffersTab({
                   href={leadFileHref(o.storagePath)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-[12px] text-muted hover:text-brand"
+                  className="flex items-center gap-1 text-[13px] text-muted hover:text-brand"
                 >
                   <FileText size={13} /> {o.fileName ?? "File"}
                 </a>
               )}
               <span className="ml-auto flex items-center gap-2">
                 {o.approvedAt ? (
-                  <span className="flex items-center gap-1 text-[12px] text-[#12693d]">
+                  <span className="flex items-center gap-1 text-[13px] text-[#12693d]">
                     <CheckCircle2 size={13} /> Approved{approver ? ` by ${approver.name}` : ""} ·{" "}
                     {formatDate(o.approvedAt)}
                   </span>
                 ) : (
                   <button
                     onClick={() => void run(() => approveOffer(o.id, leadId, o.version, currentUserId))}
-                    className="rounded-lg border border-border px-2 py-0.5 text-[12px] hover:border-brand hover:text-brand"
+                    className="rounded-lg border border-border px-2 py-0.5 text-[13px] hover:border-brand hover:text-brand"
                   >
                     Approve
                   </button>
@@ -1736,12 +1915,12 @@ function OffersTab({
               </span>
             </div>
             {o.scopeSummary && (
-              <p className="bidi-auto mt-1.5 whitespace-pre-wrap text-[12.5px] text-muted">{o.scopeSummary}</p>
+              <p className="bidi-auto mt-1.5 whitespace-pre-wrap text-[13.5px] text-muted">{o.scopeSummary}</p>
             )}
           </div>
         );
       })}
-      {offers.length === 0 && !adding && <p className="text-[12.5px] text-faint">No offers yet.</p>}
+      {offers.length === 0 && !adding && <p className="text-[13.5px] text-faint">No offers yet.</p>}
 
       {adding ? (
         <form
@@ -1751,7 +1930,7 @@ function OffersTab({
           }}
           className="flex flex-col gap-2 rounded-lg border border-brand/40 bg-brand-soft/30 p-3"
         >
-          <div className="text-[13px] font-medium">New offer · v{nextVersion}</div>
+          <div className="text-[14px] font-medium">New offer · v{nextVersion}</div>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="number"
@@ -1761,12 +1940,12 @@ function OffersTab({
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Amount"
               autoFocus
-              className="w-36 rounded-md border border-border bg-surface px-2 py-1.5 text-[13px]"
+              className="w-36 rounded-md border border-border bg-surface px-2 py-1.5 text-[14px]"
             />
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value as Currency)}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-[13px]"
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-[14px]"
             >
               <option value="ILS">₪ ILS</option>
               <option value="USD">$ USD</option>
@@ -1774,7 +1953,7 @@ function OffersTab({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as OfferStatus)}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-[13px]"
+              className="rounded-md border border-border bg-surface px-2 py-1.5 text-[14px]"
             >
               {OFFER_STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -1782,16 +1961,16 @@ function OffersTab({
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-1.5 text-[12px] text-muted">
+            <label className="flex items-center gap-1.5 text-[13px] text-muted">
               Sent
               <input
                 type="date"
                 value={sentAt}
                 onChange={(e) => setSentAt(e.target.value)}
-                className="rounded-md border border-border bg-surface px-1.5 py-1 text-[12.5px]"
+                className="rounded-md border border-border bg-surface px-1.5 py-1 text-[13.5px]"
               />
             </label>
-            <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[13px] text-muted hover:border-brand hover:text-brand">
               <Upload size={12} /> {file ? file.name : "Attach the file"}
               <input type="file" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </label>
@@ -1801,20 +1980,20 @@ function OffersTab({
             onChange={(e) => setScope(e.target.value)}
             rows={2}
             placeholder="Scope summary — what this version includes"
-            className="bidi-auto w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-[13px]"
+            className="bidi-auto w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-[14px]"
           />
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={saving}
-              className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-40"
+              className="h-9 rounded-lg bg-brand px-3 text-[13.5px] font-medium text-white disabled:opacity-40"
             >
               {saving ? "Saving…" : "Add offer"}
             </button>
             <button
               type="button"
               onClick={() => setAdding(false)}
-              className="h-8 rounded-lg border border-border px-3 text-[12.5px]"
+              className="h-9 rounded-lg border border-border px-3 text-[13.5px]"
             >
               Cancel
             </button>
@@ -1827,7 +2006,7 @@ function OffersTab({
               setCurrency(defaultCurrency);
               setAdding(true);
             }}
-            className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand"
+            className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[13px] text-muted hover:border-brand hover:text-brand"
           >
             <Plus size={13} /> Add an offer
           </button>

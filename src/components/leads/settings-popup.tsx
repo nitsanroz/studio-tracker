@@ -39,8 +39,8 @@ export function SettingsPopupButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface text-[12.5px] text-muted hover:border-brand hover:text-foreground ${
-          iconOnly ? "w-8" : "px-2.5"
+        className={`flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface text-[13px] text-muted hover:border-brand hover:text-foreground ${
+          iconOnly ? "w-9" : "px-3"
         }`}
         title={which === "leads" ? "Leads settings" : "Pricing settings"}
         aria-label={which === "leads" ? "Leads settings" : "Pricing settings"}

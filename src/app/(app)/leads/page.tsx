@@ -10,28 +10,43 @@
 // browser. Two differences: Won and Lost are COLUMNS here (narrow, folded
 // until opened), because a won deal is the point of the board rather than an
 // archive; and dropping on either opens a question instead of moving the card.
+//
+// ⚠️ LAYOUT (v1.71.0): the page uses the whole screen. Board and List are VIEW
+// MODES of the main column — two arrangements of the same leads. Today and
+// Summary are not views of the leads, they are about the pipeline as a whole,
+// so they live in a pane on the right, as its two tabs, beside whichever view
+// is showing. The pane folds away (stored per browser) when the board wants
+// the room.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlarmClock,
-  ChartPie,
+  ArrowRight,
+  CalendarClock,
   ChevronDown,
   ChevronRight,
+  CircleCheck,
+  CircleX,
+  CircleDashed,
   Columns3,
+  Lightbulb,
   List,
   MailWarning,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   Search,
-  Sun,
+  SlidersHorizontal,
   Trash2,
+  Trophy,
   UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { Avatar } from "@/components/ui";
+import { Avatar, Tabs } from "@/components/ui";
 import { formatDate } from "@/lib/format";
 import {
   loadBoard,
@@ -69,31 +84,43 @@ import { eraseLead, restoreLead } from "@/lib/leads/actions";
 import { useNewLeads } from "@/components/new-leads";
 
 const LAYOUT_KEY = "leads.layout";
+const PANE_KEY = "leads.pane";
+const SHOW_LOST_KEY = "leads.list.showLost";
+const SHOW_WON_KEY = "leads.list.showWon";
 
-/** The view switcher's options, in order, with their icons. */
-const VIEWS: { value: "today" | "board" | "list" | "summary"; label: string; Icon: LucideIcon }[] = [
-  { value: "today", label: "Today", Icon: Sun },
+/** The main column's view modes. */
+type Layout = "board" | "list";
+/** The right pane: one of its two tabs, or folded away. */
+type Pane = "today" | "summary" | "closed";
+
+const VIEWS: { value: Layout; label: string; Icon: LucideIcon }[] = [
   { value: "board", label: "Board", Icon: Columns3 },
   { value: "list", label: "List", Icon: List },
-  { value: "summary", label: "Summary", Icon: ChartPie },
 ];
 
-/** See `storedLayout` in candidates/page.tsx — effect or handler only, never render. */
-type Layout = "today" | "board" | "list" | "summary";
-
-function storedLayout(): Layout {
+/**
+ * See `storedLayout` in candidates/page.tsx — effect or handler only, never
+ * render. ⚠️ Before v1.71.0 "today" and "summary" were layouts too; a browser
+ * that stored one of those opens the board, with that tab picked in the pane.
+ */
+function stored(): { layout: Layout; pane: Pane } {
+  let layout: Layout = "board";
+  let pane: Pane = "today";
   try {
     const v = localStorage.getItem(LAYOUT_KEY);
-    if (v === "list" || v === "board" || v === "today" || v === "summary") return v;
+    if (v === "list") layout = "list";
+    const p = localStorage.getItem(PANE_KEY);
+    if (p === "today" || p === "summary" || p === "closed") pane = p;
+    else if (v === "summary") pane = "summary";
   } catch {
-    // Private window / blocked storage. The default is fine.
+    // Private window / blocked storage. The defaults are fine.
   }
-  return "board";
+  return { layout, pane };
 }
 
-function storeLayout(next: Layout) {
+function store(key: string, value: string) {
   try {
-    localStorage.setItem(LAYOUT_KEY, next);
+    localStorage.setItem(key, value);
   } catch {
     // The choice just won't stick.
   }
@@ -114,28 +141,28 @@ function ago(iso: string): string {
 const HAS_HEBREW = /[֐-׿]/;
 const headingClass = (label: string) =>
   HAS_HEBREW.test(label)
-    ? "text-[12px] font-medium text-muted"
-    : "text-[12px] font-medium uppercase tracking-wide text-muted";
+    ? "text-[13px] font-medium"
+    : "text-[12.5px] font-medium uppercase tracking-wide";
 
-/** A board column: grows to share the width, shrinks to 13.5rem before the board scrolls. */
-const COLUMN = "min-w-[13.5rem] max-w-80 flex-1 basis-60";
+/** A board column: grows to share the width, shrinks to 15rem before the board scrolls. */
+const COLUMN = "flex min-w-[15rem] max-w-[24rem] flex-1 basis-64 flex-col";
 /**
  * ⚠️ Each column scrolls ITSELF, inside the screen. Lost holds hundreds of
  * cards; growing the board to fit them put its horizontal scrollbar hundreds
  * of cards down, so whatever sat right of the view was unreachable.
  */
-const COLUMN_BODY = "max-h-[calc(100vh-15rem)] overflow-y-auto";
+const COLUMN_BODY = "max-h-[calc(100vh-17rem)] overflow-y-auto";
 
-const CHIP_OFF = "border-border bg-surface text-muted";
+const CHIP_OFF = "border-border bg-surface text-muted hover:border-border-strong hover:text-foreground";
 const CHIP_ON = "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark";
 
 function StalledBadge() {
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#fdf3e3] px-1.5 py-0.5 text-[10.5px] font-medium text-[#8a5a09]"
+      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#fdf3e3] px-2 py-0.5 text-[11.5px] font-medium text-[#8a5a09]"
       title="No activity for longer than this stage allows"
     >
-      <AlarmClock size={11} strokeWidth={2} /> Stalled
+      <AlarmClock size={12} strokeWidth={2} /> Stalled
     </span>
   );
 }
@@ -144,7 +171,7 @@ function NewBadge() {
   return (
     <span
       title="From the website form — not opened yet"
-      className="shrink-0 rounded-full bg-brand px-1.5 py-px text-[10.5px] font-medium leading-[15px] text-white"
+      className="shrink-0 rounded-full bg-brand px-2 py-px text-[11.5px] font-medium leading-[18px] text-white"
     >
       New
     </span>
@@ -187,85 +214,105 @@ function LeadCard({
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="group flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 shadow-[0_1px_2px_rgba(6,17,47,.04)] transition-colors hover:border-brand"
+      className="group flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-3.5 shadow-[0_1px_2px_rgba(6,17,47,.04)] transition-[border-color,box-shadow] hover:border-brand/60 hover:shadow-card"
     >
-      {/* The CROWN — who and how much — on a dark Studio-Black band, the same
-          for every stage (the column heading carries the stage colour), so it
-          reads apart from the content below. ⚠️ A fixed #06112f, not
-          `bg-foreground`: under the night theme the foreground flips light and
-          the white text on it would vanish. Two ROWS, not two columns: name ↔
-          price, then contact ↔ hours, each pair on one line. */}
-      <div className="lead-crown -mx-2.5 -mt-2.5 flex flex-col gap-1.5 rounded-t-[7px] bg-[#06112f] px-2.5 pb-2 pt-2.5 text-white">
-      <div className="flex items-baseline gap-2">
-        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
-          <span className="bidi-auto min-w-0 text-[15px] font-medium leading-tight text-white">{lead.company}</span>
-          {isNew && <NewBadge />}
-          {open && lead.replyOwedSince && (
-            <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 self-center text-[#fcd34d]">
-              <MailWarning size={14} strokeWidth={1.75} />
+      {/* Who and how much: the company and its value on one line, the contact
+          and the estimate's hours under it. Hierarchy is size and ink, the
+          same as a task card on a client board — no coloured band, so the one
+          colour a card carries is its attention dot. */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span className="bidi-auto min-w-0 text-[15px] font-medium leading-snug text-foreground">
+              {lead.company}
             </span>
-          )}
-          {stalled && <StalledBadge />}
-        </div>
-        {(valueIls !== null || lead.estValue !== null) && (
-          <span
-            className="shrink-0 text-[12.5px] font-medium tabular-nums text-white"
-            title={lead.currency === "USD" ? formatMoney(lead.estValue, "USD") : undefined}
-          >
-            {formatIls(valueIls)}
-          </span>
-        )}
-      </div>
-      {(lead.primaryContact || lead.source || hours) && (
-        // -mt-1: the contact belongs to the name above it, so it sits closer
-        // than the card's own gap between unrelated lines.
-        <div className="-mt-1 flex items-center gap-2 text-[12px] leading-tight">
-          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-white/75">
-            {(lead.primaryContact || lead.source) && (
-              <span title={sourceLabel(lead.source as LeadSource | null)} className="flex">
-                <SourceIcon source={lead.source as LeadSource | null} size={12} className="text-white/60" />
+            {isNew && <NewBadge />}
+            {open && lead.replyOwedSince && (
+              <span title={`We owe a reply since ${formatDate(lead.replyOwedSince)}`} className="shrink-0 text-[#b7791f]">
+                <MailWarning size={15} strokeWidth={1.75} />
               </span>
             )}
-            {lead.primaryContact && <span className="bidi-auto truncate">{lead.primaryContact}</span>}
-          </span>
-          {hours && (
-            <span className="shrink-0 text-[11.5px] tabular-nums text-white/75" title="Hours in the current estimate">
-              {fmtHours(hours)}
+          </div>
+          {(valueIls !== null || lead.estValue !== null) && (
+            <span
+              className="shrink-0 pt-px text-[14px] font-medium tabular-nums text-foreground"
+              title={lead.currency === "USD" ? formatMoney(lead.estValue, "USD") : undefined}
+            >
+              {formatIls(valueIls)}
             </span>
           )}
         </div>
-      )}
+        {(lead.primaryContact || lead.source || hours) && (
+          <div className="flex items-center gap-2 text-[13px] leading-tight text-muted">
+            <span className="flex min-w-0 flex-1 items-center gap-1.5">
+              {(lead.primaryContact || lead.source) && (
+                <span title={sourceLabel(lead.source as LeadSource | null)} className="flex">
+                  <SourceIcon source={lead.source as LeadSource | null} size={13} className="text-faint" />
+                </span>
+              )}
+              {lead.primaryContact && <span className="bidi-auto truncate">{lead.primaryContact}</span>}
+            </span>
+            {hours && (
+              <span className="shrink-0 text-[12.5px] tabular-nums" title="Hours in the current estimate">
+                {fmtHours(hours)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
       {open && (
         // ⚠️ A MISSING NEXT STEP IS SHOWN, NOT HIDDEN — the PRD's rule is that
         // no open lead is left without an action, and an empty line reads as
         // "fine" while a named gap reads as a job.
-        <span
-          className={`bidi-auto my-1 line-clamp-2 text-[12.5px] leading-snug ${
-            lead.nextStep ? (overdue ? "text-danger" : "text-foreground/80") : "italic text-warning"
+        <div
+          className={`flex gap-2 rounded-lg px-2.5 py-2 text-[13px] leading-snug ${
+            !lead.nextStep ? "bg-warning/10" : overdue ? "bg-danger/[0.06]" : "bg-background"
           }`}
         >
-          {lead.nextStep ?? "No next step"}
-          {lead.nextStep && lead.nextStepDue && (
-            <span className={overdue ? "text-danger" : "text-muted"}> · {formatDate(lead.nextStepDue)}</span>
+          {lead.nextStep ? (
+            <CalendarClock
+              size={14}
+              strokeWidth={1.75}
+              className={`mt-[2px] shrink-0 ${overdue ? "text-danger" : "text-faint"}`}
+              aria-hidden
+            />
+          ) : (
+            <CircleDashed size={14} strokeWidth={1.75} className="mt-[2px] shrink-0 text-warning" aria-hidden />
           )}
-        </span>
+          <span
+            className={`bidi-auto line-clamp-3 min-w-0 ${
+              lead.nextStep ? (overdue ? "text-danger" : "text-foreground/85") : "text-warning"
+            }`}
+          >
+            {lead.nextStep ?? "No next step yet"}
+            {lead.nextStep && lead.nextStepDue && (
+              <span className={overdue ? "font-medium text-danger" : "text-muted"}>
+                {" "}
+                · {overdue ? "overdue " : ""}
+                {formatDate(lead.nextStepDue)}
+              </span>
+            )}
+          </span>
+        </div>
       )}
-      <div className="flex items-center gap-1.5 text-[11px] text-faint">
+
+      <div className="flex items-center gap-2 text-[12px] text-muted">
         {/* A neutral chip with the first name — an avatar's colour competed
             with the attention dot, which is the one colour a card should carry. */}
         {owner && ownerName ? (
           <span
-            className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border bg-background py-0.5 pl-1 pr-2 text-[11px] text-muted"
+            className="inline-flex min-w-0 items-center gap-1 rounded-full border border-border bg-background py-0.5 pl-1.5 pr-2.5"
             title={ownerName}
           >
-            <UserRound size={12} strokeWidth={1.75} className="shrink-0 text-faint" />
+            <UserRound size={13} strokeWidth={1.75} className="shrink-0 text-faint" />
             <span className="truncate">{ownerName.split(" ")[0]}</span>
           </span>
         ) : (
-          <span>Unassigned</span>
+          <span className="text-faint">Unassigned</span>
         )}
-        <span className="ml-auto shrink-0" title="Days in this stage">
+        {stalled && <StalledBadge />}
+        <span className="ml-auto shrink-0 text-faint" title={open ? "Days in this stage" : "Since it closed"}>
           {open ? `${daysInStage(lead, now)}d in stage` : ago(lead.stageChangedAt)}
         </span>
       </div>
@@ -273,12 +320,24 @@ function LeadCard({
   );
 }
 
-function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+/** A summary figure, in the home page's StatTile voice at pane size. */
+function Tile({ label, value, sub, hi = false }: { label: string; value: string; sub?: string; hi?: boolean }) {
+  // The highlighted tile spans the pane: a shekel figure doesn't fit half of it.
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-      <div className="text-[11.5px] uppercase tracking-wide text-faint">{label}</div>
-      <div className="mt-1 text-[22px] font-medium">{value}</div>
-      {sub && <div className="text-[12px] text-muted">{sub}</div>}
+    <div className={`rounded-xl border p-3.5 ${hi ? "col-span-3 border-brand bg-brand text-white" : "border-border bg-background/60"}`}>
+      <div className={`text-[11px] uppercase tracking-wide ${hi ? "text-white/80" : "text-muted"}`}>{label}</div>
+      <div className="mt-1.5 font-serif-accent text-[28px] leading-none">{value}</div>
+      {sub && <div className={`mt-2 text-[12px] ${hi ? "text-white/85" : "text-muted"}`}>{sub}</div>}
+    </div>
+  );
+}
+
+/** A heading inside the pane: a title, and what it counts on the right. */
+function PaneHeading({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <div className="mb-2.5 flex items-baseline gap-2">
+      <h3 className="font-heading text-[14px]">{children}</h3>
+      {aside && <span className="ml-auto text-[12px] text-faint">{aside}</span>}
     </div>
   );
 }
@@ -333,58 +392,62 @@ function PipelineSummary({
     .concat([{ name: "No reason", n: lostYear.filter((l) => !l.lostReasonId).length }])
     .filter((r) => r.n > 0)
     .sort((a, b) => b.n - a.n);
+  const reasonMax = Math.max(1, ...reasonCounts.map((r) => r.n));
 
   return (
-    <div className="mt-5 flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile label="Open pipeline" value={formatIls(openTotal)} sub={`${byStage.reduce((n, r) => n + r.count, 0)} leads`} />
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-3 gap-2.5">
+        <Tile hi label="Open pipeline" value={formatIls(openTotal)} sub={`${byStage.reduce((n, r) => n + r.count, 0)} open leads`} />
         <Tile
           label="Won this month"
           value={String(wonMonth.length)}
           sub={formatIls(wonMonth.reduce((n, l) => n + (ils(l) ?? 0), 0))}
         />
-        <Tile label="Lost this month" value={String(lostMonth.length)} />
+        <Tile label="Lost this month" value={String(lostMonth.length)} sub={`${lostYear.length} this year`} />
         <Tile
           label="Avg days to win"
           value={avgDays === null ? "—" : String(avgDays)}
-          sub={worked.length ? `across ${worked.length} won in the app` : "no deal won in the app yet"}
+          sub={worked.length ? `across ${worked.length} won` : "none won in the app"}
         />
       </div>
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-          <h2 className="text-sm font-semibold">Open value by stage</h2>
-          <div className="mt-3 flex flex-col gap-2">
-            {byStage.map((r) => (
-              <div key={r.stage.id} className="grid grid-cols-[150px_1fr_90px] items-center gap-3 text-[12.5px]">
-                <span className="flex min-w-0 items-center gap-1.5 text-muted">
-                  <StageIcon stage={r.stage} />
-                  <span className="bidi-auto truncate">{r.stage.name}</span>
-                  <span className="text-faint">{r.count}</span>
-                </span>
-                <span className="h-2 rounded-full bg-foreground/[0.06]">
-                  <span
-                    className="block h-2 rounded-full"
-                    style={{ width: `${(r.value / max) * 100}%`, backgroundColor: r.stage.color || "var(--color-brand)" }}
-                  />
-                </span>
-                <span className="text-right">{formatIls(r.value)}</span>
+
+      <section>
+        <PaneHeading aside={formatIls(openTotal)}>Open value by stage</PaneHeading>
+        <div className="flex flex-col gap-3">
+          {byStage.map((r) => (
+            <div key={r.stage.id} className="flex flex-col gap-1.5 text-[13px]">
+              <div className="flex items-center gap-1.5">
+                <StageIcon stage={r.stage} size={14} />
+                <span className="bidi-auto min-w-0 truncate">{r.stage.name}</span>
+                <span className="text-faint">{r.count}</span>
+                <span className="ml-auto tabular-nums text-muted">{formatIls(r.value)}</span>
               </div>
-            ))}
-          </div>
+              <span className="h-2 rounded-full bg-foreground/[0.06]">
+                <span
+                  className="block h-2 rounded-full"
+                  style={{ width: `${(r.value / max) * 100}%`, backgroundColor: r.stage.color || "var(--color-brand)" }}
+                />
+              </span>
+            </div>
+          ))}
         </div>
-        <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-          <h2 className="text-sm font-semibold">Why leads were lost · last 12 months</h2>
-          <div className="mt-3 flex flex-col gap-1.5 text-[12.5px]">
-            {reasonCounts.map((r) => (
-              <div key={r.name} className="flex justify-between">
-                <span className="text-muted">{r.name}</span>
-                <span>{r.n}</span>
-              </div>
-            ))}
-            {reasonCounts.length === 0 && <p className="text-faint">Nothing lost in the last 12 months.</p>}
-          </div>
+      </section>
+
+      <section>
+        <PaneHeading aside="last 12 months">Why leads were lost</PaneHeading>
+        <div className="flex flex-col gap-2.5 text-[13px]">
+          {reasonCounts.map((r) => (
+            <div key={r.name} className="grid grid-cols-[minmax(0,1fr)_88px_28px] items-center gap-3">
+              <span className="bidi-auto truncate text-foreground/85">{r.name}</span>
+              <span className="h-1.5 rounded-full bg-foreground/[0.06]">
+                <span className="block h-1.5 rounded-full bg-foreground/30" style={{ width: `${(r.n / reasonMax) * 100}%` }} />
+              </span>
+              <span className="text-right tabular-nums text-muted">{r.n}</span>
+            </div>
+          ))}
+          {reasonCounts.length === 0 && <p className="text-faint">Nothing lost in the last 12 months.</p>}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -397,17 +460,7 @@ function PipelineSummary({
  * lead that owes a reply is usually also stalled and often has no next step;
  * listing it three times makes the page look three times as busy as it is.
  */
-function TodayList({
-  leads,
-  stageById,
-  now,
-  suggestions,
-}: {
-  leads: Lead[];
-  stageById: Map<string, LeadStage>;
-  now: Date;
-  suggestions: LeadSuggestion[];
-}) {
+function todaySections(leads: Lead[], stageById: Map<string, LeadStage>, now: Date, suggestions: LeadSuggestion[]) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const open = leads.filter((l) => {
     const s = l.stageId ? stageById.get(l.stageId) : undefined;
@@ -425,10 +478,19 @@ function TodayList({
       })
       .map((sg) => [sg.leadId, sg]),
   );
-  const sections: { title: string; hint: string; rows: Lead[]; line: (l: Lead) => string }[] = [
+  const sections: {
+    title: string;
+    hint: string;
+    Icon: LucideIcon;
+    tone: string;
+    rows: Lead[];
+    line: (l: Lead) => string;
+  }[] = [
     {
       title: "Suggestions",
-      hint: "Accept or dismiss on the lead.",
+      hint: "Accept or dismiss on the lead",
+      Icon: Lightbulb,
+      tone: "text-brand bg-brand-soft",
       rows: take(open.filter((l) => suggestionFor.has(l.id))),
       line: (l) => {
         const sg = suggestionFor.get(l.id)!;
@@ -437,15 +499,19 @@ function TodayList({
     },
     {
       title: "Replies we owe",
-      hint: "The last message on a thread came from them.",
+      hint: "The last message came from them",
+      Icon: MailWarning,
+      tone: "text-[#8a5a09] bg-[#fdf3e3]",
       rows: take(
         open.filter((l) => l.replyOwedSince).sort((a, b) => a.replyOwedSince!.localeCompare(b.replyOwedSince!)),
       ),
-      line: (l) => `waiting since ${formatDate(l.replyOwedSince!)}`,
+      line: (l) => `Waiting since ${formatDate(l.replyOwedSince!)}`,
     },
     {
       title: "Next steps due",
-      hint: "Due today or overdue.",
+      hint: "Due today or overdue",
+      Icon: CalendarClock,
+      tone: "text-danger bg-danger/10",
       rows: take(
         open
           .filter((l) => l.nextStep && l.nextStepDue && l.nextStepDue <= today)
@@ -455,54 +521,212 @@ function TodayList({
     },
     {
       title: "Gone quiet",
-      hint: "Past their stage's stall limit.",
+      hint: "Past their stage's stall limit",
+      Icon: AlarmClock,
+      tone: "text-[#8a5a09] bg-[#fdf3e3]",
       rows: take(
         open
           .filter((l) => isStalled(l, l.stageId ? stageById.get(l.stageId) : undefined, now))
           .sort((a, b) => a.lastActivityAt.localeCompare(b.lastActivityAt)),
       ),
-      line: (l) => `last activity ${formatDate(l.lastActivityAt)}`,
+      line: (l) => `Last activity ${formatDate(l.lastActivityAt)}`,
     },
     {
       title: "No next step",
-      hint: "Every open lead needs one.",
+      hint: "Every open lead needs one",
+      Icon: CircleDashed,
+      tone: "text-muted bg-foreground/[0.06]",
       rows: take(open.filter((l) => !l.nextStep)),
-      line: () => "add what happens next",
+      line: () => "Add what happens next",
     },
   ];
+  return sections.filter((s) => s.rows.length > 0);
+}
 
-  const total = sections.reduce((n, s) => n + s.rows.length, 0);
+function TodayList({
+  sections,
+  stageById,
+}: {
+  sections: ReturnType<typeof todaySections>;
+  stageById: Map<string, LeadStage>;
+}) {
+  if (sections.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+        <span className="flex size-11 items-center justify-center rounded-full bg-success/10 text-success">
+          <CircleCheck size={22} strokeWidth={1.75} />
+        </span>
+        <p className="font-heading text-[15px]">All clear</p>
+        <p className="text-[13px] text-muted">Nothing waiting on you — every open lead has a next step on time.</p>
+      </div>
+    );
+  }
   return (
-    <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
-      {total === 0 && <p className="text-sm text-faint">Nothing waiting on you.</p>}
-      {sections
-        .filter((s) => s.rows.length > 0)
-        .map((s) => (
-          <div key={s.title} className="rounded-xl border border-border bg-surface p-4 shadow-card">
-            <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold">{s.title}</h2>
-              <span className="text-[12px] text-faint">{s.rows.length}</span>
-              <span className="ml-auto text-[11.5px] text-faint">{s.hint}</span>
+    <div className="flex flex-col gap-6">
+      {sections.map((s) => (
+        <section key={s.title}>
+          <div className="mb-2 flex items-center gap-2.5">
+            <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${s.tone}`}>
+              <s.Icon size={15} strokeWidth={1.75} aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="flex items-center gap-2 font-heading text-[14px] leading-tight">
+                {s.title}
+                <span className="rounded-full bg-foreground/[0.06] px-1.5 text-[11.5px] font-medium tabular-nums text-muted">
+                  {s.rows.length}
+                </span>
+              </h3>
+              <p className="text-[12px] text-faint">{s.hint}</p>
             </div>
-            <ul className="mt-2 flex flex-col">
-              {s.rows.map((l) => (
-                <li key={l.id}>
-                  <Link
-                    href={`/leads/${l.id}`}
-                    className="flex items-baseline gap-2 rounded-md px-1.5 py-1.5 hover:bg-brand-soft/50"
-                  >
-                    <span className="bidi-auto shrink-0 text-[13px] font-medium">{l.company}</span>
-                    <span className="bidi-auto min-w-0 truncate text-[12px] text-muted">{s.line(l)}</span>
-                    <span className="ml-auto shrink-0">
-                      <StageChip stage={l.stageId ? stageById.get(l.stageId) : undefined} />
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </div>
-        ))}
+          <ul className="flex flex-col gap-1">
+            {s.rows.map((l) => (
+              <li key={l.id}>
+                <Link
+                  href={`/leads/${l.id}`}
+                  className="group flex items-start gap-3 rounded-lg border border-transparent px-2.5 py-2 transition-colors hover:border-border hover:bg-background"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="bidi-auto min-w-0 truncate text-[14px] font-medium">{l.company}</span>
+                      <StageChip stage={l.stageId ? stageById.get(l.stageId) : undefined} className="ml-auto shrink-0" />
+                    </span>
+                    <span className="bidi-auto mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted">{s.line(l)}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
+  );
+}
+
+/**
+ * One "Show" menu for what the main view holds back — the client page's Show
+ * menu (`show-menu.tsx`), in the same voice: switches you flip, a trigger
+ * that reports state.
+ *
+ * ⚠️ Only STALLED ONLY lights the trigger. Won and Lost being hidden is the
+ * list's resting state, and a badge that is always on gets ignored — which is
+ * how a real filter then goes unnoticed. Won/Lost appear in List view only;
+ * the board shows them as folded columns.
+ */
+function ViewMenu({
+  stalledOnly,
+  onStalledOnly,
+  stalledCount,
+  closed,
+}: {
+  stalledOnly: boolean;
+  onStalledOnly: (v: boolean) => void;
+  stalledCount: number;
+  closed: {
+    showWon: boolean;
+    wonCount: number;
+    onShowWon: (v: boolean) => void;
+    showLost: boolean;
+    lostCount: number;
+    onShowLost: (v: boolean) => void;
+  } | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrap} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        title="Choose what this view shows"
+        className={`flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors ${
+          stalledOnly ? CHIP_ON : CHIP_OFF
+        }`}
+      >
+        <SlidersHorizontal size={14} strokeWidth={1.75} />
+        Show
+        {stalledOnly && <span>· stalled only</span>}
+        <ChevronDown size={14} className={stalledOnly ? "" : "text-faint"} />
+      </button>
+      {open && (
+        <div className="pop-in absolute left-0 top-full z-50 mt-1.5 flex w-64 flex-col rounded-xl border border-border bg-surface p-1.5 shadow-xl">
+          <MenuSwitch
+            Icon={AlarmClock}
+            label="Stalled only"
+            count={stalledCount}
+            checked={stalledOnly}
+            onChange={() => onStalledOnly(!stalledOnly)}
+          />
+          {closed && (
+            <>
+              <div className="mx-2 my-1 border-t border-border" />
+              <MenuSwitch
+                Icon={Trophy}
+                label="Won leads"
+                count={closed.wonCount}
+                checked={closed.showWon}
+                onChange={() => closed.onShowWon(!closed.showWon)}
+              />
+              <MenuSwitch
+                Icon={CircleX}
+                label="Lost leads"
+                count={closed.lostCount}
+                checked={closed.showLost}
+                onChange={() => closed.onShowLost(!closed.showLost)}
+              />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** An icon, a label with its count, and a switch at the far end (show-menu.tsx's SwitchRow). */
+function MenuSwitch({
+  Icon,
+  label,
+  count,
+  checked,
+  onChange,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  count: number;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      onClick={onChange}
+      role="switch"
+      aria-checked={checked}
+      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-[14px] hover:bg-background"
+    >
+      <Icon size={15} strokeWidth={1.75} className="shrink-0 text-muted" aria-hidden />
+      <span className="min-w-0 flex-1 truncate">
+        {label} <span className="tabular-nums text-faint">{count}</span>
+      </span>
+      <span className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${checked ? "bg-brand" : "bg-border-strong"}`}>
+        <span
+          className={`absolute top-0.5 size-3 rounded-full bg-white shadow-sm transition-all ${checked ? "left-3.5" : "left-0.5"}`}
+        />
+      </span>
+    </button>
   );
 }
 
@@ -519,14 +743,17 @@ export default function LeadsPage() {
   const [nudgeRules, setNudgeRules] = useState<NudgeSettings>(DEFAULT_NUDGES);
   const [estHours, setEstHours] = useState<Map<string, Range>>(new Map());
   const [layout, setLayout] = useState<Layout>("board");
-  const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [pane, setPane] = useState<Pane>("today");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [stalledOnly, setStalledOnly] = useState(false);
+  /** The list hides won and lost leads unless asked — the closed ones buried the open ones. */
+  const [showLost, setShowLost] = useState(false);
+  const [showWon, setShowWon] = useState(false);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  /** Won and Lost start folded: the board is about what is still moving. */
+  /** Won, Lost and empty stages start folded: the board is about what is still moving. */
   const [unfolded, setUnfolded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<{ lead: Lead; from: LeadStage | null; to: LeadStage } | null>(null);
   /** One `now` per render pass, so every card agrees on what "stalled" means. */
@@ -537,8 +764,21 @@ export default function LeadsPage() {
   const [dropStage, setDropStage] = useState<string | null>(null);
 
   useEffect(() => {
-    setLayout(storedLayout());
+    const s = stored();
+    setLayout(s.layout);
+    setPane(s.pane);
+    try {
+      setShowLost(localStorage.getItem(SHOW_LOST_KEY) === "1");
+      setShowWon(localStorage.getItem(SHOW_WON_KEY) === "1");
+    } catch {
+      // Blocked storage: lost stays hidden.
+    }
   }, []);
+
+  const choosePane = (next: Pane) => {
+    setPane(next);
+    store(PANE_KEY, next);
+  };
 
   // Undo after a delete (0047). The lead page deletes by stamping
   // `deleted_at` and lands here with `?deleted=<id>`; the banner offers Undo,
@@ -603,15 +843,10 @@ export default function LeadsPage() {
   const quote = useMemo(() => usdQuote(rate), [rate]);
   const stageById = useMemo(() => new Map((vocab?.stages ?? []).map((s) => [s.id, s])), [vocab]);
   const profileById = useMemo(() => new Map(profiles.map((p) => [p.id, p])), [profiles]);
-  const owners = useMemo(
-    () => profiles.filter((p) => p.active && p.role === "admin").sort((a, b) => a.name.localeCompare(b.name)),
-    [profiles],
-  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((l) => {
-      if (ownerFilter === "none" ? l.ownerId : ownerFilter !== "all" && l.ownerId !== ownerFilter) return false;
       if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
       if (stalledOnly && !isStalled(l, l.stageId ? stageById.get(l.stageId) : undefined, now)) return false;
       if (!q) return true;
@@ -622,7 +857,7 @@ export default function LeadsPage() {
         (l.askedFor ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, ownerFilter, sourceFilter, stalledOnly, query, stageById, now]);
+  }, [rows, sourceFilter, stalledOnly, query, stageById, now]);
 
   const byStage = useMemo(() => {
     const m = new Map<string, Lead[]>();
@@ -636,6 +871,18 @@ export default function LeadsPage() {
   }, [visible, stageById]);
 
   const ils = useCallback((l: Lead) => toIls(l.estValue, l.currency, quote), [quote]);
+
+  const kindOf = useCallback((l: Lead) => (l.stageId ? stageById.get(l.stageId)?.kind : undefined), [stageById]);
+  const lostCount = useMemo(() => visible.filter((l) => kindOf(l) === "lost").length, [visible, kindOf]);
+  const wonCount = useMemo(() => visible.filter((l) => kindOf(l) === "won").length, [visible, kindOf]);
+  const listRows = useMemo(
+    () =>
+      visible.filter((l) => {
+        const k = kindOf(l);
+        return k === "lost" ? showLost : k === "won" ? showWon : true;
+      }),
+    [visible, showLost, showWon, kindOf],
+  );
 
   const summary = useMemo(() => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -655,6 +902,14 @@ export default function LeadsPage() {
     }
     return { openValue, openCount, stalled, wonMonth, lostMonth };
   }, [rows, stageById, ils, now]);
+
+  // Today follows the filters (it is "what's waiting on ME" when filtered to an
+  // owner); Summary always counts the whole pipeline.
+  const today = useMemo(
+    () => todaySections(visible, stageById, now, suggestions),
+    [visible, stageById, now, suggestions],
+  );
+  const todayCount = today.reduce((n, s) => n + s.rows.length, 0);
 
   const drop = useCallback(
     async (to: LeadStage) => {
@@ -746,20 +1001,35 @@ export default function LeadsPage() {
       void drop(s);
     },
   });
+  const filtered = sourceFilter !== "all" || stalledOnly || query.trim() !== "";
+  const paneOpen = pane !== "closed";
 
   return (
-    // ⚠️ The board may use the whole screen: seven columns at a fixed 1500px
-    // left Won/Lost unfolded side by side with one cut off at the edge.
-    <div className={`mx-auto ${layout === "board" ? "max-w-[2400px]" : "max-w-[1500px]"}`}>
-      {/* ── row 1: title, and the page's two actions on the right ── */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="font-serif-accent text-2xl">Leads</h1>
-          <p className="mt-0.5 text-sm text-muted">
-            {summary.openCount} open · {formatIls(summary.openValue)} in play
-            {summary.stalled > 0 && <span className="text-[#8a5a09]"> · {summary.stalled} stalled</span>}
-            {" · "}
-            {summary.wonMonth} won, {summary.lostMonth} lost this month
+    // ⚠️ THE WHOLE SCREEN, on purpose (Nitsan, v1.71.0) — seven board columns
+    // and the right pane don't fit the 1500px every other page caps at.
+    <div className="flex w-full flex-col gap-5">
+      {/* ── header: title and the pipeline in one line · the page's actions ── */}
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="font-serif-accent text-[30px] leading-9">Leads</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-muted">
+            <span>
+              <span className="font-medium text-foreground">{summary.openCount}</span> open
+            </span>
+            <span className="text-faint">·</span>
+            <span>
+              <span className="font-medium text-foreground">{formatIls(summary.openValue)}</span> in play
+            </span>
+            {summary.stalled > 0 && (
+              <>
+                <span className="text-faint">·</span>
+                <span className="text-[#8a5a09]">{summary.stalled} stalled</span>
+              </>
+            )}
+            <span className="text-faint">·</span>
+            <span>
+              {summary.wonMonth} won, {summary.lostMonth} lost this month
+            </span>
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -772,16 +1042,16 @@ export default function LeadsPage() {
           <button
             onClick={() => void addLead()}
             disabled={adding || !vocab}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-[14px] font-medium text-white hover:bg-brand-dark disabled:opacity-50"
           >
-            <Plus size={16} strokeWidth={2} /> {adding ? "Adding…" : "Add lead"}
+            <Plus size={17} strokeWidth={2} /> {adding ? "Adding…" : "Add lead"}
           </button>
         </div>
       </div>
 
       {deleted && (
-        <div className="notice-in mt-3 flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px]">
-          <Trash2 size={14} strokeWidth={1.75} className="text-faint" />
+        <div className="notice-in flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5 text-[14px] shadow-card">
+          <Trash2 size={15} strokeWidth={1.75} className="text-faint" />
           <span>
             <span className="bidi-auto font-medium">{deleted.company || "The lead"}</span> was deleted.
           </span>
@@ -810,279 +1080,403 @@ export default function LeadsPage() {
             title="Dismiss — the lead is erased for good"
             className="ml-auto text-faint hover:text-foreground"
           >
-            <X size={14} />
+            <X size={15} />
           </button>
         </div>
       )}
 
-      {/* ── row 2: filters left · view centre · search right ──
-          ⚠️ A THREE-COLUMN GRID WITH TWO EQUAL `1fr` SIDES, so the view switcher
-          sits on the page's true centre whatever the filters and search weigh. */}
-      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="flex flex-wrap items-center gap-2 justify-self-start">
-          <select
-            value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            aria-label="Filter by owner"
-            className={`h-7 cursor-pointer rounded-full border px-2 text-[11.5px] ${ownerFilter === "all" ? CHIP_OFF : CHIP_ON}`}
-          >
-            <option value="all">All owners</option>
-            {owners.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-            <option value="none">Unassigned</option>
-          </select>
-          <IconSelect
-            value={sourceFilter}
-            onChange={setSourceFilter}
-            ariaLabel="Filter by source"
-            className={`h-7 rounded-full border px-2.5 text-[11.5px] ${sourceFilter === "all" ? CHIP_OFF : CHIP_ON}`}
-            options={[
-              { value: "all", label: "All sources" },
-              ...SOURCES.map((s) => ({
-                value: s.value,
-                label: s.label,
-                icon: <SourceIcon source={s.value} className="text-faint" />,
-              })),
-            ]}
-          />
-          <button
-            onClick={() => setStalledOnly((v) => !v)}
-            aria-pressed={stalledOnly}
-            className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] ${stalledOnly ? CHIP_ON : CHIP_OFF}`}
-          >
-            <AlarmClock size={13} strokeWidth={1.75} /> Stalled · {summary.stalled}
-          </button>
-        </div>
+      {error && <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-2.5 text-sm text-danger">{error}</div>}
 
-        <div className="flex overflow-hidden rounded-lg border border-border bg-surface text-[12.5px]">
-          {VIEWS.map(({ value: k, label, Icon }) => (
-            <button
-              key={k}
-              onClick={() => {
+      <div className={`grid items-start gap-5 ${paneOpen ? "xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_400px]" : ""}`}>
+        {/* ── main column: the view modes ── */}
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* view · filters · search · the pane's toggle */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Tabs<Layout>
+              value={layout}
+              onChange={(k) => {
                 setLayout(k);
-                storeLayout(k);
+                store(LAYOUT_KEY, k);
               }}
-              aria-pressed={layout === k}
-              className={`flex items-center gap-1.5 px-3 py-1.5 ${layout === k ? "bg-brand font-medium text-white" : "text-muted hover:text-foreground"}`}
-            >
-              <Icon size={14} strokeWidth={1.75} aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
+              variant="segmented"
+              ariaLabel="View"
+              items={VIEWS.map(({ value, label, Icon }) => ({
+                value,
+                label: (
+                  <span className="flex items-center gap-1.5">
+                    <Icon size={15} strokeWidth={1.75} aria-hidden /> {label}
+                  </span>
+                ),
+              }))}
+            />
+            <span className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden />
+            <IconSelect
+              value={sourceFilter}
+              onChange={setSourceFilter}
+              ariaLabel="Filter by source"
+              className={`h-9 rounded-full border px-3 text-[13px] ${sourceFilter === "all" ? CHIP_OFF : CHIP_ON}`}
+              options={[
+                { value: "all", label: "All sources" },
+                ...SOURCES.map((s) => ({
+                  value: s.value,
+                  label: s.label,
+                  icon: <SourceIcon source={s.value} className="text-faint" />,
+                })),
+              ]}
+            />
+            <ViewMenu
+              stalledOnly={stalledOnly}
+              onStalledOnly={setStalledOnly}
+              stalledCount={summary.stalled}
+              closed={
+                layout === "list"
+                  ? {
+                      showWon,
+                      wonCount,
+                      onShowWon: (v) => {
+                        setShowWon(v);
+                        store(SHOW_WON_KEY, v ? "1" : "0");
+                      },
+                      showLost,
+                      lostCount,
+                      onShowLost: (v) => {
+                        setShowLost(v);
+                        store(SHOW_LOST_KEY, v ? "1" : "0");
+                      },
+                    }
+                  : null
+              }
+            />
+            {filtered && (
+              <button
+                onClick={() => {
+                  setSourceFilter("all");
+                  setStalledOnly(false);
+                  setQuery("");
+                }}
+                className="text-[13px] text-muted hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
 
-        <label className="flex h-8 items-center gap-2 justify-self-end rounded-lg border border-border bg-surface px-2.5">
-          <Search size={15} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Company, contact, domain"
-            className="w-44 bg-transparent text-[13px] outline-none placeholder:text-faint"
-          />
-          {query && (
-            <button onClick={() => setQuery("")} aria-label="Clear the search">
-              <X size={13} className="text-faint" />
-            </button>
-          )}
-        </label>
-      </div>
-
-      {error && (
-        <div className="mt-4 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">{error}</div>
-      )}
-      {busy && <p className="mt-8 text-sm text-muted">Loading…</p>}
-
-      {!busy && vocab && layout === "today" && (
-        <TodayList leads={visible} stageById={stageById} now={now} suggestions={suggestions} />
-      )}
-
-      {!busy && vocab && layout === "summary" && (
-        <PipelineSummary leads={rows} stageById={stageById} reasons={vocab.lostReasons} ils={ils} now={now} />
-      )}
-
-      {!busy && vocab && layout === "board" && (
-        <div className="mt-5 flex items-start gap-3 overflow-x-auto pb-4">
-          {stages.map((s) => {
-            const list = byStage.get(s.id) ?? [];
-            const value = list.reduce((sum, l) => sum + (ils(l) ?? 0), 0);
-            const folded = s.kind !== "open" && !unfolded.has(s.id);
-            const tone = s.color || NEUTRAL;
-            const fold = () =>
-              setUnfolded((prev) => {
-                const next = new Set(prev);
-                if (folded) next.add(s.id);
-                else next.delete(s.id);
-                return next;
-              });
-            // ⚠️ The chevron is the FIRST thing in both shapes, so folding and
-            // unfolding never moves it out from under the pointer.
-            if (folded) {
-              return (
+            <div className="ml-auto flex items-center gap-2">
+              <label className="flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 focus-within:border-brand">
+                <Search size={16} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search company, contact, domain"
+                  className="w-56 bg-transparent text-[14px] outline-none placeholder:text-faint"
+                />
+                {query && (
+                  <button onClick={() => setQuery("")} aria-label="Clear the search">
+                    <X size={14} className="text-faint" />
+                  </button>
+                )}
+              </label>
+              {!paneOpen && (
                 <button
-                  key={s.id}
-                  {...dropZone(s)}
-                  onClick={fold}
-                  title={`Show ${s.name}`}
-                  className={`flex min-h-32 w-11 shrink-0 flex-col items-center gap-2 rounded-xl border border-t-[3px] bg-surface py-2.5 shadow-card transition-colors hover:brightness-[0.98] ${
-                    dropStage === s.id ? "outline outline-2 outline-brand" : ""
-                  }`}
-                  style={{ borderColor: `${tone}40`, borderTopColor: tone }}
+                  onClick={() => choosePane("today")}
+                  title="Show Today and Summary"
+                  className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] text-muted hover:border-brand hover:text-foreground"
                 >
-                  <ChevronRight size={15} className="text-muted" />
-                  <StageIcon stage={s} size={15} />
-                  <span
-                    className="min-w-5 rounded-full px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white tabular-nums"
-                    style={{ backgroundColor: tone }}
-                  >
-                    {list.length}
-                  </span>
-                  <span
-                    className={`bidi-auto [writing-mode:vertical-rl] text-[12px] font-semibold ${HAS_HEBREW.test(s.name) ? "" : "uppercase tracking-wide"}`}
-                    style={{ color: tone }}
-                  >
-                    {s.name}
-                  </span>
-                </button>
-              );
-            }
-            return (
-              <div key={s.id} className={COLUMN}>
-                <div className="flex items-center gap-1.5 px-1 pb-2">
-                  {s.kind !== "open" && (
-                    <button onClick={fold} title={`Fold ${s.name}`} aria-label={`Fold ${s.name}`} className="-ml-0.5 rounded text-muted hover:text-foreground">
-                      <ChevronDown size={15} />
-                    </button>
+                  <PanelRightOpen size={16} strokeWidth={1.75} />
+                  Today
+                  {todayCount > 0 && (
+                    <span className="rounded-full bg-brand px-1.5 text-[11.5px] font-medium leading-[18px] text-white tabular-nums">
+                      {todayCount}
+                    </span>
                   )}
-                  <StageIcon stage={s} />
-                  <span className={`bidi-auto ${headingClass(s.name)}`} style={{ color: s.color || undefined }}>
-                    {s.name}
-                  </span>
-                  <span className="text-[11px] text-faint">{list.length}</span>
-                  {value > 0 && <span className="ml-auto text-[11px] text-muted">{formatIls(value)}</span>}
-                </div>
-                <div
-                  {...dropZone(s)}
-                  className={`flex min-h-32 flex-col gap-2 rounded-xl p-2 transition-colors ${COLUMN_BODY} ${
-                    dropStage === s.id ? "bg-brand-soft outline outline-1 outline-brand" : "bg-foreground/[0.035]"
-                  }`}
-                >
-                  {list.map((l) => (
-                    <AttentionTip key={l.id} nudge={nudgesFor(l, s, nudgeRules, now)[0]} leadId={l.id} className="block" place="dot" dot="-left-[5px] top-[15px]">
-                      <LeadCard {...cardProps(l)} {...dragHandlers(l)} />
-                    </AttentionTip>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          {(byStage.get("") ?? []).length > 0 && (
-            <div className={COLUMN}>
-              <div className="flex items-center gap-1.5 px-1 pb-2">
-                <span className="text-[12px] font-medium uppercase tracking-wide text-warning">No stage</span>
-                <span className="text-[11px] text-faint">{(byStage.get("") ?? []).length}</span>
-              </div>
-              <div className={`flex min-h-32 flex-col gap-2 rounded-xl bg-warning/10 p-2 ${COLUMN_BODY}`}>
-                {(byStage.get("") ?? []).map((l) => (
-                  <LeadCard key={l.id} {...cardProps(l)} {...dragHandlers(l)} />
-                ))}
-              </div>
+                </button>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      {!busy && vocab && layout === "list" && (
-        <div className="mt-5 overflow-x-auto rounded-xl border border-border bg-surface shadow-card">
-          <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left text-[13px]">
-            <thead>
-              <tr>
-                {["Company", "Stage", "Owner", "Value", "Next step", "Source", "Last activity"].map((h) => (
-                  <th
-                    key={h}
-                    className="border-b border-border px-3 pb-2 pt-3 text-[11px] font-medium uppercase tracking-wide text-faint"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((l) => {
-                const s = l.stageId ? stageById.get(l.stageId) : undefined;
-                const owner = l.ownerId ? profileById.get(l.ownerId) : null;
-                const overdue = isOverdue(l, now);
-                return (
-                  <tr key={l.id} className="hover:bg-brand-soft/40">
-                    <td className="border-b border-border px-3 py-2.5">
-                      <Link href={`/leads/${l.id}`} className="flex items-center gap-2">
-                        <span className="min-w-0">
-                          <span className="bidi-auto block truncate font-medium">{l.company}</span>
-                          {l.primaryContact && (
-                            <span className="bidi-auto block truncate text-[11.5px] text-faint">{l.primaryContact}</span>
-                          )}
-                        </span>
-                        {newIds.has(l.id) && <NewBadge />}
-                        {isStalled(l, s, now) && <StalledBadge />}
-                      </Link>
-                    </td>
-                    <td className="border-b border-border px-3 py-2.5 text-muted">
-                      <StageChip stage={s} />
-                    </td>
-                    <td className="border-b border-border px-3 py-2.5">
-                      {owner ? (
-                        <span className="flex items-center gap-1.5">
-                          <Avatar profile={owner} size={18} />
-                          <span className="truncate text-muted">{owner.name}</span>
-                        </span>
-                      ) : (
-                        <span className="text-faint">Unassigned</span>
-                      )}
-                    </td>
-                    <td className="border-b border-border px-3 py-2.5">
-                      {formatIls(ils(l))}
-                      {l.currency === "USD" && l.estValue !== null && (
-                        <span className="ml-1 text-[11.5px] text-faint">{formatMoney(l.estValue, "USD")}</span>
-                      )}
-                    </td>
-                    <td className={`bidi-auto border-b border-border px-3 py-2.5 ${overdue ? "text-danger" : "text-muted"}`}>
-                      {s?.kind === "open" ? (
-                        l.nextStep ? (
-                          <>
-                            {l.nextStep}
-                            {l.nextStepDue && <span className="text-faint"> · {formatDate(l.nextStepDue)}</span>}
-                          </>
-                        ) : (
-                          <span className="italic text-warning">No next step</span>
-                        )
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="border-b border-border px-3 py-2.5 text-muted">
-                      <span className="flex items-center gap-1.5">
-                        <SourceIcon source={l.source as LeadSource | null} className="text-faint" />
-                        {sourceLabel(l.source as LeadSource | null)}
+          {busy && <p className="py-6 text-sm text-muted">Loading…</p>}
+
+          {!busy && vocab && layout === "board" && (
+            <div className="flex items-start gap-3 overflow-x-auto pb-3">
+              {stages.map((s) => {
+                const list = byStage.get(s.id) ?? [];
+                const value = list.reduce((sum, l) => sum + (ils(l) ?? 0), 0);
+                // Won and Lost start folded, and so does an open stage with
+                // nothing in it (or nothing matching the filters): an empty
+                // column is width the board needs for the ones that hold leads.
+                // A folded column is still a drop target.
+                const foldable = s.kind !== "open" || list.length === 0;
+                const folded = foldable && !unfolded.has(s.id);
+                const tone = s.color || NEUTRAL;
+                const fold = () =>
+                  setUnfolded((prev) => {
+                    const next = new Set(prev);
+                    if (folded) next.add(s.id);
+                    else next.delete(s.id);
+                    return next;
+                  });
+                // ⚠️ The chevron is the FIRST thing in both shapes, so folding and
+                // unfolding never moves it out from under the pointer.
+                if (folded) {
+                  return (
+                    <button
+                      key={s.id}
+                      {...dropZone(s)}
+                      onClick={fold}
+                      title={`Show ${s.name}`}
+                      className={`flex min-h-40 w-12 shrink-0 flex-col items-center gap-2.5 rounded-2xl border border-t-[3px] bg-surface py-3 shadow-card transition-colors hover:brightness-[0.98] ${
+                        dropStage === s.id ? "outline outline-2 outline-brand" : ""
+                      }`}
+                      style={{ borderColor: `${tone}40`, borderTopColor: tone }}
+                    >
+                      <ChevronRight size={16} className="text-muted" />
+                      <StageIcon stage={s} size={16} />
+                      <span
+                        className={`min-w-6 rounded-full px-1.5 text-center text-[12px] font-medium leading-5 tabular-nums ${
+                          list.length ? "text-white" : "bg-foreground/[0.06] text-muted"
+                        }`}
+                        style={list.length ? { backgroundColor: tone } : undefined}
+                      >
+                        {list.length}
                       </span>
-                    </td>
-                    <td className="border-b border-border px-3 py-2.5 text-muted">{ago(l.lastActivityAt)}</td>
-                  </tr>
+                      <span
+                        className={`bidi-auto [writing-mode:vertical-rl] text-[13px] font-medium ${HAS_HEBREW.test(s.name) ? "" : "uppercase tracking-wide"}`}
+                        style={{ color: tone }}
+                      >
+                        {s.name}
+                      </span>
+                    </button>
+                  );
+                }
+                return (
+                  <div key={s.id} className={COLUMN}>
+                    <div
+                      className="mb-2 flex items-center gap-2 rounded-xl border border-t-[3px] bg-surface px-3 py-2.5 shadow-card"
+                      style={{ borderColor: `${tone}33`, borderTopColor: tone }}
+                    >
+                      {foldable && (
+                        <button
+                          onClick={fold}
+                          title={`Fold ${s.name}`}
+                          aria-label={`Fold ${s.name}`}
+                          className="-ml-1 rounded text-muted hover:text-foreground"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      )}
+                      <StageIcon stage={s} size={15} />
+                      <span className={`bidi-auto min-w-0 truncate ${headingClass(s.name)}`} style={{ color: tone }}>
+                        {s.name}
+                      </span>
+                      <span className="rounded-full bg-foreground/[0.06] px-1.5 text-[12px] font-medium tabular-nums text-muted">
+                        {list.length}
+                      </span>
+                      {value > 0 && <span className="ml-auto shrink-0 text-[13px] tabular-nums text-muted">{formatIls(value)}</span>}
+                    </div>
+                    <div
+                      {...dropZone(s)}
+                      className={`flex min-h-40 flex-col gap-2.5 rounded-2xl p-2 transition-colors ${COLUMN_BODY} ${
+                        dropStage === s.id ? "bg-brand-soft outline outline-1 outline-brand" : "bg-foreground/[0.035]"
+                      }`}
+                    >
+                      {list.map((l) => (
+                        <AttentionTip
+                          key={l.id}
+                          nudge={nudgesFor(l, s, nudgeRules, now)[0]}
+                          leadId={l.id}
+                          className="block"
+                          place="dot"
+                          dot="-left-[5px] top-[19px]"
+                        >
+                          <LeadCard {...cardProps(l)} {...dragHandlers(l)} />
+                        </AttentionTip>
+                      ))}
+                      {list.length === 0 && (
+                        <p className="px-2 py-6 text-center text-[13px] text-faint">
+                          {dropStage === s.id ? "Drop here" : "No leads here"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-          {visible.length === 0 && <p className="px-3 py-6 text-sm text-faint">No leads match that.</p>}
-        </div>
-      )}
 
-      {!busy && rows.length === 0 && !error && (
-        <p className="mt-8 text-sm text-faint">
-          No leads yet. Add one, or wait for the website form — it lands here as {stages[0]?.name ?? "the first stage"}.
-        </p>
-      )}
+              {(byStage.get("") ?? []).length > 0 && (
+                <div className={COLUMN}>
+                  <div className="mb-2 flex items-center gap-2 rounded-xl border border-t-[3px] border-warning/30 border-t-warning bg-surface px-3 py-2.5 shadow-card">
+                    <span className="text-[12.5px] font-medium uppercase tracking-wide text-warning">No stage</span>
+                    <span className="rounded-full bg-foreground/[0.06] px-1.5 text-[12px] font-medium tabular-nums text-muted">
+                      {(byStage.get("") ?? []).length}
+                    </span>
+                  </div>
+                  <div className={`flex min-h-40 flex-col gap-2.5 rounded-2xl bg-warning/10 p-2 ${COLUMN_BODY}`}>
+                    {(byStage.get("") ?? []).map((l) => (
+                      <LeadCard key={l.id} {...cardProps(l)} {...dragHandlers(l)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!busy && vocab && layout === "list" && (
+            <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
+              <table className="w-full min-w-[900px] border-separate border-spacing-0 text-left text-[14px]">
+                <thead>
+                  <tr>
+                    {["Company", "Stage", "Owner", "Value", "Next step", "Source", "Last activity"].map((h) => (
+                      <th
+                        key={h}
+                        className="whitespace-nowrap border-b border-border bg-background/50 px-3 py-3 text-[11.5px] font-medium uppercase tracking-wide text-muted first:rounded-tl-2xl first:pl-4 last:rounded-tr-2xl"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {listRows.map((l) => {
+                    const s = l.stageId ? stageById.get(l.stageId) : undefined;
+                    const owner = l.ownerId ? profileById.get(l.ownerId) : null;
+                    const overdue = isOverdue(l, now);
+                    return (
+                      <tr
+                        key={l.id}
+                        onClick={(e) => {
+                          // The whole row opens the lead; the company is the real link for keyboard and ⌘-click.
+                          if ((e.target as HTMLElement).closest("a")) return;
+                          router.push(`/leads/${l.id}`);
+                        }}
+                        className="cursor-pointer hover:bg-brand-soft/40"
+                      >
+                        <td className="border-b border-border py-3 pl-4 pr-3">
+                          <Link href={`/leads/${l.id}`} className="flex items-center gap-2">
+                            <span className="min-w-0 max-w-[13rem]">
+                              <span className="bidi-auto block truncate font-medium">{l.company}</span>
+                              {l.primaryContact && (
+                                <span className="bidi-auto block truncate text-[12.5px] text-muted">{l.primaryContact}</span>
+                              )}
+                            </span>
+                            {newIds.has(l.id) && <NewBadge />}
+                            {isStalled(l, s, now) && <StalledBadge />}
+                          </Link>
+                        </td>
+                        <td className="border-b border-border px-3 py-3">
+                          <StageChip stage={s} />
+                        </td>
+                        <td className="border-b border-border px-3 py-3">
+                          {owner ? (
+                            <span className="flex items-center gap-2 whitespace-nowrap" title={owner.name}>
+                              <Avatar profile={owner} size={22} />
+                              <span className="truncate text-foreground/85">{owner.name.split(" ")[0]}</span>
+                            </span>
+                          ) : (
+                            <span className="text-faint">Unassigned</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap border-b border-border px-3 py-3 tabular-nums">
+                          {formatIls(ils(l))}
+                          {l.currency === "USD" && l.estValue !== null && (
+                            <span className="ml-1.5 text-[12.5px] text-faint">{formatMoney(l.estValue, "USD")}</span>
+                          )}
+                        </td>
+                        <td className={`bidi-auto min-w-[13rem] max-w-[28rem] border-b border-border px-3 py-3 ${overdue ? "text-danger" : "text-foreground/85"}`}>
+                          {s?.kind === "open" ? (
+                            l.nextStep ? (
+                              <span className="line-clamp-2">
+                                {l.nextStep}
+                                {l.nextStepDue && <span className={overdue ? "" : "text-muted"}> · {formatDate(l.nextStepDue)}</span>}
+                              </span>
+                            ) : (
+                              <span className="text-warning">No next step</span>
+                            )
+                          ) : (
+                            <span className="text-faint">—</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap border-b border-border px-3 py-3 text-muted">
+                          <span className="flex items-center gap-1.5">
+                            <SourceIcon source={l.source as LeadSource | null} className="text-faint" />
+                            {sourceLabel(l.source as LeadSource | null)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap border-b border-border px-3 py-3 text-muted">{ago(l.lastActivityAt)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {listRows.length === 0 && <p className="px-4 py-8 text-center text-sm text-faint">No leads match that.</p>}
+            </div>
+          )}
+
+          {!busy && rows.length === 0 && !error && (
+            <p className="py-6 text-sm text-faint">
+              No leads yet. Add one, or wait for the website form — it lands here as {stages[0]?.name ?? "the first stage"}.
+            </p>
+          )}
+        </div>
+
+        {/* ── right pane: Today · Summary ──
+            ⚠️ Sticky under the app header (h-14 + main's p-6 = top-20) and
+            scrolling itself, so it stays beside the board however long a
+            column runs. Below xl it simply follows the main column. */}
+        {paneOpen && (
+          <aside className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card xl:sticky xl:top-20 xl:max-h-[calc(100vh-6.5rem)]">
+            <div className="flex items-center gap-2 border-b border-border px-5 pt-3.5">
+              <Tabs<"today" | "summary">
+                value={pane === "summary" ? "summary" : "today"}
+                onChange={choosePane}
+                ariaLabel="Pipeline pane"
+                className="flex-1 gap-5! border-b-0!"
+                items={[
+                  {
+                    value: "today",
+                    label: (
+                      <span className="flex items-center gap-1.5 text-[14px]">
+                        Today
+                        {todayCount > 0 && (
+                          <span
+                            className={`rounded-full px-1.5 text-[11.5px] leading-[18px] tabular-nums ${
+                              pane === "today" ? "bg-brand text-white" : "bg-foreground/[0.07] text-muted"
+                            }`}
+                          >
+                            {todayCount}
+                          </span>
+                        )}
+                      </span>
+                    ),
+                  },
+                  { value: "summary", label: <span className="text-[14px]">Summary</span> },
+                ]}
+              />
+              <button
+                onClick={() => choosePane("closed")}
+                title="Hide the pane — more room for the board"
+                aria-label="Hide the pane"
+                className="-mt-1.5 mb-1 flex size-8 items-center justify-center rounded-lg text-faint hover:bg-background hover:text-foreground"
+              >
+                <PanelRightClose size={17} strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              {busy || !vocab ? (
+                <p className="text-sm text-muted">Loading…</p>
+              ) : pane === "summary" ? (
+                <PipelineSummary leads={rows} stageById={stageById} reasons={vocab.lostReasons} ils={ils} now={now} />
+              ) : (
+                <>
+                  {filtered && (
+                    <p className="mb-4 flex items-center gap-1.5 rounded-lg bg-background px-3 py-2 text-[12.5px] text-muted">
+                      <ArrowRight size={13} strokeWidth={1.75} aria-hidden /> Showing the filtered leads only.
+                    </p>
+                  )}
+                  <TodayList sections={today} stageById={stageById} />
+                </>
+              )}
+            </div>
+          </aside>
+        )}
+      </div>
 
       {pending && vocab && pending.to.kind === "lost" && (
         <LostModal
