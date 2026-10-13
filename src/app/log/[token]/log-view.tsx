@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ClientAvatar } from "@/components/client-avatar";
 
 // A freelancer's page (0054–0057): his hours as a table, a month at a time,
@@ -96,34 +96,66 @@ function Chip({ client }: { client: ClientInfo }) {
 }
 
 export function FreelancerLogView({ token }: { token: string }) {
-  const [period, setPeriod] = useState<string | null>(null);
-  const [data, setData] = useState<Data | null>(null);
-  const [failed, setFailed] = useState<string | null>(null);
-  // Bumped after every change to read the month again.
-  const [version, setVersion] = useState(0);
-  const reload = () => setVersion((v) => v + 1);
-  const [editing, setEditing] = useState<Editing>(null);
   const api = `/api/log/${encodeURIComponent(token)}`;
+  // Months already loaded, by "YYYY-MM" ("now" = the default month). A month
+  // he's seen opens instantly; the one before is fetched in the background.
+  const [cache, setCache] = useState<Record<string, Data>>({});
+  const [period, setPeriod] = useState<string | null>(null);
+  // What stays on screen while a new month loads — the month he came from.
+  const [prevKey, setPrevKey] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Editing>(null);
+  const key = period ?? "now";
+  const shownKey = cache[key] ? key : prevKey;
+  const data = shownKey ? (cache[shownKey] ?? null) : null;
+  const loading = !cache[key];
+
+  const load = useCallback(
+    async (k: string): Promise<Data> => {
+      const r = await fetch(k === "now" ? api : `${api}?month=${k}`, { cache: "no-store" });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error ?? "This link isn't active.");
+      return j as Data;
+    },
+    [api],
+  );
+
+  useEffect(() => {
+    if (cache[key]) return;
+    let alive = true;
+    load(key)
+      .then((d) => {
+        if (!alive) return;
+        setCache((c) => ({ ...c, [key]: d, [d.period]: d }));
+        // Stepping back is the common move — have the month before ready.
+        const before = shift(d.period, -1);
+        if (d.period > d.firstPeriod)
+          load(before)
+            .then((b) => setCache((c) => (c[before] ? c : { ...c, [before]: b })))
+            .catch(() => undefined);
+      })
+      .catch((e: unknown) => alive && setFailed(e instanceof Error ? e.message : "Couldn't load — check your connection and refresh."));
+    return () => {
+      alive = false;
+    };
+  }, [key, cache, load]);
+
+  const go = (p: string) => {
+    setPrevKey(shownKey);
+    setPeriod(p);
+  };
+  // After a change: read this month again (and drop the rest — the months pane
+  // and the bill may have moved). What's on screen stays until it arrives.
+  const reload = () => {
+    load(key)
+      .then((d) => setCache({ [key]: d, [d.period]: d }))
+      .catch(() => undefined);
+  };
   const startEdit = (e: Editing) => {
     setEditing(e);
     // The box is pinned to the bottom; bring it into view on a long month.
     requestAnimationFrame(() => document.getElementById("composer")?.scrollIntoView({ behavior: "smooth", block: "nearest" }));
   };
-
-  useEffect(() => {
-    let alive = true;
-    fetch(period ? `${api}?month=${period}` : api, { cache: "no-store" })
-      .then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) }))
-      .then(({ ok, j }) => {
-        if (!alive) return;
-        if (ok) setData(j as Data);
-        else setFailed(j.error ?? "This link isn't active.");
-      })
-      .catch(() => alive && setFailed("Couldn't load — check your connection and refresh."));
-    return () => {
-      alive = false;
-    };
-  }, [api, period, version]);
 
   if (failed)
     return (
@@ -134,14 +166,17 @@ export function FreelancerLogView({ token }: { token: string }) {
   if (!data)
     return (
       <Shell>
-        <p className="py-16 text-center text-muted">Loading…</p>
+        <PageSkeleton />
       </Shell>
     );
 
   const cur = data.summary.currency;
   const thisMonth = data.today.slice(0, 7);
+  // The month asked for — named in the bar and marked in the list straight
+  // away, while its rows are still on their way.
+  const shownPeriod = period ?? data.period;
   // He writes to the current month only — past months are history.
-  const canLog = data.period === thisMonth;
+  const canLog = data.period === thisMonth && !loading;
 
   return (
     <Shell>
@@ -162,24 +197,27 @@ export function FreelancerLogView({ token }: { token: string }) {
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand px-4 py-3 text-white">
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setPeriod(shift(data.period, -1))}
-            disabled={data.period <= data.firstPeriod}
+            onClick={() => go(shift(shownPeriod, -1))}
+            disabled={shownPeriod <= data.firstPeriod}
             className="rounded-md p-1.5 hover:bg-white/15 disabled:opacity-30"
             aria-label="Previous month"
           >
             <ChevronLeft size={18} />
           </button>
-          <p className="min-w-40 text-center text-lg font-semibold">{monthLabel(data.period)}</p>
+          <p className="flex min-w-40 items-center justify-center gap-2 text-lg font-semibold">
+            {monthLabel(shownPeriod)}
+            {loading && <Loader2 size={16} className="animate-spin opacity-80" aria-label="Loading" />}
+          </p>
           <button
-            onClick={() => setPeriod(shift(data.period, 1))}
-            disabled={data.period >= thisMonth}
+            onClick={() => go(shift(shownPeriod, 1))}
+            disabled={shownPeriod >= thisMonth}
             className="rounded-md p-1.5 hover:bg-white/15 disabled:opacity-30"
             aria-label="Next month"
           >
             <ChevronRight size={18} />
           </button>
-          {data.period !== thisMonth && (
-            <button onClick={() => setPeriod(thisMonth)} className="ml-1 rounded-md px-2 py-1 text-xs hover:bg-white/15">
+          {shownPeriod !== thisMonth && (
+            <button onClick={() => go(thisMonth)} className="ml-1 rounded-md px-2 py-1 text-xs hover:bg-white/15">
               This month
             </button>
           )}
@@ -200,7 +238,8 @@ export function FreelancerLogView({ token }: { token: string }) {
       </div>
 
       <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-4">
+        <div className={`relative space-y-4 transition-opacity ${loading ? "pointer-events-none opacity-50" : ""}`} aria-busy={loading}>
+          {loading && <LoadingLine />}
           <HoursTable data={data} api={api} onChanged={reload} onEdit={(log) => startEdit({ kind: "hours", log })} />
           {data.charges.length > 0 && (
             <ChargesTable data={data} api={api} onChanged={reload} onEdit={(charge) => startEdit({ kind: "charge", charge })} />
@@ -220,7 +259,7 @@ export function FreelancerLogView({ token }: { token: string }) {
           )}
         </div>
         <div className="space-y-4">
-          <Months data={data} onPick={setPeriod} />
+          <Months data={data} selected={shownPeriod} onPick={go} />
           <Deliverables data={data} api={api} onChanged={reload} />
         </div>
       </div>
@@ -524,7 +563,7 @@ function AddButton({ saving, label, onClick }: { saving: boolean; label: string;
 
 /** Every month he has, newest first: hours, that month's rate, the bill —
  * click one to open it. */
-function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
+function Months({ data, selected, onPick }: { data: Data; selected: string; onPick: (p: string) => void }) {
   const cur = data.summary.currency;
   const short = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1].slice(0, 3)} ${p.slice(2, 4)}`;
   return (
@@ -545,7 +584,7 @@ function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
               <tr
                 key={m.period}
                 onClick={() => onPick(m.period)}
-                className={`cursor-pointer ${m.period === data.period ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
+                className={`cursor-pointer ${m.period === selected ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
                 title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
               >
                 <td className="whitespace-nowrap rounded-l-md px-1 py-1">{short(m.period)}</td>
@@ -636,6 +675,39 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1300px] px-4 py-6">{children}</div>
+    </div>
+  );
+}
+
+/** A thin moving line over the tables while a month loads. */
+function LoadingLine() {
+  return (
+    <div className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden rounded-full bg-brand-soft">
+      <div className="h-full w-1/3 animate-[loading-line_1s_ease-in-out_infinite] rounded-full bg-brand" />
+    </div>
+  );
+}
+
+/** The page's shape before its first month arrives. */
+function PageSkeleton() {
+  const bar = "animate-pulse rounded bg-border";
+  return (
+    <div aria-busy aria-label="Loading">
+      <div className={`${bar} h-9 w-48`} />
+      <div className="mt-4 h-14 animate-pulse rounded-2xl bg-brand/20" />
+      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="flex gap-4">
+              <div className={`${bar} h-4 w-20`} />
+              <div className={`${bar} h-4 w-24`} />
+              <div className={`${bar} h-4 flex-1`} />
+              <div className={`${bar} h-4 w-12`} />
+            </div>
+          ))}
+        </div>
+        <div className="h-64 animate-pulse rounded-2xl border border-border bg-surface" />
+      </div>
     </div>
   );
 }

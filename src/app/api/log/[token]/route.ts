@@ -98,7 +98,17 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
   const from = `${period}-01`;
   const to = `${period}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
 
-  const [{ data: profile }, { clients, tasks }, { data: logs }, { data: first }, { data: deliverables }, { data: charges }] = await Promise.all([
+  // One round of queries for everything that doesn't depend on another —
+  // switching months used to wait on six round trips one after another.
+  const [
+    { data: profile },
+    { clients, tasks },
+    { data: logs },
+    { data: deliverables },
+    { data: charges },
+    { data: allLogs },
+    { data: allCharges },
+  ] = await Promise.all([
     sb.from("profiles").select("name").eq("id", f.profile_id).single(),
     allowed(sb, f.profile_id),
     sb
@@ -110,7 +120,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       .lte("date", to)
       .order("date")
       .order("created_at"),
-    sb.from("freelancer_logs").select("date").eq("profile_id", f.profile_id).order("date").limit(1),
     sb
       .from("freelancer_deliverables")
       .select("id, title, url, created_at")
@@ -125,6 +134,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       .lte("date", to)
       .order("date")
       .order("created_at"),
+    // Every month he has, for the months pane (and how far back he can step).
+    sb.from("freelancer_logs").select("date, minutes").eq("profile_id", f.profile_id).neq("status", "rejected"),
+    sb.from("freelancer_charges").select("date, amount, currency").eq("profile_id", f.profile_id).neq("status", "rejected"),
   ]);
 
   // Names for the clients and tasks on his own logs — only those.
@@ -137,10 +149,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
   ]);
   // Every month he has, newest first — hours, that month's rate, the bill —
   // for the months pane. Turned-down rows are out, as everywhere on his page.
-  const [{ data: allLogs }, { data: allCharges }] = await Promise.all([
-    sb.from("freelancer_logs").select("date, minutes").eq("profile_id", f.profile_id).neq("status", "rejected"),
-    sb.from("freelancer_charges").select("date, amount, currency").eq("profile_id", f.profile_id).neq("status", "rejected"),
-  ]);
   const perMonth = new Map<string, { minutes: number; charges: { amount: number; currency: string; status: string }[] }>();
   const bucket = (d: string) => {
     const m = perMonth.get(d.slice(0, 7)) ?? { minutes: 0, charges: [] };
@@ -178,7 +186,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
     today: now,
     earliest: editableFrom(),
     period,
-    firstPeriod: ((first?.[0]?.date as string | undefined) ?? now).slice(0, 7),
+    firstPeriod: (allLogs ?? []).reduce((min, l) => ((l.date as string) < min ? (l.date as string) : min), now).slice(0, 7),
     clients: clients.map((c) => chipOf.get(c.id) ?? { ...c, color: "#98a0b3", icon: null, iconUrl: null }),
     tasks,
     summary: { ...monthBill(hours, t, extra), currency: t.currency },

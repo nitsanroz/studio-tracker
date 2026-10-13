@@ -77,21 +77,19 @@ export async function GET(req: NextRequest) {
   }
   const thisMonth = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date()).slice(0, 7);
 
-  const [{ data: freelancers }, { data: links }, { data: pending }, { data: clients }, { data: deliverables }] = await Promise.all([
+  // Few round trips, each a batch of independent queries — a month switch used
+  // to wait on them one after another.
+  const [{ data: freelancers }, { data: links }, { data: pending }, { data: clients }, { data: deliverables }, { data: waitingCharges }] = await Promise.all([
     sb.from("freelancers").select("profile_id, token, active, currency, rate_high, rate_low, hours_low, hours_high"),
     sb.from("freelancer_clients").select("profile_id, client_id"),
     sb.from("freelancer_logs").select("profile_id, date").eq("status", "pending"),
     sb.from("clients").select("id, name").eq("archived", false).order("name"),
     sb.from("freelancer_deliverables").select("profile_id, title, url, created_at").order("created_at", { ascending: false }),
+    sb.from("freelancer_charges").select("profile_id, date").eq("status", "pending"),
   ]);
   const one = req.nextUrl.searchParams.get("freelancer");
   const people = (freelancers ?? []).filter((f) => !one || f.profile_id === one);
   if (one && people.length === 0) return NextResponse.json({ error: "No such freelancer" }, { status: 404 });
-  const { data: profiles } = people.length
-    ? await sb.from("profiles").select("id, name").in("id", people.map((f) => f.profile_id))
-    : { data: [] as { id: string; name: string }[] };
-  const nameOf = new Map((profiles ?? []).map((p) => [p.id, p.name as string]));
-
   // ?month=YYYY-MM picks the month (this one by default); the list shows it for
   // everyone, a freelancer's own page shows its logs.
   const asked = req.nextUrl.searchParams.get("month");
@@ -99,23 +97,27 @@ export async function GET(req: NextRequest) {
   const [py, pm] = period.split("-").map(Number);
   const from = `${period}-01`;
   const to = `${period}-${String(new Date(py, pm, 0).getDate()).padStart(2, "0")}`;
-  const { data: monthCharges } = await sb
-    .from("freelancer_charges")
-    .select("id, profile_id, date, title, amount, currency, note, status, source, review_note")
-    .in("profile_id", people.map((f) => f.profile_id))
-    .gte("date", from)
-    .lte("date", to)
-    .order("date")
-    .order("created_at");
-  const { data: waitingCharges } = await sb.from("freelancer_charges").select("profile_id, date").eq("status", "pending");
-  const { data: monthLogs } = await sb
-    .from("freelancer_logs")
-    .select("id, profile_id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source")
-    .in("profile_id", people.map((f) => f.profile_id))
-    .gte("date", from)
-    .lte("date", to)
-    .order("date")
-    .order("created_at");
+  const ids = people.map((f) => f.profile_id);
+  const [{ data: profiles }, { data: monthCharges }, { data: monthLogs }] = await Promise.all([
+    ids.length ? sb.from("profiles").select("id, name").in("id", ids) : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    sb
+      .from("freelancer_charges")
+      .select("id, profile_id, date, title, amount, currency, note, status, source, review_note")
+      .in("profile_id", ids)
+      .gte("date", from)
+      .lte("date", to)
+      .order("date")
+      .order("created_at"),
+    sb
+      .from("freelancer_logs")
+      .select("id, profile_id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source")
+      .in("profile_id", ids)
+      .gte("date", from)
+      .lte("date", to)
+      .order("date")
+      .order("created_at"),
+  ]);
+  const nameOf = new Map((profiles ?? []).map((p) => [p.id, p.name as string]));
 
   const summary = (f: (typeof people)[number]) => {
     const terms = {
@@ -155,20 +157,18 @@ export async function GET(req: NextRequest) {
   const clientIds = [...new Set(rows.map((l) => l.client_id).filter((c): c is string => !!c))];
   const taskIds = [...new Set(rows.map((l) => l.task_id).filter((t): t is string => !!t))];
   const waitingClients = [...new Set(rows.filter((l) => l.status === "pending").map((l) => l.client_id).filter((c): c is string => !!c))];
-  const [{ data: logClients }, { data: logTasks }, { data: pickTasks }, { data: first }] = await Promise.all([
+  const [{ data: logClients }, { data: logTasks }, { data: pickTasks }, { data: allLogs }, { data: allCharges }] = await Promise.all([
     clientIds.length ? sb.from("clients").select("id, name").in("id", clientIds) : Promise.resolve({ data: [] }),
     taskIds.length ? sb.from("tasks").select("id, title").in("id", taskIds) : Promise.resolve({ data: [] }),
     waitingClients.length
       ? sb.from("tasks").select("id, title, client_id, status, completed_at").in("client_id", waitingClients).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    sb.from("freelancer_logs").select("date").eq("profile_id", one).order("date").limit(1),
-  ]);
-  // Every month he has, newest first — hours, that month's rate, the bill — for
-  // the months pane beside the table.
-  const [{ data: allLogs }, { data: allCharges }] = await Promise.all([
+    // Every month he has, for the months pane (and how far back to step).
     sb.from("freelancer_logs").select("date, minutes, status").eq("profile_id", one),
     sb.from("freelancer_charges").select("date, amount, currency, status").eq("profile_id", one),
   ]);
+  // Every month he has, newest first — hours, that month's rate, the bill — for
+  // the months pane beside the table.
   const byMonth = new Map<string, { minutes: number; charges: { amount: number; currency: string; status: string }[]; waiting: boolean }>();
   const monthOf = (p: string) => {
     const m = byMonth.get(p) ?? { minutes: 0, charges: [], waiting: false };
@@ -194,7 +194,7 @@ export async function GET(req: NextRequest) {
   const taskTitle = new Map(((logTasks ?? []) as { id: string; title: string }[]).map((t) => [t.id, t.title]));
   return NextResponse.json({
     period,
-    firstPeriod: ((first?.[0]?.date as string | undefined) ?? `${thisMonth}-01`).slice(0, 7),
+    firstPeriod: (allLogs ?? []).reduce((min, l) => ((l.date as string) < min ? (l.date as string) : min), `${thisMonth}-01`).slice(0, 7),
     clients: clients ?? [],
     freelancer: summary(people[0]),
     months,

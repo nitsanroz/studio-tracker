@@ -554,3 +554,14 @@ b,
 .lead-crown {
   --li-ink: #06112f;
 }
+
+/* The thin moving line shown over a table while its month loads (freelancer
+   pages: /log/[token] and /freelancers/[profileId]). */
+@keyframes loading-line {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}

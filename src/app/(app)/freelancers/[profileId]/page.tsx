@@ -1,19 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, RefreshCw, X } from "lucide-react";
-import { useIsAdmin } from "@/lib/store";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Copy,
+  Loader2,
+  ExternalLink,
+  RefreshCw,
+  X,
+} from "lucide-react";
+import { useData, useIsAdmin } from "@/lib/store";
+import { ClientChip } from "@/components/ui";
 import { freelancerPath } from "@/lib/freelancer-link";
 import {
   TermsForm,
   act,
   dayLabel,
   hrs,
+  LoadingLine,
   money,
   monthLabel,
   otherLine,
+  PageSkeleton,
   shiftMonth,
   shortMonth,
   termsLine,
@@ -75,41 +90,86 @@ interface Data {
   tasks: PickTask[];
 }
 
-const thisMonth = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date()).slice(0, 7);
+const thisMonth = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" })
+    .format(new Date())
+    .slice(0, 7);
 
 export default function FreelancerPage() {
   const isAdmin = useIsAdmin();
   const { profileId } = useParams<{ profileId: string }>();
+  // Months already loaded, by "YYYY-MM" ("now" = the default month): a month
+  // seen once opens instantly, and the one before is fetched in the background.
+  const [cache, setCache] = useState<Record<string, Data>>({});
   const [period, setPeriod] = useState<string | null>(null);
-  const [data, setData] = useState<Data | null>(null);
+  // What stays on screen while a new month loads — the month you came from.
+  const [prevKey, setPrevKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [version, setVersion] = useState(0);
-  const reload = () => setVersion((v) => v + 1);
+  const key = period ?? "now";
+  const shownKey = cache[key] ? key : prevKey;
+  const data = shownKey ? (cache[shownKey] ?? null) : null;
+  const loading = !cache[key];
+
+  const load = useCallback(
+    async (k: string): Promise<Data> => {
+      const q = new URLSearchParams({ freelancer: profileId, ...(k !== "now" ? { month: k } : {}) });
+      const r = await fetch(`/api/admin/freelancers?${q}`, { cache: "no-store" });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Couldn't load");
+      return (await r.json()) as Data;
+    },
+    [profileId],
+  );
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || cache[key]) return;
     let alive = true;
-    const q = new URLSearchParams({ freelancer: profileId, ...(period ? { month: period } : {}) });
-    fetch(`/api/admin/freelancers?${q}`, { cache: "no-store" })
-      .then(async (r) => (r.ok ? ((await r.json()) as Data) : Promise.reject(new Error((await r.json()).error))))
-      .then((d) => alive && setData(d))
+    load(key)
+      .then((d) => {
+        if (!alive) return;
+        setCache((c) => ({ ...c, [key]: d, [d.period]: d }));
+        const before = shiftMonth(d.period, -1);
+        if (d.period > d.firstPeriod)
+          load(before)
+            .then((b) => setCache((c) => (c[before] ? c : { ...c, [before]: b })))
+            .catch(() => undefined);
+      })
       .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;
     };
-  }, [isAdmin, profileId, period, version]);
+  }, [isAdmin, key, cache, load]);
 
-  if (!isAdmin) return <p className="py-20 text-center text-sm text-muted">Admins only.</p>;
-  if (error) return <p className="py-20 text-center text-sm text-danger">{error}</p>;
-  if (!data) return <p className="py-20 text-center text-sm text-muted">Loading…</p>;
+  const go = (p: string) => {
+    setPrevKey(shownKey);
+    setPeriod(p);
+  };
+  // After an approval or edit: read this month again and drop the rest (the
+  // months pane and waiting counts may have moved); the screen stays meanwhile.
+  const reload = () => {
+    load(key)
+      .then((d) => setCache({ [key]: d, [d.period]: d }))
+      .catch(() => undefined);
+  };
+
+  if (!isAdmin)
+    return <p className="py-20 text-center text-sm text-muted">Admins only.</p>;
+  if (error)
+    return <p className="py-20 text-center text-sm text-danger">{error}</p>;
+  if (!data) return <PageSkeleton />;
 
   const f = data.freelancer;
   const cur = f.terms.currency;
   const now = thisMonth();
+  // The month asked for — named in the bar and marked in the list at once,
+  // while its rows are on their way.
+  const shownPeriod = period ?? data.period;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
-      <Link href="/freelancers" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground">
+      <Link
+        href="/freelancers"
+        className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
+      >
         <ArrowLeft size={15} /> Freelancers
       </Link>
 
@@ -117,10 +177,16 @@ export default function FreelancerPage() {
       <section className="rounded-2xl bg-brand px-5 py-4 text-white">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <div className="min-w-0">
-            <h1 className="font-serif-accent text-[32px] leading-10">{f.name}</h1>
+            <h1 className="font-serif-accent text-[32px] leading-10">
+              {f.name}
+            </h1>
             <p className="text-xs text-white/75">
               {termsLine(f.terms)}
-              {!f.active && <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 font-medium text-white">Link switched off</span>}
+              {!f.active && (
+                <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 font-medium text-white">
+                  Link switched off
+                </span>
+              )}
             </p>
           </div>
           <p className="text-right tabular-nums">
@@ -129,31 +195,38 @@ export default function FreelancerPage() {
               {otherLine(f.month.otherExtras)}
             </span>
             <span className="block text-sm text-white/80">
-              {hrs(f.month.hours)} × {money(f.month.rate, cur)}/h = {money(f.month.hoursBill, cur)}
+              {hrs(f.month.hours)} × {money(f.month.rate, cur)}/h ={" "}
+              {money(f.month.hoursBill, cur)}
               {f.month.extras > 0 && ` + ${money(f.month.extras, cur)} extras`}
             </span>
           </p>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/20 pt-3">
           <button
-            onClick={() => setPeriod(shiftMonth(data.period, -1))}
-            disabled={data.period <= data.firstPeriod}
+            onClick={() => go(shiftMonth(shownPeriod, -1))}
+            disabled={shownPeriod <= data.firstPeriod}
             className="rounded-md p-1 hover:bg-white/15 disabled:opacity-30"
             aria-label="Previous month"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="min-w-36 text-center font-semibold">{monthLabel(data.period)}</span>
+          <span className="min-w-36 text-center font-semibold">
+            {monthLabel(shownPeriod)}
+            {loading && <Loader2 size={15} className="ml-1.5 inline animate-spin opacity-80" aria-label="Loading" />}
+          </span>
           <button
-            onClick={() => setPeriod(shiftMonth(data.period, 1))}
-            disabled={data.period >= now}
+            onClick={() => go(shiftMonth(shownPeriod, 1))}
+            disabled={shownPeriod >= now}
             className="rounded-md p-1 hover:bg-white/15 disabled:opacity-30"
             aria-label="Next month"
           >
             <ChevronRight size={18} />
           </button>
-          {data.period !== now && (
-            <button onClick={() => setPeriod(now)} className="rounded-md px-2 py-1 text-xs hover:bg-white/15">
+          {shownPeriod !== now && (
+            <button
+              onClick={() => go(now)}
+              className="rounded-md px-2 py-1 text-xs hover:bg-white/15"
+            >
               This month
             </button>
           )}
@@ -164,8 +237,8 @@ export default function FreelancerPage() {
               {f.pendingMonths.map((m) => (
                 <button
                   key={m}
-                  onClick={() => setPeriod(m)}
-                  className={`rounded-full px-2 py-0.5 font-medium ${m === data.period ? "bg-white text-brand" : "bg-white/20 hover:bg-white/30"}`}
+                  onClick={() => go(m)}
+                  className={`rounded-full px-2 py-0.5 font-medium ${m === shownPeriod ? "bg-white text-brand" : "bg-white/20 hover:bg-white/30"}`}
                 >
                   {shortMonth(m)}
                 </button>
@@ -176,12 +249,13 @@ export default function FreelancerPage() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
+        <div className={`relative space-y-4 transition-opacity ${loading ? "pointer-events-none opacity-50" : ""}`} aria-busy={loading}>
+          {loading && <LoadingLine />}
           <MonthTable data={data} onChanged={reload} />
           <Charges data={data} onChanged={reload} />
         </div>
         <div className="space-y-4">
-          <Months data={data} onPick={setPeriod} />
+          <Months data={data} selected={shownPeriod} onPick={go} />
           <Side f={f} clients={data.clients} onChanged={reload} />
         </div>
       </div>
@@ -189,7 +263,17 @@ export default function FreelancerPage() {
   );
 }
 
-function MonthTable({ data, onChanged }: { data: Data; onChanged: () => void }) {
+function MonthTable({
+  data,
+  onChanged,
+}: {
+  data: Data;
+  onChanged: () => void;
+}) {
+  // The client as the tracker's chip (opens the client's page) and the task as a
+  // link to its details pane — the same as everywhere else in the app.
+  const { clients, openTask } = useData();
+  const clientById = new Map(clients.map((c) => [c.id, c]));
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
       <table className="w-full min-w-[900px] text-sm">
@@ -213,16 +297,51 @@ function MonthTable({ data, onChanged }: { data: Data; onChanged: () => void }) 
           )}
           {data.logs.map((l) =>
             l.status === "pending" ? (
-              <WaitingRow key={l.id} row={l} clients={data.clients} tasks={data.tasks} onChanged={onChanged} />
+              <WaitingRow
+                key={l.id}
+                row={l}
+                clients={data.clients}
+                tasks={data.tasks}
+                onChanged={onChanged}
+              />
             ) : (
               <tr key={l.id} className="align-top">
-                <td className="whitespace-nowrap px-3 py-2">{dayLabel(l.date)}</td>
-                <td className="px-3 py-2">{l.client ?? <span className="text-faint">—</span>}</td>
-                <td className="bidi-auto px-3 py-2">{l.task ?? l.taskHint ?? <span className="text-faint">—</span>}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{hrs(l.hours)}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {dayLabel(l.date)}
+                </td>
+                <td className="px-3 py-2">
+                  {l.clientId && clientById.get(l.clientId) ? (
+                    <ClientChip
+                      client={clientById.get(l.clientId)!}
+                      size="sm"
+                    />
+                  ) : (
+                    (l.client ?? <span className="text-faint">—</span>)
+                  )}
+                </td>
+                <td className="bidi-auto px-3 py-2">
+                  {l.taskId && l.task ? (
+                    <button
+                      onClick={() => openTask(l.taskId!)}
+                      className="text-left hover:text-brand hover:underline"
+                      title="Open the task"
+                    >
+                      {l.task}
+                    </button>
+                  ) : (
+                    (l.taskHint ?? <span className="text-faint">—</span>)
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                  {hrs(l.hours)}
+                </td>
                 <td className="bidi-auto px-3 py-2 text-muted">
-                  {l.description !== l.taskHint && l.description !== l.task ? l.description : ""}
-                  {l.status === "rejected" && l.note && <span className="block text-xs text-danger">{l.note}</span>}
+                  {l.description !== l.taskHint && l.description !== l.task
+                    ? l.description
+                    : ""}
+                  {l.status === "rejected" && l.note && (
+                    <span className="block text-xs text-danger">{l.note}</span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {l.fromSheet ? (
@@ -244,9 +363,14 @@ function MonthTable({ data, onChanged }: { data: Data; onChanged: () => void }) 
         <tfoot>
           <tr className="border-t border-border bg-background/60 font-medium">
             <td colSpan={3} className="px-3 py-2 text-muted">
-              Total <span className="font-normal text-faint">(not counting turned-down rows)</span>
+              Total{" "}
+              <span className="font-normal text-faint">
+                (not counting turned-down rows)
+              </span>
             </td>
-            <td className="px-3 py-2 text-right tabular-nums">{hrs(data.freelancer.month.hours)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">
+              {hrs(data.freelancer.month.hours)}
+            </td>
             <td colSpan={2} />
           </tr>
         </tfoot>
@@ -257,7 +381,18 @@ function MonthTable({ data, onChanged }: { data: Data; onChanged: () => void }) 
 
 /** A row still waiting: his own words, and the controls to file it — the
  * client, a task of it, approve or turn down — in place. */
-function WaitingRow({ row, clients, tasks: preloaded, onChanged }: { row: Row; clients: Data["clients"]; tasks: PickTask[]; onChanged: () => void }) {
+function WaitingRow({
+  row,
+  clients,
+  tasks: preloaded,
+  onChanged,
+}: {
+  row: Row;
+  clients: Data["clients"];
+  tasks: PickTask[];
+  onChanged: () => void;
+}) {
+  const { openTask } = useData();
   const [clientId, setClientId] = useState(row.clientId ?? "");
   const [taskId, setTaskId] = useState(row.taskId ?? "");
   const [fetched, setFetched] = useState<PickTask[] | null>(null);
@@ -277,7 +412,12 @@ function WaitingRow({ row, clients, tasks: preloaded, onChanged }: { row: Row; c
     };
   }, [clientId, row.clientId]);
   const options = useMemo(
-    () => (!clientId ? [] : clientId === row.clientId ? preloaded.filter((t) => t.clientId === clientId) : (fetched ?? [])),
+    () =>
+      !clientId
+        ? []
+        : clientId === row.clientId
+          ? preloaded.filter((t) => t.clientId === clientId)
+          : (fetched ?? []),
     [clientId, row.clientId, preloaded, fetched],
   );
 
@@ -288,7 +428,8 @@ function WaitingRow({ row, clients, tasks: preloaded, onChanged }: { row: Row; c
     onChanged();
   }
 
-  const select = "w-full rounded-md border border-border-strong bg-surface px-2 py-1 text-sm";
+  const select =
+    "w-full rounded-md border border-border-strong bg-surface px-2 py-1 text-sm";
   return (
     <tr className="bg-warning/5 align-top">
       <td className="whitespace-nowrap px-3 py-2">{dayLabel(row.date)}</td>
@@ -310,30 +451,53 @@ function WaitingRow({ row, clients, tasks: preloaded, onChanged }: { row: Row; c
         </select>
       </td>
       <td className="px-3 py-2">
-        {row.taskHint && <p className="bidi-auto mb-1 text-xs text-muted">His name: &ldquo;{row.taskHint}&rdquo;</p>}
-        <select value={taskId} disabled={!clientId} onChange={(e) => setTaskId(e.target.value)} className={select}>
-          <option value="">File on a task…</option>
-          {options
-            .filter((t) => !t.done)
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-          {options.some((t) => t.done) && (
-            <optgroup label="Done">
-              {options
-                .filter((t) => t.done)
-                .map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
-                  </option>
-                ))}
-            </optgroup>
+        {row.taskHint && (
+          <p className="bidi-auto mb-1 text-xs text-muted">
+            His name: &ldquo;{row.taskHint}&rdquo;
+          </p>
+        )}
+        <div className="flex items-center gap-1">
+          <select
+            value={taskId}
+            disabled={!clientId}
+            onChange={(e) => setTaskId(e.target.value)}
+            className={select}
+          >
+            <option value="">File on a task…</option>
+            {options
+              .filter((t) => !t.done)
+              .map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            {options.some((t) => t.done) && (
+              <optgroup label="Done">
+                {options
+                  .filter((t) => t.done)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+          </select>
+          {taskId && (
+            <button
+              onClick={() => openTask(taskId)}
+              className="shrink-0 rounded p-1 text-muted hover:bg-background hover:text-brand"
+              title="Open the task"
+              aria-label="Open the task"
+            >
+              <ArrowUpRight size={14} />
+            </button>
           )}
-        </select>
+        </div>
       </td>
-      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{hrs(row.hours)}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+        {hrs(row.hours)}
+      </td>
       <td className="bidi-auto px-3 py-2 text-muted">
         {row.description !== row.taskHint ? row.description : ""}
         {error && <span className="block text-xs text-danger">{error}</span>}
@@ -350,8 +514,11 @@ function WaitingRow({ row, clients, tasks: preloaded, onChanged }: { row: Row; c
           <button
             disabled={busy}
             onClick={() => {
-              const note = prompt("Turn this log down? Add a note for him (optional):");
-              if (note !== null) void run({ action: "reject", id: row.id, note });
+              const note = prompt(
+                "Turn this log down? Add a note for him (optional):",
+              );
+              if (note !== null)
+                void run({ action: "reject", id: row.id, note });
             }}
             className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger"
             aria-label="Turn down"
@@ -388,13 +555,24 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
         </thead>
         <tbody className="divide-y divide-border">
           {data.charges.map((c) => (
-            <tr key={c.id} className={c.status === "pending" ? "bg-warning/5" : ""}>
-              <td className="whitespace-nowrap px-3 py-2">{dayLabel(c.date)}</td>
+            <tr
+              key={c.id}
+              className={c.status === "pending" ? "bg-warning/5" : ""}
+            >
+              <td className="whitespace-nowrap px-3 py-2">
+                {dayLabel(c.date)}
+              </td>
               <td className="bidi-auto px-3 py-2">{c.title}</td>
-              <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{money(c.amount, c.currency)}</td>
+              <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                {money(c.amount, c.currency)}
+              </td>
               <td className="bidi-auto px-3 py-2 text-muted">
                 {c.note}
-                {c.status === "rejected" && c.reviewNote && <span className="block text-xs text-danger">{c.reviewNote}</span>}
+                {c.status === "rejected" && c.reviewNote && (
+                  <span className="block text-xs text-danger">
+                    {c.reviewNote}
+                  </span>
+                )}
               </td>
               <td className="whitespace-nowrap px-3 py-2">
                 {c.status === "pending" ? (
@@ -409,8 +587,11 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                     <button
                       disabled={busy === c.id}
                       onClick={() => {
-                        const note = prompt("Turn this charge down? Add a note for him (optional):");
-                        if (note !== null) void run({ action: "rejectCharge", id: c.id, note });
+                        const note = prompt(
+                          "Turn this charge down? Add a note for him (optional):",
+                        );
+                        if (note !== null)
+                          void run({ action: "rejectCharge", id: c.id, note });
                       }}
                       className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger"
                       aria-label="Turn down"
@@ -441,7 +622,7 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
 /** Every month he has, newest first: hours, that month's rate, the bill. Click
  * one to open it; a dot marks a month with something waiting for review. A real
  * table, so every number sits under its column. */
-function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
+function Months({ data, selected, onPick }: { data: Data; selected: string; onPick: (p: string) => void }) {
   const cur = data.freelancer.terms.currency;
   const total = data.months.reduce((t, m) => t + m.total, 0);
   return (
@@ -462,17 +643,28 @@ function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
               <tr
                 key={m.period}
                 onClick={() => onPick(m.period)}
-                className={`cursor-pointer ${m.period === data.period ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
-                title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
+                className={`cursor-pointer ${m.period === selected ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
+                title={
+                  m.extras > 0
+                    ? `Includes ${money(m.extras, cur)} extras`
+                    : undefined
+                }
               >
                 <td className="whitespace-nowrap rounded-l-md px-1 py-1">
                   <span className="inline-flex items-center gap-1.5">
                     {shortMonth(m.period)}
-                    {m.waiting && <span className="size-1.5 rounded-full bg-warning" aria-label="Waiting for review" />}
+                    {m.waiting && (
+                      <span
+                        className="size-1.5 rounded-full bg-warning"
+                        aria-label="Waiting for review"
+                      />
+                    )}
                   </span>
                 </td>
                 <td className="px-1 py-1 text-right">{hrs(m.hours)}</td>
-                <td className="px-1 py-1 text-right text-muted">{money(m.rate, cur)}</td>
+                <td className="px-1 py-1 text-right text-muted">
+                  {money(m.rate, cur)}
+                </td>
                 <td className="whitespace-nowrap rounded-r-md px-1 py-1 text-right">
                   {money(m.total, cur)}
                   {otherLine(m.otherExtras)}
@@ -495,20 +687,34 @@ function Months({ data, onPick }: { data: Data; onPick: (p: string) => void }) {
 }
 
 /** His link, clients, terms and deliverables. */
-function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients"]; onChanged: () => void }) {
+function Side({
+  f,
+  clients,
+  onChanged,
+}: {
+  f: Freelancer;
+  clients: Data["clients"];
+  onChanged: () => void;
+}) {
   const [editingClients, setEditingClients] = useState(false);
   const [editingTerms, setEditingTerms] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set(f.clientIds));
   const [copied, setCopied] = useState(false);
-  const link = typeof window === "undefined" ? "" : `${window.location.origin}${freelancerPath(f.name, f.token)}`;
+  const link =
+    typeof window === "undefined"
+      ? ""
+      : `${window.location.origin}${freelancerPath(f.name, f.token)}`;
   const enabled = clients.filter((c) => f.clientIds.includes(c.id));
-  const btn = "flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-background";
+  const btn =
+    "flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-background";
 
   return (
     <aside className="h-fit space-y-5 rounded-2xl border border-border bg-surface p-4 text-sm shadow-card">
       <div>
         <h2 className="mb-1.5 font-medium">His private link</h2>
-        <code className="block truncate rounded bg-background px-2 py-1 text-xs">{link}</code>
+        <code className="block truncate rounded bg-background px-2 py-1 text-xs">
+          {link}
+        </code>
         <div className="mt-2 flex flex-wrap gap-1.5">
           <button
             onClick={async () => {
@@ -520,12 +726,18 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
           >
             <Copy size={12} /> {copied ? "Copied" : "Copy"}
           </button>
-          <a href={link} target="_blank" rel="noopener noreferrer" className={btn}>
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={btn}
+          >
             <ExternalLink size={12} /> Open his page
           </a>
           <button
             onClick={async () => {
-              if (!confirm("Make a new link? The current one stops working.")) return;
+              if (!confirm("Make a new link? The current one stops working."))
+                return;
               await act({ action: "regenerate", profileId: f.profileId });
               onChanged();
             }}
@@ -535,7 +747,11 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
           </button>
           <button
             onClick={async () => {
-              await act({ action: "active", profileId: f.profileId, active: !f.active });
+              await act({
+                action: "active",
+                profileId: f.profileId,
+                active: !f.active,
+              });
               onChanged();
             }}
             className={btn}
@@ -549,13 +765,22 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
         <h2 className="mb-1 flex items-center gap-2 font-medium">
           Clients he can log against
           {!editingClients && (
-            <button onClick={() => setEditingClients(true)} className="text-xs font-normal text-brand hover:underline">
+            <button
+              onClick={() => setEditingClients(true)}
+              className="text-xs font-normal text-brand hover:underline"
+            >
               Edit
             </button>
           )}
         </h2>
         {!editingClients ? (
-          <p>{enabled.length ? enabled.map((x) => x.name).join(" · ") : <span className="text-muted">None yet</span>}</p>
+          <p>
+            {enabled.length ? (
+              enabled.map((x) => x.name).join(" · ")
+            ) : (
+              <span className="text-muted">None yet</span>
+            )}
+          </p>
         ) : (
           <div>
             <div className="max-h-64 space-y-1 overflow-auto rounded-lg border border-border p-2">
@@ -578,7 +803,11 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
             <div className="mt-2 flex gap-2">
               <button
                 onClick={async () => {
-                  await act({ action: "clients", profileId: f.profileId, clientIds: [...picked] });
+                  await act({
+                    action: "clients",
+                    profileId: f.profileId,
+                    clientIds: [...picked],
+                  });
                   setEditingClients(false);
                   onChanged();
                 }}
@@ -598,14 +827,19 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
             </div>
           </div>
         )}
-        <p className="mt-1 text-xs text-faint">Approving a row on a new client opens it for him.</p>
+        <p className="mt-1 text-xs text-faint">
+          Approving a row on a new client opens it for him.
+        </p>
       </div>
 
       <div>
         <h2 className="mb-1 flex items-center gap-2 font-medium">
           Terms
           {!editingTerms && (
-            <button onClick={() => setEditingTerms(true)} className="text-xs font-normal text-brand hover:underline">
+            <button
+              onClick={() => setEditingTerms(true)}
+              className="text-xs font-normal text-brand hover:underline"
+            >
               Edit
             </button>
           )}
@@ -616,7 +850,11 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
             submitLabel="Save terms"
             onCancel={() => setEditingTerms(false)}
             onSubmit={async (t) => {
-              const err = await act({ action: "terms", profileId: f.profileId, ...t });
+              const err = await act({
+                action: "terms",
+                profileId: f.profileId,
+                ...t,
+              });
               if (!err) {
                 setEditingTerms(false);
                 onChanged();
@@ -625,7 +863,9 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
             }}
           />
         ) : (
-          <p className="text-muted">{termsLine(f.terms)}. The bill counts every hour not turned down.</p>
+          <p className="text-muted">
+            {termsLine(f.terms)}. The bill counts every hour not turned down.
+          </p>
         )}
       </div>
 
@@ -637,10 +877,18 @@ function Side({ f, clients, onChanged }: { f: Freelancer; clients: Data["clients
           <ul className="space-y-1">
             {f.deliverables.map((d) => (
               <li key={d.url + d.date} className="flex items-start gap-2">
-                <a href={d.url} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-start gap-1.5 text-brand hover:underline">
-                  <ExternalLink size={12} className="mt-1 shrink-0" /> <span className="bidi-auto break-words">{d.title}</span>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 flex-1 items-start gap-1.5 text-brand hover:underline"
+                >
+                  <ExternalLink size={12} className="mt-1 shrink-0" />{" "}
+                  <span className="bidi-auto break-words">{d.title}</span>
                 </a>
-                <span className="shrink-0 text-xs text-faint">{dayLabel(d.date)}</span>
+                <span className="shrink-0 text-xs text-faint">
+                  {dayLabel(d.date)}
+                </span>
               </li>
             ))}
           </ul>
