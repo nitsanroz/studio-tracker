@@ -94,7 +94,8 @@ export const RELEASES: Release[] = [
         // `all`: designers get the Home card; admins (Michal) the Vacation page
         // in the menu — the body names both.
         title: "Ask for vacation in the tracker",
-        body: "Home and the new Vacation page show the days you have left — your payslip balance plus a day for each month ahead. Press Request vacation, pick the days, add a message, and Nitsan approves.",
+        // Wording Nitsan's (v1.76.1).
+        body: "Now your Homepage and the new Vacation page show the days you have left. Press Request vacation, pick the days, add a message, and Nitsan approves.",
         audience: "all",
         image: {
           src: "/whats-new/1.76.0-vacation-card.svg",
