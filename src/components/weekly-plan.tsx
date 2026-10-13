@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   Columns3,
   Plus,
+  TreePalm,
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
@@ -34,6 +35,9 @@ import {
 } from "./plan-entry-modal";
 import { ResizeHandle, useColWidths } from "./resizable";
 import type { AbsenceType, DevStatus, PlanEntry } from "@/lib/types";
+import { useVacation } from "@/lib/use-vacation";
+import { workdays } from "@/lib/vacation";
+import { VacationRequestModal } from "./vacation";
 
 const DEV_STATUS: Record<DevStatus, { label: string; chip: string }> = {
   pricing: { label: "Pricing", chip: "bg-gray-100 text-gray-800" },
@@ -527,12 +531,18 @@ function PlanCell({
   onHoverCell,
   onHoverEntry,
   onEditEntry,
+  vacationPending = false,
+  onRequestVacation,
 }: {
   date: string | null;
   columnId: string;
   label: string;
   entries: PlanEntry[];
   canEdit: boolean;
+  /** A vacation request covering this day is waiting for approval (0058). */
+  vacationPending?: boolean;
+  /** Your own column, a workday ahead: ask for it off. */
+  onRequestVacation?: () => void;
   onAdd: (target: CellTarget) => void;
   onChipMenu?: (e: ReactMouseEvent, entry: PlanEntry) => void;
   onCellMenu?: (e: ReactMouseEvent, target: CellTarget) => void;
@@ -675,7 +685,26 @@ function PlanCell({
             />
           </div>
         ))}
+      {/* Asked for and not approved yet: a dashed placeholder, not an absence —
+          it becomes the real vacation chip only once Nitsan approves. */}
+      {vacationPending && !hasAbsence && (
+        <div
+          className="relative z-10 flex items-center gap-1 rounded-md border border-dashed border-emerald-400 px-1.5 py-0.5 text-[11px] text-emerald-800"
+          title="Vacation requested — waiting for approval"
+        >
+          <TreePalm size={11} strokeWidth={1.75} /> Vacation requested
+        </div>
+      )}
       {hasAbsence && <div className="min-h-8 flex-1" aria-hidden />}
+      {onRequestVacation && !hasAbsence && !vacationPending && (
+        <button
+          onClick={onRequestVacation}
+          className="hidden h-5 items-center justify-center gap-1 rounded-md border border-dashed border-border-strong text-[11px] text-faint hover:border-brand hover:text-brand group-hover/cell:flex"
+          title="Request this day off"
+        >
+          <TreePalm size={11} strokeWidth={1.75} /> Request vacation
+        </button>
+      )}
       {canEdit && !hasAbsence && (
         <button
           onClick={() => onAdd(target)}
@@ -838,6 +867,21 @@ export function WeeklyPlan() {
   );
 
   const canEdit = useIsAdmin();
+
+  // ── vacation (0058): request your own days off from your column; requests
+  // still waiting show as dashed placeholders until they're approved ─────────
+  const vacation = useVacation();
+  const [vacationDate, setVacationDate] = useState<string | null>(null);
+  const pendingVacation = useMemo(() => {
+    const cells = new Set<string>();
+    for (const r of vacation.requests) {
+      if (r.status !== "pending") continue;
+      const col = planColumns.find((c) => c.profileId === r.profileId && c.type === "member");
+      if (!col) continue;
+      for (const d of workdays(r.startDate, r.endDate, dayStates)) cells.add(`${d}::${col.id}`);
+    }
+    return cells;
+  }, [vacation.requests, planColumns, dayStates]);
 
   // ── copy / paste ───────────────────────────────────────────────────────
   const copyEntry = (entry: PlanEntry) => {
@@ -1254,6 +1298,16 @@ export function WeeklyPlan() {
                           onHoverCell={(t) => (hoveredCell.current = t)}
                           onHoverEntry={(en) => (hoveredEntry.current = en)}
                           onEditEntry={(en, t) => setEntryModal({ target: t, entry: en })}
+                          vacationPending={pendingVacation.has(`${iso}::${col.id}`)}
+                          onRequestVacation={
+                            vacation.mine &&
+                            col.profileId === vacation.mineProfileId &&
+                            iso >= todayIso &&
+                            !weekend &&
+                            !dayState
+                              ? () => setVacationDate(iso)
+                              : undefined
+                          }
                         />
                       </td>
                     ))}
@@ -1342,6 +1396,9 @@ export function WeeklyPlan() {
           entry={entryModal.entry}
           onClose={() => setEntryModal(null)}
         />
+      )}
+      {vacationDate && (
+        <VacationRequestModal vacation={vacation} startDate={vacationDate} onClose={() => setVacationDate(null)} />
       )}
       {dayStateTarget && (
         <DayStateModal dateIso={dayStateTarget} onClose={() => setDayStateTarget(null)} />

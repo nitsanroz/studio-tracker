@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" width="360" height="240" role="img" aria-label="Your column in the weekly plan: Monday shows a dashed Vacation requested, and the pointer is on Tuesday's dashed Request vacation button">
+<defs><filter id="vp" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#06112f" flood-opacity="0.10"/></filter><clipPath id="vpClip"><rect x="22" y="30" width="312" height="184" rx="12"/></clipPath></defs>
+<g filter="url(#vp)"><rect x="22" y="30" width="312" height="184" rx="12" fill="#ffffff" stroke="#e5e7eb"/></g>
+<g clip-path="url(#vpClip)">
+<rect x="118" y="30" width="216" height="46" fill="#f1fefd"/>
+<text x="30" y="48" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#06112f" text-anchor="start">Sunday</text>
+<text x="30" y="63" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#98a0b3" text-anchor="start">15/11</text>
+<rect x="124" y="37" width="204" height="24" rx="6" fill="#7c3aed"/>
+<text x="132" y="53" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#ffffff" text-anchor="start">Branding</text>
+<text x="320" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="#ffffff" text-anchor="end">VARIANT</text>
+<rect x="118" y="76" width="216" height="46" fill="#f1fefd"/>
+<rect x="22" y="76" width="312" height="1" fill="#e5e7eb"/>
+<text x="30" y="94" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#06112f" text-anchor="start">Monday</text>
+<text x="30" y="109" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#98a0b3" text-anchor="start">16/11</text>
+<rect x="124" y="84" width="204" height="20" rx="6" fill="none" stroke="#34d399" stroke-dasharray="3 2"/>
+<g transform="translate(131 88.5) scale(0.4583)" fill="none" stroke="#065f46" stroke-width="3.82" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8c0-2.76-2.46-5-5.5-5S2 5.24 2 8h2l1-1 1 1h4"/><path d="M13 7.14A5.82 5.82 0 0 1 16.5 6c3.04 0 5.5 2.24 5.5 5h-3l-1-1-1 1h-3"/><path d="M5.89 9.71c-2.15 2.15-2.3 5.47-.35 7.43l4.24-4.25.7-.7.71-.71 2.12-2.12c-1.95-1.96-5.27-1.8-7.42.35"/><path d="M11 15.5c.5 2.5-.17 4.5-1 6.5h4c2-5.5-.5-12-1-14"/></g>
+<text x="147" y="98" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#065f46" text-anchor="start">Vacation requested</text>
+<rect x="118" y="122" width="216" height="46" fill="#f1fefd"/>
+<rect x="22" y="122" width="312" height="1" fill="#e5e7eb"/>
+<text x="30" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#06112f" text-anchor="start">Tuesday</text>
+<text x="30" y="155" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#98a0b3" text-anchor="start">17/11</text>
+<rect x="124" y="130" width="204" height="20" rx="6" fill="none" stroke="#0b43ed" stroke-dasharray="3 2"/>
+<g transform="translate(170.8 134.5) scale(0.4583)" fill="none" stroke="#0b43ed" stroke-width="3.82" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8c0-2.76-2.46-5-5.5-5S2 5.24 2 8h2l1-1 1 1h4"/><path d="M13 7.14A5.82 5.82 0 0 1 16.5 6c3.04 0 5.5 2.24 5.5 5h-3l-1-1-1 1h-3"/><path d="M5.89 9.71c-2.15 2.15-2.3 5.47-.35 7.43l4.24-4.25.7-.7.71-.71 2.12-2.12c-1.95-1.96-5.27-1.8-7.42.35"/><path d="M11 15.5c.5 2.5-.17 4.5-1 6.5h4c2-5.5-.5-12-1-14"/></g>
+<text x="186.8" y="144" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#0b43ed" text-anchor="start">Request vacation</text>
+<rect x="118" y="168" width="216" height="46" fill="#f1fefd"/>
+<rect x="22" y="168" width="312" height="1" fill="#e5e7eb"/>
+<text x="30" y="186" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#06112f" text-anchor="start">Wednesday</text>
+<text x="30" y="201" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#98a0b3" text-anchor="start">18/11</text>
+<rect x="118" y="30" width="1" height="184" fill="#e5e7eb"/>
+</g>
+<g transform="translate(256 142)"><path d="M0 0 L0 15.5 L4.1 11.6 L6.7 17.5 L9.5 16.2 L6.9 10.5 L12.4 10.3 Z" fill="#06112f" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round"/></g>
+</svg>

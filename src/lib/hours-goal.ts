@@ -75,7 +75,17 @@ export interface GoalFreelancer {
   recent: { year: number; month: number; hours: number; pay: number }[];
   soFar: number;
   absent: string[];
+  /** Their sliding rate, if they're on one (HOURLY_TERMS): the month is priced
+   * through it instead of at their recent ₪/hour. */
+  terms?: RateTerms;
 }
+
+/** Hourly freelancers on a sliding ₪ rate, by tracker profile id. Dima:
+ * ₪140/h up to 50h a month, down in a straight line to ₪100/h at 150h
+ * (his sheet: =IF(h<=50, 140, IF(h>=150, 100, 140 - (h - 50) * 0.4))). */
+export const HOURLY_TERMS: Record<string, RateTerms> = {
+  "945eacad-3d33-4a69-b4a4-40b6f5c9ce8b": { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 },
+};
 
 /** Tracker facts the goal reads (getGoalInputs). */
 /** A freelancer billed on a sliding rate through the tracker (AB): his hours
@@ -240,18 +250,19 @@ export function hoursGoal(
   const workdaysDone = days.filter((d) => d.date < todayIso).length * scale;
 
   // Hourly freelancers: what they've logged, plus their usual hours a workday
-  // over the workdays left that they're in, at their recent ₪/hour.
+  // over the workdays left that they're in — through their sliding rate if
+  // they have one, else at their recent ₪/hour.
   const freelance: FreelanceForecast[] = [];
   for (const f of inputs?.freelancers ?? []) {
     const hoursBefore = f.recent.reduce((t, r) => t + r.hours, 0);
     const payBefore = f.recent.reduce((t, r) => t + r.pay, 0);
-    if (hoursBefore <= 0 || payBefore <= 0) continue;
+    if (hoursBefore <= 0 || (payBefore <= 0 && !f.terms)) continue;
     const daysBefore = f.recent.reduce((t, r) => t + workdaysOf(monthVals(pnl, r.year, r.month), r.year, r.month), 0);
     const away = new Set(f.absent);
     const daysLeft = days.filter((d) => d.date >= todayIso && !away.has(d.date)).length * scale;
     const hours = f.soFar + (hoursBefore / daysBefore) * daysLeft;
-    const rate = payBefore / hoursBefore;
-    freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate, cost: hours * rate });
+    const cost = f.terms ? billFor(hours, f.terms) : (hours * payBefore) / hoursBefore;
+    freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate: hours ? cost / hours : 0, cost });
   }
   // Sliding-rate freelancers (AB): the same pace — what he's logged plus his
   // usual hours a workday over the days left — priced through his terms (the

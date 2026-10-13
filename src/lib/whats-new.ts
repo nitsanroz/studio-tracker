@@ -87,6 +87,34 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
   {
+    version: "v1.76.0",
+    date: "2026-10-13",
+    items: [
+      {
+        // `all`: designers get the Home card; admins (Michal) the Vacation page
+        // in the menu — the body names both.
+        title: "Ask for vacation in the tracker",
+        body: "Home and the new Vacation page show the days you have left — your payslip balance plus a day for each month ahead. Press Request vacation, pick the days, add a message, and Nitsan approves.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.76.0-vacation-card.svg",
+          shape: "element",
+          alt: "The Vacation card on the home page: 7 days left now, a Request vacation button, and a one-day request on 18/11 waiting for approval",
+        },
+      },
+      {
+        title: "Or right from the weekly plan",
+        body: "Hover a day ahead in your own column and press Request vacation. It shows dashed until Nitsan approves, then becomes a vacation day in the plan.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.76.0-vacation-plan.svg",
+          shape: "element",
+          alt: "Your column in the weekly plan: Monday shows a dashed Vacation requested, and the pointer is on Tuesday's dashed Request vacation button",
+        },
+      },
+    ],
+  },
+  {
     version: "v1.19.0",
     date: "2026-08-17",
     items: [

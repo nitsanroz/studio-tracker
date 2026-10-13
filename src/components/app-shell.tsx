@@ -19,6 +19,7 @@ import {
   Settings,
   Sparkles,
   SquareCheckBig,
+  TreePalm,
   Users,
   UserRoundSearch,
   Handshake,
@@ -35,6 +36,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
+import { useVacation } from "@/lib/use-vacation";
 import { NewLeadsProvider, useNewLeads } from "./new-leads";
 import { EgressBanner } from "./egress-banner";
 import { TaskPanel } from "./task-panel";
@@ -63,6 +65,8 @@ const NAV = [
   // `desktop-only.tsx` entry any more.
   { href: "/plan", label: "Weekly Plan", Icon: CalendarDays, mobile: true },
   { href: "/my-tasks", label: "My Tasks", Icon: SquareCheckBig, mobile: true },
+  // Your balance and requests; the owner decides them here too (0058).
+  { href: "/vacation", label: "Vacation", Icon: TreePalm, mobile: true },
   { href: "/feed", label: "Time Feed", Icon: History, mobile: false },
   { href: "/settings", label: "Settings", Icon: Settings, mobile: true },
   // `mobile: true` since v1.14.0 — `client-mobile.tsx` gives both /clients and
@@ -633,6 +637,9 @@ function Shell({ children }: { children: ReactNode }) {
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
+  // Only the owner decides vacation, so only the owner's bell counts them.
+  const vacation = useVacation({ enabled: isAdmin });
+  const pendingVacation = vacation.approver ? vacation.requests.filter((r) => r.status === "pending").length : 0;
   /**
    * ⚠️ Counted across EVERY status, unlike `pendingIntake`. A client can revise a
    * brief that is already an approved task (0030), and that revision is exactly
@@ -910,7 +917,12 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2.5">
             <SyncDot />
             {isAdmin && (
-              <NotificationsBell pendingIntake={pendingIntake} updatedIntake={updatedIntake} newLeads={newLeads} />
+              <NotificationsBell
+                pendingIntake={pendingIntake}
+                updatedIntake={updatedIntake}
+                newLeads={newLeads}
+                pendingVacation={pendingVacation}
+              />
             )}
             {/* The account chip moves into the drawer below md — see MobileDrawer. */}
             <Link

@@ -57,7 +57,7 @@ These four gates (tsc, eslint, test, build) are the release checklist in **Deplo
 - **UI conventions:** pages cap at `max-w-[1500px]`; admin nav items render last under a divider; English UI with Hebrew/RTL content via `.bidi-auto` (`unicode-bidi: plaintext`); icons = lucide-react 20px strokeWidth 1.75; weekly-plan shades Fri+Sat as weekend.
 
 ## Migrations (`supabase/migrations/`)
-**All of 0001–0053 are applied** (0018–0053 checked against the live schema 2026-10-12). Long-form notes per migration: [`docs/migrations.md`](docs/migrations.md), each file's header comment, and the working log.
+**All of 0001–0058 are applied** (0018–0053 checked against the live schema 2026-10-12). Long-form notes per migration: [`docs/migrations.md`](docs/migrations.md), each file's header comment, and the working log.
 
 | # | What | Note |
 |---|---|---|
@@ -85,6 +85,7 @@ These four gates (tsc, eslint, test, build) are the release checklist in **Deplo
 | 0055 | `freelancer_logs.task_hint` — his own name for the task, filed by the admin | |
 | 0056 | `freelancer_logs.source` ('link' / 'sheet' — imported billing history, may exceed 24h); `freelancer_deliverables` (links he leaves) | Sheet rows are NOT tracker hours |
 | 0057 | `freelancer_charges` — extra money lines on a freelancer's month (another freelancer he brought in), reviewed like his hours | Admin-only RLS |
+| 0058 | `vacation_requests` + triggers (days counted in the DB; approved → vacation plan entries via `plan_entries.vacation_request_id`); `my_vacation()` / `vacation_balances()` read finance-admin's `finance_payslips` | Owner (`position = 'owner'`) approves; see v1.76.0 |
 
 - **Migrations are applied by the user in the Supabase SQL editor** — not by Claude. When you add one, tell the user to run it (and note whether it must run *before* deploying). A new **task** column must be added to the 0011 trigger's list, or it is member-writable.
 - **`data/*.sql` are NOT migrations and must never be numbered like them** — they are one-off data scripts run in the SQL editor, named for what they do (e.g. `data/task-titles-cleanup.sql`). Numbering one `0019_…` once collided with the real 0019.

@@ -28,6 +28,8 @@ import { Celebrations } from "./celebrations";
 import { DayLog } from "./day-log";
 import { ClientBreakdown, MyGraphs } from "./graphs";
 import { MemberWelcome, MyAvatar, MyWeek } from "./member";
+import { MyVacationCard } from "../vacation";
+import { useVacation } from "@/lib/use-vacation";
 import { tenureSince } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StudioTeamStrip } from "./team-strip";
@@ -40,6 +42,8 @@ export function Dashboard() {
   const { profiles, tasks, clients, currentUserId, taskRequests, openTask } = useData();
   const me = profiles.find((p) => p.id === currentUserId);
   const isAdmin = useIsAdmin();
+  // Members' own balance card; admins reach theirs on /vacation.
+  const vacation = useVacation({ enabled: !isAdmin });
 
   // page-wide filters — rangeKey picks the unit, periodOffset walks it (0 = current)
   const [rangeKey, setRangeKey] = useState<(typeof HOME_RANGES)[number]>("This month");
@@ -372,6 +376,7 @@ export function Dashboard() {
             />
           )}
           <MyWeek />
+          <MyVacationCard vacation={vacation} />
           {/* Phone only, and it is the other half of `MyWeek` there: that pane
               shows the days AHEAD, this one what you actually logged on the days
               already gone. On a laptop the Time Feed and "Log my hours" below

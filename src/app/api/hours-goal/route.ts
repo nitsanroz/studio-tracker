@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAll } from "@/lib/db";
-import { LINE, hoursGoal, type FormulaFreelancer, type GoalFreelancer, type GoalInputs, type PnlMonthly } from "@/lib/hours-goal";
+import { HOURLY_TERMS, LINE, hoursGoal, type FormulaFreelancer, type GoalFreelancer, type GoalInputs, type PnlMonthly } from "@/lib/hours-goal";
 
 /**
  * Admin-only: the studio's pace this month against the billable hours a
@@ -169,6 +169,7 @@ async function goalInputs(sb: SupabaseClient, year: number, month: number): Prom
       recent,
       soFar: hoursIn(year, month),
       absent: absentByProfile.get(pid) ?? [],
+      terms: HOURLY_TERMS[pid],
     };
   });
   const away = [...awayByName].map(([name, dates]) => ({ name, dates: dates.sort() }));

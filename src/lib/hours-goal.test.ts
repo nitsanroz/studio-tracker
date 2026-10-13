@@ -96,6 +96,24 @@ describe("hoursGoal", () => {
     expect(g.hours).toBeCloseTo(g.costs / g.rate);
   });
 
+  it("prices a freelancer on a sliding rate through their terms", () => {
+    const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];
+    const terms = { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 };
+    const dima = {
+      name: "Dima",
+      planned: 14_000,
+      recent: [7, 8, 9].map((month) => ({ year: 2026, month, hours: 100, pay: 12_000 })),
+      soFar: 45,
+      absent: [],
+      terms,
+    };
+    const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [dima] } })!;
+    const hours = g.freelance[0].hours;
+    // His sheet: 140 − (h − 50) × 0.4 an hour, every hour at the month's rate.
+    expect(g.freelance[0].cost).toBeCloseTo(hours * (140 - (hours - 50) * 0.4), 0);
+    expect(g.freelance[0].rate).toBeCloseTo(140 - (hours - 50) * 0.4, 1);
+  });
+
   it("prices a sliding-rate freelancer through his terms, plus his charges, in ₪", () => {
     // Jul–Sep: 54 workdays, 108h → 2h a workday. Mon Oct 12: 14 Sun–Thu days left (× 18/21).
     const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];

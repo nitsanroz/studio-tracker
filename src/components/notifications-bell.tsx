@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, Handshake, Inbox, PencilLine } from "lucide-react";
+import { Bell, Check, Handshake, Inbox, PencilLine, TreePalm } from "lucide-react";
 import type { NewLead } from "./new-leads";
 
 /**
@@ -31,10 +31,13 @@ export function NotificationsBell({
   pendingIntake,
   updatedIntake = 0,
   newLeads = [],
+  pendingVacation = 0,
 }: {
   pendingIntake: number;
   updatedIntake?: number;
   newLeads?: NewLead[];
+  /** Vacation requests waiting for the owner (0 for any other admin). */
+  pendingVacation?: number;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -86,9 +89,17 @@ export function NotificationsBell({
       Icon: Handshake,
       tone: "brand",
     },
+    {
+      count: pendingVacation,
+      href: "/vacation",
+      label: `${pendingVacation} vacation request${pendingVacation === 1 ? "" : "s"} to approve`,
+      detail: "Approve or decline — approved days go into the weekly plan",
+      Icon: TreePalm,
+      tone: "brand",
+    },
   ] satisfies Item[]).filter((i) => i.count > 0);
 
-  const total = pendingIntake + updatedIntake + newLeads.length;
+  const total = pendingIntake + updatedIntake + newLeads.length + pendingVacation;
 
   return (
     <div className="relative" ref={ref}>
