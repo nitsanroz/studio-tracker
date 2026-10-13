@@ -23,3 +23,30 @@ export function rateFor(hours: number, t: RateTerms): number {
 export function billFor(hours: number, t: RateTerms): number {
   return Math.round(hours * rateFor(hours, t) * 100) / 100;
 }
+
+/** An extra charge on a freelancer's month (0057) — another freelancer he
+ * brought in, a purchase — money on top of his hours. */
+export interface Charge {
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+/** The month's whole bill: hours × that month's rate, plus every charge not
+ * turned down. Charges in his own currency add to the total; any in another
+ * currency are kept apart rather than converted at a guessed rate. */
+export function monthBill(hours: number, t: RateTerms, charges: Charge[]) {
+  const counted = charges.filter((c) => c.status !== "rejected");
+  const extras = Math.round(counted.filter((c) => c.currency === t.currency).reduce((s, c) => s + c.amount, 0) * 100) / 100;
+  const other = new Map<string, number>();
+  for (const c of counted) if (c.currency !== t.currency) other.set(c.currency, (other.get(c.currency) ?? 0) + c.amount);
+  const hoursBill = billFor(hours, t);
+  return {
+    hours,
+    rate: rateFor(hours, t),
+    hoursBill,
+    extras,
+    otherExtras: [...other].map(([currency, amount]) => ({ currency, amount: Math.round(amount * 100) / 100 })),
+    total: Math.round((hoursBill + extras) * 100) / 100,
+  };
+}
