@@ -150,6 +150,7 @@ looks like rather than as decoration.
   bake live client names into an image the whole studio sees).
 
 ## Related / out of scope
+- **The admin home's "Studio pace" banner mirrors finance-admin's hours goal** (`src/lib/hours-goal.ts`, `/api/hours-goal`, v1.72.0): change the goal in both repos, and keep the route hours-only — Michal sees it without finance access.
 - **Finance was split out (2026-07-13) into a separate product** at `~/Documents/Claude/finance-admin/` — page/nav/lib deleted here. The `finance_*` tables + migrations 0005/0006 remain in the shared DB, untouched.
 - Executive-team Asana boards ("Clients", "Studio") were **deleted from the DB** — that data lives in Asana only; never re-import.
 

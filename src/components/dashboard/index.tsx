@@ -32,6 +32,7 @@ import { tenureSince } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StudioTeamStrip } from "./team-strip";
 import { StatTiles, UpdatedBriefsAlert } from "./tiles";
+import { StudioPace } from "./studio-pace";
 
 
 
@@ -303,6 +304,13 @@ export function Dashboard() {
               dashboard, and a badge in the header is easy to walk past. It
               disappears the moment the changes are read — see `needsReview`. */}
           <UpdatedBriefsAlert />
+
+          {/* The studio's pace against the hours a workday that cover the
+              month's costs — Nitsan and Michal watch it. Hours only; see
+              studio-pace.tsx. Desk-only for now (laid out for a wide row). */}
+          <div className="hidden md:block">
+            <StudioPace />
+          </div>
 
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-6">
