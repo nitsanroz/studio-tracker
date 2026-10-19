@@ -199,6 +199,23 @@ export function ClientView({ clientId }: { clientId: string }) {
   }, []);
   const showCol = (key: ColKey) => !hiddenCols.has(key);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  /**
+   * Section/group tick boxes that were ticked, `kind:id` → the task ids they
+   * selected. A mark is dropped the moment any of those tasks is unticked, so a
+   * section only duplicates as a section while it is still wholly selected.
+   */
+  const [picked, setPicked] = useState<Map<string, string[]>>(new Map());
+  /** Forget the marks that cover any of `taskIds` — they are being unticked. */
+  const unpick = (taskIds: string[]) =>
+    setPicked((prev) => {
+      const gone = new Set(taskIds);
+      const next = new Map([...prev].filter(([, ids]) => !ids.some((id) => gone.has(id))));
+      return next.size === prev.size ? prev : next;
+    });
+  const clearSelection = () => {
+    setSelected(new Set());
+    setPicked(new Map());
+  };
   /** Anchor for shift-click ranges — the last row toggled without shift. */
   const lastPickedRef = useRef<string | null>(null);
 
@@ -351,6 +368,7 @@ export function ClientView({ clientId }: { clientId: string }) {
     selected,
     ordered: orderedIds,
     toggle: (taskId, shiftKey) => {
+      if (selected.has(taskId) && !shiftKey) unpick([taskId]);
       setSelected((prev) => {
         const next = new Set(prev);
         const anchor = lastPickedRef.current;
@@ -372,7 +390,8 @@ export function ClientView({ clientId }: { clientId: string }) {
       // extending from the same origin.
       if (!shiftKey) lastPickedRef.current = taskId;
     },
-    setMany: (taskIds, on) =>
+    setMany: (taskIds, on) => {
+      if (!on) unpick(taskIds);
       setSelected((prev) => {
         const next = new Set(prev);
         for (const id of taskIds) {
@@ -380,7 +399,19 @@ export function ClientView({ clientId }: { clientId: string }) {
           else next.delete(id);
         }
         return next;
-      }),
+      });
+    },
+    pickContainer: (container, taskIds, on) => {
+      selectionValue.setMany(taskIds, on);
+      // after setMany, whose unpick would otherwise clear this very mark
+      if (on) setPicked((prev) => new Map(prev).set(`${container.kind}:${container.id}`, taskIds));
+    },
+    duplicatePick: () => {
+      const live = [...picked].filter(([, ids]) => ids.every((id) => selected.has(id)));
+      const of = (kind: string) =>
+        live.filter(([k]) => k.startsWith(`${kind}:`)).map(([k]) => k.slice(kind.length + 1));
+      return { sectionIds: of("section"), groupIds: of("group"), taskIds: [...selected] };
+    },
   };
 
   /**
@@ -827,7 +858,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             // or moved away must not be acted on invisibly.
             ids={orderedIds.filter((id) => selected.has(id))}
             clientId={clientId}
-            onClear={() => setSelected(new Set())}
+            onClear={clearSelection}
           />
         )}
         </SelectionContext.Provider>

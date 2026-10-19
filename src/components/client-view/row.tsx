@@ -8,6 +8,7 @@
 // job. That separation is what lets this file be about what a row looks like.
 
 import { EditableDateCell, EditableNumberCell, EditableSelectCell } from "../editable-cell";
+import { askConfirm } from "../confirm-dialog";
 import { Avatar, BudgetBar, ContextMenu, TagBadge } from "../ui";
 import { BASE_PL, COLS, LEAD_TIGHT, TASK_DRAG_TYPE, drag, useColCell, useNameCell, useSelection, useShowCol } from "./shared";
 import { formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
@@ -236,10 +237,12 @@ export function TaskRow({
               e.stopPropagation();
               // Spell out the cost: time_entries cascade, so the hours go with it.
               const mins = taskMinutes(task.id);
-              const warning = mins > 0 ? `\n\nThis also deletes ${formatHoursShort(mins)} of logged time.` : "";
-              if (confirm(`Delete “${task.title}”?${warning}\n\nThis cannot be undone.`)) {
-                deleteTask(task.id);
-              }
+              const warning = mins > 0 ? ` This also deletes ${formatHoursShort(mins)} of logged time.` : "";
+              // askConfirm, not confirm(): the desktop app's pane answers native dialogs "no".
+              void askConfirm(`Delete “${task.title}”?${warning} This cannot be undone.`, {
+                action: "Delete",
+                danger: true,
+              }).then((ok) => ok && deleteTask(task.id));
             }}
             title="Delete this task"
             className="invisible ml-0.5 shrink-0 rounded p-0.5 text-faint hover:bg-background hover:text-danger group-hover:visible"
@@ -533,7 +536,8 @@ export function TaskRunRows({
   /** Right-click → "New section…". Absent inside a group, for the same reason. */
   onNewSection?: () => void;
 }) {
-  const { groupTasksIntoNew, showNotice } = useData();
+  const { groupTasksIntoNew, duplicateItems, showNotice } = useData();
+  const isAdmin = useIsAdmin();
   const sel = useSelection();
   const [menu, setMenu] = useState<{ x: number; y: number; taskId: string } | null>(null);
   const [insert, setInsert] = useState<{ anchorId: string; where: "before" | "after" } | null>(
@@ -614,6 +618,24 @@ export function TaskRunRows({
                 ? [{ label: "New group…", onClick: () => onNewGroup(menu.taskId) }]
                 : []),
             ...(onNewSection ? [{ label: "New section…", onClick: onNewSection }] : []),
+            // Same rule as "Group": a selection under the pointer means "copy
+            // THESE", a lone row means "copy this one".
+            ...(isAdmin
+              ? [
+                  {
+                    label: gatherable(menu.taskId) ? "Duplicate selected" : "Duplicate task",
+                    onClick: () => {
+                      const ids = gatherable(menu.taskId);
+                      // The selection's own pick, so a ticked group box copies the group.
+                      const pick = ids && sel ? sel.duplicatePick() : { taskIds: [menu.taskId] };
+                      void duplicateItems(pick).then((err) => {
+                        if (err) showNotice(err);
+                        else if (ids) sel?.setMany(ids, false);
+                      });
+                    },
+                  },
+                ]
+              : []),
           ]}
           onClose={() => setMenu(null)}
         />

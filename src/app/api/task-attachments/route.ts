@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { classifyUpload, formatSize } from "@/lib/uploads";
+import { classifyTaskAttachment, formatSize } from "@/lib/uploads";
 
 /**
  * Task attachments. Session-verified; storage and the `attachments` row via the
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
     // The browser sent the Content-Type header itself, so check it is the one the
     // allowlist chose in step 1 — a hand-made PUT could have said text/html.
-    const cls = classifyUpload({ name } as File);
+    const cls = classifyTaskAttachment({ name } as File);
     const stored = String(info.contentType ?? "").split(";")[0].trim();
     if (!cls.ok || (stored && stored !== cls.contentType)) {
       await sb.storage.from(BUCKET).remove([path]);
@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
   // Never store a client-supplied Content-Type: an .html/.svg stored as
   // text/html would be a script-hosting URL on the studio's own Supabase origin.
   // The allowlist picks the type server-side and rejects anything renderable as
-  // active content — the same guard /api/intake and /api/client-file use.
-  const cls = classifyUpload({ name } as File);
+  // active content. Tasks alone also take .html, forced to download (v1.75.4).
+  const cls = classifyTaskAttachment({ name } as File);
   if (!cls.ok) {
     return NextResponse.json(
       { error: "That file type isn't allowed — use a PDF, image, document, or zip" },

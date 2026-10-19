@@ -23,10 +23,11 @@
 
 import { useCallback, useMemo, type Dispatch, type SetStateAction, type RefObject } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { mapSection, mapTask, mapTaskGroup, taskPatchToRow } from "../db";
+import { mapLink, mapSection, mapTask, mapTaskGroup, taskPatchToRow } from "../db";
+import { planDuplicate, type DuplicatePick } from "../duplicate";
 import { inversePatch, withGroupInvariant } from "./helpers";
 import type { HistoryAction, Store } from "./types";
-import type { Client, EntrySum, Section, Task, TaskGroup, TimeEntry } from "../types";
+import type { Client, EntrySum, Link, Section, Task, TaskGroup, TimeEntry } from "../types";
 
 export interface TaskDeps {
   supabase: SupabaseClient;
@@ -37,6 +38,9 @@ export interface TaskDeps {
   taskGroups: TaskGroup[];
   setTaskGroups: Dispatch<SetStateAction<TaskGroup[]>>;
   clients: Client[];
+  /** a duplicated task takes its reference links with it */
+  links: Link[];
+  setLinks: Dispatch<SetStateAction<Link[]>>;
   /** tag NAME → id and back; tasks carry names, the DB carries ids */
   tagIdByName: Map<string, string>;
   tagNameById: Map<string, string>;
@@ -60,6 +64,8 @@ export function useTaskActions(deps: TaskDeps) {
     taskGroups,
     setTaskGroups,
     clients,
+    links,
+    setLinks,
     tagIdByName,
     tagNameById,
     setTimeEntries,
@@ -812,6 +818,134 @@ export function useTaskActions(deps: TaskDeps) {
     [supabase, taskGroups, record, wrote, methodsRef, setTaskGroups],
   );
 
+  /**
+   * Copy sections, groups and tasks in place — see `planDuplicate` in
+   * ../duplicate.ts for what a copy carries and where it lands.
+   *
+   * Inserted parent-first (sections, groups, tasks, links), each step awaited,
+   * because every one references the rows of the step before. Ids are minted
+   * here rather than by the DB so the plan can wire children to parents before
+   * anything is written. Existing rows are renumbered only after every insert
+   * landed, so a failed copy leaves the original order untouched.
+   *
+   * Like every create in this app, NOT in the undo history — delete the copy.
+   * Resolves to null on success, or to a sentence saying what went wrong.
+   */
+  const duplicateItems = useCallback(
+    async (pick: DuplicatePick) => {
+      const plan = planDuplicate(pick, { sections, taskGroups, tasks, links });
+      if (!plan.sections.length && !plan.groups.length && !plan.tasks.length) {
+        return "Nothing to duplicate.";
+      }
+
+      if (plan.sections.length) {
+        const { data, error } = await counting(
+          supabase
+            .from("sections")
+            .insert(plan.sections.map((s) => ({ id: s.id, client_id: s.clientId, name: s.name, position: s.position })))
+            .select(),
+        );
+        if (error) {
+          noteWriteError("duplicateItems sections", error);
+          return "The copy could not be created.";
+        }
+        setSections((prev) => [...prev, ...(data ?? []).map((r) => mapSection(r))]);
+      }
+      if (plan.groups.length) {
+        const { data, error } = await counting(
+          supabase
+            .from("task_groups")
+            .insert(
+              plan.groups.map((g) => ({
+                id: g.id,
+                client_id: g.clientId,
+                section_id: g.sectionId,
+                name: g.name,
+                position: g.position,
+              })),
+            )
+            .select(),
+        );
+        if (error) {
+          noteWriteError("duplicateItems groups", error);
+          return "The copy was only partly created — its groups failed.";
+        }
+        setTaskGroups((prev) => [...prev, ...(data ?? []).map(mapTaskGroup)]);
+      }
+      if (plan.tasks.length) {
+        const { data, error } = await counting(
+          supabase
+            .from("tasks")
+            .insert(plan.tasks.map(({ id, ...t }) => ({ id, ...taskPatchToRow(t, tagIdByName) })))
+            .select(),
+        );
+        if (error) {
+          noteWriteError("duplicateItems tasks", error);
+          return "The copy was only partly created — its tasks failed.";
+        }
+        setTasks((prev) => [...prev, ...(data ?? []).map((r) => mapTask(r, tagNameById))]);
+      }
+      if (plan.links.length) {
+        const { data, error } = await counting(
+          supabase
+            .from("links")
+            .insert(
+              plan.links.map((l) => ({
+                id: l.id,
+                task_id: l.taskId,
+                client_id: null,
+                title: l.title,
+                url: l.url,
+                position: l.position,
+              })),
+            )
+            .select(),
+        );
+        // The tasks exist by now, so a failed link copy is reported, not fatal.
+        if (error) noteWriteError("duplicateItems links", error);
+        else setLinks((prev) => [...prev, ...(data ?? []).map(mapLink)]);
+      }
+
+      // Make room: the originals that sit after a copy shift down by one.
+      const renumber = <T extends { id: string; position: number }>(
+        moves: { id: string; position: number }[],
+        table: string,
+        set: Dispatch<SetStateAction<T[]>>,
+      ) => {
+        if (!moves.length) return;
+        const pos = new Map(moves.map((m) => [m.id, m.position]));
+        set((prev) => prev.map((r) => (pos.has(r.id) ? { ...r, position: pos.get(r.id)! } : r)));
+        for (const { id, position } of moves) {
+          supabase
+            .from(table)
+            .update({ position })
+            .eq("id", id)
+            .then(wrote(`duplicateItems ${table} order`));
+        }
+      };
+      renumber(plan.moves.sections, "sections", setSections);
+      renumber(plan.moves.groups, "task_groups", setTaskGroups);
+      renumber(plan.moves.tasks, "tasks", setTasks);
+      return null;
+    },
+    [
+      supabase,
+      sections,
+      taskGroups,
+      tasks,
+      links,
+      tagIdByName,
+      tagNameById,
+      noteWriteError,
+      wrote,
+      counting,
+      setSections,
+      setTaskGroups,
+      setTasks,
+      setLinks,
+    ],
+  );
+
   return useMemo(
     () => ({
       updateTask,
@@ -832,6 +966,7 @@ export function useTaskActions(deps: TaskDeps) {
       updateTaskGroup,
       deleteTaskGroup,
       reorderTaskGroup,
+      duplicateItems,
     }),
     [
       updateTask,
@@ -852,6 +987,7 @@ export function useTaskActions(deps: TaskDeps) {
       updateTaskGroup,
       deleteTaskGroup,
       reorderTaskGroup,
+      duplicateItems,
     ],
   );
 }

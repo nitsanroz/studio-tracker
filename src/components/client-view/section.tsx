@@ -6,6 +6,7 @@
 // ⚠️ An EMPTY section stays visible even when its tasks are all hidden — a
 // section you just created must not vanish as you fill it.
 
+import { askConfirm } from "../confirm-dialog";
 import { EditableTextCell } from "../editable-cell";
 import { CollapseChevron } from "../ui";
 import { AddGroupRow, GroupRow } from "./groups";
@@ -17,7 +18,7 @@ import { toISO } from "@/lib/gantt";
 import { useData, useIsAdmin } from "@/lib/store";
 import type { Rollup } from "@/lib/task-rollup";
 import type { Section, Task, TaskGroup } from "@/lib/types";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { Copy, GripVertical, Pencil, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -70,6 +71,8 @@ export function SectionGroup({
     updateSection,
     deleteSection,
     reorderSection,
+    duplicateItems,
+    showNotice,
   } = useData();
   const isAdmin = useIsAdmin();
   const sel = useSelection();
@@ -213,6 +216,7 @@ export function SectionGroup({
             <SelectAllBox
               ids={tasks.map((t) => t.id)}
               title={`Select all in ${section?.name ?? "No section"}`}
+              container={section ? { kind: "section", id: section.id } : undefined}
             />
           </span>
         )}
@@ -284,10 +288,27 @@ export function SectionGroup({
         )}
         {summary}
         {isAdmin && section && (
+          // Hover-revealed like the pencil: it creates rather than destroys, so
+          // it needn't sit in view the way the trash's disabled state does.
+          <button
+            onClick={() =>
+              void duplicateItems({ sectionIds: [section.id] }).then((err) => err && showNotice(err))
+            }
+            title="Duplicate this section with its groups and tasks — not their hours"
+            aria-label={`Duplicate ${section.name}`}
+            className="shrink-0 rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+          >
+            <Copy size={13} />
+          </button>
+        )}
+        {isAdmin && section && (
           <button
             onClick={() => {
               if (!sectionIsEmpty) return;
-              if (confirm(`Delete the section “${section.name}”?`)) deleteSection(section.id);
+              void askConfirm(`Delete the section “${section.name}”?`, {
+                action: "Delete",
+                danger: true,
+              }).then((ok) => ok && deleteSection(section.id));
             }}
             disabled={!sectionIsEmpty}
             title={

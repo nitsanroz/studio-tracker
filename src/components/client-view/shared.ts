@@ -13,6 +13,7 @@
 // the const itself.
 
 import { createContext, useContext } from "react";
+import type { DuplicatePick } from "@/lib/duplicate";
 
 
 // pl-9 clears the 36px left gutter, which holds BOTH the select checkbox (left-1)
@@ -48,7 +49,17 @@ export type SelectionCtx = {
   ordered: string[];
   toggle: (taskId: string, shiftKey: boolean) => void;
   setMany: (taskIds: string[], on: boolean) => void;
+  /**
+   * A section's or group's own tick box — selects its tasks AND marks the
+   * container itself as picked, so Duplicate copies the section/group rather
+   * than its tasks one by one. Unticking any task inside drops the mark.
+   */
+  pickContainer: (container: PickedContainer, taskIds: string[], on: boolean) => void;
+  /** What Duplicate should copy: the picked containers, plus every selected task. */
+  duplicatePick: () => DuplicatePick;
 };
+
+export type PickedContainer = { kind: "section" | "group"; id: string };
 
 export const SelectionContext = createContext<SelectionCtx | null>(null);
 

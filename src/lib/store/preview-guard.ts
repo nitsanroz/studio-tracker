@@ -63,15 +63,17 @@ const PREVIEW_ALLOWED = new Set<keyof Store>([
 ]);
 
 /**
- * Return values for the two blocked methods whose "no" is not simply falsy.
+ * Return values for the blocked methods whose "no" is not simply falsy.
  *
  * A generic stub returns a promise of null, which every other async caller
- * already reads as failure. These two don't: `groupTasksIntoNew` resolves to
- * null on SUCCESS and to a sentence explaining the refusal, and `markRequestSeen`
- * resolves to an object the caller reads `.ok` off — null would throw.
+ * already reads as failure. These don't: `groupTasksIntoNew` and `duplicateItems`
+ * resolve to null on SUCCESS and to a sentence explaining the refusal, and
+ * `markRequestSeen` resolves to an object the caller reads `.ok` off — null
+ * would throw.
  */
 const REFUSAL: Partial<Record<keyof Store, (reason: string) => unknown>> = {
   groupTasksIntoNew: (reason) => Promise.resolve(reason),
+  duplicateItems: (reason) => Promise.resolve(reason),
   markRequestSeen: (reason) => Promise.resolve({ ok: false, error: reason }),
 };
 

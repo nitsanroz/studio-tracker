@@ -7,15 +7,28 @@
 // rather than warning — hours cascade away with the task and cannot be restored.
 
 import { TaskBulkControls } from "../task-bulk-controls";
+import { askConfirm } from "../confirm-dialog";
 import { useSelection } from "./shared";
+import type { PickedContainer } from "./shared";
 import { formatHoursShort } from "@/lib/format";
 import { useData } from "@/lib/store";
 import { X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 
-/** Tri-state select-all: checked when every id is selected, dash when only some are. */
-export function SelectAllBox({ ids, title }: { ids: string[]; title: string }) {
+/**
+ * Tri-state select-all: checked when every id is selected, dash when only some are.
+ * With `container`, ticking it also picks that section or group (see `pickContainer`).
+ */
+export function SelectAllBox({
+  ids,
+  title,
+  container,
+}: {
+  ids: string[];
+  title: string;
+  container?: PickedContainer;
+}) {
   const sel = useSelection();
   if (!sel || ids.length === 0) return <span className="w-3.5" />;
   const on = ids.filter((id) => sel.selected.has(id)).length;
@@ -31,7 +44,7 @@ export function SelectAllBox({ ids, title }: { ids: string[]; title: string }) {
       title={title}
       aria-label={title}
       onClick={(e) => e.stopPropagation()}
-      onChange={() => sel.setMany(ids, !all)}
+      onChange={() => (container ? sel.pickContainer(container, ids, !all) : sel.setMany(ids, !all))}
       className="h-3.5 w-3.5 cursor-pointer accent-[var(--brand)]"
     />
   );
@@ -51,7 +64,17 @@ export function SelectionBar({
   clientId: string;
   onClear: () => void;
 }) {
-  const { clients, sections, tasks, taskMinutes, updateTasksBulk, deleteTasksBulk } = useData();
+  const {
+    clients,
+    sections,
+    tasks,
+    taskMinutes,
+    updateTasksBulk,
+    deleteTasksBulk,
+    duplicateItems,
+    showNotice,
+  } = useData();
+  const sel = useSelection();
   const [moveTo, setMoveTo] = useState("");
 
   const targetSections = useMemo(
@@ -126,6 +149,21 @@ export function SelectionBar({
 
       <button
         onClick={() => {
+          // Each copy lands right after its original. A ticked section or group
+          // box copies that whole section/group, not its tasks one by one.
+          if (!sel) return;
+          void duplicateItems(sel.duplicatePick()).then((err) => {
+            if (err) showNotice(err);
+            else done();
+          });
+        }}
+        title="Copy the selected tasks — without their hours, comments or progress"
+        className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-brand hover:text-brand"
+      >
+        Duplicate
+      </button>
+      <button
+        onClick={() => {
           updateTasksBulk(ids, { status: "done" });
           done();
         }}
@@ -155,18 +193,24 @@ export function SelectionBar({
         onClick={() => {
           // Hours cascade away with the task and cannot be restored, so a selection
           // holding any logged time is refused outright rather than warned about.
+          // ⚠️ A notice and `askConfirm`, not alert/confirm: the desktop app's
+          // browser pane answers native dialogs "no" without showing them.
           if (minutes > 0) {
-            alert(
-              `${formatHoursShort(minutes)} of logged time sits on these tasks.\n\n` +
-                `Deleting would destroy those hours permanently. Move the time off them first, ` +
-                `or delete those tasks one at a time.`,
+            showNotice(
+              `${formatHoursShort(minutes)} of logged time sits on these tasks. Deleting would ` +
+                `destroy those hours permanently — move the time off them first, or delete those ` +
+                `tasks one at a time.`,
             );
             return;
           }
-          if (confirm(`Delete ${ids.length} task${ids.length === 1 ? "" : "s"}?\n\nThis cannot be undone.`)) {
+          void askConfirm(`Delete ${ids.length} task${ids.length === 1 ? "" : "s"}? This cannot be undone.`, {
+            action: "Delete",
+            danger: true,
+          }).then((ok) => {
+            if (!ok) return;
             deleteTasksBulk(ids);
             done();
-          }
+          });
         }}
         className="rounded-md border border-border px-2 py-1 font-medium text-muted hover:border-danger hover:text-danger"
       >

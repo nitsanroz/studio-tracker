@@ -108,6 +108,27 @@ export function classifyUpload(file: File): { ok: true; contentType: string } | 
   return ct ? { ok: true, contentType: ct } : { ok: false };
 }
 
+const DOWNLOAD_ONLY_EXTS = new Set(["html", "htm"]);
+
+/**
+ * Task attachments only: the general allowlist plus `.html`/`.htm`, stored as a
+ * plain download (v1.75.4 — Nitsan attaching a page mock-up).
+ *
+ * ⚠️ NEVER ON THE INTAKE FORM OR ANY PUBLIC ROUTE. Members are signed-in
+ * colleagues; an anonymous upload of active content is the case the allowlist
+ * exists for. Two layers keep a task's HTML from ever rendering: the stored
+ * Content-Type here, and `/api/file` signing it with `download` (`mustDownload`).
+ */
+export function classifyTaskAttachment(file: File): { ok: true; contentType: string } | { ok: false } {
+  if (DOWNLOAD_ONLY_EXTS.has(extOf(file.name))) return { ok: true, contentType: "application/octet-stream" };
+  return classifyUpload(file);
+}
+
+/** A stored object a browser must save rather than open, whatever its Content-Type says. */
+export function mustDownload(path: string): boolean {
+  return DOWNLOAD_ONLY_EXTS.has(extOf(path));
+}
+
 /** Stricter variant for images only (avatars). */
 export function classifyImage(file: File): { ok: true; contentType: string } | { ok: false } {
   const ct = IMAGE_TYPES[extOf(file.name)];

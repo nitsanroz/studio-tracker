@@ -31,6 +31,7 @@ import type {
   TimeEntry,
   TimelineMark,
 } from "../types";
+import type { DuplicatePick } from "../duplicate";
 
 export interface TaskRequest {
   id: string;
@@ -232,6 +233,12 @@ export interface Store {
   deleteTaskGroup: (groupId: string, opts?: { withTasks?: boolean }) => void;
   /** Move a group before another within its own section; null = to the end. */
   reorderTaskGroup: (movedId: string, beforeId: string | null) => void;
+  /**
+   * Copy sections (with their groups and tasks), groups (with their tasks) and
+   * tasks, each landing right after its original — see `planDuplicate`. Not
+   * undoable, like every create. Resolves to null, or to why it failed.
+   */
+  duplicateItems: (pick: DuplicatePick) => Promise<string | null>;
   addClient: (name: string, color: string, billingPeriodNote?: string) => Promise<Client | null>;
   patchProfileLocal: (profileId: string, patch: Partial<Profile>) => void;
   /** local-only; for values an API route already persisted with the service key */

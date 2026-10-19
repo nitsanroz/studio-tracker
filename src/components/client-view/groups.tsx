@@ -16,7 +16,7 @@ import { formatHoursShort } from "@/lib/format";
 import { useData, useIsAdmin } from "@/lib/store";
 import { taskMinutesDone } from "@/lib/task-hours";
 import type { Task, TaskGroup } from "@/lib/types";
-import { GripVertical, Layers, Pencil, Trash2 } from "lucide-react";
+import { Copy, GripVertical, Layers, Pencil, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -52,7 +52,14 @@ export function GroupRow({
   /** The rolled-up figures, when "summaries" is on. */
   summary?: ReactNode;
 }) {
-  const { tasks: allTasks, updateTask, updateTaskGroup, reorderTaskGroup } = useData();
+  const {
+    tasks: allTasks,
+    updateTask,
+    updateTaskGroup,
+    reorderTaskGroup,
+    duplicateItems,
+    showNotice,
+  } = useData();
   const isAdmin = useIsAdmin();
   const sel = useSelection();
   const [dragOver, setDragOver] = useState(false);
@@ -150,7 +157,11 @@ export function GroupRow({
               (sel?.selected.size ?? 0) > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             }`}
           >
-            <SelectAllBox ids={tasks.map((t) => t.id)} title={`Select all in ${group.name}`} />
+            <SelectAllBox
+              ids={tasks.map((t) => t.id)}
+              title={`Select all in ${group.name}`}
+              container={{ kind: "group", id: group.id }}
+            />
           </span>
         )}
         {isAdmin && (
@@ -202,6 +213,18 @@ export function GroupRow({
           </span>
         )}
         {summary}
+        {isAdmin && (
+          <button
+            onClick={() =>
+              void duplicateItems({ groupIds: [group.id] }).then((err) => err && showNotice(err))
+            }
+            title="Duplicate this group with its tasks — not their hours"
+            aria-label={`Duplicate ${group.name}`}
+            className="shrink-0 rounded p-0.5 text-faint opacity-0 transition-opacity hover:text-brand group-hover:opacity-100"
+          >
+            <Copy size={13} />
+          </button>
+        )}
         {isAdmin && (
           // Always enabled, unlike a section's trash: there is a safe answer here
           // (dissolve) whatever the group holds, so nothing has to be tidied up

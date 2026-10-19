@@ -6,8 +6,10 @@ import {
   describeUploadSet,
   classifyImage,
   classifyUpload,
+  classifyTaskAttachment,
   describeUpload,
   formatSize,
+  mustDownload,
 } from "./uploads";
 
 /** A File of a given name and size, without allocating the bytes. */
@@ -228,5 +230,32 @@ describe("formatSize", () => {
     // No trailing ".0" — "10.0 MB each" in the form's hint reads like a machine
     // wrote it.
     expect(formatSize(10 * 1024 * 1024)).toBe("10 MB");
+  });
+});
+
+describe("classifyTaskAttachment — tasks also take HTML, as a download", () => {
+  it.each(["html", "htm", "HTML"])("accepts .%s as application/octet-stream", (ext) => {
+    expect(classifyTaskAttachment(file(`Mayors Page.${ext}`))).toEqual({
+      ok: true,
+      contentType: "application/octet-stream",
+    });
+  });
+
+  it("leaves the general allowlist — and so the public intake form — refusing HTML", () => {
+    expect(classifyUpload(file("x.html")).ok).toBe(false);
+  });
+
+  it.each(["svg", "xml", "js", "exe"])("still refuses .%s on a task", (ext) => {
+    expect(classifyTaskAttachment(file(`x.${ext}`)).ok).toBe(false);
+  });
+
+  it("passes everything else through unchanged", () => {
+    expect(classifyTaskAttachment(file("a.png"))).toEqual({ ok: true, contentType: "image/png" });
+  });
+
+  it("marks only HTML objects as download-only", () => {
+    expect(mustDownload("task/1791907720356-Mayors_Page.html")).toBe(true);
+    expect(mustDownload("task/a.htm")).toBe(true);
+    expect(mustDownload("task/a.pdf")).toBe(false);
   });
 });

@@ -947,6 +947,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     taskGroups,
     setTaskGroups,
     clients,
+    links,
+    setLinks,
     tagIdByName,
     tagNameById,
     setTimeEntries,
