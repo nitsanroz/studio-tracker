@@ -133,7 +133,7 @@ export function PlanMobile() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="font-serif-accent text-2xl">Weekly plan</h1>
+        <h1 className="page-title">Weekly plan</h1>
         <div className="flex items-center gap-1">
           <button
             onClick={() => stepWeek(-1)}

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ExternalLink, Maximize2, Pencil, Plus, X } from "lucide-react";
+import { ExternalLink, ListChecks, Maximize2, Pencil, Plus, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { formatDayMonth, formatHoursDecimal, formatHoursShort, toISODate } from "@/lib/format";
@@ -19,6 +19,7 @@ import {
 import { useColWidths, ResizeHandle } from "./resizable";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { Task } from "@/lib/types";
+import { EmptyState } from "./empty-state";
 
 /** The panel's own box, for the flip decision. 432px (w-72 + 50%) is wide enough
  *  that the duration/member/date row fits on ONE line, which is what gives the
@@ -273,7 +274,9 @@ function MobileTaskCards({
   }, [tasks]);
 
   if (tasks.length === 0) {
-    return <p className="px-4 py-8 text-center text-sm text-muted">Nothing assigned right now.</p>;
+    return (
+      <EmptyState icon={ListChecks} text="Nothing assigned to you right now." action={{ label: "See the weekly plan", href: "/plan" }} />
+    );
   }
 
   return (

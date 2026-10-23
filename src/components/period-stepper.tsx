@@ -7,6 +7,7 @@
 // page five (it has quarters), reports three.
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Tabs } from "./ui";
 
 export function PeriodStepper<K extends string>({
   ranges,
@@ -46,22 +47,18 @@ export function PeriodStepper<K extends string>({
     <div
       className={`-mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 ${className}`}
     >
-      {ranges.map((r) => (
-        <button
-          key={r}
-          onClick={() => {
-            onChange(r);
-            onOffset(0); // a new unit with the old offset would mean a period nobody picked
-          }}
-          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium ${
-            value === r
-              ? "border-brand bg-brand-soft text-brand-dark"
-              : "border-border bg-surface text-muted hover:border-border-strong"
-          }`}
-        >
-          {r}
-        </button>
-      ))}
+      <Tabs
+        variant="segmented"
+        size="sm"
+        ariaLabel="Period"
+        className="shrink-0"
+        items={ranges.map((r) => ({ value: r, label: r }))}
+        value={value}
+        onChange={(r) => {
+          onChange(r);
+          onOffset(0); // a new unit with the old offset would mean a period nobody picked
+        }}
+      />
       {/* Always rendered. These used to vanish when stepping made no sense and
           the "Now" reset only appeared once you had already moved, so the row
           reflowed as you used it. Disabled + dimmed instead, so the controls stay
@@ -71,7 +68,7 @@ export function PeriodStepper<K extends string>({
           onClick={() => onOffset(offset - 1)}
           disabled={!canStep}
           title={canStep ? "Previous period" : disabledReason}
-          className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
+          className="rounded-lg bg-surface p-2 text-muted shadow-card hover:text-foreground disabled:opacity-30 disabled:shadow-none disabled:hover:text-muted"
         >
           <ChevronLeft size={15} />
         </button>
@@ -85,7 +82,7 @@ export function PeriodStepper<K extends string>({
           onClick={() => onOffset(Math.min(0, offset + 1))}
           disabled={!canStep || offset >= 0}
           title={canStep ? "Next period" : disabledReason}
-          className="rounded-md border border-border bg-surface p-1.5 text-muted hover:border-border-strong hover:text-foreground disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
+          className="rounded-lg bg-surface p-2 text-muted shadow-card hover:text-foreground disabled:opacity-30 disabled:shadow-none disabled:hover:text-muted"
         >
           <ChevronRight size={15} />
         </button>
@@ -93,7 +90,7 @@ export function PeriodStepper<K extends string>({
           onClick={() => onOffset(0)}
           disabled={!canStep || offset === 0}
           title="Back to the current period"
-          className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted hover:border-brand hover:text-brand disabled:opacity-30 disabled:hover:border-border disabled:hover:text-muted"
+          className="rounded-lg px-2 py-1 text-xs text-muted hover:bg-surface hover:text-brand disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted"
         >
           Now
         </button>

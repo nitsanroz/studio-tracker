@@ -80,7 +80,7 @@ export function MobileClientsList() {
 
   return (
     <div className="flex flex-col gap-3">
-      <h1 className="text-xl">Clients</h1>
+      <h1 className="page-title">Clients</h1>
 
       <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3">
         <Search size={15} className="shrink-0 text-faint" />
@@ -295,7 +295,7 @@ export function MobileClientView({ clientId }: { clientId: string }) {
       <div className="flex items-center gap-2.5">
         <ClientAvatar client={client} size={34} />
         <div className="min-w-0 flex-1">
-          <h1 className="bidi-auto truncate text-xl leading-tight">{client.name}</h1>
+          <h1 className="page-title bidi-auto truncate">{client.name}</h1>
           <p className="text-[11px] text-muted">
             {openCount} open {openCount === 1 ? "task" : "tasks"}
           </p>

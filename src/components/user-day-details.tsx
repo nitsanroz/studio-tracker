@@ -9,6 +9,7 @@ import { LogTimeForm } from "./log-time-form";
 import { MemberSelect } from "./member-select";
 import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
+import { SkeletonRows } from "@/components/skeleton";
 
 // Extracted from the Time Feed page so the admin home's week timesheet opens
 // the SAME popup — two copies would drift, and this one already carries the
@@ -200,7 +201,7 @@ export function UserDayDetails({
           <ModalClose onClose={onClose} />
         </div>
         <div className="mt-2 flex max-h-56 flex-col overflow-y-auto sm:max-h-96">
-          {!ready && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
+          {!ready && <SkeletonRows rows={3} />}
           {ready && entries.length === 0 && (
             <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
           )}

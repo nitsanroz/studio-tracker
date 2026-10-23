@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { ChartNoAxesColumn, Download } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll } from "@/lib/db";
@@ -146,7 +147,7 @@ function TaskHoursModal({
             );
           })}
           {rows.length === 0 && (
-            <p className="py-4 text-center text-sm text-faint">No hours in this period.</p>
+            <EmptyState compact icon={ChartNoAxesColumn} text="No hours in this period." />
           )}
         </div>
 
@@ -340,7 +341,7 @@ function RangeStats({
             totalLabel="in this period"
           />
         ) : (
-          <p className="text-sm text-faint">No hours in this period.</p>
+          <EmptyState compact icon={ChartNoAxesColumn} text="No hours in this period." />
         )}
       </div>
 
@@ -399,7 +400,7 @@ function RangeStats({
             maxMinutes={maxUser}
           />
         ))}
-        {byUser.length === 0 && <p className="text-sm text-faint">No hours in this period.</p>}
+        {byUser.length === 0 && <EmptyState compact icon={ChartNoAxesColumn} text="No hours in this period." />}
       </div>
     </div>
   );
@@ -565,7 +566,7 @@ export default function ReportsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl">Reports</h1>
+          <h1 className="page-title">Reports</h1>
           <p className="text-sm text-muted">
             {periodLabel} · {range.from} → {range.to} ·{" "}
             {loading
@@ -780,7 +781,7 @@ export default function ReportsPage() {
           );
         })}
         {byClient.length === 0 && !loading && (
-          <div className="px-4 py-6 text-center text-sm text-faint">No hours in this range.</div>
+          <EmptyState icon={ChartNoAxesColumn} text="No hours in this range." />
         )}
       </div>
 

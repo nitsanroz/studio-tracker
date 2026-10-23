@@ -1272,7 +1272,7 @@ function PublishWorkspace() {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="font-serif-accent text-3xl">Client Reports</h1>
+          <h1 className="page-title">Client Reports</h1>
           <p className="text-sm text-muted">
             Per-client hours tables, payment periods, and the shareable report links.
           </p>

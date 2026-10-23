@@ -46,6 +46,8 @@ import { MobileLogTimeSheet } from "./mobile-log-time";
 import { DesktopOnlyCard, desktopOnlyEntry } from "./desktop-only";
 import { WhatsNewModal } from "./whats-new-modal";
 import { useBootProgress } from "@/lib/store/boot-progress";
+import { Toaster } from "./toaster";
+import { AmpLoader } from "./amp-loader";
 
 // admin-only sections render LAST, below a thin divider.
 //
@@ -125,9 +127,11 @@ function NavItem({
       href={href}
       title={folded ? undefined : label}
       aria-label={label}
-      className={`group/nav font-heading relative flex items-center rounded-lg py-2.5 text-sm transition-colors ${
+      // `is-current` fills the icon with a wash (globals.css, icons); a nav item
+      // you are not on nudges 3px right on hover (motion round 2, 2026-10-23).
+      className={`group/nav font-heading relative flex items-center rounded-md py-2.5 text-sm transition-[background-color,transform] duration-150 ${
         folded ? "justify-center px-0" : "gap-3 px-3"
-      }`}
+      } ${active ? "is-current" : folded ? "" : "hover:translate-x-[3px]"}`}
       style={
         activeStyle ??
         (active
@@ -595,12 +599,14 @@ function MobileDrawer({
  */
 function LoadingScreen() {
   const pct = Math.round(useBootProgress() * 100);
+  // On the brand blue because the ampersand is white (see amp-loader.tsx) — the
+  // same blue as the sidebar the app opens into.
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <span className="brand-wordmark w-48 animate-pulse bg-brand" />
+    <div className="flex min-h-screen items-center justify-center bg-brand">
+      <div className="flex flex-col items-center gap-5">
+        <AmpLoader size={96} />
         <div
-          className="h-1.5 w-48 overflow-hidden rounded-full bg-brand/10"
+          className="h-1 w-40 overflow-hidden rounded-full bg-white/20"
           role="progressbar"
           aria-label="Loading the studio"
           aria-valuemin={0}
@@ -608,11 +614,11 @@ function LoadingScreen() {
           aria-valuenow={pct}
         >
           <div
-            className="h-full rounded-full bg-brand transition-[width] duration-150 ease-out"
+            className="h-full rounded-full bg-white transition-[width] duration-150 ease-out"
             style={{ width: `${Math.max(4, pct)}%` }}
           />
         </div>
-        <span className="text-sm tabular-nums text-muted">Loading the studio… {pct}%</span>
+        <span className="text-sm tabular-nums text-white/70">{pct}%</span>
       </div>
     </div>
   );
@@ -630,8 +636,6 @@ function Shell({ children }: { children: ReactNode }) {
     writeError,
     serviceBlocked,
     dismissWriteError,
-    notice,
-    dismissNotice,
     bootError,
   } = useData();
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
@@ -884,7 +888,7 @@ function Shell({ children }: { children: ReactNode }) {
       {/* ⚠️ The margin is `md:`-prefixed on BOTH branches. Unprefixed it would
           still indent the content by the width of a sidebar that isn't there. */}
       <div
-        className={`flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
+        className={`app-canvas flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
       >
         {/* z-scale, and why the header is 30:
               sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
@@ -894,7 +898,7 @@ function Shell({ children }: { children: ReactNode }) {
             DOM) painted straight over the open search results. Every modal
             overlay is ≥40, so the task drawer still dims the header. */}
         <header
-          className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border px-4 backdrop-blur md:px-6"
+          className="app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border px-4 backdrop-blur md:px-6"
           style={{ backgroundColor: "var(--header-bg)" }}
         >
           {/* Below md the sidebar is gone, so the header carries the wordmark —
@@ -928,7 +932,7 @@ function Shell({ children }: { children: ReactNode }) {
             <Link
               href="/settings"
               title="Account & settings"
-              className="hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-surface py-1 pl-1 pr-2.5 transition-colors hover:border-border-strong md:flex"
+              className="hidden h-10 shrink-0 items-center gap-2 rounded-xl bg-surface pl-1.5 pr-3 shadow-card md:flex"
             >
               <Avatar profile={me} size={26} />
               <span className="text-sm font-medium">{me?.name.split(" ")[0]}</span>
@@ -982,23 +986,10 @@ function Shell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Neutral, not the red write-error banner: nothing failed to save and
-          reloading wouldn't help. Currently only "that undo expired". */}
-      {notice && (
-        <div
-          role="status"
-          className="fixed bottom-4 right-4 z-50 flex max-w-sm items-start gap-3 rounded-xl bg-foreground px-4 py-3 text-sm text-white shadow-lg notice-in"
-        >
-          <span className="flex-1">{notice}</span>
-          <button
-            onClick={dismissNotice}
-            aria-label="Dismiss"
-            className="shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium opacity-80 hover:opacity-100"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Confirmations ("Logged 2h on …") and the store's neutral notes ("that
+          undo expired") — lib/toast.ts. Not the red write-error banner below:
+          nothing here failed to save, and reloading wouldn't help. */}
+      <Toaster />
 
       {/*
         Supabase has cut the project off over its usage quota — every request is

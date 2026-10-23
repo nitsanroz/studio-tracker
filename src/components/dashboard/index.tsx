@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Inbox } from "lucide-react";
+import {
+  Inbox,
+  ListChecks,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
 import {
   formatFeedDate,
@@ -14,6 +18,7 @@ import {
   HOME_RANGES,
   comparablePrevRange,
   periodBounds,
+  periodRange,
   rangeLabel,
 } from "@/lib/period-math";
 import { ConfirmDetailsBanner } from "../confirm-details-banner";
@@ -30,11 +35,12 @@ import { ClientBreakdown, MyGraphs } from "./graphs";
 import { MemberWelcome, MyAvatar, MyWeek } from "./member";
 import { MyVacationCard } from "../vacation";
 import { useVacation } from "@/lib/use-vacation";
-import { tenureSince } from "./shared";
+import { tenureSince, tenureWords } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StudioTeamStrip } from "./team-strip";
 import { StatTiles, UpdatedBriefsAlert } from "./tiles";
 import { FreelancerLogsAlert, StudioPace } from "./studio-pace";
+import { EmptyState } from "../empty-state";
 
 
 
@@ -70,6 +76,9 @@ export function Dashboard() {
     [rangeKey, periodOffset],
   );
   const canNavigate = rangeKey !== "All time";
+  // The pace chart's reference line wants the WHOLE previous period, not the
+  // `prevRange` above (cut at today's point, for like-for-like tiles).
+  const prevFullRange = useMemo(() => periodRange(rangeKey, periodOffset - 1), [rangeKey, periodOffset]);
 
   const firstName = me?.name.split(" ")[0] ?? "";
   const today = new Date();
@@ -101,11 +110,11 @@ export function Dashboard() {
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
         <Link href="/my-tasks" className="flex items-center gap-1 text-xs text-brand hover:underline">
-          All tasks <ArrowRight size={12} />
+          All tasks <StudioArrow size={15} />
         </Link>
       </div>
       {myTasks.length === 0 ? (
-        <p className="px-4 py-6 text-center text-sm text-faint">Nothing assigned to you right now.</p>
+        <EmptyState compact icon={ListChecks} text="Nothing assigned to you right now." />
       ) : (
         <div className="divide-y divide-border">
           {myTasks.slice(0, 4).map((t) => {
@@ -150,6 +159,25 @@ export function Dashboard() {
           already carries Tasks, and picking a client to scope your own hours is
           desk work. That leaves identity + the period stepper, two rows. */}
       <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-x-10 md:gap-y-3">
+        {/* ⚠️ THE ADMIN GREETING IS ONE HEADLINE NOW (2026-10-23), in the studio
+            website's voice: Saans at the page-title size with the one word that
+            matters — the name — in brand-blue serif italic ("Want to apply?" on
+            the site). The tenure, which was a serif counter beside it, reads as a
+            plain line under it. Members keep their date line; their hero below
+            carries the greeting in the same style. */}
+        {isAdmin ? (
+          <div className="min-w-0">
+            <h1 className="page-title">
+              {greetingFor(today)}, <span className="font-serif-accent font-normal text-brand">{firstName}</span>
+            </h1>
+            {me?.startDate && (
+              <p className="mt-1 text-sm text-muted" title={`In the studio since ${me.startDate}`}>
+                {tenureWords(me.startDate)} in the studio
+              </p>
+            )}
+          </div>
+        ) : (
+        <>
         <div className="flex items-center gap-3">
           <MyAvatar />
           <div className="min-w-0">
@@ -157,10 +185,9 @@ export function Dashboard() {
                 "Good afternoon, Nadav" a few inches below, and the same phrase
                 twice on one screen reads as a bug. The date was already carried
                 by this line's `title`, so nothing new is being invented; it is
-                the one orienting fact the page never states out loud. Admins have
-                no hero, so theirs is unchanged. */}
+                the one orienting fact the page never states out loud. */}
             <p className="text-sm text-muted" title={dateLabel}>
-              {isAdmin ? greetingFor(today) : dateLabel}
+              {dateLabel}
             </p>
             <h1 className="font-serif-accent truncate text-[26px] leading-8">{firstName}</h1>
           </div>
@@ -196,6 +223,8 @@ export function Dashboard() {
             </div>
             <p className="text-xs text-muted">In the studio</p>
           </div>
+        )}
+        </>
         )}
         {/* admins don't triage their own assignments from here — the counter went
             with the My-tasks pane */}
@@ -287,7 +316,7 @@ export function Dashboard() {
         >
           <Inbox size={16} strokeWidth={2} />
           {pendingIntake} intake request{pendingIntake > 1 ? "s" : ""} waiting for review
-          <ArrowRight size={15} className="ml-auto" />
+          <StudioArrow size={18} className="ml-auto" />
         </Link>
       )}
 
@@ -341,22 +370,28 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-          {/* analytics 2×2 — hours over time / by client, then client-trend and the
-              studio roster, which took the My-tasks slot (admins use /my-tasks) */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* analytics — the running-total chart takes three fifths (design-lab
+              "Graphs 1": the graphs were asked to be more prominent), hours by
+              client the rest */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
             {/* Kept on a phone: "hours over time" is a trend, and a trend is the
                 one chart shape that still reads at 343px — it already renders
                 through a `viewBox` at `width="100%"`, so it scales rather than
                 being cropped. */}
-            <MyGraphs filter={filter} isAdmin={isAdmin} />
+            <div className="min-w-0 lg:col-span-3">
+              <MyGraphs
+                filter={filter}
+                isAdmin={isAdmin}
+                prevRange={prevFullRange}
+                prevLabel={rangeLabel(rangeKey, periodOffset - 1)}
+              />
+            </div>
             {/* the split and the trend answer the same question, so they share a
                 pane with a tab rather than competing for two slots.
-                ⚠️ Hidden below md: its donut is drawn at a literal 300×300 with a
-                legend beside it, so at 375px the legend has ~40px and the client
-                names become one character each. Reading a share is analysis, and
-                analysis is a desk job — the honest fix is to leave it out rather
-                than ship an unreadable one. */}
-            <div className="hidden md:block">
+                Hidden below md: reading a share is analysis, and analysis is a
+                desk job. (It was first hidden for its donut, which couldn't fit
+                a phone; the bars that replaced it could, if that's ever wanted.) */}
+            <div className="hidden min-w-0 md:block lg:col-span-2">
               <ClientBreakdown filter={filter} isAdmin={isAdmin} />
             </div>
           </div>

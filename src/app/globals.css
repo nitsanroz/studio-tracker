@@ -69,12 +69,19 @@
   --background: #fafafa;
   --surface: #ffffff;
   --foreground: #06112f; /* Studio Black */
-  --muted: #5c6478;
-  --faint: #98a0b3;
+  /* Stronger since 2026-10-23: #98a0b3 was 2.6:1 on white — below the 4.5:1
+     floor for text and the 3:1 floor for icons. #737b8f is 4.2:1, #4a5266 8:1. */
+  --muted: #4a5266;
+  --faint: #737b8f;
   --border: #e5e7eb;
   --border-strong: #d1d5db;
 
   --weekend: #f3f4f6;
+  /* The grey groove a segmented control's options sit in (period pills, tabs). */
+  --track: #eceef3;
+  /* the website's "Light White" (its Figma colour library) — quiet surfaces
+     inside a card */
+  --light-white: #f7f9fc;
   --danger: #dc2626;
   --success: #16a34a;
   --warning: #d97706;
@@ -112,6 +119,55 @@
   --sb-logo-fg: #0b43ed;
   --brand-soft: #dde6fd;
   --weekend: #eceffb;
+  --track: #e2e6f1;
+  /* 2026-10 refresh (picked on /design-lab: menu 2, cards 1): a cooler canvas,
+     and cards lifted by a softer, deeper shadow instead of an outline. */
+  --background: #eef0f6;
+  --header-bg: rgba(238, 240, 246, 0.82);
+  --shadow-card: 0 1px 2px rgba(6, 17, 47, 0.04), 0 6px 24px -6px rgba(6, 17, 47, 0.09);
+  --shadow-card-hover: 0 2px 4px rgba(6, 17, 47, 0.05), 0 16px 40px -10px rgba(6, 17, 47, 0.16);
+}
+
+/* ⚠️ THE CARD OUTLINE IS REMOVED HERE, NOT AT 57 CALL SITES. Every card in the
+   app is the same hand-written recipe — `rounded-2xl border border-border
+   bg-surface shadow-card` (see primitives.tsx) — so this one rule turns the
+   outline off for all of them at once, and switching theme brings it back.
+   Scoped to `.app-canvas` (the signed-in app's content column) so the public
+   client report and timeline keep the look clients already know, and popovers,
+   which portal to <body>, keep the border that separates them from what they
+   float over.
+   ⚠️ Only `.border-border`: a card that is DELIBERATELY outlined (border-brand,
+   border-warning) keeps it. And not a card whose border is its hover state —
+   this rule is unlayered, so it would beat `hover:border-brand` and kill it. */
+[data-theme="electric"] .app-canvas .shadow-card.border-border:not([class*="hover:border"]),
+[data-theme="electric"] .app-canvas .card {
+  border-color: transparent;
+}
+[data-theme="electric"] .app-canvas .rounded-2xl.shadow-card,
+[data-theme="electric"] .app-canvas .card {
+  border-radius: 20px;
+}
+/* ONE flat canvas. There was a faint blue light at the top of every page; with
+   the translucent header over it, it read as two bands of colour above the
+   content (Nitsan, 2026-10-23: "too much use of background colour change").
+   The header is the canvas colour, so it is invisible until content scrolls
+   under it. */
+[data-theme="electric"] .app-header {
+  border-bottom-color: transparent;
+}
+
+/* ⚠️ QUIET SURFACES INSIDE A CARD ARE THE WEBSITE'S "LIGHT WHITE", #F7F9FC
+   (2026-10-23, from the website's Figma colour library). Fields, tiles, hover
+   rows and wells inside a white card used the canvas grey, which made every
+   card read as two greys; Light White keeps them a step off the white without
+   a second colour. The CANVAS behind the cards stays --background, so a card
+   still stands off the page. One rule, like the card outline above: INSIDE a
+   bg-surface element, --background IS Light White. Utilities read the
+   variable directly (`@theme inline`), so every bg-background — translucent,
+   hover:, group-hover:, focus: — follows without being listed, and the
+   browser matches one class instead of searching every class string. */
+[data-theme="electric"] .app-canvas .bg-surface {
+  --background: var(--light-white);
 }
 
 /* ── Option B: "Gallery" — stark minimal black & white, blue as ink ──── */
@@ -149,6 +205,7 @@
   --border: #26272e;
   --border-strong: #3f4048;
   --weekend: #101014;
+  --track: #1d1e24;
   --brand-soft: #14204a;
   /* 5.3:1 against this theme's surface, where #0b43ed manages 2.64. */
   --group-bar: #6181e8;
@@ -178,6 +235,7 @@
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-weekend: var(--weekend);
+  --color-track: var(--track);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -241,6 +299,27 @@ b,
 .font-semibold,
 .font-bold {
   font-weight: 570;
+}
+
+/* Every page's title, one size app-wide (2026-10 refresh). Saans, not the serif:
+   the serif is for NAMES and big figures (see below), and the titles had drifted
+   into both — "My Tasks" italic, "Clients" plain, at five different sizes.
+   Unlayered, so it wins over any size utility left beside it. */
+.page-title {
+  font-family: "Saans", var(--font-rubik), system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 570;
+  /* The studio website's H2 (Figma "Design Systems": Sans/H/H2 40/48), so the
+     app's headline step is one the website has (2026-10-23; was 34px). */
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -0.025em;
+}
+@media (max-width: 767px) {
+  .page-title {
+    font-size: 28px;
+    line-height: 34px;
+  }
 }
 
 /* Serif display accent — PP Fragment Glare (names + big stat figures, per Figma round-trip) */
@@ -555,13 +634,181 @@ b,
   --li-ink: #06112f;
 }
 
-/* The thin moving line shown over a table while its month loads (freelancer
-   pages: /log/[token] and /freelancers/[profileId]). */
-@keyframes loading-line {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(300%);
-  }
+/* ────────────────────────────────────────────────────────────────────────────
+   LINES, TYPE AND CONTRAST (2026-10-23) — tried live on every page from a
+   temporary switcher, and Nitsan picked: lines in tables only, the tidy type
+   scale, stronger contrast. Like the card rule above, each is ONE rule here
+   rather than an edit at hundreds of call sites.
+
+   LINES. "Dividers and lines bring noise — use them only if it's a must."
+   Every 1px divider inside the app goes; spacing does the separating instead.
+   What keeps its lines: real tables (tr/td/th), form fields, and anything
+   inside `.keep-lines` — a grid built from divs that is a table in all but
+   markup (the client task list, the Timeline). Mark a new one of those with
+   `keep-lines` rather than adding exceptions here.
+   ⚠️ Only the 1px side utilities (`border-b`, `border-t`, `border-l`,
+   `border-r`) and `divide-y`. A deliberate accent (`border-l-4 border-brand`,
+   `border-t-[3px]`) is a different class and is untouched.
+   ⚠️ Unlayered, so it beats `hover:border-*` on those same elements too. */
+[data-theme="electric"] .app-canvas :is(.border-b, .border-t, .border-l, .border-r):not(tr, td, th, thead, input, select, textarea):not(.keep-lines, .keep-lines *),
+[data-theme="electric"] .app-canvas :not(tbody, thead).divide-y:not(.keep-lines, .keep-lines *) > * {
+  border-color: transparent;
 }
+[data-theme="electric"] .app-canvas hr:not(.keep-lines *) {
+  visibility: hidden;
+}
+
+/* TYPE. Eleven sizes were in use, several of them half-pixels and three under
+   11px. These snap them onto 11 / 12 / 13 / 14, with 11px the floor. New code
+   should use those four (text-[11px], text-xs, text-[13px], text-sm) and never
+   a half size. */
+.app-canvas :is(.text-\[9px\], .text-\[10px\]) { font-size: 11px; }
+.app-canvas .text-\[11\.5px\] { font-size: 12px; }
+.app-canvas .text-\[12\.5px\] { font-size: 13px; }
+.app-canvas .text-\[13\.5px\] { font-size: 14px; }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MOTION, ROUND 2 (2026-10-23) — picked live on /design-lab/motion:
+   load-in "Settle + count", loaders "Skeleton + line", hover "Lift",
+   feedback "Playful", gestures "Lift + make room", empty states "Icon +
+   action", icons "Studio cut + fill". Two rules hold for all of it:
+   ⚠️ NOTHING WAITS FOR AN ANIMATION — content is clickable from its first
+   frame, no entrance runs past ~200ms per element; and the reduced-motion guard
+   above switches every one of these off. */
+
+/* Load-in: every card settles in from 98.5% as it mounts, a few ms apart.
+   ⚠️ `backwards`, NOT `both`: a fill that outlived the animation would pin
+   `transform` and kill the hover lift below. Cards mount once per page, so a
+   background refresh never replays this; a card that remounts (a lead dropped
+   on a new column) settles again, which reads as it landing. */
+@keyframes settle-in {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+/* ⚠️ Page CARDS only (`rounded-2xl`): `shadow-card` is also on board cards, the
+   period arrows and toolbar fields, and a board of a hundred leads settling in
+   one by one is a hundred animations for no reading benefit. */
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card {
+  animation: settle-in 180ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card:nth-child(2) { animation-delay: 25ms; }
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card:nth-child(3) { animation-delay: 50ms; }
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card:nth-child(4) { animation-delay: 75ms; }
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card:nth-child(5) { animation-delay: 100ms; }
+[data-theme="electric"] .app-canvas main .rounded-2xl.shadow-card:nth-child(n + 6) { animation-delay: 125ms; }
+
+/* Hover "Lift": a card that IS a link or a button rises 2px with a deeper
+   shadow. Hover only says what a click will do — nothing jumps. */
+[data-theme="electric"] .app-canvas :is(a, button).shadow-card {
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 180ms;
+}
+[data-theme="electric"] .app-canvas :is(a, button).shadow-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Press: a button dips a touch while held. ⚠️ The `scale` PROPERTY, not
+   `transform`, so it composes with a button's own translate/rotate instead of
+   replacing it. ⚠️ COMPACT BUTTONS ONLY: 3% of a full-width row, a board card or
+   a tile is dozens of pixels, which reads as the layout jumping rather than a
+   press — so anything stretched, card-like or draggable keeps still. */
+[data-theme="electric"] .app-canvas button:not(:disabled) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, filter, transform, scale;
+  transition-duration: 120ms;
+}
+[data-theme="electric"] .app-canvas button:not(:disabled, .w-full, .flex-1, .grow, .shadow-card, [draggable="true"]):active {
+  scale: 0.97;
+}
+
+/* Icons "Studio cut + fill": the website's icon hand on every lucide icon —
+   square-cut ends, sharp corners, a firmer line. ⚠️ Only the app's standard
+   1.75 weight is lifted to 2; an icon drawn deliberately heavier or lighter
+   keeps its own. CSS beats the presentation attributes lucide writes. */
+/* ⚠️ SQUARE caps, not butt. Lucide is drawn for round caps — they add half
+   the line's width at each end, and its DOTS (the "i" of Info, the point of
+   "!" and "?", eyes) are 0.01-long lines that only exist because of that cap.
+   Butt caps made every dot vanish and every short stem read too short; square
+   caps cover exactly the length round ones did, just with sharp corners. */
+svg.lucide {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+svg.lucide[stroke-width="1.75"] {
+  stroke-width: 2;
+}
+/* …and the icon of where you are fills with a light wash of its colour: the
+   active sidebar item, the active bottom-bar slot, the active tab. */
+.is-current svg.lucide,
+[aria-selected="true"] > svg.lucide,
+[aria-current="page"] svg.lucide {
+  fill: currentColor;
+  fill-opacity: 0.14;
+}
+
+/* Loaders "Skeleton + line": the shape of what is coming, a light sweeping
+   across it, and a thin brand line along the top of the card that is loading. */
+/* ⚠️ The light is a pseudo-element moved with `transform`, which the
+   compositor runs — sweeping `background-position` repainted every bar on
+   every frame, ~40 of them on a page skeleton. */
+@keyframes skeleton-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--track);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--light-white), transparent);
+  animation: skeleton-sweep 1.3s linear infinite;
+}
+@keyframes load-line {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(260%); }
+}
+.load-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--brand), transparent);
+  animation: load-line 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Feedback "Playful": the toast slides up, its tick draws itself, a line under
+   it counts down; a won deal gets a small burst in the studio's colours. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.toast-in { animation: toast-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes tick-draw {
+  from { stroke-dashoffset: 26; }
+  to { stroke-dashoffset: 0; }
+}
+.tick-draw { stroke-dasharray: 26; animation: tick-draw 280ms 80ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.toast-timer { transform-origin: left; animation: toast-timer linear both; }
+@keyframes burst-out {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.5) rotate(90deg); }
+}
+.burst-bit { animation: burst-out 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* Gestures "Lift + make room": while a card is dragged, the place it left
+   stays open as a soft gap (the card itself rides under the pointer as the
+   lifted, tilted drag image — see lib/drag-lift.ts). */
+.drag-gap {
+  box-shadow: none !important;
+  background: color-mix(in oklab, var(--surface) 55%, transparent) !important;
+}
+.drag-gap > * { visibility: hidden; }

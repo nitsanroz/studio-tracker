@@ -28,6 +28,7 @@ import {
   roleUsage,
   updateRole,
 } from "@/lib/candidates/actions";
+import { SkeletonRows } from "@/components/skeleton";
 
 /** Spread around the wheel so two roles in a filter are tellable apart, and
  *  drawn from the brand family the rest of the app uses. */
@@ -127,7 +128,7 @@ export function CandidateSettings() {
   );
 
   if (!vocab) {
-    return <p className="text-sm text-muted">{error ?? "Loading…"}</p>;
+    return error ? <p className="text-sm text-danger">{error}</p> : <SkeletonRows rows={5} avatar={false} />;
   }
 
   return (

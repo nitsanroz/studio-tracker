@@ -15,7 +15,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, Check, TreePalm, X } from "lucide-react";
+import {
+  CalendarCheck,
+  Check,
+  TreePalm,
+  Users,
+  X,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { Modal, ModalClose } from "./ui";
 import { Button, Field, Input, Textarea } from "./primitives";
 import { askConfirm } from "./confirm-dialog";
@@ -23,6 +30,7 @@ import { useData } from "@/lib/store";
 import { MONTH_NAMES_SHORT, formatDate, toISODate } from "@/lib/format";
 import { availableDays, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "@/lib/vacation";
 import type { VacationState } from "@/lib/use-vacation";
+import { EmptyState } from "./empty-state";
 
 const STATUS: Record<VacationRequest["status"], { label: string; className: string }> = {
   pending: { label: "Waiting for approval", className: "bg-amber-100 text-amber-800" },
@@ -171,62 +179,85 @@ export function VacationRequestModal({
 
 // ── your balance and requests ─────────────────────────────────────────────
 
-/** The Home card, and the top of the Vacation page. */
-export function MyVacationCard({ vacation, full = false }: { vacation: VacationState; full?: boolean }) {
+/** Your own requests and your balance now — one calculation, shared by the card
+ *  and the Vacation page's headline so the two can never disagree. `balance`
+ *  is null when you have no payslip balance (not on payroll). */
+export function useMyVacationBalance(vacation: VacationState) {
   const { dayStates, planColumns, planEntries } = useData();
-  const [asking, setAsking] = useState(false);
-  const today = toISODate(new Date());
   const mine = useMemo(
     () => vacation.requests.filter((r) => r.profileId === vacation.mineProfileId),
     [vacation.requests, vacation.mineProfileId],
   );
+  const balance = useMemo(
+    () =>
+      vacation.ready && vacation.mine
+        ? availableDays(vacation.mine, mine, dayStates, undefined, new Date(), plannedVacation(vacation.mineProfileId, planColumns, planEntries))
+        : null,
+    [vacation.ready, vacation.mine, vacation.mineProfileId, mine, dayStates, planColumns, planEntries],
+  );
+  return { mine, balance };
+}
+
+/** The Home card, and the left column of the Vacation page (`full`), where the
+ * page header carries "Request vacation" instead of the card. */
+export function MyVacationCard({ vacation, full = false }: { vacation: VacationState; full?: boolean }) {
+  const [asking, setAsking] = useState(false);
+  const today = toISODate(new Date());
+  const { mine, balance: a } = useMyVacationBalance(vacation);
   if (!vacation.ready) return null;
-  const a = vacation.mine
-    ? availableDays(vacation.mine, mine, dayStates, undefined, new Date(), plannedVacation(vacation.mineProfileId, planColumns, planEntries))
-    : null;
   const shown = full ? mine : mine.filter((r) => r.endDate >= today && (r.status === "pending" || r.status === "approved")).slice(0, 4);
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+    <div className={`rounded-2xl border border-border bg-surface shadow-card ${full ? "p-6" : "p-4"}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 font-heading text-sm">
-          <TreePalm size={16} strokeWidth={1.75} className="text-brand" /> Vacation
+        <h2 className={`flex items-center gap-2 font-heading ${full ? "text-base" : "text-sm"}`}>
+          <TreePalm size={full ? 18 : 16} strokeWidth={1.75} className="text-brand" /> {full ? "Your vacation" : "Vacation"}
         </h2>
         {!full && (
           <Link href="/vacation" className="flex items-center gap-1 text-xs text-brand hover:underline">
-            All requests <ArrowRight size={12} />
+            All requests <StudioArrow size={15} />
           </Link>
         )}
       </div>
       {a ? (
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <div className={`text-3xl tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>{formatDays(a.available)}</div>
-            <div className="text-xs text-muted">
-              days left now{a.monthly ? ` · +${formatDays(a.monthly)} each month` : ""} · {formatDays(a.balance)} on your{" "}
-              {MONTH_NAMES_SHORT[vacation.mine!.month - 1]} payslip
-              {a.approved ? `, ${formatDays(a.approved)} approved since` : ""}
-              {a.pending ? `, ${formatDays(a.pending)} waiting` : ""}
+            {/* On the Vacation page the headline already says the days left
+                (2026-10-23), so the card gives only how they are made up. */}
+            {!full && (
+              <div className={`text-3xl tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>{formatDays(a.available)}</div>
+            )}
+            <div className={`text-muted ${full ? "text-sm" : "text-xs"}`}>
+              {/* Joined, not prefixed: on the page the "days left now" lead-in
+                  is gone, and a prefixed separator then opened the line. */}
+              {[
+                full ? null : "days left now",
+                a.monthly ? `+${formatDays(a.monthly)} each month` : null,
+                `${formatDays(a.balance)} on your ${MONTH_NAMES_SHORT[vacation.mine!.month - 1]} payslip` +
+                  (a.approved ? `, ${formatDays(a.approved)} approved since` : "") +
+                  (a.pending ? `, ${formatDays(a.pending)} waiting` : ""),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
           </div>
           {/* Never gated on the balance: next month's credit may cover it, and
               going over is allowed once they tick that they know. */}
-          <Button onClick={() => setAsking(true)}>
-            Request vacation
-          </Button>
+          {!full && <Button onClick={() => setAsking(true)}>Request vacation</Button>}
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted">
             No vacation balance — you&apos;re not on payroll, so there&apos;s no day limit. Nitsan approves each request.
           </p>
-          <Button onClick={() => setAsking(true)}>Request vacation</Button>
+          {!full && <Button onClick={() => setAsking(true)}>Request vacation</Button>}
         </div>
       )}
       {shown.length > 0 && (
-        <ul className="mt-3 divide-y divide-border border-t border-border">
+        <ul className={`flex flex-col ${full ? "mt-6 gap-1" : "mt-3"}`}>
+          {full && <li className="mb-1 text-xs font-medium uppercase tracking-wide text-muted">Your requests</li>}
           {shown.map((r) => (
-            <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+            <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 text-sm">
               <span className="font-medium">{range(r)}</span>
               <span className="text-muted">
                 {r.days} day{r.days === 1 ? "" : "s"}
@@ -274,10 +305,18 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-3 font-heading text-sm">Requests to decide</h2>
+    <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+      <h2 className="mb-4 flex items-center gap-2 font-heading text-base">
+        <Users size={18} strokeWidth={1.75} className="text-brand" /> The team
+      </h2>
+      <h3 className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
+        To decide
+        {pending.length > 0 && (
+          <span className="rounded-full bg-brand px-1.5 text-[11px] leading-[18px] text-white">{pending.length}</span>
+        )}
+      </h3>
       {pending.length === 0 ? (
-        <p className="text-sm text-muted">Nothing waiting.</p>
+        <EmptyState compact tone="success" icon={CalendarCheck} text="Nothing waiting — every request is decided." />
       ) : (
         <ul className="flex flex-col gap-3">
           {pending.map((r) => {
@@ -288,7 +327,7 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
               : null;
             const lastMonth = monthName(r.endDate.slice(0, 7));
             return (
-              <li key={r.id} className="rounded-xl border border-border p-3">
+              <li key={r.id} className="rounded-xl bg-background p-4">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                   <span className="font-medium">{name(r.profileId)}</span>
                   <span>{range(r)}</span>
@@ -326,8 +365,8 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
       {vacation.error && <p className="mt-2 text-xs text-danger">{vacation.error}</p>}
       {decided.length > 0 && (
         <>
-          <h3 className="mb-1 mt-5 text-xs font-medium uppercase tracking-wide text-faint">Coming up</h3>
-          <ul className="divide-y divide-border">
+          <h3 className="mb-1 mt-7 text-xs font-medium uppercase tracking-wide text-muted">Coming up</h3>
+          <ul className="flex flex-col">
             {decided.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                 <span className="font-medium">{name(r.profileId)}</span>
@@ -351,8 +390,8 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
       )}
       {vacation.balances.size > 0 && (
         <>
-          <h3 className="mb-1 mt-5 text-xs font-medium uppercase tracking-wide text-faint">Balances</h3>
-          <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+          <h3 className="mb-2 mt-7 text-xs font-medium uppercase tracking-wide text-muted">Balances</h3>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {[...vacation.balances]
               .map(([id, b]) => ({
                 id,
@@ -362,15 +401,16 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
               .filter(({ id }) => profiles.find((p) => p.id === id)?.active)
               .sort((x, y) => name(x.id).localeCompare(name(y.id)))
               .map(({ id, b, a }) => (
-                <li key={id} className="flex items-baseline justify-between gap-2 border-b border-border py-1.5 text-sm">
-                  <span>{name(id)}</span>
-                  <span className={`tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>
-                    {formatDays(a.available)} {a.available === 1 ? "day" : "days"}
-                    <span className="ml-1 text-xs text-faint">
-                      {a.monthly ? `+${formatDays(a.monthly)}/month · ` : ""}
-                      {MONTH_NAMES_SHORT[b.month - 1]} payslip
-                    </span>
-                  </span>
+                <li key={id} className="rounded-xl bg-background px-3.5 py-3">
+                  <div className="text-[13px] font-medium">{name(id)}</div>
+                  <div className={`mt-0.5 text-2xl tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>
+                    {formatDays(a.available)}
+                    <span className="ml-1 text-sm text-muted">{a.available === 1 ? "day" : "days"}</span>
+                  </div>
+                  <div className="text-xs text-muted">
+                    {a.monthly ? `+${formatDays(a.monthly)}/month · ` : ""}
+                    {MONTH_NAMES_SHORT[b.month - 1]} payslip
+                  </div>
                 </li>
               ))}
           </ul>

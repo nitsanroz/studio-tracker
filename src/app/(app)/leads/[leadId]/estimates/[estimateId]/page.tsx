@@ -18,7 +18,18 @@ import { askConfirm } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle2, ChevronLeft, Copy, ExternalLink, GitBranchPlus, Pencil, Send, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  Copy,
+  ExternalLink,
+  GitBranchPlus,
+  LayoutDashboard,
+  ListChecks,
+  Pencil,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { Tabs } from "@/components/ui";
 import { EstimateScope } from "@/components/leads/estimate-scope";
@@ -41,6 +52,7 @@ import {
   type EstimateDetail,
 } from "@/lib/leads/estimates-data";
 import { fmtHours, fmtNis, totals, type ServiceItem } from "@/lib/leads/estimate";
+import { PageSkeleton } from "@/components/skeleton";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
 const LABEL = "text-[12px] font-medium uppercase tracking-wider text-faint";
@@ -109,7 +121,7 @@ export default function EstimatePage() {
   );
 
   if (!isAdmin) return <p className="py-16 text-center text-sm text-muted">Estimates are for Nitsan and Michal only.</p>;
-  if (busy) return <p className="py-10 text-sm text-muted">Loading…</p>;
+  if (busy) return <PageSkeleton />;
   if (!detail || !t) return <p className="py-10 text-sm text-danger">{error ?? "That estimate no longer exists."}</p>;
 
   const e = detail.estimate;
@@ -127,7 +139,7 @@ export default function EstimatePage() {
       </Link>
 
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-serif-accent text-[28px] leading-tight">
+        <h1 className="page-title">
           Estimate v{e.version} <span className="text-muted">· {company}</span>
         </h1>
         <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${STATUS[e.status].cls}`}>
@@ -302,8 +314,8 @@ export default function EstimatePage() {
         onChange={setTab}
         className="mt-4"
         items={[
-          { value: "scope", label: "Scope" },
-          { value: "overview", label: "Overview" },
+          { value: "scope", label: "Scope", icon: ListChecks },
+          { value: "overview", label: "Overview", icon: LayoutDashboard },
         ]}
       />
 

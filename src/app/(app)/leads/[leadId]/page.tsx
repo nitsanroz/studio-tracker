@@ -14,35 +14,38 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Info,
-  ArrowRight,
+  Activity,
+  AlarmClock,
   ArrowRightLeft,
   Briefcase,
+  Calculator,
   CalendarClock,
   Check,
-  UserRound,
-  CircleX,
-  RotateCcw,
-  Sparkles,
-  StickyNote,
-  Users,
-  type LucideIcon,
-  AlarmClock,
   CheckCircle2,
   ChevronLeft,
+  CircleDashed,
+  CircleX,
   ExternalLink,
   FilePlus2,
   FileText,
   History,
+  Info,
   Lightbulb,
   Mail,
   Phone,
   Plus,
+  RotateCcw,
   Search,
+  Sparkles,
+  StickyNote,
   Trash2,
   Trophy,
   Upload,
+  UserRound,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
 import { IconSelect } from "@/components/leads/icon-select";
 import { NEUTRAL, SourceIcon, STAGE_ICONS, StageIcon } from "@/lib/leads/look";
@@ -105,6 +108,7 @@ import {
   copyEstimate,
   createEstimate,
   createEstimateFromImport,
+  loadBoardEstimateHours,
   loadEstimateSources,
   loadEstimates,
   type EstimateSource,
@@ -115,8 +119,10 @@ import { Modal, ModalClose } from "@/components/ui";
 import { AttentionTip } from "@/components/leads/attention-tip";
 import { EstimateImportPanel } from "@/components/leads/estimate-import-panel";
 import type { ImportedEstimate } from "@/lib/leads/estimate-import";
-import { DEFAULT_NUDGES, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
-import { fmtHours, fmtNis } from "@/lib/leads/estimate";
+import { DEFAULT_NUDGES, daysSince, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
+import { fmtHours, fmtNis, type Range } from "@/lib/leads/estimate";
+import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
+import { StageTrack } from "@/components/stage-track";
 
 type Tab = "emails" | "offers" | "estimates" | "activity";
 
@@ -213,6 +219,19 @@ export default function LeadPage() {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("activity");
+  // The current estimate's hours, for the "Estimate" fact tile — the same
+  // reader the board card uses, asked for this one lead.
+  const [estHours, setEstHours] = useState<Range | null>(null);
+  const [editingValue, setEditingValue] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadBoardEstimateHours([id])
+      .then((m) => alive && setEstHours(m.get(id) ?? null))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [id, detail]);
   const [pending, setPending] = useState<{ from: LeadStage | null; to: LeadStage; suggestionId?: string } | null>(
     null,
   );
@@ -288,12 +307,12 @@ export default function LeadPage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <h1 className="font-serif-accent text-2xl">Leads</h1>
+        <h1 className="page-title">Leads</h1>
         <p className="mt-3 text-sm text-muted">The sales pipeline is for Nitsan and Michal only.</p>
       </div>
     );
   }
-  if (busy) return <p className="py-10 text-sm text-muted">Loading…</p>;
+  if (busy) return <PageSkeleton />;
   if (missing)
     return (
       <div className="py-10">
@@ -322,6 +341,22 @@ export default function LeadPage() {
   const wonClient = l.clientId ? clients.find((c) => c.id === l.clientId) : null;
   const lostReason = l.lostReasonId ? vocab.lostReasons.find((r) => r.id === l.lostReasonId) : null;
   const valueIls = toIls(l.estValue, l.currency, quote);
+  const daysLate = overdue && l.nextStepDue ? daysSince(l.nextStepDue, now) : 0;
+  const latest = events.reduce<LeadEvent | null>((a, e) => (!a || e.at > a.at ? e : a), null);
+  /** "Done — set the next": the finished step goes on the record as a note, the
+   *  field empties, and the cursor goes there for the next one.
+   *  ⚠️ It records what the FIELD says, not the saved `l.nextStep`: someone who
+   *  rewords the step and clicks Done means the words on screen. The button
+   *  also keeps the field from blurring (`onMouseDown`), because that blur would
+   *  start its own save of the text racing this clear. */
+  const finishStep = () => {
+    const field = document.getElementById("lead-next-step") as HTMLTextAreaElement | null;
+    const step = field?.value.trim() || l.nextStep;
+    void run(async () => {
+      if (step) await logActivity(l.id, "note", `Done: ${step}`, null, l.lastActivityAt, currentUserId);
+      await updateLead(l.id, { nextStep: null, nextStepDue: null });
+    }).then(() => setTimeout(() => document.getElementById("lead-next-step")?.focus(), 50));
+  };
 
   /**
    * Accepting a suggestion is the same move the stage picker makes — Won and
@@ -391,7 +426,7 @@ export default function LeadPage() {
               if (e.key === "Enter") e.currentTarget.blur();
             }}
             aria-label="Company"
-            className={`bidi-auto -ml-1 w-full max-w-3xl font-serif-accent text-[36px] leading-tight ${QUIET}`}
+            className={`page-title bidi-auto -ml-1 w-full max-w-3xl ${QUIET}`}
           />
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-muted">
             {l.source && (
@@ -451,36 +486,22 @@ export default function LeadPage() {
           ⚠️ Won and Lost still ask first (a client to convert, a reason), through
           `changeStage` — the same path the old stage picker took. */}
       <div className="flex flex-wrap items-stretch gap-2">
-        <ol className="flex min-w-0 flex-1 overflow-x-auto rounded-xl border border-border bg-surface shadow-card [scrollbar-width:none]">
-          {openStages.map((s, i) => {
-            const at = stage?.id === s.id;
-            const idx = stage && open ? openStages.findIndex((x) => x.id === stage.id) : open ? -1 : openStages.length;
-            const passed = i < idx;
-            const color = s.color || NEUTRAL;
-            return (
-              <li key={s.id} className="min-w-[9rem] flex-1 border-l border-border first:border-l-0">
-                <button
-                  onClick={() => changeStage(s)}
-                  aria-current={at ? "step" : undefined}
-                  title={at ? `${s.name} — current stage` : `Move to ${s.name}`}
-                  className={`flex h-12 w-full items-center justify-center gap-2 px-3 text-[14px] transition-colors ${
-                    at ? "font-medium text-white" : passed ? "hover:brightness-95" : "text-muted hover:bg-background hover:text-foreground"
-                  }`}
-                  style={at ? { backgroundColor: color } : passed ? { backgroundColor: `${color}12`, color } : undefined}
-                >
-                  {at ? (
-                    <StageIconWhite stage={s} />
-                  ) : passed ? (
-                    <Check size={15} strokeWidth={2.25} aria-hidden />
-                  ) : (
-                    <StageIcon stage={s} size={15} />
-                  )}
-                  <span className="bidi-auto truncate">{s.name}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
+        {/* Neutral track (2026-10-23, Nitsan's pick): one white bar, the current
+            stage a solid brand tile, stages behind it a grey tick, and each
+            stage's own colour only as a dot — a row of seven tinted backgrounds
+            was the loudest thing on the page. */}
+        <StageTrack
+          stages={openStages}
+          current={stage && open ? openStages.findIndex((x) => x.id === stage.id) : open ? -1 : openStages.length}
+          onPick={changeStage}
+          mark={(s, place) =>
+            place === "at" ? (
+              <StageIconWhite stage={s} />
+            ) : place === "ahead" ? (
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color || NEUTRAL }} aria-hidden />
+            ) : undefined
+          }
+        />
         {closedStages.map((s) => {
           const at = stage?.id === s.id;
           const color = s.color || NEUTRAL;
@@ -490,10 +511,12 @@ export default function LeadPage() {
               onClick={() => changeStage(s)}
               aria-current={at ? "step" : undefined}
               title={at ? `${s.name} — current stage` : `Mark as ${s.name.toLowerCase()}`}
-              className={`flex h-12 items-center gap-2 rounded-xl border px-4 text-[14px] font-medium shadow-card transition-colors ${
-                at ? "text-white" : "bg-surface hover:brightness-95"
+              className={`flex h-12 items-center gap-2 rounded-xl px-4 text-sm font-medium shadow-card transition-colors ${
+                at ? "text-white" : "bg-surface text-foreground hover:bg-background"
               }`}
-              style={at ? { backgroundColor: color, borderColor: color } : { color, borderColor: `${color}55` }}
+              // Won and Lost keep their colour when they ARE the stage: that is
+              // the outcome, and green/grey says it at a glance.
+              style={at ? { backgroundColor: color } : undefined}
             >
               {at ? <StageIconWhite stage={s} /> : <StageIcon stage={s} size={15} />}
               <span className="bidi-auto">{s.name}</span>
@@ -551,12 +574,12 @@ export default function LeadPage() {
           <span className="font-medium">Won{l.wonAt ? ` on ${formatDate(l.wonAt)}` : ""}.</span>
           {l.clientId && (
             <Link href={`/clients/${l.clientId}`} className="ml-auto flex h-9 items-center gap-1.5 rounded-lg bg-[#12693d] px-3.5 text-[13.5px] font-medium text-white hover:brightness-110">
-              Open {wonClient?.name ?? "the client"} <ArrowRight size={15} />
+              Open {wonClient?.name ?? "the client"} <StudioArrow size={18} />
             </Link>
           )}
           {!l.clientId && (
             <Link href={`/leads/${l.id}/convert`} className="ml-auto flex h-9 items-center gap-1.5 rounded-lg bg-[#12693d] px-3.5 text-[13.5px] font-medium text-white hover:brightness-110">
-              Create the client page <ArrowRight size={15} />
+              Create the client page <StudioArrow size={18} />
             </Link>
           )}
         </div>
@@ -571,6 +594,165 @@ export default function LeadPage() {
         </div>
       )}
 
+      {/* ── what happens next (2026-10-23, Page B) ──
+          The next step used to be the first card in the side column; now it
+          leads the page, because "what do I do about this lead?" is the reason
+          to open it. Editable in place, with the two things you do from here:
+          log the call, or close the step and set the next. Open leads only. */}
+      {open && (
+        <section className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-surface p-5 shadow-card">
+          <span
+            className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${
+              !l.nextStep ? "bg-warning/15 text-[#855800]" : overdue ? "bg-danger/10 text-danger" : "bg-brand-soft text-brand"
+            }`}
+          >
+            {l.nextStep ? <CalendarClock size={20} strokeWidth={1.75} /> : <CircleDashed size={20} strokeWidth={1.75} />}
+          </span>
+          <div className="min-w-0 flex-1 basis-80">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
+              What&apos;s next
+              {l.nextStep && overdue && (
+                <span className="rounded-full bg-danger/10 px-2 py-0.5 normal-case tracking-normal text-danger">
+                  {daysLate === 1 ? "1 day" : `${daysLate} days`} late
+                </span>
+              )}
+              {!l.nextStep && (
+                <span className="rounded-full bg-warning/15 px-2 py-0.5 normal-case tracking-normal text-[#855800]">Not set</span>
+              )}
+              <label className="ml-1 flex items-center gap-1.5 normal-case tracking-normal">
+                <span className="font-normal">Due</span>
+                <input
+                  type="date"
+                  key={`d${l.nextStepDue}`}
+                  defaultValue={l.nextStepDue ?? ""}
+                  onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
+                  className={`${QUIET} text-[13px] font-medium ${overdue ? "text-danger" : "text-foreground"}`}
+                  aria-label="Next step due"
+                />
+              </label>
+            </div>
+            <textarea
+              id="lead-next-step"
+              key={`n${l.nextStep}`}
+              defaultValue={l.nextStep ?? ""}
+              placeholder="Every open lead needs one — what happens next?"
+              rows={1}
+              onBlur={(e) => {
+                const v = e.target.value.trim() || null;
+                if (v !== l.nextStep) void run(() => updateLead(l.id, { nextStep: v }));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              className={`bidi-auto -mx-1 mt-1 w-[calc(100%+0.5rem)] resize-none text-xl font-medium leading-snug [field-sizing:content] ${QUIET} placeholder:font-normal placeholder:text-[#855800]`}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setTab("activity");
+                setTimeout(() => {
+                  const el = document.getElementById("lead-composer");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }, 50);
+              }}
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark"
+            >
+              <Phone size={15} strokeWidth={1.75} /> Log a call
+            </button>
+            {l.nextStep && (
+              <button
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={finishStep}
+                title="Records the step as done in the activity, then clears it for the next"
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-background px-4 text-sm font-medium hover:bg-track"
+              >
+                <Check size={15} strokeWidth={2} /> Done — set the next
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── the deal's facts, at a glance (Page B) ── */}
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="rounded-2xl bg-surface p-5 shadow-card">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted">Estimated value</div>
+          <div className="mt-1 flex items-center gap-1">
+            {/* Read as money (₪242,900), edited as a number: a number field
+                cannot show the thousands separator, so it appears on click. */}
+            {editingValue || l.estValue === null ? (
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                autoFocus={editingValue}
+                key={`v${l.estValue}`}
+                defaultValue={l.estValue ?? ""}
+                placeholder="Add a value"
+                aria-label="Estimated value"
+                onBlur={(e) => {
+                  setEditingValue(false);
+                  const v = e.target.value === "" ? null : Number(e.target.value);
+                  if (v !== l.estValue && (v === null || Number.isFinite(v))) void run(() => updateLead(l.id, { estValue: v }));
+                }}
+                className={`keeps-font-size -ml-1 w-full min-w-0 font-serif-accent text-[34px] leading-tight placeholder:font-sans placeholder:text-[15px] placeholder:not-italic placeholder:text-faint ${QUIET}`}
+              />
+            ) : (
+              <button
+                onClick={() => setEditingValue(true)}
+                title="Change the value"
+                className="-ml-1 min-w-0 flex-1 truncate rounded px-1 text-left font-serif-accent text-[34px] leading-tight hover:bg-background"
+              >
+                {formatMoney(l.estValue, l.currency)}
+              </button>
+            )}
+            <select
+              value={l.currency}
+              onChange={(e) => void run(() => updateLead(l.id, { currency: e.target.value as Currency }))}
+              className={`${QUIET} shrink-0 cursor-pointer text-sm text-muted`}
+              aria-label="Currency"
+            >
+              <option value="ILS">₪ ILS</option>
+              <option value="USD">$ USD</option>
+            </select>
+          </div>
+          {l.currency === "USD" && l.estValue !== null && (
+            <p className="text-[13px] text-muted" title="Bank of Israel rate, 5% worse">
+              ≈ {formatIls(valueIls)} at {quote.rate.toFixed(3)}
+              {quote.date ? ` (BoI ${formatDate(quote.date)} − 5%)` : " (fallback rate)"}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setTab("estimates")}
+          className="rounded-2xl bg-surface p-5 text-left shadow-card"
+          title="Open the estimates"
+        >
+          <div className="text-xs font-medium uppercase tracking-wide text-muted">Estimate</div>
+          <div className="mt-2 text-xl font-medium tabular-nums">{estHours ? fmtHours(estHours) : "—"}</div>
+          <div className="mt-1 text-[13px] text-muted">{estHours ? "the current estimate" : "None yet"}</div>
+        </button>
+        <div className="rounded-2xl bg-surface p-5 shadow-card">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted">{stage ? `In ${stage.name}` : "Stage"}</div>
+          <div className={`mt-2 text-xl font-medium tabular-nums ${stalled ? "text-[#855800]" : ""}`}>
+            {daysInStage(l, now)} {daysInStage(l, now) === 1 ? "day" : "days"}
+          </div>
+          <div className="mt-1 text-[13px] text-muted">
+            {stage?.stallDays ? `limit ${stage.stallDays} working days` : "no limit for this stage"}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-surface p-5 shadow-card">
+          <div className="text-xs font-medium uppercase tracking-wide text-muted">Last activity</div>
+          <div className="mt-2 text-xl font-medium">{formatDate(l.lastActivityAt)}</div>
+          <div className="mt-1 truncate text-[13px] text-muted">{latest ? (latest.kind === "stage_change" ? "Stage change" : EVENT_LABEL[latest.kind]) : "—"}</div>
+        </div>
+      </div>
+
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* ── main: what happened, what we sent ── */}
         <div className="min-w-0 rounded-2xl border border-border bg-surface shadow-card">
@@ -580,10 +762,10 @@ export default function LeadPage() {
               onChange={setTab}
               className="gap-6! border-b-0!"
               items={[
-                { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length },
-                { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length },
-                { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length },
-                { value: "estimates", label: tabTip("Estimates", ["estimate"]) },
+                { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length, icon: Activity },
+                { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length, icon: Mail },
+                { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length, icon: FileText },
+                { value: "estimates", label: tabTip("Estimates", ["estimate"]), icon: Calculator },
               ]}
             />
           </div>
@@ -640,76 +822,32 @@ export default function LeadPage() {
             a thread, not one click away from it. */}
         <div className="flex min-w-0 flex-col gap-4">
           <SideCard
-            Icon={CalendarClock}
+            Icon={Users}
             title={
-              <AttentionTip nudge={tip("overdue", "missing")} leadId={l.id} className="inline-block">
-                Next step
-              </AttentionTip>
+              <>
+                Contacts <span className="ml-1 text-[13px] font-normal text-faint">{contacts.length}</span>
+              </>
             }
-            tone={open && !l.nextStep ? "warning" : overdue ? "danger" : "brand"}
-          >
-            <textarea
-              key={`n${l.nextStep}`}
-              defaultValue={l.nextStep ?? ""}
-              placeholder={open ? "Every open lead needs one — what happens next?" : "—"}
-              rows={3}
-              onBlur={(e) => {
-                const v = e.target.value.trim() || null;
-                if (v !== l.nextStep) void run(() => updateLead(l.id, { nextStep: v }));
-              }}
-              className={`bidi-auto -mx-1 w-[calc(100%+0.5rem)] resize-y text-[15px] leading-relaxed ${QUIET} ${open && !l.nextStep ? "placeholder:text-warning" : ""}`}
-            />
-            <label className="mt-3 flex items-center gap-2 border-t border-border pt-3 text-[14px]">
-              <span className="w-20 shrink-0 text-muted">Due</span>
-              <input
-                type="date"
-                key={`d${l.nextStepDue}`}
-                defaultValue={l.nextStepDue ?? ""}
-                onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
-                className={`${QUIET} ${overdue ? "text-danger" : "text-foreground"}`}
-              />
-              {overdue && (
-                <span className="ml-auto rounded-full bg-danger/10 px-2 py-0.5 text-[12px] font-medium text-danger">Overdue</span>
-              )}
-            </label>
-          </SideCard>
-
-          <SideCard Icon={Briefcase} title="The deal">
-            <div className="text-[13.5px] text-muted">Estimated value</div>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                key={`v${l.estValue}`}
-                defaultValue={l.estValue ?? ""}
-                placeholder="Add a value"
-                aria-label="Estimated value"
-                onBlur={(e) => {
-                  const v = e.target.value === "" ? null : Number(e.target.value);
-                  if (v !== l.estValue && (v === null || Number.isFinite(v)))
-                    void run(() => updateLead(l.id, { estValue: v }));
-                }}
-                className={`-ml-1 w-44 font-serif-accent text-[30px] leading-tight placeholder:font-sans placeholder:text-[15px] placeholder:not-italic placeholder:text-faint ${QUIET}`}
-              />
-              <select
-                value={l.currency}
-                onChange={(e) => void run(() => updateLead(l.id, { currency: e.target.value as Currency }))}
-                className={`${QUIET} cursor-pointer text-[14px] text-muted`}
-                aria-label="Currency"
+            action={
+              <button
+                onClick={() => void run(() => addContact(l.id, { name: "" }, contacts.length + 1))}
+                className="flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] text-brand hover:bg-brand-soft"
               >
-                <option value="ILS">₪ ILS</option>
-                <option value="USD">$ USD</option>
-              </select>
-            </div>
-            {l.currency === "USD" && l.estValue !== null && (
-              <p className="mt-0.5 text-[12.5px] text-muted" title="Bank of Israel rate, 5% worse">
-                ≈ {formatIls(valueIls)} at {quote.rate.toFixed(3)}
-                {quote.date ? ` (BoI ${formatDate(quote.date)} − 5%)` : " (fallback rate)"}
-              </p>
-            )}
-
-            <dl className="mt-4 flex flex-col divide-y divide-border border-t border-border text-[14px]">
+                <Plus size={15} /> Add
+              </button>
+            }
+          >
+            <ContactsList
+              contacts={contacts}
+              onSave={(c, f) => run(() => updateContact(c.id, l.id, f))}
+              onRemove={async (c) => {
+                if (await askConfirm(`Remove ${c.name || "this contact"} from this lead?`, { action: "Remove", danger: true }))
+                  void run(() => removeContact(c.id, l.id));
+              }}
+            />
+          </SideCard>
+          <SideCard Icon={Briefcase} title="The deal">
+            <dl className="-mt-2 flex flex-col text-[14px]">
               <div className="flex items-center gap-2 py-2">
                 <dt className="w-20 shrink-0 text-muted">Owner</dt>
                 <dd className="min-w-0 flex-1">
@@ -789,31 +927,6 @@ export default function LeadPage() {
             {l.sheetRef && <p className="mt-2 text-[12.5px] text-faint">Imported from the Sheet ({l.sheetRef})</p>}
           </SideCard>
 
-          <SideCard
-            Icon={Users}
-            title={
-              <>
-                Contacts <span className="ml-1 text-[13px] font-normal text-faint">{contacts.length}</span>
-              </>
-            }
-            action={
-              <button
-                onClick={() => void run(() => addContact(l.id, { name: "" }, contacts.length + 1))}
-                className="flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] text-brand hover:bg-brand-soft"
-              >
-                <Plus size={15} /> Add
-              </button>
-            }
-          >
-            <ContactsList
-              contacts={contacts}
-              onSave={(c, f) => run(() => updateContact(c.id, l.id, f))}
-              onRemove={async (c) => {
-                if (await askConfirm(`Remove ${c.name || "this contact"} from this lead?`, { action: "Remove", danger: true }))
-                  void run(() => removeContact(c.id, l.id));
-              }}
-            />
-          </SideCard>
         </div>
       </div>
 
@@ -977,6 +1090,7 @@ function ActivityTab({
             }
           }}
           rows={3}
+          id="lead-composer"
           placeholder="What was said, what was agreed…"
           className="bidi-auto w-full resize-y rounded-lg border border-border bg-surface px-3 py-2.5 text-[14.5px] leading-relaxed outline-none placeholder:text-faint focus:border-brand"
         />
@@ -1234,7 +1348,7 @@ function ThreadRow({
       {open && (
         <div className="flex flex-col gap-3 border-t border-border/60 px-3 py-3">
           {err && <p className="text-[13px] text-danger">{err}</p>}
-          {!err && messages === null && <p className="text-[13px] text-faint">Loading…</p>}
+          {!err && messages === null && <SkeletonRows rows={3} avatar={false} />}
           {(messages ?? []).map((m) => (
             <div key={m.id} className={`rounded-lg px-3 py-2 ${m.fromUs ? "bg-brand-soft/50" : "bg-background"}`}>
               <div className="mb-1 flex items-baseline gap-2 text-[12.5px]">
@@ -1707,7 +1821,7 @@ function EstimatesTab({
 
   return (
     <div className="flex flex-col gap-2">
-      {list === null && <p className="text-[13.5px] text-faint">Loading…</p>}
+      {list === null && <SkeletonRows rows={3} avatar={false} />}
       {(list ?? []).map((e) => (
         // ⚠️ A container, not one big Link: the client-link button is an anchor
         // too, and an <a> inside an <a> is invalid HTML (the browser re-parents

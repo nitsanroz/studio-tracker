@@ -365,7 +365,7 @@ export default function TeamPage() {
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
       <div>
-        <h1 className="font-serif-accent text-3xl">The team</h1>
+        <h1 className="page-title">The team</h1>
         <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
       </div>
 
@@ -385,22 +385,8 @@ export default function TeamPage() {
             value={layout}
             onChange={pickLayout}
             items={[
-              {
-                value: "cards" as const,
-                label: (
-                  <span className="flex items-center gap-1.5">
-                    <LayoutGrid size={14} /> Cards
-                  </span>
-                ),
-              },
-              {
-                value: "table" as const,
-                label: (
-                  <span className="flex items-center gap-1.5">
-                    <Table2 size={14} /> Table
-                  </span>
-                ),
-              },
+              { value: "cards" as const, label: "Cards", icon: LayoutGrid },
+              { value: "table" as const, label: "Table", icon: Table2 },
             ]}
             variant="segmented"
             size="sm"

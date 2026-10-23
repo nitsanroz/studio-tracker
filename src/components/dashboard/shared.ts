@@ -26,8 +26,8 @@ export interface HomeFilter {
 }
 
 
-/** Clients named individually in the donut; the rest fold into "Other". */
-export const PIE_CLIENTS = 15;
+/** Clients given their own bar in "Hours by client"; the rest fold into one. */
+export const BAR_CLIENTS = 8;
 
 /** Series label the "hours over time" headline reads (see totalSeries below). */
 export const TOTAL_SERIES = "All hours";
@@ -49,17 +49,23 @@ export function useHoursScope(filter: HomeFilter, isAdmin: boolean) {
   // Members see only their own hours and must stay on the legacy-free list — a
   // backfilled 2019 entry is not time they logged.
   const source = isAdmin ? entrySumsAll : entrySums;
+  // ⚠️ Keyed on the filter's VALUES, not the object: callers build filters
+  // inline (`{ ...filter, range }`), and a new object each render would rescan
+  // every entry since 2016 on every store update.
+  const from = filter.range?.from;
+  const to = filter.range?.to;
+  const { clientId, billableOnly } = filter;
   const scoped = useMemo(
     () =>
       source.filter((e) => {
         if (!isAdmin && e.userId !== currentUserId) return false;
-        if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
+        if (from !== undefined && to !== undefined && (e.date < from || e.date > to)) return false;
         const task = taskById.get(e.taskId);
-        if (filter.clientId && task?.clientId !== filter.clientId) return false;
-        if (filter.billableOnly && !task?.billable) return false;
+        if (clientId && task?.clientId !== clientId) return false;
+        if (billableOnly && !task?.billable) return false;
         return true;
       }),
-    [source, currentUserId, isAdmin, filter, taskById],
+    [source, currentUserId, isAdmin, from, to, clientId, billableOnly, taskById],
   );
 
   return { scoped, taskById, clientById };
@@ -74,8 +80,23 @@ export function splitHours(min: number, avg = false): readonly [string, string] 
 }
 
 
+/** The tenure as a sentence: "10 years, 4 months and 22 days". */
+export function tenureWords(startIso: string): string {
+  const { y, m, d } = tenureParts(startIso);
+  const unit = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const parts = [y ? unit(y, "year") : "", m ? unit(m, "month") : "", d ? unit(d, "day") : ""].filter(Boolean);
+  if (parts.length === 0) return "A day";
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
 /** calendar diff since start date → "Xy Ym Zd" */
 export function tenureSince(startIso: string): string {
+  const { y, m, d } = tenureParts(startIso);
+  return `${y}y ${m}m ${d}d`;
+}
+
+/** calendar diff since start date, in whole years, months and days */
+function tenureParts(startIso: string): { y: number; m: number; d: number } {
   const start = new Date(startIso);
   const now = new Date();
   let y = now.getFullYear() - start.getFullYear();
@@ -89,5 +110,5 @@ export function tenureSince(startIso: string): string {
     y -= 1;
     m += 12;
   }
-  return `${y}y ${m}m ${d}d`;
+  return { y, m, d };
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ClientAvatar } from "@/components/client-avatar";
+import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 
 // A freelancer's page (0054–0057): his hours as a table, a month at a time,
 // like the sheet he billed from; his extra charges below; a floating box to add
@@ -675,39 +676,6 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1300px] px-4 py-6">{children}</div>
-    </div>
-  );
-}
-
-/** A thin moving line over the tables while a month loads. */
-function LoadingLine() {
-  return (
-    <div className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden rounded-full bg-brand-soft">
-      <div className="h-full w-1/3 animate-[loading-line_1s_ease-in-out_infinite] rounded-full bg-brand" />
-    </div>
-  );
-}
-
-/** The page's shape before its first month arrives. */
-function PageSkeleton() {
-  const bar = "animate-pulse rounded bg-border";
-  return (
-    <div aria-busy aria-label="Loading">
-      <div className={`${bar} h-9 w-48`} />
-      <div className="mt-4 h-14 animate-pulse rounded-2xl bg-brand/20" />
-      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="flex gap-4">
-              <div className={`${bar} h-4 w-20`} />
-              <div className={`${bar} h-4 w-24`} />
-              <div className={`${bar} h-4 flex-1`} />
-              <div className={`${bar} h-4 w-12`} />
-            </div>
-          ))}
-        </div>
-        <div className="h-64 animate-pulse rounded-2xl border border-border bg-surface" />
-      </div>
     </div>
   );
 }

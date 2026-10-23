@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { createClient } from "../supabase/client";
+import { toast } from "../toast";
 import {
   isServiceBlocked,
   mapComment,
@@ -184,8 +185,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ── background refresh plumbing ───────────────────────────────────────
   const [refreshing, setRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const dismissNotice = useCallback(() => setNotice(null), []);
   const [freshEntryId, setFreshEntryId] = useState<string | null>(null);
   const freshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** ⚠️ One timer, replaced — logging twice quickly must not leave the first row
@@ -195,7 +194,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setFreshEntryId(id);
     freshTimer.current = setTimeout(() => setFreshEntryId(null), 600);
   }, []);
-  const showNotice = useCallback((text: string) => setNotice(text), []);
+  /** Neutral notes ("that undo expired", "add a description") go through the
+   *  same toasts as confirmations — one place at the bottom of the screen, not
+   *  two styles in two corners. A little longer on screen: they're news. */
+  const showNotice = useCallback((text: string) => toast(text, { tone: "info", ms: 6000 }), []);
   /** Bumped by boot AND every refresh, so a slow response can tell it's stale. */
   const generation = useRef(0);
   const refreshInFlight = useRef(false);
@@ -366,9 +368,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (action.epoch === epoch.current) return false;
     historyRef.current.past.length = 0;
     historyRef.current.future.length = 0;
-    setNotice("Someone else changed the studio data since then, so that undo is no longer available.");
+    showNotice("Someone else changed the studio data since then, so that undo is no longer available.");
     return true;
-  }, []);
+  }, [showNotice]);
   const undo = useCallback(() => {
     const action = historyRef.current.past.pop();
     if (!action) return;
@@ -991,7 +993,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     counting,
     methodsRef,
     tagNameById,
-    setNotice,
+    setNotice: showNotice,
   });
 
 
@@ -1185,9 +1187,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       writeError,
       dismissWriteError,
       serviceBlocked,
-      notice,
       showNotice,
-      dismissNotice,
       freshEntryId,
       refreshing,
       pollingPaused,
@@ -1200,8 +1200,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       timeEntries, entrySums, entrySumsAll, currentUserId, viewAsProfile, openTaskId,
       planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, taskTypes,
       isBriefLoaded, devItems, openTask, taskActions, plan, taskRequests, taskMinutes,
-      undo, redo, writeError, dismissWriteError, serviceBlocked, notice, showNotice,
-      dismissNotice, freshEntryId, refreshing, pollingPaused, lastSyncedAt, refreshNow,
+      undo, redo, writeError, dismissWriteError, serviceBlocked, showNotice,
+      freshEntryId, refreshing, pollingPaused, lastSyncedAt, refreshNow,
       bootError, linkActions, timeline, devItemActions, billing, entries, keysWriteDown,
       requests, taxonomy, commentActions, clientActions,
     ],

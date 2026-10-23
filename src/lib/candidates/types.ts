@@ -128,8 +128,25 @@ export interface Candidate {
   interviewCount: number;
   linkCount: number;
   commentCount: number;
-  /** Mean of every score across every interview, or null if never scored. */
+  /**
+   * The one figure for the person: `overallScore`'s weighted mean, the SAME
+   * figure the candidate page shows (2026-10-23 — the list used to show a flat
+   * mean of every score, so the two pages could disagree about one person).
+   */
   avgScore: number | null;
+  /**
+   * Every scorecard's average, oldest first, the application review included —
+   * the list's "Readings" column. Filled by `loadBoard` / `loadCandidate`.
+   */
+  readings: CandidateReading[];
+}
+
+/** One scorecard reduced to what a list row shows. */
+export interface CandidateReading {
+  kind: string;
+  /** When it happened, else when the card was made — `overallScore`'s order. */
+  at: string;
+  avg: number | null;
 }
 
 /** Everything the candidate page renders. One fetch per candidate. */
@@ -206,9 +223,16 @@ export function formatScore(value: number | null): string {
  * know, so it sorts last rather than first.
  */
 export function overallScore(interviews: Interview[]): number | null {
-  const scored = interviews
-    .map((i) => ({ at: i.heldOn ?? i.createdAt, avg: interviewAverage(i.scores) }))
-    .filter((x): x is { at: string; avg: number } => x.avg !== null)
+  return overallFromReadings(
+    interviews.map((i) => ({ kind: i.kind, at: i.heldOn ?? i.createdAt, avg: interviewAverage(i.scores) })),
+  );
+}
+
+/** `overallScore` from readings already reduced to their averages — what the
+ *  list has, since it never loads the individual scores' parameters. */
+export function overallFromReadings(readings: CandidateReading[]): number | null {
+  const scored = readings
+    .filter((x): x is CandidateReading & { avg: number } => x.avg !== null)
     .sort((a, b) => a.at.localeCompare(b.at));
   if (scored.length === 0) return null;
 

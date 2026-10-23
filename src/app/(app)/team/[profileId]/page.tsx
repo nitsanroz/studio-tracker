@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { Archive, ArchiveRestore, ArrowLeft } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  IdCard,
+  LayoutDashboard,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
@@ -425,8 +431,8 @@ export default function MemberPage({
         value={tab}
         onChange={setTab}
         items={[
-          { value: "overview" as const, label: "Overview" },
-          { value: "hr" as const, label: "HR details" },
+          { value: "overview" as const, label: "Overview", icon: LayoutDashboard },
+          { value: "hr" as const, label: "HR details", icon: IdCard },
         ]}
         ariaLabel="Member sections"
       />

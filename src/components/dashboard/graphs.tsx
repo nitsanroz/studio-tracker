@@ -6,16 +6,52 @@
 // see `bucketProjection`. On the 1st of a month a plain run-rate scales one day
 // by the whole month and draws a bar that dwarfs every real one beside it.
 
-import { MiniColumnsLabeled, MultiLineChart, PieChart } from "../charts";
+import { ChartBarBig, ChartLine, Clock } from "lucide-react";
+import { EmptyState } from "../empty-state";
+import Link from "next/link";
+import { MiniColumnsLabeled, MultiLineChart } from "../charts";
+import { formatHoursShort } from "@/lib/format";
 import { Tabs } from "../ui";
-import { PIE_CLIENTS, TOTAL_SERIES, useHoursScope } from "./shared";
+import { BAR_CLIENTS, TOTAL_SERIES, useHoursScope } from "./shared";
+import { PaceChart } from "./pace-chart";
 import type { HomeFilter } from "./shared";
 import { bucketProjection, bucketize } from "@/lib/period-math";
 import { useData } from "@/lib/store";
 import { useMemo, useState } from "react";
 
 
-export function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+export function MyGraphs({
+  filter,
+  isAdmin,
+  prevRange = null,
+  prevLabel = "",
+}: {
+  filter: HomeFilter;
+  isAdmin: boolean;
+  /** Admin pace chart only: the whole previous period, drawn as its reference line. */
+  prevRange?: { from: string; to: string } | null;
+  prevLabel?: string;
+}) {
+  // Admins, any bounded period: the running total against the goal or the
+  // previous period (pace-chart.tsx). "All time" has no period to pace against,
+  // so it keeps the per-bucket line. Two components, so the buckets below are
+  // never counted only to be thrown away.
+  const range = filter.range;
+  if (isAdmin && range) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <h2 className="mb-3 font-heading text-base" title="Hours added up day by day over the selected period">
+          Hours over time
+        </h2>
+        <PaceChart filter={{ ...filter, range }} prevRange={prevRange} prevLabel={prevLabel} />
+      </div>
+    );
+  }
+  return <BucketGraph filter={filter} isAdmin={isAdmin} />;
+}
+
+/** "Hours over time" per day/week/month bucket — members, and admins on "All time". */
+function BucketGraph({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
   const { scoped, taskById } = useHoursScope(filter, isAdmin);
 
   const { perBucket, projection } = useMemo(() => {
@@ -86,61 +122,91 @@ export function MyGraphs({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boo
           <MiniColumnsLabeled points={perBucket} />
         )
       ) : (
-        <p className="text-sm text-faint">No hours in this scope.</p>
+        <EmptyState compact icon={Clock} text="No hours in this scope." />
       )}
     </div>
   );
 }
 
 
-/** The donut half of "Hours by client". */
-export function HoursByClientDonut({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
+/**
+ * The split half of "Hours by client": one bar per client in the client's own
+ * colour, longest first (design-lab "Graphs 1"). Replaced a donut — slices of a
+ * ring are hard to compare once there are more than four, and bars aren't.
+ */
+export function HoursByClientBars({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
   const { scoped, taskById, clientById } = useHoursScope(filter, isAdmin);
 
-  const pieSlices = useMemo(() => {
+  const { rows, total } = useMemo(() => {
     const map = new Map<string, number>();
     for (const e of scoped) {
       const clientId = taskById.get(e.taskId)?.clientId;
       if (!clientId) continue;
       map.set(clientId, (map.get(clientId) ?? 0) + e.minutes);
     }
-    const rows = [...map.entries()]
+    const sorted = [...map.entries()]
       .map(([clientId, minutes]) => ({ client: clientById.get(clientId), minutes }))
       .filter((r) => r.client)
       .sort((a, b) => b.minutes - a.minutes);
-    const slices: { label: string; minutes: number; color: string; href?: string }[] = rows
-      .slice(0, PIE_CLIENTS)
+    const rows: { label: string; minutes: number; color: string; href?: string }[] = sorted
+      .slice(0, BAR_CLIENTS)
       .map((r) => ({
         label: r.client!.name,
         minutes: r.minutes,
         color: r.client!.color,
         href: `/clients/${r.client!.id}`,
       }));
-    const rest = rows.slice(PIE_CLIENTS).reduce((s, r) => s + r.minutes, 0);
-    if (rest > 0) slices.push({ label: "Other", minutes: rest, color: "#9ca3af" });
-    return slices;
+    const rest = sorted.slice(BAR_CLIENTS).reduce((s, r) => s + r.minutes, 0);
+    if (rest > 0) rows.push({ label: `${sorted.length - BAR_CLIENTS} other clients`, minutes: rest, color: "#9ca3af" });
+    return { rows, total: sorted.reduce((s, r) => s + r.minutes, 0) };
   }, [scoped, taskById, clientById]);
 
-  if (pieSlices.length === 0) return <p className="text-sm text-faint">No hours in this scope.</p>;
-  return <PieChart slices={pieSlices} />;
+  if (rows.length === 0) return <EmptyState compact icon={Clock} text="No hours in this scope." />;
+  const top = Math.max(...rows.map((r) => r.minutes));
+  return (
+    <ul className="flex flex-col gap-3">
+      {rows.map((r) => {
+        // The bar carries the client's colour, so the name needs no swatch; the
+        // hours sit just before the bar and the share just after it, so each
+        // figure is read beside the thing it measures (Nitsan, 2026-10-23).
+        const name = <span className="bidi-auto block truncate font-medium">{r.label}</span>;
+        return (
+          <li key={r.label} className="grid grid-cols-[minmax(0,7.5rem)_4.5rem_minmax(0,1fr)_3rem] items-center gap-3 text-[13px]">
+            {r.href ? (
+              <Link href={r.href} className="min-w-0 hover:text-brand">
+                {name}
+              </Link>
+            ) : (
+              name
+            )}
+            <span className="text-right font-medium tabular-nums">{formatHoursShort(r.minutes)}</span>
+            <span className="h-3.5 overflow-hidden rounded bg-background">
+              <span className="block h-full rounded" style={{ width: `${(r.minutes / top) * 100}%`, backgroundColor: r.color }} />
+            </span>
+            <span className="tabular-nums text-muted">{((r.minutes / total) * 100).toFixed(1)}%</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 
 /**
- * "Hours by client", two ways, in one pane. The split (donut) and the trend over
+ * "Hours by client", two ways, in one pane. The split (bars) and the trend over
  * time answer the same question — who the studio's hours went to — so they were
  * two panes competing for the same slot rather than two separate facts.
- * Members only ever had the donut, so they get it without a tab strip.
+ * Members only ever had the split, so they get it without a tab strip.
  */
 export function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean }) {
   const [tab, setTab] = useState<"split" | "trend">("split");
   const show = isAdmin ? tab : "split";
 
   return (
-    <div className="flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-4 flex items-center justify-between gap-2">
         <h2
-          className="font-heading text-sm"
+          className="font-heading text-base"
           title={
             show === "split"
               ? "Hours split by client over the selected period"
@@ -154,8 +220,8 @@ export function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdm
             value={tab}
             onChange={setTab}
             items={[
-              { value: "split" as const, label: "Split" },
-              { value: "trend" as const, label: "Over time" },
+              { value: "split" as const, label: "Split", icon: ChartBarBig },
+              { value: "trend" as const, label: "Over time", icon: ChartLine },
             ]}
             variant="segmented"
             size="sm"
@@ -164,7 +230,7 @@ export function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdm
         )}
       </div>
       {show === "split" ? (
-        <HoursByClientDonut filter={filter} isAdmin={isAdmin} />
+        <HoursByClientBars filter={filter} isAdmin={isAdmin} />
       ) : (
         <StudioClientTrend filter={filter} />
       )}
@@ -261,7 +327,7 @@ export function StudioClientTrend({ filter }: { filter: HomeFilter }) {
     return { labels: keys.map(labelFor), series, projection };
   }, [entrySumsAll, filter, taskById, clientById]);
 
-  if (series.length === 0) return <p className="text-sm text-faint">No hours in this scope.</p>;
+  if (series.length === 0) return <EmptyState compact icon={Clock} text="No hours in this scope." />;
   return (
     <MultiLineChart
       labels={labels}

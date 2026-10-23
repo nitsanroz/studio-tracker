@@ -1,8 +1,8 @@
 "use client";
 
+import { StudioArrow } from "@/components/studio-arrow";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { useData } from "@/lib/store";
 import { shiftDays, formatHoursShort, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
 import { Avatar } from "./ui";
@@ -25,7 +25,7 @@ import { UserDayDetails } from "./user-day-details";
  * never make a designer look like they logged.
  */
 export function WeekTimesheet() {
-  const { profiles, entrySums, tasks, clients } = useData();
+  const { profiles, entrySums, tasks, clients, planColumns, planEntries } = useData();
   const [popup, setPopup] = useState<{ userId: string; date: string } | null>(null);
 
   const todayIso = toISODate(new Date());
@@ -57,6 +57,24 @@ export function WeekTimesheet() {
     }
     return map;
   }, [entrySums, firstDay, lastDay]);
+
+  /** profileId → date → the absence planned for it ("Vacation", "Sick", "Day off").
+   * A day someone was away is not a gap, so it must not look like one. The tile
+   * itself just says "Off" — "Vacation" doesn't fit a tile at this width — and
+   * the reason is in its tooltip. */
+  const awayByUserDay = useMemo(() => {
+    const colOwner = new Map(planColumns.filter((c) => c.profileId).map((c) => [c.id, c.profileId!]));
+    const map = new Map<string, Map<string, string>>();
+    for (const e of planEntries) {
+      if (e.type !== "absence" || !e.date || e.date < firstDay || e.date > lastDay) continue;
+      const who = colOwner.get(e.columnId);
+      if (!who) continue;
+      let forUser = map.get(who);
+      if (!forUser) map.set(who, (forUser = new Map()));
+      forUser.set(e.date, e.absenceType === "vacation" ? "Vacation" : e.absenceType === "sick" ? "Sick" : "Day off");
+    }
+    return map;
+  }, [planColumns, planEntries, firstDay, lastDay]);
 
   // Who is expected to log: current designers. Admins are left out — they don't
   // log studio hours, so their row would sit permanently red and read as a
@@ -95,17 +113,21 @@ export function WeekTimesheet() {
     // h-full so the pane matches the KPI tile block beside it; the table then
     // spreads its rows over whatever height that turns out to be.
     <div className="card flex h-full flex-col overflow-x-auto p-4">
-      <table className="h-full w-full min-w-fit text-sm">
+      {/* Separated cells (design-lab "This week 2"): each day is its own tile,
+          shaded by how much was logged, so the grid reads at a glance. */}
+      {/* -mx-1 + 100%+8px: the spacing also rings the table's outer edge, which
+          would push it 4px past the pane and raise a scrollbar for nothing. */}
+      <table className="-mx-1 h-full w-[calc(100%+0.5rem)] min-w-fit border-separate border-spacing-1 text-sm">
         <thead>
           <tr>
             {/* the corner cell is otherwise dead space, and the pane has no
                 title of its own to hang this off */}
-            <th className="w-28 pb-1 text-left">
+            <th className="w-24 pb-1 text-left">
               <Link
                 href="/feed"
                 className="flex items-center gap-0.5 text-[11px] font-medium text-brand hover:underline"
               >
-                Time Feed <ArrowRight size={11} />
+                Time Feed <StudioArrow size={14} />
               </Link>
             </th>
             {days.map((iso) => {
@@ -114,7 +136,7 @@ export function WeekTimesheet() {
               return (
                 <th
                   key={iso}
-                  className={`px-1 pb-1 text-right text-[11px] font-medium uppercase tracking-wide ${
+                  className={`px-1 pb-1 text-center text-[11px] font-medium uppercase tracking-wide ${
                     isToday ? "text-brand" : "text-faint"
                   }`}
                   title={iso}
@@ -130,8 +152,8 @@ export function WeekTimesheet() {
           {members.map((m) => {
             const forUser = byUserDay.get(m.id);
             return (
-              <tr key={m.id} className="border-t border-border">
-                <td className="w-28 max-w-28 pr-1" title={m.name}>
+              <tr key={m.id}>
+                <td className="w-24 max-w-24 pr-1" title={m.name}>
                   <span className="flex items-center gap-1.5">
                     <Avatar profile={m} size={20} />
                     <span className="min-w-0 truncate text-xs font-medium">
@@ -143,21 +165,34 @@ export function WeekTimesheet() {
                   const entries = forUser?.get(iso);
                   const minutes = entries?.reduce((s, e) => s + e.minutes, 0) ?? 0;
                   const logged = minutes > 0;
+                  const away = awayByUserDay.get(m.id)?.get(iso);
                   // Only a day that is OVER can be a gap. Flagging today would
-                  // nag every morning about hours nobody has had time to log.
-                  // Carried in the text colour rather than a box, so the grid
-                  // reads like the Time Feed timesheet.
-                  const missed = !logged && iso < todayIso;
+                  // nag every morning about hours nobody has had time to log —
+                  // and a day the plan has them away was never one.
+                  const missed = !logged && !away && iso < todayIso;
+                  // Shade by hours: a 9h day is full strength, a 1h day barely
+                  // tinted. Pre-mixed against the surface, so the tile is opaque.
+                  const share = Math.min(minutes / 540, 1);
+                  const fill = logged
+                    ? `color-mix(in oklab, var(--brand) ${Math.round(12 + share * 78)}%, var(--surface))`
+                    : undefined;
                   return (
                     <td
                       key={iso}
                       onClick={() => setPopup({ userId: m.id, date: iso })}
-                      title={cellTooltip(entries)}
-                      className={`cursor-pointer p-2 text-right tabular-nums hover:bg-brand-soft/60 ${
-                        logged ? "font-medium" : missed ? "text-danger/60" : "text-faint"
+                      title={away && !logged ? `${away} — planned in the weekly plan` : cellTooltip(entries)}
+                      className={`h-8 cursor-pointer rounded-md px-1.5 text-center text-xs tabular-nums transition-shadow hover:ring-2 hover:ring-brand/40 ${
+                        logged
+                          ? `font-medium ${share > 0.5 ? "text-white" : "text-foreground"}`
+                          : away
+                            ? "bg-[repeating-linear-gradient(135deg,var(--weekend)_0_5px,transparent_5px_9px)] text-muted"
+                            : missed
+                              ? "bg-danger/10 text-danger"
+                              : "bg-background text-faint"
                       }`}
+                      style={fill ? { backgroundColor: fill } : undefined}
                     >
-                      {logged ? formatHoursShort(minutes) : "–"}
+                      {logged ? formatHoursShort(minutes) : away ? "Off" : "–"}
                     </td>
                   );
                 })}

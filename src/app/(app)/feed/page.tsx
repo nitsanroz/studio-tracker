@@ -2,7 +2,17 @@
 
 import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Pencil,
+  Plus,
+  Rows3,
+  Table2,
+  Trash2,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { fetchAll, mapTimeEntry } from "@/lib/db";
@@ -32,6 +42,8 @@ import { EditableTextCell } from "@/components/editable-cell";
 import { EntryEditRow, UserDayDetails } from "@/components/user-day-details";
 import { useColWidths, ResizeHandle } from "@/components/resizable";
 import type { TimeEntry } from "@/lib/types";
+import { SkeletonRows } from "@/components/skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 type Period = "Recent" | RangePreset;
 
@@ -119,7 +131,7 @@ function CellDetails({
       </div>
 
       <div className="mt-2 flex max-h-64 flex-col overflow-y-auto">
-        {loadedIds === null && <p className="py-3 text-center text-sm text-faint">Loading…</p>}
+        {loadedIds === null && <SkeletonRows rows={3} />}
         {loadedIds !== null && entries.length === 0 && (
           <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
         )}
@@ -362,7 +374,7 @@ function FeedPageContent() {
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="font-serif-accent text-3xl">Time Feed</h1>
+          <h1 className="page-title">Time Feed</h1>
           <p className="text-sm text-muted">
             {view === "feed"
               ? isAdmin
@@ -383,7 +395,10 @@ function FeedPageContent() {
           <Tabs
             value={view}
             onChange={setView}
-            items={["feed", "timesheet"] as const}
+            items={[
+              { value: "feed" as const, label: "Feed", icon: Rows3 },
+              { value: "timesheet" as const, label: "Timesheet", icon: Table2 },
+            ]}
             variant="segmented"
             ariaLabel="View"
           />
@@ -583,7 +598,7 @@ function FeedPageContent() {
               );
             })}
             {feedRows.length === 0 && !loading && (
-              <div className="p-8 text-center text-sm text-faint">No hours in this period.</div>
+              <EmptyState icon={Clock} text="No hours in this period." />
             )}
           </div>
         </>

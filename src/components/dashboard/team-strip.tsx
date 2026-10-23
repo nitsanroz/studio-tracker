@@ -6,6 +6,7 @@
 // describes a period, and someone who left in March did the March work. They are
 // marked rather than dropped, because their hours are as real as anyone's.
 
+import { StudioArrow } from "@/components/studio-arrow";
 import Link from "next/link";
 import { Avatar } from "../ui";
 import type { HomeFilter } from "./shared";
@@ -13,7 +14,6 @@ import { formatHoursShort } from "@/lib/format";
 import { addEntry, billablePct, keysPct, keysTaskIds, newSplit, splitTitle } from "@/lib/hours-split";
 import type { HoursSplit } from "@/lib/hours-split";
 import { useData } from "@/lib/store";
-import { ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 
 
@@ -95,7 +95,7 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
           )}
         </h2>
         <Link href="/team" className="flex shrink-0 items-center gap-1 text-xs text-brand hover:underline">
-          View team <ArrowRight size={12} />
+          View team <StudioArrow size={15} />
         </Link>
       </div>
       {/* half-width pane since v0.99.35 (it took the My-tasks slot), so 4 across at

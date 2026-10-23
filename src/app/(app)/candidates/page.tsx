@@ -10,15 +10,28 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { liftDrag } from "@/lib/drag-lift";
 import { useRouter } from "next/navigation";
-import { Archive, PauseCircle, Plus, Search, X } from "lucide-react";
+import {
+  Archive,
+  List,
+  PauseCircle,
+  Plus,
+  Search,
+  SquareKanban,
+  UserSearch,
+  Users,
+  X,
+} from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
+import { startOfWeek, toISODate } from "@/lib/format";
 import type { Profile } from "@/lib/types";
-import { Avatar } from "@/components/ui";
+import { Avatar, NameAvatar, Tabs } from "@/components/ui";
 import { loadBoard, loadVocabulary, type BoardCounts, type Vocabulary } from "@/lib/candidates/data";
 import { createCandidate, moveToStage } from "@/lib/candidates/actions";
 import {
+  APPLICATION_REVIEW_KIND,
   formatScore,
   NEW_CANDIDATE_NAME,
   NEW_CANDIDATE_PARAM,
@@ -26,6 +39,8 @@ import {
   type Candidate,
   type CandidateStatus,
 } from "@/lib/candidates/types";
+import { SkeletonCard } from "@/components/skeleton";
+import { EmptyState } from "@/components/empty-state";
 
 const TONE: Record<string, string> = {
   high: "bg-[#eaf6ee] text-[#12693d]",
@@ -113,7 +128,7 @@ function ago(iso: string): string {
   return months < 12 ? `${months}mo` : `${Math.round(days / 365)}y`;
 }
 
-function ScorePill({ value }: { value: number | null }) {
+function ScorePill({ value, table = false }: { value: number | null; table?: boolean }) {
   const tone = scoreTone(value);
   return (
     <span
@@ -122,8 +137,10 @@ function ScorePill({ value }: { value: number | null }) {
          list of candidates by, and at 11.5px beside a 15px name they read as
          footnotes on a screen you hold at arm's length. Above `md` the card is
          a 224px board column where those sizes are already right. */
-      className={`inline-flex h-10 shrink-0 items-center rounded-md px-1.5 text-[23px] font-semibold md:h-5 md:text-[11.5px] ${TONE[tone]}`}
-      title={value === null ? "Not scored yet" : `Average of every score so far`}
+      className={`inline-flex shrink-0 items-center justify-center font-semibold tabular-nums ${
+        table ? "h-7 min-w-11 rounded-lg px-2 text-[13px]" : "h-10 rounded-md px-1.5 text-[23px] md:h-5 md:text-[12px]"
+      } ${TONE[tone]}`}
+      title={value === null ? "Not scored yet" : "Every reading so far, the later ones counting more"}
     >
       {formatScore(value)}
     </span>
@@ -161,7 +178,10 @@ function CandidateCard({
     <Link
       href={`/candidates/${c.id}`}
       draggable={draggable}
-      onDragStart={onDragStart}
+      onDragStart={(e) => {
+        liftDrag(e);
+        onDragStart();
+      }}
       onDragEnd={onDragEnd}
       className="group flex flex-col gap-2 rounded-lg border border-border bg-surface p-2.5 shadow-[0_1px_2px_rgba(6,17,47,.04)] transition-colors hover:border-brand"
     >
@@ -216,6 +236,55 @@ function CandidateCard({
     </Link>
   );
 }
+
+/** Initials on a colour picked from the name, so a person keeps their colour. */
+/** How far along the stages someone is: one short bar per stage. */
+function StageProgress({ at, of }: { at: number; of: number }) {
+  return (
+    <span className="mt-1.5 flex gap-1" aria-label={`Stage ${at + 1} of ${of}`}>
+      {Array.from({ length: of }, (_, i) => (
+        <span key={i} className={`h-1.5 w-4 rounded-full ${i <= at ? "bg-brand" : "bg-track"}`} />
+      ))}
+    </span>
+  );
+}
+
+/** "Phone interview" → "Phone": the column has room for the word that differs. */
+const shortKind = (kind: string) =>
+  kind === APPLICATION_REVIEW_KIND ? "Application" : kind.replace(/ (interview|day)$/i, "");
+
+const SCORE_TEXT: Record<string, string> = {
+  high: "text-success",
+  mid: "text-[#855800]",
+  low: "text-danger",
+  none: "text-faint",
+};
+
+/** Every scorecard so far, oldest first — the list's answer to "how did each go". */
+function Readings({ readings }: { readings: Candidate["readings"] }) {
+  if (readings.length === 0) return <span className="text-faint">None yet</span>;
+  // The application always reads first — it is where every candidacy starts,
+  // even when its card is dated after a call (the date is when they applied,
+  // and that is sometimes typed in late). Only the DISPLAY order; the score's
+  // weighting still goes by date.
+  const shown = [...readings].sort((a, b) => Number(b.kind === APPLICATION_REVIEW_KIND) - Number(a.kind === APPLICATION_REVIEW_KIND));
+  return (
+    <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted">
+      {shown.map((r, i) => (
+        <span key={i} className="whitespace-nowrap">
+          <span className="bidi-auto">{shortKind(r.kind)}</span>{" "}
+          <b className={`font-medium tabular-nums ${SCORE_TEXT[scoreTone(r.avg)]}`}>{formatScore(r.avg)}</b>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const EMPTY_TAB: Record<CandidateStatus, string> = {
+  active: "Nobody in the pipeline right now.",
+  on_hold: "Nobody on hold.",
+  archived: "Nobody archived yet.",
+};
 
 export default function CandidatesPage() {
   const isAdmin = useIsAdmin();
@@ -360,6 +429,27 @@ export default function CandidatesPage() {
     });
   }, [rows, roleFilter, query]);
 
+  // ⚠️ Why the list is empty decides what it offers: with people on this tab,
+  // only the search and the role can be hiding them, so clearing those is the
+  // way back; with nobody on the tab there is nothing to clear.
+  const noMatch = (compact = false) =>
+    rows.length > 0 ? (
+      <EmptyState
+        compact={compact}
+        icon={UserSearch}
+        text="Nobody matches that."
+        action={{
+          label: "Clear search and role",
+          onClick: () => {
+            setQuery("");
+            setRoleFilter(null);
+          },
+        }}
+      />
+    ) : (
+      <EmptyState compact={compact} icon={UserSearch} text={EMPTY_TAB[view]} />
+    );
+
   /**
    * ⚠️ SORTING PUTS UNSCORED PEOPLE LAST WHATEVER THE DIRECTION, rather than
    * treating a missing score as 0. Somebody nobody has written up yet is not
@@ -464,7 +554,7 @@ export default function CandidatesPage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <h1 className="font-serif-accent text-2xl">Candidates</h1>
+        <h1 className="page-title">Candidates</h1>
         <p className="mt-3 text-sm text-muted">
           Hiring is admin-only — it holds applicants&rsquo; contact details and the studio&rsquo;s
           notes about them.
@@ -475,136 +565,115 @@ export default function CandidatesPage() {
 
   const stages = vocab?.stages ?? [];
 
+  // Interviews held this week (Sun–Thu) across the people in this view — the
+  // one forward-looking fact the summary line can carry.
+  const weekStart = toISODate(startOfWeek(new Date()));
+  const interviewsThisWeek = rows.reduce(
+    (n, c) => n + c.readings.filter((r) => r.kind !== APPLICATION_REVIEW_KIND && r.at.slice(0, 10) >= weekStart).length,
+    0,
+  );
+
   return (
     <div className="mx-auto max-w-[1500px]">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="font-serif-accent text-2xl">Candidates</h1>
-          <p className="mt-0.5 text-sm text-muted">
+      {/* ── the page's anatomy, as everywhere else (2026-10-23, List A): title
+          and summary on the left, the one primary action on the right, then a
+          toolbar row of its own — which view, filters, search, layout. */}
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="page-title">Candidates</h1>
+          <p className="mt-1 text-sm text-muted">
             {counts.active} in play
             {counts.onHold > 0 && ` · ${counts.onHold} on hold`}
+            {view === "active" && interviewsThisWeek > 0 &&
+              ` · ${interviewsThisWeek} interview${interviewsThisWeek === 1 ? "" : "s"} this week`}
           </p>
         </div>
+        <button
+          onClick={() => void addCandidate()}
+          disabled={adding || !vocab}
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 md:h-10"
+        >
+          <Plus size={16} strokeWidth={2} />
+          <span className="md:hidden">{adding ? "Adding…" : "Add"}</span>
+          <span className="hidden md:inline">{adding ? "Adding…" : "Add candidate"}</span>
+        </button>
+      </div>
 
-        {/* ⚠️ TWO GROUPS BELOW `md`, ONE FLAT ROW ABOVE IT. The wrappers carry
-            `md:contents`, so from md up they leave the layout entirely and the
-            original single wrapping row is byte-identical — the same trick
-            `MyWeek` and the plan's entry modal use. At 375px a single
-            `flex-wrap` row put the search between two chips and stranded the
-            divider on a line of its own. */}
-        <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto">
-          <div className="flex w-full gap-2 overflow-x-auto md:contents">
-          {/* ⚠️ ONE DROPDOWN, NOT A ROW OF CHIPS. A role here is a TAG — the
-              studio hires designers and rarely two kinds at once — so five
-              chips permanently across the top spent the loudest row on the page
-              on a control almost nobody touches.
-
-              ⚠️ IT IS AN OUTLINE CHIP AT REST — Nitsan, 2026-09-28. It used to
-              be borderless until you hovered it, which made it the only control
-              in a row of chips with no edge of its own: next to "On hold" and
-              "Archive" it read as a stray word rather than something you could
-              press. Same shape and resting colours as those two now; the brand
-              tint still means it is ACTUALLY hiding somebody, because a filter
-              you cannot see is how a board comes to look emptier than it is. */}
-          <select
-            value={roleFilter ?? "all"}
-            onChange={(e) => setRoleFilter(e.target.value === "all" ? null : e.target.value)}
-            aria-label="Filter by role"
-            className={`h-11 shrink-0 cursor-pointer rounded-full border px-2 text-[11.5px] md:h-7 ${
-              roleFilter === null
-                ? "border-border bg-surface text-muted"
-                : "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
-            }`}
-          >
-            <option value="all">All roles</option>
-            {/* Plenty of candidates never get a role, so "no role" has to be
-                reachable — otherwise they are the one group the filter cannot
-                find. */}
-            <option value="none">No role</option>
-            {(vocab?.roles ?? []).map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-
-          {/* ⚠️ On hold and Archive are STATUS views, not columns. On the Asana
-              board "To Reject" was a column holding 140 of 271 cards — the
-              widest thing on screen was the one nobody wanted to read. */}
-          <button
-            onClick={() => switchView(view === "on_hold" ? "active" : "on_hold")}
-            aria-pressed={view === "on_hold"}
-            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] md:h-7 ${
-              view === "on_hold"
-                ? "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
-                : "border-border bg-surface text-muted"
-            }`}
-          >
-            <PauseCircle size={13} strokeWidth={1.75} /> On hold · {counts.onHold}
-          </button>
-          <button
-            onClick={() => switchView(view === "archived" ? "active" : "archived")}
-            aria-pressed={view === "archived"}
-            className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] md:h-7 ${
-              view === "archived"
-                ? "border-[#c9d6fb] bg-brand-soft font-medium text-brand-dark"
-                : "border-border bg-surface text-muted"
-            }`}
-          >
-            <Archive size={13} strokeWidth={1.75} /> Archive · {counts.archived}
-          </button>
-
-          </div>
-
-          <span className="mx-1 hidden h-5 w-px bg-border md:block" aria-hidden />
-
-          <div className="flex w-full gap-2 md:contents">
-          <label className="flex h-11 flex-1 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 md:h-8 md:flex-none">
-            <Search size={15} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Name, email, source"
-              className="w-full bg-transparent text-[13px] outline-none placeholder:text-faint md:w-40"
-            />
-            {query && (
-              <button onClick={() => setQuery("")} aria-label="Clear the search">
-                <X size={13} className="text-faint" />
-              </button>
-            )}
-          </label>
-
-          {/* ⚠️ Hidden on a phone rather than disabled: offering "Board" and
-              then refusing it is worse than not offering it, and the list is
-              not a fallback here — it is the phone's real shape. */}
-          <div className="hidden overflow-hidden rounded-lg border border-border bg-surface text-[12.5px] md:flex">
-            {(["board", "list"] as const).map((k) => (
-              <button
-                key={k}
-                onClick={() => {
-                  setLayout(k);
-                  storeLayout(k, view);
-                }}
-                aria-pressed={layout === k}
-                className={`px-3 py-1.5 capitalize ${
-                  layout === k ? "bg-brand font-medium text-white" : "text-muted"
-                }`}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => void addCandidate()}
-            disabled={adding || !vocab}
-            className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-3 text-[13px] font-medium text-white disabled:opacity-50 md:h-8"
-          >
-            <Plus size={16} strokeWidth={2} />{" "}
-            <span className="md:hidden">{adding ? "Adding…" : "Add"}</span>
-            <span className="hidden md:inline">{adding ? "Adding…" : "Add candidate"}</span>
-          </button>
-          </div>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        {/* ⚠️ On hold and Archive are STATUS views, not columns. On the Asana
+            board "To Reject" was a column holding 140 of 271 cards — the
+            widest thing on screen was the one nobody wanted to read. They are
+            one control now, with In play, rather than two loose toggle chips:
+            you are always looking at exactly one of the three. */}
+        <div className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:w-auto md:px-0">
+          <Tabs<CandidateStatus>
+            value={view}
+            onChange={switchView}
+            variant="segmented"
+            ariaLabel="Which candidates"
+            className="w-max"
+            items={[
+              { value: "active", label: "In play", icon: Users, count: counts.active },
+              { value: "on_hold", label: "On hold", icon: PauseCircle, count: counts.onHold },
+              { value: "archived", label: "Archive", icon: Archive, count: counts.archived },
+            ]}
+          />
+        </div>
+        {/* ⚠️ ONE DROPDOWN, NOT A ROW OF CHIPS. A role here is a TAG — the
+            studio hires designers and rarely two kinds at once — so it gets the
+            quietest control. It turns brand-tinted while it is actually hiding
+            somebody, because a filter you cannot see is how a board comes to
+            look emptier than it is. */}
+        <select
+          value={roleFilter ?? "all"}
+          onChange={(e) => setRoleFilter(e.target.value === "all" ? null : e.target.value)}
+          aria-label="Filter by role"
+          className={`h-11 shrink-0 cursor-pointer rounded-xl px-3 text-sm shadow-card md:h-10 ${
+            roleFilter === null ? "bg-surface text-muted" : "bg-brand-soft font-medium text-brand-dark"
+          }`}
+        >
+          <option value="all">All roles</option>
+          {/* Plenty of candidates never get a role, so "no role" has to be
+              reachable — otherwise they are the one group the filter cannot
+              find. */}
+          <option value="none">No role</option>
+          {(vocab?.roles ?? []).map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+        <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl bg-surface px-3.5 shadow-card md:ml-auto md:h-10 md:w-72 md:flex-none">
+          <Search size={16} strokeWidth={1.75} className="shrink-0 text-faint" aria-hidden />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, email, source"
+            className="w-full bg-transparent text-sm outline-none placeholder:text-faint"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} aria-label="Clear the search">
+              <X size={14} className="text-faint" />
+            </button>
+          )}
+        </label>
+        {/* ⚠️ Hidden on a phone rather than disabled: offering "Board" and
+            then refusing it is worse than not offering it, and the list is
+            not a fallback here — it is the phone's real shape. */}
+        <div className="hidden md:block">
+          <Tabs
+            value={layout}
+            onChange={(k) => {
+              setLayout(k);
+              storeLayout(k, view);
+            }}
+            variant="segmented"
+            ariaLabel="Layout"
+            items={[
+              { value: "board" as const, label: "Board", icon: SquareKanban },
+              { value: "list" as const, label: "List", icon: List },
+            ]}
+          />
         </div>
       </div>
 
@@ -614,7 +683,7 @@ export default function CandidatesPage() {
         </div>
       )}
 
-      {busy && <p className="mt-8 text-sm text-muted">Loading…</p>}
+      {busy && <SkeletonCard rows={6} className="mt-5" />}
 
       {!busy && view !== "active" && effectiveLayout === "board" && (
         <div className="mt-5">
@@ -638,7 +707,7 @@ export default function CandidatesPage() {
               />
             ))}
             {visible.length === 0 && (
-              <p className="text-sm text-faint">Nobody here.</p>
+              noMatch(true)
             )}
           </div>
         </div>
@@ -774,34 +843,33 @@ export default function CandidatesPage() {
               onDragEnd={() => {}}
             />
           ))}
-          {sorted.length === 0 && <p className="py-6 text-sm text-faint">Nobody matches that.</p>}
+          {sorted.length === 0 && noMatch(true)}
         </div>
       )}
 
       {!busy && effectiveLayout === "list" && !isNarrow && (
-        <div className="mt-5 overflow-x-auto rounded-xl border border-border bg-surface shadow-card">
-          <table className="w-full min-w-[860px] border-separate border-spacing-0 text-left text-[13px]">
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
+          <table className="w-full min-w-[1040px] border-separate border-spacing-0 text-left text-[13px]">
             <thead>
               <tr>
                 {(
                   [
-                    ["name", "Candidate", "w-[280px]"],
-                    ["stage", view === "active" ? "Stage" : "Left at", "w-[170px]"],
-                    [null, "Owner", "w-[130px]"],
-                    ["score", "Score", "w-[90px]"],
-                    ["activity", "Last activity", "w-[130px]"],
+                    ["name", "Candidate", "w-[320px] pl-5"],
+                    ["stage", view === "active" ? "Stage" : "Left at", "w-[190px]"],
+                    [null, "Owner", "w-[150px]"],
+                    [null, "Readings", ""],
+                    ["score", "Score", "w-[90px] text-right"],
+                    ["activity", "Last activity", "w-[130px] pr-5 text-right"],
                   ] as const
                 ).map(([key, label, w]) => (
                   <th
                     key={label}
-                    className={`${w} border-b border-border px-3 pb-2 pt-3 text-[11px] font-medium uppercase tracking-wide text-faint`}
+                    className={`${w} px-3 pb-3 pt-4 text-[11px] font-medium uppercase tracking-wide text-muted`}
                   >
                     {key ? (
                       /* ⚠️ `uppercase tracking-wide` is REPEATED on the button, not
                          just on the <th>. A button carries the user agent's own
-                         `text-transform: none`, which beats an inherited value —
-                         so without this the four sortable headings render in
-                         sentence case beside an uppercase "OWNER". */
+                         `text-transform: none`, which beats an inherited value. */
                       <button
                         onClick={() => setSort(key)}
                         className={`uppercase tracking-wide hover:text-foreground ${
@@ -812,8 +880,7 @@ export default function CandidatesPage() {
                         {label}
                         {/* The arrow states the direction rather than merely
                             marking the column: score and activity run high-to-low,
-                            name and stage low-to-high, and a caret that always
-                            pointed down would be wrong half the time. */}
+                            name and stage low-to-high. */}
                         {sort === key && (SORT_DIR[key] === "desc" ? " \u25be" : " \u25b4")}
                       </button>
                     ) : (
@@ -828,50 +895,51 @@ export default function CandidatesPage() {
                 const role = c.roleId ? roleById.get(c.roleId) : null;
                 const owner = c.ownerId ? profileById.get(c.ownerId) : null;
                 const stage = c.stageId ? stageById.get(c.stageId) : null;
+                const stageAt = stage ? stages.findIndex((x) => x.id === stage.id) : -1;
                 return (
-                  <tr key={c.id} className="hover:bg-brand-soft/40">
-                    <td className="border-b border-border px-3 py-2.5">
-                      <Link href={`/candidates/${c.id}`} className="flex items-center gap-2.5">
+                  <tr key={c.id} className="group/row cursor-pointer hover:bg-background/70" onClick={() => router.push(`/candidates/${c.id}`)}>
+                    <td className="border-t border-border py-3 pl-5 pr-3">
+                      <Link
+                        href={`/candidates/${c.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-3"
+                      >
+                        <NameAvatar name={c.name} size={34} />
                         <span className="min-w-0">
-                          <span className="bidi-auto block truncate font-medium">{c.name}</span>
-                          {c.email && (
-                            <span className="block truncate text-[11.5px] text-faint">
-                              {c.email}
-                            </span>
-                          )}
-                        </span>
-                        {role && (
-                          <span
-                            className="ml-auto flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted"
-                            title={role.name}
-                          >
-                            <span
-                              className="size-2 rounded-full"
-                              style={{ backgroundColor: role.color }}
-                              aria-hidden
-                            />
-                            {role.name}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="bidi-auto truncate text-sm font-medium group-hover/row:text-brand">{c.name}</span>
+                            {role && (
+                              <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-xs text-muted">
+                                <span className="size-1.5 rounded-full" style={{ backgroundColor: role.color }} aria-hidden />
+                                {role.name}
+                              </span>
+                            )}
                           </span>
-                        )}
+                          {c.email && <span className="block truncate text-[13px] text-muted">{c.email}</span>}
+                        </span>
                       </Link>
                     </td>
-                    <td className="border-b border-border px-3 py-2.5">
-                      <span className="bidi-auto text-muted">{stage?.name ?? "—"}</span>
+                    <td className="border-t border-border px-3 py-3">
+                      <span className="bidi-auto block">{stage?.name ?? "—"}</span>
+                      {stageAt >= 0 && <StageProgress at={stageAt} of={stages.length} />}
                     </td>
-                    <td className="border-b border-border px-3 py-2.5">
+                    <td className="border-t border-border px-3 py-3">
                       {owner ? (
-                        <span className="flex items-center gap-1.5">
-                          <Avatar profile={owner} size={18} />
-                          <span className="truncate text-muted">{owner.name}</span>
+                        <span className="flex items-center gap-2">
+                          <Avatar profile={owner} size={22} />
+                          <span className="truncate">{owner.name.split(" ")[0]}</span>
                         </span>
                       ) : (
                         <span className="text-faint">Unassigned</span>
                       )}
                     </td>
-                    <td className="border-b border-border px-3 py-2.5">
-                      <ScorePill value={c.avgScore} />
+                    <td className="border-t border-border px-3 py-3">
+                      <Readings readings={c.readings} />
                     </td>
-                    <td className="border-b border-border px-3 py-2.5 text-muted">
+                    <td className="border-t border-border px-3 py-3 text-right">
+                      <ScorePill value={c.avgScore} table />
+                    </td>
+                    <td className="border-t border-border py-3 pl-3 pr-5 text-right text-muted">
                       {ago(c.lastActivityAt)}
                     </td>
                   </tr>
@@ -880,7 +948,7 @@ export default function CandidatesPage() {
             </tbody>
           </table>
           {sorted.length === 0 && (
-            <p className="px-3 py-6 text-sm text-faint">Nobody matches that.</p>
+            noMatch()
           )}
         </div>
       )}

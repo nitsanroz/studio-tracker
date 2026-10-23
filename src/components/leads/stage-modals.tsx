@@ -10,6 +10,7 @@ import { useData } from "@/lib/store";
 import { Modal, ModalClose } from "@/components/ui";
 import { Button, Field, Select, Textarea } from "@/components/primitives";
 import { markWon, moveLead } from "@/lib/leads/actions";
+import { celebrate } from "@/lib/celebrate";
 import type { Lead, LeadStage, LostReason } from "@/lib/leads/types";
 
 export function LostModal({
@@ -115,11 +116,14 @@ export function WinModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit() {
+  async function submit(button: Element | null) {
     setBusy(true);
     setError(null);
     try {
       await markWon(lead.id, wonStage, from, currentUserId);
+      // Both doors to "won" (board drop, lead page) end here, so the burst
+      // does too — from the button that confirmed it.
+      celebrate(button);
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not mark the lead as won.");
@@ -132,7 +136,7 @@ export function WinModal({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void submit();
+          void submit((e.nativeEvent as SubmitEvent).submitter);
         }}
         className="flex flex-col gap-3"
       >

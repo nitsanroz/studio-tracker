@@ -2,7 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Trash2 } from "lucide-react";
+import {
+  Calculator,
+  Handshake,
+  IdCard,
+  Images,
+  Inbox,
+  KeyRound,
+  SlidersHorizontal,
+  Trash2,
+  UserRoundSearch,
+  Users,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
@@ -735,29 +747,29 @@ const TAB_KEY = "settings.tab";
  * one tab — which is also why it was the longest page in the app.
  */
 const ACCOUNT_TABS = [
-  { value: "pictures" as const, label: "My pictures" },
-  { value: "details" as const, label: "My details" },
-  { value: "password" as const, label: "Password" },
+  { value: "pictures" as const, label: "My pictures", icon: Images },
+  { value: "details" as const, label: "My details", icon: IdCard },
+  { value: "password" as const, label: "Password", icon: KeyRound },
 ];
 const ADMIN_TABS = [
-  { value: "clients" as const, label: "Clients" },
-  { value: "studio" as const, label: "Studio setup" },
+  { value: "clients" as const, label: "Clients", icon: Users },
+  { value: "studio" as const, label: "Studio setup", icon: SlidersHorizontal },
   // Its own tab rather than two more cards under Studio setup: everything here
   // is about the ONE surface clients see and the mail that goes back to them,
   // which is a different job from the studio's task types and statuses.
-  { value: "intake" as const, label: "Intake form" },
+  { value: "intake" as const, label: "Intake form", icon: Inbox },
   // Also its own tab: "Studio setup" is about how the studio's own WORK is
   // labelled, and this is about hiring. A control that renames a client-facing
   // task type should not sit beside one that retires a question you ask a
   // stranger in an interview.
-  { value: "hiring" as const, label: "Hiring" },
+  { value: "hiring" as const, label: "Hiring", icon: UserRoundSearch },
   // Selling, like hiring, is its own job: stages, lost reasons and the
   // website form's webhook.
-  { value: "leads" as const, label: "Leads" },
+  { value: "leads" as const, label: "Leads", icon: Handshake },
   // Its own tab rather than a card under Leads (Nitsan, 2026-10-03): the rate,
   // VAT and service library are how the studio PRICES work, which outlives any
   // one lead — and the estimate editor opens this same panel as a popup.
-  { value: "pricing" as const, label: "Pricing" },
+  { value: "pricing" as const, label: "Pricing", icon: Calculator },
 ];
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
@@ -975,7 +987,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
-      <h1 className="font-serif-accent text-3xl">Settings</h1>
+      <h1 className="page-title">Settings</h1>
 
       <Tabs value={tab} onChange={pickTab} items={tabs} ariaLabel="Settings sections" />
 
@@ -1011,7 +1023,7 @@ export default function SettingsPage() {
             className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium hover:border-brand"
           >
             Users are managed on the Team page
-            <ArrowRight size={15} className="ml-auto text-muted" />
+            <StudioArrow size={18} className="ml-auto text-muted" />
           </Link>
           <ClientsSection isAdmin={isAdmin} />
         </div>

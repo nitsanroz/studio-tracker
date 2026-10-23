@@ -941,7 +941,7 @@ export default function IntakeQueuePage() {
           {/* text-xl on a phone: at 2xl "Intake Queue" needs ~200px and the
               button ~150px, which is 7px more than a 375px screen has — so the
               title wrapped mid-name. One step down and both fit on the line. */}
-          <h1 className="text-xl sm:text-2xl">Intake Queue</h1>
+          <h1 className="page-title">Intake Queue</h1>
           <p className="text-sm text-muted">
             {pending.length === 0
               ? "No submissions waiting — all clear."

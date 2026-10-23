@@ -1040,7 +1040,7 @@ export function WeeklyPlan() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl">Weekly Plan</h1>
+        <h1 className="page-title">Weekly Plan</h1>
         <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => jumpTo(new Date())}

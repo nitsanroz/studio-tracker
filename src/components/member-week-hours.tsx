@@ -20,6 +20,7 @@ import { TimeEntryModal } from "./time-entry-modal";
 import { DayTotalBar, LoggedEntryRow, useDayEntries } from "./logged-day";
 import { dailyTargetMinutes } from "@/lib/members";
 import type { TimeEntry } from "@/lib/types";
+import { SkeletonRows } from "@/components/skeleton";
 
 export function MemberWeekHours() {
   const { entrySums, timeEntries, profiles, currentUserId } = useData();
@@ -126,7 +127,7 @@ export function MemberWeekHours() {
               </button>
               {isOpen && (
                 <div className="flex flex-col gap-1 pb-3 pl-6">
-                  {rows === null && <p className="py-2 text-xs text-faint">Loading…</p>}
+                  {rows === null && <SkeletonRows rows={2} avatar={false} />}
                   {rows?.length === 0 && (
                     <p className="py-2 text-xs text-faint">Nothing logged on this day.</p>
                   )}

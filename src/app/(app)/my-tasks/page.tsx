@@ -10,10 +10,7 @@ export default function MyTasksPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4">
-      <h1 className="font-serif-accent text-3xl">My Tasks</h1>
-      {mine.length === 0 && (
-        <p className="text-sm text-muted">Nothing assigned to you right now.</p>
-      )}
+      <h1 className="page-title">My Tasks</h1>
       {/* The card chrome is `md:` only. Below that `TaskTable` renders its own
           cards, and a white card full of white cards reads as a mistake — it also
           spent 28px of a 375px screen on two nested paddings. On a phone the

@@ -133,35 +133,3 @@ export function TermsForm({
   );
 }
 
-/** A thin moving line over the tables while a month loads. */
-export function LoadingLine() {
-  return (
-    <div className="absolute inset-x-0 -top-2 h-0.5 overflow-hidden rounded-full bg-brand-soft">
-      <div className="h-full w-1/3 animate-[loading-line_1s_ease-in-out_infinite] rounded-full bg-brand" />
-    </div>
-  );
-}
-
-/** A freelancer's page in outline, before its first month arrives. */
-export function PageSkeleton() {
-  const bar = "animate-pulse rounded bg-border";
-  return (
-    <div className="mx-auto max-w-[1400px] space-y-4" aria-busy aria-label="Loading">
-      <div className={`${bar} h-4 w-24`} />
-      <div className="h-32 animate-pulse rounded-2xl bg-brand/20" />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="flex gap-4">
-              <div className={`${bar} h-4 w-20`} />
-              <div className={`${bar} h-4 w-24`} />
-              <div className={`${bar} h-4 flex-1`} />
-              <div className={`${bar} h-4 w-12`} />
-            </div>
-          ))}
-        </div>
-        <div className="h-72 animate-pulse rounded-2xl border border-border bg-surface" />
-      </div>
-    </div>
-  );
-}

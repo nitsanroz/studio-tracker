@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { InfoDot } from "../ui";
 import { splitHours } from "./shared";
+import { CountUp } from "../count-up";
 import type { HomeFilter } from "./shared";
 import { toISODate } from "@/lib/format";
 import { useData } from "@/lib/store";
@@ -54,7 +55,7 @@ export function StatTile({
         )}
       </div>
       <div className="mt-1.5 font-serif-accent text-[32px] leading-none">
-        {figure}
+        <CountUp value={figure} />
         {unit && <span className="text-xl">{unit}</span>}
       </div>
       <div className={`mt-2.5 flex items-center gap-1.5 text-[11px] ${hi ? "text-white/85" : "text-muted"}`}>

@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, type MouseEvent } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Info, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Info,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useDataMaybe } from "@/lib/store";
 import { formatHoursDecimal } from "@/lib/format";
 import type { Client, Profile } from "@/lib/types";
@@ -77,6 +83,9 @@ export type TabItem<T extends string> =
       count?: number;
       title?: string;
       disabled?: boolean;
+      /** Drawn before the label. Every VIEW selector carries one (2026-10
+       * refresh) — the icon is what you find a view by at a glance. */
+      icon?: LucideIcon;
       /**
        * Rendered as a SIBLING of the tab button, on the same line. For a control
        * that belongs to one tab — the Timeline's (i) — which can't go inside the
@@ -128,6 +137,7 @@ export function Tabs<T extends string>({
           count: undefined,
           title: undefined,
           disabled: false,
+          icon: undefined,
           after: undefined,
         }
       : { ...it, bare: false },
@@ -148,15 +158,15 @@ export function Tabs<T extends string>({
     const active = t.value === value;
     const cls =
       variant === "segmented"
-        ? `rounded-md font-medium transition-colors disabled:opacity-40 ${pad} ${
-            active ? "bg-brand-soft text-brand-dark" : "text-muted hover:text-foreground"
+        ? `rounded-lg font-medium transition-colors disabled:opacity-40 ${pad} ${
+            active ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground"
           }`
-        : `-mb-px shrink-0 border-b-2 font-medium transition-colors disabled:opacity-40 ${
-            size === "sm" ? "px-1.5 pb-1.5 text-xs" : "px-1 pb-2 text-sm"
+        : `shrink-0 rounded-lg font-medium transition-colors disabled:opacity-40 ${
+            size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm"
           } ${
             active
-              ? "border-brand text-brand-dark"
-              : "border-transparent text-muted hover:text-foreground"
+              ? "bg-surface text-foreground shadow-card"
+              : "text-muted hover:bg-surface/60 hover:text-foreground"
           }`;
     const button = (
       <button
@@ -167,8 +177,9 @@ export function Tabs<T extends string>({
         disabled={t.disabled}
         title={t.title}
         onClick={() => onChange(t.value)}
-        className={t.bare ? `capitalize ${cls}` : cls}
+        className={`inline-flex items-center gap-1.5 ${t.bare ? `capitalize ${cls}` : cls}`}
       >
+        {t.icon && <t.icon size={size === "sm" ? 14 : 16} strokeWidth={1.75} aria-hidden className="shrink-0" />}
         {t.label}
         {t.count != null && <span className="ml-1.5 text-xs tabular-nums text-faint">{t.count}</span>}
       </button>
@@ -179,9 +190,7 @@ export function Tabs<T extends string>({
     return (
       <span key={t.value} className="flex items-center gap-1">
         {button}
-        <span className={variant === "underline" ? (size === "sm" ? "mb-1.5" : "mb-2") : ""}>
-          {t.after}
-        </span>
+        <span>{t.after}</span>
       </span>
     );
   });
@@ -192,7 +201,7 @@ export function Tabs<T extends string>({
         role="tablist"
         aria-label={ariaLabel}
         onKeyDown={onKeyDown}
-        className={`flex rounded-lg border border-border bg-surface p-0.5 ${className}`}
+        className={`flex rounded-xl bg-track p-1 ${className}`}
       >
         {buttons}
       </div>
@@ -211,10 +220,12 @@ export function Tabs<T extends string>({
       // a two-word label ("Studio setup") on one line inside the scroller.
       // `[scrollbar-width:none]` because a permanent scrollbar under a tab strip
       // reads as a divider. This reaches all 8 Tabs call sites at once.
-      className={`flex items-center gap-4 overflow-x-auto whitespace-nowrap border-b border-border [scrollbar-width:none] ${className}`}
+      // ⚠️ `py-1 -my-1`: the active pill's shadow would be clipped by the
+      // scroller's own edge otherwise (overflow clips both axes).
+      className={`-my-1 flex items-center gap-1 overflow-x-auto whitespace-nowrap py-1 [scrollbar-width:none] ${className}`}
     >
       {buttons}
-      {right && <span className="ml-auto shrink-0 pb-1">{right}</span>}
+      {right && <span className="ml-auto shrink-0">{right}</span>}
     </div>
   );
 }
@@ -336,7 +347,7 @@ export function Modal({
         tabIndex={-1}
         className={`fixed left-1/2 ${align === "center" ? "top-1/2" : "top-1/3"} ${cardZ} w-full ${
           MODAL_WIDTH[width]
-        } -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-4 shadow-2xl focus:outline-none ${className}`}
+        } -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-surface p-4 shadow-2xl focus:outline-none ${className}`}
       >
         {children}
       </div>
@@ -509,6 +520,27 @@ function hashColor(name: string): string {
   return AVATAR_COLORS[h];
 }
 
+/** Initials on a colour picked from the name — Avatar's fallback, and the
+ *  avatar for people who aren't profiles (candidates). Same name, same colour,
+ *  wherever it appears. */
+export function NameAvatar({ name, size = 28, faded = false }: { name: string; size?: number; faded?: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full text-white font-semibold shrink-0"
+      style={{
+        width: size,
+        height: size,
+        fontSize: size * 0.38,
+        backgroundColor: hashColor(name),
+        opacity: faded ? 0.45 : 1,
+      }}
+      title={name}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
 export function Avatar({
   profile,
   size = 28,
@@ -550,21 +582,7 @@ export function Avatar({
       />
     );
   }
-  return (
-    <span
-      className="inline-flex items-center justify-center rounded-full text-white font-semibold shrink-0"
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.38,
-        backgroundColor: hashColor(profile.name),
-        opacity: profile.active ? 1 : 0.45,
-      }}
-      title={profile.name}
-    >
-      {initials(profile.name)}
-    </span>
-  );
+  return <NameAvatar name={profile.name} size={size} faded={!profile.active} />;
 }
 
 export function ClientChip({

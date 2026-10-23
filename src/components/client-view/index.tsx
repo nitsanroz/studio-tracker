@@ -9,8 +9,12 @@ import {
 } from "react";
 import {
   Archive,
+  ChartGantt,
+  LayoutDashboard,
+  ListChecks,
   Pencil,
   Plus,
+  SquareKanban,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { rollupTasks, sectionBudgetHours } from "@/lib/task-rollup";
@@ -487,7 +491,7 @@ export function ClientView({ clientId }: { clientId: string }) {
               Stacked, it reads as a subtitle of the client and always shows. */}
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 items-center gap-1.5">
-              <h1 className="truncate text-2xl font-bold leading-tight tracking-tight" title={titleTooltip}>
+              <h1 className="page-title truncate" title={titleTooltip}>
                 {client.name}
               </h1>
               {/* Beside the name, unboxed: this edits the client's NAME, mark
@@ -547,11 +551,12 @@ export function ClientView({ clientId }: { clientId: string }) {
               value={tab}
               onChange={setTab}
               items={[
-                { value: "tasks" as const, label: "Task list" },
-                { value: "board" as const, label: "Board" },
+                { value: "tasks" as const, label: "Task list", icon: ListChecks },
+                { value: "board" as const, label: "Board", icon: SquareKanban },
                 {
                   value: "timeline" as const,
                   label: "Timeline",
+                  icon: ChartGantt,
                   /* The Timeline's how-to, on demand, ON ITS OWN TAB — next to
                      the client name it was help floating beside something it
                      wasn't about, appearing and vanishing as you changed tabs,
@@ -566,7 +571,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                      you go looking for it. */
                   after: tab === "timeline" ? <TimelineHintDot text={timelineHint(isAdmin)} /> : undefined,
                 },
-                { value: "overview" as const, label: "Overview" },
+                { value: "overview" as const, label: "Overview", icon: LayoutDashboard },
               ]}
               ariaLabel="Client sections"
             />
@@ -668,7 +673,8 @@ export function ClientView({ clientId }: { clientId: string }) {
         {/* dragstart/dragend bubble, so the whole table can know a drag is running
             without threading state through every row. */}
         <div
-          className="overflow-x-auto rounded-xl border border-border bg-surface"
+          className="keep-lines overflow-x-auto rounded-xl border border-border bg-surface"
+          // `keep-lines`: a table built from divs — see LINES in globals.css.
           // dragstart bubbles AFTER the row handler has set drag.taskId, so this
           // can tell a task drag from a section drag — without the check, dragging a
           // section would reveal the empty "No section" group.

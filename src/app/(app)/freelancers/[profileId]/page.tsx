@@ -1,21 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowUpRight,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock,
   Copy,
-  Loader2,
   ExternalLink,
+  FolderOpen,
+  Link2,
+  Loader2,
+  ReceiptText,
   RefreshCw,
+  Scale,
+  Users,
   X,
 } from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
 import { ClientChip } from "@/components/ui";
 import { freelancerPath } from "@/lib/freelancer-link";
@@ -24,11 +30,9 @@ import {
   act,
   dayLabel,
   hrs,
-  LoadingLine,
   money,
   monthLabel,
   otherLine,
-  PageSkeleton,
   shiftMonth,
   shortMonth,
   termsLine,
@@ -165,7 +169,7 @@ export default function FreelancerPage() {
   const shownPeriod = period ?? data.period;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="mx-auto max-w-[1500px] space-y-4">
       <Link
         href="/freelancers"
         className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
@@ -173,51 +177,53 @@ export default function FreelancerPage() {
         <ArrowLeft size={15} /> Freelancers
       </Link>
 
-      {/* Hero: who, the month, and what it comes to. */}
-      <section className="rounded-2xl bg-brand px-5 py-4 text-white">
+      {/* Who, the month, and what it comes to — on the page itself, like every
+          other page's header (2026-10-23, Page A). The bill is the brand-blue
+          figure; the name is a person's, so serif. */}
+      <section>
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <div className="min-w-0">
-            <h1 className="font-serif-accent text-[32px] leading-10">
+            <h1 className="font-serif-accent text-[44px] leading-tight">
               {f.name}
             </h1>
-            <p className="text-xs text-white/75">
+            <p className="text-sm text-muted">
               {termsLine(f.terms)}
               {!f.active && (
-                <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 font-medium text-white">
+                <span className="ml-2 rounded-full bg-danger/10 px-2 py-0.5 font-medium text-danger">
                   Link switched off
                 </span>
               )}
             </p>
           </div>
           <p className="text-right tabular-nums">
-            <span className="text-3xl font-semibold">
+            <span className="font-serif-accent text-[56px] leading-none text-brand">
               {money(f.month.total, cur)}
               {otherLine(f.month.otherExtras)}
             </span>
-            <span className="block text-sm text-white/80">
+            <span className="mt-1 block text-[13px] text-muted">
               {hrs(f.month.hours)} × {money(f.month.rate, cur)}/h ={" "}
               {money(f.month.hoursBill, cur)}
               {f.month.extras > 0 && ` + ${money(f.month.extras, cur)} extras`}
             </span>
           </p>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/20 pt-3">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             onClick={() => go(shiftMonth(shownPeriod, -1))}
             disabled={shownPeriod <= data.firstPeriod}
-            className="rounded-md p-1 hover:bg-white/15 disabled:opacity-30"
+            className="rounded-lg bg-surface p-2 text-muted shadow-card hover:text-foreground disabled:opacity-30 disabled:shadow-none"
             aria-label="Previous month"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="min-w-36 text-center font-semibold">
+          <span className="min-w-36 text-center text-sm font-medium">
             {monthLabel(shownPeriod)}
-            {loading && <Loader2 size={15} className="ml-1.5 inline animate-spin opacity-80" aria-label="Loading" />}
+            {loading && <Loader2 size={15} className="ml-1.5 inline animate-spin text-muted" aria-label="Loading" />}
           </span>
           <button
             onClick={() => go(shiftMonth(shownPeriod, 1))}
             disabled={shownPeriod >= now}
-            className="rounded-md p-1 hover:bg-white/15 disabled:opacity-30"
+            className="rounded-lg bg-surface p-2 text-muted shadow-card hover:text-foreground disabled:opacity-30 disabled:shadow-none"
             aria-label="Next month"
           >
             <ChevronRight size={18} />
@@ -225,20 +231,20 @@ export default function FreelancerPage() {
           {shownPeriod !== now && (
             <button
               onClick={() => go(now)}
-              className="rounded-md px-2 py-1 text-xs hover:bg-white/15"
+              className="rounded-lg px-2 py-1 text-xs text-muted hover:bg-surface hover:text-brand"
             >
               This month
             </button>
           )}
           {/* Jump to a month with something waiting. */}
           {f.pendingMonths.length > 0 && (
-            <span className="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="ml-auto flex flex-wrap items-center gap-1.5 text-xs text-[#855800]">
               <Clock size={13} /> Waiting for review:
               {f.pendingMonths.map((m) => (
                 <button
                   key={m}
                   onClick={() => go(m)}
-                  className={`rounded-full px-2 py-0.5 font-medium ${m === shownPeriod ? "bg-white text-brand" : "bg-white/20 hover:bg-white/30"}`}
+                  className={`rounded-full px-2 py-0.5 font-medium ${m === shownPeriod ? "bg-warning text-white" : "bg-warning/15 hover:bg-warning/25"}`}
                 >
                   {shortMonth(m)}
                 </button>
@@ -248,7 +254,7 @@ export default function FreelancerPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className={`relative space-y-4 transition-opacity ${loading ? "pointer-events-none opacity-50" : ""}`} aria-busy={loading}>
           {loading && <LoadingLine />}
           <MonthTable data={data} onChanged={reload} />
@@ -274,11 +280,39 @@ function MonthTable({
   // link to its details pane — the same as everywhere else in the app.
   const { clients, openTask } = useData();
   const clientById = new Map(clients.map((c) => [c.id, c]));
+  // ⚠️ REVIEW FIRST (2026-10-23, Page A). The logs still waiting are the only
+  // thing on this page that needs doing, so they lead in a card of their own;
+  // the table below is the month's record, filed and decided rows only. The
+  // TOTAL still counts the waiting hours — the bill counts every hour not
+  // turned down — and says so.
+  const waiting = data.logs.filter((l) => l.status === "pending");
+  const filed = data.logs.filter((l) => l.status !== "pending");
+  const waitingHours = waiting.reduce((t, l) => t + l.hours, 0);
   return (
+    <>
+    {waiting.length > 0 && (
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-heading text-base">
+            <Clock size={18} strokeWidth={1.75} className="text-[#855800]" /> Waiting for review
+            <span className="rounded-full bg-warning/15 px-2 text-xs text-[#855800]">{waiting.length}</span>
+          </h2>
+          <span className="text-[13px] text-muted">File each on a task, then approve — it becomes tracker hours</span>
+        </header>
+        <ul className="flex flex-col gap-3">
+          {waiting.map((l) => (
+            <WaitingRow key={l.id} row={l} clients={data.clients} tasks={data.tasks} onChanged={onChanged} />
+          ))}
+        </ul>
+      </section>
+    )}
     <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
-      <table className="w-full min-w-[900px] text-sm">
+      <h2 className="flex items-center gap-2 px-5 pt-5 font-heading text-base">
+        <ReceiptText size={18} strokeWidth={1.75} className="text-brand" /> {monthLabel(data.period).split(" ")[0]}&apos;s hours
+      </h2>
+      <table className="mt-3 w-full min-w-[900px] text-sm">
         <thead>
-          <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-faint">
+          <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted">
             <th className="px-3 py-2 font-medium">Date</th>
             <th className="px-3 py-2 font-medium">Client</th>
             <th className="px-3 py-2 font-medium">Task</th>
@@ -288,23 +322,14 @@ function MonthTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {data.logs.length === 0 && (
+          {filed.length === 0 && (
             <tr>
               <td colSpan={6} className="px-3 py-6 text-center text-muted">
-                Nothing logged in {monthLabel(data.period)}.
+                {waiting.length ? "Nothing filed yet — see what is waiting above." : `Nothing logged in ${monthLabel(data.period)}.`}
               </td>
             </tr>
           )}
-          {data.logs.map((l) =>
-            l.status === "pending" ? (
-              <WaitingRow
-                key={l.id}
-                row={l}
-                clients={data.clients}
-                tasks={data.tasks}
-                onChanged={onChanged}
-              />
-            ) : (
+          {filed.map((l) => (
               <tr key={l.id} className="align-top">
                 <td className="whitespace-nowrap px-3 py-2">
                   {dayLabel(l.date)}
@@ -357,15 +382,14 @@ function MonthTable({
                   )}
                 </td>
               </tr>
-            ),
-          )}
+          ))}
         </tbody>
         <tfoot>
           <tr className="border-t border-border bg-background/60 font-medium">
             <td colSpan={3} className="px-3 py-2 text-muted">
               Total{" "}
-              <span className="font-normal text-faint">
-                (not counting turned-down rows)
+              <span className="font-normal text-muted">
+                (not counting turned-down rows{waitingHours > 0 ? `; ${hrs(waitingHours)} of it still waiting` : ""})
               </span>
             </td>
             <td className="px-3 py-2 text-right tabular-nums">
@@ -376,6 +400,7 @@ function MonthTable({
         </tfoot>
       </table>
     </div>
+    </>
   );
 }
 
@@ -428,19 +453,30 @@ function WaitingRow({
     onChanged();
   }
 
-  const select =
-    "w-full rounded-md border border-border-strong bg-surface px-2 py-1 text-sm";
+  const select = "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm";
   return (
-    <tr className="bg-warning/5 align-top">
-      <td className="whitespace-nowrap px-3 py-2">{dayLabel(row.date)}</td>
-      <td className="px-3 py-2">
+    <li className="rounded-xl bg-background p-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-sm font-medium">{dayLabel(row.date)}</span>
+        <span className="text-xl font-medium tabular-nums">{hrs(row.hours)}</span>
+        {row.taskHint && (
+          <span className="bidi-auto text-sm">
+            His name: <b className="font-medium">&ldquo;{row.taskHint}&rdquo;</b>
+          </span>
+        )}
+        {row.description !== row.taskHint && (
+          <span className="bidi-auto text-sm text-muted">· {row.description}</span>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <select
           value={clientId}
           onChange={(e) => {
             setClientId(e.target.value);
             setTaskId("");
           }}
-          className={select}
+          className={`${select} max-w-56 flex-1`}
+          aria-label="Client"
         >
           <option value="">Client…</option>
           {clients.map((c) => (
@@ -449,19 +485,13 @@ function WaitingRow({
             </option>
           ))}
         </select>
-      </td>
-      <td className="px-3 py-2">
-        {row.taskHint && (
-          <p className="bidi-auto mb-1 text-xs text-muted">
-            His name: &ldquo;{row.taskHint}&rdquo;
-          </p>
-        )}
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-56 flex-[2] items-center gap-1">
           <select
             value={taskId}
             disabled={!clientId}
             onChange={(e) => setTaskId(e.target.value)}
             className={select}
+            aria-label="Task"
           >
             <option value="">File on a task…</option>
             {options
@@ -486,52 +516,37 @@ function WaitingRow({
           {taskId && (
             <button
               onClick={() => openTask(taskId)}
-              className="shrink-0 rounded p-1 text-muted hover:bg-background hover:text-brand"
+              className="shrink-0 rounded-lg p-2 text-muted hover:bg-surface hover:text-brand"
               title="Open the task"
               aria-label="Open the task"
             >
-              <ArrowUpRight size={14} />
+              <StudioArrow size={17} up />
             </button>
           )}
         </div>
-      </td>
-      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
-        {hrs(row.hours)}
-      </td>
-      <td className="bidi-auto px-3 py-2 text-muted">
-        {row.description !== row.taskHint ? row.description : ""}
-        {error && <span className="block text-xs text-danger">{error}</span>}
-      </td>
-      <td className="px-3 py-2">
-        <div className="flex gap-1.5">
-          <button
-            disabled={busy || !taskId}
-            onClick={() => run({ action: "approve", id: row.id, taskId })}
-            className="flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
-          >
-            <Check size={13} /> Approve
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => {
-              const note = prompt(
-                "Turn this log down? Add a note for him (optional):",
-              );
-              if (note !== null)
-                void run({ action: "reject", id: row.id, note });
-            }}
-            className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger"
-            aria-label="Turn down"
-          >
-            <X size={13} />
-          </button>
-        </div>
-      </td>
-    </tr>
+        <button
+          disabled={busy || !taskId}
+          onClick={() => run({ action: "approve", id: row.id, taskId })}
+          className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
+        >
+          <Check size={15} /> Approve
+        </button>
+        <button
+          disabled={busy}
+          onClick={() => {
+            const note = prompt("Turn this log down? Add a note for him (optional):");
+            if (note !== null) void run({ action: "reject", id: row.id, note });
+          }}
+          className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-surface hover:text-danger"
+        >
+          <X size={15} /> Turn down
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+    </li>
   );
 }
 
-/** Extra charges on his month — another freelancer he brought in, a purchase. */
 function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   if (data.charges.length === 0) return null;
@@ -626,12 +641,14 @@ function Months({ data, selected, onPick }: { data: Data; selected: string; onPi
   const cur = data.freelancer.terms.currency;
   const total = data.months.reduce((t, m) => t + m.total, 0);
   return (
-    <aside className="rounded-2xl border border-border bg-surface p-3 text-sm shadow-card">
-      <h2 className="mb-1 px-1 font-medium">Months</h2>
+    <aside className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+      <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+        <ReceiptText size={18} strokeWidth={1.75} className="text-brand" /> Months
+      </h2>
       <div className="max-h-[440px] overflow-auto">
         <table className="w-full tabular-nums">
           <thead className="sticky top-0 bg-surface">
-            <tr className="text-[11px] uppercase tracking-wide text-faint">
+            <tr className="text-[11px] uppercase tracking-wide text-muted">
               <th className="px-1 py-1 text-left font-medium">Month</th>
               <th className="px-1 py-1 text-right font-medium">Hours</th>
               <th className="px-1 py-1 text-right font-medium">Rate</th>
@@ -706,13 +723,15 @@ function Side({
       : `${window.location.origin}${freelancerPath(f.name, f.token)}`;
   const enabled = clients.filter((c) => f.clientIds.includes(c.id));
   const btn =
-    "flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-background";
+    "flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 text-[13px] hover:bg-track";
 
   return (
-    <aside className="h-fit space-y-5 rounded-2xl border border-border bg-surface p-4 text-sm shadow-card">
-      <div>
-        <h2 className="mb-1.5 font-medium">His private link</h2>
-        <code className="block truncate rounded bg-background px-2 py-1 text-xs">
+    <div className="space-y-4">
+      <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+          <Link2 size={18} strokeWidth={1.75} className="text-brand" /> His private link
+        </h2>
+        <code className="block truncate rounded-lg bg-background px-3 py-2 text-xs">
           {link}
         </code>
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -759,15 +778,15 @@ function Side({
             {f.active ? "Switch off" : "Switch on"}
           </button>
         </div>
-      </div>
+      </section>
 
-      <div>
-        <h2 className="mb-1 flex items-center gap-2 font-medium">
-          Clients he can log against
+      <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+          <Users size={18} strokeWidth={1.75} className="text-brand" /> Clients he can log against
           {!editingClients && (
             <button
               onClick={() => setEditingClients(true)}
-              className="text-xs font-normal text-brand hover:underline"
+              className="ml-auto text-[13px] font-normal text-brand hover:underline"
             >
               Edit
             </button>
@@ -827,18 +846,18 @@ function Side({
             </div>
           </div>
         )}
-        <p className="mt-1 text-xs text-faint">
+        <p className="mt-2 text-xs text-muted">
           Approving a row on a new client opens it for him.
         </p>
-      </div>
+      </section>
 
-      <div>
-        <h2 className="mb-1 flex items-center gap-2 font-medium">
-          Terms
+      <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+          <Scale size={18} strokeWidth={1.75} className="text-brand" /> Terms
           {!editingTerms && (
             <button
               onClick={() => setEditingTerms(true)}
-              className="text-xs font-normal text-brand hover:underline"
+              className="ml-auto text-[13px] font-normal text-brand hover:underline"
             >
               Edit
             </button>
@@ -863,14 +882,16 @@ function Side({
             }}
           />
         ) : (
-          <p className="text-muted">
+          <p>
             {termsLine(f.terms)}. The bill counts every hour not turned down.
           </p>
         )}
-      </div>
+      </section>
 
-      <div>
-        <h2 className="mb-1 font-medium">His deliverables &amp; folders</h2>
+      <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+          <FolderOpen size={18} strokeWidth={1.75} className="text-brand" /> His deliverables &amp; folders
+        </h2>
         {f.deliverables.length === 0 ? (
           <p className="text-faint">None yet</p>
         ) : (
@@ -893,7 +914,7 @@ function Side({
             ))}
           </ul>
         )}
-      </div>
-    </aside>
+      </section>
+    </div>
   );
 }

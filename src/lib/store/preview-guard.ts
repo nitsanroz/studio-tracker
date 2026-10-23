@@ -57,7 +57,6 @@ const PREVIEW_ALLOWED = new Set<keyof Store>([
   "addAttachment",
   "removeAttachment",
   "showNotice",
-  "dismissNotice",
   "dismissWriteError",
   "refresh",
 ]);

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, UserPen } from "lucide-react";
+import {
+  UserPen,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 
 /**
  * Nudge shown on the home page until the member has confirmed their HR details
@@ -33,7 +36,7 @@ export function ConfirmDetailsBanner() {
     >
       <UserPen size={16} strokeWidth={2} />
       Finish setting up your profile — confirm your details and add your pictures.
-      <ArrowRight size={15} className="ml-auto shrink-0" />
+      <StudioArrow size={18} className="ml-auto" />
     </Link>
   );
 }

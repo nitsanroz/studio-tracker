@@ -32,6 +32,7 @@ import {
   reorderStages,
   updateStage,
 } from "@/lib/leads/actions";
+import { SkeletonRows } from "@/components/skeleton";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
 const HEAD = "text-sm font-semibold";
@@ -282,7 +283,7 @@ function GmailCard() {
           {msg.text}
         </p>
       )}
-      {status === undefined && <p className="mt-3 text-[12.5px] text-faint">Loading…</p>}
+      {status === undefined && <SkeletonRows rows={2} avatar={false} className="mt-2" />}
       {status === null && <p className="mt-3 text-[12.5px] text-danger">Could not read the Gmail status.</p>}
       {status && !status.installed && (
         <p className="mt-3 text-[12.5px] text-warning">Run migration 0043 first.</p>
@@ -393,7 +394,7 @@ export function LeadSettings() {
     [reload],
   );
 
-  if (!vocab) return <p className="text-sm text-muted">{error ?? "Loading…"}</p>;
+  if (!vocab) return error ? <p className="text-sm text-danger">{error}</p> : <SkeletonRows rows={5} avatar={false} />;
 
   const webhook = token ? `${origin}/api/leads/inbound/${token}` : null;
 

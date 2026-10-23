@@ -231,7 +231,7 @@ export default function ClientsPage() {
   return (
     <div className="mx-auto flex w-full max-w-[650px] flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl">Clients</h1>
+        <h1 className="page-title">Clients</h1>
         {isAdmin && (
           <button
             onClick={() => setCreating(true)}

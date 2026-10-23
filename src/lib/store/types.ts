@@ -379,10 +379,9 @@ export interface Store {
    * refresh arriving later cannot re-flash a row from minutes ago.
    */
   freshEntryId: string | null;
-  notice: string | null;
-  /** Say something neutral to the user — a refusal or an explanation, not an error. */
+  /** Say something neutral to the user — a refusal or an explanation, not an
+   *  error. Shown as an info toast (lib/toast.ts). */
   showNotice: (text: string) => void;
-  dismissNotice: () => void;
   /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
   refreshing: boolean;
   /**

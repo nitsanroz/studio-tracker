@@ -119,7 +119,7 @@ export function GlobalSearch() {
 
   return (
     <div ref={boxRef} className="relative mr-auto w-full max-w-md">
-      <div className="flex items-center gap-2 rounded-lg bg-foreground/5 px-3">
+      <div className="flex h-10 items-center gap-2 rounded-xl bg-surface px-3.5 shadow-card">
         <Search size={15} className="shrink-0 text-faint" />
         {picked && (
           // ⚠️ `shrink-0`, and the INPUT is what gives way. The input carries

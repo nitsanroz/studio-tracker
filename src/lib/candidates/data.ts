@@ -15,7 +15,7 @@
 // route down.
 
 import { createClient } from "../supabase/client";
-import { MISSING_SCHEMA_CODES } from "../db";
+import { MISSING_SCHEMA_CODES, fetchAll } from "../db";
 import type {
   Candidate,
   CandidateComment,
@@ -31,7 +31,7 @@ import type {
   ScoreParam,
   ScoreSubject,
 } from "./types";
-import { APPLICATION_REVIEW_KIND } from "./types";
+import { APPLICATION_REVIEW_KIND, interviewAverage, overallFromReadings, type CandidateReading } from "./types";
 
 type Row = Record<string, unknown>;
 
@@ -121,6 +121,7 @@ export function mapCandidate(r: Row): Candidate {
     linkCount: 0,
     commentCount: 0,
     avgScore: null,
+    readings: [],
   };
 }
 
@@ -255,60 +256,80 @@ export async function loadBoard(
 
   const ids = candidates.map((c) => c.id);
   const [links, comments, interviews] = await Promise.all([
-    sb.from("candidate_links").select("candidate_id").in("candidate_id", ids),
-    sb.from("candidate_comments").select("candidate_id").in("candidate_id", ids),
-    sb.from("candidate_interviews").select("id,candidate_id,kind").in("candidate_id", ids),
+    allIn(sb, "candidate_links", "candidate_id", "candidate_id", ids),
+    allIn(sb, "candidate_comments", "candidate_id", "candidate_id", ids),
+    allIn(sb, "candidate_interviews", "id,candidate_id,kind,held_on,created_at", "candidate_id", ids),
   ]);
 
-  const tally = (rowsIn: Row[] | null) => {
+  const tally = (rowsIn: Row[]) => {
     const m = new Map<string, number>();
-    for (const r of rowsIn ?? []) {
+    for (const r of rowsIn) {
       const k = str(r.candidate_id);
       m.set(k, (m.get(k) ?? 0) + 1);
     }
     return m;
   };
-  const linkN = tally(links.data as Row[] | null);
-  const commentN = tally(comments.data as Row[] | null);
+  const linkN = tally(links);
+  const commentN = tally(comments);
   // ⚠️ THE APPLICATION REVIEW IS NOT AN INTERVIEW ON THE CARD. It is a reading
   // of the portfolio, so "2 interviews" on a board card would claim two
   // conversations that never happened. Its SCORES still count below — the
   // opinion is real, the meeting is not.
   const interviewN = tally(
-    ((interviews.data ?? []) as Row[]).filter((r) => str(r.kind) !== APPLICATION_REVIEW_KIND),
+    interviews.filter((r) => str(r.kind) !== APPLICATION_REVIEW_KIND),
   );
 
-  // Scores hang off the INTERVIEW, so the candidate they belong to has to be
-  // walked back through the interview ids we just read.
-  const interviewOwner = new Map<string, string>();
-  for (const r of (interviews.data ?? []) as Row[]) {
-    interviewOwner.set(str(r.id), str(r.candidate_id));
-  }
+  // Per INTERVIEW, not per candidate: the list shows each reading's average,
+  // and the headline figure is `overallScore`'s weighted mean of them — the
+  // same number the candidate page shows. ⚠️ Scores run ~11 rows a scorecard,
+  // so this is the read that passes 1000 rows first — `allIn` pages it.
   const scoreSum = new Map<string, { total: number; n: number }>();
-  if (interviewOwner.size > 0) {
-    const scores = await sb
-      .from("candidate_scores")
-      .select("interview_id,value")
-      .in("interview_id", [...interviewOwner.keys()]);
-    for (const r of (scores.data ?? []) as Row[]) {
-      const cid = interviewOwner.get(str(r.interview_id));
-      if (!cid) continue;
-      const acc = scoreSum.get(cid) ?? { total: 0, n: 0 };
+  if (interviews.length > 0) {
+    const scores = await allIn(sb, "candidate_scores", "interview_id,value", "interview_id", interviews.map((r) => str(r.id)));
+    for (const r of scores) {
+      const iid = str(r.interview_id);
+      const acc = scoreSum.get(iid) ?? { total: 0, n: 0 };
       acc.total += num(r.value);
       acc.n += 1;
-      scoreSum.set(cid, acc);
+      scoreSum.set(iid, acc);
     }
+  }
+  const readingsOf = new Map<string, CandidateReading[]>();
+  for (const r of interviews) {
+    const s = scoreSum.get(str(r.id));
+    const list = readingsOf.get(str(r.candidate_id)) ?? [];
+    list.push({ kind: str(r.kind), at: nstr(r.held_on) ?? str(r.created_at), avg: s && s.n > 0 ? s.total / s.n : null });
+    readingsOf.set(str(r.candidate_id), list);
   }
 
   for (const c of candidates) {
     c.linkCount = linkN.get(c.id) ?? 0;
     c.commentCount = commentN.get(c.id) ?? 0;
     c.interviewCount = interviewN.get(c.id) ?? 0;
-    const s = scoreSum.get(c.id);
-    c.avgScore = s && s.n > 0 ? s.total / s.n : null;
+    c.readings = (readingsOf.get(c.id) ?? []).sort((a, b) => a.at.localeCompare(b.at));
+    c.avgScore = overallFromReadings(c.readings);
   }
 
   return { candidates, counts };
+}
+
+/**
+ * Every row of `table` whose `col` is one of `values`. The values go in chunks,
+ * because every id in one URL fails past a few hundred (CLAUDE.md: `.in()` over
+ * 600+ ids 400s), and each chunk is paged, because PostgREST stops at 1000 rows
+ * without saying so.
+ */
+async function allIn(
+  sb: ReturnType<typeof createClient>,
+  table: string,
+  columns: string,
+  col: string,
+  values: string[],
+): Promise<Row[]> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < values.length; i += 150) chunks.push(values.slice(i, i + 150));
+  const pages = await Promise.all(chunks.map((c) => fetchAll<Row>(sb, table, columns, (q) => q.in(col, c))));
+  return pages.flat();
 }
 
 /** Everything about one person. One route, one candidate, so `*` is honest here. */
@@ -375,17 +396,18 @@ export async function loadCandidate(id: string): Promise<CandidateDetail | null>
     // Same rule as the board — see the ⚠️ in `loadBoard`.
     interviewCount: mapped.filter((i) => i.kind !== APPLICATION_REVIEW_KIND).length,
   };
-  // Every score the person has been given, across every interview. Flat rather
-  // than a mean of means: two interviews scored on 4 and 11 parameters are not
-  // equally weighted claims, and averaging their averages would pretend they
-  // were.
-  const flat = mapped.flatMap((i) => Object.values(i.scores));
+  const readings = mapped
+    .map((i) => ({ kind: i.kind, at: i.heldOn ?? i.createdAt, avg: interviewAverage(i.scores) }))
+    .sort((a, b) => a.at.localeCompare(b.at));
 
   return {
     candidate: {
       ...candidate,
       ...counts,
-      avgScore: flat.length > 0 ? flat.reduce((a, b) => a + b, 0) / flat.length : null,
+      // The page shows `overallScore` itself; this keeps the row it hands
+      // around agreeing with it (it used to be a flat mean of every score).
+      avgScore: overallFromReadings(readings),
+      readings,
     },
     links: ((links.data ?? []) as Row[]).map(mapLink),
     interviews: mapped,

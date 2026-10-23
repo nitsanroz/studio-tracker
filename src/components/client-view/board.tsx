@@ -4,6 +4,7 @@
 
 import { Avatar, BudgetBar } from "../ui";
 import { drag } from "./shared";
+import { liftDrag } from "@/lib/drag-lift";
 import { useData } from "@/lib/store";
 import type { Task } from "@/lib/types";
 
@@ -14,7 +15,8 @@ export function BoardCard({ task, draggable }: { task: Task; draggable: boolean 
   return (
     <button
       draggable={draggable}
-      onDragStart={() => {
+      onDragStart={(e) => {
+        liftDrag(e);
         drag.boardId = task.id;
       }}
       onDragEnd={() => {

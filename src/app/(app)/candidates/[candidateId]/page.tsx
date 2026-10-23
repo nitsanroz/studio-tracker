@@ -15,11 +15,14 @@ import {
   Archive,
   ChevronDown,
   ChevronLeft,
+  ClipboardList,
   ExternalLink,
   FileText,
   Globe,
+  History,
   Link2,
   Mail,
+  MessageSquare,
   MoreHorizontal,
   PauseCircle,
   Pencil,
@@ -63,6 +66,8 @@ import {
   splitApplicationReview,
   type ScoreSubject,
 } from "@/lib/candidates/types";
+import { PageSkeleton } from "@/components/skeleton";
+import { StageTrack } from "@/components/stage-track";
 
 /**
  * What kind of meeting a scorecard describes.
@@ -121,8 +126,8 @@ function SubjectColumn({
   if (params.length === 0) return null;
   return (
     <div className="min-w-0">
-      <div className="mb-1.5 flex items-baseline gap-2 border-b border-border pb-1.5">
-        <span className="text-[10.5px] font-medium uppercase tracking-wider text-faint">
+      <div className="mb-1.5 flex items-baseline gap-2 pb-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted">
           {subject.name}
         </span>
         <span className={`ml-auto text-sm font-semibold ${TONE[scoreTone(avg)]}`}>
@@ -132,8 +137,8 @@ function SubjectColumn({
       {params.map((p) => {
         const v = scores[p.id];
         return (
-          <div key={p.id} className="flex items-center gap-2 py-0.5 text-[13px] md:text-[12.5px]">
-            <span className="min-w-0 flex-1 truncate text-muted" title={p.name}>
+          <div key={p.id} className="flex items-center gap-2 py-0.5 text-[13px]">
+            <span className="min-w-0 flex-1 truncate" title={p.name}>
               {p.name}
             </span>
             <select
@@ -144,7 +149,7 @@ function SubjectColumn({
                  section exists to use, and at 24px it was the smallest target
                  on the page. The WIDTH stays: the column is a list of numbers
                  and a wider box would pull each one away from its label. */
-              className={`h-11 w-11 cursor-pointer appearance-none rounded bg-transparent py-0.5 text-right text-[12.5px] font-semibold hover:bg-background md:h-auto ${
+              className={`h-11 w-11 cursor-pointer appearance-none rounded bg-transparent py-0.5 text-right text-[13px] font-semibold hover:bg-surface md:h-auto ${
                 TONE[scoreTone(typeof v === "number" ? v : null)]
               }`}
             >
@@ -191,10 +196,12 @@ const MENU_NOTE = "pl-[22px] text-[11px] leading-snug text-faint";
  * already the largest thing in a crowded band. On a 375px screen those all fall
  * onto separate lines and the name has a row to itself, where 32px reads as one
  * more line rather than as the title of the page.
+ * (2026-10-23, Page A: the owner and stage moved out of the header into their
+ * own track below it, so the band is quieter and the name goes to 44px.)
  */
 const NAME_BOX =
   "keeps-font-size rounded-md border border-transparent px-1 font-serif-accent " +
-  "text-[40px] leading-tight md:text-[32px]";
+  "text-[40px] leading-tight md:text-[44px]";
 const CONTACT_BOX = "min-h-11 rounded border border-transparent px-1 py-0.5 text-[13px] md:min-h-0";
 
 /**
@@ -597,6 +604,22 @@ function ContactField({
   );
 }
 
+/** The chevron that opens or folds a reading. Leads its row, so every row's
+ *  avatar and title line up behind it. */
+function FoldButton({ shut, label, onClick }: { shut: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-expanded={!shut}
+      aria-label={shut ? `Open the ${label.toLowerCase()}` : `Fold the ${label.toLowerCase()} away`}
+      title={shut ? "Open" : "Fold away"}
+      className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground md:size-8"
+    >
+      <ChevronDown size={16} strokeWidth={1.75} className={`transition-transform ${shut ? "-rotate-90" : ""}`} />
+    </button>
+  );
+}
+
 export default function CandidatePage() {
   const isAdmin = useIsAdmin();
   const { profiles, currentUserId } = useData();
@@ -781,12 +804,12 @@ export default function CandidatePage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
-        <h1 className="font-serif-accent text-2xl">Candidates</h1>
+        <h1 className="page-title">Candidates</h1>
         <p className="mt-3 text-sm text-muted">Hiring is admin-only.</p>
       </div>
     );
   }
-  if (busy) return <p className="py-10 text-sm text-muted">Loading…</p>;
+  if (busy) return <PageSkeleton />;
   if (missing)
     return (
       <div className="py-10">
@@ -844,11 +867,11 @@ export default function CandidatePage() {
           directly beside the name, where at 44px it read as the headline and
           the person read as its caption. */}
       <div
-        className={`font-serif-accent text-[32px] leading-none md:text-[44px] ${TONE[scoreTone(overall)]}`}
+        className={`font-serif-accent text-[32px] leading-none md:text-[56px] ${TONE[scoreTone(overall)]}`}
       >
         {formatScore(overall)}
       </div>
-      <div className="mt-1 text-[10px] uppercase tracking-wider text-faint md:text-[11px]">
+      <div className="mt-1 text-[11px] text-muted md:text-xs">
         {overall === null
           ? "not scored yet"
           : `across ${scoredCount} ${scoredCount === 1 ? "reading" : "readings"}`}
@@ -964,22 +987,22 @@ export default function CandidatePage() {
   const filesAndLinks = (
     <>
           {/* ── files and links ── */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             {[...cv, ...others].map((l) => {
               const linked = /(^|\.)linkedin\.com\//i.test(l.url);
               const safe = isSafeUrl(l.url) || l.url.startsWith("/api/");
               return (
                 <span
                   key={l.id}
-                  className="group flex items-center gap-1.5 rounded-full border border-border bg-surface py-1 pl-2.5 pr-1 text-[11.5px] text-muted"
+                  className="group flex items-center gap-1.5 rounded-lg bg-surface py-1.5 pl-2.5 pr-1.5 text-[13px] shadow-card"
                 >
-                  <span className="shrink-0 text-faint">
+                  <span className="shrink-0 text-brand">
                     {l.kind === "cv" ? (
-                      <FileText size={12} strokeWidth={1.75} />
+                      <FileText size={14} strokeWidth={1.75} />
                     ) : linked ? (
                       <LinkedInMark />
                     ) : (
-                      <ExternalLink size={12} strokeWidth={1.75} />
+                      <ExternalLink size={14} strokeWidth={1.75} />
                     )}
                   </span>
                   {safe ? (
@@ -1066,11 +1089,11 @@ export default function CandidatePage() {
             ) : (
               <>
                 <label
-                  className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] hover:border-brand hover:text-brand md:min-h-0 ${
+                  className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] hover:bg-surface hover:text-brand md:min-h-0 ${
                     uploading ? "opacity-50" : "text-muted"
                   }`}
                 >
-                  <Upload size={12} strokeWidth={1.75} />
+                  <Upload size={14} strokeWidth={1.75} />
                   {uploading ? "Uploading…" : "Upload a CV"}
                   <input
                     type="file"
@@ -1085,9 +1108,9 @@ export default function CandidatePage() {
                 </label>
                 <button
                   onClick={() => setAddingLink(true)}
-                  className="flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[11.5px] text-muted hover:border-brand hover:text-brand md:min-h-0"
+                  className="flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted hover:bg-surface hover:text-brand md:min-h-0"
                 >
-                  <Link2 size={12} strokeWidth={1.75} /> Add a link
+                  <Link2 size={14} strokeWidth={1.75} /> Add a link
                 </button>
               </>
             )}
@@ -1095,13 +1118,144 @@ export default function CandidatePage() {
     </>
   );
 
+  /**
+   * The ⋯ menu — hold, archive, delete. Hoisted because it renders in one of
+   * two places: beside the score at a desk, in the controls row on a phone.
+   */
+  const moreMenu = (
+    <>
+    {/* ⚠️ HOLD, ARCHIVE AND DELETE GO BEHIND THE DOTS, and the three
+        belong together because they are one idea: take this person off
+        the board. Owner and Stage stay out because they are touched on
+        every visit. It also gets the delete out from under a stray
+        click — it was a bare trash icon sitting beside Archive, which
+        is the neighbour you least want to miss. */}
+    <div className="relative">
+      <button
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="More actions"
+        aria-expanded={menuOpen}
+        className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:text-foreground md:size-10 md:rounded-xl md:border-transparent md:shadow-card"
+      >
+        <MoreHorizontal size={16} strokeWidth={1.75} />
+      </button>
+      {menuOpen && (
+        <>
+          <button
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-border bg-surface py-1 text-left shadow-card">
+            {c.status !== "on_hold" && c.status !== "archived" && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  void run(() => setStatus(c.id, "on_hold", null, currentUserId));
+                }}
+                className={MENU_ITEM}
+              >
+                <span className={MENU_TITLE}>
+                  <PauseCircle size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                  Hold
+                </span>
+                <span className={MENU_NOTE}>Good, wrong moment</span>
+              </button>
+            )}
+            {c.status !== "archived" && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  void run(() => setStatus(c.id, "archived", null, currentUserId));
+                }}
+                className={MENU_ITEM}
+              >
+                <span className={MENU_TITLE}>
+                  <Archive size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                  Archive
+                </span>
+                <span className={MENU_NOTE}>Off the board, still searchable</span>
+              </button>
+            )}
+            <div className="my-1 border-t border-border" />
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                const bits = [
+                  interviews.length &&
+                    `${interviews.length} interview${interviews.length === 1 ? "" : "s"}`,
+                  // ⚠️ NAMED SEPARATELY, because it is no longer counted
+                  // as an interview anywhere — so without this line the
+                  // one thing the delete destroys silently is the read
+                  // somebody actually recorded.
+                  Object.keys(application?.scores ?? {}).length &&
+                    "the application scorecard",
+                  comments.length &&
+                    `${comments.length} message${comments.length === 1 ? "" : "s"}`,
+                  links.length &&
+                    `${links.length} file${links.length === 1 ? "" : "s"} or link${links.length === 1 ? "" : "s"}`,
+                ].filter(Boolean);
+                const tail = bits.length ? `, along with ${bits.join(", ")}` : "";
+                if (
+                  !window.confirm(
+                    `Delete ${c.name} for good${tail}? This cannot be undone — Archive keeps them and takes them off the board.`,
+                  )
+                )
+                  return;
+                void (async () => {
+                  setError(null);
+                  try {
+                    await deleteCandidate(c.id);
+                    router.push("/candidates");
+                  } catch (e) {
+                    setError(
+                      e instanceof Error ? e.message : "That candidate could not be deleted.",
+                    );
+                  }
+                })();
+              }}
+              className={`${MENU_ITEM} text-danger hover:bg-danger/5`}
+            >
+              <span className={MENU_TITLE}>
+                <Trash2 size={14} strokeWidth={1.75} className="shrink-0" />
+                Delete for good
+              </span>
+              <span className={MENU_NOTE}>Interviews and files too</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+    </>
+  );
+
+  /** The owner select, shared by the phone controls and the desk stage row. */
+  const ownerSelect = (box: string) => (
+    <select
+      value={c.ownerId ?? ""}
+      onChange={(e) =>
+        void run(() => updateCandidate(c.id, { ownerId: e.target.value || null }, currentUserId))
+      }
+      className={box}
+      aria-label="Who is holding this candidate"
+    >
+      <option value="">Unassigned</option>
+      {assignable.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
+      ))}
+    </select>
+  );
+
   return (
     <div className="mx-auto max-w-[1500px]">
       <Link
         href="/candidates"
-        className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-foreground"
+        className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
       >
-        <ChevronLeft size={14} strokeWidth={1.75} /> Candidates
+        <ChevronLeft size={15} strokeWidth={1.75} /> Candidates
       </Link>
 
       {error && (
@@ -1255,224 +1409,187 @@ export default function CandidatePage() {
             which reads as three separate things rather than one cluster about
             this person. */}
         <div className="flex w-full shrink-0 flex-col items-start gap-3 md:w-auto md:items-end">
-          <div className="hidden text-right md:block">{scoreFigure}</div>
-
-          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
-            <select
-              value={c.ownerId ?? ""}
-              onChange={(e) =>
-                void run(() => updateCandidate(c.id, { ownerId: e.target.value || null }, currentUserId))
-              }
-              className="h-11 w-full min-w-0 rounded-lg border border-border bg-surface px-2 text-[13px] md:h-9 md:w-auto"
-              aria-label="Who is holding this candidate"
-            >
-              <option value="">Unassigned</option>
-              {assignable.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-
-            {c.status === "active" ? (
-              <select
-                value={c.stageId ?? ""}
-                onChange={(e) => {
-                  const st = vocab.stages.find((x) => x.id === e.target.value);
-                  if (st) void run(() => moveToStage(c.id, st.id, st.name, currentUserId));
-                }}
-                className="h-11 min-w-0 flex-1 rounded-lg border border-[#c9d6fb] bg-brand-soft px-2 text-[13px] font-medium text-brand-dark md:h-9 md:flex-none"
-                aria-label="Stage"
-              >
-                {vocab.stages.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <button
-                onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
-                className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] md:h-9 md:flex-none"
-              >
-                <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
-              </button>
-            )}
-
-            {/* ⚠️ HOLD, ARCHIVE AND DELETE GO BEHIND THE DOTS, and the three
-                belong together because they are one idea: take this person off
-                the board. Owner and Stage stay out because they are touched on
-                every visit. It also gets the delete out from under a stray
-                click — it was a bare trash icon sitting beside Archive, which
-                is the neighbour you least want to miss. */}
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label="More actions"
-                aria-expanded={menuOpen}
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted hover:text-foreground md:size-9"
-              >
-                <MoreHorizontal size={16} strokeWidth={1.75} />
-              </button>
-              {menuOpen && (
-                <>
-                  <button
-                    aria-hidden
-                    tabIndex={-1}
-                    onClick={() => setMenuOpen(false)}
-                    className="fixed inset-0 z-40 cursor-default"
-                  />
-                  <div className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-border bg-surface py-1 text-left shadow-card">
-                    {c.status !== "on_hold" && c.status !== "archived" && (
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          void run(() => setStatus(c.id, "on_hold", null, currentUserId));
-                        }}
-                        className={MENU_ITEM}
-                      >
-                        <span className={MENU_TITLE}>
-                          <PauseCircle size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
-                          Hold
-                        </span>
-                        <span className={MENU_NOTE}>Good, wrong moment</span>
-                      </button>
-                    )}
-                    {c.status !== "archived" && (
-                      <button
-                        onClick={() => {
-                          setMenuOpen(false);
-                          void run(() => setStatus(c.id, "archived", null, currentUserId));
-                        }}
-                        className={MENU_ITEM}
-                      >
-                        <span className={MENU_TITLE}>
-                          <Archive size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
-                          Archive
-                        </span>
-                        <span className={MENU_NOTE}>Off the board, still searchable</span>
-                      </button>
-                    )}
-                    <div className="my-1 border-t border-border" />
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        const bits = [
-                          interviews.length &&
-                            `${interviews.length} interview${interviews.length === 1 ? "" : "s"}`,
-                          // ⚠️ NAMED SEPARATELY, because it is no longer counted
-                          // as an interview anywhere — so without this line the
-                          // one thing the delete destroys silently is the read
-                          // somebody actually recorded.
-                          Object.keys(application?.scores ?? {}).length &&
-                            "the application scorecard",
-                          comments.length &&
-                            `${comments.length} message${comments.length === 1 ? "" : "s"}`,
-                          links.length &&
-                            `${links.length} file${links.length === 1 ? "" : "s"} or link${links.length === 1 ? "" : "s"}`,
-                        ].filter(Boolean);
-                        const tail = bits.length ? `, along with ${bits.join(", ")}` : "";
-                        if (
-                          !window.confirm(
-                            `Delete ${c.name} for good${tail}? This cannot be undone — Archive keeps them and takes them off the board.`,
-                          )
-                        )
-                          return;
-                        void (async () => {
-                          setError(null);
-                          try {
-                            await deleteCandidate(c.id);
-                            router.push("/candidates");
-                          } catch (e) {
-                            setError(
-                              e instanceof Error ? e.message : "That candidate could not be deleted.",
-                            );
-                          }
-                        })();
-                      }}
-                      className={`${MENU_ITEM} text-danger hover:bg-danger/5`}
-                    >
-                      <span className={MENU_TITLE}>
-                        <Trash2 size={14} strokeWidth={1.75} className="shrink-0" />
-                        Delete for good
-                      </span>
-                      <span className={MENU_NOTE}>Interviews and files too</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+          <div className="hidden items-start gap-3 md:flex">
+            <div className="text-right">{scoreFigure}</div>
+            {!isNarrow && moreMenu}
           </div>
+
+          {/* The phone keeps its compact controls: a five-stage track does not
+              fit 343px, and the selects are what a thumb can work. */}
+          {isNarrow && (
+            <div className="flex w-full flex-wrap items-center gap-2">
+              {ownerSelect("h-11 w-full min-w-0 rounded-lg border border-border bg-surface px-2 text-[13px]")}
+              {c.status === "active" ? (
+                <select
+                  value={c.stageId ?? ""}
+                  onChange={(e) => {
+                    const st = vocab.stages.find((x) => x.id === e.target.value);
+                    if (st) void run(() => moveToStage(c.id, st.id, st.name, currentUserId));
+                  }}
+                  className="h-11 min-w-0 flex-1 rounded-lg border border-[#c9d6fb] bg-brand-soft px-2 text-[13px] font-medium text-brand-dark"
+                  aria-label="Stage"
+                >
+                  {vocab.stages.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
+                  className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px]"
+                >
+                  <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
+                </button>
+              )}
+              {moreMenu}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── body ── */}
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1fr_400px]">
-        <div className="flex flex-col gap-3">
-          {/* application — the text they sent, and the studio's first read of it */}
-          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-            <div className="mb-2 flex items-baseline gap-2">
-              <span className="text-[12px] font-medium uppercase tracking-wider text-faint">
-                Application
+      {/* ── the stage, as the same neutral track a lead's page uses ──
+          (2026-10-23, Page A.) The stages were a dropdown in the header; laid
+          out as a track you see where they are AND what is next, and one press
+          moves them. The current stage is the solid tile, the ones behind it a
+          grey tick. Who is holding them sits at its end. */}
+      {!isNarrow && (
+        <div className="mt-5 flex items-stretch gap-2">
+          {c.status === "active" ? (
+            <StageTrack
+              stages={vocab.stages}
+              current={vocab.stages.findIndex((x) => x.id === c.stageId)}
+              onPick={(st) => {
+                if (st.id !== c.stageId) void run(() => moveToStage(c.id, st.id, st.name, currentUserId));
+              }}
+            />
+          ) : (
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-surface px-4 shadow-card">
+              <span className="text-sm text-muted">
+                {c.status === "on_hold" ? "On hold" : "Archived"}
+                {stage && <> · reached <b className="font-medium text-foreground">{stage.name}</b></>}
               </span>
-              {c.appliedOn && (
-                <span className="text-[11px] text-faint">applied {formatDate(c.appliedOn)}</span>
-              )}
-              <span className={`ml-auto text-sm font-semibold ${TONE[scoreTone(applicationAvg)]}`}>
-                {formatScore(applicationAvg)}
-                <span className="ml-1 text-[11px] font-normal text-faint">first read</span>
-              </span>
+              <button
+                onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
+                className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+              >
+                <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
+              </button>
             </div>
-            <textarea
-              defaultValue={c.applicationText ?? ""}
-              placeholder="What they sent — paste it here, verbatim. The studio's own notes go on the interviews below."
-              rows={4}
-              onBlur={(e) =>
+          )}
+          {ownerSelect("h-12 shrink-0 cursor-pointer rounded-xl bg-surface px-4 text-sm shadow-card")}
+        </div>
+      )}
+
+      {/* ── body ── */}
+      <div className="mt-5 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+        {/* ── the readings ──────────────────────────────────────────────────
+            (2026-10-23, Page A.) ONE card holding every scorecard in order —
+            the application first, then each interview — where they used to be
+            separate cards. Each row says who, when and its average as a figure;
+            the latest is open, the rest fold to that row. The figure at the top
+            of the page is these, weighted toward the latest. */}
+        <section className="rounded-2xl border border-border bg-surface p-3 shadow-card md:p-5">
+          <header className="mb-2 flex items-center justify-between gap-3 px-2">
+            <h2 className="flex items-center gap-2 font-heading text-base">
+              <ClipboardList size={18} strokeWidth={1.75} className="text-brand" /> Readings
+            </h2>
+            <button
+              onClick={() =>
                 void run(() =>
-                  updateCandidate(c.id, { applicationText: e.target.value.trim() || null }, currentUserId),
+                  addInterview(c.id, "Phone interview", null, currentUserId, currentUserId),
                 )
               }
-              className="bidi-auto w-full resize-y rounded-md border border-transparent bg-transparent p-1 text-[12.5px] leading-relaxed text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
-            />
-
-            {/* ⚠️ ALWAYS HERE, NEVER ADDED. A judgement formed from the mail, the
-                CV and the portfolio is one you have already made by the time you
-                finish reading — so it is a grid to fill in, not a card to opt
-                into. The row behind it is created by the first score. */}
-            {submissionSubjects.length > 0 && (
-              <div className="mt-3 grid gap-x-5 border-t border-border pt-3 sm:grid-cols-2">
-                {submissionSubjects.map((s) => (
-                  <SubjectColumn
-                    key={s.id}
-                    subject={s}
-                    scores={applicationScores}
-                    onSet={(paramId, value) =>
+              className="flex h-11 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-[13px] font-medium text-white hover:bg-brand-dark md:h-9"
+            >
+              <Plus size={15} strokeWidth={2} /> Add an interview
+            </button>
+          </header>
+          <ol className="flex flex-col gap-1">
+          {(() => {
+            /* ⚠️ THE APPLICATION IS THE FIRST READING, folded like the others.
+               Open by default only while nobody has been interviewed yet — then
+               it is the one thing there is to read. Same override map as the
+               interviews, keyed "application". */
+            const shut = !(openOverride.get("application") ?? interviews.length === 0);
+            const scored = Object.keys(applicationScores).length;
+            return (
+              <li className={`rounded-xl px-2 py-2 md:px-3 ${shut ? "" : "bg-background"}`}>
+                <div className="flex items-center gap-2">
+                  <FoldButton shut={shut} label="application" onClick={() => toggleFold("application", !shut)} />
+                  <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+                    <FileText size={15} strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0 flex-1 px-1">
+                    <span className="block text-sm font-medium">Application</span>
+                    <span className="block text-[13px] text-muted">
+                      {c.appliedOn ? `Applied ${formatDate(c.appliedOn)}` : "What they sent"} ·{" "}
+                      {scored > 0 ? `${scored} score${scored === 1 ? "" : "s"}` : "not read yet"}
+                    </span>
+                  </span>
+                  <span
+                    className={`font-serif-accent mr-1 text-[30px] leading-none tabular-nums ${TONE[scoreTone(applicationAvg)]}`}
+                    title="The first read: the studio's scores from the submission alone"
+                  >
+                    {formatScore(applicationAvg)}
+                  </span>
+                </div>
+                {!shut && (
+                  <div className="pb-2 pt-3 md:pl-[86px]">
+                  <textarea
+                    defaultValue={c.applicationText ?? ""}
+                    placeholder="What they sent — paste it here, verbatim. The studio's own notes go on the interviews below."
+                    rows={6}
+                    onBlur={(e) =>
                       void run(() =>
-                        scoreApplication(c.id, paramId, value, c.appliedOn, currentUserId),
+                        updateCandidate(c.id, { applicationText: e.target.value.trim() || null }, currentUserId),
                       )
                     }
+                    className="bidi-auto w-full resize-y rounded-lg bg-surface px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-brand/30"
                   />
-                ))}
-              </div>
-            )}
-            {/* ⚠️ Said out loud rather than left as an absence, because the
-                missing column is the one somebody will look for. */}
-            <p className="mt-2 text-[11px] leading-snug text-faint">
-              Only what a submission can answer — a portfolio is not a person, so the subjects that
-              need a conversation are on the interviews below.
-            </p>
-          </div>
+                  {/* ⚠️ ALWAYS HERE, NEVER ADDED. A judgement formed from the mail, the
+                      CV and the portfolio is one you have already made by the time you
+                      finish reading — so it is a grid to fill in, not a card to opt
+                      into. The row behind it is created by the first score. */}
+                  {submissionSubjects.length > 0 && (
+                    <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                      {submissionSubjects.map((s) => (
+                        <SubjectColumn
+                          key={s.id}
+                          subject={s}
+                          scores={applicationScores}
+                          onSet={(paramId, value) =>
+                            void run(() =>
+                              scoreApplication(c.id, paramId, value, c.appliedOn, currentUserId),
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* ⚠️ Said out loud rather than left as an absence, because the
+                      missing column is the one somebody will look for. */}
+                  <p className="mt-3 text-xs leading-snug text-muted">
+                    Only what a submission can answer — a portfolio is not a person, so the subjects that
+                    need a conversation are on the interviews below.
+                  </p>
+                  </div>
+                )}
+              </li>
+            );
+          })()}
 
-          {/* interviews */}
           {interviews.map((iv) => {
             const who = iv.interviewerId ? profileById.get(iv.interviewerId) : null;
             const avg = interviewAverage(iv.scores);
             const shut = !(openOverride.get(iv.id) ?? iv.id === latestInterviewId);
             const scored = Object.keys(iv.scores).length;
             return (
-              <div key={iv.id} className="rounded-xl border border-border bg-surface p-4 shadow-card">
+              <li key={iv.id} className={`rounded-xl px-2 py-2 md:px-3 ${shut ? "" : "bg-background"}`}>
                 <div className="flex flex-wrap items-center gap-2">
-                  {who ? <Avatar profile={who} size={26} /> : <span className="size-[26px] rounded-full bg-background" />}
+                  <FoldButton shut={shut} label={iv.kind} onClick={() => toggleFold(iv.id, !shut)} />
+                  {who ? <Avatar profile={who} size={30} /> : <span className="size-[30px] rounded-full bg-track" />}
                   {/* ⚠️ The stored value is added to the option list when it is
                       not one we offer, so an imported kind ("Candidates",
                       "Contract") still renders and is not silently rewritten by
@@ -1523,28 +1640,17 @@ export default function CandidatePage() {
                       of its own under the interview's name, which reads as a
                       broken card rather than a tidy wrap. */}
                   <span className="ml-auto flex shrink-0 items-center gap-1">
-                  <span className={`text-sm font-semibold ${TONE[scoreTone(avg)]}`}>
+                  <span
+                    className={`font-serif-accent mr-1 text-[30px] leading-none tabular-nums ${TONE[scoreTone(avg)]}`}
+                    title="The average of this reading's scores"
+                  >
                     {formatScore(avg)}
-                    <span className="ml-1 text-[11px] font-normal text-faint">average</span>
                   </span>
                   {/* ⚠️ THE AVERAGE STAYS VISIBLE WHEN FOLDED, and that is what
                       makes folding worth having: the figure is the reason to
                       keep a card on screen, the eleven rows behind it are not.
                       A fold that hid the number would just be a delete you can
                       undo. */}
-                  <button
-                    onClick={() => toggleFold(iv.id, !shut)}
-                    aria-expanded={!shut}
-                    aria-label={shut ? `Open this ${iv.kind.toLowerCase()}` : `Fold this ${iv.kind.toLowerCase()} away`}
-                    title={shut ? "Open" : "Fold away"}
-                    className="flex size-11 items-center justify-center rounded text-faint hover:text-foreground md:size-auto md:p-1.5"
-                  >
-                    <ChevronDown
-                      size={15}
-                      strokeWidth={1.75}
-                      className={`transition-transform ${shut ? "-rotate-90" : ""}`}
-                    />
-                  </button>
                   {/* ⚠️ Confirmed, because it takes the scores with it — the
                       interview's rows cascade (0039) and there is no undo in
                       this section by design. */}
@@ -1579,7 +1685,7 @@ export default function CandidatePage() {
                     it moves focus off the textarea, which fires `onBlur` and
                     commits, and only then does the fold take the element away. */}
                 {!shut && (
-                  <>
+                  <div className="md:pl-[86px]">
                     <textarea
                       defaultValue={iv.summary ?? ""}
                       placeholder="What you heard. A few lines is plenty — the scores carry the rest."
@@ -1587,10 +1693,10 @@ export default function CandidatePage() {
                       onBlur={(e) =>
                         void run(() => updateInterview(iv.id, c.id, { summary: e.target.value.trim() || null }))
                       }
-                      className="bidi-auto mt-2.5 w-full resize-y rounded-md border border-transparent bg-transparent p-1 text-[12.5px] leading-relaxed text-muted hover:border-border focus:border-border focus:bg-surface focus:outline-none"
+                      className="bidi-auto mt-3 w-full resize-y rounded-lg bg-surface px-3 py-2.5 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-brand/30"
                     />
 
-                    <div className="mt-3 grid gap-x-5 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="mt-4 grid gap-x-8 gap-y-4 pb-2 sm:grid-cols-2 lg:grid-cols-3">
                       {vocab.subjects.map((s) => (
                         <SubjectColumn
                           key={s.id}
@@ -1600,7 +1706,7 @@ export default function CandidatePage() {
                         />
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {/* ⚠️ A FOLDED CARD SAYS WHAT IS BEHIND IT. Without this the
@@ -1609,7 +1715,7 @@ export default function CandidatePage() {
                     closed one — the failure the client table's folded sections
                     already solved by keeping their subtotals. */}
                 {shut && (
-                  <p className="mt-2 text-[12px] text-faint">
+                  <p className="mt-0.5 pl-[86px] text-[13px] text-muted">
                     {[
                       scored > 0 && `${scored} score${scored === 1 ? "" : "s"}`,
                       iv.summary?.trim() && "a summary",
@@ -1618,30 +1724,19 @@ export default function CandidatePage() {
                       .join(" · ") || "Nothing recorded yet"}
                   </p>
                 )}
-              </div>
+              </li>
             );
           })}
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() =>
-                void run(() =>
-                  addInterview(c.id, "Phone interview", null, currentUserId, currentUserId),
-                )
-              }
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong p-4 text-[13px] text-muted hover:border-brand hover:text-brand"
-            >
-              <Plus size={16} strokeWidth={2} /> Add an interview
-            </button>
-          </div>
-        </div>
+          </ol>
+        </section>
 
         {/* ── right column ── */}
-        <div className="flex flex-col gap-3">
-          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-            <div className="mb-3 text-[12px] font-medium uppercase tracking-wider text-faint">
-              Discussion
-            </div>
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+            <h2 className="mb-4 flex items-center gap-2 font-heading text-base">
+              <MessageSquare size={18} strokeWidth={1.75} className="text-brand" /> Discussion
+            </h2>
             <div className="flex flex-col gap-3">
               {comments.map((m) => {
                 const mine = m.authorId && m.authorId === currentUserId;
@@ -1712,11 +1807,11 @@ export default function CandidatePage() {
             </form>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
-            <div className="mb-2.5 text-[12px] font-medium uppercase tracking-wider text-faint">
-              History
-            </div>
-            <div className="flex flex-col gap-2 text-[12.5px] text-muted">
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+            <h2 className="mb-4 flex items-center gap-2 font-heading text-base">
+              <History size={18} strokeWidth={1.75} className="text-brand" /> History
+            </h2>
+            <div className="flex flex-col gap-2 text-[13px]">
               {events.map((ev) => (
                 <div key={ev.id} className="flex gap-2">
                   <span className="w-14 shrink-0 text-faint">

@@ -11,6 +11,7 @@ import { useData } from "@/lib/store";
 import type { TimeEntry } from "@/lib/types";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { SkeletonRows } from "@/components/skeleton";
 
 
 export function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
@@ -218,7 +219,7 @@ export function DayLog() {
       </div>
 
       <div className="max-h-56 overflow-y-auto">
-        {loading && <p className="py-3 text-center text-xs text-faint">Loading…</p>}
+        {loading && <SkeletonRows rows={3} />}
         {!loading && entries.length === 0 && (
           <p className="py-3 text-center text-xs text-faint">No hours logged on this day.</p>
         )}

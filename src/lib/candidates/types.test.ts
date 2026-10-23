@@ -3,6 +3,7 @@ import {
   formatScore,
   interviewAverage,
   overallScore,
+  overallFromReadings,
   isOnBoard,
   splitApplicationReview,
   APPLICATION_REVIEW_KIND,
@@ -129,6 +130,7 @@ describe("isOnBoard", () => {
     linkCount: 0,
     commentCount: 0,
     avgScore: null,
+    readings: [],
   };
 
   /**
@@ -142,6 +144,19 @@ describe("isOnBoard", () => {
     expect(isOnBoard({ ...base, status: "archived", outcome: "rejected" })).toBe(false);
     // Hired leaves the board too — a decision is a decision either way.
     expect(isOnBoard({ ...base, status: "archived", outcome: "hired" })).toBe(false);
+  });
+});
+
+describe("overallFromReadings", () => {
+  // The list computes from reduced readings, the page from full interviews —
+  // they must land on the same figure for the same person.
+  it("matches overallScore on the same scorecards", () => {
+    const ivs = [iv("2026-09-01", { a: 8, b: 6 }), iv("2026-09-08", { a: 9 }), iv("2026-09-15", {})];
+    const readings = ivs.map((i) => ({ kind: i.kind, at: i.heldOn ?? i.createdAt, avg: interviewAverage(i.scores) }));
+    expect(overallFromReadings(readings)).toBe(overallScore(ivs));
+  });
+  it("is null when nothing is scored", () => {
+    expect(overallFromReadings([{ kind: "Phone interview", at: "2026-09-01", avg: null }])).toBeNull();
   });
 });
 

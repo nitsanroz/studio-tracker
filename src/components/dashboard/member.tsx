@@ -21,7 +21,10 @@ import { useData } from "@/lib/store";
 import type { Profile } from "@/lib/types";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { useMemberPortraits } from "@/lib/use-member-portraits";
-import { ArrowRight, Pencil } from "lucide-react";
+import {
+  Pencil,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { useMemo, useRef, useState } from "react";
 
 
@@ -55,7 +58,7 @@ export function MyWeek() {
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-heading text-sm">My week</h2>
         <Link href="/plan" className="flex items-center gap-1 text-xs text-brand hover:underline">
-          Weekly plan <ArrowRight size={12} />
+          Weekly plan <StudioArrow size={15} />
         </Link>
       </div>
       {/* Five day-cards at 375px give each about 63px — a weekday label and an
@@ -315,8 +318,10 @@ export function MemberWelcome({
               left is the one figure nothing else on the page shows — today
               against your own day — which is also the one the button underneath
               acts on. */}
-          <h2 className="font-serif-accent text-[34px] italic leading-tight">
-            {greetingFor(new Date())}, {me.name.split(" ")[0]}
+          {/* The website's voice (2026-10-23): Saans, the name in serif italic. */}
+          <h2 className="text-[34px] font-medium leading-tight tracking-[-0.02em]">
+            {greetingFor(new Date())},{" "}
+            <span className="font-serif-accent font-normal">{me.name.split(" ")[0]}</span>
           </h2>
           <div className="mt-1.5 text-sm text-white/85">{todayLine}</div>
           {/* ⚠️ Off on a phone, and the gate is a WRAPPER for the same reason the

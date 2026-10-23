@@ -26,6 +26,7 @@ import { copyLeadFilesToClient, loadLeadFiles, type OverviewFile } from "@/lib/o
 import { loadEstimate, loadEstimates, type EstimateDetail, type EstimateSummary } from "@/lib/leads/estimates-data";
 import { counts, fmtHours, groupWinners, phaseLayout, totals, type EstimateLine } from "@/lib/leads/estimate";
 import type { LeadDetail } from "@/lib/leads/types";
+import { PageSkeleton } from "@/components/skeleton";
 
 type Rule = "top" | "middle" | "bottom";
 interface DTask {
@@ -274,7 +275,7 @@ export default function ConvertPage() {
   }
 
   if (!isAdmin) return <p className="py-16 text-center text-sm text-muted">Leads are for Nitsan and Michal only.</p>;
-  if (loading) return <p className="py-10 text-sm text-muted">Loading…</p>;
+  if (loading) return <PageSkeleton side={false} />;
   if (!lead) return <p className="py-10 text-sm text-danger">{error ?? "That lead no longer exists."}</p>;
 
   const taskRow = (t: DTask, disabled: boolean, indent: string) => (
@@ -319,7 +320,7 @@ export default function ConvertPage() {
       <Link href={`/leads/${leadId}`} className="mb-3 inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-foreground">
         <ChevronLeft size={14} strokeWidth={1.75} /> {lead.lead.company}
       </Link>
-      <h1 className="font-serif-accent text-[28px] leading-tight">Create client page</h1>
+      <h1 className="page-title">Create client page</h1>
       <p className="mt-1 text-[13px] text-muted">Pick what comes across from this lead, check it, then create. Nothing is written until the last step.</p>
 
       {!lead.lead.wonAt && (

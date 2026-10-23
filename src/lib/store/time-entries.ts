@@ -15,7 +15,8 @@
 import { useCallback, useMemo, type Dispatch, type RefObject, type SetStateAction } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapTimeEntry, type DbRow } from "../db";
-import { toISODate } from "../format";
+import { formatHoursShort, toISODate } from "../format";
+import { toast } from "../toast";
 import type { HistoryAction, Store, TimeEntryPatch } from "./types";
 import type { EntrySum, TimeEntry } from "../types";
 
@@ -139,6 +140,15 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
       record({
         undo: () => methodsRef.current?.deleteTimeEntry(entry.id),
         redo: () => restoreTimeEntry(entry),
+      });
+      // Said once here, so every logging surface confirms the same way. Its Undo
+      // removes THIS entry — not whatever the history's last step is by then.
+      const store = methodsRef.current;
+      const task = store?.tasks.find((t) => t.id === taskId);
+      const client = task && store?.clients.find((c) => c.id === task.clientId);
+      const where = [client?.name, task?.title].filter(Boolean).join(" · ");
+      toast(`Logged ${formatHoursShort(minutes)}${where ? ` on ${where}` : ""}`, {
+        onUndo: () => methodsRef.current?.deleteTimeEntry(entry.id),
       });
       return entry;
     },

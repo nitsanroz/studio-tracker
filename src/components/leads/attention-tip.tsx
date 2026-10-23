@@ -1,9 +1,10 @@
 "use client";
 
-// The attention tip: a short dark bubble floating above whatever needs doing —
-// a card on the board, a tab on the lead page. × dismisses it; once the pointer
-// moves off, it shrinks to a dot in the tip's colour, and hovering the dot
-// opens the bubble again. Rules and wording: `src/lib/leads/nudges.ts`.
+// The attention tip: a short dark bubble floating above whatever needs doing
+// — a tab on the lead page (board cards say it in their own line since
+// 2026-10-23). × dismisses it; once the pointer moves off, it shrinks to a dot
+// in the tip's colour, and hovering the dot opens the bubble again. Rules and
+// wording: `src/lib/leads/nudges.ts`.
 //
 // ⚠️ THE BUBBLE IS PORTALLED AND `position: fixed`. The board's columns scroll
 // (overflow), which would clip a bubble standing above the first card; fixed
@@ -68,21 +69,13 @@ export function AttentionTip({
   children,
   className = "",
   dot = "-right-1 -top-1",
-  place = "above",
 }: {
   nudge: Nudge | null | undefined;
   leadId: string;
   children: React.ReactNode;
   className?: string;
-  /** Where the dot sits on the anchor (Tailwind position classes). */
+  /** Where a dismissed tip's dot sits on the anchor (Tailwind position classes). */
   dot?: string;
-  /**
-   * "above" (a tab): the bubble points down at the anchor, and only a dismissed
-   * tip leaves a dot. "dot" (a board card): the dot is always there, on the
-   * card's edge, and the bubble points at the DOT — so the card above it is
-   * barely covered and the tip reads as belonging to that one mark.
-   */
-  place?: "above" | "dot";
 }) {
   const dismissed = useSyncExternalStore(subscribe, read, () => EMPTY);
   const id = nudge ? `${leadId}|${nudge.key}` : "";
@@ -91,11 +84,10 @@ export function AttentionTip({
   const [lingering, setLingering] = useState(false);
   const [hover, setHover] = useState(false);
   const anchor = useRef<HTMLSpanElement>(null);
-  const dotRef = useRef<HTMLSpanElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   const show = Boolean(nudge) && (!gone || lingering || hover);
-  const dotShown = Boolean(nudge) && (place === "dot" || (gone && !lingering));
+  const dotShown = Boolean(nudge) && gone && !lingering;
 
   useLayoutEffect(() => {
     if (!show) return;
@@ -103,7 +95,7 @@ export function AttentionTip({
     const measure = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const el = place === "dot" ? dotRef.current : anchor.current;
+        const el = anchor.current;
         if (!el) return;
         const r = el.getBoundingClientRect();
         if (!visibleIn(el, r)) setPos(null);
@@ -121,22 +113,13 @@ export function AttentionTip({
       window.removeEventListener("resize", measure);
       ro.disconnect();
     };
-  }, [show, place]);
-
-  // In "dot" mode the bubble starts just left of the dot so its arrow, ARROW_X
-  // in, lands on the dot's centre; in "above" mode it is centred on the anchor.
-  const ARROW_X = 14;
-  // ⚠️ Light on the board, dark elsewhere: the board card's crown is navy, and a
-  // dark bubble pointing at it merged into it. The page around a tab is white,
-  // where the dark bubble is the one that stands out.
-  const light = place === "dot";
+  }, [show]);
 
   return (
     <span ref={anchor} className={`relative ${className}`}>
       {children}
       {dotShown && nudge && (
         <span
-          ref={dotRef}
           onMouseEnter={() => setHover(true)}
           onMouseLeave={() => setHover(false)}
           onClick={(e) => {
@@ -155,13 +138,11 @@ export function AttentionTip({
           <div
             role="status"
             onMouseLeave={() => setLingering(false)}
-            className={`pointer-events-auto fixed z-40 -translate-y-full pb-2 ${place === "above" ? "-translate-x-1/2" : ""}`}
-            style={{ left: place === "dot" ? pos.x - ARROW_X : pos.x, top: pos.y - (place === "dot" ? 2 : 0) }}
+            className="pointer-events-auto fixed z-40 -translate-x-1/2 -translate-y-full pb-2"
+            style={{ left: pos.x, top: pos.y }}
           >
             <div
-              className={`flex max-w-64 items-center gap-2 whitespace-nowrap rounded-lg py-1.5 pl-2.5 pr-1.5 text-[12px] font-medium shadow-lg ${
-                light ? "border border-[#06112f]/20 bg-white text-[#06112f]" : "bg-[#1d1d1f] text-white"
-              }`}
+              className="flex max-w-64 items-center gap-2 whitespace-nowrap rounded-lg bg-[#1d1d1f] py-1.5 pl-2.5 pr-1.5 text-[12px] font-medium text-white shadow-lg"
             >
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: nudge.color }} />
               <span className="bidi-auto truncate">{nudge.text}</span>
@@ -174,7 +155,7 @@ export function AttentionTip({
                     dismiss(id);
                   }}
                   aria-label="Dismiss"
-                  className={`rounded p-0.5 ${light ? "text-[#06112f]/45 hover:bg-[#06112f]/5 hover:text-[#06112f]" : "text-white/50 hover:bg-white/10 hover:text-white"}`}
+                  className="rounded p-0.5 text-white/50 hover:bg-white/10 hover:text-white"
                 >
                   <X size={12} strokeWidth={2.25} />
                 </button>
@@ -182,12 +163,7 @@ export function AttentionTip({
                 <span className="w-0.5" />
               )}
             </div>
-            <span
-              className={`absolute bottom-[3px] size-2.5 -translate-x-1/2 rotate-45 ${
-                light ? "border-b border-r border-[#06112f]/20 bg-white" : "bg-[#1d1d1f]"
-              }`}
-              style={{ left: place === "dot" ? ARROW_X : "50%" }}
-            />
+            <span className="absolute bottom-[3px] left-1/2 size-2.5 -translate-x-1/2 rotate-45 bg-[#1d1d1f]" />
           </div>,
           document.body,
         )}

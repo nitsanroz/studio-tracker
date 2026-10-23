@@ -109,7 +109,7 @@ export function NotificationsBell({
         aria-expanded={open}
         aria-haspopup="menu"
         title={total > 0 ? `${total} waiting on you` : "Nothing waiting"}
-        className="relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-muted transition-colors hover:border-border-strong hover:text-foreground"
+        className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-surface text-muted shadow-card transition-colors hover:text-foreground"
       >
         <Bell size={17} strokeWidth={1.75} />
         {total > 0 && (

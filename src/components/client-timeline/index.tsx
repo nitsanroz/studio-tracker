@@ -866,7 +866,7 @@ export function ClientTimeline({
   );
 
   return (
-    <div ref={root} className="flex flex-col gap-3">
+    <div ref={root} className="keep-lines flex flex-col gap-3">
       {toolbarSlot && createPortal(toolbar, toolbarSlot)}
 
       {allRows.length === 0 ? (
