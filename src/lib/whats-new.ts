@@ -87,6 +87,39 @@ export interface Release {
  */
 export const RELEASES: Release[] = [
   {
+    version: "v1.78.0",
+    date: "2026-10-23",
+    // Two items for the studio. The release's admin half (Leads, Candidates,
+    // Freelancers and Vacation rethought, the board drag) was built with Nitsan
+    // and Michal at the screen; announcing it back to them is noise.
+    // Pictures: `scripts/build-whatsnew-refresh.mjs` — the app's own stylesheet
+    // and markup, laid out by Chrome. The new-look one is Nitsan's pick of
+    // several (floating Home pieces).
+    items: [
+      {
+        title: "The tracker has a new look",
+        body: "Closer to our website — bigger page titles, its arrow, cards without outlines and easier-to-read grey text. Everything is still where it was.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.78.0-new-look.png",
+          shape: "element",
+          alt: "Pieces of the home page in the new look, floating: a card with Nadav in the serif under the date, the My week card with Tuesday in brand blue, coloured task chips and a Weekly plan link with the new arrow, and two stat tiles, 118h and 91% billable, in the serif"
+        },
+      },
+      {
+        // `all`: `addTimeEntry` toasts for everyone, on every surface that logs.
+        title: "Undo right after you log time",
+        body: "Logging hours now shows a note at the bottom of the screen. Logged it on the wrong task? Press Undo and the entry is gone.",
+        audience: "all",
+        image: {
+          src: "/whats-new/1.78.0-undo.png",
+          shape: "element",
+          alt: "A dark note at the bottom of the screen reading Logged 2h on Anchor · Homepage, with a green tick, and the pointer on its Undo button",
+        },
+      },
+    ],
+  },
+  {
     version: "v1.76.0",
     date: "2026-10-13",
     items: [

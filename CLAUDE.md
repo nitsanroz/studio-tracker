@@ -154,6 +154,17 @@ looks like rather than as decoration.
   headless is on the machine; the blocker is auth, and the clean route is a
   fixture page rendering the real components (not a minted session, which would
   bake live client names into an image the whole studio sees).
+- **The route that works now (v1.78.1, `scripts/build-whatsnew-refresh.mjs`):**
+  the app's real markup (class lists copied from the rendered component) with
+  made-up content, styled by the DEV SERVER's own stylesheet inlined into an
+  HTML page, captured by headless Chrome as a transparent PNG. Real font, real
+  rules, no hand-copied values. ⚠️ Three silent fallbacks to the system font or
+  the old look, each cost a render: a LINKED sheet isn't applied to a file://
+  page (inline it); fonts fetched from localhost by a file:// page are refused
+  cross-origin (point `url(/…)` at the files in `public/`); and `--font-rubik`
+  (set by next/font on `<html>`) must be defined, or every font stack naming it
+  is void. Pieces must sit inside `.app-canvas` or the electric card rules don't
+  apply, and lay out wider than 768px (then `zoom`) or the `md:` layout is lost.
 
 ## Related / out of scope
 - **The admin home's "Studio pace" banner mirrors finance-admin's hours goal** (`src/lib/hours-goal.ts`, `/api/hours-goal`, v1.72.0): change the goal in both repos, and keep the route hours-only — Michal sees it without finance access.
