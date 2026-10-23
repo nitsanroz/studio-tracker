@@ -12,7 +12,6 @@ import {
   formatFeedDate,
   greetingFor,
   toISODate,
-  DAY_NAMES,
 } from "@/lib/format";
 import {
   HOME_RANGES,
@@ -32,10 +31,10 @@ import {
 import { Celebrations } from "./celebrations";
 import { DayLog } from "./day-log";
 import { ClientBreakdown, MyGraphs } from "./graphs";
-import { MemberWelcome, MyAvatar, MyWeek } from "./member";
+import { MemberWelcome, MyWeek } from "./member";
 import { MyVacationCard } from "../vacation";
 import { useVacation } from "@/lib/use-vacation";
-import { tenureSince, tenureWords } from "./shared";
+import { tenureWords } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StudioTeamStrip } from "./team-strip";
 import { StatTiles, UpdatedBriefsAlert } from "./tiles";
@@ -82,7 +81,6 @@ export function Dashboard() {
 
   const firstName = me?.name.split(" ")[0] ?? "";
   const today = new Date();
-  const dateLabel = `${DAY_NAMES[today.getDay()]}, ${today.getDate()}/${today.getMonth() + 1}`;
 
   const myTasks = useMemo(
     () =>
@@ -154,86 +152,30 @@ export function Dashboard() {
           than under it) and ONE horizontally-scrollable strip holding every
           filter. Above `md` the `md:` classes restore the original wrap
           behaviour exactly.
-          Second pass (Nitsan, on the phone): the member's "Tasks assigned"
-          counter and the client select are both `md:` only now — the bottom bar
-          already carries Tasks, and picking a client to scope your own hours is
-          desk work. That leaves identity + the period stepper, two rows. */}
+          Second pass (Nitsan, on the phone): the client select is `md:` only —
+          picking a client to scope your own hours is desk work. (The member's
+          "Tasks assigned" counter is gone altogether since 2026-10-23: the My
+          tasks pane's heading carries the same count.) That leaves identity +
+          the period stepper, two rows. */}
       <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-x-10 md:gap-y-3">
-        {/* ⚠️ THE ADMIN GREETING IS ONE HEADLINE NOW (2026-10-23), in the studio
-            website's voice: Saans at the page-title size with the one word that
-            matters — the name — in brand-blue serif italic ("Want to apply?" on
-            the site). The tenure, which was a serif counter beside it, reads as a
-            plain line under it. Members keep their date line; their hero below
-            carries the greeting in the same style. */}
-        {isAdmin ? (
-          <div className="min-w-0">
-            <h1 className="page-title">
-              {greetingFor(today)}, <span className="font-serif-accent font-normal text-brand">{firstName}</span>
-            </h1>
-            {me?.startDate && (
-              <p className="mt-1 text-sm text-muted" title={`In the studio since ${me.startDate}`}>
-                {tenureWords(me.startDate)} in the studio
-              </p>
-            )}
-          </div>
-        ) : (
-        <>
-        <div className="flex items-center gap-3">
-          <MyAvatar />
-          <div className="min-w-0">
-            {/* ⚠️ Members get the DATE here, not the greeting — their hero says
-                "Good afternoon, Nadav" a few inches below, and the same phrase
-                twice on one screen reads as a bug. The date was already carried
-                by this line's `title`, so nothing new is being invented; it is
-                the one orienting fact the page never states out loud. */}
-            <p className="text-sm text-muted" title={dateLabel}>
-              {dateLabel}
-            </p>
-            <h1 className="font-serif-accent truncate text-[26px] leading-8">{firstName}</h1>
-          </div>
-          {/* `ml-auto` only below md — above it this block is a flex sibling of
-              the filters and pushing it right would strand the greeting. */}
+        {/* ⚠️ THE GREETING IS ONE HEADLINE (2026-10-23), in the studio website's
+            voice: Saans at the page-title size with the one word that matters —
+            the name — in brand-blue serif italic ("Want to apply?" on the site).
+            The tenure, which was a serif counter beside it, reads as a plain line
+            under it. Members get the same headline: theirs used to keep the old
+            avatar + date + "2y 4m 14d" strip, with the greeting down in the hero,
+            so the name appeared twice and the page read as two designs. The hero
+            now leads with today's hours instead. */}
+        <div className="min-w-0">
+          <h1 className="page-title">
+            {greetingFor(today)}, <span className="font-serif-accent font-normal text-brand">{firstName}</span>
+          </h1>
           {me?.startDate && (
-            <div className="ml-auto text-right md:hidden" title={`In the studio since ${me.startDate}`}>
-              <div className="font-serif-accent text-[22px] leading-7">
-                {tenureSince(me.startDate)
-                  .split(" ")
-                  .map((part) => (
-                    <span key={part} className="mr-1.5 last:mr-0">
-                      {part.slice(0, -1)}
-                      <span className="text-[13px]">{part.slice(-1)}</span>
-                    </span>
-                  ))}
-              </div>
-              <p className="text-[11px] text-muted">In the studio</p>
-            </div>
+            <p className="mt-1 text-sm text-muted" title={`In the studio since ${me.startDate}`}>
+              {tenureWords(me.startDate)} in the studio
+            </p>
           )}
         </div>
-        {me?.startDate && (
-          <div className="hidden md:block" title={`In the studio since ${me.startDate}`}>
-            <div className="font-serif-accent text-[30px] leading-9">
-              {tenureSince(me.startDate)
-                .split(" ")
-                .map((part) => (
-                  <span key={part} className="mr-1.5 last:mr-0">
-                    {part.slice(0, -1)}
-                    <span className="text-base">{part.slice(-1)}</span>
-                  </span>
-                ))}
-            </div>
-            <p className="text-xs text-muted">In the studio</p>
-          </div>
-        )}
-        </>
-        )}
-        {/* admins don't triage their own assignments from here — the counter went
-            with the My-tasks pane */}
-        {!isAdmin && (
-          <div className="hidden md:block">
-            <div className="font-serif-accent text-[30px] leading-9">{myTasks.length}</div>
-            <p className="text-xs text-muted">Tasks assigned</p>
-          </div>
-        )}
         {/* Two lines below md: the billable switch and the client picker share
             the first, and `PeriodStepper` — pushed last and given a full basis —
             takes the second, where it scrolls itself.

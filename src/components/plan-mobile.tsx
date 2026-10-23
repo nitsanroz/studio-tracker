@@ -163,7 +163,7 @@ export function PlanMobile() {
           waiting list cannot all be 44px wide, and shrinking them to fit is how
           "SUN 30" becomes unreadable. Same `-mx-4 px-4` bleed the log-time
           client chips use, so a swipe has somewhere to go. */}
-      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {days.map((d) => {
           const iso = toISODate(d);
           const { date } = formatDayLabel(d);
@@ -455,7 +455,7 @@ function MoveSheet({
         {col?.type !== "waiting_list" && (
           <div>
             <div className="mb-1 text-[11px] font-medium text-muted">When</div>
-            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {days.map((d) => {
                 const iso = toISODate(d);
                 const { date: dd } = formatDayLabel(d);

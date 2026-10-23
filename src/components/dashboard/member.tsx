@@ -10,22 +10,18 @@
 
 import Link from "next/link";
 import { DEFAULT_PORTRAIT, MemberPhoto } from "../member-photo";
-import { Avatar } from "../ui";
 import { Celebrations } from "./celebrations";
 import { splitHours } from "./shared";
 import type { HomeFilter } from "./shared";
 import { StatTile } from "./tiles";
-import { DAY_NAMES, formatHours, greetingFor, shiftDays, startOfWeek, toISODate } from "@/lib/format";
+import { DAY_NAMES, formatHours, shiftDays, startOfWeek, toISODate } from "@/lib/format";
 import { dailyTargetMinutes } from "@/lib/members";
 import { useData } from "@/lib/store";
 import type { Profile } from "@/lib/types";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { useMemberPortraits } from "@/lib/use-member-portraits";
-import {
-  Pencil,
-} from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 
 export function MyWeek() {
@@ -160,53 +156,6 @@ export function MyWeek() {
 }
 
 
-/** My avatar next to the greeting; hover reveals an edit overlay → upload. */
-export function MyAvatar() {
-  const { profiles, currentUserId, patchProfileLocal } = useData();
-  const me = profiles.find((p) => p.id === currentUserId) ?? null;
-  const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  async function upload(file: File) {
-    setBusy(true);
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/avatar", { method: "POST", body });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      console.error("avatar upload failed", json.error);
-      return;
-    }
-    if (me) patchProfileLocal(me.id, { avatarUrl: json.avatarUrl });
-  }
-
-  return (
-    <button
-      onClick={() => inputRef.current?.click()}
-      className={`group/avatar relative shrink-0 rounded-full ${busy ? "opacity-50" : ""}`}
-      title="Change my avatar"
-    >
-      <Avatar profile={me} size={52} />
-      <span className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/40 text-white group-hover/avatar:flex">
-        <Pencil size={16} />
-      </span>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) upload(f);
-          e.target.value = "";
-        }}
-      />
-    </button>
-  );
-}
-
-
 /** Member welcome: blue hero with the member's cut-out photo + this-week summary, then 3 KPI tiles. */
 export function MemberWelcome({
   me,
@@ -277,11 +226,14 @@ export function MemberWelcome({
       if (e.userId === me.id && e.date === today && !e.legacy) min += e.minutes;
     }
     const target = dailyTargetMinutes(me);
-    if (min <= 0) return "Nothing logged today";
+    // [plain lead, serif-italic word] — the hero's headline, in the website's voice.
+    if (min <= 0) return ["Nothing logged ", "today"];
     // At or past the target the remaining figure is noise — say it's done.
-    if (min >= target) return `Day complete — ${formatHours(min)} logged`;
-    return `${formatHours(min)} of ${formatHours(target)} logged today`;
+    if (min >= target) return [`${formatHours(min)} logged — day `, "complete"];
+    return [`${formatHours(min)} of ${formatHours(target)} logged `, "today"];
   }, [timeEntries, me]);
+  const now = new Date();
+  const dateLine = `${DAY_NAMES[now.getDay()]}, ${now.getDate()}/${now.getMonth() + 1}`;
 
   const [hFig, hUnit] = splitHours(scoped.min);
   const [adFig, adUnit] = splitHours(scoped.perDay, true);
@@ -308,22 +260,19 @@ export function MemberWelcome({
             person. The portrait is `hidden sm:block`, so below `sm` the padding
             has to be zero or it reserves a column for nothing. */}
         <div className="relative z-10 sm:pr-[196px]">
-          {/* ⚠️ The greeting LIVES HERE now, and the page header's copy of it was
-              removed for members in the same change — this panel is the welcome,
-              and two "Good afternoon"s six inches apart is one too many.
-              The sentence that used to be here reported three figures the same
-              screen already carried: the week's hours (the My hours tile beside
-              this), the open-task count (the header's own counter and the My
-              tasks heading) and the due count (those tasks' own dates). What is
-              left is the one figure nothing else on the page shows — today
-              against your own day — which is also the one the button underneath
-              acts on. */}
-          {/* The website's voice (2026-10-23): Saans, the name in serif italic. */}
+          {/* ⚠️ The greeting is the PAGE's headline now, same as the admin's
+              (2026-10-23) — this panel used to carry it, and the header above
+              carried the name again. What the panel leads with instead is the one
+              figure nothing else on the page shows — today against your own day —
+              which is also the one the button underneath acts on. The sentence
+              before that reported three figures the screen already carried (the
+              week's hours, the open-task count, the due count). The date line
+              under it is what the old header strip used to say. */}
           <h2 className="text-[34px] font-medium leading-tight tracking-[-0.02em]">
-            {greetingFor(new Date())},{" "}
-            <span className="font-serif-accent font-normal">{me.name.split(" ")[0]}</span>
+            {todayLine[0]}
+            <span className="font-serif-accent font-normal">{todayLine[1]}</span>
           </h2>
-          <div className="mt-1.5 text-sm text-white/85">{todayLine}</div>
+          <div className="mt-1.5 text-sm text-white/85">{dateLine}</div>
           {/* ⚠️ Off on a phone, and the gate is a WRAPPER for the same reason the
               admin pane's is (see below): `Celebrations` returns its own element
               with `empty:hidden`, so `hidden md:block` on that element would win

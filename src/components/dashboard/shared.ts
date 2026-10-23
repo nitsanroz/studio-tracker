@@ -89,12 +89,6 @@ export function tenureWords(startIso: string): string {
   return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
 }
 
-/** calendar diff since start date → "Xy Ym Zd" */
-export function tenureSince(startIso: string): string {
-  const { y, m, d } = tenureParts(startIso);
-  return `${y}y ${m}m ${d}d`;
-}
-
 /** calendar diff since start date, in whole years, months and days */
 function tenureParts(startIso: string): { y: number; m: number; d: number } {
   const start = new Date(startIso);
