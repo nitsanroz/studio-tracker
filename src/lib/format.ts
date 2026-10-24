@@ -31,6 +31,22 @@ export function formatHoursAvg(minutes: number): string {
 }
 
 
+const STUDIO_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
+
+/** Today in Israel as yyyy-mm-dd — not the server's (Vercel runs in UTC). */
+export function studioToday(now = new Date()): string {
+  return STUDIO_DATE.format(now);
+}
+
+/**
+ * A timestamp's date IN ISRAEL, or a plain date as it is. `.slice(0, 10)` on a
+ * timestamptz is the UTC date: something done at 01:30 on a Thursday reads as
+ * Wednesday.
+ */
+export function studioDate(value: string): string {
+  return value.length <= 10 ? value : STUDIO_DATE.format(new Date(value));
+}
+
 export function toISODate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");

@@ -4,6 +4,8 @@ export interface Profile {
   id: string;
   name: string;
   role: Role;
+  /** job title; 'owner' marks the studio owner (0058 vacation approver, 0059 &advice) */
+  position?: string | null;
   avatarUrl: string | null;
   /** studio cut-out portrait (head-to-arms, white studio&more tee) */
   photoUrl: string | null;

@@ -21,7 +21,7 @@
 // "Lost" card nobody looks at. Phase 3's "possible new leads" inbox is where
 // those belong.
 
-import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { decryptToken } from "./crypto";
 import { afterMail } from "../leads/rules";
 import { mapStage } from "../leads/stage-map";
@@ -47,11 +47,8 @@ import {
   type ParsedMessage,
 } from "./parse";
 
-export function service(): SupabaseClient {
-  return createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false },
-  });
-}
+// Kept as an export here for the routes that already import it from Gmail.
+export { service } from "../supabase/service";
 
 export interface Account {
   id: string;

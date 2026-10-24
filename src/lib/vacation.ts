@@ -41,7 +41,7 @@ export interface VacationBalance {
 }
 
 /** Workdays from `from` to `to`, inclusive: Sun–Thu, holidays out. */
-export function workdays(from: string, to: string, dayStates: DayState[]): string[] {
+export function workdays(from: string, to: string, dayStates: Pick<DayState, "dateFrom" | "dateTo">[]): string[] {
   const out: string[] = [];
   if (!from || !to || to < from) return out;
   for (let d = parseISO(from); toISODate(d) <= to; d = shiftDays(d, 1)) {

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { isCronRequest } from "@/lib/cron";
 import { googleConfigured } from "@/lib/gmail/google";
 import { renewAll, service } from "@/lib/gmail/sync";
 import { purgeDeletedLeads } from "@/lib/leads/purge";
@@ -16,11 +16,7 @@ export const maxDuration = 60;
  * else is refused, so this cannot be used to make the app hammer Gmail.
  */
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET ?? "";
-  const got = req.headers.get("authorization") ?? "";
-  const want = `Bearer ${secret}`;
-  const ok = secret.length >= 16 && got.length === want.length && timingSafeEqual(Buffer.from(got), Buffer.from(want));
-  if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!isCronRequest(req)) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const sb = service();
   if (!googleConfigured()) return NextResponse.json({ skipped: "not configured", purged: await purgeDeletedLeads(sb) });
   const [renewed, purged] = await Promise.all([renewAll(sb), purgeDeletedLeads(sb)]);

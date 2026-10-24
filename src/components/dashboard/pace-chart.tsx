@@ -15,7 +15,8 @@
 // and a second line there told a story the band doesn't speak to.
 
 import { useMemo, useState } from "react";
-import { DAY_NAMES, MONTH_NAMES_SHORT, formatHoursShort, isWeekend, parseISO, shiftDays, toISODate } from "@/lib/format";
+import { DAY_NAMES, MONTH_NAMES_SHORT, formatHoursShort, parseISO, shiftDays, toISODate } from "@/lib/format";
+import { evenSpread } from "@/lib/hours-goal";
 import { periodRange } from "@/lib/period-math";
 import { useHoursScope } from "./shared";
 import type { HomeFilter } from "./shared";
@@ -109,10 +110,7 @@ export function PaceChart({
 
   const goalRuns = useMemo(() => {
     if (!showGoal || !goal) return null;
-    const isWork = days.map((d) => !isWeekend(parseISO(d)));
-    const total = isWork.filter(Boolean).length || 1;
-    let n = 0;
-    const share = isWork.map((w) => (n += w ? 1 : 0) / total);
+    const share = evenSpread(days);
     return { goal: share.map((s) => s * goal.goal.hours * 60), costs: share.map((s) => s * goal.min.hours * 60) };
   }, [showGoal, goal, days]);
 

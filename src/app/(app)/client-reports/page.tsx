@@ -702,6 +702,25 @@ function PublishWorkspace() {
   const visibleTabs = candidates.filter((c) => !hiddenTabs.includes(c.id));
   const selectedClient =
     clients.find((c) => c.id === selected) ?? visibleTabs[0] ?? null;
+  const selectedId = selectedClient?.id ?? null;
+
+  // Opened from a link with ?client=… (&advice's "Open the report"): start on that tab.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("client");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the URL
+    if (id) setSelected(id);
+  }, []);
+  // …and the open tab is written back, so a reload keeps it and &advice knows
+  // which client you're looking at (Next keeps `useSearchParams` in step with replaceState).
+  useEffect(() => {
+    if (!selectedId) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("client") === selectedId) return;
+    url.searchParams.set("client", selectedId);
+    // `null`, as Next's docs do: passing Next's own history state made it treat
+    // this as its own write and skip syncing useSearchParams.
+    window.history.replaceState(null, "", url);
+  }, [selectedId]);
 
   /**
    * ⚠️ Recomputed per render rather than held in state: this page stays open for

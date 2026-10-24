@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   ChartPie,
@@ -36,6 +36,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
+import { Advice } from "./advice";
 import { useVacation } from "@/lib/use-vacation";
 import { NewLeadsProvider, useNewLeads } from "./new-leads";
 import { EgressBanner } from "./egress-banner";
@@ -984,6 +985,15 @@ function Shell({ children }: { children: ReactNode }) {
             Exit
           </button>
         </div>
+      )}
+
+      {/* &advice, the owner's advisor. Checked here so other admins never even
+          ask (the API still answers them 403). Not while previewing someone else. */}
+      {isAdmin && !viewingAs && me?.position === "owner" && (
+        // useSearchParams inside needs a boundary; the button may render nothing anyway.
+        <Suspense fallback={null}>
+          <Advice />
+        </Suspense>
       )}
 
       {/* Confirmations ("Logged 2h on …") and the store's neutral notes ("that

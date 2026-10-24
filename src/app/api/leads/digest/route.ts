@@ -1,12 +1,13 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { service } from "@/lib/gmail/sync";
+import { isCronRequest } from "@/lib/cron";
+import { service } from "@/lib/supabase/service";
+import { dailyRun } from "@/lib/advice/word";
 import { boardUrl, esc, leadUrl, recipients, sendMail } from "@/lib/leads/mail";
 import { mapStage } from "@/lib/leads/stage-map";
 import { isStalled } from "@/lib/leads/stalled";
 import type { Lead } from "@/lib/leads/types";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * The morning email: replies owed, next steps due, stage suggestions waiting,
@@ -17,18 +18,25 @@ export const maxDuration = 60;
  * "all clear" is a digest people stop opening.
  *
  * `?preview=1` with the cron secret returns the HTML instead of sending it.
+ *
+ * It also runs &advice's morning step (v1.80.0): every rule check, then
+ * Claude's wording when there's an API key. It rides this cron because the
+ * Vercel plan allows two (see gmail/renew), and it wants the same 07:00 slot.
  */
-function authorised(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET ?? "";
-  const want = `Bearer ${secret}`;
-  const got = req.headers.get("authorization") ?? "";
-  return secret.length >= 16 && got.length === want.length && timingSafeEqual(Buffer.from(got), Buffer.from(want));
-}
-
 type Row = Record<string, unknown>;
 
 export async function GET(req: NextRequest) {
-  if (!authorised(req)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!isCronRequest(req)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (req.nextUrl.searchParams.get("preview") === "1") return digest(req);
+  // Side by side, and neither can sink the other: the digest's answer carries the advice result.
+  const [res, advice] = await Promise.all([
+    digest(req),
+    dailyRun(service()).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) })),
+  ]);
+  return NextResponse.json({ ...(await res.json()), advice });
+}
+
+async function digest(req: NextRequest): Promise<NextResponse> {
   const sb = service();
   const now = new Date();
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(now);

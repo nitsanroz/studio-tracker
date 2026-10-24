@@ -266,6 +266,7 @@ export const mapProfile = (r: any): Profile => ({
   id: r.id,
   name: r.name,
   role: r.role,
+  position: r.position ?? null,
   avatarUrl: r.avatar_url,
   photoUrl: r.photo_url ?? null,
   active: r.active,

@@ -11,6 +11,7 @@
     "test:watch": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
     "lucide-react": "^1.23.0",
