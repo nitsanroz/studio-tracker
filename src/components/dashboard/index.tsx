@@ -106,7 +106,7 @@ export function Dashboard() {
   const compactTasksCard = (
     <div className="rounded-2xl border border-border bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <h2 className="font-heading text-sm">My tasks ({myTasks.length})</h2>
+        <h2 className="card-title">My tasks ({myTasks.length})</h2>
         <Link href="/my-tasks" className="flex items-center gap-1 text-xs text-brand hover:underline">
           All tasks <StudioArrow size={15} />
         </Link>
@@ -350,10 +350,16 @@ export function Dashboard() {
               filter={filter}
               prevRange={prevRange}
               onLogTime={() => setLogTimeOpen(true)}
-            />
+            >
+              <MyWeek />
+            </MemberWelcome>
           )}
-          <MyWeek />
-          <MyVacationCard vacation={vacation} />
+          {/* On a phone the vacation card keeps its own row here; from `md` it
+              sits under My tasks, beside "Log my hours" (below), instead of
+              spending a full-width row on one figure. */}
+          <div className="md:hidden">
+            <MyVacationCard vacation={vacation} />
+          </div>
           {/* Phone only, and it is the other half of `MyWeek` there: that pane
               shows the days AHEAD, this one what you actually logged on the days
               already gone. On a laptop the Time Feed and "Log my hours" below
@@ -369,7 +375,10 @@ export function Dashboard() {
             <div id="log" className="scroll-mt-20 lg:col-span-2">
               <DayLog />
             </div>
-            {compactTasksCard}
+            <div className="flex flex-col gap-4">
+              {compactTasksCard}
+              <MyVacationCard vacation={vacation} />
+            </div>
           </div>
           {/* PeriodStat is gone from the member view — it repeated the "My hours"
               tile above, whose delta chip now carries the vs-last-period figure.

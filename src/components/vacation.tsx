@@ -28,7 +28,7 @@ import { Button, Field, Input, Textarea } from "./primitives";
 import { askConfirm } from "./confirm-dialog";
 import { useData } from "@/lib/store";
 import { MONTH_NAMES_SHORT, formatDate, toISODate } from "@/lib/format";
-import { availableDays, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "@/lib/vacation";
+import { availableDays, availableIn, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "@/lib/vacation";
 import type { VacationState } from "@/lib/use-vacation";
 import { EmptyState } from "./empty-state";
 
@@ -82,6 +82,14 @@ export function VacationRequestModal({
   // credit for every month after the payslip's.
   const planned = plannedVacation(vacation.mineProfileId, planColumns, planEntries);
   const fit = vacation.mine && days ? fitRequest(vacation.mine, mine, dayStates, dates, undefined, new Date(), planned) : null;
+  // ⚠️ What they'll HAVE in the month the vacation starts, before this request:
+  // a day's credit for every month up to it (Nitsan, 2026-10-24 — asking for
+  // February should show February's figure, not today's). Same `room` maths
+  // as `fit`, so the two lines can't disagree.
+  const startMonth = (from < today ? today : from).slice(0, 7);
+  const inMonth = vacation.mine
+    ? availableIn(vacation.mine, mine, dayStates, startMonth, undefined, new Date(), planned)
+    : null;
   const tooMany = fit != null && !fit.ok;
   const shortBy = tooMany
     ? `By ${monthName(fit!.short!.month)} you'd be ${formatDays(fit!.short!.by)} day${fit!.short!.by === 1 ? "" : "s"} short.`
@@ -132,6 +140,21 @@ export function VacationRequestModal({
             <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
           </Field>
         </div>
+        {inMonth != null && (
+          <div className="rounded-xl bg-background px-3 py-2.5">
+            <div className="text-sm">
+              <span className={`font-medium ${inMonth < 0 ? "text-danger" : ""}`}>{formatDays(inMonth)}</span>{" "}
+              day{Math.abs(inMonth) === 1 ? "" : "s"} available in {monthName(startMonth)}
+              {startMonth.slice(0, 4) !== today.slice(0, 4) && ` ${startMonth.slice(0, 4)}`}
+            </div>
+            {/* the arithmetic, so a figure higher than the page's isn't a surprise */}
+            {(vacation.mine?.accrued ?? 0) > 0 && (
+              <div className="mt-0.5 text-xs text-muted">
+                {`+${formatDays(vacation.mine!.accrued!)} each month until then, less what's already booked`}
+              </div>
+            )}
+          </div>
+        )}
         <p className="text-sm">
           <span className="font-medium">{days}</span> workday{days === 1 ? "" : "s"}
           {!vacation.mine && <span className="text-muted"> · no day limit — Nitsan approves</span>}
@@ -159,7 +182,7 @@ export function VacationRequestModal({
           <label className="flex items-start gap-2 rounded-md bg-red-50 p-2 text-xs text-red-800">
             <input type="checkbox" checked={overOk} onChange={(e) => setOverOk(e.target.checked)} className="mt-0.5" />
             <span>
-              {shortBy} I know this is more vacation than I&apos;ll have — send it anyway.
+              {`${shortBy} I know this is more vacation than I'll have — send it anyway.`}
             </span>
           </label>
         )}
@@ -209,9 +232,9 @@ export function MyVacationCard({ vacation, full = false }: { vacation: VacationS
 
   return (
     <div className={`rounded-2xl border border-border bg-surface shadow-card ${full ? "p-6" : "p-4"}`}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className={`flex items-center gap-2 font-heading ${full ? "text-base" : "text-sm"}`}>
-          <TreePalm size={full ? 18 : 16} strokeWidth={1.75} className="text-brand" /> {full ? "Your vacation" : "Vacation"}
+      <div className={`flex items-center justify-between gap-2 ${full ? "mb-3" : "mb-1.5"}`}>
+        <h2 className="card-title flex items-center gap-2">
+          <TreePalm size={20} strokeWidth={1.75} className="text-brand" /> {full ? "Your vacation" : "Vacation"}
         </h2>
         {!full && (
           <Link href="/vacation" className="flex items-center gap-1 text-xs text-brand hover:underline">
@@ -220,30 +243,35 @@ export function MyVacationCard({ vacation, full = false }: { vacation: VacationS
         )}
       </div>
       {a ? (
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            {/* On the Vacation page the headline already says the days left
-                (2026-10-23), so the card gives only how they are made up. */}
-            {!full && (
-              <div className={`text-3xl tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>{formatDays(a.available)}</div>
-            )}
-            <div className={`text-muted ${full ? "text-sm" : "text-xs"}`}>
-              {/* Joined, not prefixed: on the page the "days left now" lead-in
-                  is gone, and a prefixed separator then opened the line. */}
-              {[
-                full ? null : "days left now",
-                a.monthly ? `+${formatDays(a.monthly)} each month` : null,
-                `${formatDays(a.balance)} on your ${MONTH_NAMES_SHORT[vacation.mine!.month - 1]} payslip` +
-                  (a.approved ? `, ${formatDays(a.approved)} approved since` : "") +
-                  (a.pending ? `, ${formatDays(a.pending)} waiting` : ""),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+        <div>
+          {/* Home card: the days and the button share ONE row, and the "how
+              it's made up" line runs under both (Nitsan, 2026-10-24 — the card
+              was a tall column of number, sentence, then button). On the
+              Vacation page the headline already says the days left
+              (2026-10-23), so the card gives only how they are made up. */}
+          {!full && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-3xl tabular-nums ${a.available < 0 ? "text-danger" : ""}`}>
+                  {formatDays(a.available)}
+                </span>
+                <span className="text-xs text-muted">days left now</span>
+              </div>
+              {/* Never gated on the balance: next month's credit may cover it,
+                  and going over is allowed once they tick that they know. */}
+              <Button onClick={() => setAsking(true)}>Request vacation</Button>
             </div>
+          )}
+          <div className={`text-muted ${full ? "text-sm" : "mt-1 text-xs"}`}>
+            {[
+              a.monthly ? `+${formatDays(a.monthly)} each month` : null,
+              `${formatDays(a.balance)} on your ${MONTH_NAMES_SHORT[vacation.mine!.month - 1]} payslip` +
+                (a.approved ? `, ${formatDays(a.approved)} approved since` : "") +
+                (a.pending ? `, ${formatDays(a.pending)} waiting` : ""),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </div>
-          {/* Never gated on the balance: next month's credit may cover it, and
-              going over is allowed once they tick that they know. */}
-          {!full && <Button onClick={() => setAsking(true)}>Request vacation</Button>}
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -306,8 +334,8 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-      <h2 className="mb-4 flex items-center gap-2 font-heading text-base">
-        <Users size={18} strokeWidth={1.75} className="text-brand" /> The team
+      <h2 className="card-title mb-4 flex items-center gap-2">
+        <Users size={20} strokeWidth={1.75} className="text-brand" /> The team
       </h2>
       <h3 className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
         To decide

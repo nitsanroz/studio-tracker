@@ -40,7 +40,7 @@ export function MyGraphs({
   if (isAdmin && range) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-5 shadow-card">
-        <h2 className="mb-3 font-heading text-base" title="Hours added up day by day over the selected period">
+        <h2 className="card-title mb-3" title="Hours added up day by day over the selected period">
           Hours over time
         </h2>
         <PaceChart filter={{ ...filter, range }} prevRange={prevRange} prevLabel={prevLabel} />
@@ -88,7 +88,7 @@ function BucketGraph({ filter, isAdmin }: { filter: HomeFilter; isAdmin: boolean
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-3 font-heading text-sm" title="Your logged hours over the selected period">
+      <h2 className="card-title mb-3" title="Your logged hours over the selected period">
         Hours over time
       </h2>
       {perBucket.length > 0 ? (
@@ -206,7 +206,7 @@ export function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdm
     <div className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-card">
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2
-          className="font-heading text-base"
+          className="card-title"
           title={
             show === "split"
               ? "Hours split by client over the selected period"

@@ -68,6 +68,9 @@ let planClipboard: ChipPayload | null = null;
  * between the columns equally rather than giving it to the busiest one.
  */
 const PERSON_COL = "w-[175px]";
+/** Members only read the Studio column (admins write in it), so it gives up 30%
+ * of its width to the people's columns (Nitsan, 2026-10-24). */
+const STUDIO_COL_MEMBER = "w-[122px]";
 
 // ── chips ────────────────────────────────────────────────────────────────
 
@@ -754,6 +757,9 @@ const MONTH_NAMES = [
 const EDGE_TINT = "rgba(0,0,0,0.075)";
 const EDGE_X_BG = `linear-gradient(to right, ${EDGE_TINT}, rgba(0,0,0,0))`;
 const EDGE_Y_BG = `linear-gradient(to bottom, ${EDGE_TINT}, rgba(0,0,0,0))`;
+/** Today's row, lifted off the grid: a brand-tinted spread above and below. */
+const TODAY_LIFT =
+  "0 12px 28px -8px rgba(11, 67, 237, 0.32), 0 -8px 22px -10px rgba(11, 67, 237, 0.22), inset 0 0 0 1px rgba(11, 67, 237, 0.2)";
 /** The pinned date column's width — `w-24`, and the gradient sticks at its edge. */
 const DATE_COL_W = 96;
 
@@ -803,6 +809,10 @@ export function WeeklyPlan() {
   const [headerH, setHeaderH] = useState(0);
   /** The table's own width, for the edge overlays — see `syncGridShadow`. */
   const [tableW, setTableW] = useState(0);
+  /** Today's row within the table, for the lift drawn over it. */
+  const [todayBox, setTodayBox] = useState<{ top: number; height: number } | null>(null);
+  /** The scroller's visible width — today's lift spans the VIEW, not the table. */
+  const [viewW, setViewW] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const syncGridShadow = useCallback((el: HTMLDivElement) => {
     const x = el.scrollWidth > el.clientWidth;
@@ -823,11 +833,25 @@ export function WeeklyPlan() {
      * `width: leftW + chartW`; ours is measured, because the column count and the
      * rail width both move.
      */
+    const vw = el.clientWidth;
+    setViewW((prev) => (Math.abs(prev - vw) < 0.5 ? prev : vw));
     const tbl = el.querySelector("table");
     if (tbl) {
       const w = tbl.scrollWidth;
       setTableW((prev) => (Math.abs(prev - w) < 0.5 ? prev : w));
     }
+    // Today's row, measured against the overlays' wrapper (the table's parent),
+    // so the lift follows it as months fold and chips change the row heights —
+    // every one of those resizes the table, which re-runs this.
+    const row = el.querySelector<HTMLTableRowElement>("tr[data-today]");
+    const wrap = tbl?.parentElement;
+    if (row && wrap) {
+      const top = row.getBoundingClientRect().top - wrap.getBoundingClientRect().top;
+      const height = row.getBoundingClientRect().height;
+      setTodayBox((prev) =>
+        prev && Math.abs(prev.top - top) < 0.5 && Math.abs(prev.height - height) < 0.5 ? prev : { top, height },
+      );
+    } else setTodayBox((prev) => (prev ? null : prev));
   }, []);
   function onGridScroll(e: React.UIEvent<HTMLDivElement>) {
     syncGridShadow(e.currentTarget);
@@ -1168,7 +1192,7 @@ export function WeeklyPlan() {
                       // The tint classes are UNLAYERED, so they beat this
                       // deterministically (globals.css); two TAILWIND backgrounds
                       // are what was ambiguous, not a Tailwind base under one.
-                      className={`${PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
+                      className={`${col.type === "studio" && !canEdit ? STUDIO_COL_MEMBER : PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
                         isMe ? "plan-head-me" : col.type === "studio" ? "plan-head-studio" : ""
                       }`}
                     >
@@ -1234,6 +1258,7 @@ export function WeeklyPlan() {
                   <tr
                     key={iso}
                     id={`plan-day-${iso}`}
+                    data-today={isToday || undefined}
                     // ⚠️ `isPast` uses `plan-row-past`, NOT `opacity-55`. Opacity
                     // on a row applies to its descendants as a group, so it made
                     // the STICKY date cell 55% transparent and chips scrolling
@@ -1241,27 +1266,27 @@ export function WeeklyPlan() {
                     // while every cell still measured a fully opaque background.
                     // The class fades the cells' CONTENT and leaves the cell
                     // backgrounds alone. See globals.css.
-                    className={`${dayState ? "plan-row-holiday" : weekend ? "bg-weekend" : ""} ${isToday ? "plan-row-today outline outline-2 -outline-offset-2 outline-brand" : ""} ${isPast ? "plan-row-past" : ""}`}
+                    className={`${dayState ? "plan-row-holiday" : isToday ? "plan-row-today" : weekend ? "plan-row-weekend" : ""} ${isPast ? "plan-row-past" : ""}`}
                   >
                     <td
                       onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
-                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "border-l-4 border-l-brand pin-today" : dayState ? "bg-blue-100" : weekend ? "bg-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
+                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "pin-today" : dayState ? "plan-date-holiday" : weekend ? "plan-date-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
                       title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <div className={isToday ? "text-sm font-bold text-foreground" : "font-semibold"}>
+                        <div className={isToday ? "text-sm font-bold" : "font-semibold"}>
                           {isToday ? "Today" : name}
                         </div>
                         {canEdit && (
                           <CalendarPlus
                             size={12}
-                            className="mt-0.5 shrink-0 text-brand opacity-0 transition-opacity group-hover/date:opacity-100"
+                            className={`mt-0.5 shrink-0 opacity-0 transition-opacity group-hover/date:opacity-100 ${isToday ? "" : "text-brand"}`}
                           />
                         )}
                       </div>
-                      <div className={isToday ? "font-bold text-foreground" : "text-faint"}>{date}</div>
+                      <div className={isToday ? "font-bold" : "text-faint"}>{date}</div>
                       {dayState && (
-                        <div className="mt-1 inline-block max-w-full truncate rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        <div className="mt-1 inline-block max-w-full truncate rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-medium text-white">
                           {dayState.label}
                         </div>
                       )}
@@ -1277,13 +1302,13 @@ export function WeeklyPlan() {
                         // row instead of one chip's worth of it.
                         // ⚠️ One OPAQUE tint class, same reason as the header above.
                         className={`h-px border-b border-r border-border p-0 align-top last:border-r-0 ${
-                          weekend
-                            ? ""
-                            : col.profileId === currentUserId
-                              ? "plan-cell-me"
-                              : col.type === "studio"
-                                ? "plan-cell-studio"
-                                : ""
+                          // Your column is a FRAME, not a fill, so it holds through
+                          // weekends and holidays and lets their row colour show.
+                          col.profileId === currentUserId
+                            ? "plan-cell-me"
+                            : col.type === "studio" && !weekend && !dayState
+                              ? "plan-cell-studio"
+                              : ""
                         }`}
                       >
                         <PlanCell
@@ -1336,6 +1361,30 @@ export function WeeklyPlan() {
               hit-tests with `elementFromPoint`, so a live 10px strip at the pinned
               edge would silently swallow drops into the first person column.
             */}
+            {/* TODAY IS LIFTED, NOT STROKED (Nitsan, 2026-10-24): the blue frame is
+                YOUR column's, so the two highlights no longer look alike. A
+                spread shadow above and below the row, from an overlay, because a
+                shadow on the <tr> or its cells is painted over by the next row's
+                cells (and per-cell shadows read as dashes — see above).
+                ⚠️ Transparent inside and `pointer-events-none`: the row's own
+                cells, chips and drops stay exactly as they were. z-[16] clears
+                the pinned date column (z-15) and stays under the header (z-20). */}
+            {/* ⚠️ The lift is `sticky left-0` at the scroller's VISIBLE width
+                (the edge-gradient pattern below), so the pinned blue date cell is
+                always inside it — a table-wide box slid off to the left with the
+                content and left the date cell bare (Nitsan, 2026-10-24). Rounded,
+                with an INSET hairline: an outer one is clipped by the scroller. */}
+            {todayBox && viewW > 0 && (
+              <div
+                className="pointer-events-none absolute inset-x-0 z-[16]"
+                style={{ top: todayBox.top, height: todayBox.height }}
+              >
+                <div
+                  className="sticky left-0 h-full rounded-[10px]"
+                  style={{ width: viewW, boxShadow: TODAY_LIFT }}
+                />
+              </div>
+            )}
             {gridShadow.x && (
               <div className="pointer-events-none absolute inset-y-0 left-0 z-[24] w-full">
                 <div

@@ -322,6 +322,27 @@ b,
   }
 }
 
+/* EVERY CARD'S TITLE — the card's crown (Nitsan, 2026-10-24: "titles feel
+   weak … Hours over time, Hours by client seem in different sizes"). They were
+   14px on some cards and 16px on others, the same weight as the card's own text.
+   Now one step: the website's H4 (Sans/H/H4 20/28), Saans Medium, so the title
+   leads the card. Unlayered, so it wins over a size utility left beside it. */
+.card-title {
+  font-family: "Saans", var(--font-rubik), system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 570;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+@media (max-width: 767px) {
+  .card-title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+}
+
 /* Serif display accent — PP Fragment Glare (names + big stat figures, per Figma round-trip) */
 .font-serif-accent {
   font-family: "PP Fragment Glare", Georgia, serif;
@@ -549,9 +570,15 @@ b,
    applied only on the cell that should win — but do not add a Tailwind
    background to an element carrying one and expect it to apply. */
 .pin-today {
-  background-color: color-mix(in oklab, var(--aqua) 20%, var(--surface));
+  /* Solid brand, white type (2026-10-24): today is the one row you must find at
+     a glance, so it no longer shares its pale aqua with "your column". */
+  background-color: var(--brand);
+  color: #fff;
+  /* matches the rounded lift drawn over today's row (weekly-plan.tsx) */
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
 }
-.pin-hover:hover {
+.pin-hover:not(.pin-today):hover {
   background-color: color-mix(in oklab, var(--brand-soft) 60%, var(--surface));
 }
 
@@ -573,17 +600,36 @@ b,
    ⚠️ Percentages are matched to the alphas they replace so nothing changes
    appearance: /60 → 60%, /30 → 30%, /20 → 20%, /10 → 10%. As above, change the
    MIX PERCENTAGE, never introduce an alpha. */
+/* ⚠️⚠️ ONE MEANING, ONE TREATMENT (Nitsan, 2026-10-24: "very pale and not clear
+   the difference between states"). Before, "your column" and "today" were the
+   SAME colour and weekend, holiday and Studio were three near-identical pale
+   blues. Second round the same day: amber holidays were harsh (→ blue), the
+   weekend hatch was noise (→ solid, darker), and a green "you" column was odd
+   next to the chips' client colours (→ a brand frame, no fill at all).
+     today      — solid brand date cell + the row outline, no row fill
+     holiday    — clear blue row, blue pill
+     weekend    — solid grey, a step darker than anything else in the grid
+     you        — 2px brand frame down the column, header in brand
+     Studio     — quiet neutral, so it never competes with a person
+   A new state gets a new TREATMENT, not a lighter mix of one here. */
 .plan-head-studio {
-  background-color: color-mix(in oklab, var(--brand-soft) 60%, var(--surface));
+  background-color: color-mix(in oklab, var(--track) 55%, var(--surface));
+}
+/* The frame is drawn with the cells' own side borders, NOT box-shadows: an inset
+   shadow stops at each cell's 1px bottom border and the frame reads as a dashed
+   line (the per-cell shadow warning in the grid's JSX). Unlayered, so it beats
+   the cells' `border-border` / `last:border-r-0`. */
+.plan-head-me,
+.plan-cell-me {
+  border-left: 2px solid var(--brand);
+  border-right: 2px solid var(--brand);
 }
 .plan-head-me {
-  background-color: color-mix(in oklab, var(--aqua) 20%, var(--surface));
+  background-color: var(--brand);
+  color: #fff;
 }
 .plan-cell-studio {
-  background-color: color-mix(in oklab, var(--brand-soft) 30%, var(--surface));
-}
-.plan-cell-me {
-  background-color: color-mix(in oklab, var(--aqua) 10%, var(--surface));
+  background-color: color-mix(in oklab, var(--track) 30%, var(--surface));
 }
 
 /* The weekly plan's ROW-level tints and the past-day fade.
@@ -609,12 +655,20 @@ b,
 }
 /* Pre-composited for the same reason as the cell tints — a translucent row
    background is one more surface that cannot hide what passes behind it. */
+/* Today is a white strip lifted off the grid (the shadow is an overlay in
+   weekly-plan.tsx), even on a Friday or Saturday — grey would bury the lift. */
 .plan-row-today {
-  background-color: color-mix(in oklab, var(--aqua) 10%, var(--surface));
+  background-color: var(--surface);
 }
 .plan-row-holiday {
-  /* Tailwind's blue-100, the literal this replaces (`bg-blue-100/60`). */
-  background-color: color-mix(in oklab, #dbeafe 60%, var(--surface));
+  background-color: color-mix(in oklab, #c9d8ff 65%, var(--surface));
+}
+.plan-date-holiday {
+  background-color: color-mix(in oklab, #b3c8ff 75%, var(--surface));
+}
+.plan-row-weekend,
+.plan-date-weekend {
+  background-color: color-mix(in oklab, var(--track) 100%, #06112f 5%);
 }
 
 /* The weekly plan's month separator band.

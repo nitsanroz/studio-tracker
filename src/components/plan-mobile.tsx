@@ -182,9 +182,9 @@ export function PlanMobile() {
                 on
                   ? "border-brand bg-brand text-white"
                   : holiday
-                    ? "border-border bg-blue-100 text-foreground"
+                    ? "border-border plan-date-holiday text-foreground"
                     : isWeekend(d)
-                      ? "border-border bg-weekend text-faint"
+                      ? "border-border plan-date-weekend text-faint"
                       : "border-border bg-surface text-muted"
               }`}
             >
@@ -217,7 +217,7 @@ export function PlanMobile() {
       </div>
 
       {dayState && !onWaiting && (
-        <div className="rounded-xl border border-border bg-blue-100 px-3 py-2 text-xs font-medium">
+        <div className="plan-date-holiday rounded-xl border border-border px-3 py-2 text-xs font-medium">
           {dayState.label}
         </div>
       )}

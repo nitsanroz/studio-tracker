@@ -187,7 +187,7 @@ export function DayLog() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="font-heading text-sm">Log my hours</h2>
+        <h2 className="card-title">Log my hours</h2>
         <div className="flex items-center gap-1">
           <button
             onClick={() => shiftDay(-1)}

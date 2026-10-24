@@ -90,6 +90,8 @@ function room(
   exceptId: string | undefined,
   today: Date,
   planned: string[] = [],
+  /** Run the months out at least this far ("2027-03"). */
+  until?: string,
 ): { month: string; room: number }[] {
   const asOf = balanceAsOf(balance);
   const first = monthIndex(asOf) + 1;
@@ -108,7 +110,12 @@ function room(
     const i = monthIndex(monthKey(d));
     perMonth.set(i, (perMonth.get(i) ?? 0) + 1);
   }
-  const last = Math.max(first, monthIndex(monthKey(toISODate(today))), ...perMonth.keys());
+  const last = Math.max(
+    first,
+    monthIndex(monthKey(toISODate(today))),
+    until ? monthIndex(until) : first,
+    ...perMonth.keys(),
+  );
   const monthly = balance.accrued ?? 0;
   const out: { month: string; room: number }[] = [];
   let used = 0;
@@ -153,6 +160,24 @@ export function availableDays(
   };
 }
 
+/** What can be asked for in `month` ("2027-03"): the payslip's balance plus a
+ * month's credit for every month up to and including it, less what's approved
+ * or waiting by then — and never more than a later month can spare. So −1.4 on
+ * a full-time September payslip is 2.6 by January, with nothing else booked. */
+export function availableIn(
+  balance: VacationBalance,
+  requests: VacationRequest[],
+  dayStates: DayState[],
+  month: string,
+  exceptId?: string,
+  today = new Date(),
+  planned: string[] = [],
+): number {
+  const from = month < monthKey(toISODate(today)) ? monthKey(toISODate(today)) : month;
+  const ahead = room(balance, requests, dayStates, [], exceptId, today, planned, from).filter((m) => m.month >= from);
+  return ahead.length ? Math.min(...ahead.map((m) => m.room)) : balance.balance;
+}
+
 export interface Fit {
   ok: boolean;
   /** The first month that would run short, and by how many days. */
@@ -172,7 +197,12 @@ export function fitRequest(
   planned: string[] = [],
 ): Fit {
   const months = room(balance, requests, dayStates, days, exceptId, today, planned);
-  const bad = months.find((m) => m.room < -1e-9);
+  // ⚠️ Only from the request's own first month on. A month BEFORE it can't be
+  // changed by it, so one that is already overbooked must not be blamed on it:
+  // a February day once read "By December you'd be 1.4 days short" when
+  // December was short with or without it (2026-10-24).
+  const start = days.length ? monthKey(days[0]) : monthKey(toISODate(today));
+  const bad = months.find((m) => m.month >= start && m.room < -1e-9);
   const end = days.length ? monthKey(days[days.length - 1]) : monthKey(toISODate(today));
   const at = months.find((m) => m.month === end) ?? months[months.length - 1];
   return {

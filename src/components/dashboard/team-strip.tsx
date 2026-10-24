@@ -81,7 +81,7 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-heading text-sm">
+        <h2 className="card-title">
           The studio · {rows.length} designer{rows.length === 1 ? "" : "s"}
           {unattributed > 0 && (
             // Without this the cards silently account for less than the period's

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableDays, balanceAsOf, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "./vacation";
+import { availableDays, availableIn, balanceAsOf, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "./vacation";
 import type { DayState } from "./types";
 
 const holidays: DayState[] = [{ id: "h", dateFrom: "2026-10-14", dateTo: "2026-10-14", label: "Holiday" }];
@@ -113,6 +113,43 @@ describe("fitRequest", () => {
     // October's day is taken, so November has only its own day left.
     const f = fitRequest(aki, [req("2026-10-15", "2026-10-15", "approved")], [], ["2026-11-01", "2026-11-02"], undefined, oct13);
     expect(f).toMatchObject({ ok: false, short: { month: "2026-11", by: 1 } });
+  });
+  it("doesn't blame a request for a month before it that is already short", () => {
+    // Mon 30 Nov – Thu 3 Dec: December ends a day short (3 credited, 4 taken)
+    // with or without a February day; by February the credits have caught up.
+    const dec = [req("2026-11-30", "2026-12-03", "approved")];
+    expect(fitRequest(aki, dec, [], ["2027-02-01"], undefined, oct13)).toMatchObject({ ok: true, leftAfter: 0 });
+    // …and a February that can't cover its own days is reported as February.
+    expect(fitRequest(aki, dec, [], ["2027-02-01", "2027-02-02", "2027-02-03"], undefined, oct13)).toMatchObject({
+      ok: false,
+      short: { month: "2027-02", by: 2 },
+    });
+  });
+});
+
+describe("availableIn", () => {
+  // Nadav: −1.4 on September's payslip, a day a month.
+  const nadav = { year: 2026, month: 9, balance: -1.4, accrued: 1 };
+  const oct24 = new Date(2026, 9, 24);
+
+  it("adds a day for every month up to the one asked about", () => {
+    expect(availableIn(nadav, [], [], "2026-10", undefined, oct24)).toBeCloseTo(-0.4);
+    expect(availableIn(nadav, [], [], "2027-01", undefined, oct24)).toBeCloseTo(2.6);
+  });
+
+  it("takes off what's booked before it, and what a later month needs", () => {
+    const booked = [req("2026-12-01", "2026-12-01", "approved"), req("2027-03-01", "2027-03-03", "pending")];
+    // Credited by month: Nov 0.6, Dec 1.6, Jan 2.6 … Mar 4.6. December's day
+    // leaves January 1.6 — but March, with 4 days out of its 4.6, can spare
+    // only 0.6, so that is all January (or November) can offer.
+    expect(availableIn(nadav, booked, [], "2027-01", undefined, oct24)).toBeCloseTo(0.6);
+    expect(availableIn(nadav, booked, [], "2026-11", undefined, oct24)).toBeCloseTo(0.6);
+    // After March nothing later is booked: April has its own day on top.
+    expect(availableIn(nadav, booked, [], "2027-04", undefined, oct24)).toBeCloseTo(1.6);
+  });
+
+  it("treats a past month as this month", () => {
+    expect(availableIn(nadav, [], [], "2026-08", undefined, oct24)).toBeCloseTo(-0.4);
   });
 });
 

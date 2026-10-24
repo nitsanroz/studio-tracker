@@ -198,7 +198,7 @@ export function Celebrations({ inline = false }: { inline?: boolean }) {
   return (
     <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-2 flex shrink-0 items-baseline justify-between gap-2">
-        <h2 className="font-heading text-sm">Coming up</h2>
+        <h2 className="card-title">Coming up</h2>
         <span className="text-[11px] tabular-nums text-faint">{upcoming.length} ahead</span>
       </div>
       {/* min-h-0 is load-bearing: without it a flex child refuses to shrink below

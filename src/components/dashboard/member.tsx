@@ -52,7 +52,7 @@ export function MyWeek() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-heading text-sm">My week</h2>
+        <h2 className="card-title">My week</h2>
         <Link href="/plan" className="flex items-center gap-1 text-xs text-brand hover:underline">
           Weekly plan <StudioArrow size={15} />
         </Link>
@@ -162,6 +162,7 @@ export function MemberWelcome({
   filter,
   prevRange,
   onLogTime,
+  children,
 }: {
   // ⚠️ The whole `Profile`, not the three fields the hero draws: the caller
   // already found it in `profiles`, and `dailyTargetMinutes` needs its capacity.
@@ -171,6 +172,8 @@ export function MemberWelcome({
   prevRange: { from: string; to: string } | null;
   /** Phone-only: opens the log-time sheet, since `#log` has nothing to jump to. */
   onLogTime: () => void;
+  /** Sits under the figures, beside the hero (My week). */
+  children?: React.ReactNode;
 }) {
   const { entrySums, timeEntries, tasks } = useData();
   const portraits = useMemberPortraits();
@@ -239,14 +242,19 @@ export function MemberWelcome({
   const [adFig, adUnit] = splitHours(scoped.perDay, true);
 
   return (
-    <div className="grid items-stretch gap-2 lg:grid-cols-2 lg:gap-4">
+    // ⚠️ RE-LAID OUT 2026-10-24 (Nitsan: "kpi cubes are big and empty, space
+    // seems to be wasted"). The four figures were a 2×2 of full cards beside the
+    // hero, each a number floating in ~150px of white. They are ONE strip now,
+    // and the hero's other neighbour is My week (passed in as `children`), so
+    // the first screen carries the week instead of air.
+    <div className="grid items-stretch gap-2 lg:grid-cols-12 lg:gap-4">
       {/* mt-9 is the room the portrait's head needs above the panel. The hero can't
           clip (the head breaks out of the top), so the decorative disc gets its own
           clipping layer instead of relying on overflow-hidden here.
           ⚠️ Below `sm` the portrait is not rendered at all, so that 36px was pure
           gap on the screen with the least of it to spare. */}
       <div
-        className="relative rounded-2xl bg-brand px-6 py-6 text-white sm:mt-9"
+        className="relative rounded-2xl bg-brand px-6 py-6 text-white sm:mt-9 lg:col-span-6"
         style={{ minHeight: 208, boxShadow: "var(--shadow-hero)" }}
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
@@ -336,17 +344,22 @@ export function MemberWelcome({
       {/* mt-9 only earns its place at `lg`, where this is the column BESIDE the
           hero and has to start level with it. Stacked under the hero it is just
           a 36px hole between two panes. */}
-      <div className="mt-2 grid grid-cols-2 gap-4 lg:mt-9">
-        <StatTile
-          label="My hours"
-          figure={hFig}
-          unit={hUnit}
-          delta={scoped.delta != null ? { value: scoped.delta, unit: "%" } : null}
-          sub={filter.label.toLowerCase()}
-        />
-        <StatTile label="Billable" figure={String(scoped.pct)} unit="%" sub={filter.label.toLowerCase()} />
-        <StatTile label="Days in studio" figure={String(scoped.days)} sub={filter.label.toLowerCase()} />
-        <StatTile label="Avg / day" figure={adFig} unit={adUnit} sub="days logged" />
+      <div className="mt-2 flex min-w-0 flex-col gap-2 md:gap-4 lg:col-span-6 lg:mt-9">
+        {/* Four boxes in one row (Nitsan, 2026-10-24: a box each, but not the
+            2×2 of tall cards beside the hero). */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-4">
+          <StatTile
+            label="My hours"
+            figure={hFig}
+            unit={hUnit}
+            delta={scoped.delta != null ? { value: scoped.delta, unit: "%" } : null}
+            sub={filter.label.toLowerCase()}
+          />
+          <StatTile label="Billable" figure={String(scoped.pct)} unit="%" sub={filter.label.toLowerCase()} />
+          <StatTile label="Days in studio" figure={String(scoped.days)} sub={filter.label.toLowerCase()} />
+          <StatTile label="Avg / day" figure={adFig} unit={adUnit} sub="days logged" />
+        </div>
+        {children}
       </div>
     </div>
   );
