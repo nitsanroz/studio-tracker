@@ -68,9 +68,9 @@ let planClipboard: ChipPayload | null = null;
  * between the columns equally rather than giving it to the busiest one.
  */
 const PERSON_COL = "w-[175px]";
-/** Members only read the Studio column (admins write in it), so it gives up 30%
- * of its width to the people's columns (Nitsan, 2026-10-24). */
-const STUDIO_COL_MEMBER = "w-[122px]";
+/** The Studio column is 30% narrower than a person's, so it never reads as one
+ * more teammate — for members (2026-10-24) and admins alike (2026-10-25). */
+const STUDIO_COL = "w-[122px]";
 
 // ── chips ────────────────────────────────────────────────────────────────
 
@@ -757,9 +757,11 @@ const MONTH_NAMES = [
 const EDGE_TINT = "rgba(0,0,0,0.075)";
 const EDGE_X_BG = `linear-gradient(to right, ${EDGE_TINT}, rgba(0,0,0,0))`;
 const EDGE_Y_BG = `linear-gradient(to bottom, ${EDGE_TINT}, rgba(0,0,0,0))`;
-/** Today's row, lifted off the grid: a brand-tinted spread above and below. */
+/** Today's row, lifted off the grid: a wide, soft spread above and below, in
+ *  Studio Black rather than brand blue (Nitsan, 2026-10-25: "more spread, less
+ *  blue") — the blue lives in the date cell; the shadow only lifts. */
 const TODAY_LIFT =
-  "0 12px 28px -8px rgba(11, 67, 237, 0.32), 0 -8px 22px -10px rgba(11, 67, 237, 0.22), inset 0 0 0 1px rgba(11, 67, 237, 0.2)";
+  "0 18px 44px -12px rgba(6, 17, 47, 0.22), 0 -12px 36px -14px rgba(6, 17, 47, 0.14), inset 0 0 0 1px rgba(6, 17, 47, 0.06)";
 /** The pinned date column's width — `w-24`, and the gradient sticks at its edge. */
 const DATE_COL_W = 96;
 
@@ -1192,7 +1194,7 @@ export function WeeklyPlan() {
                       // The tint classes are UNLAYERED, so they beat this
                       // deterministically (globals.css); two TAILWIND backgrounds
                       // are what was ambiguous, not a Tailwind base under one.
-                      className={`${col.type === "studio" && !canEdit ? STUDIO_COL_MEMBER : PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
+                      className={`${col.type === "studio" ? STUDIO_COL : PERSON_COL} border-b border-r border-border bg-surface p-2 text-left last:border-r-0 ${
                         isMe ? "plan-head-me" : col.type === "studio" ? "plan-head-studio" : ""
                       }`}
                     >
@@ -1270,11 +1272,11 @@ export function WeeklyPlan() {
                   >
                     <td
                       onClick={canEdit ? () => setDayStateTarget(iso) : undefined}
-                      className={`group/date sticky left-0 z-[15] border-b border-r border-border p-2 align-top text-xs ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "pin-today" : dayState ? "plan-date-holiday" : weekend ? "plan-date-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
+                      className={`group/date sticky left-0 z-[15] border-b border-r border-border align-top text-xs ${isToday ? "px-2.5 py-4" : "p-2"} ${weekend && !dayState ? "text-faint" : ""} ${isToday ? "pin-today" : dayState ? "plan-date-holiday" : weekend ? "plan-date-weekend" : "bg-surface"} ${canEdit ? "cursor-pointer pin-hover" : ""}`}
                       title={canEdit ? "Set day state (holiday…)" : undefined}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <div className={isToday ? "text-sm font-bold" : "font-semibold"}>
+                        <div className={isToday ? "font-serif-accent text-[30px] leading-8" : "font-semibold"}>
                           {isToday ? "Today" : name}
                         </div>
                         {canEdit && (
@@ -1284,7 +1286,7 @@ export function WeeklyPlan() {
                           />
                         )}
                       </div>
-                      <div className={isToday ? "font-bold" : "text-faint"}>{date}</div>
+                      <div className={isToday ? "mt-0.5 text-[13px] opacity-80" : "text-faint"}>{date}</div>
                       {dayState && (
                         <div className="mt-1 inline-block max-w-full truncate rounded-full bg-blue-600 px-1.5 py-0.5 text-[11px] font-medium text-white">
                           {dayState.label}
