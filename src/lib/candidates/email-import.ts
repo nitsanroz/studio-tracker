@@ -444,6 +444,23 @@ export function formatPhone(phone: string): string {
   return phone.trim();
 }
 
+/**
+ * A storage-safe name for a linked PDF, from its URL's last segment — the same
+ * sanitising `/api/candidate-file` applies, so the importer can recognise a
+ * file it stored before. `null` when the URL names no PDF (a Drive share page
+ * ends in "view"), and those dedupe on their kept original link instead.
+ */
+export function storedNameOf(url: string): string | null {
+  let last: string;
+  try {
+    last = decodeURIComponent(new URL(url).pathname.split("/").pop() ?? "");
+  } catch {
+    return null;
+  }
+  if (!/\.pdf$/i.test(last)) return null;
+  return last.replace(/[^\w.\-]+/g, "_").slice(-120);
+}
+
 /** "ecebb389-89b5-…-9e82665438e9-CVEllaZell.pdf" → "CVEllaZell.pdf". */
 export function cleanFileName(name: string): string {
   return name.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[-_]/i, "") || name;

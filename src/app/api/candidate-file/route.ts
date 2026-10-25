@@ -180,7 +180,10 @@ export async function POST(request: NextRequest) {
   // Idempotent: already-there is the normal case after the first upload ever.
   await admin.storage.createBucket(BUCKET, { public: false }).catch(() => undefined);
 
-  const safeName = name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+  // `storeAs` (a linked PDF's own filename) keys the object so a re-import can
+  // tell it already holds this file; the title shown can still be "CV".
+  const storeAs = String(form.get("storeAs") ?? "").trim();
+  const safeName = (storeAs || name).replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
   const path = `${candidateId}/${Date.now()}-${safeName}`;
   const { error } = await admin.storage
     .from(BUCKET)

@@ -8,6 +8,7 @@ import {
   parseWebsiteForm,
   portfolioFromField,
   roleFromInterests,
+  storedNameOf,
   documentLink,
   documentLinks,
   extractEmail,
@@ -219,6 +220,17 @@ describe("formatPhone and cleanFileName", () => {
     ["+381 65 2199 112", "+381 65 2199 112"],
   ])("%s → %s", (input, out) => {
     expect(formatPhone(input)).toBe(out);
+  });
+
+  it("names a linked PDF the way it is stored, so a re-import recognises it", () => {
+    const url =
+      "https://framerforms.s3.us-east-1.amazonaws.com/form-uploads/ecebb389-89b5-449f-a334-9e82665438e9-CVEllaZell.pdf";
+    // Ella's CV as it is actually stored: "<candidate>/<time>-<this name>".
+    const stored =
+      "9bc5eb86-bf43-446a-8a40-5f4dbd18ae18/1792938835934-ecebb389-89b5-449f-a334-9e82665438e9-CVEllaZell.pdf";
+    expect(stored.endsWith(`-${storedNameOf(url)}`)).toBe(true);
+    expect(storedNameOf("https://x.com/My%20CV.pdf")).toBe("My_CV.pdf");
+    expect(storedNameOf("https://drive.google.com/file/d/abc/view")).toBeNull();
   });
 
   it("drops an upload-id prefix", () => {

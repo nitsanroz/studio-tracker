@@ -33,6 +33,7 @@ import {
   portfolioFromField,
   roleFromInterests,
   sourceOf,
+  storedNameOf,
 } from "./email-import";
 import { NEW_CANDIDATE_NAME } from "./types";
 
@@ -56,7 +57,7 @@ interface Uploaded {
 
 /** A file to store, or a link for the server to fetch one from. */
 async function upload(
-  what: File | { fromUrl: string; title: string; name?: string },
+  what: File | { fromUrl: string; title: string; name?: string; storeAs?: string | null },
   candidateId: string,
 ): Promise<Uploaded> {
   const body = new FormData();
@@ -66,6 +67,7 @@ async function upload(
     body.append("fromUrl", what.fromUrl);
     body.append("title", what.title);
     if (what.name) body.append("name", what.name);
+    if (what.storeAs) body.append("storeAs", what.storeAs);
   }
   body.append("candidateId", candidateId);
   body.append("extract", "1");
@@ -140,6 +142,7 @@ export async function importApplicationEmail(
   const heldLinks = held ?? [];
   const heldFiles = new Set(heldLinks.filter((l) => l.storage_path).map((l) => l.title.toLowerCase()));
   const heldUrls = new Set(heldLinks.map((l) => l.url.toLowerCase().replace(/\/$/, "")));
+  const heldPaths = heldLinks.flatMap((l) => (l.storage_path ? [l.storage_path as string] : []));
   let cvTaken = heldLinks.some((l) => l.kind === "cv");
   let position = heldLinks.length + 1;
 
@@ -159,7 +162,8 @@ export async function importApplicationEmail(
   plan.sort((a, b) => Number(b.kind === "cv") - Number(a.kind === "cv"));
   for (const { index, kind } of plan) {
     const att = atts[index];
-    if (heldFiles.has(att.filename.toLowerCase())) continue;
+    // Titles are stored cleaned, so compare cleaned.
+    if (heldFiles.has(cleanFileName(att.filename).toLowerCase())) continue;
     const content = att.raw.content;
     const blob =
       typeof content === "string"
@@ -190,9 +194,15 @@ export async function importApplicationEmail(
     // The form's own upload is the CV and nothing else: titled "CV", as the
     // studio files it, and its S3 address is not kept as a second link.
     const formUpload = FORM_UPLOAD_HOST.test(new URL(doc.url).hostname);
+    // ⚠️ SO THE ADDRESS CAN'T BE WHAT DEDUPES IT. The file is stored under the
+    // URL's own filename instead — the form's carries a unique upload id — and
+    // a re-import skips it when a stored file of that name is already held.
+    // (Found on the second import of Ella Zell, which grew a "CV.pdf".)
+    const storeAs = storedNameOf(doc.url);
+    if (storeAs && heldPaths.some((p) => p.endsWith(`-${storeAs}`))) continue;
     try {
       const up = await upload(
-        { fromUrl: doc.fetchUrl, title: doc.title, name: formUpload ? "CV" : undefined },
+        { fromUrl: doc.fetchUrl, title: doc.title, name: formUpload ? "CV" : undefined, storeAs },
         candidateId,
       );
       const asKind = cvTaken ? "other" : "cv";
