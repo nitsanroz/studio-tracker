@@ -3,6 +3,11 @@ import {
   appliedOnOf,
   attachmentName,
   bodyOf,
+  cleanFileName,
+  formatPhone,
+  parseWebsiteForm,
+  portfolioFromField,
+  roleFromInterests,
   documentLink,
   documentLinks,
   extractEmail,
@@ -138,6 +143,87 @@ describe("documentLink", () => {
     expect(documentLinks([body]).map((d) => d.fetchUrl)).toEqual([
       "https://drive.google.com/uc?export=download&id=A1",
     ]);
+  });
+});
+
+describe("the website's application form", () => {
+  // The shape of the first real submission (2026-10-25), with made-up content.
+  const body = [
+    "Name: Dana Levi",
+    "Email: Dana.Levi@gmail.com",
+    "Phone: +972521234567",
+    "CV",
+    "https://framerforms.s3.us-east-1.amazonaws.com/form-uploads/ecebb389-89b5-449f-a334-9e82665438e9-CVDanaLevi.pdf",
+    "Portfolio: danalevi.com",
+    "Password:",
+    "Interests: Product Design, Branding, & more..",
+    "About: I love typography and the way small details change",
+    "how a page reads",
+  ].join("\n");
+
+  it("reads the applicant from the fields and keeps only what they wrote", () => {
+    expect(parseWebsiteForm(body)).toEqual({
+      name: "Dana Levi",
+      email: "dana.levi@gmail.com",
+      phone: "+972521234567",
+      portfolio: "danalevi.com",
+      cvUrl:
+        "https://framerforms.s3.us-east-1.amazonaws.com/form-uploads/ecebb389-89b5-449f-a334-9e82665438e9-CVDanaLevi.pdf",
+      interests: "Product Design, Branding, & more..",
+      text:
+        "Interests: Product Design, Branding, & more..\n" +
+        "About: I love typography and the way small details change how a page reads",
+    });
+  });
+
+  it("keeps a portfolio password when there is one", () => {
+    expect(parseWebsiteForm(body.replace("Password:", "Password: hunter2"))?.text).toContain(
+      "Portfolio password: hunter2",
+    );
+  });
+
+  it("is not fooled by a letter that mentions a name", () => {
+    expect(parseWebsiteForm("Hi,\nName: Dana\nI'd love to join.\nThanks")).toBeNull();
+  });
+
+  it("turns the bare portfolio domain into a link", () => {
+    expect(portfolioFromField("danalevi.com")).toEqual({
+      url: "https://danalevi.com",
+      title: "danalevi.com",
+      kind: "portfolio",
+    });
+    expect(portfolioFromField("see my work")).toBeNull();
+  });
+
+  it("never keeps the form's own upload as a link", () => {
+    expect(extractLinks([body]).map((l) => l.url)).toEqual([]);
+  });
+
+  it("picks the role from interests, among the studio's own roles", () => {
+    const roles = [
+      { id: "d", name: "Designer" },
+      { id: "a", name: "Animator" },
+    ];
+    expect(roleFromInterests("Product Design, Branding", roles)).toBe("d");
+    expect(roleFromInterests("Motion", roles)).toBe("a");
+    expect(roleFromInterests("Project management", roles)).toBeNull();
+  });
+});
+
+describe("formatPhone and cleanFileName", () => {
+  it.each([
+    ["+972521234567", "052-1234567"],
+    ["+972 3 555 1234", "03-5551234"],
+    ["0521234567", "052-1234567"],
+    ["052-1234567", "052-1234567"],
+    ["+381 65 2199 112", "+381 65 2199 112"],
+  ])("%s → %s", (input, out) => {
+    expect(formatPhone(input)).toBe(out);
+  });
+
+  it("drops an upload-id prefix", () => {
+    expect(cleanFileName("ecebb389-89b5-449f-a334-9e82665438e9-CVDanaLevi.pdf")).toBe("CVDanaLevi.pdf");
+    expect(cleanFileName("Dana CV.pdf")).toBe("Dana CV.pdf");
   });
 });
 

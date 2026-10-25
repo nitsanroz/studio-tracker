@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyUpload, formatSize, MAX_INTAKE_BYTES } from "@/lib/uploads";
 import { fetchLinkedPdf } from "@/lib/candidates/fetch-document";
+import { cleanFileName } from "@/lib/candidates/email-import";
 
 /**
  * Serves one candidate file — a CV, a portfolio PDF — to an ADMIN.
@@ -132,8 +133,11 @@ export async function POST(request: NextRequest) {
   if (typeof fromUrl === "string" && fromUrl) {
     try {
       const got = await fetchLinkedPdf(fromUrl);
+      // A name the caller chose wins ("CV" for the website form's upload);
+      // then the server's own filename, minus any upload-id prefix.
+      const chosen = String(form.get("name") ?? "").trim();
       const fallback = String(form.get("title") ?? "").trim() || "CV";
-      name = got.filename ?? fallback;
+      name = chosen || (got.filename ? cleanFileName(got.filename) : fallback);
       if (!/\.pdf$/i.test(name)) name = `${name}.pdf`;
       bytes = got.bytes;
       contentType = "application/pdf";

@@ -578,7 +578,12 @@ export default function CandidatesPage() {
       try {
         for (const [i, file] of emails.entries()) {
           setImporting(emails.length > 1 ? `Importing ${i + 1} of ${emails.length}…` : "Importing…");
-          const r = await importApplicationEmail(file, vocab.stages[0]?.id ?? null, currentUserId);
+          const r = await importApplicationEmail(
+            file,
+            vocab.stages[0]?.id ?? null,
+            currentUserId,
+            vocab.roles,
+          );
           done.push({ id: r.candidateId, created: r.created });
           const files = r.files ? ` with ${r.files} file${r.files === 1 ? "" : "s"}` : "";
           toast(r.created ? `Added ${r.name}${files}` : `${r.name} was already here — added to their card`);

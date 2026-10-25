@@ -19,13 +19,19 @@ import {
   appliedOnOf,
   attachmentName,
   bodyOf,
+  cleanFileName,
   documentLinks,
   extractEmail,
   extractLinks,
   extractPhone,
+  FORM_UPLOAD_HOST,
+  formatPhone,
   MAX_APPLICATION_CHARS,
+  parseWebsiteForm,
   pickApplicant,
   planAttachments,
+  portfolioFromField,
+  roleFromInterests,
   sourceOf,
 } from "./email-import";
 import { NEW_CANDIDATE_NAME } from "./types";
@@ -50,7 +56,7 @@ interface Uploaded {
 
 /** A file to store, or a link for the server to fetch one from. */
 async function upload(
-  what: File | { fromUrl: string; title: string },
+  what: File | { fromUrl: string; title: string; name?: string },
   candidateId: string,
 ): Promise<Uploaded> {
   const body = new FormData();
@@ -59,6 +65,7 @@ async function upload(
   } else {
     body.append("fromUrl", what.fromUrl);
     body.append("title", what.title);
+    if (what.name) body.append("name", what.name);
   }
   body.append("candidateId", candidateId);
   body.append("extract", "1");
@@ -75,6 +82,7 @@ export async function importApplicationEmail(
   file: File,
   stageId: string | null,
   actorId: string | null,
+  roles: { id: string; name: string }[] = [],
 ): Promise<ImportResult> {
   const { default: PostalMime } = await import("postal-mime");
   let mail;
@@ -88,8 +96,13 @@ export async function importApplicationEmail(
   const replyTo = (mail.replyTo ?? []).flatMap((a) => ("address" in a && a.address ? [a] : []));
   const parsed = { ...mail, from, replyTo };
   const body = bodyOf(parsed);
-  const applicant = pickApplicant(parsed, body);
-  const text = body.slice(0, MAX_APPLICATION_CHARS);
+  // The studio website's form names the applicant in its fields; the sender
+  // is the form itself, which is why the first website import came out as
+  // "New candidate".
+  const form = parseWebsiteForm(body);
+  const applicant =
+    form?.name && form.email ? { name: form.name, email: form.email } : pickApplicant(parsed, body);
+  const text = (form ? form.text : body).slice(0, MAX_APPLICATION_CHARS);
 
   const sb = createClient();
   let existing: { id: string; name: string; phone: string | null; email: string | null } | null = null;
@@ -111,7 +124,8 @@ export async function importApplicationEmail(
         name: applicant?.name ?? NEW_CANDIDATE_NAME,
         email: applicant?.email ?? null,
         stageId,
-        source: sourceOf(parsed, body),
+        source: form ? "Website" : sourceOf(parsed, body),
+        roleId: roleFromInterests(form?.interests ?? null, roles),
         applicationText: text || null,
         appliedOn: appliedOnOf(mail.date),
       },
@@ -155,7 +169,8 @@ export async function importApplicationEmail(
       const up = await upload(new File([blob], att.filename, { type: att.mimeType }), candidateId);
       const asKind = kind === "cv" && cvTaken ? "other" : kind;
       if (asKind === "cv") cvTaken = true;
-      await addLink(candidateId, att.filename, up.url, asKind, up.path, asKind === "cv" ? 0 : position++);
+      const title = cleanFileName(att.filename);
+      await addLink(candidateId, title, up.url, asKind, up.path, asKind === "cv" ? 0 : position++);
       files++;
       if (up.text) pdfTexts.push(up.text);
       if (up.links) pdfLinks.push(...up.links);
@@ -169,11 +184,17 @@ export async function importApplicationEmail(
   // and the card should not lose the CV when they do. The original link is
   // kept beside the copy. Already-held links are not fetched again, so a
   // second import of the same mail costs nothing.
-  for (const doc of documentLinks([body])) {
+  for (const doc of documentLinks(form?.cvUrl ? [form.cvUrl, body] : [body])) {
     if (heldUrls.has(doc.url.toLowerCase().replace(/\/$/, ""))) continue;
     heldUrls.add(doc.url.toLowerCase().replace(/\/$/, ""));
+    // The form's own upload is the CV and nothing else: titled "CV", as the
+    // studio files it, and its S3 address is not kept as a second link.
+    const formUpload = FORM_UPLOAD_HOST.test(new URL(doc.url).hostname);
     try {
-      const up = await upload({ fromUrl: doc.fetchUrl, title: doc.title }, candidateId);
+      const up = await upload(
+        { fromUrl: doc.fetchUrl, title: doc.title, name: formUpload ? "CV" : undefined },
+        candidateId,
+      );
       const asKind = cvTaken ? "other" : "cv";
       if (asKind === "cv") cvTaken = true;
       await addLink(candidateId, up.title, up.url, asKind, up.path, asKind === "cv" ? 0 : position++);
@@ -183,7 +204,15 @@ export async function importApplicationEmail(
     } catch {
       skipped.push(`the CV linked on ${doc.title} (private, or not a PDF)`);
     }
-    await addLink(candidateId, doc.title, doc.url, "other", null, position++);
+    if (!formUpload) await addLink(candidateId, doc.title, doc.url, "other", null, position++);
+  }
+
+  // The form's Portfolio field is usually a bare domain ("ellazell.com"),
+  // which the free-text link finder rightly won't guess at.
+  const formPortfolio = form?.portfolio ? portfolioFromField(form.portfolio) : null;
+  if (formPortfolio && !heldUrls.has(formPortfolio.url.toLowerCase())) {
+    heldUrls.add(formPortfolio.url.toLowerCase());
+    await addLink(candidateId, formPortfolio.title, formPortfolio.url, formPortfolio.kind, null, position++);
   }
 
   // ── links: the mail's, then the PDFs' own hyperlinks, then their text ──
@@ -195,8 +224,8 @@ export async function importApplicationEmail(
 
   // ── contact details: only fill what is empty, never overwrite ──
   const patch: { phone?: string; email?: string } = {};
-  const phone = extractPhone(body) ?? pdfTexts.map(extractPhone).find(Boolean) ?? null;
-  if (phone && !existing?.phone) patch.phone = phone;
+  const phone = form?.phone ?? extractPhone(body) ?? pdfTexts.map(extractPhone).find(Boolean) ?? null;
+  if (phone && !existing?.phone) patch.phone = formatPhone(phone);
   if (!applicant && !existing) {
     const email = pdfTexts.map(extractEmail).find(Boolean);
     if (email) patch.email = email;
