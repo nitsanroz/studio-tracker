@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import {
   Archive,
   List,
+  Mail,
   PauseCircle,
   Plus,
   Search,
@@ -30,6 +31,8 @@ import type { Profile } from "@/lib/types";
 import { Avatar, NameAvatar, Tabs } from "@/components/ui";
 import { loadBoard, loadVocabulary, type BoardCounts, type Vocabulary } from "@/lib/candidates/data";
 import { createCandidate, moveToStage } from "@/lib/candidates/actions";
+import { importApplicationEmail } from "@/lib/candidates/import-email";
+import { toast } from "@/lib/toast";
 import {
   APPLICATION_REVIEW_KIND,
   formatScore,
@@ -551,6 +554,56 @@ export default function CandidatesPage() {
     }
   }, [vocab, adding, currentUserId, router]);
 
+  /**
+   * Saved applicant emails → candidates. Dropped anywhere on the page, or
+   * picked with the Import email button.
+   *
+   * ONE email opens the candidate, like Add candidate does — you want to check
+   * what was read. SEVERAL stay on the board and say what happened, because
+   * being bounced to the first of five is losing the other four.
+   */
+  const emailInput = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState<string | null>(null);
+  const [fileOver, setFileOver] = useState(false);
+  const importEmails = useCallback(
+    async (picked: File[]) => {
+      if (!vocab || importing) return;
+      const emails = picked.filter((f) => /\.eml$/i.test(f.name) || f.type === "message/rfc822");
+      if (emails.length === 0) {
+        setError("That isn't a saved email. In Gmail: ⋮ → Download message, then drop the .eml file here.");
+        return;
+      }
+      setError(null);
+      const done: { id: string; created: boolean }[] = [];
+      try {
+        for (const [i, file] of emails.entries()) {
+          setImporting(emails.length > 1 ? `Importing ${i + 1} of ${emails.length}…` : "Importing…");
+          const r = await importApplicationEmail(file, vocab.stages[0]?.id ?? null, currentUserId);
+          done.push({ id: r.candidateId, created: r.created });
+          const files = r.files ? ` with ${r.files} file${r.files === 1 ? "" : "s"}` : "";
+          toast(r.created ? `Added ${r.name}${files}` : `${r.name} was already here — added to their card`);
+          if (r.skipped.length) {
+            toast(`Couldn't store ${r.skipped.join(", ")} — add it on their page`, { tone: "info", ms: 8000 });
+          }
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "That email could not be imported.");
+      } finally {
+        setImporting(null);
+      }
+      if (done.length === 1 && emails.length === 1) {
+        router.push(`/candidates/${done[0].id}`);
+      } else if (done.length) {
+        const b = await loadBoard(view).catch(() => null);
+        if (b) {
+          setRows(b.candidates);
+          setCounts(b.counts);
+        }
+      }
+    },
+    [vocab, importing, currentUserId, router, view],
+  );
+
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
@@ -573,8 +626,37 @@ export default function CandidatesPage() {
     0,
   );
 
+  // ⚠️ ONLY A DRAG CARRYING FILES. A card being dragged between columns also
+  // fires these, and must not light the whole page up as a drop target.
+  const carriesFiles = (e: React.DragEvent) => !dragged.current && e.dataTransfer.types.includes("Files");
+
   return (
-    <div className="mx-auto max-w-[1500px]">
+    <div
+      className="relative mx-auto max-w-[1500px]"
+      onDragOver={(e) => {
+        if (!carriesFiles(e)) return;
+        e.preventDefault();
+        if (!fileOver) setFileOver(true);
+      }}
+      onDragLeave={(e) => {
+        // Leaving into a child is not leaving the page.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFileOver(false);
+      }}
+      onDrop={(e) => {
+        if (!carriesFiles(e)) return;
+        e.preventDefault();
+        setFileOver(false);
+        void importEmails(Array.from(e.dataTransfer.files));
+      }}
+    >
+      {fileOver && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center rounded-2xl bg-brand-soft/80 outline-2 outline-dashed outline-brand">
+          <div className="mt-32 flex items-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-medium text-brand-dark shadow-card">
+            <Mail size={20} strokeWidth={1.75} />
+            Drop the applicant&rsquo;s email to add them
+          </div>
+        </div>
+      )}
       {/* ── the page's anatomy, as everywhere else (2026-10-23, List A): title
           and summary on the left, the one primary action on the right, then a
           toolbar row of its own — which view, filters, search, layout. */}
@@ -588,15 +670,38 @@ export default function CandidatesPage() {
               ` · ${interviewsThisWeek} interview${interviewsThisWeek === 1 ? "" : "s"} this week`}
           </p>
         </div>
-        <button
-          onClick={() => void addCandidate()}
-          disabled={adding || !vocab}
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 md:h-10"
-        >
-          <Plus size={16} strokeWidth={2} />
-          <span className="md:hidden">{adding ? "Adding…" : "Add"}</span>
-          <span className="hidden md:inline">{adding ? "Adding…" : "Add candidate"}</span>
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <input
+            ref={emailInput}
+            type="file"
+            accept=".eml,message/rfc822"
+            multiple
+            hidden
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              e.target.value = "";
+              void importEmails(picked);
+            }}
+          />
+          <button
+            onClick={() => emailInput.current?.click()}
+            disabled={!!importing || !vocab}
+            title="Add a candidate from a saved email (.eml) — or drop one anywhere on this page"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-surface px-3 text-sm font-medium text-foreground shadow-card hover:bg-background disabled:opacity-50 md:h-10 md:px-4"
+          >
+            <Mail size={16} strokeWidth={1.75} />
+            <span className="hidden md:inline">{importing ?? "Import email"}</span>
+          </button>
+          <button
+            onClick={() => void addCandidate()}
+            disabled={adding || !vocab}
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50 md:h-10"
+          >
+            <Plus size={16} strokeWidth={2} />
+            <span className="md:hidden">{adding ? "Adding…" : "Add"}</span>
+            <span className="hidden md:inline">{adding ? "Adding…" : "Add candidate"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

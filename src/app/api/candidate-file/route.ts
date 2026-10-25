@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyUpload, formatSize, MAX_INTAKE_BYTES } from "@/lib/uploads";
+import { fetchLinkedPdf } from "@/lib/candidates/fetch-document";
 
 /**
  * Serves one candidate file — a CV, a portfolio PDF — to an ADMIN.
@@ -117,26 +118,53 @@ export async function POST(request: NextRequest) {
   }
 
   const form = await request.formData();
-  const file = form.get("file");
   const candidateId = String(form.get("candidateId") ?? "");
-  if (!(file instanceof File) || !/^[0-9a-f-]{36}$/i.test(candidateId)) {
+  if (!/^[0-9a-f-]{36}$/i.test(candidateId)) {
     return NextResponse.json({ error: "Nothing to upload" }, { status: 400 });
   }
-  if (file.size === 0) {
-    return NextResponse.json({ error: "That file is empty." }, { status: 400 });
-  }
-  if (file.size > MAX_INTAKE_BYTES) {
-    return NextResponse.json(
-      { error: `That's ${formatSize(file.size)}, over the ${formatSize(MAX_INTAKE_BYTES)} limit.` },
-      { status: 400 },
-    );
-  }
-  const kind = classifyUpload(file);
-  if (!kind.ok) {
-    return NextResponse.json(
-      { error: "That kind of file can't be stored here — PDFs, images and documents only." },
-      { status: 400 },
-    );
+
+  // Either the bytes were sent, or — for a CV the applicant sent as a link —
+  // the address to fetch them from (`fetch-document.ts` says why that is safe).
+  let name: string;
+  let bytes: ArrayBuffer;
+  let contentType: string;
+  const fromUrl = form.get("fromUrl");
+  if (typeof fromUrl === "string" && fromUrl) {
+    try {
+      const got = await fetchLinkedPdf(fromUrl);
+      const fallback = String(form.get("title") ?? "").trim() || "CV";
+      name = got.filename ?? fallback;
+      if (!/\.pdf$/i.test(name)) name = `${name}.pdf`;
+      bytes = got.bytes;
+      contentType = "application/pdf";
+    } catch (e) {
+      console.error("[candidate-file] linked document not fetched", e);
+      return NextResponse.json({ error: "That link isn't a PDF we can open." }, { status: 422 });
+    }
+  } else {
+    const file = form.get("file");
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "Nothing to upload" }, { status: 400 });
+    }
+    if (file.size === 0) {
+      return NextResponse.json({ error: "That file is empty." }, { status: 400 });
+    }
+    if (file.size > MAX_INTAKE_BYTES) {
+      return NextResponse.json(
+        { error: `That's ${formatSize(file.size)}, over the ${formatSize(MAX_INTAKE_BYTES)} limit.` },
+        { status: 400 },
+      );
+    }
+    const kind = classifyUpload(file);
+    if (!kind.ok) {
+      return NextResponse.json(
+        { error: "That kind of file can't be stored here — PDFs, images and documents only." },
+        { status: 400 },
+      );
+    }
+    name = file.name;
+    bytes = await file.arrayBuffer();
+    contentType = kind.contentType;
   }
 
   const admin = createServiceClient(
@@ -148,11 +176,11 @@ export async function POST(request: NextRequest) {
   // Idempotent: already-there is the normal case after the first upload ever.
   await admin.storage.createBucket(BUCKET, { public: false }).catch(() => undefined);
 
-  const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+  const safeName = name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
   const path = `${candidateId}/${Date.now()}-${safeName}`;
   const { error } = await admin.storage
     .from(BUCKET)
-    .upload(path, await file.arrayBuffer(), { contentType: kind.contentType, upsert: false });
+    .upload(path, bytes.slice(0), { contentType, upsert: false });
   if (error) {
     return NextResponse.json({ error: "That file could not be stored." }, { status: 500 });
   }
@@ -160,6 +188,37 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     path,
     url: `/api/candidate-file?p=${encodeURIComponent(path)}`,
-    title: file.name,
+    title: name,
+    ...(form.get("extract") === "1" && contentType === "application/pdf"
+      ? await readPdf(bytes)
+      : {}),
   });
+}
+
+/** The longest CV text handed back; the importer only looks for a phone and links in it. */
+const MAX_PDF_TEXT = 50_000;
+
+/**
+ * A PDF's text layer and its hyperlinks, for the email importer.
+ *
+ * ⚠️ ON THE SERVER, IN THE SAME REQUEST AS THE UPLOAD, so a CV crosses the
+ * wire once — the browser already has to send it here to be stored.
+ *
+ * ⚠️ NEVER FAILS THE UPLOAD. The file is already stored by the time this runs;
+ * a PDF pdf.js can't read (or a scanned one with no text at all) just comes
+ * back with nothing found, and the candidate still gets their CV.
+ */
+async function readPdf(bytes: ArrayBuffer): Promise<{ text?: string; links?: string[] }> {
+  try {
+    const { getDocumentProxy, extractText, extractLinks } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(bytes));
+    const [{ text }, { links }] = await Promise.all([
+      extractText(pdf, { mergePages: true }),
+      extractLinks(pdf),
+    ]);
+    return { text: text.slice(0, MAX_PDF_TEXT), links };
+  } catch (e) {
+    console.error("[candidate-file] PDF not readable", e);
+    return {};
+  }
 }
