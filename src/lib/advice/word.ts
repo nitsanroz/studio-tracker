@@ -68,6 +68,8 @@ export function promptFor(rows: AdviceRow[], pulse: { label: string; value: numb
     delete facts.href;
     delete facts.action;
     delete facts.changed;
+    // Task and lead ids mean nothing to Claude; the title and body name what matters.
+    delete facts.list;
     return { key: r.key, kind: r.kind, area: r.area, title: r.title, body: r.body, facts };
   });
   return JSON.stringify({ today: studioToday(), figures: pulse.filter((p) => p.value != null), findings }, null, 1);

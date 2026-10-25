@@ -15,41 +15,48 @@ export interface PageContext {
   clientId: string | null;
   /** items of these signals */
   signals: Set<string> | null;
+  /** the pane's figures for this page (signals.ts `TileScope`) */
+  tiles: Set<string>;
 }
 
 /**
- * Every other page: its name, and the signals that are about it (Nitsan: "try
- * to say something on each page"). Settings has none, so no button there.
+ * Every other page: its name, the signals that are about it (Nitsan: "try to
+ * say something on each page"), and the figures that belong to it — never
+ * Home's again (2026-10-25). Settings has none, so no button there.
  */
-const PAGES: [string, string, string[]][] = [
-  ["/plan", "Weekly Plan", ["plan-gaps"]],
-  ["/my-tasks", "My Tasks", ["my-overdue"]],
-  ["/vacation", "Vacation", ["vacation"]],
-  ["/feed", "Time Feed", ["missing-hours"]],
-  ["/settings", "Settings", []],
-  ["/intake-queue", "Intake", ["intake"]],
-  ["/clients", "Clients", ["overdue"]],
-  ["/team", "Team", ["missing-hours", "vacation", "plan-gaps"]],
-  ["/candidates", "Candidates", ["candidates"]],
-  ["/leads", "Leads", ["leads"]],
-  ["/freelancers", "Freelancers", ["freelancer-logs"]],
+const PAGES: [string, string, string[], string[]][] = [
+  ["/plan", "Weekly Plan", ["plan-gaps", "unassigned", "pace"], ["plan"]],
+  ["/my-tasks", "My Tasks", ["my-overdue"], []],
+  ["/vacation", "Vacation", ["vacation"], []],
+  ["/feed", "Time Feed", ["missing-hours", "internal"], ["team"]],
+  ["/settings", "Settings", [], []],
+  ["/intake-queue", "Intake", ["intake"], []],
+  ["/clients", "Clients", ["overdue", "unassigned", "client-quiet", "concentration"], ["concentration"]],
+  ["/team", "Team", ["missing-hours", "vacation", "plan-gaps", "internal"], ["plan", "team"]],
+  ["/candidates", "Candidates", ["candidates"], []],
+  ["/leads", "Leads", ["leads", "concentration"], ["concentration"]],
+  ["/freelancers", "Freelancers", ["freelancer-logs"], []],
 ];
 
 const CLIENT_SIGNALS = new Set(["report-due", "unpaid", "cap", "estimate"]);
-const STUDIO_SIGNALS = new Set(["billable", "pace", "income"]);
+const STUDIO_SIGNALS = new Set(["pace", "income", "concentration", "internal"]);
+/** Home's figures: the studio-wide ones. Plan and team figures belong to their pages. */
+const HOME_TILES = new Set(["money", "concentration", "billing"]);
 
 export function pageContext(pathname: string, search: string): PageContext {
-  const none = { all: false, clientId: null, signals: null };
-  if (pathname === "/") return { ...none, label: "Home", all: true };
+  const none = { all: false, clientId: null, signals: null, tiles: new Set<string>() };
+  if (pathname === "/") return { ...none, label: "Home", all: true, tiles: HOME_TILES };
   const client = pathname.match(/^\/clients\/([^/]+)/);
   if (client) return { ...none, label: "This client", clientId: client[1] };
   if (pathname.startsWith("/client-reports")) {
     const id = new URLSearchParams(search).get("client");
-    return id ? { ...none, label: "This client", clientId: id } : { ...none, label: "Client Reports", signals: CLIENT_SIGNALS };
+    return id
+      ? { ...none, label: "This client", clientId: id }
+      : { ...none, label: "Client Reports", signals: CLIENT_SIGNALS, tiles: new Set(["billing"]) };
   }
-  if (pathname.startsWith("/reports")) return { ...none, label: "Reports", signals: STUDIO_SIGNALS };
+  if (pathname.startsWith("/reports")) return { ...none, label: "Reports", signals: STUDIO_SIGNALS, tiles: new Set(["money", "concentration"]) };
   const page = PAGES.find(([path]) => pathname.startsWith(path));
-  return page ? { ...none, label: page[1], signals: new Set(page[2]) } : { ...none, label: "This page" };
+  return page ? { ...none, label: page[1], signals: new Set(page[2]), tiles: new Set(page[3]) } : { ...none, label: "This page" };
 }
 
 /** Split items into this page's and the rest, keeping their order. */
@@ -57,4 +64,10 @@ export function splitByPage<T extends { signal: string; clientId: string | null 
   if (ctx.all) return { here: items, elsewhere: [] };
   const mine = (i: T) => (ctx.clientId ? i.clientId === ctx.clientId : ctx.signals ? ctx.signals.has(i.signal) : false);
   return { here: items.filter(mine), elsewhere: items.filter((i) => !mine(i)) };
+}
+
+/** The figures for this page: a client's own on its page and report tab, else the page's scopes. */
+export function tilesFor<T extends { scope: string; clientId: string | null }>(tiles: T[], ctx: PageContext): T[] {
+  if (ctx.clientId) return tiles.filter((t) => t.clientId === ctx.clientId);
+  return tiles.filter((t) => t.clientId == null && ctx.tiles.has(t.scope));
 }

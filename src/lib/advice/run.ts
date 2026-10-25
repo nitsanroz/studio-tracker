@@ -10,7 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { assertOk, fetchAll, isMissingSchema } from "@/lib/db";
 import { parseISO, shiftDays, studioToday, toISODate } from "@/lib/format";
 import { studioGoal } from "@/lib/hours-goal-server";
-import { LINE, evenSpread } from "@/lib/hours-goal";
+import { HOURLY_TERMS, LINE, evenSpread } from "@/lib/hours-goal";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow } from "./merge";
 import { findAll, pulse, type AdviceData, type PulseTile } from "./signals";
 import { totals, type EstimateLine } from "@/lib/leads/estimate";
@@ -173,8 +173,11 @@ async function loadPageData(sb: SupabaseClient, today: string): Promise<Partial<
     const at = String(t.last_message_at ?? "");
     if (at && (!owedSince.has(id) || at < owedSince.get(id)!)) owedSince.set(id, at);
   }
+  const openLeads = leads.filter((l) => !l.stage_id || openStage.has(String(l.stage_id)));
   return {
     ownerId: owner ? String(owner.id) : null,
+    hourly: Object.keys(HOURLY_TERMS),
+    leadsOpen: openLeads.length,
     people: active.map((p) => ({ id: String(p.id), name: String(p.name ?? "") })),
     planColumns: columns
       .filter((c) => !c.hidden && c.profile_id && activeIds.has(String(c.profile_id)))
@@ -184,10 +187,10 @@ async function loadPageData(sb: SupabaseClient, today: string): Promise<Partial<
     dayStates: dayStates.map((d) => ({ dateFrom: String(d.date_from), dateTo: String(d.date_to) })),
     vacationPending: vacation.map((v) => ({ createdAt: String(v.created_at) })),
     intakePending: intake.map((r) => ({ createdAt: String(r.created_at) })),
-    leadsWaiting: leads
-      // A lead with no stage is open, as the digest reads it.
-      .filter((l) => !l.stage_id || openStage.has(String(l.stage_id)))
+    // A lead with no stage is open, as the digest reads it.
+    leadsWaiting: openLeads
       .map((l) => ({
+        id: String(l.id),
         company: String(l.company ?? ""),
         replyOwedSince: owedSince.get(String(l.id)) ?? null,
         stepDue: (l.next_step_due as string | null) ?? null,

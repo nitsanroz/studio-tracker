@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { studioDate } from "../format";
 import {
-  billableShare,
   capFilling,
+  clientQuiet,
+  concentration,
+  dueUnassigned,
   estimateBudget,
   incomeVsCosts,
   outOfScope,
@@ -137,7 +139,8 @@ describe("periodUnpaid", () => {
       }),
     );
     expect(f.map((x) => x.facts.period)).toEqual(["September 2026"]);
-    expect(f[0].severity).toBe(2); // 22 days
+    expect(f[0].facts).toMatchObject({ dueDate: "2026-10-14", daysLate: 8 });
+    expect(f[0].severity).toBe(2); // 8 days past its payment date
   });
 
   it("counts the report's hours: billable tasks only, so a keys write-down isn't billed twice", () => {
@@ -147,11 +150,21 @@ describe("periodUnpaid", () => {
     expect(f[0].facts.hours).toBe(81);
   });
 
-  it("is quiet when the last one is paid, or it ended under 7 or over 45 days ago", () => {
-    const run = (periods: ReturnType<typeof p>[]) => periodUnpaid(base({ periods, entries: [e("t1", "2026-08-10", 4), e("t1", "2026-10-10", 4), e("t1", "2026-09-10", 4)] }));
+  it("is quiet when the last one is paid, inside the 14-day terms, or 60+ days after it ended", () => {
+    const run = (periods: ReturnType<typeof p>[]) => periodUnpaid(base({ periods, entries: [e("t1", "2026-07-10", 4), e("t1", "2026-10-10", 4), e("t1", "2026-09-10", 4)] }));
     expect(run([p("August", "2026-08-01", "2026-08-31"), p("September", "2026-09-01", "2026-09-30", true)])).toEqual([]);
-    expect(run([p("To 18 Oct", "2026-09-19", "2026-10-18")])).toEqual([]);
-    expect(run([p("August", "2026-08-01", "2026-08-31")])).toEqual([]); // 52 days
+    expect(run([p("To 12 Oct", "2026-09-13", "2026-10-12")])).toEqual([]); // 10 days: not due yet
+    expect(run([p("To 8 Oct", "2026-09-09", "2026-10-08")])).toEqual([]); // due today: still on time
+    expect(run([p("To 7 Oct", "2026-09-08", "2026-10-07")])).toHaveLength(1); // a day late
+    expect(run([p("July", "2026-07-01", "2026-07-31")])).toEqual([]); // 83 days
+  });
+
+  it("says how much has been logged since — work on credit makes it worse", () => {
+    const periods = [p("September 2026", "2026-09-01", "2026-09-30")];
+    const plain = periodUnpaid(base({ periods, entries: [e("t1", "2026-09-10", 10)] }))[0];
+    const credit = periodUnpaid(base({ periods, entries: [e("t1", "2026-09-10", 10), e("t1", "2026-10-12", 12)] }))[0];
+    expect(credit.severity).toBe(plain.severity + 1);
+    expect(credit.body).toMatch(/logged 12h for them since/);
   });
 });
 
@@ -222,23 +235,6 @@ describe("outOfScope", () => {
   });
 });
 
-describe("billableShare", () => {
-  it("fires when this month drops 5+ points below the three before", () => {
-    const entries = [
-      ...["2026-07-05", "2026-08-05", "2026-09-05"].flatMap((d) => [e("t1", d, 90), e("st", d, 10)]),
-      e("t1", "2026-10-05", 30),
-      e("st", "2026-10-06", 10),
-    ];
-    const f = billableShare(base({ entries }));
-    expect(f[0].facts).toMatchObject({ sharePct: 75, averagePct: 90, dropPts: 15 });
-    expect(f[0].severity).toBe(3);
-  });
-
-  it("waits for 20h in the month", () => {
-    expect(billableShare(base({ entries: [e("t1", "2026-09-05", 90), e("st", "2026-10-05", 10)] }))).toEqual([]);
-  });
-});
-
 describe("paceBehind", () => {
   it("fires under 90% of the expected pace", () => {
     expect(paceBehind(base({ pace: { soFar: 85, expectedByNow: 100 } }))[0].severity).toBe(1);
@@ -290,15 +286,25 @@ const team = {
 };
 
 describe("planGaps", () => {
-  it("names designers with 2+ open days next week (Sun 25 – Thu 29 Oct)", () => {
-    const planEntries = ["2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29"].map((date) => ({ date, columnId: "c1" }));
+  // Thursday 22: the next two workdays are Sun 25 and Mon 26 — the studio plans a day or two ahead.
+  it("looks only at the next two workdays", () => {
+    const planEntries = ["2026-10-25", "2026-10-26"].map((date) => ({ date, columnId: "c1" }));
     const f = planGaps(base({ ...team, planEntries: [...planEntries, { date: "2026-10-25", columnId: "c2" }] }));
-    expect(f[0].title).toBe("Next week has open days: Dana 4");
+    expect(f[0].title).toBe("Nothing planned Mon for Dana");
+    expect(f[0].kind).toBe("heads");
+    expect(planGaps(base({ ...team, planEntries: [...planEntries, ...planEntries.map((x) => ({ ...x, columnId: "c2" }))] }))).toEqual([]);
   });
 
-  it("doesn't count a holiday as open", () => {
-    const f = planGaps(base({ ...team, planEntries: [], dayStates: [{ dateFrom: "2026-10-25", dateTo: "2026-10-29" }] }));
-    expect(f).toEqual([]);
+  it("the next workday open is a do-now, with the person's due tasks", () => {
+    const tasks = [{ id: "d", clientId: "lumen", sectionId: null, groupId: null, title: "Deck", billable: true, assigneeId: "p2", dueDate: "2026-10-26", status: "todo" }];
+    const f = planGaps(base({ ...team, tasks, planEntries: ["2026-10-25", "2026-10-26"].map((date) => ({ date, columnId: "c1" })) }));
+    expect(f[0]).toMatchObject({ kind: "now", title: "Nothing planned Sun for Dana" });
+    expect(f[0].body).toMatch(/^Dana — Sun, Mon \(1 task due this week\)\./);
+  });
+
+  it("doesn't count a holiday as open, nor an hourly freelancer", () => {
+    expect(planGaps(base({ ...team, planEntries: [], dayStates: [{ dateFrom: "2026-10-25", dateTo: "2026-11-05" }] }))).toEqual([]);
+    expect(planGaps(base({ ...team, planEntries: [], hourly: ["p1", "p2"] }))).toEqual([]);
   });
 });
 
@@ -310,7 +316,14 @@ describe("missingHours", () => {
       base({ ...team, entries: [...entries, { taskId: "t1", date: "2026-10-15", minutes: 60, userId: "p2" }], absences: [{ date: "2026-10-18", columnId: "c2" }] }),
     );
     expect(f[0].title).toBe("Hours missing: Dana 3 days");
-    expect(f[0].body).toBe("Workdays from 15 Oct to 21 Oct with nothing logged and no absence in the plan.");
+    expect(f[0].body).toMatch(/^Workdays from 15 Oct to 21 Oct with nothing logged and no absence in the plan\./);
+  });
+
+  it("skips hourly freelancers, and keys on who — so a dismiss holds for the same people", () => {
+    const f = missingHours(base({ ...team, hourly: ["p1"] }));
+    expect(f[0].title).toBe("Hours missing: Dana 5 days");
+    const both = missingHours(base({ ...team }));
+    expect(both[0].key).not.toBe(f[0].key);
   });
 });
 
@@ -331,6 +344,49 @@ describe("overdueTasks", () => {
     const f = overdueTasks(base({ tasks: [t("a", "2026-10-01"), t("b", "2026-10-21"), t("c", "2026-10-10", "done"), t("d", "2026-07-01"), t("e", "2026-10-30")] }));
     expect(f[0].title).toBe("2 tasks are past due across 1 client");
     expect(f[0].body).toMatch(/^Lumen Health 2\./);
+    expect(f[0].list?.map((l) => l.taskId)).toEqual(["a", "b"]);
+  });
+
+  it("reads a pattern: most of them on one person", () => {
+    const t = (id: string, assigneeId: string) => ({ id, clientId: "lumen", sectionId: null, groupId: null, title: id, billable: true, dueDate: "2026-10-10", status: "todo", assigneeId });
+    const f = overdueTasks(base({ ...team, tasks: [t("a", "p1"), t("b", "p1"), t("c", "p1"), t("d", "p2")] }));
+    expect(f[0].body).toMatch(/3 of them are Aki's/);
+  });
+});
+
+describe("dueUnassigned", () => {
+  it("lists tasks due in the next week with nobody on them", () => {
+    const t = (id: string, dueDate: string, assigneeId: string | null = null) => ({ id, clientId: "lumen", sectionId: null, groupId: null, title: id, billable: true, dueDate, status: "todo", assigneeId });
+    const f = dueUnassigned(base({ tasks: [t("a", "2026-10-23"), t("b", "2026-10-28"), t("c", "2026-10-24", "p1"), t("d", "2026-11-10")] }));
+    expect(f[0]).toMatchObject({ kind: "now", title: "2 tasks due this week have nobody on them" });
+    expect(f[0].list?.map((l) => l.taskId)).toEqual(["a", "b"]);
+  });
+});
+
+describe("insights", () => {
+  const clients = [
+    { id: "lumen", name: "Lumen Health", billable: true, archived: false, hourCap: null, keysTaskId: null },
+    { id: "halo", name: "Halo", billable: true, archived: false, hourCap: null, keysTaskId: null },
+    { id: "orb", name: "Orb", billable: true, archived: false, hourCap: null, keysTaskId: null },
+  ];
+  const tasks = [
+    { id: "t1", clientId: "lumen", sectionId: null, groupId: null, title: "Site", billable: true },
+    { id: "h1", clientId: "halo", sectionId: null, groupId: null, title: "Deck", billable: true },
+    { id: "o1", clientId: "orb", sectionId: null, groupId: null, title: "App", billable: true },
+  ];
+
+  it("concentration: one client over 40% of 90 days' billable hours, read with the open leads", () => {
+    const f = concentration(base({ clients, tasks, leadsOpen: 2, entries: [e("t1", "2026-09-10", 80), e("h1", "2026-09-11", 40)] }));
+    expect(f[0]).toMatchObject({ kind: "idea", clientId: "lumen", title: "Lumen Health is 67% of the studio's billable work" });
+    expect(f[0].body).toMatch(/2 leads are open/);
+    expect(concentration(base({ clients, tasks, entries: [e("t1", "2026-09-10", 40), e("h1", "2026-09-11", 40), e("o1", "2026-09-12", 40)] }))).toEqual([]);
+  });
+
+  it("client-quiet: 15h+ a month before, under 40% of that in the last 30 days", () => {
+    const entries = [e("h1", "2026-07-01", 30), e("h1", "2026-08-01", 30), e("h1", "2026-09-01", 30), e("h1", "2026-10-10", 3)];
+    const f = clientQuiet(base({ clients, tasks, entries }));
+    expect(f.map((x) => x.clientId)).toEqual(["halo"]);
+    expect(clientQuiet(base({ clients, tasks, entries: [...entries, e("h1", "2026-10-12", 20)] }))).toEqual([]);
   });
 });
 

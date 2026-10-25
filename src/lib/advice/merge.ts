@@ -6,11 +6,13 @@
 // The rules, all Nitsan's (2026-10-24):
 // - A finding seen again is the same row: its figures update, its state stays.
 // - A row no check finds any more is resolved — the automatic "done".
-// - Snooze is the only way to hide advice; a reminder can also be ticked done.
+// - Any item can be snoozed or dismissed (2026-10-25 — it was snooze-only for
+//   advice; "Dmitry has 2 days with no hours" needs to go away). A reminder's
+//   dismiss reads "Mark done". Both are `done_at`.
 // - Either one breaks when the finding gets WORSE (severity rises above the
 //   level it was hidden at): the row comes back, marked as changed.
 
-import type { AdviceKind, Finding } from "./signals";
+import type { AdviceKind, Finding, FindingLink } from "./signals";
 
 export interface AdviceRow {
   id: string;
@@ -20,7 +22,8 @@ export interface AdviceRow {
   area: string;
   clientId: string | null;
   severity: number;
-  facts: Record<string, string | number | boolean | null>;
+  /** the finding's facts, plus `href`/`action`, `changed`, and `list` (the things it links) */
+  facts: Record<string, string | number | boolean | null | FindingLink[]>;
   title: string;
   body: string;
   wordedTitle: string | null;
@@ -41,18 +44,28 @@ export interface MergePlan {
   resolve: string[];
 }
 
+/** JSON with every object's keys sorted, at any depth. */
+const stable = (v: unknown): string =>
+  Array.isArray(v)
+    ? `[${v.map(stable).join(",")}]`
+    : v && typeof v === "object"
+      ? `{${Object.keys(v)
+          .sort()
+          .map((k) => `${JSON.stringify(k)}:${stable((v as Record<string, unknown>)[k])}`)
+          .join(",")}}`
+      : JSON.stringify(v ?? null);
+
 /**
  * Same facts, whatever the key order — Postgres jsonb stores keys in its own
- * order, so a plain JSON.stringify would call every stored row "changed".
+ * order (inside a list's items too), so a plain JSON.stringify would call every
+ * stored row "changed".
  */
 function sameFacts(a: AdviceRow["facts"], b: AdviceRow["facts"]): boolean {
-  const ka = Object.keys(a).sort();
-  const kb = Object.keys(b).sort();
-  return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k]);
+  return stable(a) === stable(b);
 }
 
 function factsOf(f: Finding): AdviceRow["facts"] {
-  return { ...f.facts, href: f.href, action: f.action };
+  return { ...f.facts, href: f.href, action: f.action, ...(f.list?.length ? { list: f.list } : {}) };
 }
 
 /**

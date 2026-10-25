@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { Check, ChevronDown, Clock3, Lightbulb, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Check, ChevronDown, Clock3, Info, Lightbulb, TrendingDown, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { StudioArrow } from "./studio-arrow";
@@ -9,10 +9,11 @@ import { EmptyState } from "./empty-state";
 import { Skeleton } from "./skeleton";
 import { toast } from "@/lib/toast";
 import { parseISO, shiftDays, toISODate } from "@/lib/format";
+import { useDataMaybe } from "@/lib/store";
 import type { AdviceRow } from "@/lib/advice/merge";
-import type { AdviceKind, PulseTile } from "@/lib/advice/signals";
+import type { AdviceKind, FindingLink, PulseTile } from "@/lib/advice/signals";
 import type { AdviceView } from "@/lib/advice/run";
-import { pageContext, splitByPage } from "@/lib/advice/context";
+import { pageContext, splitByPage, tilesFor } from "@/lib/advice/context";
 
 /**
  * &advice — the owner's advisor (v1.80.0). Closed, a round Studio Black button
@@ -26,6 +27,10 @@ import { pageContext, splitByPage } from "@/lib/advice/context";
  *
  * Mounted for admins; the API answers 403 to anyone but the owner, and then
  * nothing renders. Desktop only for now.
+ *
+ * Not a second dashboard (Nitsan, 2026-10-25): what Home already shows stays
+ * on Home. The figures are the page's own, each with a hover box saying what it
+ * is, and the cards read figures from different pages together.
  */
 
 const NIGHT: CSSProperties = {
@@ -162,6 +167,9 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<AdviceKind | "all">("all");
   const [snoozing, setSnoozing] = useState<string | null>(null);
+  /** cards whose list is shown in full */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const openTask = useDataMaybe()?.openTask;
 
   const load = useCallback(async () => {
     const res = await fetch("/api/advice").catch(() => null);
@@ -208,6 +216,9 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
   const ctx = usePageContext();
   const [showElsewhere, setShowElsewhere] = useState(false);
   const { here, elsewhere } = splitByPage(shown, ctx);
+  // The figures of the page you're on — Home's own (billable share, pace) never
+  // again, and none at all where none fit (Nitsan, 2026-10-25).
+  const tiles = view ? tilesFor(view.pulse, ctx) : [];
   const clientName = ctx.clientId ? items.find((i) => i.clientId === ctx.clientId && typeof i.facts.client === "string")?.facts.client : null;
   const hereLabel = typeof clientName === "string" ? clientName : ctx.label;
 
@@ -217,8 +228,10 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
     const target = typeof it.facts.href === "string" ? it.facts.href : null;
     const href = target && !isCurrent(target, ctx.pathname, ctx.params) ? target : null;
     const action = typeof it.facts.action === "string" ? it.facts.action : null;
+    const list = Array.isArray(it.facts.list) ? it.facts.list : [];
+    const full = expanded.has(it.id);
     return (
-      <li key={it.id} className="group/item relative mt-2 rounded-2xl bg-surface p-4 pr-12">
+      <li key={it.id} className="group/item relative mt-2 rounded-2xl bg-surface p-4 pr-20">
         <p className="mb-1.5 flex items-center gap-2 text-[12px] text-muted">
           <span className="size-2 rounded-full" style={{ background: TONE[it.kind] }} />
           {KIND_LABEL[it.kind]} · {it.area}
@@ -226,6 +239,32 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
         </p>
         <p className="bidi-auto text-[15px] font-medium leading-5">{it.wordedTitle ?? it.title}</p>
         <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{it.wordedBody ?? it.body}</p>
+        {list.length > 0 && (
+          <ul className="-mx-2 mt-2.5">
+            {(full ? list : list.slice(0, LIST_SHOWN)).map((l, i) => (
+              <li key={l.taskId ?? l.href ?? i}>
+                <ListLink link={l} onOpenTask={openTask} onClose={onClose} />
+              </li>
+            ))}
+            {list.length > LIST_SHOWN && (
+              <li>
+                <button
+                  onClick={() =>
+                    setExpanded((s) => {
+                      const next = new Set(s);
+                      if (full) next.delete(it.id);
+                      else next.add(it.id);
+                      return next;
+                    })
+                  }
+                  className="px-2 py-1 text-[12px] text-muted hover:text-foreground"
+                >
+                  {full ? "Show fewer" : `Show all ${list.length}`}
+                </button>
+              </li>
+            )}
+          </ul>
+        )}
         {snoozing === it.id ? (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
             <span className="text-muted">Snooze until</span>
@@ -262,15 +301,25 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
             </div>
           )
         )}
-        {/* Snooze is the only way out (Nitsan, 2026-10-24): it comes back if still true, sooner if it gets worse. */}
-        <button
-          onClick={() => setSnoozing(snoozing === it.id ? null : it.id)}
-          title="Snooze"
-          aria-label="Snooze"
-          className="absolute right-2.5 top-2.5 flex size-7 items-center justify-center rounded-lg text-muted opacity-40 transition-opacity hover:bg-[#1f2c57] hover:text-foreground group-hover/item:opacity-100"
-        >
-          <Clock3 size={16} strokeWidth={1.75} />
-        </button>
+        {/* Snooze brings it back on a date; dismiss for good (2026-10-25). Either returns early if it gets worse. */}
+        <div className="absolute right-2.5 top-2.5 flex gap-0.5 opacity-40 transition-opacity group-hover/item:opacity-100">
+          <button
+            onClick={() => setSnoozing(snoozing === it.id ? null : it.id)}
+            title="Snooze"
+            aria-label="Snooze"
+            className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-[#1f2c57] hover:text-foreground"
+          >
+            <Clock3 size={16} strokeWidth={1.75} />
+          </button>
+          <button
+            onClick={() => hide(it, { action: "done" }, "Dismissed", "info")}
+            title="Dismiss — it comes back only if it gets worse"
+            aria-label="Dismiss"
+            className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-[#1f2c57] hover:text-foreground"
+          >
+            <X size={16} strokeWidth={1.75} />
+          </button>
+        </div>
       </li>
     );
   };
@@ -285,10 +334,8 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
         <span className="flex size-9 items-center justify-center rounded-xl bg-brand-soft">
           <span className="brand-amp w-4" style={{ backgroundColor: AQUA }} />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="card-title">&amp;advice</p>
-          <p className="text-[12px] text-faint">{view ? parseISO(view.today).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : " "}</p>
-        </div>
+        {/* No date or "updated" line: opening the pane IS the check, so it's always now. */}
+        <p className="card-title min-w-0 flex-1">&amp;advice</p>
         <button onClick={onClose} aria-label="Close" className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground">
           <X size={20} strokeWidth={1.75} />
         </button>
@@ -325,12 +372,14 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
                 "Nothing urgent today."
               )}
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {view.pulse.map((p, i, all) => (
-                // An odd last tile spans the row rather than leaving a hole beside it.
-                <Tile key={p.label} p={p} wide={all.length % 2 === 1 && i === all.length - 1} />
-              ))}
-            </div>
+            {tiles.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {tiles.map((p, i, all) => (
+                  // An odd last tile spans the row rather than leaving a hole beside it.
+                  <Tile key={p.label} p={p} wide={all.length % 2 === 1 && i === all.length - 1} right={i % 2 === 1} />
+                ))}
+              </div>
+            )}
             <div className="mt-5 flex gap-1 rounded-xl bg-surface p-1 text-[13px]">
               {(["all", "now", "heads", "idea"] as const).map((k) => (
                 <button
@@ -372,7 +421,7 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
           </ul>
           <footer className="flex items-center justify-between gap-3 border-t border-border px-6 py-3 text-[12px] text-faint">
             <span>{view.wordingOff ?? "Percentages and trends only — amounts stay in the finance app"}</span>
-            {view.hidden > 0 && <span>{view.hidden} snoozed or done</span>}
+            {view.hidden > 0 && <span>{view.hidden} snoozed or dismissed</span>}
           </footer>
         </>
       )}
@@ -380,13 +429,19 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Tile({ p, wide }: { p: PulseTile; wide: boolean }) {
+/**
+ * One figure. Hovering (or focusing) it opens a box saying what it is and how
+ * it's counted (Nitsan, 2026-10-25) — anchored to the tile's outer edge so it
+ * never leaves the pane.
+ */
+function Tile({ p, wide, right }: { p: PulseTile; wide: boolean; right: boolean }) {
   const delta = p.value != null && p.against != null && p.unit === "%" ? p.value - p.against : null;
   const color = p.good ? AQUA : CORAL;
   return (
-    <div className={`rounded-xl bg-surface px-3.5 py-3 ${wide ? "col-span-2" : ""}`}>
-      <p className="flex items-center gap-2 text-[12px] text-muted">
+    <div tabIndex={0} className={`group/tile relative cursor-help rounded-xl bg-surface px-3.5 py-3 outline-none ${wide ? "col-span-2" : ""}`}>
+      <p className="flex items-center gap-1.5 text-[12px] text-muted">
         {p.label}
+        <Info size={12} strokeWidth={2} className="text-faint" />
         {delta != null && delta !== 0 && (
           <span className="ml-auto inline-flex items-center gap-1 whitespace-nowrap" style={{ color }}>
             {delta > 0 ? <TrendingUp size={14} strokeWidth={2} /> : <TrendingDown size={14} strokeWidth={2} />}
@@ -401,7 +456,48 @@ function Tile({ p, wide }: { p: PulseTile; wide: boolean }) {
       {p.series.length >= 2 && <Spark series={p.series} color={color} />}
       {/* What the figure is measured against — "+18 pts" means nothing without it. */}
       <p className="mt-1 truncate text-[11px] text-faint">{p.note}</p>
+      <div
+        role="tooltip"
+        className={`pointer-events-none absolute top-full z-10 mt-1.5 w-[260px] rounded-xl bg-[#1f2c57] px-3.5 py-3 text-[12px] leading-[18px] text-foreground opacity-0 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.6)] transition-opacity group-hover/tile:opacity-100 group-focus/tile:opacity-100 ${right && !wide ? "right-0" : "left-0"}`}
+      >
+        {p.help}
+      </div>
     </div>
+  );
+}
+
+/** How many of a card's things show before "Show all". */
+const LIST_SHOWN = 5;
+
+/** One thing a card is about: a task opens in the task pane (closing this one), a lead or page navigates. */
+function ListLink({ link, onOpenTask, onClose }: { link: FindingLink; onOpenTask?: (id: string) => void; onClose: () => void }) {
+  // The arrow makes each row read as a button (Nitsan, 2026-10-25); it brightens on hover.
+  const inner = (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className="bidi-auto block truncate text-[13px] text-foreground">{link.label}</span>
+        {link.sub && <span className="block truncate text-[11px] text-faint">{link.sub}</span>}
+      </span>
+      <StudioArrow size={14} className="shrink-0 text-faint transition-colors group-hover/link:text-brand" />
+    </>
+  );
+  const cls = "group/link flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-[#1f2c57]";
+  if (link.taskId && onOpenTask)
+    return (
+      <button
+        onClick={() => {
+          onClose();
+          onOpenTask(link.taskId!);
+        }}
+        className={cls}
+      >
+        {inner}
+      </button>
+    );
+  return (
+    <Link href={link.href ?? (link.taskId ? `/?task=${link.taskId}` : "#")} onClick={onClose} className={cls}>
+      {inner}
+    </Link>
   );
 }
 
