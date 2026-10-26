@@ -187,8 +187,14 @@ export function FreelancerLogView({ token }: { token: string }) {
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <h1 className="font-serif-accent text-[30px] leading-9">Hi {data.name}</h1>
           <p className="text-xs text-muted">
-            Your rate: {money(data.terms.rateHigh, cur)}/h up to {data.terms.hoursLow}h a month, sliding to{" "}
-            {money(data.terms.rateLow, cur)}/h from {data.terms.hoursHigh}h
+            {data.terms.rateHigh === data.terms.rateLow ? (
+              <>Your rate: {money(data.terms.rateHigh, cur)}/h, flat</>
+            ) : (
+              <>
+                Your rate: {money(data.terms.rateHigh, cur)}/h up to {data.terms.hoursLow}h a month, sliding to{" "}
+                {money(data.terms.rateLow, cur)}/h from {data.terms.hoursHigh}h
+              </>
+            )}
           </p>
         </div>
         <span className="brand-ampmore w-20 bg-brand" aria-label="Studio&more" />
