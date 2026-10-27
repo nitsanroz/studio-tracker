@@ -3,13 +3,14 @@ import { createClient as createServiceClient, type SupabaseClient } from "@supab
 import { monthBill, type RateTerms } from "@/lib/freelance-rate";
 import { signStorageUrl } from "@/lib/sign-storage";
 import { tokenFromSegment } from "@/lib/freelancer-link";
+import { fetchAll } from "@/lib/db";
 
 // Public endpoint behind a freelancer's private link (/log/[token], 0054).
 // Token-gated; every read and write uses the service key on the server and is
 // scoped to that freelancer's own rows. He has no login, so none of the
 // studio-wide "read all" RLS ever applies to him — and this route must never
-// return anything but: his enabled clients, the tasks an admin already approved
-// one of his logs on, and his own logs.
+// return anything but: their enabled clients, those clients' open tasks (plus any
+// task an admin already approved one of their logs on), and their own logs.
 
 /** Anti-flood: logs accepted per link within the window. */
 const RATE_LIMIT_WINDOW_MIN = 60;
@@ -60,8 +61,8 @@ function today(): string {
 /** The first day he may write to: his own lines live in the current month only
  * — past months are history (billed, maybe already in a client's report). */
 const editableFrom = () => `${today().slice(0, 7)}-01`;
-/** The clients he may log against, and the tasks he may pick: those an admin
- * approved one of his logs on. */
+/** The clients they may log against, and the tasks they may pick: every open
+ * task of those clients, plus any done one an admin approved one of their logs on. */
 async function allowed(sb: SupabaseClient, profileId: string) {
   const [{ data: links }, { data: approved }] = await Promise.all([
     sb.from("freelancer_clients").select("client_id").eq("profile_id", profileId),
@@ -69,15 +70,26 @@ async function allowed(sb: SupabaseClient, profileId: string) {
   ]);
   const clientIds = (links ?? []).map((l) => l.client_id as string);
   const taskIds = [...new Set((approved ?? []).map((l) => l.task_id as string))];
-  const [{ data: clients }, { data: tasks }] = await Promise.all([
-    clientIds.length ? sb.from("clients").select("id, name").in("id", clientIds) : Promise.resolve({ data: [] }),
+  type TaskRow = { id: string; title: string; client_id: string | null; status: string | null; completed_at: string | null };
+  const [{ data: clients }, clientTasks, { data: pastTasks }] = await Promise.all([
+    clientIds.length ? sb.from("clients").select("id, name, keys_task_id").in("id", clientIds) : Promise.resolve({ data: [] }),
+    clientIds.length
+      ? fetchAll<TaskRow>(sb, "tasks", "id, title, client_id, status, completed_at", (q) => q.in("client_id", clientIds))
+      : Promise.resolve([] as TaskRow[]),
     taskIds.length ? sb.from("tasks").select("id, title, client_id").in("id", taskIds) : Promise.resolve({ data: [] }),
   ]);
+  // Each client's keys task is the admin's write-down holder, never a place to log.
+  const keys = new Set(((clients ?? []) as { keys_task_id: string | null }[]).map((c) => c.keys_task_id).filter(Boolean));
+  const open = clientTasks.filter((t) => !t.completed_at && t.status !== "done" && !keys.has(t.id));
+  const byId = new Map<string, { id: string; title: string; client_id: string | null }>();
+  for (const t of [...open, ...((pastTasks ?? []) as { id: string; title: string; client_id: string | null }[])]) byId.set(t.id, t);
   return {
-    clients: ((clients ?? []) as { id: string; name: string }[]).sort((a, b) => a.name.localeCompare(b.name)),
-    tasks: ((tasks ?? []) as { id: string; title: string; client_id: string | null }[])
-      .filter((t) => t.client_id && clientIds.includes(t.client_id))
-      .map((t) => ({ id: t.id, title: t.title, clientId: t.client_id! }))
+    clients: ((clients ?? []) as { id: string; name: string }[])
+      .map((c) => ({ id: c.id, name: c.name }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    tasks: [...byId.values()]
+      .filter((t) => t.client_id && clientIds.includes(t.client_id) && t.title?.trim())
+      .map((t) => ({ id: t.id, title: t.title.trim(), clientId: t.client_id! }))
       .sort((a, b) => a.title.localeCompare(b.title)),
   };
 }

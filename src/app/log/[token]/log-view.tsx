@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Info, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ClientAvatar } from "@/components/client-avatar";
 import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 
@@ -535,7 +535,7 @@ function Composer({
       ) : (
         <div className="grid grid-cols-[150px_minmax(0,1.3fr)_110px_70px_minmax(0,1fr)_auto] items-start gap-2">
           <input type="date" value={date} min={data.earliest} max={data.today} onChange={(e) => setDate(e.target.value)} className={field} aria-label="Date" />
-          <input value={task} onChange={(e) => setTask(e.target.value)} onKeyDown={onEnter} placeholder="What for — e.g. AMIR SFX, NoTraffic sounds" maxLength={120} className={field} />
+          <input value={task} onChange={(e) => setTask(e.target.value)} onKeyDown={onEnter} placeholder="What it's for" maxLength={120} className={field} />
           <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={onEnter} placeholder="Amount" className={`${field} text-right`} />
           <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={field} aria-label="Currency">
             <option value="EUR">€</option>
@@ -547,11 +547,17 @@ function Composer({
         </div>
       )}
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-      <p className="mt-2 text-xs text-faint">
-        {kind === "hours"
-          ? "Type a task in your own words, or pick one Studio&more already filed you on."
-          : "Money you're charging on top of your hours — another freelancer you brought in, a purchase."}
-      </p>
+      {kind === "hours" ? (
+        <p className="mt-2 flex items-start gap-1.5 text-xs text-muted">
+          <Info size={14} strokeWidth={1.75} className="mt-px shrink-0 text-brand" />
+          Pick a task only when you&apos;re sure it&apos;s the right one — please don&apos;t guess. Not sure? Check with
+          Studio&amp;more which task to log it on.
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-faint">
+          Money you&apos;re charging on top of your hours — another freelancer you brought in, a purchase.
+        </p>
+      )}
     </div>
   );
 }

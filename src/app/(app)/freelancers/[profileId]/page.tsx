@@ -310,14 +310,14 @@ function MonthTable({
       <h2 className="flex items-center gap-2 px-5 pt-5 font-heading text-base">
         <ReceiptText size={18} strokeWidth={1.75} className="text-brand" /> {monthLabel(data.period).split(" ")[0]}&apos;s hours
       </h2>
-      <table className="mt-3 w-full min-w-[900px] text-sm">
+      <table className="mt-3 w-full min-w-[740px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted">
             <th className="px-3 py-2 font-medium">Date</th>
             <th className="px-3 py-2 font-medium">Client</th>
-            <th className="px-3 py-2 font-medium">Task</th>
+            <th className="min-w-[260px] px-3 py-2 font-medium">Task</th>
             <th className="px-3 py-2 text-right font-medium">Hours</th>
-            <th className="px-3 py-2 font-medium">What he did</th>
+            <th className="px-3 py-2 font-medium">What they did</th>
             <th className="px-3 py-2 font-medium">Status</th>
           </tr>
         </thead>
@@ -370,7 +370,7 @@ function MonthTable({
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {l.fromSheet ? (
-                    <span className="text-xs text-faint">From his sheet</span>
+                    <span className="text-xs text-faint">From their sheet</span>
                   ) : l.status === "approved" ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
                       <Check size={12} /> Approved
@@ -389,7 +389,7 @@ function MonthTable({
             <td colSpan={3} className="px-3 py-2 text-muted">
               Total{" "}
               <span className="font-normal text-muted">
-                (not counting turned-down rows{waitingHours > 0 ? `; ${hrs(waitingHours)} of it still waiting` : ""})
+                (approved rows only{waitingHours > 0 ? `, plus ${hrs(waitingHours)} still waiting` : ""})
               </span>
             </td>
             <td className="px-3 py-2 text-right tabular-nums">
@@ -461,7 +461,7 @@ function WaitingRow({
         <span className="text-xl font-medium tabular-nums">{hrs(row.hours)}</span>
         {row.taskHint && (
           <span className="bidi-auto text-sm">
-            His name: <b className="font-medium">&ldquo;{row.taskHint}&rdquo;</b>
+            Their name for it: <b className="font-medium">&ldquo;{row.taskHint}&rdquo;</b>
           </span>
         )}
         {row.description !== row.taskHint && (
@@ -534,7 +534,7 @@ function WaitingRow({
         <button
           disabled={busy}
           onClick={() => {
-            const note = prompt("Turn this log down? Add a note for him (optional):");
+            const note = prompt("Turn this log down? Add a note for them (optional):");
             if (note !== null) void run({ action: "reject", id: row.id, note });
           }}
           className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-surface hover:text-danger"
@@ -603,7 +603,7 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                       disabled={busy === c.id}
                       onClick={() => {
                         const note = prompt(
-                          "Turn this charge down? Add a note for him (optional):",
+                          "Turn this charge down? Add a note for them (optional):",
                         );
                         if (note !== null)
                           void run({ action: "rejectCharge", id: c.id, note });
@@ -615,7 +615,7 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                     </button>
                   </div>
                 ) : c.fromSheet ? (
-                  <span className="text-xs text-faint">From his sheet</span>
+                  <span className="text-xs text-faint">From their sheet</span>
                 ) : c.status === "approved" ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
                     <Check size={12} /> Approved
@@ -729,7 +729,7 @@ function Side({
     <div className="space-y-4">
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
         <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
-          <Link2 size={18} strokeWidth={1.75} className="text-brand" /> His private link
+          <Link2 size={18} strokeWidth={1.75} className="text-brand" /> Private link
         </h2>
         <code className="block truncate rounded-lg bg-background px-3 py-2 text-xs">
           {link}
@@ -751,7 +751,7 @@ function Side({
             rel="noopener noreferrer"
             className={btn}
           >
-            <ExternalLink size={12} /> Open his page
+            <ExternalLink size={12} /> Open their page
           </a>
           <button
             onClick={async () => {
@@ -782,7 +782,7 @@ function Side({
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
         <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
-          <Users size={18} strokeWidth={1.75} className="text-brand" /> Clients he can log against
+          <Users size={18} strokeWidth={1.75} className="text-brand" /> Clients they can log against
           {!editingClients && (
             <button
               onClick={() => setEditingClients(true)}
@@ -847,7 +847,7 @@ function Side({
           </div>
         )}
         <p className="mt-2 text-xs text-muted">
-          Approving a row on a new client opens it for him.
+          Approving a row on a new client opens it for them.
         </p>
       </section>
 
@@ -890,7 +890,7 @@ function Side({
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
         <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
-          <FolderOpen size={18} strokeWidth={1.75} className="text-brand" /> His deliverables &amp; folders
+          <FolderOpen size={18} strokeWidth={1.75} className="text-brand" /> Deliverables &amp; folders
         </h2>
         {f.deliverables.length === 0 ? (
           <p className="text-faint">None yet</p>
