@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableDays, availableIn, balanceAsOf, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "./vacation";
+import { availableDays, availableIn, balanceAsOf, fitRequest, formatDays, plannedVacation, requestDays, workdays, type VacationRequest } from "./vacation";
 import type { DayState } from "./types";
 
 const holidays: DayState[] = [{ id: "h", dateFrom: "2026-10-14", dateTo: "2026-10-14", label: "Holiday" }];
@@ -12,6 +12,8 @@ const req = (startDate: string, endDate: string, status: VacationRequest["status
   days: 0,
   message: "",
   status,
+  dates: null,
+  replacesId: null,
   decidedAt: null,
   decisionNote: null,
   createdAt: "",
@@ -158,5 +160,32 @@ describe("formatDays", () => {
     expect(formatDays(9.55)).toBe("9.6");
     expect(formatDays(10)).toBe("10");
     expect(formatDays(-2.6)).toBe("−2.6");
+  });
+});
+
+describe("a vacation moved in the plan, or changed (0060)", () => {
+  const bal = { year: 2026, month: 9, balance: 10, accrued: 1 };
+  const today = new Date(2026, 9, 1);
+
+  it("uses the exact days once one was moved, and skips a moved Friday", () => {
+    // Sun 11 – Thu 15 Oct, the Thursday dragged to Sun 18; another to Fri 16.
+    const r = { ...req("2026-10-11", "2026-10-18", "approved"), dates: ["2026-10-18", "2026-10-11", "2026-10-12", "2026-10-16"] };
+    expect(requestDays(r, [])).toEqual(["2026-10-11", "2026-10-12", "2026-10-18"]);
+    expect(availableDays(bal, [r], [], undefined, today).approved).toBe(3);
+  });
+
+  it("counts only the days a waiting change adds to the approved one", () => {
+    const old = req("2026-10-11", "2026-10-13", "approved", "old");
+    const change = { ...req("2026-10-12", "2026-10-15", "pending", "new"), replacesId: "old" };
+    const a = availableDays(bal, [old, change], [], undefined, today);
+    expect(a.approved).toBe(3);
+    expect(a.pending).toBe(2);
+  });
+
+  it("judges a change without the request it replaces", () => {
+    const old = req("2026-10-11", "2026-10-22", "approved", "old");
+    const days = ["2026-10-11", "2026-10-12"];
+    expect(fitRequest({ ...bal, balance: 2, accrued: 0 }, [old], [], days, "old", today).ok).toBe(true);
+    expect(fitRequest({ ...bal, balance: 2, accrued: 0 }, [old], [], days, undefined, today).ok).toBe(false);
   });
 });

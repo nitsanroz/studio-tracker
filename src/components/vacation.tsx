@@ -28,7 +28,16 @@ import { Button, Field, Input, Textarea } from "./primitives";
 import { askConfirm } from "./confirm-dialog";
 import { useData } from "@/lib/store";
 import { MONTH_NAMES_SHORT, formatDate, toISODate } from "@/lib/format";
-import { availableDays, availableIn, fitRequest, formatDays, plannedVacation, workdays, type VacationRequest } from "@/lib/vacation";
+import {
+  availableDays,
+  availableIn,
+  fitRequest,
+  formatDays,
+  plannedVacation,
+  requestDays,
+  workdays,
+  type VacationRequest,
+} from "@/lib/vacation";
 import type { VacationState } from "@/lib/use-vacation";
 import { EmptyState } from "./empty-state";
 
@@ -37,6 +46,7 @@ const STATUS: Record<VacationRequest["status"], { label: string; className: stri
   approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800" },
   declined: { label: "Declined", className: "bg-red-100 text-red-800" },
   cancelled: { label: "Cancelled", className: "bg-background text-muted" },
+  replaced: { label: "Changed", className: "bg-background text-muted" },
 };
 
 export function VacationStatusPill({ status }: { status: VacationRequest["status"] }) {
@@ -51,26 +61,40 @@ export function VacationStatusPill({ status }: { status: VacationRequest["status
 const monthName = (key: string) =>
   new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, 1).toLocaleDateString("en-GB", { month: "long" });
 
-const range = (r: Pick<VacationRequest, "startDate" | "endDate">) =>
-  r.startDate === r.endDate ? formatDate(r.startDate) : `${formatDate(r.startDate)} – ${formatDate(r.endDate)}`;
+/** "3 – 7 Nov", or each day when a day was moved in the plan and left a gap. */
+const range = (r: Pick<VacationRequest, "startDate" | "endDate" | "dates">) => {
+  if (r.dates && r.dates.length > 1) {
+    const days = [...r.dates].sort();
+    const full = workdays(days[0], days[days.length - 1], []);
+    if (days.length !== full.length || days.some((d, i) => d !== full[i])) return days.map((d) => formatDate(d)).join(", ");
+  }
+  return r.startDate === r.endDate ? formatDate(r.startDate) : `${formatDate(r.startDate)} – ${formatDate(r.endDate)}`;
+};
 
 // ── the request form ──────────────────────────────────────────────────────
 
 export function VacationRequestModal({
   vacation,
   startDate,
+  editing,
   onClose,
 }: {
   vacation: VacationState;
   /** Prefilled from a weekly-plan cell. */
   startDate?: string;
+  /** Change this request: a waiting one is changed in place; an approved one
+   * goes back to Nitsan as a change, and stands until he decides (0060). */
+  editing?: VacationRequest;
   onClose: () => void;
 }) {
   const { dayStates, planColumns, planEntries } = useData();
   const today = toISODate(new Date());
-  const [from, setFrom] = useState(startDate ?? today);
-  const [to, setTo] = useState(startDate ?? today);
-  const [message, setMessage] = useState("");
+  const resend = editing?.status === "approved";
+  // A vacation already under way can keep its first day.
+  const earliest = editing && editing.startDate < today ? editing.startDate : today;
+  const [from, setFrom] = useState(editing?.startDate ?? startDate ?? today);
+  const [to, setTo] = useState(editing?.endDate ?? startDate ?? today);
+  const [message, setMessage] = useState(editing?.message ?? "");
   const [busy, setBusy] = useState(false);
   /** They've ticked that they know it's more than they'll have (Nitsan, 2026-10-13:
    * allowed, but only knowingly — he sees the shortfall when deciding). */
@@ -78,26 +102,36 @@ export function VacationRequestModal({
   const dates = workdays(from, to, dayStates);
   const days = dates.length;
   const mine = vacation.requests.filter((r) => r.profileId === vacation.mineProfileId);
+  // Judged without the request being changed — its days are what's being replaced.
+  const except = editing?.id;
   // Judged against what they'll have by each month the days fall in — a day's
   // credit for every month after the payslip's.
-  const planned = plannedVacation(vacation.mineProfileId, planColumns, planEntries);
-  const fit = vacation.mine && days ? fitRequest(vacation.mine, mine, dayStates, dates, undefined, new Date(), planned) : null;
+  // A change replaces the approved days — their chips in the plan go with them.
+  const replacing = new Set(resend ? requestDays(editing!, dayStates) : []);
+  const planned = plannedVacation(vacation.mineProfileId, planColumns, planEntries).filter((d) => !replacing.has(d));
+  const fit = vacation.mine && days ? fitRequest(vacation.mine, mine, dayStates, dates, except, new Date(), planned) : null;
   // ⚠️ What they'll HAVE in the month the vacation starts, before this request:
   // a day's credit for every month up to it (Nitsan, 2026-10-24 — asking for
   // February should show February's figure, not today's). Same `room` maths
   // as `fit`, so the two lines can't disagree.
   const startMonth = (from < today ? today : from).slice(0, 7);
   const inMonth = vacation.mine
-    ? availableIn(vacation.mine, mine, dayStates, startMonth, undefined, new Date(), planned)
+    ? availableIn(vacation.mine, mine, dayStates, startMonth, except, new Date(), planned)
     : null;
-  const tooMany = fit != null && !fit.ok;
+  // A change is only short if it's shorter than the approved days it replaces
+  // — someone already over shouldn't be stopped from moving a day.
+  const fitBefore =
+    resend && vacation.mine
+      ? fitRequest(vacation.mine, mine, dayStates, [...replacing].sort(), except, new Date(), planned)
+      : null;
+  const tooMany = fit != null && !fit.ok && !(fitBefore && !fitBefore.ok && fit.short!.by <= fitBefore.short!.by + 1e-9);
   const shortBy = tooMany
     ? `By ${monthName(fit!.short!.month)} you'd be ${formatDays(fit!.short!.by)} day${fit!.short!.by === 1 ? "" : "s"} short.`
     : null;
   const problem =
     to < from
       ? "The last day is before the first."
-      : from < today
+      : from < earliest
         ? "Vacation can't start in the past."
         : days === 0
           ? "No workdays in these dates (Fri–Sat and holidays don't count)."
@@ -105,12 +139,17 @@ export function VacationRequestModal({
             ? shortBy
             : !message.trim()
               ? "Add a message for Nitsan."
-              : null;
+              : editing && editing.startDate === from && editing.endDate === to && !editing.dates && editing.message.trim() === message.trim()
+                ? "Nothing changed yet."
+                : null;
 
   async function submit() {
     if (problem) return;
     setBusy(true);
-    const ok = await vacation.request({ startDate: from, endDate: to, message });
+    const ok =
+      editing && !resend
+        ? await vacation.edit(editing.id, { startDate: from, endDate: to, message })
+        : await vacation.request({ startDate: from, endDate: to, message, replacesId: resend ? editing!.id : undefined });
     setBusy(false);
     if (ok) onClose();
   }
@@ -119,17 +158,23 @@ export function VacationRequestModal({
     <Modal onClose={onClose} width="sm" labelledBy="vacation-title">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 id="vacation-title" className="font-heading text-base">
-          Request vacation
+          {resend ? "Change approved vacation" : editing ? "Change request" : "Request vacation"}
         </h2>
         <ModalClose onClose={onClose} />
       </div>
       <div className="flex flex-col gap-3">
+        {resend && (
+          <p className="rounded-xl bg-background px-3 py-2.5 text-sm">
+            Approved: <span className="font-medium">{range(editing!)}</span>. It stays as it is until Nitsan approves the
+            change.
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Field label="First day">
             <Input
               type="date"
               value={from}
-              min={today}
+              min={earliest}
               onChange={(e) => {
                 setFrom(e.target.value);
                 if (e.target.value > to) setTo(e.target.value);
@@ -175,7 +220,11 @@ export function VacationRequestModal({
             autoFocus
           />
         </Field>
-        {(problem && problem !== shortBy && (message.trim() || problem !== "Add a message for Nitsan.")) || vacation.error ? (
+        {(problem &&
+          problem !== shortBy &&
+          problem !== "Nothing changed yet." &&
+          (message.trim() || problem !== "Add a message for Nitsan.")) ||
+        vacation.error ? (
           <p className="text-xs text-danger">{vacation.error ?? problem}</p>
         ) : null}
         {tooMany && (
@@ -191,7 +240,7 @@ export function VacationRequestModal({
             Cancel
           </Button>
           <Button onClick={submit} disabled={!!problem || busy}>
-            {busy ? "Sending…" : "Send request"}
+            {busy ? "Sending…" : resend ? "Send for approval" : editing ? "Save" : "Send request"}
           </Button>
         </div>
         <p className="text-[11px] text-muted">Whole days only. Nitsan approves; once he does, the days show in the weekly plan.</p>
@@ -225,6 +274,7 @@ export function useMyVacationBalance(vacation: VacationState) {
  * page header carries "Request vacation" instead of the card. */
 export function MyVacationCard({ vacation, full = false }: { vacation: VacationState; full?: boolean }) {
   const [asking, setAsking] = useState(false);
+  const [editing, setEditing] = useState<VacationRequest | null>(null);
   const today = toISODate(new Date());
   const { mine, balance: a } = useMyVacationBalance(vacation);
   if (!vacation.ready) return null;
@@ -291,22 +341,43 @@ export function MyVacationCard({ vacation, full = false }: { vacation: VacationS
                 {r.days} day{r.days === 1 ? "" : "s"}
               </span>
               <VacationStatusPill status={r.status} />
+              {r.replacesId && r.status === "pending" && (
+                <span className="text-xs text-muted">
+                  change to {range(vacation.requests.find((x) => x.id === r.replacesId) ?? r)}
+                </span>
+              )}
               {r.decisionNote && <span className="bidi-auto text-xs text-muted">“{r.decisionNote}”</span>}
               {r.status === "pending" && (
-                <button
-                  onClick={async () => {
-                    if (await askConfirm("Withdraw this request?", { action: "Withdraw", danger: true })) vacation.cancel(r.id);
-                  }}
-                  className="ml-auto text-xs text-muted hover:text-danger"
-                >
-                  Withdraw
-                </button>
+                <span className="ml-auto flex gap-3">
+                  <button onClick={() => setEditing(r)} className="text-xs text-muted hover:text-brand">
+                    Change
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (await askConfirm(r.replacesId ? "Withdraw this change? The approved vacation stays." : "Withdraw this request?", { action: "Withdraw", danger: true }))
+                        vacation.cancel(r.id);
+                    }}
+                    className="text-xs text-muted hover:text-danger"
+                  >
+                    Withdraw
+                  </button>
+                </span>
               )}
+              {/* An approved vacation can be changed and sent back (one change
+                  waiting at a time); the approved days hold until Nitsan decides. */}
+              {r.status === "approved" &&
+                r.endDate >= today &&
+                !vacation.requests.some((x) => x.replacesId === r.id && x.status === "pending") && (
+                  <button onClick={() => setEditing(r)} className="ml-auto text-xs text-muted hover:text-brand">
+                    Change
+                  </button>
+                )}
             </li>
           ))}
         </ul>
       )}
       {asking && <VacationRequestModal vacation={vacation} onClose={() => setAsking(false)} />}
+      {editing && <VacationRequestModal vacation={vacation} editing={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
@@ -350,8 +421,20 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
           {pending.map((r) => {
             const b = vacation.balances.get(r.profileId);
             const theirs = vacation.requests.filter((x) => x.profileId === r.profileId);
+            const was = r.replacesId ? vacation.requests.find((x) => x.id === r.replacesId) : undefined;
+            // A change is judged without the approved days it replaces — and
+            // without those days in the plan, which the approval clears.
+            const wasDays = new Set(was ? requestDays(was, dayStates) : []);
             const fit = b
-              ? fitRequest(b, theirs, dayStates, workdays(r.startDate, r.endDate, dayStates), r.id, new Date(), plannedOf(r.profileId))
+              ? fitRequest(
+                  b,
+                  theirs,
+                  dayStates,
+                  requestDays(r, dayStates),
+                  was ? [r.id, was.id] : r.id,
+                  new Date(),
+                  plannedOf(r.profileId).filter((d) => !wasDays.has(d)),
+                )
               : null;
             const lastMonth = monthName(r.endDate.slice(0, 7));
             return (
@@ -370,6 +453,12 @@ export function VacationApprovals({ vacation }: { vacation: VacationState }) {
                     </span>
                   )}
                 </div>
+                {was && (
+                  <p className="mt-1 text-xs text-muted">
+                    A change — approved now: {range(was)}
+                    {was.status !== "approved" && ` (${STATUS[was.status].label.toLowerCase()})`}
+                  </p>
+                )}
                 <p className="bidi-auto mt-1 whitespace-pre-line text-sm">{r.message}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Input

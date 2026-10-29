@@ -16,7 +16,8 @@
 import { isWeekend, parseISO, shiftDays, toISODate } from "./format";
 import type { DayState } from "./types";
 
-export type VacationStatus = "pending" | "approved" | "declined" | "cancelled";
+/** 'replaced': an approved request whose change was approved (0060). */
+export type VacationStatus = "pending" | "approved" | "declined" | "cancelled" | "replaced";
 
 export interface VacationRequest {
   id: string;
@@ -26,6 +27,11 @@ export interface VacationRequest {
   days: number;
   message: string;
   status: VacationStatus;
+  /** The exact days, once one was moved in the plan (0060); null = every
+   * workday from startDate to endDate. */
+  dates: string[] | null;
+  /** A change to this approved request, waiting for the owner (0060). */
+  replacesId: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
   createdAt: string;
@@ -53,6 +59,17 @@ export function workdays(from: string, to: string, dayStates: Pick<DayState, "da
   return out;
 }
 
+/** A request's days: its exact list when a day was moved in the plan, else
+ * every workday in its range. Weekend and holiday days in a list cost nothing,
+ * as in the database. */
+export function requestDays(
+  r: Pick<VacationRequest, "startDate" | "endDate" | "dates">,
+  dayStates: Pick<DayState, "dateFrom" | "dateTo">[],
+): string[] {
+  if (!r.dates) return workdays(r.startDate, r.endDate, dayStates);
+  return [...r.dates].sort().filter((d) => workdays(d, d, dayStates).length > 0);
+}
+
 /** The last day of a payslip's month — what its balance already accounts for. */
 export function balanceAsOf(b: Pick<VacationBalance, "year" | "month">): string {
   return toISODate(new Date(b.year, b.month, 0));
@@ -72,6 +89,11 @@ export interface Available {
   available: number;
 }
 
+/** Requests to leave out — the one being decided or edited, and for a change,
+ * the approved request it replaces. */
+type Except = string | string[] | undefined;
+const skip = (except: Except, id: string) => (Array.isArray(except) ? except.includes(id) : except === id);
+
 const monthKey = (iso: string) => iso.slice(0, 7);
 const monthIndex = (key: string) => Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)) - 1;
 const keyOf = (index: number) => `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
@@ -87,7 +109,7 @@ function room(
   requests: VacationRequest[],
   dayStates: DayState[],
   extra: string[],
-  exceptId: string | undefined,
+  except: Except,
   today: Date,
   planned: string[] = [],
   /** Run the months out at least this far ("2027-03"). */
@@ -99,8 +121,8 @@ function room(
   // plan, and must not count twice.
   const taken = new Set<string>();
   for (const r of requests) {
-    if (r.id === exceptId || (r.status !== "approved" && r.status !== "pending")) continue;
-    workdays(r.startDate, r.endDate, dayStates).forEach((d) => taken.add(d));
+    if (skip(except, r.id) || (r.status !== "approved" && r.status !== "pending")) continue;
+    requestDays(r, dayStates).forEach((d) => taken.add(d));
   }
   planned.forEach((d) => taken.add(d));
   extra.forEach((d) => taken.add(d));
@@ -133,8 +155,8 @@ export function availableDays(
   balance: VacationBalance,
   requests: VacationRequest[],
   dayStates: DayState[],
-  /** Leave one request out — the one being decided or edited. */
-  exceptId?: string,
+  /** Leave requests out — the one being decided or edited (and what it replaces). */
+  exceptId?: Except,
   today = new Date(),
   /** Vacation days already in their plan column (see `plannedVacation`). */
   planned: string[] = [],
@@ -143,10 +165,19 @@ export function availableDays(
   const approvedDays = new Set(planned.filter((d) => d > asOf));
   let pending = 0;
   for (const r of requests) {
-    if (r.id === exceptId) continue;
-    const days = workdays(r.startDate, r.endDate, dayStates).filter((d) => d > asOf);
+    if (skip(exceptId, r.id)) continue;
+    let days = requestDays(r, dayStates).filter((d) => d > asOf);
     if (r.status === "approved") days.forEach((d) => approvedDays.add(d));
-    else if (r.status === "pending") pending += days.length;
+    else if (r.status === "pending") {
+      // A change waits on top of the approved days it replaces: only the days
+      // it adds are new.
+      const old = r.replacesId ? requests.find((x) => x.id === r.replacesId && x.status === "approved") : null;
+      if (old) {
+        const had = new Set(requestDays(old, dayStates));
+        days = days.filter((d) => !had.has(d));
+      }
+      pending += days.length;
+    }
   }
   const approved = approvedDays.size;
   const now = monthKey(toISODate(today));
@@ -169,7 +200,7 @@ export function availableIn(
   requests: VacationRequest[],
   dayStates: DayState[],
   month: string,
-  exceptId?: string,
+  exceptId?: Except,
   today = new Date(),
   planned: string[] = [],
 ): number {
@@ -192,7 +223,7 @@ export function fitRequest(
   requests: VacationRequest[],
   dayStates: DayState[],
   days: string[],
-  exceptId?: string,
+  exceptId?: Except,
   today = new Date(),
   planned: string[] = [],
 ): Fit {

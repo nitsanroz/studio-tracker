@@ -26,6 +26,9 @@ interface RequestRow {
   days: number;
   message: string;
   status: VacationStatus;
+  /** 0060; absent before it's run. */
+  dates?: string[] | null;
+  replaces_id?: string | null;
   decided_at: string | null;
   decision_note: string | null;
   created_at: string;
@@ -46,6 +49,8 @@ const mapRequest = (r: RequestRow): VacationRequest => ({
   days: r.days,
   message: r.message,
   status: r.status,
+  dates: r.dates ?? null,
+  replacesId: r.replaces_id ?? null,
   decidedAt: r.decided_at,
   decisionNote: r.decision_note,
   createdAt: r.created_at,
@@ -82,7 +87,10 @@ export interface VacationState {
   balances: Map<string, VacationBalance>;
   /** Set when a write was refused (a preview, or the database said no). */
   error: string | null;
-  request: (r: { startDate: string; endDate: string; message: string }) => Promise<boolean>;
+  /** `replacesId`: a change to your approved request, sent back for approval (0060). */
+  request: (r: { startDate: string; endDate: string; message: string; replacesId?: string }) => Promise<boolean>;
+  /** Change your own request while it's still waiting. */
+  edit: (id: string, r: { startDate: string; endDate: string; message: string }) => Promise<boolean>;
   cancel: (id: string) => Promise<boolean>;
   decide: (id: string, status: "approved" | "declined", note?: string) => Promise<boolean>;
   reload: () => void;
@@ -165,7 +173,13 @@ export function useVacation({ enabled = true }: { enabled?: boolean } = {}): Vac
       setError(null);
       const { error: e } = await run();
       if (e) {
-        setError(e.message.includes("No workdays") ? "Those dates have no workdays." : e.message);
+        setError(
+          e.message.includes("No workdays")
+            ? "Those dates have no workdays."
+            : e.message.includes("vacation_requests_one_change_idx")
+              ? "A change to this vacation is already waiting for approval."
+              : e.message,
+        );
         return false;
       }
       window.dispatchEvent(new Event(CHANGED));
@@ -177,13 +191,30 @@ export function useVacation({ enabled = true }: { enabled?: boolean } = {}): Vac
   );
 
   const request = useCallback(
-    (r: { startDate: string; endDate: string; message: string }) =>
+    (r: { startDate: string; endDate: string; message: string; replacesId?: string }) =>
       write(() =>
         createClient()
           .from("vacation_requests")
-          .insert({ profile_id: mineProfileId, start_date: r.startDate, end_date: r.endDate, message: r.message.trim() }),
+          .insert({
+            profile_id: mineProfileId,
+            start_date: r.startDate,
+            end_date: r.endDate,
+            message: r.message.trim(),
+            // Only named when set, so a plain request still works before 0060.
+            ...(r.replacesId ? { replaces_id: r.replacesId } : {}),
+          }),
       ),
     [write, mineProfileId],
+  );
+  const edit = useCallback(
+    (id: string, r: { startDate: string; endDate: string; message: string }) =>
+      write(() =>
+        createClient()
+          .from("vacation_requests")
+          .update({ start_date: r.startDate, end_date: r.endDate, message: r.message.trim() })
+          .eq("id", id),
+      ),
+    [write],
   );
   const cancel = useCallback(
     (id: string) =>
@@ -208,5 +239,5 @@ export function useVacation({ enabled = true }: { enabled?: boolean } = {}): Vac
     [write, mineProfileId],
   );
 
-  return { ready, unavailable, mine, mineProfileId, requests, approver, balances, error, request, cancel, decide, reload };
+  return { ready, unavailable, mine, mineProfileId, requests, approver, balances, error, request, edit, cancel, decide, reload };
 }

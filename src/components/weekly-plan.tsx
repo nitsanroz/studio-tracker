@@ -36,7 +36,7 @@ import {
 import { ResizeHandle, useColWidths } from "./resizable";
 import type { AbsenceType, DevStatus, PlanEntry } from "@/lib/types";
 import { useVacation } from "@/lib/use-vacation";
-import { workdays } from "@/lib/vacation";
+import { requestDays } from "@/lib/vacation";
 import { VacationRequestModal } from "./vacation";
 
 const DEV_STATUS: Record<DevStatus, { label: string; chip: string }> = {
@@ -904,7 +904,7 @@ export function WeeklyPlan() {
       if (r.status !== "pending") continue;
       const col = planColumns.find((c) => c.profileId === r.profileId && c.type === "member");
       if (!col) continue;
-      for (const d of workdays(r.startDate, r.endDate, dayStates)) cells.add(`${d}::${col.id}`);
+      for (const d of requestDays(r, dayStates)) cells.add(`${d}::${col.id}`);
     }
     return cells;
   }, [vacation.requests, planColumns, dayStates]);
