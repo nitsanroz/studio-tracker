@@ -112,6 +112,7 @@ export function mapCandidate(r: Row): Candidate {
       ? outcome
       : null) as CandidateOutcome | null,
     archivedAt: nstr(r.archived_at),
+    profileId: nstr(r.profile_id),
     source: nstr(r.source),
     applicationText: nstr(r.application_text),
     appliedOn: nstr(r.applied_on),
@@ -129,6 +130,20 @@ export function mapCandidate(r: Row): Candidate {
 const CANDIDATE_COLS =
   "id,name,email,phone,role_id,stage_id,owner_id,status,outcome,archived_at," +
   "source,application_text,applied_on,last_activity_at,created_at";
+
+/**
+ * `CANDIDATE_COLS` plus 0061's `profile_id`, stepping down to the plain list if
+ * the migration has not run — a named column that does not exist fails the
+ * whole select, which here would empty the board and every dossier. Only on a
+ * missing-schema code; anything else propagates.
+ */
+async function candidateRows<T>(
+  build: (cols: string) => PromiseLike<{ data: T; error: { code?: string } | null }>,
+) {
+  const full = await build(`${CANDIDATE_COLS},profile_id`);
+  if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
+  return build(CANDIDATE_COLS);
+}
 
 export interface Vocabulary {
   stages: CandidateStage[];
@@ -235,11 +250,13 @@ export async function loadBoard(
   const sb = createClient();
 
   const [rows, activeC, holdC, archC] = await Promise.all([
-    sb
-      .from("candidates")
-      .select(CANDIDATE_COLS)
-      .eq("status", status)
-      .order("last_activity_at", { ascending: false }),
+    candidateRows((cols) =>
+      sb
+        .from("candidates")
+        .select(cols)
+        .eq("status", status)
+        .order("last_activity_at", { ascending: false }),
+    ),
     sb.from("candidates").select("id", { count: "exact", head: true }).eq("status", "active"),
     sb.from("candidates").select("id", { count: "exact", head: true }).eq("status", "on_hold"),
     sb.from("candidates").select("id", { count: "exact", head: true }).eq("status", "archived"),
@@ -335,11 +352,9 @@ async function allIn(
 /** Everything about one person. One route, one candidate, so `*` is honest here. */
 export async function loadCandidate(id: string): Promise<CandidateDetail | null> {
   const sb = createClient();
-  const { data, error } = await sb
-    .from("candidates")
-    .select(CANDIDATE_COLS)
-    .eq("id", id)
-    .maybeSingle();
+  const { data, error } = await candidateRows((cols) =>
+    sb.from("candidates").select(cols).eq("id", id).maybeSingle(),
+  );
   if (error) throw error;
   if (!data) return null;
 

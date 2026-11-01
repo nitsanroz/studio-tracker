@@ -121,6 +121,7 @@ describe("isOnBoard", () => {
     status: "active",
     outcome: null,
     archivedAt: null,
+    profileId: null,
     source: null,
     applicationText: null,
     appliedOn: null,

@@ -138,6 +138,11 @@ export async function setStatus(
     })
     .eq("id", candidateId);
   fail("change the candidate's status", error);
+  // A hire reads as "hired" in History, not "archived — hired".
+  if (status === "archived" && outcome === "hired") {
+    await logEvent(candidateId, "hired", null, actorId);
+    return;
+  }
   await logEvent(
     candidateId,
     status === "archived" ? "archived" : status === "on_hold" ? "on_hold" : "reopened",

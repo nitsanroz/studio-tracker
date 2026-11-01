@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Archive,
+  BadgeCheck,
   ChevronDown,
   ChevronLeft,
   ClipboardList,
@@ -31,13 +32,15 @@ import {
   RotateCcw,
   Trash2,
   Upload,
+  UserPlus,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { MobileSheet } from "@/components/mobile-sheet";
-import { Avatar } from "@/components/ui";
+import { Avatar, Modal, ModalClose } from "@/components/ui";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
-import { formatDate } from "@/lib/format";
+import { formatDate, toISODate } from "@/lib/format";
+import { toast } from "@/lib/toast";
 import { loadCandidate, loadVocabulary, type Vocabulary } from "@/lib/candidates/data";
 import {
   addComment,
@@ -64,6 +67,7 @@ import {
   type CandidateLinkKind,
   type CandidateRole,
   splitApplicationReview,
+  type Candidate,
   type ScoreSubject,
 } from "@/lib/candidates/types";
 import { PageSkeleton } from "@/components/skeleton";
@@ -620,9 +624,127 @@ function FoldButton({ shut, label, onClick }: { shut: boolean; label: string; on
   );
 }
 
+/**
+ * "Add to the team" — a hired candidate becomes a member: an account, a
+ * profile, a plan column, and their email and phone in HR details.
+ *
+ * ⚠️ THE SAME ROUTE AS TEAM → ADD USER (`/api/admin/users`), with the
+ * candidate's id on top, so there is one way a member gets made. What the
+ * candidate adds is server-side: see `fromCandidate` there.
+ *
+ * ⚠️ THE EMAIL IS PREFILLED, NOT FIXED. It is the address they applied from;
+ * the account may want their studio one, and the applied-from address is kept
+ * in HR as their personal email either way.
+ */
+function JoinTeamModal({
+  candidate,
+  onClose,
+  onDone,
+}: {
+  candidate: Candidate;
+  onClose: () => void;
+  onDone: (profileId: string, warnings: string[]) => void;
+}) {
+  const [name, setName] = useState(candidate.name);
+  const [email, setEmail] = useState(candidate.email ?? "");
+  const [startDate, setStartDate] = useState(toISODate(new Date()));
+  const [role, setRole] = useState<"designer" | "admin">("designer");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          role,
+          startDate,
+          candidateId: candidate.id,
+        }),
+      });
+      const body = (await res.json()) as { id?: string; warnings?: string[]; error?: string };
+      if (!res.ok || !body.id) throw new Error(body.error ?? "They could not be added.");
+      onDone(body.id, body.warnings ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "They could not be added.");
+      setBusy(false);
+    }
+  }
+
+  const field = "min-h-11 rounded-lg border border-border bg-surface px-2.5 text-sm md:min-h-9";
+  return (
+    <Modal onClose={onClose} labelledBy="join-team-title">
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="join-team-title" className="text-lg font-semibold">
+            Add to the team
+          </h2>
+          <ModalClose onClose={onClose} />
+        </div>
+        <p className="-mt-2 text-xs text-muted">
+          Creates their account and a column in the weekly plan, copies their email and phone into
+          HR details, and marks them hired here.
+        </p>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Name
+          <input required value={name} onChange={(e) => setName(e.target.value)} className={field} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Email they sign in with
+          <input
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={field}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Start date
+            <input
+              required
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={field}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            Role
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "designer" | "admin")}
+              className={field}
+            >
+              <option value="designer">Designer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+        </div>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <button
+          type="submit"
+          disabled={busy || !name.trim() || !email.trim()}
+          className="mt-1 flex h-11 items-center justify-center gap-1.5 rounded-lg bg-brand px-3 text-sm font-medium text-white disabled:opacity-50 md:h-10"
+        >
+          <UserPlus size={16} strokeWidth={1.75} />
+          {busy ? "Adding…" : `Add ${name.trim().split(" ")[0] || "them"} to the team`}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
 export default function CandidatePage() {
   const isAdmin = useIsAdmin();
-  const { profiles, currentUserId } = useData();
+  const { profiles, currentUserId, refresh } = useData();
   const router = useRouter();
   const params = useParams<{ candidateId: string }>();
   const id = params.candidateId;
@@ -639,6 +761,7 @@ export default function CandidatePage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   /**
    * ⚠️ THE EDIT SHEET IS PHONE-ONLY AND `isNarrow` IS WHAT DECIDES IT, not a
    * `md:hidden`. The point is that only ONE of the two presentations exists at
@@ -845,6 +968,15 @@ export default function CandidatePage() {
       : interviews.reduce((a, b) => ((a.heldOn ?? a.createdAt) > (b.heldOn ?? b.createdAt) ? a : b))
           .id;
   const stage = vocab.stages.find((s) => s.id === c.stageId) ?? null;
+  /**
+   * ⚠️ HIRED AND ON THE TEAM ARE SEPARATE (0061). A freelancer is hired and
+   * stays a candidate; only "Add to the team" makes a member. The profile can
+   * be missing from the store for a moment (just made, before the next
+   * refresh), so "on the team" goes by the link and the avatar is optional.
+   */
+  const hired = c.status === "archived" && c.outcome === "hired";
+  const teamMember = c.profileId ? (profiles.find((p) => p.id === c.profileId) ?? null) : null;
+  const teamFirstName = (teamMember?.name ?? c.name).split(" ")[0];
   const overall = overallScore(detail.interviews);
   const scoredCount = detail.interviews.filter((i) => Object.keys(i.scores).length > 0).length;
   /** The subjects a portfolio can actually answer — see `fromSubmission`. */
@@ -955,10 +1087,15 @@ export default function CandidatePage() {
                   <PauseCircle size={12} /> On hold
                 </span>
               )}
-              {c.status === "archived" && (
+              {c.status === "archived" && !hired && (
                 <span className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px]">
                   <Archive size={12} /> Archived
                   {stage && <span className="text-faint">· reached {stage.name}</span>}
+                </span>
+              )}
+              {hired && (
+                <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[11.5px] text-success">
+                  <BadgeCheck size={12} /> {c.profileId ? "Hired · on the team" : "Hired"}
                 </span>
               )}
               {/* ⚠️ THE ROLE IS SET HERE AND NOWHERE ELSE — Nitsan, 2026-09-28:
@@ -1161,6 +1298,39 @@ export default function CandidatePage() {
                   Hold
                 </span>
                 <span className={MENU_NOTE}>Good, wrong moment</span>
+              </button>
+            )}
+            {/* ⚠️ TWO WAYS TO SAY YES, because a yes is not always a hire
+                onto the payroll — Nitsan, 2026-11-01: a freelancer (Milica)
+                is accepted without becoming a team member. */}
+            {!c.profileId && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  setJoinOpen(true);
+                }}
+                className={MENU_ITEM}
+              >
+                <span className={MENU_TITLE}>
+                  <UserPlus size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                  Hired · add to the team
+                </span>
+                <span className={MENU_NOTE}>Account, plan column, HR details</span>
+              </button>
+            )}
+            {!hired && (
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  void run(() => setStatus(c.id, "archived", "hired", currentUserId));
+                }}
+                className={MENU_ITEM}
+              >
+                <span className={MENU_TITLE}>
+                  <BadgeCheck size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                  Hired
+                </span>
+                <span className={MENU_NOTE}>Freelance — not on the team</span>
               </button>
             )}
             {c.status !== "archived" && (
@@ -1435,6 +1605,20 @@ export default function CandidatePage() {
                     </option>
                   ))}
                 </select>
+              ) : c.profileId ? (
+                <Link
+                  href={`/team/${c.profileId}`}
+                  className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] text-brand"
+                >
+                  <BadgeCheck size={14} strokeWidth={1.75} /> {teamFirstName}&apos;s team page
+                </Link>
+              ) : hired ? (
+                <button
+                  onClick={() => setJoinOpen(true)}
+                  className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] text-brand"
+                >
+                  <UserPlus size={14} strokeWidth={1.75} /> Add to the team
+                </button>
               ) : (
                 <button
                   onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
@@ -1466,16 +1650,42 @@ export default function CandidatePage() {
             />
           ) : (
             <div className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-surface px-4 shadow-card">
-              <span className="text-sm text-muted">
-                {c.status === "on_hold" ? "On hold" : "Archived"}
-                {stage && <> · reached <b className="font-medium text-foreground">{stage.name}</b></>}
+              <span className={`flex items-center gap-1.5 text-sm ${hired ? "text-success" : "text-muted"}`}>
+                {hired && <BadgeCheck size={16} strokeWidth={1.75} />}
+                {c.status === "on_hold" ? "On hold" : hired ? "Hired" : "Archived"}
+                {stage && (
+                  <span className="text-muted">
+                    · reached <b className="font-medium text-foreground">{stage.name}</b>
+                  </span>
+                )}
               </span>
-              <button
-                onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
-                className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
-              >
-                <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
-              </button>
+              <span className="flex items-center gap-1">
+                {c.profileId ? (
+                  <Link
+                    href={`/team/${c.profileId}`}
+                    className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+                  >
+                    {teamMember && <Avatar profile={teamMember} size={20} />} {teamFirstName}&apos;s team page
+                  </Link>
+                ) : (
+                  hired && (
+                    <button
+                      onClick={() => setJoinOpen(true)}
+                      className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+                    >
+                      <UserPlus size={14} strokeWidth={1.75} /> Add to the team
+                    </button>
+                  )
+                )}
+                {!c.profileId && (
+                  <button
+                    onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
+                    className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+                  >
+                    <RotateCcw size={14} strokeWidth={1.75} /> Put back on the board
+                  </button>
+                )}
+              </span>
             </div>
           )}
           {ownerSelect("h-12 shrink-0 cursor-pointer rounded-xl bg-surface px-4 text-sm shadow-card")}
@@ -1845,6 +2055,27 @@ export default function CandidatePage() {
           ⚠️ `title` is the sheet's ARIA LABEL and is never drawn — MobileSheet
           shows no heading — so it is written for a screen reader, with the word
           "and" rather than the ampersand the button uses. */}
+      {joinOpen && (
+        <JoinTeamModal
+          candidate={c}
+          onClose={() => setJoinOpen(false)}
+          onDone={(profileId, warnings) => {
+            setJoinOpen(false);
+            // The new member is in the database but not yet in this tab's
+            // store; a cold refresh brings them into every picker and the plan.
+            refresh();
+            if (warnings.length) {
+              // Stay here so what did not happen can be read and finished.
+              setError(`${c.name} is on the team, but: ${warnings.join(" ")}`);
+              void reload();
+              return;
+            }
+            toast(`${c.name} is on the team`);
+            router.push(`/team/${profileId}`);
+          }}
+        />
+      )}
+
       {isNarrow && editOpen && (
         <MobileSheet title="Edit details and files" onClose={() => setEditOpen(false)}>
           <div className="flex flex-col gap-5 pb-2">

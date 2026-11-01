@@ -119,6 +119,12 @@ export interface Candidate {
   status: CandidateStatus;
   outcome: CandidateOutcome | null;
   archivedAt: string | null;
+  /**
+   * The team member this candidate became, set only by "Add to the team"
+   * (0061). ⚠️ Null on a hire is normal — a freelancer is hired with no
+   * account — so never read `outcome === "hired"` as "on the team".
+   */
+  profileId: string | null;
   source: string | null;
   applicationText: string | null;
   appliedOn: string | null;

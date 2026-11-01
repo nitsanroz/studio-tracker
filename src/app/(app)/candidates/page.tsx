@@ -14,6 +14,7 @@ import { liftDrag } from "@/lib/drag-lift";
 import { useRouter } from "next/navigation";
 import {
   Archive,
+  BadgeCheck,
   List,
   Mail,
   PauseCircle,
@@ -198,6 +199,7 @@ function CandidateCard({
         </span>
         <ScorePill value={c.avgScore} />
       </div>
+      {c.outcome === "hired" && <HiredChip onTeam={Boolean(c.profileId)} />}
 
       {/* ⚠️ ROLE LEFT, STAGE RIGHT, ONE LINE, ONE HEIGHT — Nitsan, 2026-09-29.
           The stage still reads as sitting under the grade because it is
@@ -237,6 +239,19 @@ function CandidateCard({
         <span className="ml-auto shrink-0">{ago(c.lastActivityAt)}</span>
       </div>
     </Link>
+  );
+}
+
+/**
+ * The one archive outcome worth a mark: in a column of 140 rejections the
+ * handful who said yes are what you look for. `onTeam` = they became a member
+ * (0061); without it they were taken on freelance.
+ */
+function HiredChip({ onTeam }: { onTeam: boolean }) {
+  return (
+    <span className="flex w-fit shrink-0 items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] text-success">
+      <BadgeCheck size={12} strokeWidth={1.75} /> {onTeam ? "Hired · on the team" : "Hired"}
+    </span>
   );
 }
 
@@ -1018,6 +1033,7 @@ export default function CandidatesPage() {
                         <span className="min-w-0">
                           <span className="flex min-w-0 items-center gap-2">
                             <span className="bidi-auto truncate text-sm font-medium group-hover/row:text-brand">{c.name}</span>
+                            {c.outcome === "hired" && <HiredChip onTeam={Boolean(c.profileId)} />}
                             {role && (
                               <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-xs text-muted">
                                 <span className="size-1.5 rounded-full" style={{ backgroundColor: role.color }} aria-hidden />

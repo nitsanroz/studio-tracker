@@ -89,6 +89,7 @@ These four gates (tsc, eslint, test, build) are the release checklist in **Deplo
 | 0057 | `freelancer_charges` — extra money lines on a freelancer's month (another freelancer he brought in), reviewed like his hours | Admin-only RLS |
 | 0059 | `advice_items` + `advice_runs`, `is_owner()` — &advice (v1.80.0). Applied 2026-10-24 | OWNER-only RLS, not admin; `facts` hold %/hours/dates, never amounts |
 | 0058 | `vacation_requests` + triggers (days counted in the DB; approved → vacation plan entries via `plan_entries.vacation_request_id`); `my_vacation()` / `vacation_balances()` read finance-admin's `finance_payslips` | Owner (`position = 'owner'`) approves; see v1.76.0 |
+| 0061 | `candidates.profile_id` — the team member a hired candidate became (set by "Add to the team" via `/api/admin/users` + `candidateId`). Hired ≠ on the team: a freelancer is hired with no profile. ⚠️ Not yet applied (2026-11-01); the app steps down without it | Optional, any order vs deploy |
 | 0060 | `vacation_requests.dates` (exact days once a chip is dragged) + `replaces_id` / status `replaced` (change an approved request); plan-entry triggers write drags back to the request. Applied 2026-10-29 | See v1.84.0 |
 
 - **Migrations are applied by the user in the Supabase SQL editor** — not by Claude. When you add one, tell the user to run it (and note whether it must run *before* deploying). A new **task** column must be added to the 0011 trigger's list, or it is member-writable.
