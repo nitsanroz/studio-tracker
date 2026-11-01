@@ -289,11 +289,28 @@ export function Dashboard() {
             <StudioPace />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-6">
+          {/* ⚠️ COLUMNS SIZED BY CONTENT, NOT A 6/4/2 SPLIT (Nitsan, 2026-11-01:
+              "coming up and time feed don't have enough space in some screens,
+              and 4 kpi boxes have plenty"). Each column has the floor its content
+              needs, MEASURED rather than guessed — tiles 360px (a four-digit serif
+              total like "7811.4h" is ~150px inside a 172px tile), the week grid
+              350px (its table's min-content is 344), Coming up 260px — and extra
+              room is split evenly between the tiles and the week, with Coming up
+              growing only to a readable 360px. The old 6/4/2 split gave the tiles
+              half the row at every width.
+              ⚠️ BY CONTAINER WIDTH, NOT WINDOW WIDTH (`@container`): the sidebar
+              open or folded moves the room by ~145px, so a window breakpoint
+              spilled the row sideways at 1280 with the menu open. Three columns
+              from 1000px of actual room — ⚠️ chosen so a 13" MacBook keeps Coming
+              up IN the row even with the menu open (Nitsan, 2026-11-01): at its
+              smaller 1280×800 setting the room is 1009px, and 360 + 350 + 260 +
+              gaps = 1002. Two columns from 720px, stacked below. */}
+          <div className="@container">
+          <div className="grid gap-4 @min-[720px]:grid-cols-[minmax(360px,1fr)_minmax(350px,1fr)] @min-[1000px]:grid-cols-[minmax(360px,1fr)_minmax(350px,1fr)_minmax(260px,360px)]">
+            <div className="min-w-0">
               <StatTiles filter={filter} prevRange={prevRange} />
             </div>
-            <div className="lg:col-span-4">
+            <div className="min-w-0">
               <WeekTimesheet />
             </div>
             {/* ⚠️ The mobile gate goes on a WRAPPER, not on the pane's own div —
@@ -307,10 +324,15 @@ export function Dashboard() {
                 on the way home. The member hero's `inline` variant is gated the
                 same way, so no phone shows an occasion anywhere. */}
             <div className="hidden md:contents">
-              <div className="empty:hidden lg:col-span-2 lg:h-0 lg:min-h-full">
+              {/* Height-matching only in the three-column row: on its own row the
+                  pane has no neighbour to take its height from, and `h-0 min-h-full`
+                  would collapse it to nothing — so there it gets a fixed 256px and
+                  its list scrolls inside, as it does beside the week grid. */}
+              <div className="empty:hidden @min-[720px]:col-span-2 @min-[720px]:h-64 @min-[1000px]:col-span-1 @min-[1000px]:h-0 @min-[1000px]:min-h-full">
                 <Celebrations />
               </div>
             </div>
+          </div>
           </div>
           {/* analytics — the running-total chart takes three fifths (design-lab
               "Graphs 1": the graphs were asked to be more prominent), hours by

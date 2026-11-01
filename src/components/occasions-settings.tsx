@@ -111,7 +111,7 @@ export function OccasionsSettings() {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-1 font-heading">Occasions</h2>
+      <h2 className="card-title mb-1">Occasions</h2>
       <p className="mb-3 text-sm text-muted">
         What shows in the &ldquo;Coming up&rdquo; pane on everyone&apos;s home page, for the next 30
         days.
@@ -137,7 +137,7 @@ export function OccasionsSettings() {
       </div>
 
       <div className="mt-4 border-t border-border pt-3">
-        <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
+        <h3 className="mb-2 text-[15px] font-medium">
           Custom occasions
         </h3>
         {customUnavailable && (
@@ -180,19 +180,19 @@ export function OccasionsSettings() {
             onChange={(e) => setIcon(e.target.value)}
             title="Emoji"
             aria-label="Emoji"
-            className="w-11 rounded-md border border-border bg-surface px-2 py-1.5 text-center text-sm outline-none focus:border-brand"
+            className="w-11 rounded-xl bg-background px-2 py-2 text-center text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Occasion name…"
-            className="min-w-40 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+            className="min-w-40 flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+            className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
           <label className="flex items-center gap-1.5 text-xs text-muted" title="Repeat every year on this date">
             <input

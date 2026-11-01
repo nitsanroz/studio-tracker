@@ -420,12 +420,12 @@ export default function ConvertPage() {
         <div className="mt-4 grid items-start gap-5 lg:grid-cols-[7fr_3fr]">
           <section className={CARD}>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-sm font-semibold">Sections, groups and tasks</h2>
+              <h2 className="card-title">Sections, groups and tasks</h2>
               {estimates.length > 0 && (
                 <select
                   value={estimateId ?? ""}
                   onChange={(e) => void pickEstimate(e.target.value || null)}
-                  className="rounded-md border border-border bg-surface px-2 py-1 text-[12.5px]"
+                  className="rounded-xl bg-background px-3 py-1.5 text-[12.5px] outline-none ring-brand focus:bg-surface focus:ring-2"
                   aria-label="From estimate"
                 >
                   {estimates.map((e) => (
@@ -476,7 +476,7 @@ export default function ConvertPage() {
                           onChange={(e) => editSection(s.id, (x) => ({ ...x, name: e.target.value }))}
                           className="bidi-auto min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[14px] font-semibold hover:border-border focus:border-border focus:outline-none"
                         />
-                        <span className="text-[11px] uppercase tracking-wide text-faint">Section</span>
+                        <span className="text-xs text-muted">Section</span>
                       </div>
                       {s.groups.map((g) => (
                         <div key={g.id} className={!s.on ? "opacity-50" : ""}>
@@ -495,7 +495,7 @@ export default function ConvertPage() {
                               onChange={(e) => editGroup(g.id, (x) => ({ ...x, name: e.target.value }))}
                               className="bidi-auto min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold hover:border-border focus:border-border focus:outline-none"
                             />
-                            <span className="text-[11px] uppercase tracking-wide text-faint">Group</span>
+                            <span className="text-xs text-muted">Group</span>
                           </div>
                           {g.tasks.map((t) => taskRow(t, !s.on || !g.on, "pl-12"))}
                         </div>
@@ -510,7 +510,7 @@ export default function ConvertPage() {
 
           <div className="flex flex-col gap-4">
             <section className={CARD}>
-              <h2 className="mb-2 text-sm font-semibold">Contacts</h2>
+              <h2 className="card-title mb-2">Contacts</h2>
               {lead.contacts.length === 0 ? (
                 <p className="text-[13px] text-faint">No contacts on this lead.</p>
               ) : (
@@ -538,7 +538,7 @@ export default function ConvertPage() {
               )}
             </section>
             <section className={CARD}>
-              <h2 className="mb-2 text-sm font-semibold">Overview</h2>
+              <h2 className="card-title mb-2">Overview</h2>
               {estimate?.estimate.notes ? (
                 <label className="flex items-start gap-2 text-[13px]">
                   <input type="checkbox" checked={bringNotes} onChange={(e) => setBringNotes(e.target.checked)} className="mt-0.5" />
@@ -596,7 +596,7 @@ export default function ConvertPage() {
       {step === 2 && (
         <div className="mt-4 grid items-start gap-5 lg:grid-cols-[7fr_3fr]">
           <section className={CARD}>
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <h2 className="card-title mb-2 flex items-center gap-2">
               <FolderTree size={15} className="text-faint" /> What the client page will get
             </h2>
             {sections.length === 0 ? (

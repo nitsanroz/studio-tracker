@@ -3,8 +3,14 @@
 import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  Check,
   ChevronDown,
+  ClipboardList,
+  Clock,
   Link2,
+  MessageSquare,
+  Paperclip,
+  PenTool,
   Maximize2,
   Minimize2,
   Pencil,
@@ -19,7 +25,7 @@ import { proxyStorageUrl } from "@/lib/storage-url";
 import { formatDate, formatDayMonth, formatHours, formatHoursDecimal } from "@/lib/format";
 import { taskMinutesDone, taskLegacyMinutes } from "@/lib/task-hours";
 import { formatSize } from "@/lib/uploads";
-import { Avatar, BudgetBar, ClientChip, TagBadge } from "./ui";
+import { Avatar, ClientChip, TagBadge } from "./ui";
 import { EditableTextCell } from "./editable-cell";
 import { TimeEntryModal, canEditEntry } from "./time-entry-modal";
 import {
@@ -74,7 +80,12 @@ const META_ROW = "group/row flex items-center gap-3";
  *   · field label      — 13px regular, muted  (value beside it: 14px foreground)
  * Anything genuinely incidental (a file size, a timestamp) stays `text-faint`.
  */
-const SECTION_HEADING = "text-sm font-semibold text-foreground";
+const SECTION_HEADING = "flex items-center gap-2 text-[15px] font-medium text-foreground";
+/** The icon in front of each section heading (2026-11 refresh), brand blue like a card title's. */
+const HEADING_ICON = { size: 17, strokeWidth: 1.75, className: "shrink-0 text-brand", "aria-hidden": true } as const;
+/** A recessed surface inside the pane — the refresh's Light White well. ⚠️ The pane
+ *  is portalled outside `.app-canvas`, so `bg-background` here is the page tint. */
+const WELL = "rounded-2xl bg-[var(--light-white)]";
 /** w-20, not w-24: at half the pane's width every pixel of label is taken off the control. */
 const FIELD_LABEL = "w-20 shrink-0 text-[13px] text-muted";
 
@@ -315,7 +326,9 @@ function TaskAttachments({ taskId }: { taskId: string }) {
 
   return (
     <div className="group/atts">
-      <div className={`mb-1.5 ${SECTION_HEADING}`}>Attachments</div>
+      <div className={`mb-2 ${SECTION_HEADING}`}>
+        <Paperclip {...HEADING_ICON} /> Attachments
+      </div>
       {files.length > 0 && (
         <div className="mb-2 flex flex-col divide-y divide-border rounded-lg border border-border">
           {files.map((f) => (
@@ -672,7 +685,11 @@ export function TaskPanel() {
         }}
       >
         {/* Toolbar */}
-        <div className="sticky top-0 z-10 border-b border-border bg-surface px-6 py-3">
+        {/* ⚠️ THE HEAD IS BRAND BLUE (2026-11, design-lab round 7, option B
+            "Headline"): the toolbar, then the client · section · status line,
+            the title and the hours. The toolbar alone stays sticky, so the
+            close button never scrolls away. */}
+        <div className="sticky top-0 z-10 bg-brand px-6 py-3 text-white">
           <div className="flex items-center justify-between gap-3">
             {canEditFields ? (
               <button
@@ -681,20 +698,18 @@ export function TaskPanel() {
                     status: task.status === "done" ? "todo" : "done",
                   })
                 }
-                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-medium ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium ${
                   task.status === "done"
-                    ? "border-success bg-emerald-50 text-success"
-                    : "border-border-strong text-muted hover:border-success hover:text-success"
+                    ? "bg-white text-success"
+                    : "bg-white/15 text-white hover:bg-white/25"
                 }`}
               >
-                ✓ {task.status === "done" ? "Completed" : "Mark complete"}
+                <Check size={15} strokeWidth={2.25} /> {task.status === "done" ? "Completed" : "Mark complete"}
               </button>
             ) : (
               <span
-                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm font-medium ${
-                  task.status === "done"
-                    ? "border-success bg-emerald-50 text-success"
-                    : "border-border text-muted"
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-medium ${
+                  task.status === "done" ? "bg-white text-success" : "bg-white/15 text-white"
                 }`}
                 title="Only admins can complete tasks"
               >
@@ -706,37 +721,111 @@ export function TaskPanel() {
                 onClick={() => copyLink(task.id)}
                 title="Copy task link"
                 aria-label="Copy task link"
-                className={`rounded-md p-1.5 hover:bg-background ${
-                  copied ? "text-success" : "text-muted hover:text-brand"
-                }`}
+                className={`rounded-xl p-2 hover:bg-white/15 ${copied ? "text-white" : "text-white/80 hover:text-white"}`}
               >
                 <Link2 size={16} />
               </button>
-              {copied && <span className="text-xs text-success">Copied</span>}
+              {copied && <span className="text-xs text-white">Copied</span>}
               {/* Full screen is meaningless on a phone — the pane already fills
                   the screen, so the control would toggle nothing. */}
               <button
                 onClick={() => setFullscreen((f) => !f)}
                 title={fullscreen ? "Exit full screen" : "Full screen"}
                 aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-                className="hidden rounded-md p-1.5 text-muted hover:bg-background hover:text-brand md:block"
+                className="hidden rounded-xl p-2 text-white/80 hover:bg-white/15 hover:text-white md:block"
               >
                 {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
               </button>
               <button
                 onClick={closePane}
                 title="Close"
-                className="rounded-md px-2 py-1 text-muted hover:bg-background"
+                aria-label="Close"
+                className="rounded-xl p-2 text-white/80 hover:bg-white/15 hover:text-white"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
           </div>
           {task.pending && (
-            <div className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
               Pending approval — from client intake, not yet confirmed by an admin.
             </div>
           )}
+        </div>
+        <div className="bg-brand px-6 pb-6 text-white">
+          <div className={`flex flex-col gap-4 ${fullscreen ? "mx-auto w-full max-w-3xl" : ""}`}>
+            <div>
+              <p className="bidi-auto truncate text-sm text-white/75">
+                {[client?.name, section?.name].filter(Boolean).join(" · ")}
+                {task.tag && <span className="text-white"> · {task.tag}</span>}
+              </p>
+              {/* The pane is the ONLY place a task can be renamed — the client
+                  table's inline editor was removed in favour of click-to-open. */}
+              {canEditFields ? (
+                <h2 className="-mx-1.5 mt-1 text-[28px] font-medium leading-9 tracking-[-0.02em]">
+                  <EditableTextCell
+                    value={task.title}
+                    onCommit={(v) => v && v !== task.title && updateTask(task.id, { title: v })}
+                    className="hover:bg-white/15!"
+                    inputClassName="text-foreground"
+                  />
+                </h2>
+              ) : (
+                <h2 className="bidi-auto mt-1 text-[28px] font-medium leading-9 tracking-[-0.02em]">{task.title}</h2>
+              )}
+            </div>
+            {/* The hours, as the head's figure: done in the serif, the budget
+                beside it (editable for an admin), the bar in white. */}
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span
+                  className="font-serif-accent text-[40px] leading-none tabular-nums"
+                  title={`${formatHours(doneMinutes)} logged`}
+                >
+                  {formatHoursDecimal(doneMinutes)}h
+                </span>
+                <span className="text-white/75">
+                  of{" "}
+                  {canEditFields ? (
+                    // ⚠️ Sized to its own value, not a fixed width: budgets run
+                    // to 285h. `ch` is a "0" and the digits are tabular. The
+                    // spinner is hidden because it ate a third of the box.
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      style={{ width: budgetWidth(task.estimateHours) }}
+                      className="rounded-lg bg-transparent px-1 text-right tabular-nums text-white [appearance:textfield] placeholder:text-white/50 hover:bg-white/15 focus:bg-white focus:text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      value={task.estimateHours ?? ""}
+                      placeholder="–"
+                      title="Budget in hours"
+                      onChange={(e) =>
+                        updateTask(task.id, {
+                          estimateHours: e.target.value === "" ? null : Number(e.target.value),
+                        })
+                      }
+                    />
+                  ) : (
+                    <span className="tabular-nums text-white">{task.estimateHours ?? "–"}</span>
+                  )}
+                  h budget
+                </span>
+                {overBudget && task.estimateHours != null && (
+                  <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-xs font-medium text-danger">
+                    {formatHoursDecimal(doneMinutes - task.estimateHours * 60)}h over
+                  </span>
+                )}
+              </div>
+              {task.estimateHours != null && task.estimateHours > 0 && (
+                <span className="mt-2.5 block h-1.5 overflow-hidden rounded-full bg-white/20">
+                  <span
+                    className="block h-full rounded-full bg-white"
+                    style={{ width: `${Math.min(100, (doneMinutes / 60 / task.estimateHours) * 100)}%` }}
+                  />
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Full screen caps the reading column: a brief and a comment thread set
@@ -744,18 +833,6 @@ export function TaskPanel() {
         <div
           className={`flex flex-col gap-5 px-6 py-5 ${fullscreen ? "mx-auto w-full max-w-3xl" : ""}`}
         >
-          {/* The pane is now the ONLY place a task can be renamed — the client
-              table's inline editor was removed in favour of click-to-open. */}
-          {canEditFields ? (
-            <h2 className="text-[22px] font-semibold leading-tight">
-              <EditableTextCell
-                value={task.title}
-                onCommit={(v) => v && v !== task.title && updateTask(task.id, { title: v })}
-              />
-            </h2>
-          ) : (
-            <h2 className="bidi-auto text-[22px] font-semibold leading-tight">{task.title}</h2>
-          )}
 
           {/* Phone-only tab strip. The pane is one long column on a laptop and
               that is right there — you can see the brief and the discussion at
@@ -804,7 +881,7 @@ export function TaskPanel() {
             grid collapses to one column under `sm`, where two 130px controls
             would be unusable.
           */}
-          <div className="grid grid-cols-1 gap-x-5 gap-y-2.5 text-sm text-foreground sm:grid-cols-2">
+          <div className={`${WELL} grid grid-cols-1 gap-x-5 gap-y-2.5 p-4 text-sm text-foreground sm:grid-cols-2`}>
             <div className={META_ROW}>
               <span className={FIELD_LABEL}>Assignee</span>
               <Avatar profile={assignee} size={24} />
@@ -953,60 +1030,6 @@ export function TaskPanel() {
                 </span>
               )}
             </div>
-            {/* Hours spans both columns: the 24px figure and its bar are the
-                one thing here that isn't a label:value pair. */}
-            <div className={`${META_ROW} sm:col-span-2`}>
-              <span className={FIELD_LABEL}>Hours</span>
-              <span className="flex items-baseline gap-1">
-                <span
-                  className={`text-2xl font-semibold tabular-nums ${overBudget ? "text-danger" : ""}`}
-                  title={`${formatHours(doneMinutes)} logged`}
-                >
-                  {formatHoursDecimal(doneMinutes)}
-                </span>
-                <span className="text-2xl text-faint">/</span>
-                {canEditFields ? (
-                  // ⚠️ Sized to its own value, not a fixed `w-16`: at 64px a
-                  // 24px "11.25" was cropped to "11.2", and budgets run to 285h.
-                  // `ch` is the width of a "0" and the digits are tabular, so
-                  // one ch per digit, a little for the point, plus the box's
-                  // own padding and border. The spinner is hidden because it
-                  // ate a third of the box.
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.5}
-                    style={{ width: budgetWidth(task.estimateHours) }}
-                    className="rounded-md border border-transparent bg-transparent px-0.5 text-2xl font-semibold tabular-nums [appearance:textfield] hover:border-border focus:border-brand focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={task.estimateHours ?? ""}
-                    placeholder="–"
-                    title="Budget in hours"
-                    onChange={(e) =>
-                      updateTask(task.id, {
-                        estimateHours: e.target.value === "" ? null : Number(e.target.value),
-                      })
-                    }
-                  />
-                ) : (
-                  <span className="text-2xl font-semibold tabular-nums">
-                    {task.estimateHours ?? "–"}
-                  </span>
-                )}
-                <span className="self-end pb-1 text-xs text-muted">h</span>
-              </span>
-              {task.estimateHours != null && (
-                // Desktop only: on a phone the red/blue figure already says it,
-                // and beside a four-digit "1234.75 / 1234.5h" the bar ran off the pane.
-                <span className="hidden min-w-0 flex-1 md:block">
-                  {/* label="none": the numbers are already spelled out above it */}
-                  <BudgetBar
-                    doneMinutes={doneMinutes}
-                    estimateHours={task.estimateHours}
-                    label="none"
-                  />
-                </span>
-              )}
-            </div>
           </div>
 
           {/* Figma link.
@@ -1016,7 +1039,9 @@ export function TaskPanel() {
               never meant to change is worse than an absent row. With a link it
               still renders, because opening the file is reading, not editing. */}
           <div className={!task.figmaUrl && isNarrow ? "hidden" : undefined}>
-            <div className={`mb-1.5 ${SECTION_HEADING}`}>Figma</div>
+            <div className={`mb-2 ${SECTION_HEADING}`}>
+              <PenTool {...HEADING_ICON} /> Figma
+            </div>
             {task.figmaUrl && (!editingFigma || isNarrow) ? (
               <span className="group/figma flex items-center gap-2">
                 {isSafeUrl(task.figmaUrl) ? (
@@ -1063,8 +1088,8 @@ export function TaskPanel() {
                 // Empty and untouched, this was a full-width outlined box on every
                 // task that has no Figma file — which is most of them. Once you're
                 // actually editing (`editingFigma`) it keeps its border.
-                className={`w-full rounded-md border bg-transparent px-2 py-1.5 text-sm outline-none transition-colors placeholder:text-faint focus:border-brand focus:bg-surface ${
-                  editingFigma ? "border-border bg-surface" : "border-transparent hover:border-border"
+                className={`${WELL} w-full px-4 py-2.5 text-sm outline-none ring-brand transition-colors placeholder:text-faint focus:bg-surface focus:ring-2 ${
+                  editingFigma ? "bg-surface ring-2" : ""
                 }`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
@@ -1094,7 +1119,9 @@ export function TaskPanel() {
               the app: only the public intake form ever wrote it. */}
           <div className="group/brief">
             <div className="mb-1 flex items-center gap-2">
-              <span className={SECTION_HEADING}>Brief</span>
+              <span className={SECTION_HEADING}>
+                <ClipboardList {...HEADING_ICON} /> Brief
+              </span>
               {/* Both edit affordances are `md:` only. A hover-revealed control
                   has no resting state a thumb can find anyway, so on a phone
                   these were invisible buttons that opened an editor by accident. */}
@@ -1123,14 +1150,14 @@ export function TaskPanel() {
                 control that does nothing, which is worse for a keyboard or
                 screen-reader user than plain text. */}
             {isNarrow ? (
-              <div className="bidi-auto w-full whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed">
+              <div className={`${WELL} bidi-auto w-full whitespace-pre-wrap px-4 py-3 text-sm leading-relaxed`}>
                 {task.brief || <span className="text-faint">No brief yet.</span>}
               </div>
             ) : (
               <button
                 onClick={() => setEditingBrief(true)}
                 title="Edit brief and links"
-                className="bidi-auto w-full whitespace-pre-wrap rounded-lg border border-border bg-background px-3 py-2.5 text-left text-sm leading-relaxed hover:border-brand"
+                className={`${WELL} bidi-auto w-full whitespace-pre-wrap px-4 py-3 text-left text-sm leading-relaxed ring-brand hover:ring-2`}
               >
                 {task.brief || (
                   <span className="text-faint">No brief yet — click to write one.</span>
@@ -1160,7 +1187,9 @@ export function TaskPanel() {
             {/* The heading is "Time"; the total is a fact about it, so it rides
                 alongside at the incidental weight rather than shouting equally. */}
             <div className="mb-1.5 flex items-baseline gap-2">
-              <h3 className={SECTION_HEADING}>Time</h3>
+              <h3 className={SECTION_HEADING}>
+                <Clock {...HEADING_ICON} /> Time
+              </h3>
               <span className="text-xs tabular-nums text-faint">
                 {formatHours(doneMinutes)} total
               </span>
@@ -1184,14 +1213,14 @@ export function TaskPanel() {
                   </button>
                   <button
                     onClick={() => setShowMove(true)}
-                    className="rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark"
+                    className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark"
                   >
                     Move to…
                   </button>
                 </div>
               </div>
             )}
-            <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+            <div className={`${WELL} flex flex-col divide-y divide-surface overflow-hidden`}>
               {/* 37px = the rendered height of a px-3 py-2 text-sm row, so the tile
                   is square and flush with the lines below it */}
               <div className="flex items-center gap-2 pr-2">
@@ -1261,9 +1290,11 @@ export function TaskPanel() {
               separation is the whole point of the Asana reference: you should be
               able to tell at a glance where the record stops and the talking
               starts, without reading a word. */}
-          <div className="-mx-1 rounded-2xl bg-background p-3 ring-1 ring-border/60">
+          <div className={`${WELL} -mx-1 p-3`}>
             <div className="mb-2.5 flex items-baseline gap-2">
-              <h3 className={SECTION_HEADING}>Discussion</h3>
+              <h3 className={SECTION_HEADING}>
+                <MessageSquare {...HEADING_ICON} /> Discussion
+              </h3>
               {taskComments.length > 0 && (
                 <span className="text-xs tabular-nums text-faint">{taskComments.length}</span>
               )}
@@ -1305,7 +1336,7 @@ export function TaskPanel() {
                     <div className={`flex min-w-0 flex-col ${mine ? "items-end" : "items-start"}`}>
                       {!sameRun && (
                         <span className="mb-0.5 flex items-baseline gap-1.5">
-                          <span className="text-xs font-semibold">{author}</span>
+                          <span className="text-xs font-medium">{author}</span>
                         </span>
                       )}
                       {/* The bubble sits on `bg-surface` now, because the panel
@@ -1316,7 +1347,7 @@ export function TaskPanel() {
                         className={`bidi-auto max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                           mine
                             ? "rounded-tr-sm bg-brand-soft text-brand-dark"
-                            : "rounded-tl-sm border border-border bg-surface"
+                            : "rounded-tl-sm bg-surface shadow-card"
                         }`}
                       >
                         {c.body}

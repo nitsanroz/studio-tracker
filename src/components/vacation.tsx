@@ -157,7 +157,7 @@ export function VacationRequestModal({
   return (
     <Modal onClose={onClose} width="sm" labelledBy="vacation-title">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 id="vacation-title" className="font-heading text-base">
+        <h2 id="vacation-title" className="card-title">
           {resend ? "Change approved vacation" : editing ? "Change request" : "Request vacation"}
         </h2>
         <ModalClose onClose={onClose} />

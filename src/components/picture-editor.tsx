@@ -104,7 +104,7 @@ export function PictureEditor({
       </button>
 
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold">{title}</div>
+        <div className="text-[15px] font-medium">{title}</div>
         <p className="mt-0.5 text-xs text-muted">{hint}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <button

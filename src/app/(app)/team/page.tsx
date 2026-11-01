@@ -86,7 +86,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
         className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-heading text-sm">Add user</h3>
+          <h3 className="card-title">Add user</h3>
           <button
             type="button"
             onClick={onClose}
@@ -101,7 +101,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             required
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
+            className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -111,7 +111,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
+            className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -121,7 +121,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             type="date"
             value={form.startDate}
             onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-            className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
+            className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -129,7 +129,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
           <select
             value={form.role}
             onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-            className="rounded-md border border-border-strong px-2 py-1.5 text-sm text-foreground"
+            className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
           >
             <option value="designer">designer</option>
             <option value="admin">admin</option>
@@ -137,7 +137,7 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
         </label>
         <button
           disabled={busy}
-          className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
         >
           {busy ? "Adding…" : "+ Add user"}
         </button>
@@ -365,7 +365,9 @@ export default function TeamPage() {
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
       <div>
-        <h1 className="page-title">The team</h1>
+        <h1 className="page-title">
+          The <span className="font-serif-accent">team</span>
+        </h1>
         <p className="text-sm text-muted">Open a member for details, graphs, and HR fields.</p>
       </div>
 
@@ -394,7 +396,7 @@ export default function TeamPage() {
           />
           <button
             onClick={() => setAddOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+            className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
           >
             <Plus size={15} /> Add user
           </button>
@@ -471,7 +473,7 @@ export default function TeamPage() {
                 className="mt-3 shrink-0 self-start"
               />
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="truncate pr-5 text-xl font-semibold leading-tight">{p.name}</div>
+                <div className="truncate pr-5 font-serif-accent text-[22px] leading-7">{p.name}</div>
                 <div className="truncate text-xs capitalize text-muted">
                   {p.role}
                   {p.startDate ? ` · ${tenureShort(p.startDate)}` : ""}
@@ -487,13 +489,13 @@ export default function TeamPage() {
                     bar under the card — that row was the space the name needed. */}
                 <div className="mt-3 flex items-center gap-5">
                   <div>
-                    <div className="text-base font-semibold tabular-nums">
+                    <div className="text-base font-medium tabular-nums">
                       {s?.total ? formatHoursShort(s.total) : "–"}
                     </div>
                     <div className="text-[10px] text-muted">Hours</div>
                   </div>
                   <div>
-                    <div className="text-base font-semibold tabular-nums">{openTasks}</div>
+                    <div className="text-base font-medium tabular-nums">{openTasks}</div>
                     <div className="text-[10px] text-muted">Tasks</div>
                   </div>
                   {/* ⚠️ Absent entirely for an admin rather than showing a dash:
@@ -502,7 +504,7 @@ export default function TeamPage() {
                   {p.role !== "admin" && (
                     <div className="flex items-center gap-1.5">
                       {pct == null ? (
-                        <span className="text-base font-semibold tabular-nums text-muted">–</span>
+                        <span className="text-base font-medium tabular-nums text-muted">–</span>
                       ) : (
                         <PercentRing
                           pct={pct}

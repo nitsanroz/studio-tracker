@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AuthFrame } from "@/components/auth-frame";
+import { StudioArrow } from "@/components/studio-arrow";
 import { connection } from "next/server";
 
 /**
@@ -32,20 +34,26 @@ import { connection } from "next/server";
 export default async function NotFound() {
   await connection(); // prerendering stops here — see above
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 text-center shadow-card">
-        <p className="font-heading text-sm font-semibold text-muted">404</p>
-        <h1 className="mt-1 font-heading text-lg text-foreground">This page does not exist</h1>
+    // The signed-out pages' frame (2026-11): strangers and signed-out people
+    // land here as often as the studio does. `AuthFrame` is a plain server-safe
+    // component — no store, no session — so the 404 still renders when nothing
+    // else can.
+    <AuthFrame>
+      <div className="text-center">
+        <p className="text-sm text-muted">404</p>
+        <h1 className="page-title mt-1">
+          Page <span className="font-serif-accent">not found</span>
+        </h1>
         <p className="mt-2 text-sm text-muted">
           The link may be out of date, or the page may have moved.
         </p>
         <Link
           href="/"
-          className="mt-5 inline-flex rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-brand px-6 text-base font-medium text-white hover:bg-brand-dark"
         >
-          Back to the studio
+          Back to the studio <StudioArrow size={18} />
         </Link>
       </div>
-    </main>
+    </AuthFrame>
   );
 }

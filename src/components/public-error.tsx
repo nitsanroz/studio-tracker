@@ -37,15 +37,15 @@ export function PublicError({
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background p-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 text-center shadow-card">
-        <h1 className="font-serif-accent text-2xl leading-tight">{what} couldn&apos;t open</h1>
+      <div className="w-full max-w-md rounded-[20px] bg-surface p-8 text-center shadow-card">
+        <h1 className="font-serif-accent text-[28px] leading-9">{what} couldn&apos;t open</h1>
         <p className="mt-2 text-sm text-muted">
           Something went wrong at our end. Reloading may work; if it doesn&apos;t, let
           Studio&amp;more know and we&apos;ll sort it.
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="mt-5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         >
           Reload
         </button>

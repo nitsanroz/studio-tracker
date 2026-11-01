@@ -35,9 +35,9 @@ import {
 import { SkeletonRows } from "@/components/skeleton";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
-const HEAD = "text-sm font-semibold";
+const HEAD = "card-title"; // 2026-11: every card's title, as on the other pages
 const NOTE = "mt-1 text-xs leading-relaxed text-muted";
-const FIELD = "min-h-11 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0";
+const FIELD = "min-h-11 w-full rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 sm:min-h-0";
 
 function EditableName({ value, onCommit }: { value: string; onCommit: (next: string) => void }) {
   return (
@@ -201,7 +201,7 @@ function NudgeCard() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") e.currentTarget.blur();
                     }}
-                    className="h-7 w-14 rounded-md border border-border bg-surface px-2 text-right text-[12.5px] tabular-nums"
+                    className="h-7 w-14 rounded-lg bg-background px-2 text-right text-[12.5px] tabular-nums outline-none ring-brand focus:bg-surface focus:ring-2"
                   />
                   days
                 </label>
@@ -552,7 +552,7 @@ export function LeadSettings() {
           webhook are TECHNICAL, set up once and rarely touched again; the cards
           above are the pipeline's content, edited as the studio works. */}
       <div className="lg:col-span-2">
-        <h3 className="mb-2 mt-2 text-[12px] font-medium uppercase tracking-wider text-faint">Connections</h3>
+        <h3 className="mb-2 mt-2 text-[15px] font-medium text-muted">Connections</h3>
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <GmailCard />
           <div className={CARD}>
@@ -565,7 +565,7 @@ export function LeadSettings() {
             </p>
             {webhook ? (
               <div className="mt-3 flex items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded-md border border-border bg-background px-2 py-1.5 text-[11.5px]">
+                <code className="min-w-0 flex-1 truncate rounded-xl bg-background px-3 py-2 text-[11.5px]">
                   {webhook}
                 </code>
                 <button

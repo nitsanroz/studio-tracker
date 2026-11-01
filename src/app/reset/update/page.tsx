@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordInput } from "@/components/password-input";
+import { AuthButton, AuthFrame, authLabel } from "@/components/auth-frame";
 
 export default function ResetUpdatePage() {
   const router = useRouter();
@@ -39,34 +40,29 @@ export default function ResetUpdatePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-surface p-8 shadow-sm"
-      >
-        <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
-        <h1 className="text-lg">Choose a new password</h1>
+    <AuthFrame>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <h1 className="page-title">
+          New <span className="font-serif-accent">password</span>
+        </h1>
         {hasSession === false && (
           <p className="text-sm text-danger">
             This link is invalid or expired — request a new one from the reset page.
           </p>
         )}
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className={authLabel}>
           New password
           <PasswordInput value={password} onChange={setPassword} minLength={8} autoComplete="new-password" />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className={authLabel}>
           Repeat password
           <PasswordInput value={confirm} onChange={setConfirm} minLength={8} autoComplete="new-password" />
         </label>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <button
-          disabled={loading || hasSession === false}
-          className="rounded-lg bg-brand py-2.5 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-        >
-          {loading ? "Saving…" : "Set password"}
-        </button>
+        <AuthButton busy={loading} busyLabel="Saving…" disabled={hasSession === false}>
+          Set password
+        </AuthButton>
       </form>
-    </div>
+    </AuthFrame>
   );
 }

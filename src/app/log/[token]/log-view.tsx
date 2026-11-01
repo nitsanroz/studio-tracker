@@ -15,8 +15,14 @@ import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 
 // ⚠️ 16px text in every input on a phone: iOS Safari zooms the page when a
 // focused input's text is smaller (same rule as the intake form).
+// The 2026-11 look, shared with the brief form: a Light White well with no
+// outline that turns white with a brand ring on focus. ⚠️ This page is outside
+// `.app-canvas`, so the refresh's global card/divider rules never reach it —
+// the values are set here by hand.
 const field =
-  "w-full rounded-lg border border-border-strong bg-surface px-2.5 py-2 text-base outline-none focus:border-brand bidi-auto md:text-sm";
+  "w-full rounded-xl bg-[var(--light-white)] px-3 py-2 text-base outline-none ring-brand placeholder:text-faint focus:bg-surface focus:ring-2 bidi-auto md:text-sm";
+/** The refresh's card: 20px radius, no outline, the soft shadow. */
+const card = "rounded-[20px] bg-surface shadow-card";
 
 interface ClientInfo {
   id: string;
@@ -185,8 +191,10 @@ export function FreelancerLogView({ token }: { token: string }) {
           sidebar's short logo — the full wordmark cost a row of height). */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h1 className="font-serif-accent text-[30px] leading-9">Hi {data.name}</h1>
-          <p className="text-xs text-muted">
+          <h1 className="page-title bidi-auto">
+            Hi <span className="font-serif-accent">{data.name}</span>
+          </h1>
+          <p className="text-sm text-muted">
             {data.terms.rateHigh === data.terms.rateLow ? (
               <>Your rate: {money(data.terms.rateHigh, cur)}/h, flat</>
             ) : (
@@ -197,11 +205,11 @@ export function FreelancerLogView({ token }: { token: string }) {
             )}
           </p>
         </div>
-        <span className="brand-ampmore w-20 bg-brand" aria-label="Studio&more" />
+        <span className="brand-ampmore h-6 bg-brand" role="img" aria-label="Studio&more" />
       </div>
 
       {/* The month: step through it, and what it comes to. */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-brand px-4 py-3 text-white">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-brand px-5 py-4 text-white">
         <div className="flex items-center gap-1">
           <button
             onClick={() => go(shift(shownPeriod, -1))}
@@ -211,7 +219,7 @@ export function FreelancerLogView({ token }: { token: string }) {
           >
             <ChevronLeft size={18} />
           </button>
-          <p className="flex min-w-40 items-center justify-center gap-2 text-lg font-semibold">
+          <p className="flex min-w-40 items-center justify-center gap-2 text-lg font-medium">
             {monthLabel(shownPeriod)}
             {loading && <Loader2 size={16} className="animate-spin opacity-80" aria-label="Loading" />}
           </p>
@@ -230,11 +238,11 @@ export function FreelancerLogView({ token }: { token: string }) {
           )}
         </div>
         <p className="text-right tabular-nums">
-          <span className="text-2xl font-semibold">{hrs(data.summary.hours)}</span>
+          <span className="font-serif-accent text-[28px] leading-none">{hrs(data.summary.hours)}</span>
           <span className="text-white/80"> × {money(data.summary.rate, cur)}/h</span>
           {data.summary.extras > 0 && <span className="text-white/80"> + {money(data.summary.extras, cur)} extras</span>}
           <span className="text-white/80"> = </span>
-          <span className="text-2xl font-semibold">{money(data.summary.total, cur)}</span>
+          <span className="font-serif-accent text-[28px] leading-none">{money(data.summary.total, cur)}</span>
           {data.summary.otherExtras.map((o) => (
             <span key={o.currency} className="text-white/80">
               {" "}
@@ -298,7 +306,7 @@ function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => 
 
 function HoursTable({ data, api, onChanged, onEdit }: { data: Data; api: string; onChanged: () => void; onEdit: (l: Log) => void }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
+    <div className={`overflow-x-auto ${card}`}>
       <table className="w-full min-w-[680px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-faint">
@@ -361,7 +369,7 @@ function HoursTable({ data, api, onChanged, onEdit }: { data: Data; api: string;
 /** Extra charges on his month — another freelancer he brought in, a purchase. */
 function ChargesTable({ data, api, onChanged, onEdit }: { data: Data; api: string; onChanged: () => void; onEdit: (c: ChargeRow) => void }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
+    <div className={`overflow-x-auto ${card}`}>
       <table className="w-full min-w-[680px] text-sm">
         <thead>
           <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-faint">
@@ -486,23 +494,23 @@ function Composer({
   return (
     <div
       id="composer"
-      className={`sticky bottom-4 z-10 rounded-2xl border bg-surface p-4 shadow-[0_12px_40px_rgba(6,17,47,0.18)] ${
-        editing ? "border-brand" : "border-brand/30"
+      className={`sticky bottom-4 z-10 rounded-[20px] bg-surface p-5 shadow-[0_12px_40px_rgba(6,17,47,0.18)] ${
+        editing ? "ring-2 ring-brand" : ""
       }`}
     >
       <div className="mb-3 flex items-center gap-3">
-        <p className="text-sm font-semibold">{editing ? "Editing a line" : "Add a line"}</p>
+        <p className="text-[15px] font-medium">{editing ? "Editing a line" : "Add a line"}</p>
         {editing && (
           <button onClick={onCancel} className="text-xs text-muted hover:text-foreground">
             Cancel
           </button>
         )}
-        <div className={`flex rounded-lg bg-background p-0.5 text-xs font-medium ${editing ? "hidden" : ""}`}>
+        <div className={`flex rounded-xl bg-[var(--light-white)] p-0.5 text-xs font-medium ${editing ? "hidden" : ""}`}>
           {(["hours", "charge"] as const).map((k) => (
             <button
               key={k}
               onClick={() => setKind(k)}
-              className={`rounded-md px-3 py-1 ${kind === k ? "bg-surface text-brand shadow-card" : "text-muted hover:text-foreground"}`}
+              className={`rounded-lg px-3 py-1 ${kind === k ? "bg-surface text-brand shadow-card" : "text-muted hover:text-foreground"}`}
             >
               {k === "hours" ? "Hours" : "Extra charge"}
             </button>
@@ -567,7 +575,7 @@ function AddButton({ saving, label, onClick }: { saving: boolean; label: string;
     <button
       onClick={onClick}
       disabled={saving}
-      className="flex items-center gap-1 whitespace-nowrap rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+      className="flex items-center gap-1 whitespace-nowrap rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
     >
       {label === "Add" && <Plus size={15} />} {saving ? "Saving…" : label}
     </button>
@@ -580,8 +588,8 @@ function Months({ data, selected, onPick }: { data: Data; selected: string; onPi
   const cur = data.summary.currency;
   const short = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1].slice(0, 3)} ${p.slice(2, 4)}`;
   return (
-    <aside className="rounded-2xl border border-border bg-surface p-3 text-sm shadow-card">
-      <h2 className="mb-1 px-1 text-base font-medium">Months</h2>
+    <aside className={`${card} p-4 text-sm`}>
+      <h2 className="card-title mb-2 px-1">Months</h2>
       <div className="max-h-[360px] overflow-auto">
         <table className="w-full tabular-nums">
           <thead className="sticky top-0 bg-surface">
@@ -640,11 +648,11 @@ function Deliverables({ data, api, onChanged }: { data: Data; api: string; onCha
   }
 
   return (
-    <aside className="h-fit rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="flex items-center gap-2 text-base font-medium">
-        <FolderOpen size={17} className="text-brand" /> Deliverables &amp; folders
+    <aside className={`h-fit ${card} p-5`}>
+      <h2 className="card-title flex items-center gap-2">
+        <FolderOpen size={18} strokeWidth={1.75} className="text-brand" /> Deliverables &amp; folders
       </h2>
-      <p className="mt-0.5 text-xs text-muted">Links to what you delivered, or a shared folder.</p>
+      <p className="mt-1 text-xs text-muted">Links to what you delivered, or a shared folder.</p>
       <ul className="mt-3 space-y-1.5">
         {data.deliverables.length === 0 && <li className="text-sm text-faint">No links yet.</li>}
         {data.deliverables.map((d) => (
@@ -668,14 +676,14 @@ function Deliverables({ data, api, onChanged }: { data: Data; api: string; onCha
           </li>
         ))}
       </ul>
-      <div className="mt-4 space-y-2 border-t border-border pt-3">
+      <div className="mt-4 space-y-2">
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Name, e.g. Sensor 3 — final renders" maxLength={120} className={field} />
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" inputMode="url" className={field} />
         {error && <p className="text-xs text-danger">{error}</p>}
         <button
           onClick={() => void add()}
           disabled={saving || !title.trim() || !url.trim()}
-          className="flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
         >
           <Plus size={14} /> Add link
         </button>

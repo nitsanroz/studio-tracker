@@ -319,7 +319,7 @@ function PaymentPeriods({ client }: { client: Client }) {
                 <EditableTextCell
                   value={p.label}
                   onCommit={(v) => v && updateBillingPeriod(p.id, { label: v })}
-                  className={isCurrent ? "font-semibold text-brand-dark" : ""}
+                  className={isCurrent ? "font-medium text-brand-dark" : ""}
                 />
               </span>
               <span className={`flex w-56 shrink-0 items-center gap-1 text-xs ${strike}`}>
@@ -371,7 +371,7 @@ function PaymentPeriods({ client }: { client: Client }) {
         )}
         <button
           onClick={addPeriod}
-          className="m-2 self-start rounded-md border border-dashed border-border-strong px-2 py-1 text-xs text-muted hover:border-brand hover:text-brand"
+          className="m-2 self-start rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
         >
           + Add period
         </button>
@@ -389,30 +389,30 @@ function PaymentPeriods({ client }: { client: Client }) {
                   : "Hours logged on billable tasks in the current payment period"
               }
             >
-              <div className="text-[11px] font-medium text-muted">Current period</div>
+              <div className="text-xs text-muted">Current period</div>
               {/* ⚠️ `136/150`, and the COLOUR is the whole point of the cap: it is
                   semantic, so the number has to say by itself that the period is
                   filling up. Amber from 70%, red from 90% — Nitsan's thresholds,
                   so nobody goes over without noticing and asking. */}
               <div
-                className={`mt-0.5 text-2xl font-semibold tabular-nums ${capTone(currentMinutes, client.hourCap)}`}
+                className={`mt-1 font-serif-accent text-[32px] leading-10 tabular-nums ${capTone(currentMinutes, client.hourCap)}`}
               >
                 {current ? formatHoursShort(currentMinutes) : "–"}
                 {current && client.hourCap != null && (
-                  <span className="text-base font-medium opacity-70">/{client.hourCap}h</span>
+                  <span className="font-sans text-base not-italic opacity-70">/{client.hourCap}h</span>
                 )}
               </div>
             </div>
             <div title="Hours agreed per billing period for this client. The client's report shows it as a cap with the hours remaining — leave it blank for no cap and neither appears. Click to edit.">
-              <div className="text-[11px] font-medium text-muted">Hour cap</div>
-              <div className="mt-0.5">
+              <div className="text-xs text-muted">Hour cap</div>
+              <div className="mt-1">
                 <EditableTextCell
                   value={client.hourCap != null ? String(client.hourCap) : ""}
                   placeholder="none"
                   bidi={false}
                   onCommit={(v) => commitClientCap(client, v)}
-                  className="text-2xl font-semibold"
-                  inputClassName="text-2xl font-semibold"
+                  className="font-serif-accent text-[32px] leading-10"
+                  inputClassName="text-2xl"
                 />
               </div>
             </div>
@@ -434,14 +434,14 @@ function PaymentPeriods({ client }: { client: Client }) {
                 nothing. Do not "simplify" it to `Number()` without checking the
                 column first. */}
             <div title="Day of the month the invoice goes out — click to edit, 1–31. New billing periods are aligned to end the day before this; leave it blank and they simply run a calendar month.">
-              <div className="text-[11px] font-medium text-muted">Invoice day</div>
-              <div className="mt-0.5">
+              <div className="text-xs text-muted">Invoice day</div>
+              <div className="mt-1">
                 <EditableTextCell
                   value={invoiceDayText(client.invoiceNote)}
                   placeholder="e.g. 15"
                   onCommit={(v) => commitInvoiceDay(client, v)}
-                  className="text-2xl font-semibold tabular-nums"
-                  inputClassName="text-2xl font-semibold tabular-nums"
+                  className="font-serif-accent text-[32px] leading-10 tabular-nums"
+                  inputClassName="text-2xl tabular-nums"
                 />
               </div>
             </div>
@@ -461,7 +461,7 @@ function PaymentPeriods({ client }: { client: Client }) {
               // beside it fill the grid exactly, and a select squeezed into 92px of
               // a 504px pane shows about two words of a task title.
               <div
-                className="col-span-4 rounded-lg border border-warning/40 bg-warning/5 p-2"
+                className="col-span-4 rounded-xl border border-warning/40 bg-warning/5 p-3"
                 title="This client has no valid Keys task, so hours cannot be written down on its report. Only this client's non-billable tasks are offered, because a billable destination cannot reduce a bill."
               >
                 <div className="text-[11px] font-medium text-warning">
@@ -473,7 +473,7 @@ function PaymentPeriods({ client }: { client: Client }) {
                   <select
                     value={client.keysTaskId ?? ""}
                     onChange={(e) => updateClient(client.id, { keysTaskId: e.target.value || null })}
-                    className="w-full rounded-md border border-warning bg-surface px-1 py-0.5 text-sm outline-none focus:border-brand"
+                    className="w-full rounded-lg border border-warning bg-surface px-2 py-1 text-sm outline-none focus:border-brand"
                   >
                     <option value="">none — write-down off</option>
                     {keysCandidates.map((t) => (
@@ -486,8 +486,8 @@ function PaymentPeriods({ client }: { client: Client }) {
               </div>
             )}
             <div title="Tasks with hours logged in the current payment period">
-              <div className="text-[11px] font-medium text-muted">Active tasks</div>
-              <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+              <div className="text-xs text-muted">Active tasks</div>
+              <div className="mt-1 font-serif-accent text-[32px] leading-10 tabular-nums">
                 {current ? activeTasks : "–"}
               </div>
             </div>
@@ -495,7 +495,7 @@ function PaymentPeriods({ client }: { client: Client }) {
         </div>
         <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
           <h3
-            className="mb-2 text-xs font-medium uppercase tracking-wide text-faint"
+            className="card-title mb-3"
             title="This client's logged hours per month (last 12 months with activity)"
           >
             Hours by month
@@ -540,7 +540,7 @@ function InternalNotes({ client }: { client: Client }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
       <h3
-        className="mb-2 text-xs font-medium uppercase tracking-wide text-faint"
+        className="card-title mb-3"
         title="Only the studio sees this — it is never part of a published client report"
       >
         Internal notes
@@ -1291,7 +1291,9 @@ function PublishWorkspace() {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="page-title">Client Reports</h1>
+          <h1 className="page-title">
+            Client <span className="font-serif-accent">reports</span>
+          </h1>
           <p className="text-sm text-muted">
             Per-client hours tables, payment periods, and the shareable report links.
           </p>
@@ -1320,7 +1322,7 @@ function PublishWorkspace() {
                 the dialog. */}
             <button
               onClick={copyLink}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted hover:border-brand hover:text-brand"
+              className="flex items-center gap-1.5 rounded-xl bg-surface px-3.5 py-2 text-sm font-medium text-brand shadow-card hover:bg-brand-soft"
               title="Copy this client's report link"
             >
               <Copy size={14} /> Copy link
@@ -1333,7 +1335,7 @@ function PublishWorkspace() {
             <button
               onClick={() => setConfirmOpen(true)}
               disabled={publishing}
-              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
               title="Check what the client will get, then publish"
             >
               <Send size={14} />
@@ -1662,7 +1664,7 @@ function PublishWorkspace() {
       {confirmOpen && selectedClient && (
         <Modal onClose={() => setConfirmOpen(false)} labelledBy="publish-confirm-title">
           <div className="flex items-start justify-between gap-3">
-            <h2 id="publish-confirm-title" className="text-lg font-semibold">
+            <h2 id="publish-confirm-title" className="card-title">
               {currentLink?.publishedAt ? "Update" : "Create"} {selectedClient.name}&apos;s report
             </h2>
             <ModalClose onClose={() => setConfirmOpen(false)} />
@@ -1758,7 +1760,7 @@ function PublishWorkspace() {
                 void publish();
               }}
               disabled={publishing}
-              className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
             >
               <Send size={14} />
               {currentLink?.publishedAt ? "Update the report" : "Publish"}

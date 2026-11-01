@@ -35,10 +35,10 @@ import { SkeletonRows } from "@/components/skeleton";
 const ROLE_COLORS = ["#0b43ed", "#7c3aed", "#0891b2", "#15803d", "#c2410c", "#be123c", "#6b7280"];
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
-const HEAD = "text-sm font-semibold";
+const HEAD = "card-title"; // 2026-11: every card's title, as on the other pages
 const NOTE = "mt-1 text-xs leading-relaxed text-muted";
 const FIELD =
-  "min-h-11 w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0";
+  "min-h-11 w-full rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 sm:min-h-0";
 
 /** A name you can edit in place, committing on blur and on Enter. */
 function EditableName({

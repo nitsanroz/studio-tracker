@@ -92,7 +92,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
         }}
         className="fixed left-1/2 top-1/3 z-[70] flex w-full max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-2xl"
       >
-        <h3 className="font-heading text-sm">New client</h3>
+        <h3 className="card-title">New client</h3>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
           Name
           <input
@@ -102,7 +102,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && onClose()}
             placeholder="Client name"
-            className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm font-normal text-foreground outline-none focus:border-brand"
+            className="bidi-auto rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 font-normal text-foreground outline-none focus:border-brand"
           />
         </label>
         <label className="flex items-center gap-2 text-xs font-medium text-muted">
@@ -121,7 +121,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => setNote(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && onClose()}
             placeholder="e.g. monthly retainer, 20h"
-            className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm font-normal text-foreground outline-none focus:border-brand"
+            className="bidi-auto rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 font-normal text-foreground outline-none focus:border-brand"
           />
         </label>
         {error && <p className="text-xs text-danger">{error}</p>}
@@ -136,7 +136,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
           <button
             type="submit"
             disabled={busy || !name.trim()}
-            className="rounded-lg bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+            className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
           >
             {busy ? "Creating…" : "Create client"}
           </button>

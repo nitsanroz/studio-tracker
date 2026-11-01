@@ -71,7 +71,7 @@ export function BriefModal({ task, onClose }: { task: Task; onClose: () => void 
     <Modal onClose={close} width="2xl" align="center" layer="raised" labelledBy="brief-modal-title">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 id="brief-modal-title" className="font-heading text-sm">
+          <h3 id="brief-modal-title" className="card-title">
             Brief
           </h3>
           <p className="bidi-auto truncate text-xs text-muted" title={task.title}>
@@ -102,7 +102,7 @@ export function BriefModal({ task, onClose }: { task: Task; onClose: () => void 
       )}
 
       <div className="mt-4">
-        <div className="mb-1.5 text-xs font-medium uppercase tracking-wide text-faint">Links</div>
+        <div className="mb-1.5 text-[13px] font-medium text-muted">Links</div>
         <LinksEditor
           ref={linksRef}
           owner={{ taskId: task.id }}
@@ -115,7 +115,7 @@ export function BriefModal({ task, onClose }: { task: Task; onClose: () => void 
         <span className="mr-auto text-xs text-faint">Saves when you close · ⌘↵</span>
         <button
           onClick={close}
-          className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         >
           Done
         </button>

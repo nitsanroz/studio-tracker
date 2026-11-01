@@ -20,6 +20,7 @@ import { useColWidths, ResizeHandle } from "./resizable";
 import { isSafeUrl, normalizeUrl } from "@/lib/links";
 import type { Task } from "@/lib/types";
 import { EmptyState } from "./empty-state";
+import { BUCKET_LABEL, bucketTasks } from "@/lib/task-buckets";
 
 /** The panel's own box, for the flip decision. 432px (w-72 + 50%) is wide enough
  *  that the duration/member/date row fits on ONE line, which is what gives the
@@ -248,6 +249,33 @@ function LoggedByGroup({ userIds, profiles }: { userIds: string[]; profiles: Ret
  * ⚠️ No progress bar, deliberately — hours read as "6 / 12h" and a bar beside
  * that says the same thing twice at the cost of a row's worth of height.
  */
+/** Hours logged against the budget (grouped My Tasks): brand inside it, danger past it. */
+function HoursBar({ minutes, budget }: { minutes: number; budget: number | null }) {
+  const hours = minutes / 60;
+  if (!budget || budget <= 0) {
+    return (
+      <span className="text-xs tabular-nums text-muted">
+        {minutes > 0 ? `${formatHoursDecimal(minutes)}h` : <span className="text-faint">–</span>}
+      </span>
+    );
+  }
+  const over = hours > budget;
+  return (
+    <span className="flex flex-col gap-1 pr-2">
+      <span className="flex justify-between gap-2 text-xs tabular-nums">
+        <span className={over ? "font-medium text-danger" : "text-foreground"}>{formatHoursDecimal(minutes)}h</span>
+        <span className="text-faint">of {budget}h</span>
+      </span>
+      <span className="h-1.5 overflow-hidden rounded-full bg-background">
+        <span
+          className={`block h-full rounded-full ${over ? "bg-danger" : "bg-brand"}`}
+          style={{ width: `${Math.min(100, (hours / budget) * 100)}%` }}
+        />
+      </span>
+    </span>
+  );
+}
+
 function MobileTaskCards({
   tasks,
   clients,
@@ -343,8 +371,21 @@ function MobileTaskCards({
 /**
  * Task table with the full column set + drag-resizable columns.
  * Used by the My Tasks page AND the Home "My tasks" card.
+ *
+ * `grouped` (My Tasks, 2026-11 design-lab option A): rows split into Overdue /
+ * Due this week / Later / No due date (`lib/task-buckets.ts`), and Hours and
+ * Budget merge into one bar — hours against the budget, red once past it. The
+ * budget stays editable in the task pane; everywhere else keeps the two columns.
  */
-export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableKey?: string }) {
+export function TaskTable({
+  tasks,
+  tableKey = "tasks",
+  grouped = false,
+}: {
+  tasks: Task[];
+  tableKey?: string;
+  grouped?: boolean;
+}) {
   const { clients, sections, profiles, entrySums, entrySumsAll, currentUserId, openTask, updateTask, tags } =
     useData();
   const { widths, startResize } = useColWidths(tableKey, DEFAULT_WIDTHS);
@@ -378,8 +419,13 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
     return { total, mine, users };
   }, [entrySums, entrySumsAll, tasks, currentUserId]);
 
-  const cell = (key: string) => ({ width: widths[key], flexShrink: 0 } as const);
+  // Grouped: one "Hours" column holds the bar, so Budget goes and Hours takes its
+  // room (128 = the two old 64px columns, so the row is no wider than before).
+  const cell = (key: string) =>
+    ({ width: grouped && key === "hours" ? Math.max(widths.hours ?? 0, 128) : widths[key], flexShrink: 0 }) as const;
+  const cols = grouped ? COLS.filter((c) => c.key !== "budget") : COLS;
   const todayIso = toISODate(new Date());
+  const groups = useMemo(() => (grouped ? bucketTasks(tasks, todayIso) : []), [grouped, tasks, todayIso]);
 
   // ⚠️ JS, not `md:hidden`. Rendering both would build every row twice, and the
   // table's own `min-w-fit` wrapper would widen the document to ~900px before
@@ -387,16 +433,32 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
   // simply not consulted on a phone — the stored values stay untouched, so a
   // carefully dragged desktop layout survives a phone visit.
   if (isNarrow) {
+    const cards = (list: Task[]) => (
+      <MobileTaskCards
+        tasks={list}
+        clients={clients}
+        stats={stats}
+        todayIso={todayIso}
+        onOpen={openTask}
+        onAdd={(id) => setAdding({ id, left: 0, top: 0 })}
+      />
+    );
     return (
       <>
-        <MobileTaskCards
-          tasks={tasks}
-          clients={clients}
-          stats={stats}
-          todayIso={todayIso}
-          onOpen={openTask}
-          onAdd={(id) => setAdding({ id, left: 0, top: 0 })}
-        />
+        {grouped && tasks.length > 0 ? (
+          <div className="flex flex-col gap-6">
+            {groups.map((g) => (
+              <div key={g.bucket} className="flex flex-col gap-2">
+                <p className={`text-sm font-medium ${g.bucket === "overdue" ? "text-danger" : "text-muted"}`}>
+                  {BUCKET_LABEL[g.bucket]} <span className="text-faint">· {g.tasks.length}</span>
+                </p>
+                {cards(g.tasks)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          cards(tasks)
+        )}
         {/* left/top are ignored on a phone — AddTimePopover renders a sheet. */}
         {adding && (
           <AddTimePopover at={adding} taskId={adding.id} onClose={() => setAdding(null)} />
@@ -405,12 +467,161 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
     );
   }
 
+  const row = (task: Task) => {
+    const client = clients.find((c) => c.id === task.clientId);
+    const section = sections.find((s) => s.id === task.sectionId);
+    // the shared helper, so this table and the client page can't disagree
+    // about a task's hours (it adds the pre-Everhour remainder on top)
+    const total = taskMinutesDone(task, (id) => stats.total.get(id) ?? 0);
+    const my = stats.mine.get(task.id) ?? 0;
+    const budget = task.estimateHours;
+    const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
+    const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
+    const hoursTitle =
+      pctDone != null ? `${formatHoursDecimal(total)}h of ${budget}h — ${pctDone}%` : "Hours logged";
+    return (
+      <div
+        key={task.id}
+        className="group flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
+        onClick={() => openTask(task.id)}
+      >
+        <span style={cell("client")}>
+          {client && <ClientChip client={client} size="sm" />}
+        </span>
+        <span className="bidi-auto truncate text-muted" style={cell("section")}>
+          {section?.name}
+        </span>
+        <span
+          className="flex min-w-24 flex-1 items-center font-medium"
+          onClick={(e) => isAdmin && e.stopPropagation()}
+        >
+          {isAdmin ? (
+            <EditableTextCell
+              value={task.title}
+              onCommit={(v) => v && updateTask(task.id, { title: v })}
+            />
+          ) : (
+            <span className="bidi-auto truncate px-1.5 py-0.5">{task.title}</span>
+          )}
+          <button
+            onClick={() => openTask(task.id)}
+            title="Open details"
+            className="invisible ml-1 shrink-0 rounded p-0.5 text-faint hover:bg-surface hover:text-brand group-hover:visible"
+          >
+            <Maximize2 size={13} />
+          </button>
+        </span>
+        <span
+          className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
+          style={cell("due")}
+          onClick={(e) => isAdmin && e.stopPropagation()}
+        >
+          {isAdmin ? (
+            <EditableDateCell
+              value={task.dueDate}
+              onCommit={(v) => updateTask(task.id, { dueDate: v })}
+              format={formatDueShort}
+              placeholder=""
+            />
+          ) : (
+            <span className="px-1.5 py-0.5 tabular-nums">
+              {task.dueDate ? formatDueShort(task.dueDate) : ""}
+            </span>
+          )}
+        </span>
+        <span style={cell("tags")} onClick={(e) => e.stopPropagation()}>
+          <EditableSelectCell
+            value={task.tag ?? ""}
+            options={tags.map((t) => ({ value: t.name, label: t.name }))}
+            onCommit={(v) => updateTask(task.id, { tag: v || null })}
+            display={task.tag ? <TagBadge tag={task.tag} /> : null}
+            emptyLabel="No status"
+          />
+        </span>
+        <span style={cell("figma")} onClick={(e) => e.stopPropagation()}>
+          <FigmaCell
+            url={task.figmaUrl}
+            onCommit={(v) => updateTask(task.id, { figmaUrl: v || null })}
+          />
+        </span>
+        {grouped ? (
+          <span style={cell("hours")} title={hoursTitle}>
+            <HoursBar minutes={total} budget={budget} />
+          </span>
+        ) : (
+          <>
+            <span
+              className={`text-xs tabular-nums ${pctDone != null && pctDone > 100 ? "font-medium text-danger" : "text-muted"}`}
+              style={cell("hours")}
+              title={hoursTitle}
+            >
+              {total > 0 ? `${formatHoursDecimal(total)}h` : <span className="text-faint">–</span>}
+            </span>
+            <span
+              className="text-xs tabular-nums text-muted"
+              style={cell("budget")}
+              onClick={(e) => isAdmin && e.stopPropagation()}
+              title={hoursTitle}
+            >
+              {isAdmin ? (
+                <EditableNumberCell
+                  value={budget}
+                  onCommit={(v) => updateTask(task.id, { estimateHours: v })}
+                  display={
+                    budget != null ? (
+                      <span>{budget}h</span>
+                    ) : (
+                      <span className="text-faint">–</span>
+                    )
+                  }
+                />
+              ) : budget != null ? (
+                `${budget}h`
+              ) : (
+                <span className="text-faint">–</span>
+              )}
+            </span>
+          </>
+        )}
+        <span className="text-xs tabular-nums text-muted" style={cell("mine")}>
+          {my > 0 ? formatHoursShort(my) : "–"}
+        </span>
+        <span style={cell("loggedBy")}>
+          <LoggedByGroup userIds={stats.users.get(task.id) ?? []} profiles={profiles} />
+        </span>
+        <span style={cell("add")} onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => {
+              // ⚠️ Read `currentTarget` HERE, not inside the updater.
+              // React nulls it once the handler returns, and a state
+              // updater runs later — `addPopoverPos(e.currentTarget)`
+              // inside the callback threw on every click.
+              const btn = e.currentTarget;
+              setAdding((v) =>
+                v?.id === task.id ? null : { id: task.id, ...addPopoverPos(btn) },
+              );
+            }}
+            className="flex items-center gap-1 rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
+          >
+            <Plus size={12} /> Add time
+          </button>
+        </span>
+      </div>
+    );
+  };
+
+  if (grouped && tasks.length === 0) {
+    return (
+      <EmptyState icon={ListChecks} text="Nothing assigned to you right now." action={{ label: "See the weekly plan", href: "/plan" }} />
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
       <div className="min-w-fit">
         {/* header */}
         <div className="group/thead flex items-center gap-3 border-b border-border bg-background px-4 py-2 text-xs font-medium uppercase tracking-wide text-faint">
-          {COLS.slice(0, 2).map((c) => (
+          {cols.slice(0, 2).map((c) => (
             <span key={c.key} className="relative" style={cell(c.key)} title={c.hint}>
               {c.label}
               <ResizeHandle onMouseDown={startResize(c.key)} />
@@ -419,7 +630,7 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           <span className="min-w-24 flex-1" title="Task title — click a cell to rename">
             Task
           </span>
-          {COLS.slice(2).map((c) => (
+          {cols.slice(2).map((c) => (
             <span key={c.key} className="relative" style={cell(c.key)} title={c.hint}>
               {c.label}
               {c.key !== "add" && <ResizeHandle onMouseDown={startResize(c.key)} />}
@@ -427,140 +638,18 @@ export function TaskTable({ tasks, tableKey = "tasks" }: { tasks: Task[]; tableK
           ))}
         </div>
 
-        {tasks.map((task) => {
-          const client = clients.find((c) => c.id === task.clientId);
-          const section = sections.find((s) => s.id === task.sectionId);
-          // the shared helper, so this table and the client page can't disagree
-          // about a task's hours (it adds the pre-Everhour remainder on top)
-          const total = taskMinutesDone(task, (id) => stats.total.get(id) ?? 0);
-          const my = stats.mine.get(task.id) ?? 0;
-          const budget = task.estimateHours;
-          const pctDone = budget && budget > 0 ? Math.round((total / 60 / budget) * 100) : null;
-          const overdue = task.dueDate != null && task.status !== "done" && task.dueDate < todayIso;
-          const hoursTitle =
-            pctDone != null ? `${formatHoursDecimal(total)}h of ${budget}h — ${pctDone}%` : "Hours logged";
-          return (
-            <div
-              key={task.id}
-              className="group flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-background"
-              onClick={() => openTask(task.id)}
-            >
-              <span style={cell("client")}>
-                {client && <ClientChip client={client} size="sm" />}
-              </span>
-              <span className="bidi-auto truncate text-muted" style={cell("section")}>
-                {section?.name}
-              </span>
-              <span
-                className="flex min-w-24 flex-1 items-center font-medium"
-                onClick={(e) => isAdmin && e.stopPropagation()}
-              >
-                {isAdmin ? (
-                  <EditableTextCell
-                    value={task.title}
-                    onCommit={(v) => v && updateTask(task.id, { title: v })}
-                  />
-                ) : (
-                  <span className="bidi-auto truncate px-1.5 py-0.5">{task.title}</span>
-                )}
-                <button
-                  onClick={() => openTask(task.id)}
-                  title="Open details"
-                  className="invisible ml-1 shrink-0 rounded p-0.5 text-faint hover:bg-surface hover:text-brand group-hover:visible"
+        {grouped
+          ? groups.map((g) => (
+              <div key={g.bucket}>
+                <div
+                  className={`bg-background px-4 py-2 text-xs font-medium ${g.bucket === "overdue" ? "text-danger" : "text-muted"}`}
                 >
-                  <Maximize2 size={13} />
-                </button>
-              </span>
-              <span
-                className={`text-xs ${overdue ? "font-medium text-danger" : "text-muted"}`}
-                style={cell("due")}
-                onClick={(e) => isAdmin && e.stopPropagation()}
-              >
-                {isAdmin ? (
-                  <EditableDateCell
-                    value={task.dueDate}
-                    onCommit={(v) => updateTask(task.id, { dueDate: v })}
-                    format={formatDueShort}
-                    placeholder=""
-                  />
-                ) : (
-                  <span className="px-1.5 py-0.5 tabular-nums">
-                    {task.dueDate ? formatDueShort(task.dueDate) : ""}
-                  </span>
-                )}
-              </span>
-              <span style={cell("tags")} onClick={(e) => e.stopPropagation()}>
-                <EditableSelectCell
-                  value={task.tag ?? ""}
-                  options={tags.map((t) => ({ value: t.name, label: t.name }))}
-                  onCommit={(v) => updateTask(task.id, { tag: v || null })}
-                  display={task.tag ? <TagBadge tag={task.tag} /> : null}
-                  emptyLabel="No status"
-                />
-              </span>
-              <span style={cell("figma")} onClick={(e) => e.stopPropagation()}>
-                <FigmaCell
-                  url={task.figmaUrl}
-                  onCommit={(v) => updateTask(task.id, { figmaUrl: v || null })}
-                />
-              </span>
-              <span
-                className={`text-xs tabular-nums ${pctDone != null && pctDone > 100 ? "font-medium text-danger" : "text-muted"}`}
-                style={cell("hours")}
-                title={hoursTitle}
-              >
-                {total > 0 ? `${formatHoursDecimal(total)}h` : <span className="text-faint">–</span>}
-              </span>
-              <span
-                className="text-xs tabular-nums text-muted"
-                style={cell("budget")}
-                onClick={(e) => isAdmin && e.stopPropagation()}
-                title={hoursTitle}
-              >
-                {isAdmin ? (
-                  <EditableNumberCell
-                    value={budget}
-                    onCommit={(v) => updateTask(task.id, { estimateHours: v })}
-                    display={
-                      budget != null ? (
-                        <span>{budget}h</span>
-                      ) : (
-                        <span className="text-faint">–</span>
-                      )
-                    }
-                  />
-                ) : budget != null ? (
-                  `${budget}h`
-                ) : (
-                  <span className="text-faint">–</span>
-                )}
-              </span>
-              <span className="text-xs tabular-nums text-muted" style={cell("mine")}>
-                {my > 0 ? formatHoursShort(my) : "–"}
-              </span>
-              <span style={cell("loggedBy")}>
-                <LoggedByGroup userIds={stats.users.get(task.id) ?? []} profiles={profiles} />
-              </span>
-              <span style={cell("add")} onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={(e) => {
-                    // ⚠️ Read `currentTarget` HERE, not inside the updater.
-                    // React nulls it once the handler returns, and a state
-                    // updater runs later — `addPopoverPos(e.currentTarget)`
-                    // inside the callback threw on every click.
-                    const btn = e.currentTarget;
-                    setAdding((v) =>
-                      v?.id === task.id ? null : { id: task.id, ...addPopoverPos(btn) },
-                    );
-                  }}
-                  className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted hover:border-brand hover:text-brand"
-                >
-                  <Plus size={12} /> Add time
-                </button>
-              </span>
-            </div>
-          );
-        })}
+                  {BUCKET_LABEL[g.bucket]} <span className="text-faint">· {g.tasks.length}</span>
+                </div>
+                {g.tasks.map(row)}
+              </div>
+            ))
+          : tasks.map(row)}
       </div>
 
       {/* Rendered ONCE, outside the scroller, since it is portalled and carries

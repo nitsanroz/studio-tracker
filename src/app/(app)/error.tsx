@@ -44,8 +44,8 @@ export default function AppError({
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 text-center shadow-card">
-        <h2 className="font-serif-accent text-2xl leading-tight">This part didn&apos;t load</h2>
+      <div className="w-full max-w-md rounded-[20px] bg-surface p-8 text-center shadow-card">
+        <h2 className="font-serif-accent text-[28px] leading-9">This part didn&apos;t load</h2>
         <p className="mt-2 text-sm text-muted">
           Something went wrong drawing this screen. Nothing you did is lost — your hours and
           tasks are safe.
@@ -53,13 +53,13 @@ export default function AppError({
         <div className="mt-5 flex items-center justify-center gap-2">
           <button
             onClick={() => unstable_retry()}
-            className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+            className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
           >
             <RefreshCw size={14} /> Try again
           </button>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted hover:bg-background hover:text-foreground"
+            className="rounded-xl bg-background px-4 py-2 text-sm font-medium text-brand hover:bg-brand-soft"
           >
             Reload the page
           </button>

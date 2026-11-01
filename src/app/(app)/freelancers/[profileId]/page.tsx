@@ -293,7 +293,7 @@ function MonthTable({
     {waiting.length > 0 && (
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-heading text-base">
+          <h2 className="card-title flex items-center gap-2">
             <Clock size={18} strokeWidth={1.75} className="text-[#855800]" /> Waiting for review
             <span className="rounded-full bg-warning/15 px-2 text-xs text-[#855800]">{waiting.length}</span>
           </h2>
@@ -307,7 +307,7 @@ function MonthTable({
       </section>
     )}
     <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
-      <h2 className="flex items-center gap-2 px-5 pt-5 font-heading text-base">
+      <h2 className="card-title flex items-center gap-2 px-5 pt-5">
         <ReceiptText size={18} strokeWidth={1.75} className="text-brand" /> {monthLabel(data.period).split(" ")[0]}&apos;s hours
       </h2>
       <table className="mt-3 w-full min-w-[740px] text-sm">
@@ -595,7 +595,7 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                     <button
                       disabled={busy === c.id}
                       onClick={() => run({ action: "approveCharge", id: c.id })}
-                      className="flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+                      className="flex items-center gap-1 rounded-lg bg-brand px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-dark disabled:opacity-40"
                     >
                       <Check size={13} /> Approve
                     </button>
@@ -608,7 +608,7 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                         if (note !== null)
                           void run({ action: "rejectCharge", id: c.id, note });
                       }}
-                      className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger"
+                      className="flex items-center gap-1 rounded-lg bg-background px-2 py-1 text-xs text-muted hover:text-danger"
                       aria-label="Turn down"
                     >
                       <X size={13} />
@@ -642,7 +642,7 @@ function Months({ data, selected, onPick }: { data: Data; selected: string; onPi
   const total = data.months.reduce((t, m) => t + m.total, 0);
   return (
     <aside className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
-      <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+      <h2 className="card-title mb-3 flex items-center gap-2">
         <ReceiptText size={18} strokeWidth={1.75} className="text-brand" /> Months
       </h2>
       <div className="max-h-[440px] overflow-auto">
@@ -728,7 +728,7 @@ function Side({
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
-        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+        <h2 className="card-title mb-3 flex items-center gap-2">
           <Link2 size={18} strokeWidth={1.75} className="text-brand" /> Private link
         </h2>
         <code className="block truncate rounded-lg bg-background px-3 py-2 text-xs">
@@ -781,7 +781,7 @@ function Side({
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
-        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+        <h2 className="card-title mb-3 flex items-center gap-2">
           <Users size={18} strokeWidth={1.75} className="text-brand" /> Clients they can log against
           {!editingClients && (
             <button
@@ -830,7 +830,7 @@ function Side({
                   setEditingClients(false);
                   onChanged();
                 }}
-                className="rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark"
+                className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark"
               >
                 Save
               </button>
@@ -839,7 +839,7 @@ function Side({
                   setPicked(new Set(f.clientIds));
                   setEditingClients(false);
                 }}
-                className="rounded-md border border-border px-3 py-1 text-xs"
+                className="rounded-lg bg-background px-3 py-1 text-xs text-brand hover:bg-brand-soft"
               >
                 Cancel
               </button>
@@ -852,7 +852,7 @@ function Side({
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
-        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+        <h2 className="card-title mb-3 flex items-center gap-2">
           <Scale size={18} strokeWidth={1.75} className="text-brand" /> Terms
           {!editingTerms && (
             <button
@@ -889,7 +889,7 @@ function Side({
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
-        <h2 className="mb-3 flex items-center gap-2 font-heading text-base">
+        <h2 className="card-title mb-3 flex items-center gap-2">
           <FolderOpen size={18} strokeWidth={1.75} className="text-brand" /> Deliverables &amp; folders
         </h2>
         {f.deliverables.length === 0 ? (

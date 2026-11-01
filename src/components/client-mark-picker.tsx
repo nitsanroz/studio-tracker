@@ -114,7 +114,7 @@ export function ClientMarkPicker({ client }: { client: Client }) {
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
           spellCheck={false}
           placeholder="#0b43ed"
-          className="w-24 rounded-md border border-border bg-surface px-2 py-1 font-mono text-[11px] outline-none focus:border-brand"
+          className="w-24 rounded-lg bg-background px-2 py-1.5 font-mono text-[11px] outline-none ring-brand focus:bg-surface focus:ring-2"
           title="Hex — paste or type, Enter to apply"
         />
         <span className="text-faint">Any hex, or pick from the palette.</span>
@@ -152,7 +152,7 @@ export function ClientMarkPicker({ client }: { client: Client }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <label className="cursor-pointer rounded-md border border-border px-2 py-1 text-muted hover:border-brand hover:text-brand">
+        <label className="cursor-pointer rounded-xl bg-background px-3 py-1.5 font-medium text-brand hover:bg-brand-soft">
           {busy ? "Uploading…" : client.iconUrl ? "Replace image" : "Upload image"}
           <input
             type="file"
@@ -191,7 +191,7 @@ export function ClientMarkModal({ client, onClose }: { client: Client; onClose: 
     <Modal onClose={onClose} width="lg" align="center" labelledBy="client-mark-title">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 id="client-mark-title" className="font-heading text-sm">
+          <h3 id="client-mark-title" className="card-title">
             Client mark
           </h3>
           <p className="bidi-auto truncate text-xs text-muted">{client.name}</p>
@@ -202,7 +202,7 @@ export function ClientMarkModal({ client, onClose }: { client: Client; onClose: 
       <div className="mt-4 flex items-center justify-end border-t border-border pt-3">
         <button
           onClick={onClose}
-          className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         >
           Done
         </button>

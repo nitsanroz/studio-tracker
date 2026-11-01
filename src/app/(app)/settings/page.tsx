@@ -43,7 +43,7 @@ function MyProfile() {
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-1 font-heading">My pictures</h2>
+      <h2 className="card-title mb-1">My pictures</h2>
       <p className="mb-4 text-xs text-muted">
         Your avatar and your studio portrait. Admins can also set these for you.
       </p>
@@ -67,7 +67,7 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-heading">Clients</h2>
+        <h2 className="card-title">Clients</h2>
         <label className="flex items-center gap-1.5 text-xs text-muted">
           <input
             type="checkbox"
@@ -243,7 +243,7 @@ function ClientEmailSettings({
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-1 font-heading">{title}</h2>
+      <h2 className="card-title mb-1">{title}</h2>
       <p className="mb-3 text-xs text-muted">
         {blurb ?? (
           <>
@@ -255,20 +255,20 @@ function ClientEmailSettings({
 
       <div className="flex flex-col gap-3">
         <div>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">Subject</div>
+          <div className="mb-1.5 text-[13px] font-medium text-muted">Subject</div>
           <input
             value={tpl.subject}
             onChange={(e) => setTpl((t) => ({ ...t, subject: e.target.value }))}
-            className="w-full rounded-md border border-border-strong bg-surface px-2 py-1.5 text-sm"
+            className="w-full rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
         </div>
         <div>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">Message</div>
+          <div className="mb-1.5 text-[13px] font-medium text-muted">Message</div>
           <textarea
             value={tpl.body}
             onChange={(e) => setTpl((t) => ({ ...t, body: e.target.value }))}
             rows={9}
-            className="w-full resize-y rounded-md border border-border-strong bg-surface px-2 py-1.5 text-sm leading-relaxed"
+            className="w-full resize-y rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 leading-relaxed"
           />
           <p className="mt-1 text-xs text-faint">
             Leave a blank line between paragraphs. These get filled in:{" "}
@@ -288,7 +288,7 @@ function ClientEmailSettings({
         </div>
 
         <div>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">
+          <div className="mb-1.5 text-[13px] font-medium text-muted">
             Preview — what the client sees
           </div>
           <div className="rounded-lg border border-border bg-background p-3">
@@ -309,13 +309,13 @@ function ClientEmailSettings({
           <button
             onClick={save}
             disabled={!dirty}
-            className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black disabled:opacity-40"
+            className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
           >
             Save
           </button>
           <button
             onClick={() => setTpl(SEEN_EMAIL_DEFAULT)}
-            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-muted hover:border-brand hover:text-brand"
+            className="rounded-xl bg-background px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand-soft"
           >
             Reset to default
           </button>
@@ -370,10 +370,10 @@ function IntakeSettings() {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-3 font-heading">Client intake form</h2>
+      <h2 className="card-title mb-3">Client intake form</h2>
       <div className="flex flex-col gap-4">
         <div>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">
+          <div className="mb-1.5 text-[13px] font-medium text-muted">
             Form link — share with clients
           </div>
           {link ? (
@@ -386,14 +386,14 @@ function IntakeSettings() {
                   navigator.clipboard.writeText(link);
                   setStatus("Link copied ✓");
                 }}
-                className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-brand hover:text-brand"
+                className="shrink-0 rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
               >
                 Copy
               </button>
               <a
                 href={link}
                 target="_blank"
-                className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-brand hover:text-brand"
+                className="shrink-0 rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
               >
                 Open
               </a>
@@ -401,14 +401,14 @@ function IntakeSettings() {
           ) : (
             <button
               onClick={createLink}
-              className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+              className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
             >
               Create form link
             </button>
           )}
         </div>
         <div>
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-faint">
+          <div className="mb-1.5 text-[13px] font-medium text-muted">
             Notify these emails on every submission
           </div>
           <div className="flex gap-2">
@@ -416,11 +416,11 @@ function IntakeSettings() {
               value={emails}
               onChange={(e) => setEmails(e.target.value)}
               placeholder="nitsan@studionmore.com, office@studionmore.com"
-              className="flex-1 rounded-md border border-border-strong px-2 py-1.5 text-sm"
+              className="flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
             />
             <button
               onClick={saveEmails}
-              className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black"
+              className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
             >
               Save
             </button>
@@ -554,7 +554,7 @@ function TaskTypesSection() {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-1 font-heading">Task types</h2>
+      <h2 className="card-title mb-1">Task types</h2>
       <p className="mb-2 text-xs text-muted">
         The kind of work a task is. Each type&apos;s colour is what its bars are drawn in on a
         client&apos;s Timeline.
@@ -586,7 +586,7 @@ function TaskTypesSection() {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           placeholder="New type — e.g. Wireframe…"
-          className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+          className="flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         />
         <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
           Add
@@ -603,7 +603,7 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-1 font-heading">Task statuses</h2>
+      <h2 className="card-title mb-1">Task statuses</h2>
       <p className="mb-2 text-xs text-muted">
         Where a task is in the process — in design, waiting on the client, approved. What KIND of
         work it is lives in Task types above.
@@ -636,7 +636,7 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="New status — e.g. In review…"
-            className="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+            className="flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
           <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
             Add
@@ -674,7 +674,7 @@ function ChangePassword() {
   return (
     // matches the other own-account cards, now that it stands alone on its tab
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-1 font-heading">Change password</h2>
+      <h2 className="card-title mb-1">Change password</h2>
       <p className="mb-4 text-xs text-muted">
         At least 6 characters. You stay signed in on this device.
       </p>
@@ -685,7 +685,7 @@ function ChangePassword() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="New password (min 6 characters)"
           autoComplete="new-password"
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+          className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         />
         <input
           type="password"
@@ -694,15 +694,15 @@ function ChangePassword() {
           onKeyDown={(e) => e.key === "Enter" && save()}
           placeholder="Repeat new password"
           autoComplete="new-password"
-          className={`rounded-md border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand ${
-            confirm && confirm !== password ? "border-danger" : "border-border"
+          className={`rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 ${
+            confirm && confirm !== password ? "ring-2 ring-danger!" : ""
           }`}
         />
         <div className="flex items-center gap-3">
           <button
             disabled={!canSave}
             onClick={save}
-            className="w-fit rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
+            className="w-fit rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
           >
             {busy ? "Saving…" : "Update password"}
           </button>
@@ -718,7 +718,7 @@ function ChangePassword() {
 function MyDetails() {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-1 font-heading">My details</h2>
+      <h2 className="card-title mb-1">My details</h2>
       <p className="mb-4 text-xs text-muted">
         For HR and payroll paperwork. Visible only to you and the studio admins.
       </p>
@@ -852,7 +852,7 @@ function CspReportsSection() {
   const items = store?.items ?? [];
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-card">
-      <h2 className="mb-1 font-heading">Blocked by the security policy</h2>
+      <h2 className="card-title mb-1">Blocked by the security policy</h2>
       <p className="mb-3 text-xs text-muted">
         Anything the browser refused to load — a script, image or connection the policy does not
         allow. This is how a retired third-party CDN or a new embed announces itself instead of just
@@ -937,7 +937,7 @@ function CspReportsSection() {
         <div className="mt-3 flex items-center gap-3">
           <button
             onClick={load}
-            className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold hover:bg-background"
+            className="rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
           >
             Refresh
           </button>
@@ -989,7 +989,19 @@ export default function SettingsPage() {
     <div className="flex max-w-[1500px] flex-col gap-4">
       <h1 className="page-title">Settings</h1>
 
-      <Tabs value={tab} onChange={pickTab} items={tabs} ariaLabel="Settings sections" />
+      {/* ⚠️ WRAPS ON A DESK (2026-11): an admin has nine tabs, and the strip's
+          default sideways scroll hid the last ones with no sign they were there —
+          Pricing was gone at 1024px, Hiring and Leads too on a narrower window
+          (Nitsan: make sure Michal has Intake form, Hiring, Leads, Pricing). The
+          tabs are pills now, so a second row doesn't strand an underline. A
+          phone keeps the scroll. */}
+      <Tabs
+        value={tab}
+        onChange={pickTab}
+        items={tabs}
+        ariaLabel="Settings sections"
+        className="md:flex-wrap md:overflow-visible"
+      />
 
       {/* The hand-split two-column masonry is gone. It was why ChangePassword had
           to be rendered TWICE (once per column, to balance an admin's page), and

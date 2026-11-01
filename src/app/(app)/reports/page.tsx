@@ -577,7 +577,7 @@ export default function ReportsPage() {
         <button
           onClick={exportCSV}
           disabled={enriched.length === 0}
-          className="flex items-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
         >
           <Download size={15} /> Export CSV
         </button>
@@ -601,21 +601,21 @@ export default function ReportsPage() {
               type="date"
               value={range.from}
               onChange={(e) => setCustomRange((r) => ({ ...r, from: e.target.value }))}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+              className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
             />
             <span className="text-muted">→</span>
             <input
               type="date"
               value={range.to}
               onChange={(e) => setCustomRange((r) => ({ ...r, to: e.target.value }))}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+              className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
             />
           </>
         )}
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         >
           <option value="">All clients</option>
           {clients
@@ -630,7 +630,7 @@ export default function ReportsPage() {
         <select
           value={designerFilter}
           onChange={(e) => setDesignerFilter(e.target.value)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         >
           <option value="">All users</option>
           {activeProfiles.map((p) => (
@@ -642,7 +642,7 @@ export default function ReportsPage() {
         <select
           value={billableFilter}
           onChange={(e) => setBillableFilter(e.target.value as typeof billableFilter)}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         >
           <option value="">Billable + non-billable</option>
           <option value="billable">Billable only</option>
@@ -740,7 +740,7 @@ export default function ReportsPage() {
                               return next;
                             })
                           }
-                          className="flex w-full items-center gap-1.5 rounded-md bg-gray-200/80 px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-200"
+                          className="flex w-full items-center gap-1.5 rounded-lg bg-background px-2 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
                         >
                           <CollapseChevron open={!folded} size={12} />
                           <span className="bidi-auto min-w-0 flex-1 truncate text-left">

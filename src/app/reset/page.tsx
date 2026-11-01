@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { AuthButton, AuthFrame, authField, authLabel } from "@/components/auth-frame";
+import { StudioArrow } from "@/components/studio-arrow";
 
 export default function ResetRequestPage() {
   const [email, setEmail] = useState("");
@@ -54,15 +56,13 @@ export default function ResetRequestPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-surface p-8 shadow-sm"
-      >
-        <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
-        <h1 className="text-lg">Reset password</h1>
+    <AuthFrame>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <h1 className="page-title">
+          Reset <span className="font-serif-accent">password</span>
+        </h1>
         {linkFailed && !sent && (
-          <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">
+          <p className="rounded-xl bg-danger/10 p-3 text-sm text-danger">
             That link couldn&apos;t be used — it may have expired or already been opened. Enter your
             email below and we&apos;ll send a fresh one.
           </p>
@@ -79,7 +79,7 @@ export default function ResetRequestPage() {
               First time here, or forgot your password? Enter your studio email and we&apos;ll send
               you a link to set a new one.
             </p>
-            <label className="flex flex-col gap-1 text-sm font-medium">
+            <label className={authLabel}>
               Email
               <input
                 type="email"
@@ -87,22 +87,19 @@ export default function ResetRequestPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-lg border border-border-strong px-3 py-2 outline-none focus:border-brand"
+                className={authField}
               />
             </label>
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button
-              disabled={loading}
-              className="rounded-lg bg-brand py-2.5 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-            >
-              {loading ? "Sending…" : "Send reset link"}
-            </button>
+            <AuthButton busy={loading} busyLabel="Sending…">
+              Send reset link
+            </AuthButton>
           </>
         )}
-        <Link href="/login" className="text-sm text-brand hover:underline">
-          ← Back to sign in
+        <Link href="/login" className="flex w-fit items-center gap-1.5 text-sm text-brand hover:underline">
+          <StudioArrow size={14} className="rotate-180" /> Back to sign in
         </Link>
       </form>
-    </div>
+    </AuthFrame>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordInput } from "@/components/password-input";
+import { AuthButton, AuthFrame, authField, authLabel } from "@/components/auth-frame";
 import { APP_VERSION } from "@/lib/version";
 
 export default function LoginPage() {
@@ -29,14 +30,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-surface p-8 shadow-sm"
-      >
-        <span className="brand-wordmark w-44 bg-brand" aria-label="Studio&more" />
-        <p className="text-sm text-muted">Sign in with your studio account.</p>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+    <AuthFrame footer={APP_VERSION}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <h1 className="page-title">
+            Welcome <span className="font-serif-accent">back</span>
+          </h1>
+          <p className="mt-1 text-base text-muted">Sign in with your studio account.</p>
+        </div>
+        <label className={authLabel}>
           Email
           <input
             type="email"
@@ -44,25 +46,21 @@ export default function LoginPage() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-border-strong px-3 py-2 outline-none focus:border-brand"
+            className={authField}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className={authLabel}>
           Password
           <PasswordInput value={password} onChange={setPassword} />
         </label>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <button
-          disabled={loading}
-          className="rounded-lg bg-brand py-2.5 font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
+        <AuthButton busy={loading} busyLabel="Signing in…">
+          Sign in
+        </AuthButton>
         <a href="/reset" className="text-sm text-brand hover:underline">
           Forgot password? / First time here?
         </a>
-        <p className="text-center text-xs text-muted">{APP_VERSION}</p>
       </form>
-    </div>
+    </AuthFrame>
   );
 }

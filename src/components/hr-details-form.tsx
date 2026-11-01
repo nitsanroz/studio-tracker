@@ -114,7 +114,7 @@ export function HrDetailsForm({
     <div className="flex flex-col gap-5">
       {GROUPS.map((g) => (
         <div key={g.title}>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">{g.title}</h3>
+          <h3 className="mb-2 text-[15px] font-medium">{g.title}</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {g.fields.map((f) => (
               <label key={f.key} className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -135,7 +135,7 @@ export function HrDetailsForm({
         <button
           onClick={save}
           disabled={busy}
-          className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-xl bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
         >
           {busy ? "Saving…" : confirmMode ? "Confirm my details" : "Save changes"}
         </button>

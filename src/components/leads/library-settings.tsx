@@ -89,7 +89,7 @@ export function LibrarySettings() {
   return (
     <div className={CARD}>
       <div className="flex flex-wrap items-baseline gap-3">
-        <h3 className="text-sm font-semibold">Service library &amp; pricing</h3>
+        <h3 className="card-title">Service library &amp; pricing</h3>
         <span className="text-xs text-muted">
           Estimate lines are picked from here. Changing a range affects new lines only — existing estimates keep
           their numbers.
@@ -204,7 +204,7 @@ export function LibrarySettings() {
       <div className="mt-3 flex items-center gap-3">
         <button
           onClick={() => void run(() => addLibraryItem(Math.max(0, ...items.map((i) => i.position)) + 1))}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[12px] text-muted hover:border-brand hover:text-brand"
+          className="flex items-center gap-1.5 rounded-xl bg-background px-3 py-1.5 text-[12px] font-medium text-brand hover:bg-brand-soft"
         >
           <Plus size={13} /> Add an item
         </button>

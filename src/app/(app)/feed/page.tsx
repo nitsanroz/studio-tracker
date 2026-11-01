@@ -335,6 +335,27 @@ function FeedPageContent() {
   }, [view, entrySums, weekFrom, weekTo, weekStart, effectiveMemberFilter, clientFilter, taskClient, profiles]);
 
   const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1} – ${shiftDays(weekStart, 4).getDate()}/${shiftDays(weekStart, 4).getMonth() + 1}`;
+  const todayIso = toISODate(new Date());
+
+  /**
+   * The headline panel's pace (2026-11, design-lab option C): hours so far
+   * against what the person's week should hold by today — their weekly capacity
+   * (40h when none is set) spread evenly over Sun–Thu.
+   *
+   * ⚠️ ONLY FOR ONE PERSON'S WEEK. A member always sees their own; an admin gets
+   * it once "My hours" or a member is picked. Across the whole studio "expected"
+   * would mean summing capacities of people who were on vacation, which is the
+   * Weekly Plan's job, not this panel's — so the studio view shows the total and
+   * the days without a bar.
+   */
+  const pace = useMemo(() => {
+    if (!sheet || !effectiveMemberFilter) return null;
+    const cap = profiles.find((p) => p.id === effectiveMemberFilter)?.capacityHoursWeek ?? 40;
+    const workdays = Array.from({ length: 5 }, (_, i) => toISODate(shiftDays(weekStart, i)));
+    const elapsed = workdays.filter((d) => d <= todayIso).length;
+    if (elapsed === 0) return null; // a week that hasn't started has nothing to be behind on
+    return { weekMinutes: cap * 60, expectedMinutes: (cap * 60 * elapsed) / 5, full: elapsed === 5 };
+  }, [sheet, effectiveMemberFilter, profiles, weekStart, todayIso]);
 
   // full entries for the visible week — powers the hour-cell description tooltips
   const [weekEntries, setWeekEntries] = useState<TimeEntry[]>([]);
@@ -371,10 +392,14 @@ function FeedPageContent() {
     cellTooltips.get(key)?.join("\n") ?? fallback;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
+    // ⚠️ The timesheet takes the app's full width (1500px, 2026-11); the feed
+    // list stays at 1000px, where its long description lines still read.
+    <div className={`mx-auto flex w-full flex-col gap-4 ${view === "timesheet" ? "max-w-[1500px]" : "max-w-[1000px]"}`}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="page-title">Time Feed</h1>
+          <h1 className="page-title">
+            Time <span className="font-serif-accent">feed</span>
+          </h1>
           <p className="text-sm text-muted">
             {view === "feed"
               ? isAdmin
@@ -388,7 +413,7 @@ function FeedPageContent() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setUserPopup({ userId: currentUserId, date: toISODate(new Date()) })}
-            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
+            className="flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
           >
             <Plus size={15} /> Add new hours
           </button>
@@ -606,37 +631,81 @@ function FeedPageContent() {
 
       {view === "timesheet" && sheet && (
         <>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setWeekStart((w) => shiftDays(w, -7))}
-              className="rounded-md border border-border bg-surface p-1.5 text-muted hover:text-foreground"
-              title="Previous week"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span className="min-w-28 text-center text-sm font-medium tabular-nums">{weekLabel}</span>
-            <button
-              onClick={() => setWeekStart((w) => shiftDays(w, 7))}
-              className="rounded-md border border-border bg-surface p-1.5 text-muted hover:text-foreground"
-              title="Next week"
-            >
-              <ChevronRight size={15} />
-            </button>
-            <button
-              onClick={() => setWeekStart(startOfWeek(new Date()))}
-              className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-muted hover:text-foreground"
-            >
-              This week
-            </button>
-            <span className="ml-auto text-sm text-muted">
-              Week total:{" "}
-              <span className="font-semibold text-foreground tabular-nums">
+          {/* The week as a headline (2026-11, design-lab option C): brand blue,
+              the total big in the serif, the pace against the person's week
+              and each day's hours underneath. */}
+          <section className="flex flex-wrap items-center gap-x-10 gap-y-5 rounded-[20px] bg-brand p-5 text-white sm:p-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setWeekStart((w) => shiftDays(w, -7))}
+                  className="flex size-9 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25"
+                  title="Previous week"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="min-w-28 text-center text-sm font-medium tabular-nums">{weekLabel}</span>
+                <button
+                  onClick={() => setWeekStart((w) => shiftDays(w, 7))}
+                  className="flex size-9 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25"
+                  title="Next week"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                {weekFrom !== toISODate(startOfWeek(new Date())) && (
+                  <button
+                    onClick={() => setWeekStart(startOfWeek(new Date()))}
+                    className="h-9 rounded-xl bg-white/15 px-3 text-xs font-medium hover:bg-white/25"
+                  >
+                    This week
+                  </button>
+                )}
+              </div>
+              <p className="mt-4 text-sm text-white/75">
+                {weekFrom === toISODate(startOfWeek(new Date())) ? "This week" : "That week"}
+              </p>
+              <p className="font-serif-accent text-[56px] leading-[60px] tabular-nums sm:text-[72px] sm:leading-[72px]">
                 {formatHoursShort(sheet.weekTotal)}
-              </span>
-            </span>
-          </div>
+              </p>
+            </div>
+            <div className="min-w-0 flex-1 basis-72">
+              {pace && (
+                <>
+                  <div className="flex flex-wrap justify-between gap-2 text-sm text-white/80">
+                    <span className="flex items-center gap-1.5">
+                      <Clock size={15} strokeWidth={1.75} />
+                      {pace.full
+                        ? `${formatHoursShort(sheet.weekTotal)} of ${formatHoursShort(pace.weekMinutes)}`
+                        : `${formatHoursShort(sheet.weekTotal)} of ${formatHoursShort(pace.expectedMinutes)} expected by today`}
+                    </span>
+                    <span>{formatHoursShort(pace.weekMinutes)} week</span>
+                  </div>
+                  <span className="mt-2 block h-2 overflow-hidden rounded-full bg-white/20">
+                    <span
+                      className="block h-full rounded-full bg-white"
+                      style={{ width: `${Math.min(100, (sheet.weekTotal / pace.weekMinutes) * 100)}%` }}
+                    />
+                  </span>
+                </>
+              )}
+              <div
+                className={`grid gap-2 text-center text-xs text-white/75 ${pace ? "mt-3" : ""}`}
+                style={{ gridTemplateColumns: `repeat(${sheet.days.length}, minmax(0, 1fr))` }}
+              >
+                {sheet.days.map((d, i) => {
+                  const day = new Date(d);
+                  return (
+                    <span key={d} className={d === todayIso ? "font-medium text-white" : ""}>
+                      {DAY_NAMES[day.getDay()].slice(0, 3)} {day.getDate()} ·{" "}
+                      {sheet.dayTotals[i] > 0 ? formatHoursShort(sheet.dayTotals[i]) : "–"}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
-          <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-card">
+          <div className="overflow-x-auto rounded-[20px] bg-surface shadow-card">
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-background text-xs font-medium uppercase tracking-wide text-faint">
@@ -648,11 +717,11 @@ function FeedPageContent() {
                   </th>
                   {sheet.days.map((d) => {
                     const day = new Date(d);
-                    const isToday = d === toISODate(new Date());
+                    const isToday = d === todayIso;
                     return (
                       <th
                         key={d}
-                        className={`w-20 p-2 text-right ${isToday ? "text-brand" : ""}`}
+                        className={`w-20 p-2 text-right ${isToday ? "bg-brand text-white" : ""}`}
                         title={`Hours logged for ${formatFeedDate(d)}${isToday ? " (today)" : ""}`}
                       >
                         {DAY_NAMES[day.getDay()].slice(0, 3)} {day.getDate()}
@@ -710,7 +779,7 @@ function FeedPageContent() {
                               }}
                               className={`cursor-pointer p-2 text-right tabular-nums hover:bg-brand-soft/60 ${
                                 minutes > 0 ? "font-medium" : "text-faint"
-                              }`}
+                              } ${d === todayIso ? "bg-brand-soft/40" : ""}`}
                               title={
                                 minutes > 0
                                   ? cellTitle(`${userId}|${d}`, "Click for that day's entries")
@@ -768,7 +837,7 @@ function FeedPageContent() {
                                         m > 0
                                           ? "cursor-pointer hover:bg-brand-soft/60"
                                           : "text-faint"
-                                      }`}
+                                      } ${d === todayIso ? "bg-brand-soft/40" : ""}`}
                                       title={
                                         m > 0
                                           ? cellTitle(

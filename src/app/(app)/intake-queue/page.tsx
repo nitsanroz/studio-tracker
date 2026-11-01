@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ExternalLink, Link2, MailCheck, Paperclip, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Inbox, Link2, MailCheck, Paperclip, Trash2, X } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useData, useIsAdmin, type TaskRequest } from "@/lib/store";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { formatDate } from "@/lib/format";
@@ -22,7 +23,7 @@ import { ClientChip } from "@/components/ui";
  * the client-facing form and `QUIET_FIELD` in the task pane.
  */
 const CARD_CONTROL =
-  "min-h-11 rounded-md border border-border bg-surface px-2 py-1.5 text-sm sm:min-h-0";
+  "min-h-11 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 sm:min-h-0";
 
 /** "14:20" — the receipt's timestamp, on the day it matters most. */
 function timeOf(iso: string): string {
@@ -78,7 +79,7 @@ function AddedItem({
           type="button"
           disabled={already}
           onClick={onAdd}
-          className="min-h-9 shrink-0 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand disabled:opacity-40"
+          className="min-h-9 shrink-0 rounded-xl bg-background px-3 text-sm font-medium text-brand hover:bg-brand-soft disabled:opacity-40"
         >
           {already ? "On the task" : "Add to the task"}
         </button>
@@ -141,13 +142,13 @@ function WhatChanged({ request }: { request: TaskRequest }) {
   return (
     <div className="mt-3 rounded-xl border-2 border-brand/40 bg-brand/5 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="font-heading text-sm">
+        <h4 className="text-[15px] font-medium">
           The client changed this{request.editedAt ? ` on ${formatDate(request.editedAt.slice(0, 10))}` : ""}
         </h4>
         <button
           type="button"
           onClick={() => markRevisionReviewed(request.id)}
-          className="min-h-9 rounded-lg border border-border-strong bg-surface px-3 text-sm hover:border-brand"
+          className="min-h-9 rounded-xl bg-background px-3 text-sm font-medium text-brand hover:bg-brand-soft"
         >
           I&apos;ve read it
         </button>
@@ -171,7 +172,7 @@ function WhatChanged({ request }: { request: TaskRequest }) {
       {diff.fields.map((f) => (
         <div key={f.key} className="mt-3 border-t border-brand/20 pt-3 first:border-0">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">{f.label}</span>
+            <span className="text-[13px] font-medium text-muted">{f.label}</span>
             <button
               type="button"
               onClick={() => copy(f.now, f.key)}
@@ -191,7 +192,7 @@ function WhatChanged({ request }: { request: TaskRequest }) {
 
       {diff.deliverablesChanged && (
         <div className="mt-3 border-t border-brand/20 pt-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Deliverables</span>
+          <span className="text-[13px] font-medium text-muted">Deliverables</span>
           {diff.deliverablesWas.map((l, i) => (
             <p key={`w${i}`} className="bidi-auto mt-1 text-sm text-muted line-through decoration-danger/40">
               {l}
@@ -207,7 +208,7 @@ function WhatChanged({ request }: { request: TaskRequest }) {
 
       {(diff.addedFiles.length > 0 || diff.removedFiles.length > 0) && (
         <div className="mt-3 border-t border-brand/20 pt-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Files</span>
+          <span className="text-[13px] font-medium text-muted">Files</span>
           {diff.addedFiles.map((f) => (
             <AddedItem
               key={f.url}
@@ -225,7 +226,7 @@ function WhatChanged({ request }: { request: TaskRequest }) {
 
       {(diff.addedLinks.length > 0 || diff.removedLinks.length > 0) && (
         <div className="mt-3 border-t border-brand/20 pt-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Links</span>
+          <span className="text-[13px] font-medium text-muted">Links</span>
           {diff.addedLinks.map((l) => (
             <AddedItem
               key={l.url}
@@ -737,7 +738,7 @@ function ReviewCard({
               setBusy(false);
             }
           }}
-          className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40 sm:min-h-0 sm:py-1.5"
+          className="min-h-11 rounded-xl bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40 sm:min-h-0 sm:py-1.5"
         >
           {busy ? "Approving…" : "Approve → create task"}
         </button>
@@ -854,7 +855,7 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
       )}
 
       <div>
-        <span className="mb-1 block text-xs uppercase tracking-wide text-faint">
+        <span className="mb-1 block text-[13px] font-medium text-muted">
           As it arrived
         </span>
         {/* Plain pre-wrap, deliberately: this is a record, not something to
@@ -869,7 +870,7 @@ function SubmissionPane({ request, onClose }: { request: TaskRequest; onClose: (
           clickable href, exactly as the studio's own link editor does. */}
       {(submission?.files.length || submission?.links.length) ? (
         <div className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wide text-faint">Attached</span>
+          <span className="text-[13px] font-medium text-muted">Attached</span>
           {submission.files.map((f, i) => (
             <SafeLink key={`f${i}`} url={f.url} label={f.name} icon="file" />
           ))}
@@ -941,7 +942,9 @@ export default function IntakeQueuePage() {
           {/* text-xl on a phone: at 2xl "Intake Queue" needs ~200px and the
               button ~150px, which is 7px more than a 375px screen has — so the
               title wrapped mid-name. One step down and both fit on the line. */}
-          <h1 className="page-title">Intake Queue</h1>
+          <h1 className="page-title">
+            Intake <span className="font-serif-accent">queue</span>
+          </h1>
           <p className="text-sm text-muted">
             {pending.length === 0
               ? "No submissions waiting — all clear."
@@ -956,9 +959,15 @@ export default function IntakeQueuePage() {
       </div>
 
       {clients.length > 0 && pending.length === 0 && !showHandled && (
-        <div className="rounded-xl border border-dashed border-border-strong p-8 text-center text-sm text-faint">
-          New client submissions will appear here for review before becoming tasks.
-        </div>
+        // The refresh's EmptyState (2026-11; this was still the pre-refresh
+        // dashed box). `success`: nothing waiting is good news here.
+        <section className="rounded-2xl border border-border bg-surface shadow-card">
+          <EmptyState
+            icon={Inbox}
+            tone="success"
+            text="New client briefs will appear here for review before they become tasks."
+          />
+        </section>
       )}
 
       {/* ⚠️ Sits with the LIST, not up in the page header. It changes what the

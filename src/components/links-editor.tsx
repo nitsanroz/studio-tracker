@@ -273,7 +273,7 @@ function LinkForm({
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="Title — e.g. Client branding questionnaire"
-        className="bidi-auto w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+        className="bidi-auto w-full rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
       />
       <input
         value={url}
@@ -284,13 +284,13 @@ function LinkForm({
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="https://docs.google.com/…"
         dir="ltr"
-        className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+        className="w-full rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex items-center gap-2">
         <button
           onClick={() => submit()}
-          className="rounded-md bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark"
+          className="rounded-lg bg-brand px-3 py-1 text-xs font-medium text-white hover:bg-brand-dark"
         >
           {submitLabel}
         </button>

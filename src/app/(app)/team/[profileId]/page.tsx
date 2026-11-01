@@ -56,7 +56,7 @@ function NotesField({ profileId }: { profileId: string }) {
         onChange={(e) => setValue(e.target.value)}
         rows={3}
         placeholder="Contract details, reviews, reminders…"
-        className="bidi-auto w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-brand"
+        className="bidi-auto w-full resize-y rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
       />
       {dirty && (
         <button
@@ -135,7 +135,7 @@ function HrFields({ profileId }: { profileId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-faint">
+      <h3 className="text-[15px] font-medium">
         Personal details (admins only){age != null && <span className="ml-2 normal-case">· age {age}</span>}
       </h3>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -150,7 +150,7 @@ function HrFields({ profileId }: { profileId: string }) {
               defaultValue={row[key] == null ? "" : String(row[key])}
               onBlur={(e) => saveField(key, e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              className="bidi-auto rounded-md border border-border bg-surface px-2 py-1.5 text-sm font-normal text-foreground outline-none focus:border-brand"
+              className="bidi-auto rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 font-normal text-foreground"
             />
           </label>
         ))}
@@ -183,7 +183,7 @@ function OpenTasksPane({ profileId }: { profileId: string }) {
 
   return (
     <div className="flex flex-col rounded-xl border border-border bg-surface p-4">
-      <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
+      <h2 className="card-title">
         Open tasks ({open.length})
       </h2>
       <p className="mb-2 text-[11px] text-faint">open now — not scoped to a period</p>
@@ -223,9 +223,9 @@ function OpenTasksPane({ profileId }: { profileId: string }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-3">
-      <div className="text-[11px] font-medium text-muted">{label}</div>
-      <div className="mt-0.5 text-xl font-semibold tabular-nums">{value}</div>
+    <div className="rounded-2xl bg-surface p-4 shadow-card">
+      <div className="text-xs text-muted">{label}</div>
+      <div className="mt-1 font-serif-accent text-[28px] leading-8 tabular-nums">{value}</div>
     </div>
   );
 }
@@ -388,7 +388,11 @@ export default function MemberPage({
         <PictureEditBadge profile={profile} kind="avatar" size={56} />
         <PictureEditBadge profile={profile} kind="photo" size={56} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl">{profile.name}</h1>
+          {/* The serif is for NAMES (2026-10 refresh), so a person's page heads
+              with theirs at the page-title size. */}
+          <h1 className="page-title truncate">
+            <span className="font-serif-accent">{profile.name}</span>
+          </h1>
           <p className="text-sm capitalize text-muted">
             {profile.role}
             {email ? <span className="normal-case"> · {email}</span> : null}
@@ -397,7 +401,7 @@ export default function MemberPage({
         <select
           value={profile.role}
           onChange={(e) => updateProfile(profile.id, { role: e.target.value as Role })}
-          className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
         >
           <option value="designer">designer</option>
           <option value="admin">admin</option>
@@ -457,7 +461,7 @@ export default function MemberPage({
         </div>
 
         <div className="flex h-full flex-col rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">
+          <h2 className="card-title mb-3">
             Hours per month
           </h2>
           {/* MultiLineChart, not LineChart: with 12 buckets LineChart labels no
@@ -475,7 +479,7 @@ export default function MemberPage({
 
       <div className={tab === "overview" ? "" : "hidden"}>
         <div className="flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-4">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
+          <h2 className="card-title">
             Most active clients
           </h2>
           {topClients.map(({ client, minutes }) => (
@@ -501,7 +505,7 @@ export default function MemberPage({
           pulls national IDs and home addresses into the browser. */}
       {hrMounted && (
       <div className={`flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 ${tab === "hr" ? "" : "hidden"}`}>
-        <h2 className="text-xs font-medium uppercase tracking-wide text-faint">HR details</h2>
+        <h2 className="card-title">HR details</h2>
         <div className="grid grid-cols-2 gap-2 sm:max-w-md">
           <label className="flex flex-col gap-1 text-xs font-medium text-muted">
             Start date
@@ -509,7 +513,7 @@ export default function MemberPage({
               type="date"
               value={profile.startDate ?? ""}
               onChange={(e) => updateProfile(profile.id, { startDate: e.target.value || null })}
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+              className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-muted">
@@ -520,7 +524,7 @@ export default function MemberPage({
               min={profile.startDate ?? undefined}
               onChange={(e) => updateProfile(profile.id, { endDate: e.target.value || null })}
               title="Last day in the studio. Setting it archives them; clearing it does not bring them back — use Restore for that."
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+              className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
             />
             {profile.endDate && (
               <span className="text-[11px] font-normal text-faint">archived by this date</span>
@@ -540,7 +544,7 @@ export default function MemberPage({
                 })
               }
               placeholder="40"
-              className="rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+              className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
             />
           </label>
         </div>

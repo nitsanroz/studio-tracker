@@ -32,7 +32,7 @@ export function ClientInfoModal({ client, onClose }: { client: Client; onClose: 
         <div className="flex min-w-0 items-center gap-2.5">
           <ClientAvatar client={client} size={28} />
           <div className="min-w-0">
-            <h3 id="client-info-title" className="font-heading text-sm">
+            <h3 id="client-info-title" className="card-title">
               Edit client
             </h3>
             <p className="bidi-auto truncate text-xs text-muted">{client.name}</p>
@@ -58,7 +58,7 @@ export function ClientInfoModal({ client, onClose }: { client: Client; onClose: 
               if (v && v !== client.name) updateClient(client.id, { name: v });
               else setName(client.name);
             }}
-            className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 outline-none focus:border-brand"
+            className="bidi-auto min-w-0 flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
         </label>
         <label className="flex items-center gap-3 text-sm">
@@ -71,7 +71,7 @@ export function ClientInfoModal({ client, onClose }: { client: Client; onClose: 
                 updateClient(client.id, { billingPeriodNote: billing });
             }}
             placeholder="e.g. Monthly retainer, 40h"
-            className="bidi-auto min-w-0 flex-1 rounded-md border border-border bg-surface px-2 py-1.5 outline-none focus:border-brand"
+            className="bidi-auto min-w-0 flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
           />
         </label>
         <div className="flex items-center gap-3 text-sm">
@@ -103,7 +103,7 @@ export function ClientInfoModal({ client, onClose }: { client: Client; onClose: 
       <div className="mt-4 flex items-center justify-end border-t border-border pt-3">
         <button
           onClick={onClose}
-          className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
         >
           Done
         </button>

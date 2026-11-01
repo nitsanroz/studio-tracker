@@ -1,7 +1,26 @@
 "use client";
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Link2, Paperclip, Plus, X } from "lucide-react";
+import {
+  ChartColumn,
+  Check,
+  FileText,
+  Link2,
+  MessageSquare,
+  Monitor,
+  Paperclip,
+  Plus,
+  Presentation,
+  Puzzle,
+  Shirt,
+  Sparkles,
+  Tent,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
+import { AmpLoader } from "@/components/amp-loader";
+import { SkeletonCard } from "@/components/skeleton";
 import { normalizeUrl } from "@/lib/links";
 import {
   MAX_INTAKE_FILES,
@@ -26,8 +45,32 @@ import {
 // ⚠️ `text-base`, not `text-sm`. This is a form filled by people outside the
 // studio, often on a phone — and iOS Safari ZOOMS the whole page when a focused
 // input's text is under 16px, which throws the layout around mid-answer.
+//
+// The 2026-11 look (design-lab round 7, direction A): a field is a Light White
+// well with no outline, the refresh's quiet surface, and turns white with a
+// brand ring when it has focus. ⚠️ This page is OUTSIDE `.app-canvas`, so none
+// of the refresh's global rules reach it — every value here is set by hand.
 const inputCls =
-  "w-full rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-base outline-none focus:border-brand bidi-auto";
+  "w-full rounded-xl bg-[var(--light-white)] px-4 py-3 text-base outline-none ring-brand placeholder:text-faint focus:bg-surface focus:ring-2 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger bidi-auto";
+/** The same field sitting INSIDE a well (an open deliverable), so it stays visible. */
+const inputOnWellCls = inputCls.replace("bg-[var(--light-white)]", "bg-surface");
+
+/**
+ * The kinds drawn in the app's own icon set. ⚠️ `WorkKind.icon` (the emoji) stays
+ * in the data — the studio-side brief still uses it — and this map only decides
+ * what the CLIENT sees here; an unknown id falls back to the puzzle piece.
+ */
+const KIND_ICON: Record<string, LucideIcon> = {
+  social: MessageSquare,
+  website: Monitor,
+  event: Tent,
+  presentation: Presentation,
+  document: FileText,
+  graphics: ChartColumn,
+  swag: Shirt,
+  logo: Sparkles,
+  other: Puzzle,
+};
 
 /**
  * What this browser filled in last time — name, email, company only.
@@ -166,7 +209,7 @@ function Question({
       {/* An explicit htmlFor rather than a wrapping label: a wrapping label
           around a <select> swallows clicks on some browsers, and the error
           message needs an id to point at anyway. */}
-      <label htmlFor={id} className="text-base font-medium">
+      <label htmlFor={id} className="mb-0.5 text-[15px] font-medium">
         {field.label}
         {field.required && (
           <span className="text-danger" aria-hidden="true">
@@ -237,30 +280,27 @@ function KindPicker({
     onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (
     <fieldset aria-describedby={invalid ? "kind-err" : undefined}>
-      <legend className="text-base font-medium">
+      <legend className="text-[15px] font-medium">
         What kind of work is this?
         <span className="text-danger" aria-hidden="true">
           {" "}
           *
         </span>
       </legend>
-      <p className="mb-2.5 text-sm text-muted">Pick as many as apply.</p>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <p className="mb-3 text-sm text-muted">Pick as many as apply.</p>
+      <div className="grid gap-2.5 sm:grid-cols-2">
         {WORK_KINDS.map((k) => {
           const on = value.includes(k.id);
+          const Icon = KIND_ICON[k.id] ?? Puzzle;
           return (
             <label
               key={k.id}
-              className={`flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-3 ${
-                // ⚠️ Both states sit on `bg-surface` — white — rather than
-                // letting the page's tinted background show through. That is
-                // also what finally fixed the hint's legibility: at `bg-brand/10`
-                // over the page tint it measured exactly 4.5:1, the AA floor,
-                // and read as muddy. The selected state is carried by the brand
-                // border and the tick, so its fill only has to be a whisper.
-                on
-                  ? "border-brand bg-surface ring-1 ring-brand"
-                  : "border-border-strong bg-surface hover:border-brand"
+              // ⚠️ THE CHECKBOX IS STILL THE NATIVE ONE, only visually hidden
+              // (`sr-only`), so a keyboard and a screen reader get exactly what
+              // they got before. The tile shows its state; `has-[:focus-visible]`
+              // puts the focus ring back on the tile, where the eye is.
+              className={`relative flex cursor-pointer items-start gap-3 rounded-2xl p-4 transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand has-[:focus-visible]:ring-offset-2 ${
+                on ? "bg-brand-soft ring-2 ring-brand" : "bg-[var(--light-white)] hover:shadow-card"
               }`}
             >
               <input
@@ -269,18 +309,31 @@ function KindPicker({
                 value={k.id}
                 checked={on}
                 onChange={() => toggle(k.id)}
-                className="mt-1 shrink-0"
+                className="sr-only"
               />
-              <span aria-hidden="true" className="text-lg leading-none">
-                {k.icon}
+              <span
+                aria-hidden="true"
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                  on ? "bg-brand text-white" : "bg-surface text-brand"
+                }`}
+              >
+                <Icon size={18} strokeWidth={2} />
               </span>
-              <span className="min-w-0">
-                <span className="block text-base font-medium">{k.label}</span>
+              <span className="min-w-0 pr-5">
+                <span className="block text-[15px] font-medium leading-snug">{k.label}</span>
                 {/* ⚠️ `text-muted`, not `text-faint`. The faint token is tuned
                     for the app's plain surfaces and disappears against the
-                    tinted card of a selected option. */}
-                <span className="block text-sm text-muted">{k.hint}</span>
+                    tinted tile of a selected option. */}
+                <span className="mt-0.5 block text-sm leading-snug text-muted">{k.hint}</span>
               </span>
+              {on && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-brand text-white"
+                >
+                  <Check size={12} strokeWidth={3} />
+                </span>
+              )}
             </label>
           );
         })}
@@ -313,7 +366,7 @@ function BlockHeader({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <span className="block text-base font-medium">{title}</span>
+        <span className="block text-[15px] font-medium">{title}</span>
         {hint && <span className="mt-0.5 block text-sm text-muted">{hint}</span>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -322,7 +375,7 @@ function BlockHeader({
 }
 
 const addBtnCls =
-  "flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border-strong px-3 text-base text-muted hover:border-brand hover:text-brand sm:min-h-0 sm:py-2";
+  "flex min-h-11 w-fit items-center gap-1.5 rounded-xl bg-[var(--light-white)] px-3.5 text-base text-brand hover:bg-brand-soft sm:min-h-0 sm:py-2";
 
 /* ───────────────────────────── the deliverables ─────────────────────────── */
 
@@ -388,7 +441,7 @@ function DeliverableRows({
           return (
             <div
               key={d.id}
-              className="flex items-start gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
+              className="flex items-start gap-3 rounded-xl bg-[var(--light-white)] px-4 py-3"
             >
               <Check size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" />
               <div className="min-w-0 flex-1">
@@ -405,7 +458,7 @@ function DeliverableRows({
               <button
                 type="button"
                 onClick={() => setOpen((o) => [...o, d.id])}
-                className="shrink-0 text-sm text-brand underline"
+                className="shrink-0 text-sm text-brand hover:underline"
               >
                 Edit
               </button>
@@ -422,14 +475,14 @@ function DeliverableRows({
         }
 
         return (
-          <div key={d.id} className="flex items-start gap-2 rounded-lg border border-border-strong p-2">
+          <div key={d.id} className="flex items-start gap-2 rounded-2xl bg-[var(--light-white)] p-3">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <input
                 value={d.name}
                 onChange={(e) => set(d.id, { name: e.target.value })}
                 placeholder="Name — e.g. Roll-up 1"
                 aria-label={`Deliverable ${i + 1} name`}
-                className={inputCls}
+                className={inputOnWellCls}
                 maxLength={80}
               />
               {/* ⚠️ Its own size and format. A real set varies — the Partner
@@ -443,7 +496,7 @@ function DeliverableRows({
                   onChange={(e) => set(d.id, { dimensions: e.target.value })}
                   placeholder="Its size, if different"
                   aria-label={`Deliverable ${i + 1} dimensions`}
-                  className={`${inputCls} sm:flex-1`}
+                  className={`${inputOnWellCls} sm:flex-1`}
                   maxLength={120}
                 />
                 <input
@@ -451,7 +504,7 @@ function DeliverableRows({
                   onChange={(e) => set(d.id, { format: e.target.value })}
                   placeholder="Its format, if different"
                   aria-label={`Deliverable ${i + 1} format`}
-                  className={`${inputCls} sm:flex-1`}
+                  className={`${inputOnWellCls} sm:flex-1`}
                   maxLength={120}
                 />
               </div>
@@ -461,13 +514,13 @@ function DeliverableRows({
                 placeholder="What’s on it?"
                 aria-label={`Deliverable ${i + 1} details`}
                 rows={2}
-                className={inputCls}
+                className={inputOnWellCls}
               />
               <button
                 type="button"
                 onClick={() => setOpen((o) => o.filter((x) => x !== d.id))}
                 disabled={empty}
-                className="min-h-11 w-fit rounded-lg border border-brand px-4 text-base text-brand hover:bg-brand/5 disabled:opacity-40 sm:min-h-0 sm:py-2"
+                className="min-h-11 w-fit rounded-xl bg-brand-soft px-4 text-base text-brand hover:bg-brand hover:text-white disabled:opacity-40 sm:min-h-0 sm:py-2"
               >
                 Done
               </button>
@@ -711,7 +764,7 @@ function FileRows({
       {files.map((a) => (
         <div
           key={a.key}
-          className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 py-2"
+          className="flex items-center gap-2 rounded-xl bg-[var(--light-white)] px-4 py-2"
         >
           <Paperclip size={14} className="shrink-0 text-faint" />
           <span className="bidi-auto min-w-0 flex-1 truncate text-base">{a.name}</span>
@@ -873,22 +926,22 @@ function Review({
         Here&apos;s what we&apos;ll receive. Anything you skipped simply isn&apos;t shown — you can
         still send it as it is.
       </p>
-      <dl className="divide-y divide-border rounded-lg border border-border">
+      <dl className="divide-y divide-surface overflow-hidden rounded-2xl bg-[var(--light-white)]">
         {rows.map((r, i) => (
-          <div key={i} className="flex items-start gap-3 px-3 py-2.5">
+          <div key={i} className="flex items-start gap-3 px-4 py-3">
             <dt className="w-36 shrink-0 text-sm text-muted">{r.label}</dt>
             <dd className="bidi-auto min-w-0 flex-1 whitespace-pre-wrap text-base">{r.value}</dd>
             <button
               type="button"
               onClick={() => onEdit(r.step)}
-              className="shrink-0 text-sm text-brand underline"
+              className="shrink-0 text-sm text-brand hover:underline"
             >
               Edit
             </button>
           </div>
         ))}
         {named.map((d, i) => (
-          <div key={`d${i}`} className="flex items-start gap-3 px-3 py-2.5">
+          <div key={`d${i}`} className="flex items-start gap-3 px-4 py-3">
             <dt className="w-36 shrink-0 text-sm text-muted">
               {i === 0 ? "Deliverables" : ""}
             </dt>
@@ -906,14 +959,14 @@ function Review({
             <button
               type="button"
               onClick={() => onEdit(contentStep)}
-              className="shrink-0 text-sm text-brand underline"
+              className="shrink-0 text-sm text-brand hover:underline"
             >
               Edit
             </button>
           </div>
         ))}
         {(realLinks.length > 0 || files.length > 0) && (
-          <div className="flex items-start gap-3 px-3 py-2.5">
+          <div className="flex items-start gap-3 px-4 py-3">
             <dt className="w-36 shrink-0 text-sm text-muted">Attached</dt>
             <dd className="min-w-0 flex-1 text-base">
               {realLinks.map((l, i) => (
@@ -940,13 +993,38 @@ function Review({
             <button
               type="button"
               onClick={() => onEdit(contentStep)}
-              className="shrink-0 text-sm text-brand underline"
+              className="shrink-0 text-sm text-brand hover:underline"
             >
               Edit
             </button>
           </div>
         )}
       </dl>
+    </div>
+  );
+}
+
+/* ──────────────────────────────── the frame ─────────────────────────────── */
+
+/** Every screen of the form shares this column (880px: six named steps fit one line). */
+const PAGE = "mx-auto w-full max-w-[880px] px-5 py-8 sm:py-10";
+/** The refresh's card — 20px radius, no outline, the soft shadow. */
+const CARD = "rounded-[20px] bg-surface p-5 shadow-card sm:p-8";
+const PRIMARY_BTN =
+  "flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-base font-medium text-white hover:bg-brand-dark disabled:opacity-50 sm:flex-none";
+const SOFT_BTN =
+  "min-h-11 rounded-xl bg-[var(--light-white)] px-4 text-base hover:bg-brand-soft hover:text-brand";
+
+/**
+ * The studio's mark, top right on every screen. It identifies the sender; the
+ * form's own title is what the client came to read, so it stays small.
+ * ⚠️ `.brand-ampmore` is a CSS mask of the real artwork (`globals.css`) — the
+ * earlier version typed "&more" in bold Saans, which is not the logo.
+ */
+function BriefHeader() {
+  return (
+    <div className="mb-8 flex justify-end">
+      <span className="brand-ampmore h-6 bg-brand" role="img" aria-label="Studio&more" />
     </div>
   );
 }
@@ -1272,12 +1350,20 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
 
   if (state === "loading") {
-    return <div className="flex min-h-screen items-center justify-center text-muted">Loading…</div>;
+    return (
+      <div className={PAGE}>
+        <BriefHeader />
+        <SkeletonCard rows={4} className="mt-24" />
+      </div>
+    );
   }
   if (state === "invalid") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted">This link is no longer active — please contact the studio.</p>
+      <div className={PAGE}>
+        <BriefHeader />
+        <section className={`${CARD} mt-24 text-center`}>
+          <p className="text-base text-muted">This link is no longer active — please contact the studio.</p>
+        </section>
       </div>
     );
   }
@@ -1291,12 +1377,17 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
    */
   if (state === "choose") {
     return (
-      <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
-        <div className="mb-6 flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl">Welcome back{values.name ? `, ${values.name.split(" ")[0]}` : ""}</h1>
-          <span className="brand-wordmark h-5 w-20 bg-brand" aria-label="Studio&more" />
-        </div>
-        <p className="text-base text-muted">
+      <div className={PAGE}>
+        <BriefHeader />
+        <h1 className="page-title bidi-auto">
+          Welcome back
+          {values.name && (
+            <>
+              , <span className="font-serif-accent">{values.name.split(" ")[0]}</span>
+            </>
+          )}
+        </h1>
+        <p className="mt-2 text-base text-muted">
           You&apos;ve sent {sent.length === 1 ? "a brief" : `${sent.length} briefs`} from this
           device. Start something new, or pick one up.
         </p>
@@ -1314,17 +1405,18 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             setState("form");
             go(1);
           }}
-          className="mt-6 flex min-h-14 w-full items-center gap-3 rounded-xl bg-brand px-5 text-base font-semibold text-white hover:bg-brand-dark"
+          className="mt-6 flex min-h-14 w-full items-center gap-3 rounded-2xl bg-brand px-5 text-base font-medium text-white shadow-card hover:bg-brand-dark"
         >
           <Plus size={18} />
           Start a new brief
+          <StudioArrow size={18} className="ml-auto" />
         </button>
 
         <ul className="mt-6 flex flex-col gap-2">
           {sent.map((b) => (
             <li
               key={b.id}
-              className="rounded-xl border border-border-strong bg-surface p-4 sm:flex sm:items-center sm:gap-3"
+              className="rounded-2xl bg-surface p-4 shadow-card sm:flex sm:items-center sm:gap-3 sm:px-5"
             >
               <div className="min-w-0 flex-1">
                 <p className="bidi-auto truncate text-base font-medium">{b.title || "Untitled brief"}</p>
@@ -1339,7 +1431,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
                 <button
                   type="button"
                   onClick={() => reuse(b, false)}
-                  className="min-h-11 flex-1 rounded-lg border border-border-strong px-4 text-base hover:border-brand sm:flex-none"
+                  className={`${SOFT_BTN} flex-1 sm:flex-none`}
                 >
                   Duplicate
                 </button>
@@ -1352,7 +1444,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
                 <button
                   type="button"
                   onClick={() => reuse(b, true)}
-                  className="min-h-11 flex-1 rounded-lg border border-border-strong px-4 text-base hover:border-brand sm:flex-none"
+                  className={`${SOFT_BTN} flex-1 sm:flex-none`}
                 >
                   Edit
                 </button>
@@ -1364,7 +1456,7 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
         <button
           type="button"
           onClick={() => setState("form")}
-          className="mt-6 text-base text-brand underline"
+          className="mt-6 text-base text-brand hover:underline"
         >
           Back to my details
         </button>
@@ -1373,43 +1465,53 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
   }
 
   if (state === "done") {
+    const firstName = (values.name ?? "").trim().split(" ")[0];
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
-        <div className="text-center">
-          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand/10 text-brand">
-            <Check size={24} />
-          </div>
-          <h1 className="mt-4 text-2xl">Thank you! 🎉</h1>
-          <p className="mt-1 text-base text-muted">
-            Your brief is with the studio. We&apos;ll be in touch shortly.
-          </p>
-          {/* A returning client is told the door is still open — this is the one
-              screen where they learn the form remembers them at all. */}
-          {sent.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setValues((prev) => ({ ...prev }));
-                setState("choose");
-              }}
-              className="mt-4 text-base text-brand underline"
-            >
-              Send another, or change one you&apos;ve sent
-            </button>
+      // The whole screen in brand blue with the animated ampersand (2026-11,
+      // design-lab direction C's ending on A's form): the one moment the form
+      // can afford to be the studio rather than a form. ⚠️ `AmpLoader` is WHITE,
+      // which is why it only ever sits on brand blue.
+      <div className="flex min-h-screen flex-col items-center justify-center bg-brand px-5 py-12 text-center text-white">
+        <AmpLoader size={160} />
+        <h1 className="bidi-auto mt-6 text-[32px] font-medium leading-[40px] tracking-[-0.025em] sm:text-[40px] sm:leading-[48px]">
+          Thank you
+          {firstName && (
+            <>
+              , <span className="font-serif-accent">{firstName}</span>
+            </>
           )}
-        </div>
+        </h1>
+        <p className="mt-2 max-w-md text-base text-white/80">
+          Your brief is with the studio. We&apos;ll be in touch shortly.
+        </p>
+        {/* A returning client is told the door is still open — this is the one
+            screen where they learn the form remembers them at all. */}
+        {sent.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setValues((prev) => ({ ...prev }));
+              setState("choose");
+            }}
+            className="mt-8 flex min-h-12 items-center gap-2 rounded-xl bg-white px-6 text-base font-medium text-brand hover:bg-brand-soft"
+          >
+            Send another, or change one you&apos;ve sent
+            <StudioArrow size={18} />
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
+    <div className={PAGE}>
+      <BriefHeader />
       {/* ⚠️ Editing has to be VISIBLE for the whole form, not just on the button
           at the end: everything on screen is a brief the studio is already
           holding, and a client who thinks they are writing a new one would send
           their next job as a revision of the last. */}
       {editing && (
-        <div className="mb-5 rounded-xl border border-brand/40 bg-brand/5 px-4 py-3 text-base">
+        <div className="mb-6 rounded-2xl bg-brand-soft px-5 py-4 text-base">
           {editing.started ? (
             // ⚠️ Honest about what a late change can and cannot do. The studio may
             // already have drawn something, so promising "sending will replace it"
@@ -1430,31 +1532,23 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           </button>
         </div>
       )}
-      {/* The mark alone, as TEXT — exactly how the app's own sidebar draws it
-          when folded (`app-shell.tsx`), so there is one definition of the mark
-          rather than a second copy in SVG. Right-aligned: it identifies the
-          sender, and the form's own title is what the client came to read. */}
-      <div className="mb-5 flex justify-end">
-        <span
-          className="leading-none text-brand text-[28px]"
-          style={{ fontWeight: 700 }}
-          role="img"
-          aria-label="Studio&more"
-        >
-          &amp;more
-        </span>
-      </div>
-      <h1 className="text-2xl">New Task Brief</h1>
-      <p className="mt-1 text-base text-muted">
+      <h1 className="page-title">
+        New task <span className="font-serif-accent">brief</span>
+      </h1>
+      <p className="mt-2 text-base text-muted">
         Tell us what you need — the more detail, the better the result.
       </p>
 
       {/* Progress. An ordered list so it reads as "step 2 of 5" rather than as
           decoration, with the current one marked for assistive tech. */}
-      <nav aria-label="Progress" className="mt-5">
-        <ol className="flex flex-wrap gap-1.5">
+      {/* The steps, NAMED (2026-11, direction A): done ones carry a tick and
+          take you back, the current one is solid brand, the rest are quiet.
+          ⚠️ On a phone only the current step keeps its name — six named chips
+          wrap to three lines at 375px — and the others shrink to their number. */}
+      <nav aria-label="Progress" className="mt-6">
+        <ol className="flex flex-wrap gap-1">
           {steps.map((s, i) => (
-            <li key={s.title} className="flex-1">
+            <li key={s.title}>
               <button
                 type="button"
                 // Going BACK is always allowed; going forward is not, or you
@@ -1462,10 +1556,24 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
                 disabled={i > step}
                 onClick={() => i < step && go(i)}
                 aria-current={i === step ? "step" : undefined}
-                className={`h-1.5 w-full rounded-full transition-colors ${
-                  i <= step ? "bg-brand" : "bg-border-strong"
-                } ${i < step ? "cursor-pointer" : ""}`}
+                className={`flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] transition-colors ${
+                  i === step
+                    ? "bg-brand text-white"
+                    : i < step
+                      ? "cursor-pointer bg-surface text-brand shadow-card hover:bg-brand-soft"
+                      : "text-faint"
+                }`}
               >
+                {i < step ? (
+                  <Check size={13} strokeWidth={2.5} aria-hidden="true" />
+                ) : (
+                  <span aria-hidden="true" className="tabular-nums">
+                    {i + 1}
+                  </span>
+                )}
+                <span aria-hidden="true" className={i === step ? "" : "hidden sm:inline"}>
+                  {s.title}
+                </span>
                 <span className="sr-only">
                   {`Step ${i + 1} of ${steps.length}: ${s.title}`}
                   {i === step ? " (current)" : ""}
@@ -1474,17 +1582,18 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
             </li>
           ))}
         </ol>
-        <p className="mt-2 text-sm text-muted">
-          Step {step + 1} of {steps.length}: {current.title}
-        </p>
       </nav>
 
-      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-5" noValidate>
+      <form
+        onSubmit={handleSubmit}
+        className={`${CARD} mt-4 flex flex-col gap-6`}
+        noValidate
+      >
         {/* ⚠️ Labelled BY the heading rather than carrying its own `<legend>`.
             An sr-only legend plus a visible <h2> saying the same words makes a
             screen reader announce the step name twice. */}
-        <fieldset className="flex flex-col gap-4" aria-labelledby="step-title">
-          <h2 id="step-title" ref={headingRef} tabIndex={-1} className="text-xl outline-none">
+        <fieldset className="flex flex-col gap-5" aria-labelledby="step-title">
+          <h2 id="step-title" ref={headingRef} tabIndex={-1} className="card-title outline-none">
             {current.title}
           </h2>
 
@@ -1561,12 +1670,12 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
           </p>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           {step > 0 && (
             <button
               type="button"
               onClick={() => go(step - 1)}
-              className="min-h-12 rounded-lg border border-border-strong px-4 text-base hover:border-brand"
+              className="min-h-12 rounded-xl px-5 text-base text-muted hover:bg-[var(--light-white)] hover:text-foreground"
             >
               Back
             </button>
@@ -1585,9 +1694,10 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
               key="submit"
               type="submit"
               disabled={state === "sending"}
-              className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+              className={PRIMARY_BTN}
             >
               {state === "sending" ? "Sending…" : editing ? "Save changes" : "Submit brief"}
+              {state !== "sending" && <StudioArrow size={18} />}
             </button>
           ) : (
             <button
@@ -1606,9 +1716,10 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
                 }
                 go(step + 1);
               }}
-              className="min-h-12 flex-1 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark"
+              className={PRIMARY_BTN}
             >
               Next
+              <StudioArrow size={18} />
             </button>
           )}
         </div>
