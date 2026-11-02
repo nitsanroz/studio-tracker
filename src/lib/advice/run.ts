@@ -63,9 +63,9 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   const monthKey = today.slice(0, 7);
   const billableClient = new Set(clients.filter((c) => c.billable !== false).map((c) => String(c.id)));
   const billableTask = new Set(tasks.filter((t) => t.billable !== false && t.client_id && billableClient.has(String(t.client_id))).map((t) => String(t.id)));
-  const liveHours = entries
-    .filter((e) => String(e.date).startsWith(monthKey) && billableTask.has(String(e.task_id)))
-    .reduce((h, e) => h + Number(e.minutes) / 60, 0);
+  const billableNow = entries.filter((e) => String(e.date).startsWith(monthKey) && billableTask.has(String(e.task_id)));
+  const hoursOf = (list: typeof billableNow) => list.reduce((h, e) => h + Number(e.minutes) / 60, 0);
+  const liveHours = { total: hoursOf(billableNow), today: hoursOf(billableNow.filter((e) => String(e.date) === today)) };
 
   // The rest doesn't depend on itself — run it side by side.
   const [estimates, pages, goal] = await Promise.all([
@@ -84,14 +84,17 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     pnlByMonth.set(k, m);
   }
 
-  // Home's pace chart spreads the month's goal evenly over its Sun–Thu days,
-  // today included — `evenSpread`, shared, so the pane and Home's "7% behind
-  // goal pace" chip never disagree by a point.
+  // Home's pace chart spreads the month's goal evenly over its Sun–Thu days —
+  // `evenSpread`, shared, so the pane and Home's "7% behind goal pace" chip
+  // never disagree by a point. Both compare through the last LOGGED day: today
+  // only from 17:30, with today's hours out of the count until then.
   const t = parseISO(today);
   const monthDays = Array.from({ length: new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate() }, (_, i) =>
     toISODate(new Date(t.getFullYear(), t.getMonth(), i + 1)),
   );
-  const dueShare = evenSpread(monthDays)[t.getDate() - 1];
+  const lastLogged = t.getDate() - (goal?.todayCounted ? 1 : 2);
+  const dueShare = lastLogged >= 0 ? evenSpread(monthDays)[lastLogged] : 0;
+  const paceHours = goal ? (goal.todayCounted ? goal.soFar : Math.max(0, goal.soFar - liveHours.today)) : 0;
 
   return {
     today,
@@ -134,7 +137,7 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     })),
     estimates,
     pnl: [...pnlByMonth.values()],
-    pace: goal ? { soFar: goal.soFar, expectedByNow: goal.profit.hours * dueShare } : null,
+    pace: goal ? { soFar: paceHours, expectedByNow: goal.profit.hours * dueShare } : null,
   };
 }
 

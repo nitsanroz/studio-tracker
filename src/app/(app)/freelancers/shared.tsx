@@ -16,6 +16,9 @@ export interface Freelancer {
   profileId: string;
   name: string;
   token: string;
+  /** A studio member billed as a freelancer (Dima): his hours are his own
+   * time entries — no link, nothing to review. */
+  hasLogin: boolean;
   active: boolean;
   terms: Terms;
   clientIds: string[];

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Check, Clock, Link as LinkIcon, Plus } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
 import { Button } from "@/components/primitives";
-import { useIsAdmin } from "@/lib/store";
+import { useData, useIsAdmin } from "@/lib/store";
 import { TermsForm, act, hrs, money, monthLabel, otherLine, termsLine, type Freelancer } from "./shared";
 import { PageSkeleton } from "@/components/skeleton";
 
@@ -46,7 +46,8 @@ export default function FreelancersPage() {
         <div>
           <h1 className="page-title">Freelancers</h1>
           <p className="mt-1 text-sm text-muted">
-            They log hours through a private link, with no login. Open one to review the month and file what&apos;s waiting.
+            They log hours through a private link, with no login — or, for a studio member on a freelance rate, in
+            their own log. Open one to review the month and file what&apos;s waiting.
           </p>
         </div>
         {!adding && (
@@ -58,6 +59,7 @@ export default function FreelancersPage() {
 
       {adding && (
         <AddFreelancer
+          listed={data.freelancers.map((f) => f.profileId)}
           onClose={() => setAdding(false)}
           onDone={() => {
             setAdding(false);
@@ -102,7 +104,11 @@ export default function FreelancersPage() {
               </p>
             </div>
             <div className="mt-auto flex flex-wrap items-center gap-2 text-[13px]">
-              {f.pendingCount > 0 ? (
+              {f.hasLogin ? (
+                <span className="flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 font-medium text-brand-dark">
+                  <Check size={14} /> Hours from their own log
+                </span>
+              ) : f.pendingCount > 0 ? (
                 <span className="flex items-center gap-1.5 rounded-full bg-warning/15 px-2.5 py-1 font-medium text-[#855800]">
                   <Clock size={14} /> {f.pendingCount} waiting for review
                 </span>
@@ -111,7 +117,7 @@ export default function FreelancersPage() {
                   <Check size={14} /> Nothing waiting
                 </span>
               )}
-              {!f.active && (
+              {!f.active && !f.hasLogin && (
                 <span className="flex items-center gap-1.5 rounded-full bg-danger/10 px-2.5 py-1 font-medium text-danger">
                   <LinkIcon size={14} /> Link switched off
                 </span>
@@ -124,19 +130,57 @@ export default function FreelancersPage() {
   );
 }
 
-function AddFreelancer({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
+function AddFreelancer({ listed, onDone, onClose }: { listed: string[]; onDone: () => void; onClose: () => void }) {
+  const { profiles } = useData();
+  // New = a person with a private link; member = someone who already logs in
+  // (Dima), billed from their own hours.
+  const [kind, setKind] = useState<"new" | "member">("new");
   const [name, setName] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const members = profiles
+    .filter((p) => p.active && p.hasAccount !== false && !listed.includes(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
   return (
     <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
       <h2 className="text-base font-medium">Add a freelancer</h2>
-      <p className="text-xs text-muted">
-        They get a private link to log hours — no login, and they never appear among the studio&apos;s members.
+      <div className="mt-2 flex w-fit rounded-md border border-border bg-background p-0.5 text-xs">
+        {(
+          [
+            ["new", "New person"],
+            ["member", "Studio member"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setKind(v)}
+            className={`rounded px-2.5 py-1 ${kind === v ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-muted">
+        {kind === "new"
+          ? "They get a private link to log hours — no login, and they never appear among the studio's members."
+          : "Someone who already logs in: their hours come straight from their own log, with nothing to review. This page adds their bill."}
       </p>
       <TermsForm
-        initial={{ currency: "EUR", rateHigh: 50, rateLow: 50, hoursLow: 50, hoursHigh: 150 }}
+        initial={
+          kind === "new"
+            ? { currency: "EUR", rateHigh: 50, rateLow: 50, hoursLow: 50, hoursHigh: 150 }
+            : { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 }
+        }
+        key={kind}
         submitLabel="Add freelancer"
         onCancel={onClose}
         onSubmit={async (t) => {
+          if (kind === "member") {
+            if (!memberId) return "Pick a member.";
+            const err = await act({ action: "addMember", profileId: memberId, ...t });
+            if (!err) onDone();
+            return err;
+          }
           if (!name.trim()) return "Give the freelancer a name.";
           const err = await act({ action: "create", name, ...t });
           if (!err) {
@@ -146,12 +190,27 @@ function AddFreelancer({ onDone, onClose }: { onDone: () => void; onClose: () =>
           return err;
         }}
       >
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Full name"
-          className="w-72 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
-        />
+        {kind === "new" ? (
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+            className="w-72 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          />
+        ) : (
+          <select
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            className="w-72 rounded-md border border-border bg-surface px-2 py-1.5 text-sm"
+          >
+            <option value="">Pick a member…</option>
+            {members.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
       </TermsForm>
     </section>
   );

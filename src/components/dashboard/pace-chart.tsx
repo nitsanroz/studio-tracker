@@ -142,12 +142,16 @@ export function PaceChart({
   // Headline chip: billable against the goal's pace, or all hours against the
   // same point of the previous period.
   let chip: { text: string; good: boolean; title: string } | null = null;
-  if (goalRuns && lastIdx >= 0 && goalRuns.goal[lastIdx] > 0) {
-    const pct = Math.round((reached / goalRuns.goal[lastIdx] - 1) * 100);
+  // Against the goal, the last day whose hours are IN: today only once the
+  // server says it's logged (17:30, the banner's own rule), else yesterday —
+  // a morning's empty today read as the studio falling behind.
+  const goalIdx = lastIdx >= 0 && days[lastIdx] === todayIso && !goal?.todayCounted ? lastIdx - 1 : lastIdx;
+  if (goalRuns && goalIdx >= 0 && goalRuns.goal[goalIdx] > 0) {
+    const pct = Math.round((main[goalIdx] / goalRuns.goal[goalIdx] - 1) * 100);
     chip = {
       text: `Billable ${Math.abs(pct)}% ${pct >= 0 ? "ahead of" : "behind"} goal pace`,
       good: pct >= 0,
-      title: `Billable hours so far (${formatHoursShort(reached)}) against where the month's goal would be today if it were spread evenly over the Sun–Thu workdays (${formatHoursShort(goalRuns.goal[lastIdx])}).`,
+      title: `Billable hours through ${days[goalIdx] === todayIso ? "today" : "yesterday"} (${formatHoursShort(main[goalIdx])}) against where the month's goal would be then if it were spread evenly over the Sun–Thu workdays (${formatHoursShort(goalRuns.goal[goalIdx])}). Today counts from 17:30, when the day's hours are in.`,
     };
   } else if (showPrev && lastIdx >= 0 && prev.runAll.length) {
     const at = prev.runAll[Math.min(lastIdx, prev.runAll.length - 1)];

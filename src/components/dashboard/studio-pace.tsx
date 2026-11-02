@@ -25,6 +25,8 @@ export interface Goal {
   month: number;
   soFar: number;
   pace: number | null;
+  /** Whether today is in the pace yet — hours go in around 17:30. */
+  todayCounted: boolean;
   min: Level;
   goal: Level;
   away: { name: string; dates: string[] }[];
@@ -83,7 +85,9 @@ export function StudioPace() {
           <InfoDot>
             The billable hours each workday left needs so that {month} pays for its costs; the goal also leaves a
             profit. Worked out from the finance plan, over the month&apos;s workdays — a day with someone away in the
-            weekly plan counts for less.{away.length > 0 && <> Counted in: {away.join(" · ")}.</>}
+            weekly plan counts for less. Freelancers count for the hours they&apos;ve logged so far. Your pace is the
+            average over the days whose hours are in — today joins at 17:30.
+            {away.length > 0 && <> Counted in: {away.join(" · ")}.</>}
           </InfoDot>
         </p>
         {goal.min.neededPerDay === 0 ? (

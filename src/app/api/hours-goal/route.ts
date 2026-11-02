@@ -39,6 +39,7 @@ export async function GET() {
       month: g.month,
       soFar: g.soFar,
       pace: g.actualPerDay,
+      todayCounted: g.todayCounted,
       workdays: g.workdays,
       workdaysDone: g.workdaysDone,
       workdaysLeft: g.workdaysLeft,

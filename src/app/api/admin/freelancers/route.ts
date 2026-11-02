@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import { fetchAll } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { monthBill } from "@/lib/freelance-rate";
 
@@ -12,6 +13,11 @@ import { monthBill } from "@/lib/freelance-rate";
 // time_entries row — on the task the admin picked, credited to the freelancer —
 // and only then marks the log approved. Nothing a freelancer types reaches
 // reports or client hours before that.
+//
+// ⚠️ ONE EXCEPTION, a freelancer WITH a login (Dima, 2026-11-02): he logs hours
+// like any designer, so his rows here are his own time_entries — read, never
+// reviewed — and his link stays switched off (`active` false; the /log route
+// serves only active links). He's here for his sliding-rate bill.
 
 /** 24 letters and digits (~143 bits) — no "-", so it splits cleanly off the
  * name in /log/<name>-<secret> (lib/freelancer-link.ts). */
@@ -52,6 +58,37 @@ async function adminOnly() {
     auth: { persistSession: false },
   });
   return { sb, userId: user.id };
+}
+
+/** Login freelancers' time entries from → to, as filed log rows. */
+async function loginEntries(sb: SupabaseClient, ids: string[], from: string, to: string) {
+  const entries = await fetchAll<{ id: string; user_id: string; task_id: string; date: string; minutes: number; description: string | null }>(
+    sb,
+    "time_entries",
+    "id, user_id, task_id, date, minutes, description",
+    (q) => q.in("user_id", ids).gte("date", from).lte("date", to).not("minutes", "is", null),
+  );
+  const taskIds = [...new Set(entries.map((e) => e.task_id))];
+  const clientOf = new Map<string, string | null>();
+  for (let i = 0; i < taskIds.length; i += 100) {
+    const { data } = await sb.from("tasks").select("id, client_id").in("id", taskIds.slice(i, i + 100));
+    for (const t of data ?? []) clientOf.set(t.id, t.client_id);
+  }
+  return entries
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((e) => ({
+      id: e.id,
+      profile_id: e.user_id,
+      date: e.date,
+      minutes: e.minutes,
+      client_id: clientOf.get(e.task_id) ?? null,
+      task_id: e.task_id,
+      task_hint: null as string | null,
+      description: e.description ?? "",
+      status: "approved",
+      review_note: null as string | null,
+      source: "log",
+    }));
 }
 
 export async function GET(req: NextRequest) {
@@ -98,8 +135,10 @@ export async function GET(req: NextRequest) {
   const from = `${period}-01`;
   const to = `${period}-${String(new Date(py, pm, 0).getDate()).padStart(2, "0")}`;
   const ids = people.map((f) => f.profile_id);
-  const [{ data: profiles }, { data: monthCharges }, { data: monthLogs }] = await Promise.all([
-    ids.length ? sb.from("profiles").select("id, name").in("id", ids) : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  const [{ data: profiles }, { data: monthCharges }, { data: linkLogs }] = await Promise.all([
+    ids.length
+      ? sb.from("profiles").select("id, name, has_account").in("id", ids)
+      : Promise.resolve({ data: [] as { id: string; name: string; has_account: boolean }[] }),
     sb
       .from("freelancer_charges")
       .select("id, profile_id, date, title, amount, currency, note, status, source, review_note")
@@ -118,6 +157,10 @@ export async function GET(req: NextRequest) {
       .order("created_at"),
   ]);
   const nameOf = new Map((profiles ?? []).map((p) => [p.id, p.name as string]));
+  const withLogin = new Set((profiles ?? []).filter((p) => p.has_account).map((p) => p.id as string));
+  // A login's month: his own time entries, in the shape of a filed log.
+  const entryRows = withLogin.size ? await loginEntries(sb, [...withLogin], from, to) : [];
+  const monthLogs = [...(linkLogs ?? []).filter((l) => !withLogin.has(l.profile_id)), ...entryRows];
 
   const summary = (f: (typeof people)[number]) => {
     const terms = {
@@ -134,7 +177,8 @@ export async function GET(req: NextRequest) {
     return {
       profileId: f.profile_id,
       name: nameOf.get(f.profile_id) ?? "",
-      token: f.token,
+      token: withLogin.has(f.profile_id) ? "" : f.token,
+      hasLogin: withLogin.has(f.profile_id),
       active: f.active,
       terms,
       clientIds: (links ?? []).filter((l) => l.profile_id === f.profile_id).map((l) => l.client_id),
@@ -164,7 +208,11 @@ export async function GET(req: NextRequest) {
       ? sb.from("tasks").select("id, title, client_id, status, completed_at").in("client_id", waitingClients).order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     // Every month he has, for the months pane (and how far back to step).
-    sb.from("freelancer_logs").select("date, minutes, status").eq("profile_id", one),
+    withLogin.has(one)
+      ? fetchAll<{ date: string; minutes: number }>(sb, "time_entries", "date, minutes", (q) =>
+          q.eq("user_id", one).not("minutes", "is", null),
+        ).then((data) => ({ data: data.map((e) => ({ ...e, status: "approved" })) }))
+      : sb.from("freelancer_logs").select("date, minutes, status").eq("profile_id", one),
     sb.from("freelancer_charges").select("date, amount, currency, status").eq("profile_id", one),
   ]);
   // Every month he has, newest first — hours, that month's rate, the bill — for
@@ -211,6 +259,7 @@ export async function GET(req: NextRequest) {
       status: l.status,
       note: l.review_note,
       fromSheet: l.source === "sheet",
+      fromLog: l.source === "log",
     })),
     charges: (monthCharges ?? []).map((c) => ({
       id: c.id,
@@ -312,6 +361,19 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ ok: true });
     }
+    case "addMember": {
+      // A studio member billed as a freelancer (Dima): his login stays, his
+      // hours stay his own time entries, and his link is made switched off.
+      const profileId = str("profileId");
+      const { data: person } = await sb.from("profiles").select("id, has_account").eq("id", profileId).single();
+      if (!person?.has_account) return NextResponse.json({ error: "Pick a member with a login." }, { status: 400 });
+      const terms = readTerms(body);
+      if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
+      const { error } = await sb.from("freelancers").insert({ profile_id: profileId, token: newToken(), active: false, ...terms });
+      if (error)
+        return NextResponse.json({ error: error.code === "23505" ? "They're already on the list." : error.message }, { status: 500 });
+      return NextResponse.json({ ok: true, profileId });
+    }
     case "create": {
       // A freelancer is a person WITHOUT an account (0018): has_account false,
       // so also inactive — never in a member list, a task picker or the plan.
@@ -340,6 +402,11 @@ export async function POST(req: NextRequest) {
       return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
     }
     case "active": {
+      // A login never gets a link: he'd see his hours twice, once unreviewed.
+      if (body.active === true) {
+        const { data: person } = await sb.from("profiles").select("has_account").eq("id", str("profileId")).single();
+        if (person?.has_account) return NextResponse.json({ error: "They log with their own login." }, { status: 400 });
+      }
       const { error } = await sb.from("freelancers").update({ active: body.active === true }).eq("profile_id", str("profileId"));
       return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
     }

@@ -9,16 +9,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll } from "@/lib/db";
 import { parseISO, studioToday } from "@/lib/format";
-import { HOURLY_TERMS, LINE, hoursGoal, type FormulaFreelancer, type GoalFreelancer, type GoalInputs, type PnlMonthly } from "@/lib/hours-goal";
+import {
+  HOURLY_TERMS,
+  LINE,
+  hoursGoal,
+  studioDayLogged,
+  type FormulaFreelancer,
+  type GoalFreelancer,
+  type GoalInputs,
+  type PnlMonthly,
+} from "@/lib/hours-goal";
 
 /**
  * This month's goal reading, or null when the P&L can't produce one. Throws on a
- * query error. `liveHours` = this month's billable hours when the caller already
- * has them (&advice loads the month's entries anyway), else they're fetched.
+ * query error. `liveHours` = this month's billable hours, and today's among
+ * them, when the caller already has them (&advice loads the month's entries
+ * anyway), else they're fetched.
  */
-export async function studioGoal(sb: SupabaseClient, liveHours?: number) {
+export async function studioGoal(sb: SupabaseClient, liveHours?: LiveHours) {
   // The studio's today, not the server's (Vercel runs in UTC).
-  const today = parseISO(studioToday());
+  const now = new Date();
+  const todayIso = studioToday(now);
+  const today = parseISO(todayIso);
   const [y, m] = [today.getFullYear(), today.getMonth() + 1];
 
   // None of the three needs another: side by side.
@@ -29,16 +41,22 @@ export async function studioGoal(sb: SupabaseClient, liveHours?: number) {
       .gte("year", y - 1)
       .lte("year", y)
       .in("line_item", Object.values(LINE)),
-    liveHours ?? billableHoursForMonth(sb, y, m),
+    liveHours ?? billableHoursForMonth(sb, y, m, todayIso),
     goalInputs(sb, y, m),
   ]);
   if (error) throw new Error(error.message);
   const pnl: PnlMonthly[] = (pnlRows ?? [])
     .filter((r) => !(r.year === y && r.month === m && r.line_item === LINE.totalHours))
     .map((r) => ({ year: r.year, month: r.month, lineItem: r.line_item, value: Number(r.value) }));
-  pnl.push({ year: y, month: m, lineItem: LINE.totalHours, value: soFar });
+  pnl.push({ year: y, month: m, lineItem: LINE.totalHours, value: soFar.total });
 
-  return hoursGoal(pnl, y, today, { inputs });
+  return hoursGoal(pnl, y, today, { inputs, todayLogged: studioDayLogged(now), hoursToday: soFar.today });
+}
+
+/** This month's billable hours, and those of them dated today. */
+export interface LiveHours {
+  total: number;
+  today: number;
 }
 
 const monthBounds = (year: number, month: number) => {
@@ -47,9 +65,9 @@ const monthBounds = (year: number, month: number) => {
 };
 
 /** Billable hours logged this month: billable tasks of billable clients. */
-async function billableHoursForMonth(sb: SupabaseClient, year: number, month: number): Promise<number> {
+async function billableHoursForMonth(sb: SupabaseClient, year: number, month: number, todayIso: string): Promise<LiveHours> {
   const [from, to] = monthBounds(year, month);
-  const entries = await fetchAll<{ task_id: string; minutes: number | null }>(sb, "time_entries", "task_id, minutes", (q) =>
+  const entries = await fetchAll<{ task_id: string; date: string; minutes: number | null }>(sb, "time_entries", "task_id, date, minutes", (q) =>
     q.gte("date", from).lte("date", to).not("minutes", "is", null),
   );
   const taskIds = [...new Set(entries.map((e) => e.task_id))];
@@ -64,7 +82,9 @@ async function billableHoursForMonth(sb: SupabaseClient, year: number, month: nu
     : { data: [] as { id: string; billable: boolean }[] };
   const billableClient = new Set((clients ?? []).filter((c) => c.billable).map((c) => c.id));
   const billableTask = new Set(tasks.filter((t) => t.billable && t.client_id && billableClient.has(t.client_id)).map((t) => t.id));
-  return entries.reduce((t, e) => (billableTask.has(e.task_id) ? t + (e.minutes ?? 0) / 60 : t), 0);
+  const billable = entries.filter((e) => billableTask.has(e.task_id));
+  const hoursOf = (list: typeof billable) => list.reduce((t, e) => t + (e.minutes ?? 0) / 60, 0);
+  return { total: hoursOf(billable), today: hoursOf(billable.filter((e) => e.date === todayIso)) };
 }
 
 /** Designers away (weekly plan) and hourly freelancers' pace — finance-admin's
@@ -119,7 +139,10 @@ async function goalInputs(sb: SupabaseClient, year: number, month: number): Prom
     slidingRateFreelancers(sb, year, month, startOfRange, monthEnd, absentByProfile),
   ]);
 
-  const freelancers: GoalFreelancer[] = profiles.map((pid) => {
+  // Someone kept on the tracker's Freelancers page is costed there (below) —
+  // counting them here too booked Milica twice once a finance row named her.
+  const kept = new Set(formulaFreelancers.map((f) => f.profileId));
+  const freelancers: GoalFreelancer[] = profiles.filter((pid) => !kept.has(pid)).map((pid) => {
     const rows = inRange.filter((r) => r.profile_id === pid);
     const hoursIn = (yy: number, mm: number) =>
       entries
@@ -145,10 +168,12 @@ async function goalInputs(sb: SupabaseClient, year: number, month: number): Prom
   return { absent, away, freelancers, formulaFreelancers };
 }
 
-/** Freelancers billed on a sliding rate through the tracker (AB) — finance-
- * admin's slidingRateFreelancers (actions.ts), mirrored. Read only: his terms,
- * his logs (not turned down), this month's charges, his planned amount
- * (matched by profile, else by name) and the month's official rate. */
+/** Freelancers billed on a sliding rate through the tracker (AB, Milica, Dima)
+ * — finance-admin's slidingRateFreelancers (actions.ts), mirrored. Read only:
+ * their terms, their hours, this month's charges, their planned amount
+ * (matched by profile, else by name) and the month's official rate. Hours are
+ * their link's logs (not turned down) — or, for one with a login (Dima), his
+ * own time entries: he logs like a designer, with no link and no review. */
 async function slidingRateFreelancers(
   sb: SupabaseClient,
   year: number,
@@ -161,18 +186,33 @@ async function slidingRateFreelancers(
   if (!people?.length) return [];
   const ids = people.map((p) => p.profile_id as string);
   const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
-  const [{ data: profiles }, logs, { data: charges }, { data: planRows }, { data: fxRows }] = await Promise.all([
-    sb.from("profiles").select("id, name").in("id", ids),
+  const [{ data: profiles }, linkLogs, entries, { data: charges }, { data: planRows }, { data: fxRows }] = await Promise.all([
+    sb.from("profiles").select("id, name, has_account").in("id", ids),
     fetchAll<{ profile_id: string; date: string; minutes: number }>(sb, "freelancer_logs", "profile_id, date, minutes", (q) =>
       q.in("profile_id", ids).neq("status", "rejected").gte("date", from).lte("date", monthEnd),
+    ),
+    fetchAll<{ user_id: string; date: string; minutes: number | null }>(sb, "time_entries", "user_id, date, minutes", (q) =>
+      q.in("user_id", ids).gte("date", from).lte("date", monthEnd).not("minutes", "is", null),
     ),
     sb.from("freelancer_charges").select("profile_id, amount, currency").in("profile_id", ids).neq("status", "rejected").gte("date", monthStart).lte("date", monthEnd),
     sb.from("finance_freelance").select("person_name, profile_id, amount").eq("year", year).eq("month", month),
     sb.from("fx_rates").select("year, month, usd_ils, eur_ils").lte("year", year).order("year", { ascending: false }).order("month", { ascending: false }),
   ]);
   const nameOf = new Map((profiles ?? []).map((p) => [p.id as string, p.name as string]));
-  const fxRow = (fxRows ?? []).find((r) => r.year < year || (r.year === year && r.month <= month));
-  const fxOf = (currency: string) => (currency === "ILS" ? 1 : Number((currency === "USD" ? fxRow?.usd_ils : fxRow?.eur_ils) ?? 0));
+  const withLogin = new Set((profiles ?? []).filter((p) => p.has_account).map((p) => p.id as string));
+  const logs = [
+    ...linkLogs.filter((l) => !withLogin.has(l.profile_id)),
+    ...entries.filter((e) => withLogin.has(e.user_id)).map((e) => ({ profile_id: e.user_id, date: e.date, minutes: e.minutes ?? 0 })),
+  ];
+  // This month's official rate, else the latest one stored FOR THAT CURRENCY —
+  // a month can hold a dollar rate before its euro one (Nov 2026), and taking
+  // the row as a whole dropped AB out of the goal.
+  const fxOf = (currency: string) => {
+    if (currency === "ILS") return 1;
+    const col = currency === "USD" ? "usd_ils" : "eur_ils";
+    const row = (fxRows ?? []).find((r) => (r.year < year || (r.year === year && r.month <= month)) && r[col] != null);
+    return Number(row?.[col] ?? 0);
+  };
   const [fy, fm] = [Number(from.slice(0, 4)), Number(from.slice(5, 7))];
   const recentMonths = [0, 1, 2].map((i) => {
     const n = fy * 12 + fm - 1 + i;
@@ -187,6 +227,7 @@ async function slidingRateFreelancers(
       const pid = p.profile_id as string;
       const name = nameOf.get(pid) ?? "";
       return {
+        profileId: pid,
         name,
         planned: (planRows ?? [])
           .filter((r) => r.profile_id === pid || (!r.profile_id && (r.person_name as string).trim().toLowerCase() === name.trim().toLowerCase()))

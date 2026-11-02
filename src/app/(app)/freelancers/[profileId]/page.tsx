@@ -57,6 +57,8 @@ interface Row {
   status: "pending" | "approved" | "rejected";
   note: string | null;
   fromSheet: boolean;
+  /** One of a login's own time entries (Dima) — never reviewed here. */
+  fromLog: boolean;
 }
 interface PickTask {
   id: string;
@@ -188,10 +190,16 @@ export default function FreelancerPage() {
             </h1>
             <p className="text-sm text-muted">
               {termsLine(f.terms)}
-              {!f.active && (
-                <span className="ml-2 rounded-full bg-danger/10 px-2 py-0.5 font-medium text-danger">
-                  Link switched off
+              {f.hasLogin ? (
+                <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 font-medium text-brand-dark">
+                  Hours from their own log
                 </span>
+              ) : (
+                !f.active && (
+                  <span className="ml-2 rounded-full bg-danger/10 px-2 py-0.5 font-medium text-danger">
+                    Link switched off
+                  </span>
+                )
               )}
             </p>
           </div>
@@ -371,6 +379,8 @@ function MonthTable({
                 <td className="whitespace-nowrap px-3 py-2">
                   {l.fromSheet ? (
                     <span className="text-xs text-faint">From their sheet</span>
+                  ) : l.fromLog ? (
+                    <span className="text-xs text-faint">Logged</span>
                   ) : l.status === "approved" ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
                       <Check size={12} /> Approved
@@ -388,9 +398,11 @@ function MonthTable({
           <tr className="border-t border-border bg-background/60 font-medium">
             <td colSpan={3} className="px-3 py-2 text-muted">
               Total{" "}
-              <span className="font-normal text-muted">
-                (approved rows only{waitingHours > 0 ? `, plus ${hrs(waitingHours)} still waiting` : ""})
-              </span>
+              {!data.freelancer.hasLogin && (
+                <span className="font-normal text-muted">
+                  (approved rows only{waitingHours > 0 ? `, plus ${hrs(waitingHours)} still waiting` : ""})
+                </span>
+              )}
             </td>
             <td className="px-3 py-2 text-right tabular-nums">
               {hrs(data.freelancer.month.hours)}
@@ -727,6 +739,9 @@ function Side({
 
   return (
     <div className="space-y-4">
+      {/* A login logs like any designer: no link, no client list. */}
+      {!f.hasLogin && (
+      <>
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
         <h2 className="card-title mb-3 flex items-center gap-2">
           <Link2 size={18} strokeWidth={1.75} className="text-brand" /> Private link
@@ -850,6 +865,8 @@ function Side({
           Approving a row on a new client opens it for them.
         </p>
       </section>
+      </>
+      )}
 
       <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
         <h2 className="card-title mb-3 flex items-center gap-2">
@@ -883,7 +900,8 @@ function Side({
           />
         ) : (
           <p>
-            {termsLine(f.terms)}. The bill counts every hour not turned down.
+            {termsLine(f.terms)}.{" "}
+            {f.hasLogin ? "The bill counts every hour in their log." : "The bill counts every hour not turned down."}
           </p>
         )}
       </section>

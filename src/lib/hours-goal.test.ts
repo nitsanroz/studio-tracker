@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINE, hoursGoal, type PnlMonthly } from "./hours-goal";
+import { LINE, hoursGoal, studioDayLogged, type PnlMonthly } from "./hours-goal";
 
 // ⚠️ Mirrors the hoursGoal tests in finance-admin's src/lib/overview.test.ts —
 // keep both in step with hours-goal.ts (see its header).
@@ -44,8 +44,28 @@ describe("hoursGoal", () => {
     expect(g.workdaysLeft).toBeCloseTo(18 - (7 * 18) / 21);
     expect(g.expectedByNow).toBeCloseTo((420 / 18) * ((7 * 18) / 21));
     expect(g.neededPerDay).toBeCloseTo((420 - 24) / g.workdaysLeft);
-    // Today (a Monday) counts toward the average logged: 8 days of 21, scaled to 18.
-    expect(g.actualPerDay).toBeCloseTo(24 / ((8 * 18) / 21));
+    // Before 17:30 today isn't logged yet: the average is over the 7 days before it.
+    expect(g.todayCounted).toBe(false);
+    expect(g.actualPerDay).toBeCloseTo(24 / ((7 * 18) / 21));
+  });
+
+  it("counts today in the pace only once its hours are in", () => {
+    // 6 of the 24h are dated today: left out until the day counts, then all of it over 8 days.
+    const early = hoursGoal(goalPnl, 2026, new Date(2026, 9, 12), { hoursToday: 6 })!;
+    expect(early.actualPerDay).toBeCloseTo(18 / ((7 * 18) / 21));
+    const logged = hoursGoal(goalPnl, 2026, new Date(2026, 9, 12), { hoursToday: 6, todayLogged: true })!;
+    expect(logged.todayCounted).toBe(true);
+    expect(logged.actualPerDay).toBeCloseTo(24 / ((8 * 18) / 21));
+    // The month's first workday, before 17:30: no pace yet rather than 0.
+    expect(hoursGoal(goalPnl, 2026, new Date(2026, 9, 1))!.actualPerDay).toBeNull();
+  });
+
+  it("calls the day logged from 17:30 in Tel Aviv", () => {
+    // Israel is UTC+3 on Oct 12 2026 (summer time) and UTC+2 on Nov 2 2026.
+    expect(studioDayLogged(new Date("2026-10-12T14:29:00Z"))).toBe(false);
+    expect(studioDayLogged(new Date("2026-10-12T14:30:00Z"))).toBe(true);
+    expect(studioDayLogged(new Date("2026-11-02T15:29:00Z"))).toBe(false);
+    expect(studioDayLogged(new Date("2026-11-02T15:30:00Z"))).toBe(true);
   });
 
   it("adds a profit target: the hours for revenue of costs ÷ (1 − margin)", () => {
@@ -76,7 +96,7 @@ describe("hoursGoal", () => {
     expect(g.neededPerDay).toBeCloseTo((420 - 24) / (g.effectiveWorkdays - 7 * scale));
   });
 
-  it("costs an hourly freelancer at their pace, not the plan's flat amount", () => {
+  it("costs an hourly freelancer at what they've logged, not the plan's flat amount", () => {
     // Jul–Sep: 300h for ₪30,000 (₪100/h) over 18 + 18 + 18 workdays (no sheet days → Sun–Thu).
     const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];
     const dima = {
@@ -87,11 +107,10 @@ describe("hoursGoal", () => {
       absent: ["2026-10-13", "2026-10-14"],
     };
     const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [dima] } })!;
-    // 14 Sun–Thu days from Mon the 12th on, 2 of them away: 12 × 18/21 workdays at 300/54 h a day.
-    const hours = 45 + (300 / 54) * 12 * (18 / 21);
-    expect(g.freelance[0].hours).toBeCloseTo(hours);
+    // His 45h so far at his recent ₪100/h — no guess at the rest of the month.
+    expect(g.freelance[0].hours).toBe(45);
     expect(g.freelance[0].rate).toBeCloseTo(100);
-    expect(g.costs).toBeCloseTo(140_000 - 14_000 + hours * 100);
+    expect(g.costs).toBeCloseTo(140_000 - 14_000 + 45 * 100);
     expect(g.plannedCosts).toBe(140_000);
     expect(g.hours).toBeCloseTo(g.costs / g.rate);
   });
@@ -108,14 +127,33 @@ describe("hoursGoal", () => {
       terms,
     };
     const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [dima] } })!;
-    const hours = g.freelance[0].hours;
+    // 45h is under 50h: every hour at ₪140.
+    expect(g.freelance[0].hours).toBe(45);
+    expect(g.freelance[0].cost).toBeCloseTo(45 * 140);
+    const more = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [{ ...dima, soFar: 80 }] } })!;
     // His sheet: 140 − (h − 50) × 0.4 an hour, every hour at the month's rate.
-    expect(g.freelance[0].cost).toBeCloseTo(hours * (140 - (hours - 50) * 0.4), 0);
-    expect(g.freelance[0].rate).toBeCloseTo(140 - (hours - 50) * 0.4, 1);
+    expect(more.freelance[0].cost).toBeCloseTo(80 * (140 - 30 * 0.4));
+  });
+
+  it("costs nothing for a freelancer who hasn't logged this month", () => {
+    const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];
+    const idle = {
+      name: "Milica",
+      planned: 0,
+      terms: { currency: "EUR", rateHigh: 40, rateLow: 40, hoursLow: 0, hoursHigh: 1 },
+      fx: 3.7,
+      soFar: 0,
+      charges: 0,
+      recent: [7, 8, 9].map((month) => ({ year: 2026, month, hours: 60 })),
+      absent: [],
+    };
+    const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [], formulaFreelancers: [idle] } })!;
+    expect(g.freelance[0].cost).toBe(0);
+    expect(g.costs).toBe(140_000);
   });
 
   it("prices a sliding-rate freelancer through his terms, plus his charges, in ₪", () => {
-    // Jul–Sep: 54 workdays, 108h → 2h a workday. Mon Oct 12: 14 Sun–Thu days left (× 18/21).
+    // 40h logged so far: priced through his terms, plus his €100 of charges, at ₪3.5.
     const withDays = [...goalPnl, row(7, LINE.daysInMonth, 18), row(8, LINE.daysInMonth, 18), row(9, LINE.daysInMonth, 18)];
     const ab = {
       name: "AB",
@@ -128,10 +166,9 @@ describe("hoursGoal", () => {
       absent: [],
     };
     const g = hoursGoal(withDays, 2026, new Date(2026, 9, 12), { inputs: { absent: {}, away: [], freelancers: [], formulaFreelancers: [ab] } })!;
-    const hours = 40 + 2 * 14 * (18 / 21);
-    const rate = 55 - (10 * (hours - 50)) / 100;
-    const cost = (Math.round(hours * Math.round(rate * 100) / 100 * 100) / 100 + 100) * 3.5;
-    expect(g.freelance[0].hours).toBeCloseTo(hours);
+    const hours = 40;
+    const cost = (hours * 55 + 100) * 3.5;
+    expect(g.freelance[0].hours).toBe(hours);
     expect(g.freelance[0].cost).toBeCloseTo(cost);
     expect(g.costs).toBeCloseTo(140_000 - 5_000 + cost);
   });
