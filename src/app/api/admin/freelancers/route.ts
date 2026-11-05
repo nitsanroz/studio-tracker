@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { monthBill } from "@/lib/freelance-rate";
 import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
+import { cleanDetails } from "@/lib/freelancer-details";
 
 // Admin-only: freelancers' logs waiting for review, and each freelancer's
 // private link, clients and terms (0054). The review page (/freelancers)
@@ -121,6 +122,29 @@ export async function GET(req: NextRequest) {
       tasks: (data ?? [])
         .filter((t) => t.id !== client?.keys_task_id)
         .map((t) => ({ id: t.id, title: t.title, clientId: t.client_id, done: !!t.completed_at || t.status === "done" })),
+    });
+  }
+  // A freelancer's details card (v1.91.0): email + phone from HR details,
+  // website / location / notes from 0063 — `extra` false until it has run.
+  const detailsOf = req.nextUrl.searchParams.get("details");
+  if (detailsOf) {
+    const [{ data: hr }, extraRes] = await Promise.all([
+      sb.from("member_hr").select("personal_email, phone").eq("profile_id", detailsOf).maybeSingle(),
+      sb.from("freelancers").select("website, location, notes").eq("profile_id", detailsOf).maybeSingle(),
+    ]);
+    const extra = !extraRes.error;
+    if (extraRes.error && !MISSING_SCHEMA_CODES.has(extraRes.error.code ?? ""))
+      return NextResponse.json({ error: extraRes.error.message }, { status: 500 });
+    const x = (extraRes.data ?? {}) as { website?: string | null; location?: string | null; notes?: string | null };
+    return NextResponse.json({
+      extra,
+      details: {
+        email: hr?.personal_email ?? null,
+        phone: hr?.phone ?? null,
+        website: x.website ?? null,
+        location: x.location ?? null,
+        notes: x.notes ?? null,
+      },
     });
   }
   // The home page's alert needs only the count.
@@ -513,6 +537,29 @@ export async function POST(req: NextRequest) {
       }
       const warnings = candidateId ? await finishConversion(sb, "freelancer", candidateId, id, name, userId) : [];
       return NextResponse.json({ ok: true, profileId: id, warnings });
+    }
+    case "details": {
+      // Email + phone → HR details (only those two columns, so nothing else in
+      // the HR file is touched); the rest → the freelancer's row (0063).
+      const profileId = str("profileId");
+      const { data: f } = await sb.from("freelancers").select("profile_id").eq("profile_id", profileId).maybeSingle();
+      if (!f) return NextResponse.json({ error: "No such freelancer" }, { status: 404 });
+      const d = cleanDetails(body);
+      if ("error" in d) return NextResponse.json({ error: d.error }, { status: 400 });
+      const { data: hr } = await sb.from("member_hr").select("profile_id").eq("profile_id", profileId).maybeSingle();
+      if (hr || d.email || d.phone) {
+        const { error } = await sb
+          .from("member_hr")
+          .upsert({ profile_id: profileId, personal_email: d.email, phone: d.phone, updated_at: new Date().toISOString() });
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      const { error: e2 } = await sb
+        .from("freelancers")
+        .update({ website: d.website, location: d.location, notes: d.notes })
+        .eq("profile_id", profileId);
+      if (e2 && MISSING_SCHEMA_CODES.has(e2.code ?? ""))
+        return NextResponse.json({ ok: true, warning: "Email and phone saved. Website, location and notes need migration 0063." });
+      return e2 ? NextResponse.json({ error: e2.message }, { status: 500 }) : NextResponse.json({ ok: true });
     }
     case "terms": {
       const terms = readTerms(body);

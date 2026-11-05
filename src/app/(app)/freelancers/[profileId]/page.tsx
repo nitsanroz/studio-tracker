@@ -13,9 +13,14 @@ import {
   Copy,
   ExternalLink,
   FolderOpen,
+  Globe,
+  Contact,
   Link2,
   Loader2,
+  Mail,
+  MapPin,
   Pencil,
+  Phone,
   ReceiptText,
   RefreshCw,
   Scale,
@@ -28,6 +33,8 @@ import { ClientChip, Modal, ModalClose } from "@/components/ui";
 import { formatHoursShort, parseDuration } from "@/lib/format";
 import { freelancerPath } from "@/lib/freelancer-link";
 import { createClient } from "@/lib/supabase/client";
+import { isSafeUrl } from "@/lib/links";
+import type { FreelancerDetails } from "@/lib/freelancer-details";
 import {
   TermsForm,
   act,
@@ -814,6 +821,7 @@ function Side({
 
   return (
     <div className="space-y-4">
+      <Details profileId={f.profileId} />
       {/* A login logs like any designer: no link, no client list. */}
       {!f.hasLogin && (
       <>
@@ -1009,6 +1017,156 @@ function Side({
         )}
       </section>
     </div>
+  );
+}
+
+const EMPTY: FreelancerDetails = { email: null, phone: null, website: null, location: null, notes: null };
+
+/**
+ * Their details (v1.91.0, Nitsan 2026-11-05: "so it's organized"): email and
+ * phone are their HR details (a candidate's conversion fills them; finance's
+ * person page shows them), website / location / notes are 0063's columns on
+ * their freelancer row. Admin-only; never reaches their /log page. Loaded on
+ * its own, so a month switch doesn't fetch it again.
+ */
+function Details({ profileId }: { profileId: string }) {
+  const [d, setD] = useState<FreelancerDetails | null>(null);
+  /** false = 0063 not run: only email and phone can be kept. */
+  const [extra, setExtra] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<FreelancerDetails>(EMPTY);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/admin/freelancers?details=${encodeURIComponent(profileId)}`, { cache: "no-store" })
+      .then(async (r) => (r.ok ? r.json() : Promise.reject(new Error((await r.json().catch(() => ({}))).error))))
+      .then((j: { details: FreelancerDetails; extra: boolean }) => {
+        if (!alive) return;
+        setD(j.details);
+        setExtra(j.extra);
+      })
+      .catch(() => alive && setD(EMPTY));
+    return () => {
+      alive = false;
+    };
+  }, [profileId, version]);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    const r = await fetch("/api/admin/freelancers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "details", profileId, ...form }),
+    });
+    const j = (await r.json().catch(() => ({}))) as { error?: string; warning?: string };
+    setBusy(false);
+    if (!r.ok) return setError(j.error ?? "Couldn't save");
+    if (j.warning) setError(j.warning);
+    setEditing(false);
+    setVersion((v) => v + 1);
+  };
+
+  const field = "w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm";
+  const input = (k: keyof FreelancerDetails, label: string, type = "text", placeholder = "") => (
+    <label className="block text-xs text-muted">
+      {label}
+      <input
+        type={type}
+        value={form[k] ?? ""}
+        placeholder={placeholder}
+        onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+        className={`${field} mt-1 text-foreground`}
+      />
+    </label>
+  );
+  const line = (Icon: typeof Mail, value: React.ReactNode) => (
+    <p className="flex min-w-0 items-start gap-2">
+      <Icon size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-faint" />
+      <span className="min-w-0 break-words">{value}</span>
+    </p>
+  );
+  const nothing = d && !d.email && !d.phone && !d.website && !d.location && !d.notes;
+
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5 text-sm shadow-card">
+      <h2 className="card-title mb-3 flex items-center gap-2">
+        <Contact size={18} strokeWidth={1.75} className="text-brand" /> Details
+        {!editing && d && (
+          <button
+            onClick={() => {
+              setForm(d);
+              setError(null);
+              setEditing(true);
+            }}
+            className="ml-auto text-[13px] font-normal text-brand hover:underline"
+          >
+            Edit
+          </button>
+        )}
+      </h2>
+      {!d ? (
+        <LoadingLine />
+      ) : editing ? (
+        <div className="space-y-2">
+          {input("email", "Email", "email")}
+          {input("phone", "Phone", "tel")}
+          {extra && (
+            <>
+              {input("website", "Website / portfolio", "url", "behance.net/…")}
+              {input("location", "Where they work from", "text", "City, country")}
+              <label className="block text-xs text-muted">
+                Notes
+                <textarea
+                  value={form.notes ?? ""}
+                  rows={3}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="How they invoice, time zone…"
+                  className={`${field} bidi-auto mt-1 text-foreground`}
+                />
+              </label>
+            </>
+          )}
+          {error && <p className="text-xs text-danger">{error}</p>}
+          <div className="flex gap-2 pt-1">
+            <button
+              disabled={busy}
+              onClick={() => void save()}
+              className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+            >
+              {busy ? "Saving…" : "Save details"}
+            </button>
+            <button onClick={() => setEditing(false)} className="rounded-md border border-border px-3 py-1.5 text-sm">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : nothing ? (
+        <p className="text-faint">None yet — add their email, phone and the rest.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {d.email && line(Mail, <a href={`mailto:${d.email}`} className="text-brand hover:underline">{d.email}</a>)}
+          {d.phone && line(Phone, <a href={`tel:${d.phone.replace(/[^\d+]/g, "")}`} className="text-brand hover:underline">{d.phone}</a>)}
+          {d.website &&
+            isSafeUrl(d.website) &&
+            line(
+              Globe,
+              <a href={d.website} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                {d.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+              </a>,
+            )}
+          {d.location && line(MapPin, <span className="bidi-auto">{d.location}</span>)}
+          {d.notes && <p className="bidi-auto whitespace-pre-wrap pt-1 text-muted">{d.notes}</p>}
+        </div>
+      )}
+      {!editing && error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      {!extra && !editing && (
+        <p className="mt-2 text-[11px] text-faint">Website, location and notes need migration 0063.</p>
+      )}
+    </section>
   );
 }
 
