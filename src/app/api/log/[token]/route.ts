@@ -3,7 +3,8 @@ import { createClient as createServiceClient, type SupabaseClient } from "@supab
 import { monthBill, type RateTerms } from "@/lib/freelance-rate";
 import { signStorageUrl } from "@/lib/sign-storage";
 import { tokenFromSegment } from "@/lib/freelancer-link";
-import { fetchAll } from "@/lib/db";
+import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
+import { snapOf, updateLog, type LogSnap } from "@/lib/freelancer-sync";
 
 // Public endpoint behind a freelancer's private link (/log/[token], 0054).
 // Token-gated; every read and write uses the service key on the server and is
@@ -383,27 +384,30 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ token: st
   const read = body.type === "charge" ? readCharge(f, body) : await readLog(sb, f, body);
   if ("error" in read) return NextResponse.json({ error: read.error }, { status: 400 });
   if (table === "freelancer_logs") {
-    const { data: current } = await sb
-      .from("freelancer_logs")
-      .select("date, minutes, client_id, task_id, task_hint, description, status")
-      .eq("id", id)
-      .eq("profile_id", f.profile_id)
-      .eq("source", "link")
-      .in("status", ["pending", "approved"])
-      .gte("date", editableFrom())
-      .maybeSingle();
+    const pick = (cols: string) =>
+      sb
+        .from("freelancer_logs")
+        .select(cols)
+        .eq("id", id)
+        .eq("profile_id", f.profile_id)
+        .eq("source", "link")
+        .in("status", ["pending", "approved"])
+        .gte("date", editableFrom())
+        .maybeSingle();
+    const base = "date, minutes, client_id, task_id, task_hint, description, status";
+    // `approved` is 0062's; step down without it.
+    let got = await pick(`${base}, approved`);
+    if (got.error && MISSING_SCHEMA_CODES.has(got.error.code)) got = await pick(base);
+    const current = got.data as unknown as (LogSnap & { status: string; approved?: LogSnap | null }) | null;
     if (!current) return NextResponse.json({ error: "This line can't be changed any more." }, { status: 409 });
     const row = read.row as Record<string, unknown>;
-    const same = (Object.keys(row) as (keyof typeof current)[]).every((k) => (current[k] ?? null) === (row[k] ?? null));
+    const same = Object.keys(row).every((k) => ((current as unknown as Record<string, unknown>)[k] ?? null) === (row[k] ?? null));
     // Saving an approved line unchanged must not send it back for review.
     if (same) return NextResponse.json({ ok: true });
-    const { data } = await sb
-      .from("freelancer_logs")
-      .update({ ...row, status: "pending" })
-      .eq("id", id)
-      .eq("profile_id", f.profile_id)
-      .eq("status", current.status)
-      .select("id");
+    // Leaving "approved" keeps what was approved (0062): the admin's review
+    // shows it, Keep restores it, and Approve applies only the difference.
+    const keep = current.status === "approved" && !current.approved ? { approved: snapOf(current) } : {};
+    const { data } = await updateLog(sb, id, { ...row, ...keep, status: "pending" }, current.status);
     if (!data?.length) return NextResponse.json({ error: "This line changed meanwhile — reload and try again." }, { status: 409 });
     return NextResponse.json({ ok: true });
   }

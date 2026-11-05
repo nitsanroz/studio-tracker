@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
-import { fetchAll } from "@/lib/db";
+import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
+import { approvedSnap, snapOf, syncEntry, updateLog, type LogSnap } from "@/lib/freelancer-sync";
 import { createClient } from "@/lib/supabase/server";
 import { monthBill } from "@/lib/freelance-rate";
 
@@ -60,6 +61,15 @@ async function adminOnly() {
   return { sb, userId: user.id };
 }
 
+type LogRow = LogSnap & { id: string; profile_id: string; status: string; time_entry_id: string | null; approved?: LogSnap | null };
+/** One freelancer line with 0062's snapshot — stepping down without the column. */
+async function readLogRow(sb: SupabaseClient, id: string): Promise<LogRow | null> {
+  const base = "id, profile_id, date, minutes, client_id, task_id, task_hint, description, status, time_entry_id";
+  let got = await sb.from("freelancer_logs").select(`${base}, approved`).eq("id", id).maybeSingle();
+  if (got.error && MISSING_SCHEMA_CODES.has(got.error.code)) got = await sb.from("freelancer_logs").select(base).eq("id", id).maybeSingle();
+  return (got.data as unknown as LogRow | null) ?? null;
+}
+
 /** Login freelancers' time entries from → to, as filed log rows. */
 async function loginEntries(sb: SupabaseClient, ids: string[], from: string, to: string) {
   const entries = await fetchAll<{ id: string; user_id: string; task_id: string; date: string; minutes: number; description: string | null }>(
@@ -99,13 +109,16 @@ export async function GET(req: NextRequest) {
   // The review row's task picker, for whichever client the admin files a log on.
   const tasksOf = req.nextUrl.searchParams.get("tasks");
   if (tasksOf) {
-    const { data } = await sb
-      .from("tasks")
-      .select("id, title, client_id, status, completed_at")
-      .eq("client_id", tasksOf)
-      .order("created_at", { ascending: false });
+    const [{ data }, { data: client }] = await Promise.all([
+      sb.from("tasks").select("id, title, client_id, status, completed_at").eq("client_id", tasksOf).order("created_at", { ascending: false }),
+      sb.from("clients").select("keys_task_id").eq("id", tasksOf).maybeSingle(),
+    ]);
+    // Never the client's Keys task: hours reach it only through a write-down
+    // (which keeps them traceable), not by being filed there.
     return NextResponse.json({
-      tasks: (data ?? []).map((t) => ({ id: t.id, title: t.title, clientId: t.client_id, done: !!t.completed_at || t.status === "done" })),
+      tasks: (data ?? [])
+        .filter((t) => t.id !== client?.keys_task_id)
+        .map((t) => ({ id: t.id, title: t.title, clientId: t.client_id, done: !!t.completed_at || t.status === "done" })),
     });
   }
   // The home page's alert needs only the count.
@@ -208,8 +221,14 @@ export async function GET(req: NextRequest) {
   const { data: beforeEntries } = changedEntryIds.length
     ? await sb.from("time_entries").select("id, date, minutes, description, task_id").in("id", changedEntryIds)
     : { data: [] as { id: string; date: string; minutes: number; description: string | null; task_id: string }[] };
+  // What was approved, from 0062's snapshot when there is one (the entry's own
+  // minutes may be lower — a Keys write-down — and she's paid the line's).
+  const changedIds = rows.filter((l) => l.status === "pending" && l.time_entry_id).map((l) => l.id as string);
+  const snaps = changedIds.length ? await sb.from("freelancer_logs").select("id, approved").in("id", changedIds) : { data: [] };
+  const snapOfLog = new Map(((snaps.data ?? []) as { id: string; approved: LogSnap | null }[]).map((r) => [r.id, r.approved]));
   const beforeOf = new Map((beforeEntries ?? []).map((e) => [e.id as string, e]));
   for (const e of beforeEntries ?? []) if (e.task_id && !taskIds.includes(e.task_id)) taskIds.push(e.task_id);
+  for (const a of snapOfLog.values()) if (a?.task_id && !taskIds.includes(a.task_id)) taskIds.push(a.task_id);
   const [{ data: logClients }, { data: logTasks }, { data: pickTasks }, { data: allLogs }, { data: allCharges }] = await Promise.all([
     clientIds.length ? sb.from("clients").select("id, name").in("id", clientIds) : Promise.resolve({ data: [] }),
     taskIds.length ? sb.from("tasks").select("id, title").in("id", taskIds) : Promise.resolve({ data: [] }),
@@ -271,7 +290,10 @@ export async function GET(req: NextRequest) {
       fromLog: l.source === "log",
       // What is approved today, when this waiting row is a change to it.
       before: (() => {
-        const e = l.status === "pending" && l.time_entry_id ? beforeOf.get(l.time_entry_id) : undefined;
+        if (l.status !== "pending" || !l.time_entry_id) return null;
+        const a = snapOfLog.get(l.id);
+        if (a) return { date: a.date, hours: a.minutes / 60, description: a.description, task: a.task_id ? (taskTitle.get(a.task_id) ?? null) : null };
+        const e = beforeOf.get(l.time_entry_id);
         return e
           ? { date: e.date, hours: e.minutes / 60, description: e.description ?? "", task: taskTitle.get(e.task_id) ?? null }
           : null;
@@ -306,45 +328,48 @@ export async function POST(req: NextRequest) {
 
   switch (body.action) {
     case "approve": {
-      const { data: log } = await sb
-        .from("freelancer_logs")
-        .select("id, profile_id, date, minutes, client_id, description, status, time_entry_id")
-        .eq("id", str("id"))
-        .single();
+      const log = await readLogRow(sb, str("id"));
       if (!log || log.status !== "pending") return NextResponse.json({ error: "That log isn't waiting for review." }, { status: 409 });
       const { data: task } = await sb.from("tasks").select("id, client_id").eq("id", str("taskId")).single();
       if (!task) return NextResponse.json({ error: "Pick a task to file it on." }, { status: 400 });
-      const fields = { task_id: task.id, user_id: log.profile_id, date: log.date, minutes: log.minutes, description: log.description };
-      // A change to an approved line rewrites ITS time entry rather than adding
-      // a second one (v1.88.0); if that entry is gone, it's filed afresh.
-      let entry: { id: string } | null = null;
+      const now: LogSnap = { ...snapOf(log), task_id: task.id, client_id: task.client_id ?? log.client_id, task_hint: null };
+      // A change to an approved line moves ITS time entry by the difference
+      // (v1.88.0 / 0062) — Keys write-downs survive; gone → filed afresh.
+      let entryId: string | null = null;
       let fresh = false;
-      if (log.time_entry_id) {
-        const { data: updated, error } = await sb.from("time_entries").update(fields).eq("id", log.time_entry_id).select("id");
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        entry = updated?.[0] ?? null;
+      const before = log.time_entry_id ? await approvedSnap(sb, log) : null;
+      if (log.time_entry_id && before) {
+        const r = await syncEntry(sb, log.time_entry_id, before, now);
+        if (r && r !== "gone") return NextResponse.json({ error: r }, { status: 400 });
+        if (!r) entryId = log.time_entry_id;
       }
-      if (!entry) {
-        const { data: inserted, error } = await sb.from("time_entries").insert(fields).select("id").single();
+      if (!entryId) {
+        const { data: inserted, error } = await sb
+          .from("time_entries")
+          .insert({ task_id: task.id, user_id: log.profile_id, date: log.date, minutes: log.minutes, description: log.description })
+          .select("id")
+          .single();
         if (error || !inserted) return NextResponse.json({ error: error?.message ?? "Couldn't add the hours." }, { status: 500 });
-        entry = inserted;
+        entryId = inserted.id as string;
         fresh = true;
       }
-      const { error: e2 } = await sb
-        .from("freelancer_logs")
-        .update({
+      const { error: e2 } = await updateLog(
+        sb,
+        log.id,
+        {
           status: "approved",
           task_id: task.id,
-          client_id: task.client_id ?? log.client_id,
-          time_entry_id: entry.id,
+          client_id: now.client_id,
+          time_entry_id: entryId,
+          approved: now,
           reviewed_by: userId,
           reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", log.id)
-        .eq("status", "pending");
+        },
+        "pending",
+      );
       if (e2) {
         // Don't leave hours in the tracker that the log doesn't point at.
-        if (fresh) await sb.from("time_entries").delete().eq("id", entry.id);
+        if (fresh) await sb.from("time_entries").delete().eq("id", entryId);
         return NextResponse.json({ error: e2.message }, { status: 500 });
       }
       // Filed on a client he wasn't open for: open it, so this task is in his
@@ -352,6 +377,51 @@ export async function POST(req: NextRequest) {
       if (task.client_id) {
         await sb.from("freelancer_clients").upsert({ profile_id: log.profile_id, client_id: task.client_id }, { ignoreDuplicates: true });
       }
+      return NextResponse.json({ ok: true });
+    }
+    case "editLog": {
+      // The admin edits any line of a freelancer's, approved ones included
+      // (v1.89.0 — Nitsan: "keep me able to edit things in her freelance page
+      // only"). An approved line's time entry follows by the difference, so a
+      // Keys write-down survives. The tracker's own popup won't edit these.
+      const log = await readLogRow(sb, str("id"));
+      if (!log || log.status === "rejected") return NextResponse.json({ error: "That line can't be edited." }, { status: 409 });
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(str("date")) ? str("date") : null;
+      const minutes = typeof body.minutes === "number" ? Math.round(body.minutes) : NaN;
+      const description = str("description").trim().slice(0, 600);
+      if (!date) return NextResponse.json({ error: "Pick a date." }, { status: 400 });
+      if (!(minutes >= 5 && minutes <= 1440)) return NextResponse.json({ error: "Hours must be between 0.1 and 24." }, { status: 400 });
+      if (!description) return NextResponse.json({ error: "Say what they worked on." }, { status: 400 });
+      let task: { id: string; client_id: string | null } | null = null;
+      if (str("taskId")) {
+        const { data } = await sb.from("tasks").select("id, client_id").eq("id", str("taskId")).maybeSingle();
+        if (!data) return NextResponse.json({ error: "That task doesn't exist." }, { status: 400 });
+        task = data;
+      } else if (log.status === "approved") {
+        return NextResponse.json({ error: "An approved line needs a task." }, { status: 400 });
+      }
+      const now: LogSnap = {
+        date,
+        minutes,
+        description,
+        task_id: task?.id ?? null,
+        client_id: task?.client_id ?? log.client_id,
+        task_hint: task ? null : log.task_hint,
+      };
+      if (log.status === "approved" && log.time_entry_id) {
+        const before = (await approvedSnap(sb, log)) ?? snapOf(log);
+        const r = await syncEntry(sb, log.time_entry_id, before, now);
+        if (r === "gone") return NextResponse.json({ error: "Its tracker hours were deleted — nothing to update." }, { status: 409 });
+        if (r) return NextResponse.json({ error: r }, { status: 400 });
+      }
+      const { data: written, error } = await updateLog(
+        sb,
+        log.id,
+        { ...now, ...(log.status === "approved" ? { approved: now } : {}) },
+        log.status,
+      );
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (!written?.length) return NextResponse.json({ error: "It changed meanwhile — reload and try again." }, { status: 409 });
       return NextResponse.json({ ok: true });
     }
     case "approveCharge":
@@ -371,29 +441,17 @@ export async function POST(req: NextRequest) {
     }
     case "reject": {
       // Turning down a CHANGE to an approved line keeps the approved one: the
-      // line is restored from its time entry, which never changed (v1.88.0).
-      const { data: log } = await sb.from("freelancer_logs").select("time_entry_id").eq("id", str("id")).eq("status", "pending").maybeSingle();
-      if (log?.time_entry_id) {
-        const { data: e } = await sb.from("time_entries").select("date, minutes, description, task_id").eq("id", log.time_entry_id).maybeSingle();
-        if (e) {
-          const { data: t } = await sb.from("tasks").select("client_id").eq("id", e.task_id).maybeSingle();
-          const { error } = await sb
-            .from("freelancer_logs")
-            .update({
-              status: "approved",
-              date: e.date,
-              minutes: e.minutes,
-              description: e.description ?? "",
-              task_id: e.task_id,
-              task_hint: null,
-              ...(t?.client_id ? { client_id: t.client_id } : {}),
-              reviewed_by: userId,
-              reviewed_at: new Date().toISOString(),
-            })
-            .eq("id", str("id"))
-            .eq("status", "pending");
-          return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
-        }
+      // line is restored from what was approved; its time entry never moved.
+      const log = await readLogRow(sb, str("id"));
+      const before = log?.status === "pending" && log.time_entry_id ? await approvedSnap(sb, log) : null;
+      if (log && before) {
+        const { error } = await updateLog(
+          sb,
+          log.id,
+          { ...before, status: "approved", approved: before, reviewed_by: userId, reviewed_at: new Date().toISOString() },
+          "pending",
+        );
+        return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
       }
       const { error } = await sb
         .from("freelancer_logs")

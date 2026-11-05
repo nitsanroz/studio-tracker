@@ -4,7 +4,9 @@
 // APPEND hours — there was no way to fix a typo'd figure or delete a wrong entry
 // without going to the Time Feed and finding it again.
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatHoursShort, parseDuration } from "@/lib/format";
 import { Modal, ModalClose } from "./ui";
@@ -47,6 +49,32 @@ export function TimeEntryModal({
   const [description, setDescription] = useState(entry?.description ?? "");
   const [date, setDate] = useState(entry?.date ?? "");
   const [userId, setUserId] = useState(entry?.userId ?? currentUserId);
+  /**
+   * Hours a freelancer logged on their own page and an admin approved (0054).
+   * The freelancer's line is what they're paid, so changing the entry here would
+   * leave the two disagreeing with nobody told (Nitsan moved Milica's 4 Nov to
+   * 3 Nov here, 2026-11-05, and her page kept the 4th). Edited on the freelancer
+   * page instead, which moves both. Keys stays available: writing hours down
+   * changes what the CLIENT pays, not what she's paid.
+   * Looked up only for an admin on an accountless person's entry —
+   * freelancer_logs is admin-only.
+   */
+  const owner = entry ? profiles.find((p) => p.id === entry.userId) : undefined;
+  const mayBeFreelance = isAdmin && !!entry?.id && !entry.legacy && owner?.hasAccount === false;
+  const [fromFreelancer, setFromFreelancer] = useState(false);
+  useEffect(() => {
+    if (!mayBeFreelance || !entry) return;
+    let alive = true;
+    createClient()
+      .from("freelancer_logs")
+      .select("id")
+      .eq("time_entry_id", entry.id)
+      .limit(1)
+      .then(({ data }) => alive && setFromFreelancer(!!data?.length));
+    return () => {
+      alive = false;
+    };
+  }, [mayBeFreelance, entry]);
   /**
    * The note box grows to fit the note. A long note in a one-line field shows a
    * dozen characters through a slit and you cannot fix what you cannot read —
@@ -101,7 +129,7 @@ export function TimeEntryModal({
     );
   }
 
-  const editable = canEditEntry(entry, isAdmin, currentUserId);
+  const editable = canEditEntry(entry, isAdmin, currentUserId) && !fromFreelancer;
   const minutes = parseDuration(duration);
   const ready = editable && !!minutes && minutes > 0 && description.trim().length > 0;
   const input = "rounded-md border border-border bg-surface px-2 py-1.5 text-sm";
@@ -136,7 +164,18 @@ export function TimeEntryModal({
         <ModalClose onClose={onClose} />
       </div>
 
-      {!editable && (
+      {fromFreelancer && (
+        <p className="mb-3 rounded-lg bg-background px-3 py-2 text-xs text-muted">
+          {owner?.name.split(" ")[0]} logged these hours on their freelancer page. They can change
+          them there (it comes back to you), or you can on{" "}
+          <Link href={`/freelancers/${entry.userId}`} onClick={onClose} className="text-brand hover:underline">
+            their page here
+          </Link>
+          {" "}— both keep the tracker in step. Keys below still works: it changes what the client
+          pays, not what they&apos;re paid.
+        </p>
+      )}
+      {!editable && !fromFreelancer && (
         <p className="mb-3 rounded-lg bg-background px-3 py-2 text-xs text-muted">
           {entry.legacy
             ? "Recovered pre-Everhour history — read-only, and deliberately so: its hours and often its date were reconstructed, not logged here."

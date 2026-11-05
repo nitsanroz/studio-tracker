@@ -15,6 +15,7 @@ import {
   FolderOpen,
   Link2,
   Loader2,
+  Pencil,
   ReceiptText,
   RefreshCw,
   Scale,
@@ -23,7 +24,8 @@ import {
 } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
-import { ClientChip } from "@/components/ui";
+import { ClientChip, Modal, ModalClose } from "@/components/ui";
+import { formatHoursShort, parseDuration } from "@/lib/format";
 import { freelancerPath } from "@/lib/freelancer-link";
 import {
   TermsForm,
@@ -297,6 +299,7 @@ function MonthTable({
   // turned down — and says so.
   const waiting = data.logs.filter((l) => l.status === "pending");
   const filed = data.logs.filter((l) => l.status !== "pending");
+  const [editing, setEditing] = useState<Row | null>(null);
   const waitingHours = waiting.reduce((t, l) => t + l.hours, 0);
   return (
     <>
@@ -311,7 +314,7 @@ function MonthTable({
         </header>
         <ul className="flex flex-col gap-3">
           {waiting.map((l) => (
-            <WaitingRow key={l.id} row={l} clients={data.clients} tasks={data.tasks} onChanged={onChanged} />
+            <WaitingRow key={l.id} row={l} clients={data.clients} tasks={data.tasks} onChanged={onChanged} onEdit={() => setEditing(l)} />
           ))}
         </ul>
       </section>
@@ -384,8 +387,18 @@ function MonthTable({
                   ) : l.fromLog ? (
                     <span className="text-xs text-faint">Logged</span>
                   ) : l.status === "approved" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
-                      <Check size={12} /> Approved
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
+                        <Check size={12} /> Approved
+                      </span>
+                      <button
+                        onClick={() => setEditing(l)}
+                        className="rounded p-1 text-faint hover:bg-background hover:text-brand"
+                        title="Edit this line — the tracker hours follow"
+                        aria-label="Edit this line"
+                      >
+                        <Pencil size={14} />
+                      </button>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
@@ -414,6 +427,18 @@ function MonthTable({
         </tfoot>
       </table>
     </div>
+    {editing && (
+      <EditLineModal
+        row={editing}
+        clients={data.clients}
+        tasks={data.tasks}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          onChanged();
+        }}
+      />
+    )}
     </>
   );
 }
@@ -425,11 +450,13 @@ function WaitingRow({
   clients,
   tasks: preloaded,
   onChanged,
+  onEdit,
 }: {
   row: Row;
   clients: Data["clients"];
   tasks: PickTask[];
   onChanged: () => void;
+  onEdit: () => void;
 }) {
   const { openTask } = useData();
   const [clientId, setClientId] = useState(row.clientId ?? "");
@@ -481,6 +508,14 @@ function WaitingRow({
         {row.description !== row.taskHint && (
           <span className="bidi-auto text-sm text-muted">· {row.description}</span>
         )}
+        <button
+          onClick={onEdit}
+          className="rounded p-1 text-faint hover:bg-surface hover:text-brand"
+          title="Edit their date, hours or note"
+          aria-label="Edit this line"
+        >
+          <Pencil size={14} />
+        </button>
       </div>
       {row.before && (
         <p className="bidi-auto mt-2 rounded-lg bg-surface px-3 py-2 text-[13px] text-muted">
@@ -947,5 +982,150 @@ function Side({
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * The admin's edit of one freelancer line — date, hours, task, note — approved
+ * lines included (v1.89.0). The server moves the tracker entry by the
+ * difference, so a Keys write-down on it survives; the tracker's own popup
+ * won't edit these, so the two can't drift apart.
+ */
+function EditLineModal({
+  row,
+  clients,
+  tasks: preloaded,
+  onClose,
+  onSaved,
+}: {
+  row: Row;
+  clients: Data["clients"];
+  tasks: PickTask[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [date, setDate] = useState(row.date);
+  const [duration, setDuration] = useState(formatHoursShort(Math.round(row.hours * 60)));
+  const [description, setDescription] = useState(row.description);
+  const [clientId, setClientId] = useState(row.clientId ?? "");
+  const [taskId, setTaskId] = useState(row.taskId ?? "");
+  const [fetched, setFetched] = useState<PickTask[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!clientId) return;
+    let alive = true;
+    fetch(`/api/admin/freelancers?tasks=${encodeURIComponent(clientId)}`)
+      .then((r) => r.json())
+      .then((j: { tasks?: PickTask[] }) => alive && setFetched(j.tasks ?? []))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [clientId]);
+  const options = (fetched ?? preloaded.filter((t) => t.clientId === clientId)).filter(
+    (t) => !t.done || t.id === taskId,
+  );
+  // The line's own task may be done and so missing from a fresh list — keep it.
+  if (row.taskId && row.task && clientId === row.clientId && !options.some((t) => t.id === row.taskId)) {
+    options.unshift({ id: row.taskId, title: row.task, clientId, done: true });
+  }
+  const minutes = parseDuration(duration);
+  const approved = row.status === "approved";
+  const ready = !!date && !!minutes && minutes > 0 && description.trim().length > 0 && (!approved || !!taskId);
+
+  async function save() {
+    if (!ready) return;
+    setBusy(true);
+    const err = await act({ action: "editLog", id: row.id, date, minutes, description: description.trim(), taskId });
+    setBusy(false);
+    if (err) setError(err);
+    else onSaved();
+  }
+
+  const field = "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm";
+  return (
+    <Modal onClose={onClose} width="md">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="font-heading text-sm">Edit their line</h3>
+        <ModalClose onClose={onClose} />
+      </div>
+      <div className="flex flex-col gap-3 text-sm">
+        <div className="flex gap-3">
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-muted">Date</span>
+            <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} className={field} />
+          </label>
+          <label className="flex w-28 flex-col gap-1">
+            <span className="text-muted">Hours</span>
+            <input
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              title="1.5, 1.5h, 1:30 and 90m all work"
+              className={`${field} ${duration && minutes == null ? "border-danger" : ""}`}
+            />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted">Client</span>
+          <select
+            value={clientId}
+            onChange={(e) => {
+              setClientId(e.target.value);
+              setTaskId("");
+              setFetched(null);
+            }}
+            className={field}
+          >
+            <option value="">Client…</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted">Task</span>
+          <select value={taskId} disabled={!clientId} onChange={(e) => setTaskId(e.target.value)} className={field}>
+            <option value="">{approved ? "Pick a task…" : "Not filed yet"}</option>
+            {options.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+                {t.done ? " (done)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted">What they did</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className="bidi-auto w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm"
+          />
+        </label>
+        {approved && (
+          <p className="text-xs text-muted">
+            Approved — saving updates its tracker hours too. A Keys write-down on them stays: only the
+            difference in hours is applied.
+          </p>
+        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm font-medium text-muted hover:bg-background">
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={!ready || busy}
+          className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-white hover:bg-black disabled:opacity-40"
+        >
+          Save
+        </button>
+      </div>
+    </Modal>
   );
 }
