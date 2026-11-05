@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanPosition, convertedAs, convertedHref } from "./convert";
+import { cleanPosition, convertedAs, convertedHref, positionFromRole } from "./convert";
 
 describe("convertedAs", () => {
   it("is null for a candidate never converted", () => {
@@ -31,23 +31,36 @@ describe("convertedHref", () => {
 });
 
 describe("cleanPosition", () => {
-  it("keeps a role name, tidied", () => {
-    expect(cleanPosition("  Senior   designer ")).toBe("Senior designer");
+  it("keeps only the keys the database allows", () => {
+    expect(cleanPosition("designer")).toBe("designer");
+    expect(cleanPosition(" project_manager ")).toBe("project_manager");
+    // The first real conversion sent the role as typed and was refused.
+    expect(cleanPosition("Designer")).toBeNull();
+    expect(cleanPosition("Senior designer")).toBeNull();
   });
 
   it("never hands out the owner's position", () => {
-    expect(cleanPosition("Owner")).toBeNull();
-    expect(cleanPosition(" owner ")).toBeNull();
+    expect(cleanPosition("owner")).toBeNull();
   });
 
   it("drops anything empty or not text", () => {
     expect(cleanPosition("")).toBeNull();
-    expect(cleanPosition("   ")).toBeNull();
     expect(cleanPosition(undefined)).toBeNull();
     expect(cleanPosition(42)).toBeNull();
   });
+});
 
-  it("caps the length", () => {
-    expect(cleanPosition("x".repeat(200))?.length).toBe(80);
+describe("positionFromRole", () => {
+  it("guesses a key from the hiring board's role", () => {
+    expect(positionFromRole("Designer")).toBe("designer");
+    expect(positionFromRole("Senior Product Designer")).toBe("designer");
+    expect(positionFromRole("Project Manager")).toBe("project_manager");
+    expect(positionFromRole("Office manager")).toBe("office_manager");
+  });
+
+  it("is null when nothing fits, or for an Owner role", () => {
+    expect(positionFromRole("Developer")).toBeNull();
+    expect(positionFromRole("Owner")).toBeNull();
+    expect(positionFromRole(null)).toBeNull();
   });
 });

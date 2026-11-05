@@ -72,7 +72,13 @@ import {
   type ScoreSubject,
 } from "@/lib/candidates/types";
 import { PageSkeleton } from "@/components/skeleton";
-import { convertedAs, convertedHref, type ConvertedAs } from "@/lib/candidates/convert";
+import {
+  convertedAs,
+  convertedHref,
+  positionFromRole,
+  POSITIONS,
+  type ConvertedAs,
+} from "@/lib/candidates/convert";
 import { TermsForm } from "@/app/(app)/freelancers/shared";
 import { StageTrack } from "@/components/stage-track";
 
@@ -630,8 +636,8 @@ function FoldButton({ shut, label, onClick }: { shut: boolean; label: string; on
 /**
  * "Convert to a team member" — a candidate becomes a member: an account, a
  * profile, a plan column, and their email and phone in HR details. Their role
- * on the board becomes the profile's job title (never "owner" — the route
- * refuses it, see `cleanPosition`).
+ * on the board suggests the job title — a key from `POSITIONS`, since the
+ * database checks it (never "owner", see `cleanPosition`).
  *
  * ⚠️ THE SAME ROUTE AS TEAM → ADD USER (`/api/admin/users`), with the
  * candidate's id on top, so there is one way a member gets made. What the
@@ -654,7 +660,7 @@ function JoinTeamModal({
 }) {
   const [name, setName] = useState(candidate.name);
   const [email, setEmail] = useState(candidate.email ?? "");
-  const [position, setPosition] = useState(roleName ?? "");
+  const [position, setPosition] = useState<string>(positionFromRole(roleName) ?? "");
   const [startDate, setStartDate] = useState(toISODate(new Date()));
   const [role, setRole] = useState<"designer" | "admin">("designer");
   const [busy, setBusy] = useState(false);
@@ -673,7 +679,7 @@ function JoinTeamModal({
           email: email.trim(),
           role,
           startDate,
-          position: position.trim() || undefined,
+          position: position || undefined,
           candidateId: candidate.id,
         }),
       });
@@ -716,12 +722,14 @@ function JoinTeamModal({
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
           Job title
-          <input
-            value={position}
-            onChange={(e) => setPosition(e.target.value)}
-            placeholder="Designer"
-            className={field}
-          />
+          <select value={position} onChange={(e) => setPosition(e.target.value)} className={field}>
+            <option value="">None</option>
+            {POSITIONS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1 text-xs text-muted">
@@ -784,7 +792,7 @@ function FreelancerModal({
   onDone: (profileId: string, warnings: string[]) => void;
 }) {
   const [name, setName] = useState(candidate.name);
-  const [position, setPosition] = useState(roleName ?? "");
+  const [position, setPosition] = useState<string>(positionFromRole(roleName) ?? "");
   const field = "min-h-11 rounded-lg border border-border bg-surface px-2.5 text-sm md:min-h-9";
   return (
     <Modal onClose={onClose} labelledBy="freelancer-title">
@@ -806,12 +814,14 @@ function FreelancerModal({
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted">
           Job title
-          <input
-            value={position}
-            onChange={(e) => setPosition(e.target.value)}
-            placeholder="Designer"
-            className={field}
-          />
+          <select value={position} onChange={(e) => setPosition(e.target.value)} className={field}>
+            <option value="">None</option>
+            {POSITIONS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+          </select>
         </label>
         <TermsForm
           initial={{ currency: "EUR", rateHigh: 50, rateLow: 50, hoursLow: 50, hoursHigh: 150 }}
@@ -825,7 +835,7 @@ function FreelancerModal({
               body: JSON.stringify({
                 action: "create",
                 name: name.trim(),
-                position: position.trim() || undefined,
+                position: position || undefined,
                 candidateId: candidate.id,
                 ...t,
               }),

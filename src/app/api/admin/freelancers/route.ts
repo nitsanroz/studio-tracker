@@ -494,7 +494,7 @@ export async function POST(req: NextRequest) {
       if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
       // "Convert to a freelancer" from a hired candidate (v1.90.0): the same
       // create, refused if they were converted already, then finished like a
-      // team member's (convert-server.ts). `position` is their role, never "owner".
+      // team member's (convert-server.ts). `position` is a POSITIONS key, never "owner".
       const candidateId = str("candidateId");
       if (candidateId) {
         const blocked = await convertBlocked(sb, candidateId);

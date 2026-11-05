@@ -45,16 +45,40 @@ export function convertedHref(as: ConvertedAs, profileId: string): string {
 }
 
 /**
- * The job title a new profile gets from the candidate's role, or null.
+ * The job titles a new profile may get — `profiles.position` is a KEY checked
+ * by the database (`profiles_position_check`, added by hand), not free text:
+ * "Designer" as typed is refused (hit on the first real conversion,
+ * 2026-11-05). These are the keys profiles use today, minus "owner".
+ */
+export const POSITIONS = [
+  { key: "designer", label: "Designer" },
+  { key: "project_manager", label: "Project manager" },
+  { key: "office_manager", label: "Office manager" },
+] as const;
+export type PositionKey = (typeof POSITIONS)[number]["key"];
+
+/**
+ * The position key a profile may be written with, or null.
  *
  * ⚠️ NEVER "owner". `profiles.position = 'owner'` is what makes someone the
  * studio owner — the vacation approver (0058) and the only reader of &advice
  * (0059) — and these routes write with the service key, past the 0021 trigger.
- * A role named "Owner" on the hiring board must not hand that out.
+ * Anything not in `POSITIONS` is dropped, so the insert can't be refused.
  */
-export function cleanPosition(raw: unknown): string | null {
+export function cleanPosition(raw: unknown): PositionKey | null {
   if (typeof raw !== "string") return null;
-  const p = raw.trim().replace(/\s+/g, " ").slice(0, 80);
-  if (!p || p.toLowerCase() === "owner") return null;
-  return p;
+  const k = raw.trim();
+  return POSITIONS.some((p) => p.key === k) ? (k as PositionKey) : null;
+}
+
+/**
+ * The position a candidate's role on the hiring board suggests — a guess the
+ * form shows, which the admin can change. Null when nothing fits.
+ */
+export function positionFromRole(roleName: string | null | undefined): PositionKey | null {
+  const r = (roleName ?? "").toLowerCase();
+  if (/office/.test(r)) return "office_manager";
+  if (/project|producer|account/.test(r)) return "project_manager";
+  if (/design|art direct|illustrat|motion|brand/.test(r)) return "designer";
+  return null;
 }
