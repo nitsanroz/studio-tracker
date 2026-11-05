@@ -66,7 +66,14 @@ const editableFrom = () => `${today().slice(0, 7)}-01`;
 async function allowed(sb: SupabaseClient, profileId: string) {
   const [{ data: links }, { data: approved }] = await Promise.all([
     sb.from("freelancer_clients").select("client_id").eq("profile_id", profileId),
-    sb.from("freelancer_logs").select("task_id").eq("profile_id", profileId).eq("status", "approved").not("task_id", "is", null),
+    // Approved — or approved once and changed since (back to pending with its
+    // time entry kept), so a line he re-edits still validates on its own task.
+    sb
+      .from("freelancer_logs")
+      .select("task_id")
+      .eq("profile_id", profileId)
+      .or("status.eq.approved,time_entry_id.not.is.null")
+      .not("task_id", "is", null),
   ]);
   const clientIds = (links ?? []).map((l) => l.client_id as string);
   const taskIds = [...new Set((approved ?? []).map((l) => l.task_id as string))];
@@ -125,7 +132,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
     allowed(sb, f.profile_id),
     sb
       .from("freelancer_logs")
-      .select("id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source")
+      .select("id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source, time_entry_id")
       .eq("profile_id", f.profile_id)
       .neq("status", "rejected")
       .gte("date", from)
@@ -224,8 +231,13 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       taskHint: l.task_hint,
       description: l.description,
       // Review is internal: he only learns whether a row is still his to change —
-      // waiting, his own (not his sheet's), and in the current month.
-      editable: l.status === "pending" && l.source !== "sheet" && l.date >= editableFrom(),
+      // his own (not his sheet's) and in the current month. An APPROVED line can
+      // be changed too (v1.88.0 — Milica logged a day on the wrong date the day
+      // after it was approved): the change goes back for review, see PATCH.
+      editable: l.status !== "rejected" && l.source !== "sheet" && l.date >= editableFrom(),
+      // Taking a line back is only before it's filed — once approved it is
+      // tracker hours, and removing them is the studio's call.
+      removable: l.status === "pending" && !l.time_entry_id && l.source !== "sheet" && l.date >= editableFrom(),
       clientId: l.client_id,
       taskId: l.task_id,
     })),
@@ -349,9 +361,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   return NextResponse.json({ ok: true });
 }
 
-/** He can change or take back a line of his until it's reviewed — in the
- * current month only. Once approved it is tracker hours (and maybe already in a
- * client's report), so it is history and stays as filed. */
+/** He can change a line of his in the current month — before review, or after
+ * (v1.88.0). A change to an APPROVED line puts it back to pending with its
+ * `time_entry_id` kept: the approved hours stay in the tracker as they were
+ * until an admin approves the change (which rewrites that entry) or keeps the
+ * old one (which restores the line from it) — see /api/admin/freelancers. */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
   const sb = admin();
@@ -368,6 +382,31 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ token: st
   const table = body.type === "charge" ? "freelancer_charges" : "freelancer_logs";
   const read = body.type === "charge" ? readCharge(f, body) : await readLog(sb, f, body);
   if ("error" in read) return NextResponse.json({ error: read.error }, { status: 400 });
+  if (table === "freelancer_logs") {
+    const { data: current } = await sb
+      .from("freelancer_logs")
+      .select("date, minutes, client_id, task_id, task_hint, description, status")
+      .eq("id", id)
+      .eq("profile_id", f.profile_id)
+      .eq("source", "link")
+      .in("status", ["pending", "approved"])
+      .gte("date", editableFrom())
+      .maybeSingle();
+    if (!current) return NextResponse.json({ error: "This line can't be changed any more." }, { status: 409 });
+    const row = read.row as Record<string, unknown>;
+    const same = (Object.keys(row) as (keyof typeof current)[]).every((k) => (current[k] ?? null) === (row[k] ?? null));
+    // Saving an approved line unchanged must not send it back for review.
+    if (same) return NextResponse.json({ ok: true });
+    const { data } = await sb
+      .from("freelancer_logs")
+      .update({ ...row, status: "pending" })
+      .eq("id", id)
+      .eq("profile_id", f.profile_id)
+      .eq("status", current.status)
+      .select("id");
+    if (!data?.length) return NextResponse.json({ error: "This line changed meanwhile — reload and try again." }, { status: 409 });
+    return NextResponse.json({ ok: true });
+  }
   const { data } = await sb
     .from(table)
     .update(read.row)
@@ -416,6 +455,8 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ token: s
     .eq("id", id)
     .eq("profile_id", f.profile_id)
     .eq("status", "pending")
+    // A changed approved line still has tracker hours behind it.
+    .is("time_entry_id", null)
     .eq("source", "link")
     .gte("date", editableFrom())
     .select("id");

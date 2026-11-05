@@ -391,13 +391,13 @@ export function usePlanActions(deps: PlanDeps) {
   );
 
   const addPlanColumn = useCallback(
-    (name: string) => {
+    (name: string, profileId?: string) => {
       const memberCols = planColumns.filter((c) => c.type !== "waiting_list");
       const position = Math.max(0, ...memberCols.map((c) => c.position)) + 1;
       counting(
         supabase
           .from("plan_columns")
-          .insert({ name, type: "member", position })
+          .insert({ name, type: "member", position, ...(profileId ? { profile_id: profileId } : {}) })
           .select()
           .single(),
       )

@@ -54,6 +54,7 @@ function month(period: string) {
       taskHint: null,
       description: l.x,
       editable: l.e,
+      removable: l.e,
       clientId: CLIENTS[l.c].id,
       taskId: null,
     })),

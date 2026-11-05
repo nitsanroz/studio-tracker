@@ -59,6 +59,8 @@ interface Row {
   fromSheet: boolean;
   /** One of a login's own time entries (Dima) — never reviewed here. */
   fromLog: boolean;
+  /** A waiting row that changes an approved one: what is approved today. */
+  before?: { date: string; hours: number; description: string; task: string | null } | null;
 }
 interface PickTask {
   id: string;
@@ -480,6 +482,16 @@ function WaitingRow({
           <span className="bidi-auto text-sm text-muted">· {row.description}</span>
         )}
       </div>
+      {row.before && (
+        <p className="bidi-auto mt-2 rounded-lg bg-surface px-3 py-2 text-[13px] text-muted">
+          <b className="font-medium text-foreground">Changed after approval.</b> Approved now:{" "}
+          {dayLabel(row.before.date)} · {hrs(row.before.hours)}
+          {row.before.task ? ` · ${row.before.task}` : ""} · {row.before.description}
+          <span className="block text-faint">
+            Approve to update those hours in the tracker, or keep the approved line as it was.
+          </span>
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <select
           value={clientId}
@@ -546,12 +558,13 @@ function WaitingRow({
         <button
           disabled={busy}
           onClick={() => {
+            if (row.before) return void run({ action: "reject", id: row.id });
             const note = prompt("Turn this log down? Add a note for them (optional):");
             if (note !== null) void run({ action: "reject", id: row.id, note });
           }}
           className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-surface hover:text-danger"
         >
-          <X size={15} /> Turn down
+          <X size={15} /> {row.before ? "Keep the approved one" : "Turn down"}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}

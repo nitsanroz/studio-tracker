@@ -274,7 +274,8 @@ export interface Store {
     place?: { beforeId: string | null },
   ) => void;
   deletePlanEntry: (entryId: string) => void;
-  addPlanColumn: (name: string) => void;
+  /** `profileId` links the column to a person — a freelancer with no login (v1.88.0). */
+  addPlanColumn: (name: string, profileId?: string) => void;
   updatePlanColumn: (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => void;
   movePlanColumn: (columnId: string, direction: -1 | 1) => void;
   deletePlanColumn: (columnId: string) => void;

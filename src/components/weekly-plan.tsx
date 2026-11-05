@@ -237,6 +237,28 @@ function ColumnManager({ onClose }: { onClose: () => void }) {
   const { planColumns, addPlanColumn, updatePlanColumn, movePlanColumn, deletePlanColumn } =
     useData();
   const [newName, setNewName] = useState("");
+  /**
+   * Freelancers (no login) for a column of their own (v1.88.0, Nitsan: "weekly
+   * plan can have freelancers columns available to show"). Their list is
+   * admin-only data, so it is fetched here rather than kept in the store; a
+   * member opening this gets a 403 and simply no section. The column is LINKED
+   * to the profile, so it shows their photo and a task dragged into it is
+   * assigned to them, like any member's.
+   */
+  const [freelancers, setFreelancers] = useState<{ profileId: string; name: string }[]>([]);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/admin/freelancers")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { freelancers?: { profileId: string; name: string; hasLogin: boolean }[] } | null) => {
+        if (alive && j?.freelancers) setFreelancers(j.freelancers.filter((f) => !f.hasLogin && f.name));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const unplaced = freelancers.filter((f) => !planColumns.some((c) => c.profileId === f.profileId));
 
   const ordered = planColumns
     .filter((c) => c.type !== "waiting_list")
@@ -260,6 +282,9 @@ function ColumnManager({ onClose }: { onClose: () => void }) {
                 {col.type === "studio" && <span className="ml-1.5 text-xs text-faint">(studio)</span>}
                 {!col.profileId && col.type === "member" && (
                   <span className="ml-1.5 text-xs text-faint">(custom)</span>
+                )}
+                {col.profileId && freelancers.some((f) => f.profileId === col.profileId) && (
+                  <span className="ml-1.5 text-xs text-faint">(freelancer)</span>
                 )}
               </span>
               <button
@@ -298,6 +323,22 @@ function ColumnManager({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
+        {unplaced.length > 0 && (
+          <div className="mt-3 border-t border-border pt-3">
+            <p className="mb-1.5 text-xs text-muted">Freelancers without a column</p>
+            <div className="flex flex-wrap gap-1.5">
+              {unplaced.map((f) => (
+                <button
+                  key={f.profileId}
+                  onClick={() => addPlanColumn(f.name, f.profileId)}
+                  className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs hover:border-brand hover:text-brand"
+                >
+                  <Plus size={12} /> {f.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <form
           className="mt-3 flex gap-2 border-t border-border pt-3"
           onSubmit={(e) => {

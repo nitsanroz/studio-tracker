@@ -37,6 +37,19 @@ export function MemberSelect({
    * starts with the list open, or the select would show a name it doesn't offer.
    */
   const [showArchived, setShowArchived] = useState(() => archived.some((p) => p.id === value));
+  /**
+   * The person the value already names, when neither list holds them — a
+   * freelancer with no login (Milica), whose hours an admin filed. Without this
+   * the select had no matching option and showed "Me" — wrong, and with no way
+   * to pick her back once anything else was chosen.
+   */
+  const outside = useMemo(
+    () =>
+      members.some((p) => p.id === value) || archived.some((p) => p.id === value)
+        ? null
+        : (profiles.find((p) => p.id === value) ?? null),
+    [members, archived, profiles, value],
+  );
 
   return (
     <div className="flex items-center gap-1">
@@ -48,6 +61,7 @@ export function MemberSelect({
         // so adding the archived names would make it jump.
         className={`${width} truncate ${className}`}
       >
+        {outside && <option value={outside.id}>{outside.name}</option>}
         {members.map((p) => (
           <option key={p.id} value={p.id}>
             {p.id === currentUserId ? "Me" : p.name}

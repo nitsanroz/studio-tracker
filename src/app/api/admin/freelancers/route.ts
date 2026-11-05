@@ -88,6 +88,7 @@ async function loginEntries(sb: SupabaseClient, ids: string[], from: string, to:
       status: "approved",
       review_note: null as string | null,
       source: "log",
+      time_entry_id: null as string | null,
     }));
 }
 
@@ -149,7 +150,7 @@ export async function GET(req: NextRequest) {
       .order("created_at"),
     sb
       .from("freelancer_logs")
-      .select("id, profile_id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source")
+      .select("id, profile_id, date, minutes, client_id, task_id, task_hint, description, status, review_note, source, time_entry_id")
       .in("profile_id", ids)
       .gte("date", from)
       .lte("date", to)
@@ -201,6 +202,14 @@ export async function GET(req: NextRequest) {
   const clientIds = [...new Set(rows.map((l) => l.client_id).filter((c): c is string => !!c))];
   const taskIds = [...new Set(rows.map((l) => l.task_id).filter((t): t is string => !!t))];
   const waitingClients = [...new Set(rows.filter((l) => l.status === "pending").map((l) => l.client_id).filter((c): c is string => !!c))];
+  // A WAITING row that already has a time entry was approved once and changed
+  // since by the freelancer (v1.88.0): the entry still holds what was approved.
+  const changedEntryIds = rows.filter((l) => l.status === "pending" && l.time_entry_id).map((l) => l.time_entry_id as string);
+  const { data: beforeEntries } = changedEntryIds.length
+    ? await sb.from("time_entries").select("id, date, minutes, description, task_id").in("id", changedEntryIds)
+    : { data: [] as { id: string; date: string; minutes: number; description: string | null; task_id: string }[] };
+  const beforeOf = new Map((beforeEntries ?? []).map((e) => [e.id as string, e]));
+  for (const e of beforeEntries ?? []) if (e.task_id && !taskIds.includes(e.task_id)) taskIds.push(e.task_id);
   const [{ data: logClients }, { data: logTasks }, { data: pickTasks }, { data: allLogs }, { data: allCharges }] = await Promise.all([
     clientIds.length ? sb.from("clients").select("id, name").in("id", clientIds) : Promise.resolve({ data: [] }),
     taskIds.length ? sb.from("tasks").select("id, title").in("id", taskIds) : Promise.resolve({ data: [] }),
@@ -260,6 +269,13 @@ export async function GET(req: NextRequest) {
       note: l.review_note,
       fromSheet: l.source === "sheet",
       fromLog: l.source === "log",
+      // What is approved today, when this waiting row is a change to it.
+      before: (() => {
+        const e = l.status === "pending" && l.time_entry_id ? beforeOf.get(l.time_entry_id) : undefined;
+        return e
+          ? { date: e.date, hours: e.minutes / 60, description: e.description ?? "", task: taskTitle.get(e.task_id) ?? null }
+          : null;
+      })(),
     })),
     charges: (monthCharges ?? []).map((c) => ({
       id: c.id,
@@ -292,18 +308,28 @@ export async function POST(req: NextRequest) {
     case "approve": {
       const { data: log } = await sb
         .from("freelancer_logs")
-        .select("id, profile_id, date, minutes, client_id, description, status")
+        .select("id, profile_id, date, minutes, client_id, description, status, time_entry_id")
         .eq("id", str("id"))
         .single();
       if (!log || log.status !== "pending") return NextResponse.json({ error: "That log isn't waiting for review." }, { status: 409 });
       const { data: task } = await sb.from("tasks").select("id, client_id").eq("id", str("taskId")).single();
       if (!task) return NextResponse.json({ error: "Pick a task to file it on." }, { status: 400 });
-      const { data: entry, error } = await sb
-        .from("time_entries")
-        .insert({ task_id: task.id, user_id: log.profile_id, date: log.date, minutes: log.minutes, description: log.description })
-        .select("id")
-        .single();
-      if (error || !entry) return NextResponse.json({ error: error?.message ?? "Couldn't add the hours." }, { status: 500 });
+      const fields = { task_id: task.id, user_id: log.profile_id, date: log.date, minutes: log.minutes, description: log.description };
+      // A change to an approved line rewrites ITS time entry rather than adding
+      // a second one (v1.88.0); if that entry is gone, it's filed afresh.
+      let entry: { id: string } | null = null;
+      let fresh = false;
+      if (log.time_entry_id) {
+        const { data: updated, error } = await sb.from("time_entries").update(fields).eq("id", log.time_entry_id).select("id");
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        entry = updated?.[0] ?? null;
+      }
+      if (!entry) {
+        const { data: inserted, error } = await sb.from("time_entries").insert(fields).select("id").single();
+        if (error || !inserted) return NextResponse.json({ error: error?.message ?? "Couldn't add the hours." }, { status: 500 });
+        entry = inserted;
+        fresh = true;
+      }
       const { error: e2 } = await sb
         .from("freelancer_logs")
         .update({
@@ -318,7 +344,7 @@ export async function POST(req: NextRequest) {
         .eq("status", "pending");
       if (e2) {
         // Don't leave hours in the tracker that the log doesn't point at.
-        await sb.from("time_entries").delete().eq("id", entry.id);
+        if (fresh) await sb.from("time_entries").delete().eq("id", entry.id);
         return NextResponse.json({ error: e2.message }, { status: 500 });
       }
       // Filed on a client he wasn't open for: open it, so this task is in his
@@ -344,6 +370,31 @@ export async function POST(req: NextRequest) {
       return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
     }
     case "reject": {
+      // Turning down a CHANGE to an approved line keeps the approved one: the
+      // line is restored from its time entry, which never changed (v1.88.0).
+      const { data: log } = await sb.from("freelancer_logs").select("time_entry_id").eq("id", str("id")).eq("status", "pending").maybeSingle();
+      if (log?.time_entry_id) {
+        const { data: e } = await sb.from("time_entries").select("date, minutes, description, task_id").eq("id", log.time_entry_id).maybeSingle();
+        if (e) {
+          const { data: t } = await sb.from("tasks").select("client_id").eq("id", e.task_id).maybeSingle();
+          const { error } = await sb
+            .from("freelancer_logs")
+            .update({
+              status: "approved",
+              date: e.date,
+              minutes: e.minutes,
+              description: e.description ?? "",
+              task_id: e.task_id,
+              task_hint: null,
+              ...(t?.client_id ? { client_id: t.client_id } : {}),
+              reviewed_by: userId,
+              reviewed_at: new Date().toISOString(),
+            })
+            .eq("id", str("id"))
+            .eq("status", "pending");
+          return error ? NextResponse.json({ error: error.message }, { status: 500 }) : NextResponse.json({ ok: true });
+        }
+      }
       const { error } = await sb
         .from("freelancer_logs")
         .update({ status: "rejected", review_note: str("note").trim().slice(0, 300) || null, reviewed_by: userId, reviewed_at: new Date().toISOString() })

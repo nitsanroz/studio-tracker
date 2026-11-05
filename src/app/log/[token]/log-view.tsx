@@ -10,8 +10,9 @@ import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 // either; and a pane of links to his deliverables.
 // ⚠️ Review is INTERNAL to the studio (Nitsan): no status shows here, turned-down
 // rows don't either (the server leaves them out; they're out of his bill) — he
-// only sees whether a row is still his to change: his own, not yet filed, and
-// in the current month. Filed lines are tracker hours — history — and stay put.
+// only sees whether a row is still his to change: his own and in the current
+// month. A filed line can still be changed (it goes back for review, unseen by
+// him) but not deleted — it is tracker hours.
 
 // ⚠️ 16px text in every input on a phone: iOS Safari zooms the page when a
 // focused input's text is smaller (same rule as the intake form).
@@ -40,6 +41,8 @@ interface Log {
   taskHint: string | null;
   description: string;
   editable: boolean;
+  /** Only a line not yet filed can be taken back; a filed one can still be changed. */
+  removable: boolean;
   clientId: string | null;
   taskId: string | null;
 }
@@ -283,23 +286,25 @@ export function FreelancerLogView({ token }: { token: string }) {
 }
 
 /** Edit / delete on a row that's still his to change (shown on hover). */
-function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => void; onRemove: () => Promise<void> }) {
+function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => void; onRemove?: () => Promise<void> }) {
   return (
     <div className="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
       <button onClick={onEdit} className="text-faint hover:text-brand" aria-label={`Edit ${label}`} title="Edit">
         <Pencil size={14} />
       </button>
-      <button
-        onClick={async () => {
-          if (!confirm(`Delete this ${label}?`)) return;
-          await onRemove();
-        }}
-        className="text-faint hover:text-danger"
-        aria-label={`Delete ${label}`}
-        title="Delete"
-      >
-        <Trash2 size={14} />
-      </button>
+      {onRemove && (
+        <button
+          onClick={async () => {
+            if (!confirm(`Delete this ${label}?`)) return;
+            await onRemove();
+          }}
+          className="text-faint hover:text-danger"
+          aria-label={`Delete ${label}`}
+          title="Delete"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }
@@ -340,10 +345,14 @@ function HoursTable({ data, api, onChanged, onEdit }: { data: Data; api: string;
                   <RowActions
                     label="line"
                     onEdit={() => onEdit(l)}
-                    onRemove={async () => {
-                      await fetch(`${api}?id=${encodeURIComponent(l.id)}`, { method: "DELETE" });
-                      onChanged();
-                    }}
+                    onRemove={
+                      l.removable
+                        ? async () => {
+                            await fetch(`${api}?id=${encodeURIComponent(l.id)}`, { method: "DELETE" });
+                            onChanged();
+                          }
+                        : undefined
+                    }
                   />
                 )}
               </td>
