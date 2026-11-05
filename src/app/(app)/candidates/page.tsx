@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { convertedAs } from "@/lib/candidates/convert";
 import { useIsNarrow } from "@/lib/use-is-narrow";
 import { startOfWeek, toISODate } from "@/lib/format";
 import type { Profile } from "@/lib/types";
@@ -199,7 +200,7 @@ function CandidateCard({
         </span>
         <ScorePill value={c.avgScore} />
       </div>
-      {c.outcome === "hired" && <HiredChip onTeam={Boolean(c.profileId)} />}
+      {c.outcome === "hired" && <HiredChip profileId={c.profileId} />}
 
       {/* ⚠️ ROLE LEFT, STAGE RIGHT, ONE LINE, ONE HEIGHT — Nitsan, 2026-09-29.
           The stage still reads as sitting under the grade because it is
@@ -244,13 +245,16 @@ function CandidateCard({
 
 /**
  * The one archive outcome worth a mark: in a column of 140 rejections the
- * handful who said yes are what you look for. `onTeam` = they became a member
- * (0061); without it they were taken on freelance.
+ * handful who said yes are what you look for. With 0061's link it also says
+ * what "Convert to…" made of them — a person with no login is a freelancer.
  */
-function HiredChip({ onTeam }: { onTeam: boolean }) {
+function HiredChip({ profileId }: { profileId: string | null }) {
+  const { profiles } = useData();
+  const as = convertedAs(profileId, [], profiles.find((p) => p.id === profileId));
   return (
     <span className="flex w-fit shrink-0 items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] text-success">
-      <BadgeCheck size={12} strokeWidth={1.75} /> {onTeam ? "Hired · on the team" : "Hired"}
+      <BadgeCheck size={12} strokeWidth={1.75} />{" "}
+      {as === "freelancer" ? "Hired · freelancer" : as ? "Hired · on the team" : "Hired"}
     </span>
   );
 }
@@ -1033,7 +1037,7 @@ export default function CandidatesPage() {
                         <span className="min-w-0">
                           <span className="flex min-w-0 items-center gap-2">
                             <span className="bidi-auto truncate text-sm font-medium group-hover/row:text-brand">{c.name}</span>
-                            {c.outcome === "hired" && <HiredChip onTeam={Boolean(c.profileId)} />}
+                            {c.outcome === "hired" && <HiredChip profileId={c.profileId} />}
                             {role && (
                               <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-background px-2 py-0.5 text-xs text-muted">
                                 <span className="size-1.5 rounded-full" style={{ backgroundColor: role.color }} aria-hidden />

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { updateWithOptional } from "@/lib/db";
+import { cleanPosition } from "@/lib/candidates/convert";
+import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 
 // Admin-only: create a team member (auth user + profile).
 // The caller's session is verified server-side; the service key never leaves the server.
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Admins only" }, { status: 403 });
   }
 
-  const { email, name, role, startDate, candidateId } = await request.json();
+  const { email, name, role, startDate, candidateId, position } = await request.json();
   if (!email || !name || !["admin", "designer"].includes(role)) {
     return NextResponse.json({ error: "email, name and role are required" }, { status: 400 });
   }
@@ -34,6 +35,13 @@ export async function POST(request: NextRequest) {
     { auth: { persistSession: false } },
   );
 
+  // "Convert to a team member" from a candidate: refuse a second conversion
+  // before an account exists (convert-server.ts).
+  if (candidateId) {
+    const blocked = await convertBlocked(admin, candidateId);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
+  }
+
   const { data: created, error } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
@@ -47,6 +55,9 @@ export async function POST(request: NextRequest) {
     role,
     active: true,
     start_date: startDate || null,
+    // Job title, from a candidate's role — never "owner" (cleanPosition says
+    // why). Left out when empty, so Team → Add user writes what it always did.
+    ...(cleanPosition(position) ? { position: cleanPosition(position) } : {}),
   });
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
 
@@ -64,7 +75,9 @@ export async function POST(request: NextRequest) {
     position: (cols?.[0]?.position ?? 0) + 1,
   });
 
-  const warnings = candidateId ? await fromCandidate(admin, candidateId, created.user.id, name, user.id) : [];
+  const warnings = candidateId
+    ? await finishConversion(admin, "member", candidateId, created.user.id, name, user.id)
+    : [];
 
   return NextResponse.json({
     id: created.user.id,
@@ -77,66 +90,3 @@ export async function POST(request: NextRequest) {
   });
 }
 
-/**
- * "Add to the team" from a hired candidate's page: carry what the application
- * told us into their HR file, mark the candidate hired, and link the two.
- *
- * ⚠️ RUNS AFTER THE ACCOUNT EXISTS, SO NOTHING HERE FAILS THE REQUEST. The
- * member is real by now; refusing would leave an account the admin was told
- * was not made, and a retry would collide on the email. Each step that misses
- * comes back as a line the page shows, so it can be finished by hand.
- *
- * ⚠️ ONLY EMAIL AND PHONE CROSS OVER — they are all an application holds that
- * `member_hr` has a column for. The candidate's email goes to PERSONAL email:
- * it is the address they applied from, and the account may use a studio one.
- */
-async function fromCandidate(
-  admin: SupabaseClient,
-  candidateId: string,
-  profileId: string,
-  name: string,
-  actorId: string,
-): Promise<string[]> {
-  const warnings: string[] = [];
-  const { data: cand, error } = await admin
-    .from("candidates")
-    .select("email,phone")
-    .eq("id", candidateId)
-    .maybeSingle();
-  if (error || !cand) return ["The candidate could not be read, so nothing was copied from it."];
-
-  if (cand.email || cand.phone) {
-    const { error: hrErr } = await admin.from("member_hr").upsert({
-      profile_id: profileId,
-      personal_email: cand.email ?? null,
-      phone: cand.phone ?? null,
-      updated_at: new Date().toISOString(),
-    });
-    if (hrErr) warnings.push("Their email and phone were not copied to HR details.");
-  }
-
-  const now = new Date().toISOString();
-  // ⚠️ `profile_id` is 0061's and optional: without it they are still marked
-  // hired, just not linked to their team page.
-  const { error: cErr, degraded } = await updateWithOptional(
-    admin,
-    "candidates",
-    { id: candidateId },
-    {
-      status: "archived",
-      outcome: "hired",
-      archived_at: now,
-      archived_by: actorId,
-      last_activity_at: now,
-    },
-    { profile_id: profileId },
-  );
-  if (cErr) warnings.push("The candidate was not marked as hired.");
-  else if (degraded) warnings.push("Migration 0061 has not run, so the candidate is not linked to their team page.");
-
-  await admin
-    .from("candidate_events")
-    .insert({ candidate_id: candidateId, kind: "joined_team", detail: name, actor_id: actorId });
-
-  return warnings;
-}

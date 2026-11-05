@@ -14,6 +14,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Archive,
   BadgeCheck,
+  Briefcase,
   ChevronDown,
   ChevronLeft,
   ClipboardList,
@@ -71,6 +72,8 @@ import {
   type ScoreSubject,
 } from "@/lib/candidates/types";
 import { PageSkeleton } from "@/components/skeleton";
+import { convertedAs, convertedHref, type ConvertedAs } from "@/lib/candidates/convert";
+import { TermsForm } from "@/app/(app)/freelancers/shared";
 import { StageTrack } from "@/components/stage-track";
 
 /**
@@ -625,8 +628,10 @@ function FoldButton({ shut, label, onClick }: { shut: boolean; label: string; on
 }
 
 /**
- * "Add to the team" — a hired candidate becomes a member: an account, a
- * profile, a plan column, and their email and phone in HR details.
+ * "Convert to a team member" — a candidate becomes a member: an account, a
+ * profile, a plan column, and their email and phone in HR details. Their role
+ * on the board becomes the profile's job title (never "owner" — the route
+ * refuses it, see `cleanPosition`).
  *
  * ⚠️ THE SAME ROUTE AS TEAM → ADD USER (`/api/admin/users`), with the
  * candidate's id on top, so there is one way a member gets made. What the
@@ -638,15 +643,18 @@ function FoldButton({ shut, label, onClick }: { shut: boolean; label: string; on
  */
 function JoinTeamModal({
   candidate,
+  roleName,
   onClose,
   onDone,
 }: {
   candidate: Candidate;
+  roleName: string | null;
   onClose: () => void;
   onDone: (profileId: string, warnings: string[]) => void;
 }) {
   const [name, setName] = useState(candidate.name);
   const [email, setEmail] = useState(candidate.email ?? "");
+  const [position, setPosition] = useState(roleName ?? "");
   const [startDate, setStartDate] = useState(toISODate(new Date()));
   const [role, setRole] = useState<"designer" | "admin">("designer");
   const [busy, setBusy] = useState(false);
@@ -665,6 +673,7 @@ function JoinTeamModal({
           email: email.trim(),
           role,
           startDate,
+          position: position.trim() || undefined,
           candidateId: candidate.id,
         }),
       });
@@ -683,7 +692,7 @@ function JoinTeamModal({
       <form onSubmit={submit} className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <h2 id="join-team-title" className="text-lg font-semibold">
-            Add to the team
+            Convert to a team member
           </h2>
           <ModalClose onClose={onClose} />
         </div>
@@ -702,6 +711,15 @@ function JoinTeamModal({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className={field}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Job title
+          <input
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            placeholder="Designer"
             className={field}
           />
         </label>
@@ -742,6 +760,91 @@ function JoinTeamModal({
   );
 }
 
+/**
+ * "Convert to a freelancer" — a candidate becomes a person with NO login and a
+ * private link to log hours (0054), billed on rate terms.
+ *
+ * ⚠️ THE SAME CREATE AS FREELANCERS → ADD A FREELANCER (`/api/admin/freelancers`
+ * "create"), with the candidate's id on top, and the same `TermsForm` — so the
+ * terms stay exactly what `lib/freelance-rate.ts` (and finance-admin's mirror)
+ * prices. What the candidate adds is server-side: `finishConversion`.
+ *
+ * ⚠️ Never an account: every "read all" policy would hand a freelancer the
+ * studio (CLAUDE.md, Access control).
+ */
+function FreelancerModal({
+  candidate,
+  roleName,
+  onClose,
+  onDone,
+}: {
+  candidate: Candidate;
+  roleName: string | null;
+  onClose: () => void;
+  onDone: (profileId: string, warnings: string[]) => void;
+}) {
+  const [name, setName] = useState(candidate.name);
+  const [position, setPosition] = useState(roleName ?? "");
+  const field = "min-h-11 rounded-lg border border-border bg-surface px-2.5 text-sm md:min-h-9";
+  return (
+    <Modal onClose={onClose} labelledBy="freelancer-title">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="freelancer-title" className="text-lg font-semibold">
+            Convert to a freelancer
+          </h2>
+          <ModalClose onClose={onClose} />
+        </div>
+        <p className="-mt-2 text-xs text-muted">
+          Adds them to Freelancers with a private link to log hours — no login, never among the
+          studio&apos;s members. Copies their email and phone into HR details and marks them hired
+          here; their files and links stay on this page.
+        </p>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Name
+          <input required value={name} onChange={(e) => setName(e.target.value)} className={field} />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Job title
+          <input
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            placeholder="Designer"
+            className={field}
+          />
+        </label>
+        <TermsForm
+          initial={{ currency: "EUR", rateHigh: 50, rateLow: 50, hoursLow: 50, hoursHigh: 150 }}
+          submitLabel={`Add ${name.trim().split(" ")[0] || "them"} as a freelancer`}
+          onCancel={onClose}
+          onSubmit={async (t) => {
+            if (!name.trim()) return "Give the freelancer a name.";
+            const res = await fetch("/api/admin/freelancers", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "create",
+                name: name.trim(),
+                position: position.trim() || undefined,
+                candidateId: candidate.id,
+                ...t,
+              }),
+            });
+            const body = (await res.json().catch(() => ({}))) as {
+              profileId?: string;
+              warnings?: string[];
+              error?: string;
+            };
+            if (!res.ok || !body.profileId) return body.error ?? "They could not be added.";
+            onDone(body.profileId, body.warnings ?? []);
+            return null;
+          }}
+        />
+      </div>
+    </Modal>
+  );
+}
+
 export default function CandidatePage() {
   const isAdmin = useIsAdmin();
   const { profiles, currentUserId, refresh } = useData();
@@ -761,7 +864,8 @@ export default function CandidatePage() {
   const [linkUrl, setLinkUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [joinOpen, setJoinOpen] = useState(false);
+  /** Which "Convert to…" form is open, if any. */
+  const [convertOpen, setConvertOpen] = useState<ConvertedAs | null>(null);
   /**
    * ⚠️ THE EDIT SHEET IS PHONE-ONLY AND `isNarrow` IS WHAT DECIDES IT, not a
    * `md:hidden`. The point is that only ONE of the two presentations exists at
@@ -977,6 +1081,14 @@ export default function CandidatePage() {
   const hired = c.status === "archived" && c.outcome === "hired";
   const teamMember = c.profileId ? (profiles.find((p) => p.id === c.profileId) ?? null) : null;
   const teamFirstName = (teamMember?.name ?? c.name).split(" ")[0];
+  /**
+   * What "Convert to…" made of them (v1.90.0): a team member, a freelancer, or
+   * nothing yet. ⚠️ Read from History first, so a converted candidate never
+   * offers it again even before 0061 gives the link (`convertedAs`).
+   */
+  const converted = convertedAs(c.profileId, events, teamMember);
+  const convertedLink = converted && c.profileId ? convertedHref(converted, c.profileId) : null;
+  const convertedLabel = `${teamFirstName}'s ${converted === "freelancer" ? "freelancer" : "team"} page`;
   const overall = overallScore(detail.interviews);
   const scoredCount = detail.interviews.filter((i) => Object.keys(i.scores).length > 0).length;
   /** The subjects a portfolio can actually answer — see `fromSubmission`. */
@@ -1095,7 +1207,8 @@ export default function CandidatePage() {
               )}
               {hired && (
                 <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[11.5px] text-success">
-                  <BadgeCheck size={12} /> {c.profileId ? "Hired · on the team" : "Hired"}
+                  <BadgeCheck size={12} />{" "}
+                  {converted === "freelancer" ? "Hired · freelancer" : converted ? "Hired · on the team" : "Hired"}
                 </span>
               )}
               {/* ⚠️ THE ROLE IS SET HERE AND NOWHERE ELSE — Nitsan, 2026-09-28:
@@ -1300,23 +1413,40 @@ export default function CandidatePage() {
                 <span className={MENU_NOTE}>Good, wrong moment</span>
               </button>
             )}
-            {/* ⚠️ TWO WAYS TO SAY YES, because a yes is not always a hire
-                onto the payroll — Nitsan, 2026-11-01: a freelancer (Milica)
-                is accepted without becoming a team member. */}
-            {!c.profileId && (
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  setJoinOpen(true);
-                }}
-                className={MENU_ITEM}
-              >
-                <span className={MENU_TITLE}>
-                  <UserPlus size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
-                  Hired · add to the team
-                </span>
-                <span className={MENU_NOTE}>Account, plan column, HR details</span>
-              </button>
+            {/* ⚠️ MORE THAN ONE WAY TO SAY YES, because a yes is not always a
+                hire onto the payroll — Nitsan, 2026-11-01: a freelancer
+                (Milica) is accepted without becoming a team member. "Convert
+                to…" (v1.90.0) makes the matching record, prefilled from here;
+                plain "Hired" only marks it. */}
+            {!converted && (
+              <>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setConvertOpen("member");
+                  }}
+                  className={MENU_ITEM}
+                >
+                  <span className={MENU_TITLE}>
+                    <UserPlus size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                    Convert to a team member
+                  </span>
+                  <span className={MENU_NOTE}>Account, plan column, HR details</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setConvertOpen("freelancer");
+                  }}
+                  className={MENU_ITEM}
+                >
+                  <span className={MENU_TITLE}>
+                    <Briefcase size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
+                    Convert to a freelancer
+                  </span>
+                  <span className={MENU_NOTE}>Private log link and rate terms, no login</span>
+                </button>
+              </>
             )}
             {!hired && (
               <button
@@ -1330,7 +1460,7 @@ export default function CandidatePage() {
                   <BadgeCheck size={14} strokeWidth={1.75} className="shrink-0 text-faint" />
                   Hired
                 </span>
-                <span className={MENU_NOTE}>Freelance — not on the team</span>
+                <span className={MENU_NOTE}>Mark only — convert them later</span>
               </button>
             )}
             {c.status !== "archived" && (
@@ -1605,19 +1735,21 @@ export default function CandidatePage() {
                     </option>
                   ))}
                 </select>
-              ) : c.profileId ? (
+              ) : convertedLink ? (
                 <Link
-                  href={`/team/${c.profileId}`}
+                  href={convertedLink}
                   className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] text-brand"
                 >
-                  <BadgeCheck size={14} strokeWidth={1.75} /> {teamFirstName}&apos;s team page
+                  <BadgeCheck size={14} strokeWidth={1.75} /> {convertedLabel}
                 </Link>
-              ) : hired ? (
+              ) : hired && !converted ? (
+                // One slot on a phone: the dots menu beside it holds both
+                // "Convert to…" choices, so this opens it.
                 <button
-                  onClick={() => setJoinOpen(true)}
+                  onClick={() => setMenuOpen(true)}
                   className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13px] text-brand"
                 >
-                  <UserPlus size={14} strokeWidth={1.75} /> Add to the team
+                  <UserPlus size={14} strokeWidth={1.75} /> Convert to…
                 </button>
               ) : (
                 <button
@@ -1660,24 +1792,33 @@ export default function CandidatePage() {
                 )}
               </span>
               <span className="flex items-center gap-1">
-                {c.profileId ? (
+                {convertedLink ? (
                   <Link
-                    href={`/team/${c.profileId}`}
+                    href={convertedLink}
                     className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
                   >
-                    {teamMember && <Avatar profile={teamMember} size={20} />} {teamFirstName}&apos;s team page
+                    {teamMember && <Avatar profile={teamMember} size={20} />} {convertedLabel}
                   </Link>
                 ) : (
-                  hired && (
-                    <button
-                      onClick={() => setJoinOpen(true)}
-                      className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
-                    >
-                      <UserPlus size={14} strokeWidth={1.75} /> Add to the team
-                    </button>
+                  hired &&
+                  !converted && (
+                    <>
+                      <button
+                        onClick={() => setConvertOpen("member")}
+                        className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+                      >
+                        <UserPlus size={14} strokeWidth={1.75} /> Convert to a team member
+                      </button>
+                      <button
+                        onClick={() => setConvertOpen("freelancer")}
+                        className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
+                      >
+                        <Briefcase size={14} strokeWidth={1.75} /> Convert to a freelancer
+                      </button>
+                    </>
                   )
                 )}
-                {!c.profileId && (
+                {!converted && (
                   <button
                     onClick={() => void run(() => setStatus(c.id, "active", null, currentUserId))}
                     className="flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm text-brand hover:bg-brand-soft"
@@ -2055,26 +2196,33 @@ export default function CandidatePage() {
           ⚠️ `title` is the sheet's ARIA LABEL and is never drawn — MobileSheet
           shows no heading — so it is written for a screen reader, with the word
           "and" rather than the ampersand the button uses. */}
-      {joinOpen && (
-        <JoinTeamModal
-          candidate={c}
-          onClose={() => setJoinOpen(false)}
-          onDone={(profileId, warnings) => {
-            setJoinOpen(false);
-            // The new member is in the database but not yet in this tab's
-            // store; a cold refresh brings them into every picker and the plan.
-            refresh();
-            if (warnings.length) {
-              // Stay here so what did not happen can be read and finished.
-              setError(`${c.name} is on the team, but: ${warnings.join(" ")}`);
-              void reload();
-              return;
-            }
-            toast(`${c.name} is on the team`);
-            router.push(`/team/${profileId}`);
-          }}
-        />
-      )}
+      {convertOpen && (() => {
+        const as = convertOpen;
+        const done = (profileId: string, warnings: string[]) => {
+          setConvertOpen(null);
+          // The new person is in the database but not yet in this tab's
+          // store; a cold refresh brings them into every picker and the plan.
+          refresh();
+          const what = as === "freelancer" ? "a freelancer" : "on the team";
+          if (warnings.length) {
+            // Stay here so what did not happen can be read and finished.
+            setError(`${c.name} is ${what}, but: ${warnings.join(" ")}`);
+            void reload();
+            return;
+          }
+          toast(`${c.name} is ${what}`);
+          router.push(convertedHref(as, profileId));
+        };
+        const Form = as === "freelancer" ? FreelancerModal : JoinTeamModal;
+        return (
+          <Form
+            candidate={c}
+            roleName={role?.name ?? null}
+            onClose={() => setConvertOpen(null)}
+            onDone={done}
+          />
+        );
+      })()}
 
       {isNarrow && editOpen && (
         <MobileSheet title="Edit details and files" onClose={() => setEditOpen(false)}>

@@ -27,6 +27,7 @@ import { useData, useIsAdmin } from "@/lib/store";
 import { ClientChip, Modal, ModalClose } from "@/components/ui";
 import { formatHoursShort, parseDuration } from "@/lib/format";
 import { freelancerPath } from "@/lib/freelancer-link";
+import { createClient } from "@/lib/supabase/client";
 import {
   TermsForm,
   act,
@@ -119,6 +120,27 @@ export default function FreelancerPage() {
   const shownKey = cache[key] ? key : prevKey;
   const data = shownKey ? (cache[shownKey] ?? null) : null;
   const loading = !cache[key];
+  /**
+   * The hiring dossier they were converted from (v1.90.0, 0061's
+   * `candidates.profile_id`) — where their CV, portfolio and links stay.
+   * ⚠️ Best effort: any error (0061 not run, or none) just shows no link.
+   */
+  const [candidateId, setCandidateId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    void createClient()
+      .from("candidates")
+      .select("id")
+      .eq("profile_id", profileId)
+      .limit(1)
+      .then(({ data: rows, error: err }) => {
+        if (alive && !err) setCandidateId((rows?.[0]?.id as string | undefined) ?? null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [isAdmin, profileId]);
 
   const load = useCallback(
     async (k: string): Promise<Data> => {
@@ -204,6 +226,11 @@ export default function FreelancerPage() {
                     Link switched off
                   </span>
                 )
+              )}
+              {candidateId && (
+                <Link href={`/candidates/${candidateId}`} className="ml-2 text-brand hover:underline">
+                  Their application
+                </Link>
               )}
             </p>
           </div>

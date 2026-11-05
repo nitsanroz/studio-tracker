@@ -5,6 +5,8 @@ import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
 import { approvedSnap, snapOf, syncEntry, updateLog, type LogSnap } from "@/lib/freelancer-sync";
 import { createClient } from "@/lib/supabase/server";
 import { monthBill } from "@/lib/freelance-rate";
+import { cleanPosition } from "@/lib/candidates/convert";
+import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 
 // Admin-only: freelancers' logs waiting for review, and each freelancer's
 // private link, clients and terms (0054). The review page (/freelancers)
@@ -490,15 +492,27 @@ export async function POST(req: NextRequest) {
       if (!name) return NextResponse.json({ error: "Give the freelancer a name." }, { status: 400 });
       const terms = readTerms(body);
       if ("error" in terms) return NextResponse.json({ error: terms.error }, { status: 400 });
+      // "Convert to a freelancer" from a hired candidate (v1.90.0): the same
+      // create, refused if they were converted already, then finished like a
+      // team member's (convert-server.ts). `position` is their role, never "owner".
+      const candidateId = str("candidateId");
+      if (candidateId) {
+        const blocked = await convertBlocked(sb, candidateId);
+        if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
+      }
+      const position = cleanPosition(body.position);
       const id = crypto.randomUUID();
-      const { error } = await sb.from("profiles").insert({ id, name, role: "designer", active: false, has_account: false });
+      const { error } = await sb
+        .from("profiles")
+        .insert({ id, name, role: "designer", active: false, has_account: false, ...(position ? { position } : {}) });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       const { error: e2 } = await sb.from("freelancers").insert({ profile_id: id, token: newToken(), ...terms });
       if (e2) {
         await sb.from("profiles").delete().eq("id", id);
         return NextResponse.json({ error: e2.message }, { status: 500 });
       }
-      return NextResponse.json({ ok: true, profileId: id });
+      const warnings = candidateId ? await finishConversion(sb, "freelancer", candidateId, id, name, userId) : [];
+      return NextResponse.json({ ok: true, profileId: id, warnings });
     }
     case "terms": {
       const terms = readTerms(body);
