@@ -190,9 +190,10 @@ describe("mergeReports", () => {
     expect(writes).toBe(1); // only the very first one
     /**
      * ⚠️ AND `count` IS 1, NOT 20 — this is the honest reading of the throttle and
-     * the reason `countIsFloor` exists. 19 of those reports were collapsed, so the
-     * figure is a FLOOR on how often this happened, never a tally. The viewer says
-     * so rather than presenting a sampled number as a count.
+     * the reason the viewer carries a footnote (see `mergeReports`). 19 of those
+     * reports were collapsed, so the figure is a FLOOR on how often this happened,
+     * never a tally. The viewer says so rather than presenting a sampled number as
+     * a count.
      */
     /**
      * ⚠️ AND THE STORE CANNOT TELL YOU IT COLLAPSED ANYTHING — this entry is now

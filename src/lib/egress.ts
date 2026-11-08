@@ -36,6 +36,8 @@
  * somebody looks at the dashboard is what keeps the drift bounded.
  */
 
+import { parseISO, shiftDays, toISODate } from "./format";
+
 /**
  * The org's monthly egress allowance — **the PRO plan's 250 GB since 2026-09-16**,
  * when Nitsan confirmed the org is no longer on the free tier.
@@ -103,8 +105,6 @@ export type EgressState = {
  * this app.
  */
 export function cycleWindow(now: Date): { start: string; end: string } {
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const y = now.getFullYear();
   const m = now.getMonth();
   // Before the reset day, the cycle began in the previous month.
@@ -113,7 +113,7 @@ export function cycleWindow(now: Date): { start: string; end: string } {
       ? new Date(y, m, CYCLE_RESET_DAY)
       : new Date(y, m - 1, CYCLE_RESET_DAY);
   const end = new Date(start.getFullYear(), start.getMonth() + 1, CYCLE_RESET_DAY - 1);
-  return { start: iso(start), end: iso(end) };
+  return { start: toISODate(start), end: toISODate(end) };
 }
 
 /** Requests → bytes, with the non-REST tail added. */
@@ -173,21 +173,15 @@ export function estimateCycle(state: EgressState, now: Date): EgressEstimate {
  * in whichever direction the sample happens to lean.
  */
 function isWorkday(iso: string): boolean {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).getDay() <= 4; // 0=Sun … 4=Thu
+  return parseISO(iso).getDay() <= 4; // 0=Sun … 4=Thu
 }
 
 /** How many working / weekend days a date range holds, inclusive. */
 function shapeOf(fromIso: string, toIso: string): { work: number; wknd: number } {
-  const [fy, fm, fd] = fromIso.split("-").map(Number);
-  const [ty, tm, td] = toIso.split("-").map(Number);
+  const last = parseISO(toIso);
   let work = 0,
     wknd = 0;
-  for (
-    let d = new Date(fy, fm - 1, fd);
-    d <= new Date(ty, tm - 1, td);
-    d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
-  ) {
+  for (let d = parseISO(fromIso); d <= last; d = shiftDays(d, 1)) {
     if (d.getDay() <= 4) work++;
     else wknd++;
   }
@@ -233,9 +227,7 @@ export function projectCycle(
   est: EgressEstimate,
   now: Date,
 ): CycleProjection | null {
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const today = iso(now);
+  const today = toISODate(now);
 
   const complete = state.samples.filter(
     (s) => s.date < today && s.date >= est.cycle.start && s.date <= est.cycle.end,
@@ -260,9 +252,7 @@ export function projectCycle(
 
   let bytes = est.bytes - todayCounted + rateFor(today);
   if (today < est.cycle.end) {
-    const [ty, tm, td] = today.split("-").map(Number);
-    const dayAfter = new Date(ty, tm - 1, td + 1);
-    const rest = shapeOf(iso(dayAfter), est.cycle.end);
+    const rest = shapeOf(toISODate(shiftDays(parseISO(today), 1)), est.cycle.end);
     bytes += rest.work * perWorkday + rest.wknd * perWeekend;
   }
 

@@ -1,0 +1,113 @@
+- src/lib/about.ts — AboutData, ABOUT, projectSpanDays, recoveredShare, group, ACTUAL_SPEND, actualSpendUsd, REPLACED, MILESTONES
+- src/lib/advice/context.ts — PageContext, pageContext, splitByPage, tilesFor
+- src/lib/advice/merge.ts — AdviceRow, MergePlan, mergeFindings, applyPlan, visible, mapAdviceRow, toDb
+- src/lib/advice/owner.ts — ownerOnly
+- src/lib/advice/run.ts — loadAdviceData, loadRows, AdviceView, runCheck, checkNow
+- src/lib/advice/signals.ts — AdviceKind, FindingLink, Finding, AdviceData, workdayCount, reportDue, capFilling, PAYMENT_TERMS_DAYS, periodUnpaid, words, outOfScope, estimateBudget, paceBehind, incomeCostSeries, incomeVsCosts, SIGNALS, findAll, openPlanDays, planGaps, missingHours, myOverdue, overdueTasks, dueUnassigned, concentration, clientQuiet, internalHeavy, vacationPending, intakePending, leadsWaiting, candidatesQuiet, freelancerLogs, TileScope, PulseTile, pulse
+- src/lib/advice/word.ts — promptFor, dailyRun
+- src/lib/aggregate.ts — buildTaskClientMap, minutesByClientInRange, latestActivityByClient
+- src/lib/app-origin.ts — appOrigin
+- src/lib/avatar-variant.ts — AvatarVariant, avatarVariantFor
+- src/lib/billing-rollover.ts — PeriodBounds, LastPeriod, nextInvoiceDate, periodLabel, nextPeriod, invoiceDayToStore, parseInvoiceDay
+- src/lib/brief-diff.ts — FieldChange, FileChange, BriefDiff, diffBriefs, needsReview
+- src/lib/brief.ts — Deliverable, IntakeAnswers, IntakeFile, BriefLink, BriefAttachments, assembleTaskBrief, readSubmission, assembleEmailHtml, SeenEmailTemplate, SEEN_EMAIL_DEFAULT, SEEN_UPDATE_EMAIL_DEFAULT, SEEN_EMAIL_PLACEHOLDERS, SeenEmailVars, renderSeenEmail, parseBudgetHours
+- src/lib/candidates/actions.ts — CandidateWriteError, NewCandidate, createCandidate, moveToStage, setStatus, updateCandidate, deleteCandidate, addLink, removeLink, addInterview, updateInterview, removeInterview, setScore, scoreApplication, addComment, removeComment, addStage, renameStage, removeStage, reorderStages, addRole, updateRole, removeRole, roleUsage, addSubject, addParam, renameParam, retireParam, retireSubject
+- src/lib/candidates/convert-server.ts — convertBlocked, finishConversion
+- src/lib/candidates/convert.ts — ConvertedAs, CONVERT_EVENT, convertedAs, convertedHref, POSITIONS, PositionKey, cleanPosition, positionFromRole
+- src/lib/candidates/data.ts — mapStage, mapRole, mapLink, mapComment, mapEvent, mapCandidate, Vocabulary, loadVocabulary, BoardCounts, loadBoard, loadCandidate
+- src/lib/candidates/email-import.ts — ParsedMailbox, ParsedEmail, pickApplicant, htmlToText, bodyOf, MAX_APPLICATION_CHARS, extractPhone, extractEmail, FoundLink, judgeLink, extractLinks, DocumentLink, documentLink, documentLinks, WebsiteForm, FORM_UPLOAD_HOST, parseWebsiteForm, portfolioFromField, roleFromInterests, formatPhone, storedNameOf, cleanFileName, sourceOf, appliedOnOf, AttachmentInfo, planAttachments, attachmentName
+- src/lib/candidates/fetch-document.ts — MAX_LINKED_BYTES, fetchLinkedPdf
+- src/lib/candidates/import-email.ts — ImportResult, importApplicationEmail
+- src/lib/candidates/types.ts — CandidateStatus, CandidateOutcome, CandidateLinkKind, CandidateStage, CandidateRole, CandidateLink, ScoreSubject, ScoreParam, Interview, CandidateComment, CandidateEvent, Candidate, CandidateReading, CandidateDetail, interviewAverage, subjectAverage, formatScore, overallScore, overallFromReadings, scoreTone, isOnBoard, APPLICATION_REVIEW_KIND, splitApplicationReview, NEW_CANDIDATE_NAME, NEW_CANDIDATE_PARAM
+- src/lib/cap.ts — capTone
+- src/lib/celebrate.ts — celebrate
+- src/lib/cron.ts — isCronRequest
+- src/lib/csp-reports.ts — Violation, ReportEntry, ReportStore, EMPTY_STORE, SIGNATURE_CAP, THROTTLE_MS, blockedKey, signature, parseReports, keepViolation, mergeReports
+- src/lib/csp.ts — policy
+- src/lib/date-ranges.ts — RANGE_PRESETS, RangePreset, presetRange
+- src/lib/db.ts — DbRow, DbError, MISSING_SCHEMA_CODES, isMissingSchema, isServiceBlocked, assertOk, updateWithOptional, FetchAllOptions, fetchAll, mapProfile, mapTaskType, mapTag, mapEntrySum, mapReportLink, canonicalReportLink, mapBillingPeriod, mapDayState, mapDevItem, mapClient, mapTimelineMark, mapLink, mapSection, mapTaskGroup, mapTask, mapTimeEntry, mapComment, mapPlanColumn, mapPlanEntry, taskPatchToRow
+- src/lib/drag-lift.ts — liftDrag
+- src/lib/duplicate.ts — DuplicatePick, TaskCopy, DuplicatePlan, planDuplicate
+- src/lib/egress.ts — ALLOWANCE_BYTES, KB_PER_REST_REQUEST, NON_REST_UPLIFT, CYCLE_RESET_DAY, DaySample, EgressState, cycleWindow, estimateBytes, EgressEstimate, estimateCycle, CycleProjection, MIN_PROJECTION_DAYS, CONFIDENT_PROJECTION_DAYS, projectCycle, EgressLevel, egressLevel, mergeSamples, combinedLevel
+- src/lib/format.ts — formatHours, formatHoursDecimal, formatHoursShort, formatHoursAvg, studioToday, studioDate, toISODate, startOfWeek, shiftDays, parseISO, isWeekend, DAY_NAMES, formatDayLabel, formatDate, formatDayMonth, MONTH_NAMES_SHORT, parseDuration, formatFeedDate, shortDate, shortRangeLabel, formatILS, formatILSShort, formatPct, formatSignedPct, greetingFor
+- src/lib/freelance-rate.ts — RateTerms, rateFor, billFor, Charge, monthBill
+- src/lib/freelancer-details.ts — FreelancerDetails, cleanDetails
+- src/lib/freelancer-link.ts — tokenFromSegment, linkSlug, freelancerPath
+- src/lib/freelancer-sync.ts — LogSnap, snapOf, entryPatch, syncEntry, approvedSnap, updateLog
+- src/lib/gantt-links.ts — ensureClientGanttLink
+- src/lib/gantt.ts — Zoom, PX_PER_DAY, ROW_H, SECTION_H, GROUP_H, BAR_H, GROUP_BAR_H, GROUP_LAYERS, GROUP_LAYER_STEP, GROUP_LAYER_INSET, BAR_R, DIAMOND, BAR_LABEL_MIN_PX, SHADE_MIN_PX_PER_DAY, SECTION_BAR_H, TIP_W, TIP_H, TIP_MIN_W, daysBetween, toISO, dateRangeLabel, tickTooltip, isWorkDay, snapToWorkDay, addWorkDays, workDaysBetween, Tick, ticksFor, chartWindow
+- src/lib/gmail/auth.ts — requireAdmin, callbackUrl
+- src/lib/gmail/crypto.ts — encryptToken, decryptToken
+- src/lib/gmail/google.ts — GMAIL_SCOPE, googleConfigured, GmailError, authUrl, exchangeCode, accessTokenFor, revokeToken, gmail, GmailProfile, getProfile, watch, stopWatch, HistoryPage, listHistory, getMessageMeta, getThread, searchThreads
+- src/lib/gmail/parse.ts — STUDIO_DOMAINS, GmailHeader, GmailPart, GmailMessage, Address, header, parseAddresses, domainOfEmail, isStudio, decodeBody, extractText, stripQuoted, MAX_BODY, ParsedMessage, decodeEntities, isCalendarMessage, isRealMail, parseMessage, externalParticipants, replyOwedBy, MatchCandidate, matchLead, threadUrl
+- src/lib/gmail/sync.ts — Account, accounts, accountByEmail, accessFor, matchCandidates, storeThread, syncAccount, backfillQuery, backfillLead, backfillOpenLeads, renewAll
+- src/lib/hours-goal-server.ts — studioGoal, LiveHours
+- src/lib/hours-goal.ts — PnlMonthly, LINE, AbsentByDate, GoalFreelancer, HOURLY_TERMS, FormulaFreelancer, GoalInputs, FreelanceForecast, GoalDay, GoalLevel, HoursGoal, STUDIO_WEEK_DAYS, DAY_LOGGED_AT, studioDayLogged, TARGET_MARGIN, hoursGoal, evenSpread
+- src/lib/hours-split.ts — HoursSplit, EMPTY_SPLIT, keysTaskIds, addEntry, newSplit, billablePct, keysPct, splitTitle
+- src/lib/intake-fields.ts — IntakeField, FIELDS, WorkKind, CONTACT_FIELDS, ALWAYS_ASKS, TECH_ALWAYS, CLOSING_ASKS, WORK_KINDS, kindById, fieldsAsked, wantsDeliverables
+- src/lib/intake-links.ts — studioIntakeLinkUrl, ensureStudioIntakeLink
+- src/lib/jewish-holidays.ts — Holiday, jewishHolidays
+- src/lib/leads/actions.ts — LeadWriteError, NewLead, createLead, LeadPatch, updateLead, moveLead, deleteLead, restoreLead, eraseLead, logActivity, removeActivity, ContactFields, addContact, updateContact, removeContact, OfferInput, addOffer, updateOffer, approveOffer, removeOffer, linkThread, unlinkThread, markWon, ConvertTask, ConvertSection, ConvertPlan, convertToClient, addClientContact, updateClientContact, removeClientContact, addStage, updateStage, removeStage, reorderStages, addLostReason, renameLostReason, removeLostReason, proposeSuggestion, decideSuggestion, alertOfferReview, RuleContext, saveMailSetting, saveNudgeSettings
+- src/lib/leads/data.ts — LeadsNotInstalled, mapSuggestion, mapLead, mapContact, mapOffer, mapThread, mapMessage, loadThreadMessages, mapEvent, mapClientContact, Vocabulary, loadVocabulary, deletedLeadName, loadBoard, loadPendingSuggestions, loadLead, leadForClient, loadClientContacts, loadStoredRate, refreshRate, loadInboundToken, GmailStatus, loadGmailStatus, searchGmailForLead, loadMailSettings, loadNudgeSettings
+- src/lib/leads/estimate-import.ts — ImportedItem, ImportedGroup, ImportedPhase, ImportedEstimate, ImportResult, extractJson, parseImport, importTotals, buildImportPrompt
+- src/lib/leads/estimate.ts — Category, CATEGORIES, ServiceItem, EstimateLine, EstimateGroup, EstimateLink, EstimatePhase, EstimateStatus, Estimate, phaseLayout, phaseLines, Range, groupWinners, counts, lineHours, Totals, totals, fmtHours, fmtNis
+- src/lib/leads/estimates-data.ts — mapItem, mapEstimate, mapGroup, mapPhase, mapLine, loadLibrary, loadPricing, EstimateSummary, loadEstimates, EstimateDetail, loadEstimate, loadLibraryActuals, createEstimateFromImport, createEstimate, newVersion, copyEstimate, EstimateSourcePhase, EstimateSource, loadEstimateSources, updateEstimate, updateEstimateOverview, deleteEstimate, addPhase, updatePhase, removePhase, addLine, LinePatch, updateLine, chooseAlternative, removeLine, addGroup, renameGroup, removeGroup, moveLine, moveGroup, movePhase, submitForReview, approveEstimate, reopenEstimate, unlockEstimate, PublishedEstimate, publishEstimate, addLibraryItem, updateLibraryItem, savePricing, latestApproved, loadBoardEstimateHours
+- src/lib/leads/fx.ts — FX_MARKUP, FX_FALLBACK_USD, StoredRate, FxQuote, usdQuote, toIls, isStale, latestRate, BOI_USD_URL, formatIls, formatMoney
+- src/lib/leads/look.tsx — NEUTRAL, STAGE_ICONS, STAGE_COLORS, StageIcon, stageStyle, StageChip, SourceIcon
+- src/lib/leads/mail.ts — esc, sendMail, adminEmails, recipients, leadUrl, boardUrl
+- src/lib/leads/nudges.ts — NudgeKind, NudgeRule, NudgeSettings, NUDGE_KINDS, DEFAULT_NUDGES, readNudgeSettings, Nudge, NUDGE_COLOR, daysSince, nudgesFor
+- src/lib/leads/purge.ts — purgeDeletedLeads
+- src/lib/leads/rules.ts — Suggestion, afterOfferStatus, MailEvent, afterMail
+- src/lib/leads/stage-map.ts — mapStage
+- src/lib/leads/stalled.ts — quietWorkDays, isStalled, daysInStage, isOverdue
+- src/lib/leads/types.ts — LeadStageKind, LeadSource, Currency, OfferStatus, LeadEventKind, SOURCES, sourceLabel, OFFER_STATUSES, LOGGABLE, LeadStage, StageRuleKey, SuggestionRule, LeadSuggestion, LostReason, Lead, LeadContact, LeadOffer, LeadThread, LeadMessage, LeadEvent, LeadDetail, ClientContact, NEW_LEAD_NAME, NEW_LEAD_PARAM, domainOf, PERSONAL_DOMAINS, gmailThreadIdFromUrl
+- src/lib/links.ts — normalizeUrl, isSafeUrl, hostLabel
+- src/lib/members.ts — loggableMembers, dailyTargetMinutes, archivedMembers
+- src/lib/mint-cap.ts — makeMintCap
+- src/lib/overview-files.ts — OverviewFile, loadClientFiles, addClientFile, removeClientFile, clientFileHref, copyLeadFilesToClient, loadLeadFiles, uploadLeadFile, addLeadFile, removeLeadFile, leadFileHref
+- src/lib/period-math.ts — HOME_RANGES, HomeRange, TEAM_RANGES, PeriodKey, REPORT_RANGES, MONTH_SHORT, daysBetween, periodBounds, rangeLabel, periodRange, comparablePrevRange, bucketize, bucketProjection, daysCoveredInPeriod, lastCompleteWeekEnd, cutoffIsStale, presenceFraction
+- src/lib/reduced-motion.ts — prefersReducedMotion
+- src/lib/report-links.ts — ensureClientReportLink
+- src/lib/report-period-focus.ts — PeriodLike, currentPeriodIndex, previousPeriodIndex, periodIndexFromDate
+- src/lib/report-sanitize.ts — sanitizeSnapshot
+- src/lib/report-snapshot.ts — buildWeeks, periodCuts, buildReportSnapshot
+- src/lib/sign-storage.ts — signStorageUrl
+- src/lib/snapshot.ts — PackedEntrySums, unpackEntrySums, fetchEntrySums, ColdSnapshot, HotSnapshot, HotCtx, fetchCold, fetchTasks, fetchHot, fetchFull, fingerprint, mergeTasks, mergeTimeEntries, pollDecision, idleTransition, wakeTransition, refreshVerdict, historyEpochShouldMove
+- src/lib/storage-url.ts — PROXIED_BUCKETS, PUBLIC_MARKER, proxyStorageUrl, parseProxyRequest
+- src/lib/store/billing.ts — BillingDeps, useBillingActions
+- src/lib/store/boot-progress.ts — bootFraction, startBootProgress, useBootProgress
+- src/lib/store/clients.ts — ClientDeps, useClientActions
+- src/lib/store/comments.ts — CommentDeps, useCommentActions
+- src/lib/store/dev-items.ts — DevItemDeps, useDevItemActions
+- src/lib/store/helpers.ts — inversePatch, withGroupInvariant, mapTaskRequest
+- src/lib/store/index.tsx — DataProvider, useData, useDataMaybe, useMe, useIsAdmin
+- src/lib/store/keys-write-down.ts — KeysWriteDownDeps, useKeysWriteDown
+- src/lib/store/links.ts — LinkDeps, useLinkActions
+- src/lib/store/plan.ts — PlanDeps, usePlanActions
+- src/lib/store/preview-guard.ts — guardPreview
+- src/lib/store/refresh-cadence.ts — DEV_SLOWDOWN, HOT_INTERVAL_MS, COLD_EVERY_N_TICKS, TASKS_EVERY_N_TICKS, SUMS_EVERY_N_TICKS, FOCUS_MAX_STALE_MS, FOCUS_MIN_GAP_MS, COLD_AFTER_AWAY_MS, IDLE_AFTER_MS, idleAfterMs, WRITE_SETTLE_MS
+- src/lib/store/requests.ts — RequestDeps, useRequestActions
+- src/lib/store/tasks.ts — TaskDeps, useTaskActions
+- src/lib/store/taxonomy.ts — TaxonomyDeps, useTaxonomyActions
+- src/lib/store/time-entries.ts — TimeEntryDeps, useTimeEntryActions
+- src/lib/store/timeline.ts — TimelineDeps, useTimelineActions
+- src/lib/store/types.ts — TaskRequest, ApproveRequestInput, NewPlanEntry, PlanEntryPatch, PLAN_ENTRY_FIELDS, TimeEntryPatch, Store, HistoryAction
+- src/lib/studio-days.ts — StudioDay, STUDIO_DAYS
+- src/lib/supabase/client.ts — createClient
+- src/lib/supabase/server.ts — createClient
+- src/lib/supabase/service.ts — service
+- src/lib/task-buckets.ts — TaskBucket, BUCKET_LABEL, BUCKET_ORDER, taskBucket, bucketTasks
+- src/lib/task-hours.ts — taskMinutesDone, taskLegacyMinutes
+- src/lib/task-rollup.ts — Rollup, rollupTasks, sectionBudgetHours
+- src/lib/toast.ts — Toast, toast, dismissToast, subscribeToasts, getToasts, getServerToasts
+- src/lib/toggle.ts — toggleIn
+- src/lib/types.ts — Role, Profile, TaskType, Tag, Client, Link, TimelineMark, Section, TaskGroup, TaskStatus, Task, TaskComment, Attachment, TimeEntry, PlanEntryType, AbsenceType, EntrySum, UserEntrySum, ReportLink, ReportViewFlags, ReportSnapshot, BillingPeriod, DayState, DevStatus, DevItem, PlanColumn, PlanEntry
+- src/lib/uploads.ts — MAX_INTAKE_TOTAL_BYTES, MAX_INTAKE_BYTES, STORED_CONTENT_TYPES, MAX_INTAKE_FILES, classifyUpload, classifyTaskAttachment, mustDownload, classifyImage, formatSize, describeUpload, describeUploadSet
+- src/lib/use-enter-transition.ts — useEnterTransition
+- src/lib/use-is-narrow.ts — NARROW_MAX, useIsNarrow
+- src/lib/use-member-emails.ts — useMemberEmails
+- src/lib/use-member-portraits.ts — useMemberPortraits
+- src/lib/use-vacation.ts — VacationState, useVacation
+- src/lib/vacation.ts — VacationStatus, VacationRequest, VacationBalance, workdays, requestDays, balanceAsOf, Available, availableDays, availableIn, Fit, fitRequest, formatDays, plannedVacation
+- src/lib/version.ts — APP_VERSION
+- src/lib/whats-new.ts — Audience, WhatsNewItem, Release, RELEASES, MAX_STEPS, compareVersions, Step, WhatsNew, whatsNewSince

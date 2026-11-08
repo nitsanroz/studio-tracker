@@ -118,7 +118,7 @@ export function assertOk(
 
 /**
  * An UPDATE whose optional columns may not exist yet — the write-side twin of
- * the `fetchAll` + `isMissingSchema` ladder above.
+ * the `fetchAll` + `isMissingSchema` ladder below.
  *
  * ⚠️ THIS EXISTS BECAUSE THE PATTERN WAS HAND-ROLLED FOUR TIMES IN TWO RELEASES
  * and one of the four forgot the guard entirely. Every time a migration adds a
@@ -262,6 +262,9 @@ export async function fetchAll<T>(
 
 // ── row → app-type mappers ────────────────────────────────────────────────
 
+/** A nullable numeric column (Postgres numerics arrive as strings). */
+const numOrNull = (v: any): number | null => (v == null ? null : Number(v));
+
 export const mapProfile = (r: any): Profile => ({
   id: r.id,
   name: r.name,
@@ -273,7 +276,7 @@ export const mapProfile = (r: any): Profile => ({
   hasAccount: r.has_account ?? true, // column exists from migration 0018
   startDate: r.start_date ?? null,
   endDate: r.end_date ?? null,
-  capacityHoursWeek: r.capacity_hours_week == null ? null : Number(r.capacity_hours_week),
+  capacityHoursWeek: numOrNull(r.capacity_hours_week),
 });
 
 export const mapTaskType = (r: any): TaskType => ({
@@ -348,8 +351,8 @@ export const mapBillingPeriod = (r: any): BillingPeriod => ({
   label: r.label,
   dateFrom: r.date_from,
   dateTo: r.date_to,
-  hourCap: r.hour_cap == null ? null : Number(r.hour_cap),
-  advanceHours: r.advance_hours == null ? null : Number(r.advance_hours),
+  hourCap: numOrNull(r.hour_cap),
+  advanceHours: numOrNull(r.advance_hours),
   position: r.position,
   paid: r.paid ?? false, // column exists from migration 0010
 });
@@ -376,7 +379,7 @@ export const mapClient = (r: any): Client => ({
   archived: r.archived,
   billable: r.billable ?? true, // column exists from migration 0009
   invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
-  hourCap: r.hour_cap == null ? null : Number(r.hour_cap), // 0033
+  hourCap: numOrNull(r.hour_cap), // 0033
   reportNotes: r.report_notes ?? "", // 0033
   // 0037; null until the migration runs, which simply hides the write-down control
   keysTaskId: (r.keys_task_id as string | null) ?? null,
@@ -408,8 +411,8 @@ export const mapSection = (r: any, projectClientById?: Map<string, string>): Sec
   name: r.name,
   position: r.position,
   // columns exist from migration 0016
-  estimateHours: r.estimate_hours == null ? null : Number(r.estimate_hours),
-  legacyHours: r.legacy_hours == null ? null : Number(r.legacy_hours),
+  estimateHours: numOrNull(r.estimate_hours),
+  legacyHours: numOrNull(r.legacy_hours),
   legacyName: r.legacy_name ?? null,
   closedOn: r.closed_on ?? null,
 });
@@ -443,11 +446,11 @@ export const mapTask = (
   startDate: r.start_date ?? null, // column exists from migration 0022
   timelinePosition: r.timeline_position ?? null, // migration 0023
   billable: r.billable,
-  estimateHours: r.estimate_hours == null ? null : Number(r.estimate_hours),
+  estimateHours: numOrNull(r.estimate_hours),
   position: r.position,
   pending: r.pending,
   // columns exist from migration 0016
-  legacyHours: r.legacy_hours == null ? null : Number(r.legacy_hours),
+  legacyHours: numOrNull(r.legacy_hours),
   legacyTitle: r.legacy_title ?? null,
   activityFrom: r.activity_from ?? null,
   activityTo: r.activity_to ?? null,

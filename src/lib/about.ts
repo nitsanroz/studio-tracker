@@ -35,15 +35,6 @@ export function group(n: number): string {
 }
 
 /**
- * The project's arc, for the About panel's timeline.
- *
- * EDITORIAL, and deliberately not generated: git knows every commit but not
- * which ones mattered, and a timeline that lists all 94 says nothing. Add a row
- * when something changes what the app IS — a release everyone noticed, a whole
- * capability arriving, data appearing that wasn't there before. `major` is the
- * filled dot; keep it for the two or three that genuinely earn it.
- */
-/**
  * What the build actually cost the studio, in real money.
  *
  * NOT derivable from anything on this machine — the transcripts carry token
@@ -89,6 +80,15 @@ export const REPLACED: { tool: string; became: string }[] = [
   { tool: "Team sheet", became: "Team pages and HR details" },
 ];
 
+/**
+ * The project's arc, for the About panel's timeline.
+ *
+ * EDITORIAL, and deliberately not generated: git knows every commit but not
+ * which ones mattered, and a timeline that lists all 94 says nothing. Add a row
+ * when something changes what the app IS — a release everyone noticed, a whole
+ * capability arriving, data appearing that wasn't there before. `major` is the
+ * filled dot; keep it for the two or three that genuinely earn it.
+ */
 export const MILESTONES: { date: string; label: string; major?: boolean }[] = [
   { date: "2026-07-05", label: "First commit" },
   { date: "2026-07-07", label: "Live on Vercel" },

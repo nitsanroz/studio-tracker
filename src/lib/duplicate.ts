@@ -177,22 +177,21 @@ export function planDuplicate(
 
   // ── sections ──────────────────────────────────────────────────────────
   const sectionCopy = new Map(pickedSections.map((s) => [s.id, newId()]));
-  for (const [clientId] of groupBy(pickedSections, (s) => s.clientId)) {
+  for (const [clientId, run] of groupBy(pickedSections, (s) => s.clientId)) {
     const { copyPos, moves } = interleave(
       sections.filter((s) => s.clientId === clientId),
       sectionCopy,
     );
     plan.moves.sections.push(...moves);
-    for (const s of pickedSections.filter((s) => s.clientId === clientId)) {
+    for (const s of run) {
       const id = sectionCopy.get(s.id)!;
       plan.sections.push({ id, clientId, name: s.name, position: copyPos.get(id)! });
       // Its groups keep their names and order; each brings its own tasks.
-      for (const g of taskGroups.filter((g) => g.sectionId === s.id)) {
-        copyGroup(g, id, g.position);
-      }
+      const sectionGroups = taskGroups.filter((g) => g.sectionId === s.id);
+      for (const g of sectionGroups) copyGroup(g, id, g.position);
       // ⚠️ "Not in one of this section's groups", not "groupId === null" — a task
       // pointing at another section's group renders loose here, so it copies loose.
-      const own = new Set(taskGroups.filter((g) => g.sectionId === s.id).map((g) => g.id));
+      const own = new Set(sectionGroups.map((g) => g.id));
       copyRun(
         tasks.filter((t) => t.sectionId === s.id && !(t.groupId && own.has(t.groupId))),
         id,

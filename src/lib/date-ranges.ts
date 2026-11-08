@@ -1,4 +1,4 @@
-import { startOfWeek, toISODate } from "./format";
+import { shiftDays, startOfWeek, toISODate } from "./format";
 
 export const RANGE_PRESETS = [
   "This week",
@@ -18,18 +18,13 @@ export function presetRange(preset: RangePreset, now = new Date()): { from: stri
   // Israeli week starts on Sunday" is how one of them silently keeps the old rule.
   const startOfThisWeek = startOfWeek(now);
   switch (preset) {
-    case "This week": {
-      const end = new Date(startOfThisWeek);
-      end.setDate(end.getDate() + 6);
-      return { from: toISODate(startOfThisWeek), to: toISODate(end) };
-    }
-    case "Last week": {
-      const start = new Date(startOfThisWeek);
-      start.setDate(start.getDate() - 7);
-      const end = new Date(startOfThisWeek);
-      end.setDate(end.getDate() - 1);
-      return { from: toISODate(start), to: toISODate(end) };
-    }
+    case "This week":
+      return { from: toISODate(startOfThisWeek), to: toISODate(shiftDays(startOfThisWeek, 6)) };
+    case "Last week":
+      return {
+        from: toISODate(shiftDays(startOfThisWeek, -7)),
+        to: toISODate(shiftDays(startOfThisWeek, -1)),
+      };
     case "This month":
       return {
         from: toISODate(new Date(now.getFullYear(), now.getMonth(), 1)),

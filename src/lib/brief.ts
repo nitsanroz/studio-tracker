@@ -185,6 +185,22 @@ const said = (s: string) => {
 const isNo = (s: string) => /^no$/i.test(val(s));
 
 /**
+ * A declared piece, as its own block.
+ *
+ * ⚠️ The name is emitted plain for now. It is the thing that wants emphasis,
+ * and the moment the brief renderer understands `**bold**` this is the single
+ * line that changes — which is the point of the client declaring it rather than
+ * typing it into a paragraph.
+ */
+function blocksForDeliverable(into: string[], d: Deliverable) {
+  const name = val(d.name);
+  const spec = [said(d.dimensions ?? ""), said(d.format ?? "")].filter(Boolean).join(" · ");
+  const details = said(d.details ?? "");
+  const lines = [name, spec, details].filter(Boolean);
+  if (lines.length) into.push(lines.join("\n"));
+}
+
+/**
  * What the brief actually shows, in order, as `Label: value` pairs — the single
  * source for both the plain-text brief and the HTML notification email, so the
  * two cannot drift into different shapes.
@@ -207,22 +223,6 @@ const isNo = (s: string) => /^no$/i.test(val(s));
  * the client's own free text exactly as typed. So: **emit only what was
  * answered, never what the task already knows, and never touch the wording.**
  */
-/**
- * A declared piece, as its own block.
- *
- * ⚠️ The name is emitted plain for now. It is the thing that wants emphasis,
- * and the moment the brief renderer understands `**bold**` this is the single
- * line that changes — which is the point of the client declaring it rather than
- * typing it into a paragraph.
- */
-function blocksForDeliverable(into: string[], d: Deliverable) {
-  const name = val(d.name);
-  const spec = [said(d.dimensions ?? ""), said(d.format ?? "")].filter(Boolean).join(" · ");
-  const details = said(d.details ?? "");
-  const lines = [name, spec, details].filter(Boolean);
-  if (lines.length) into.push(lines.join("\n"));
-}
-
 function briefParts(a: IntakeAnswers): { specs: string[]; body: string[] } {
   const specs: string[] = [];
   const body: string[] = [];
@@ -340,13 +340,14 @@ export function readSubmission(
   answers: Record<string, unknown> | null | undefined,
 ): { answers: IntakeAnswers; files: IntakeFile[]; links: BriefLink[] } | null {
   if (!answers || typeof answers !== "object") return null;
+  const raw: Record<string, unknown> = answers;
   const str = (k: string) => {
-    const v = (answers as Record<string, unknown>)[k];
+    const v = raw[k];
     return typeof v === "string" ? v : "";
   };
   // A title/url pair, from either shape: files carry `name`, links carry `title`.
   const pairs = (k: string): { title: string; url: string }[] => {
-    const v = (answers as Record<string, unknown>)[k];
+    const v = raw[k];
     if (!Array.isArray(v)) return [];
     return v.flatMap((row) => {
       if (!row || typeof row !== "object") return [];
@@ -361,16 +362,16 @@ export function readSubmission(
   // first submissions through the stepped form stored one, and a jsonb column
   // keeps whatever was written on the day.
   const kinds = (): string[] => {
-    const v = (answers as Record<string, unknown>).kinds;
+    const v = raw.kinds;
     if (Array.isArray(v)) return v.filter((k): k is string => typeof k === "string" && !!k);
-    const one = (answers as Record<string, unknown>).kind;
+    const one = raw.kind;
     return typeof one === "string" && one ? [one] : [];
   };
   // ⚠️ Same defensiveness as `pairs`: this is a jsonb column, so its shape is
   // whatever was written on the day. A row with no deliverables (every
   // submission before the stepped form) yields [], never undefined-with-a-map.
   const deliverables = (): Deliverable[] => {
-    const v = (answers as Record<string, unknown>).deliverables;
+    const v = raw.deliverables;
     if (!Array.isArray(v)) return [];
     return v.flatMap((row) => {
       if (!row || typeof row !== "object") return [];
