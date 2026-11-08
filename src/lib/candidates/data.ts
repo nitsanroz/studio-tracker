@@ -22,7 +22,6 @@ import type {
   CandidateDetail,
   CandidateEvent,
   CandidateLink,
-  CandidateLinkKind,
   CandidateOutcome,
   CandidateRole,
   CandidateStage,
@@ -39,11 +38,11 @@ const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const nstr = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const num = (v: unknown): number => (typeof v === "number" ? v : 0);
 
-export function mapStage(r: Row): CandidateStage {
+function mapStage(r: Row): CandidateStage {
   return { id: str(r.id), name: str(r.name), position: num(r.position) };
 }
 
-export function mapRole(r: Row): CandidateRole {
+function mapRole(r: Row): CandidateRole {
   return {
     id: str(r.id),
     name: str(r.name),
@@ -52,20 +51,20 @@ export function mapRole(r: Row): CandidateRole {
   };
 }
 
-export function mapLink(r: Row): CandidateLink {
+function mapLink(r: Row): CandidateLink {
   const kind = str(r.kind);
   return {
     id: str(r.id),
     candidateId: str(r.candidate_id),
     title: str(r.title),
     url: str(r.url),
-    kind: (kind === "cv" || kind === "portfolio" ? kind : "other") as CandidateLinkKind,
+    kind: kind === "cv" || kind === "portfolio" ? kind : "other",
     storagePath: nstr(r.storage_path),
     position: num(r.position),
   };
 }
 
-export function mapComment(r: Row): CandidateComment {
+function mapComment(r: Row): CandidateComment {
   return {
     id: str(r.id),
     candidateId: str(r.candidate_id),
@@ -76,7 +75,7 @@ export function mapComment(r: Row): CandidateComment {
   };
 }
 
-export function mapEvent(r: Row): CandidateEvent {
+function mapEvent(r: Row): CandidateEvent {
   return {
     id: str(r.id),
     candidateId: str(r.candidate_id),
@@ -94,7 +93,7 @@ export function mapEvent(r: Row): CandidateEvent {
  * is deliberately not 0: never scored and scored badly are different facts, and
  * `scoreTone` gives them different colours.
  */
-export function mapCandidate(r: Row): Candidate {
+function mapCandidate(r: Row): Candidate {
   const status = str(r.status);
   const outcome = str(r.outcome);
   return {
@@ -152,15 +151,6 @@ export interface Vocabulary {
 }
 
 /**
- * Stages, roles and the scoring vocabulary. Small, changes rarely, and needed
- * by both routes — so it is one call rather than three scattered ones.
- *
- * ⚠️ RETIRED SUBJECTS AND PARAMETERS ARE FETCHED, NOT FILTERED OUT. A scorecard
- * from 2024 still has to render the parameter it was scored against, even after
- * somebody removes that parameter in Settings. Callers building a NEW card
- * filter on `active` themselves.
- */
-/**
  * The scoring subjects, stepping down one column if 0040 has not been applied.
  *
  * ⚠️⚠️ NAMING A COLUMN THAT DOES NOT EXIST FAILS THE WHOLE SELECT, and this
@@ -182,6 +172,15 @@ async function subjectRows(sb: ReturnType<typeof createClient>) {
   return sb.from("candidate_score_subjects").select("id,name,position,active").order("position");
 }
 
+/**
+ * Stages, roles and the scoring vocabulary. Small, changes rarely, and needed
+ * by both routes — so it is one call rather than three scattered ones.
+ *
+ * ⚠️ RETIRED SUBJECTS AND PARAMETERS ARE FETCHED, NOT FILTERED OUT. A scorecard
+ * from 2024 still has to render the parameter it was scored against, even after
+ * somebody removes that parameter in Settings. Callers building a NEW card
+ * filter on `active` themselves.
+ */
 export async function loadVocabulary(): Promise<Vocabulary> {
   const sb = createClient();
   const [stages, roles, subjects, params] = await Promise.all([

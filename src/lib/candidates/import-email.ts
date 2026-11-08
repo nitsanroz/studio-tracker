@@ -165,10 +165,7 @@ export async function importApplicationEmail(
     // Titles are stored cleaned, so compare cleaned.
     if (heldFiles.has(cleanFileName(att.filename).toLowerCase())) continue;
     const content = att.raw.content;
-    const blob =
-      typeof content === "string"
-        ? new Blob([content], { type: att.mimeType })
-        : new Blob([content as BlobPart], { type: att.mimeType });
+    const blob = new Blob([content as BlobPart], { type: att.mimeType });
     try {
       const up = await upload(new File([blob], att.filename, { type: att.mimeType }), candidateId);
       const asKind = kind === "cv" && cvTaken ? "other" : kind;
@@ -189,8 +186,9 @@ export async function importApplicationEmail(
   // kept beside the copy. Already-held links are not fetched again, so a
   // second import of the same mail costs nothing.
   for (const doc of documentLinks(form?.cvUrl ? [form.cvUrl, body] : [body])) {
-    if (heldUrls.has(doc.url.toLowerCase().replace(/\/$/, ""))) continue;
-    heldUrls.add(doc.url.toLowerCase().replace(/\/$/, ""));
+    const key = doc.url.toLowerCase().replace(/\/$/, "");
+    if (heldUrls.has(key)) continue;
+    heldUrls.add(key);
     // The form's own upload is the CV and nothing else: titled "CV", as the
     // studio files it, and its S3 address is not kept as a second link.
     const formUpload = FORM_UPLOAD_HOST.test(new URL(doc.url).hostname);

@@ -11,6 +11,7 @@
 // No IO here: the browser side (`import-email.ts`) parses the MIME and does the
 // writes, and this file only decides. That is what lets it be tested.
 
+import { toISODate } from "../format";
 import type { CandidateLinkKind } from "./types";
 
 /** The parts of a parsed message this file reads — postal-mime's shape. */
@@ -479,11 +480,7 @@ export function sourceOf(mail: ParsedEmail, body: string): "LinkedIn" | "Email" 
 export function appliedOnOf(date: string | null | undefined): string | null {
   if (!date) return null;
   const d = new Date(date);
-  if (Number.isNaN(d.getTime())) return null;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return Number.isNaN(d.getTime()) ? null : toISODate(d);
 }
 
 export interface AttachmentInfo {

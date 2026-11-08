@@ -67,17 +67,17 @@ export async function finishConversion(
     .maybeSingle();
   if (error || !cand) return ["The candidate could not be read, so nothing was copied from it."];
 
+  const now = new Date().toISOString();
   if (cand.email || cand.phone) {
     const { error: hrErr } = await admin.from("member_hr").upsert({
       profile_id: profileId,
       personal_email: cand.email ?? null,
       phone: cand.phone ?? null,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     });
     if (hrErr) warnings.push("Their email and phone were not copied to HR details.");
   }
 
-  const now = new Date().toISOString();
   // ⚠️ `profile_id` is 0061's and optional: without it they are still marked
   // hired, just not linked to their new page.
   const { error: cErr, degraded } = await updateWithOptional(

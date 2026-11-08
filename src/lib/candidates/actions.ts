@@ -457,14 +457,10 @@ export async function updateRole(id: string, patch: { name?: string; color?: str
  * which is why that one refuses. The caller is still told the count first.
  */
 export async function removeRole(id: string): Promise<{ untagged: number }> {
-  const sb = createClient();
-  const { count } = await sb
-    .from("candidates")
-    .select("id", { count: "exact", head: true })
-    .eq("role_id", id);
-  const { error } = await sb.from("candidate_roles").delete().eq("id", id);
+  const untagged = await roleUsage(id);
+  const { error } = await createClient().from("candidate_roles").delete().eq("id", id);
   fail("remove the role", error);
-  return { untagged: count ?? 0 };
+  return { untagged };
 }
 
 export async function roleUsage(id: string): Promise<number> {
