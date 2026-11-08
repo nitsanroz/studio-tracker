@@ -252,8 +252,9 @@ describe("projectCycle", () => {
 
   it("projects nothing beyond the cycle end", () => {
     const p = projectCycle(state({ samples: REAL }), est(0), new Date(2026, 8, 4))!;
-    // On the last day, only that day remains.
-    expect(p.bytes).toBe(p.perWorkday > 0 ? p.bytes : 0);
+    // On the last day, only that day remains — a Friday (4 Sep 2026), so one
+    // weekend day at the weekend rate, and nothing after it.
+    expect(p.bytes).toBe(p.perWeekend);
     expect(p.bytes).toBeLessThan(p.perWorkday * 2);
   });
 });

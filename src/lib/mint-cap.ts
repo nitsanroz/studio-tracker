@@ -21,8 +21,12 @@ export function makeMintCap(max: number, windowMs: number, now: () => number = D
     /** True when `key` is over its allowance — and otherwise records this mint. */
     exceeded(key: string): boolean {
       const since = now() - windowMs;
+      // ⚠️ Prune while we are here, so an idle process does not hold every key for
+      // ever: drop EVERY key whose newest mint has aged out, not only this one —
+      // pruning just the asked key re-recorded it at once, so nothing was ever
+      // forgotten (fixed 2026-11-08). Linear in live keys, which stay few.
+      for (const [k, ts] of seen) if (ts[ts.length - 1] < since) seen.delete(k);
       const fresh = (seen.get(key) ?? []).filter((t) => t >= since);
-      // Prune while we are here, so an idle process does not hold every key for ever.
       if (fresh.length) seen.set(key, fresh);
       else seen.delete(key);
       if (fresh.length >= max) return true;

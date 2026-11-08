@@ -57,9 +57,8 @@ describe("makeMintCap", () => {
     expect(cap.size()).toBe(1);
     advance(60_001);
     cap.exceeded("b");
-    // "a" is pruned the next time it is asked about
-    cap.exceeded("a");
-    expect(cap.size()).toBe(2);
+    // "a" has been idle a whole window: asking about any key sweeps it out
+    expect(cap.size()).toBe(1);
   });
 
   it("a refused mint does not consume more allowance", () => {

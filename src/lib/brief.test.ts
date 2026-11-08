@@ -5,6 +5,7 @@ import {
   readSubmission,
   renderSeenEmail,
   SEEN_EMAIL_DEFAULT,
+  SEEN_UPDATE_EMAIL_DEFAULT,
   type IntakeAnswers,
 } from "./brief";
 
@@ -349,10 +350,13 @@ describe("the receipt for a brief the client changed", () => {
   // ⚠️ The fallback follows the KIND. An unset update template must not quietly
   // send the new-brief wording — that is the exact message this exists to avoid.
   it("falls back to the update default when only the other one is configured", () => {
-    const configuredForNew = { subject: "Got your brief — {task}", body: "Hi {firstName}, ta." };
-    const { subject } = renderSeenEmail(null, vars, "update");
-    expect(subject).not.toBe(configuredForNew.subject);
-    expect(subject).toContain("update");
+    // The update template is unset (null) even though a new-brief one exists:
+    // the receipt must be the UPDATE default, never the new-brief wording.
+    const { subject, html } = renderSeenEmail(null, vars, "update");
+    const updateDefault = renderSeenEmail(SEEN_UPDATE_EMAIL_DEFAULT, vars, "update");
+    expect(subject).toBe(updateDefault.subject);
+    expect(html).toBe(updateDefault.html);
+    expect(subject).not.toBe(renderSeenEmail(null, vars, "new").subject);
   });
 
   it("escapes the client's own text in the update wording too", () => {
