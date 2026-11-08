@@ -308,10 +308,11 @@ export function ClientTimeline({
     return { offDates: dates, offLabel: labels };
   }, [dayStates]);
 
-  const today = useMemo(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }, []);
+  // Keyed on today's DATE, not memoized once: a tab left open past midnight kept
+  // yesterday's today-line and past-shading until it remounted. Renders follow the
+  // store's minute refresh, so the new day arrives within a minute.
+  const todayKey = toISO(new Date());
+  const today = useMemo(() => parseISO(todayKey), [todayKey]);
 
   /** Rows grouped by section, in the client's section order, "No section" last. */
   const groups = useMemo<Group[]>(() => {
@@ -1189,7 +1190,7 @@ export function ClientTimeline({
       {filteredOut > 0 && (
         <p className="text-xs text-faint">
           {filteredOut} more {filteredOut === 1 ? "task is" : "tasks are"}{" "}hidden by the type
-          filter — clear it from &ldquo;Show&rdquo;, or click a dimmed swatch in the legend.
+          filter — clear it from &ldquo;Show&rdquo;.
         </p>
       )}
 

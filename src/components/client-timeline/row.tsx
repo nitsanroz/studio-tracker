@@ -147,6 +147,10 @@ export function TimelineRow({
       : plain
         ? "inset 0 0 0 1px var(--color-border-strong)"
         : null,
+    // The drag ring. ⚠️ It has to live HERE, not as `ring-2 ring-brand`: a Tailwind
+    // ring is a box-shadow, and the inline `boxShadow` below silently replaced it,
+    // so the class never painted (found 2026-11-08).
+    drag ? "0 0 0 2px var(--brand)" : null,
     BAR_SHADOW,
   ]
     .filter(Boolean)
@@ -481,7 +485,10 @@ export function TimelineRow({
           className="pointer-events-none absolute top-1/2 z-[23] -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white shadow-lg"
           style={
             drag.mode === "start"
-              ? { left: left - 6, transform: "translate(-100%, -50%)" }
+              ? // X only: the class's `-translate-y-1/2` already centres it, and in
+                // Tailwind 4 that is the `translate` property, which STACKS with an
+                // inline transform — "-50%" here put the chip half its height too high.
+                { left: left - 6, transform: "translateX(-100%)" }
               : { left: left + (hasSpan ? barWidth : DIAMOND) + 6 }
           }
         >
@@ -517,9 +524,7 @@ export function TimelineRow({
           }}
           className={`absolute top-1/2 z-10 -translate-y-1/2 overflow-hidden ${
             done ? "opacity-55" : ""
-          } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
-            drag ? "ring-2 ring-brand" : ""
-          }`}
+          } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
           style={{
             left,
             width: barWidth,
@@ -657,9 +662,7 @@ export function TimelineRow({
           }}
           className={`absolute top-1/2 z-10 -translate-y-1/2 rotate-45 rounded-[2px] ${
             done ? "opacity-55" : ""
-          } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
-            drag ? "ring-2 ring-brand" : ""
-          }`}
+          } ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
           style={{
             left: left + Math.max(0, pxPerDay / 2 - DIAMOND / 2),
             width: DIAMOND,

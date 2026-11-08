@@ -8,7 +8,7 @@
 // summary bar whole — see the note in the section header.
 
 import { EditableTextCell } from "../editable-cell";
-import { GROUP_BAR_COLOR, GROUP_LAYER_COLORS, GROUP_LINE_TOP, SECTION_BAR_COLOR, SECTION_BAR_TOP, SHADOW_Y, STICKY_W, TL_COLS, TODAY_TAIL } from "./shared";
+import { GROUP_BAR_COLOR, GROUP_LAYER_COLORS, GROUP_LINE_TOP, SECTION_BAR_COLOR, SECTION_BAR_TOP, SHADOW_Y, STICKY_W, TL_COLS, TODAY_TAIL, allRowsOf } from "./shared";
 import type { Block, Group, TlCol } from "./shared";
 import { HoverTip, RulerTip, TipHead, TipRow } from "./tooltip";
 import { formatHoursDecimal } from "@/lib/format";
@@ -324,7 +324,7 @@ export function SectionHeaderRow({
               {group.section?.name ?? "No section"}
             </button>
             <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-[11px] tabular-nums text-faint">
-              {group.rows.length}
+              {allRowsOf(group).length}
             </span>
             {renameable && (
               <button
@@ -365,7 +365,7 @@ export function SectionHeaderRow({
             <TipHead title={group.section?.name ?? "No section"} subtitle="Section" color={color} />
             <div className="flex flex-col gap-1 px-3 py-2.5">
               <TipRow label="Runs" value={dateRangeLabel(group.start, group.due, true)} />
-              <TipRow label="Tasks" value={String(group.rows.length)} />
+              <TipRow label="Tasks" value={String(allRowsOf(group).length)} />
             </div>
           </HoverTip>
         )}
