@@ -83,12 +83,6 @@ export function StageIcon({ stage, size = 13 }: { stage: Pick<LeadStage, "icon" 
   return <Icon size={size} strokeWidth={2} style={{ color }} className="shrink-0" aria-hidden />;
 }
 
-/** Border/fill/ink for a control that wears a stage's colour (the lead page's stage picker). */
-export function stageStyle(stage: Pick<LeadStage, "color"> | null | undefined) {
-  const color = stage?.color || NEUTRAL;
-  return { color, backgroundColor: `${color}14`, borderColor: `${color}4d` };
-}
-
 /** A stage as a small tinted chip: icon + name in the stage's colour. */
 export function StageChip({ stage, className = "" }: { stage: LeadStage | undefined; className?: string }) {
   if (!stage) return <span className="text-faint">—</span>;

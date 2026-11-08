@@ -9,7 +9,7 @@
 
 import { createClient } from "../supabase/client";
 import { MISSING_SCHEMA_CODES } from "../db";
-import { LeadWriteError, alertOfferReview } from "./actions";
+import { LeadWriteError, alertOfferReview, fail } from "./actions";
 import {
   fmtHours,
   fmtNis,
@@ -35,9 +35,6 @@ const nnum = (v: unknown): number | null => {
   if (v === null || v === undefined || v === "") return null;
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : null;
-};
-const fail = (label: string, error: { message: string } | null) => {
-  if (error) throw new LeadWriteError(label, error.message);
 };
 
 export function mapItem(r: Row): ServiceItem {
@@ -379,13 +376,7 @@ export async function createEstimateFromImport(
 export async function createEstimate(leadId: string, company: string, actorId: string | null): Promise<string> {
   const sb = createClient();
   const pricing = await loadPricing();
-  const { data: last } = await sb
-    .from("lead_estimates")
-    .select("version")
-    .eq("lead_id", leadId)
-    .order("version", { ascending: false })
-    .limit(1);
-  const version = (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
+  const version = await nextVersion(leadId);
   const { data, error } = await sb
     .from("lead_estimates")
     .insert({
@@ -462,13 +453,7 @@ async function copyInto(
   swap: { from: string; to: string } | null,
 ): Promise<string> {
   const sb = createClient();
-  const { data: last } = await sb
-    .from("lead_estimates")
-    .select("version")
-    .eq("lead_id", targetLeadId)
-    .order("version", { ascending: false })
-    .limit(1);
-  const version = (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
+  const version = await nextVersion(targetLeadId);
   const e = src.estimate;
   const { data, error } = await sb
     .from("lead_estimates")
@@ -1169,12 +1154,6 @@ export async function savePricing(rate: number, vatPercent: number) {
     .from("lead_settings")
     .upsert({ key: "pricing", value: { rate, vat_percent: vatPercent }, updated_at: new Date().toISOString() }, { onConflict: "key" });
   fail("save the pricing", error);
-}
-
-/** The newest approved version for a lead, if any — what "Mark as won" can turn into work. */
-export async function latestApproved(leadId: string): Promise<EstimateSummary | null> {
-  const list = await loadEstimates(leadId);
-  return list.find((e) => e.status === "approved") ?? null;
 }
 
 /**

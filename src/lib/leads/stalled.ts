@@ -10,7 +10,9 @@
 // days by Sunday morning. `isWorkDay` is the same rule the Timeline uses, so
 // the two can never disagree about what a working day is.
 
+import { toISODate } from "../format";
 import { isWorkDay, shiftDays } from "../gantt";
+import { daysBetween } from "../period-math";
 import type { Lead, LeadStage } from "./types";
 
 const NO_OFF_DAYS = new Set<string>();
@@ -51,12 +53,11 @@ export function isStalled(lead: Lead, stage: LeadStage | undefined, now: Date): 
 export function daysInStage(lead: Lead, now: Date): number {
   const from = new Date(lead.stageChangedAt);
   if (Number.isNaN(from.getTime())) return 0;
-  return Math.max(0, Math.round((dayOf(now).getTime() - dayOf(from).getTime()) / 86_400_000));
+  return Math.max(0, daysBetween(from, now));
 }
 
 /** A next step that is due today or earlier. */
 export function isOverdue(lead: Lead, now: Date): boolean {
   if (!lead.nextStepDue) return false;
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  return lead.nextStepDue < today;
+  return lead.nextStepDue < toISODate(now);
 }

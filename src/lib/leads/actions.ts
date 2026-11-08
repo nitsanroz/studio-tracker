@@ -33,7 +33,7 @@ export class LeadWriteError extends Error {
   }
 }
 
-const fail = (label: string, error: { message: string } | null) => {
+export const fail = (label: string, error: { message: string } | null) => {
   if (error) throw new LeadWriteError(label, error.message);
 };
 
@@ -402,7 +402,7 @@ export async function removeOffer(id: string, leadId: string) {
   await touch(leadId);
 }
 
-// ── Gmail threads (by hand until Phase 2) ───────────────────────────────────
+// ── Gmail threads (linked by hand; Phase 2 sync files most of them) ─────────
 
 export async function linkThread(
   leadId: string,

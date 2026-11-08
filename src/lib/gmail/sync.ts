@@ -37,12 +37,14 @@ import {
 } from "./google";
 import {
   externalParticipants,
+  header,
   isRealMail,
   matchLead,
   parseAddresses,
   parseMessage,
   replyOwedBy,
   threadUrl,
+  type GmailMessage,
   type MatchCandidate,
   type ParsedMessage,
 } from "./parse";
@@ -350,8 +352,7 @@ export async function syncAccount(sb: SupabaseClient, account: Account): Promise
         const h = await listHistory(at, cursor, page);
         for (const rec of h.history ?? []) {
           for (const added of rec.messagesAdded ?? []) {
-            const l = new Set(added.message.labelIds ?? []);
-            if (l.has("DRAFT") || l.has("SPAM") || l.has("TRASH") || l.has("CHAT")) continue;
+            if (!isRealMail(added.message)) continue;
             threadIds.set(added.message.threadId, added.message.id);
           }
         }
@@ -397,8 +398,8 @@ export async function syncAccount(sb: SupabaseClient, account: Account): Promise
 }
 
 /** Does this message reply to one we already hold (In-Reply-To / References)? */
-async function repliesToKnown(sb: SupabaseClient, meta: import("./parse").GmailMessage): Promise<boolean> {
-  const h = (name: string) => meta.payload?.headers?.find((x) => x.name.toLowerCase() === name)?.value ?? "";
+async function repliesToKnown(sb: SupabaseClient, meta: GmailMessage): Promise<boolean> {
+  const h = (name: string) => header(meta, name) ?? "";
   const ids = `${h("in-reply-to")} ${h("references")}`.match(/<[^>]+>/g) ?? [];
   if (ids.length === 0) return false;
   const { data } = await sb.from("lead_messages").select("id").in("rfc_message_id", ids.slice(-20)).limit(1);
@@ -422,8 +423,7 @@ export function backfillQuery(emails: string[], domain: string | null): string |
  * (a lost one from last year and this one) would otherwise fight over threads.
  */
 export async function backfillLead(sb: SupabaseClient, leadId: string): Promise<{ threads: number; accounts: number }> {
-  const [cand] = await matchCandidates(sb, leadId);
-  const all = await accounts(sb);
+  const [[cand], all] = await Promise.all([matchCandidates(sb, leadId), accounts(sb)]);
   if (!cand || all.length === 0) return { threads: 0, accounts: all.length };
   const q = backfillQuery(cand.emails, cand.domain);
   let stored = 0;

@@ -14,7 +14,7 @@
 // ("Website", "12-16", [12, 16]), but never guesses at structure: a missing item
 // name or an item with no hours is reported, not invented.
 
-import { CATEGORIES, totals, type Category, type EstimateLine, type Range, type ServiceItem } from "./estimate";
+import { CATEGORIES, totals, type Category, type EstimateLine, type ServiceItem } from "./estimate";
 
 export interface ImportedItem {
   name: string;
@@ -292,8 +292,6 @@ export function importTotals(est: ImportedEstimate, rate: number, vatPercent: nu
       });
   return totals(lines, rate, vatPercent, est.discountPercent ?? 0);
 }
-
-export type { Range };
 
 /**
  * The prompt Nitsan pastes at the end of a Claude conversation. It names the

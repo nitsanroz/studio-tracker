@@ -64,8 +64,6 @@ function check(error: { code?: string; message: string } | null) {
   throw new Error(error.message);
 }
 
-export { mapStage };
-
 export function mapSuggestion(r: Row): LeadSuggestion {
   return {
     id: str(r.id),
@@ -263,14 +261,6 @@ export async function loadVocabulary(): Promise<Vocabulary> {
 }
 
 /**
- * Every lead, with its first contact's name.
- *
- * ⚠️ ALL OF THEM, INCLUDING WON AND LOST. A studio this size opens dozens of
- * leads a year, not thousands, and the board's Won/Lost columns and the summary
- * strip both need them. If that ever stops being true, filter closed leads to
- * the last N months here — not on the page.
- */
-/**
  * ⚠️ STEPS DOWN A RUNG WHEN 0043 IS NOT APPLIED — the same ladder the store
  * uses: naming a missing column fails the whole select, and Phase 1 must keep
  * working while Phase 2's migration waits to be run.
@@ -304,6 +294,14 @@ export async function deletedLeadName(id: string): Promise<string | null> {
   return data ? str((data as Row).company) : null;
 }
 
+/**
+ * Every lead, with its first contact's name.
+ *
+ * ⚠️ ALL OF THEM, INCLUDING WON AND LOST. A studio this size opens dozens of
+ * leads a year, not thousands, and the board's Won/Lost columns and the summary
+ * strip both need them. If that ever stops being true, filter closed leads to
+ * the last N months here — not on the page.
+ */
 export async function loadBoard(): Promise<Lead[]> {
   const sb = createClient();
   const { data, error } = await leadRows();
@@ -402,13 +400,19 @@ export async function loadLead(id: string): Promise<LeadDetail | null> {
   if (!data) return null;
   const lead = mapLead(data);
 
-  const [contacts, offers, threads, events] = await Promise.all([
+  const [contacts, offers, threads, events, { data: sugg }] = await Promise.all([
     sb.from("lead_contacts").select("*").eq("lead_id", id).order("position"),
     sb.from("lead_offers").select("*").eq("lead_id", id).order("version", { ascending: false }),
     // Sorted below rather than by `last_message_at` here: that column is 0043's,
     // and ordering by a missing column fails the whole lead page.
     sb.from("lead_threads").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     sb.from("lead_events").select("*").eq("lead_id", id).order("at", { ascending: false }).limit(100),
+    sb
+      .from("lead_suggestions")
+      .select("id,lead_id,rule,to_stage_id,reason,created_at")
+      .eq("lead_id", id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }),
   ]);
   check(contacts.error);
   check(offers.error);
@@ -417,12 +421,6 @@ export async function loadLead(id: string): Promise<LeadDetail | null> {
 
   const c = ((contacts.data ?? []) as Row[]).map(mapContact);
   lead.primaryContact = c[0]?.name ?? null;
-  const { data: sugg } = await sb
-    .from("lead_suggestions")
-    .select("id,lead_id,rule,to_stage_id,reason,created_at")
-    .eq("lead_id", id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
 
   const mappedThreads = ((threads.data ?? []) as Row[])
     .map(mapThread)

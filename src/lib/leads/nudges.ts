@@ -7,6 +7,7 @@
 // anything is saved. Dismissing is per viewer and per SITUATION (`key`): the tip
 // comes back, full size, only when what it is about changes.
 
+import { daysBetween } from "../period-math";
 import type { Lead, LeadStage } from "./types";
 import { isStalled, quietWorkDays } from "./stalled";
 
@@ -70,13 +71,11 @@ export const NUDGE_COLOR: Record<NudgeKind, string> = {
   missing: "#ca8a04",
 };
 
-const DAY = 86_400_000;
-const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 /** Whole calendar days from `iso` (a timestamp or a yyyy-mm-dd) to `now`. */
 export function daysSince(iso: string, now: Date): number {
   const t = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso);
   if (Number.isNaN(t.getTime())) return 0;
-  return Math.max(0, Math.round((midnight(now) - midnight(t)) / DAY));
+  return Math.max(0, daysBetween(t, now));
 }
 const ago = (n: number) => (n === 0 ? "today" : n === 1 ? "1 day" : `${n} days`);
 const clip = (s: string, n = 34) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);

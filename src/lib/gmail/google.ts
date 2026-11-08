@@ -9,6 +9,8 @@
 // label, archive or delete mail, and the scope means Google would refuse it if
 // anything tried.
 
+import type { GmailMessage } from "./parse";
+
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 export function googleConfigured(): boolean {
@@ -151,12 +153,12 @@ export const listHistory = (at: string, startHistoryId: string, pageToken?: stri
 
 /** Headers only — enough to match a thread to a lead without reading the body. */
 export const getMessageMeta = (at: string, id: string) =>
-  gmail<import("./parse").GmailMessage>(at, `messages/${id}`, {
+  gmail<GmailMessage>(at, `messages/${id}`, {
     query: { format: "metadata", metadataHeaders: ["From", "To", "Cc", "In-Reply-To", "References"] },
   });
 
 export const getThread = (at: string, id: string) =>
-  gmail<{ id: string; messages?: import("./parse").GmailMessage[] }>(at, `threads/${id}`, {
+  gmail<{ id: string; messages?: GmailMessage[] }>(at, `threads/${id}`, {
     query: { format: "full" },
   });
 
