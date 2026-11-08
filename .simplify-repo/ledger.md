@@ -90,3 +90,40 @@ could verify are skipped and noted under report.md → Skipped.
 - [x] src/lib/leads + gmail — dead `latestApproved`, `stageStyle`, `mapStage`/`Range` re-exports removed; `createEstimate`/`copyInto` call `nextVersion`; `fail` shared from actions.ts; nudges/stalled use period-math `daysBetween` + `toISODate`; lead page's suggestions read joins the `Promise.all`; gmail sync reuses `isRealMail` + `header`, `GmailMessage` imported once, backfill's two reads in parallel; loadBoard doc moved; stale "Phase 2" header. Not applied: stage-ladder round trip (Supabase column-string typing fights it), rate/VAT constants, phase-orphan tidy, shared `leads/row.ts`, `fx.formatIls`, `nowIso` once
 - [x] src/lib/candidates — 6 file-local mappers no longer exported; redundant cast; `loadVocabulary` doc moved onto it; `appliedOnOf` uses `toISODate`; `removeRole` calls `roleUsage`; one Blob constructor; one URL key; one `now` in finishConversion; `profileId` doc + 0061 date note corrected. Not applied: `storageSafeName` shared with api/candidate-file (outside src/lib), batched link insert
 - [x] Phase 3 — full gates green (tsc, eslint 0 errors / 38 warnings, 869 tests, build); Home, Weekly Plan, Leads board smoke-checked on localhost, no console errors
+
+## Sweep 2 — src/components (report-only, started 2026-11-08)
+Same digest and project.md. Reviewer brief: brief-components.md. 106 files, 16 batches.
+- [x] src/components#1 (8 files)
+  src/components/about-modal.tsx, src/components/account-inactive.tsx, src/components/advice.test.ts, src/components/advice.tsx, src/components/amp-loader.tsx, src/components/app-shell.tsx, src/components/auth-frame.tsx, src/components/brief-modal.tsx
+- [x] src/components#2 (8 files)
+  src/components/candidate-settings.tsx, src/components/cell-inspector.tsx, src/components/charts.tsx, src/components/client-avatar.tsx, src/components/client-contacts.tsx, src/components/client-files.tsx, src/components/client-info-modal.tsx, src/components/client-mark-picker.tsx
+- [x] src/components#3 (8 files)
+  src/components/client-mobile.tsx, src/components/client-notes.tsx, src/components/client-report-buttons.tsx, src/components/confirm-details-banner.tsx, src/components/confirm-dialog.tsx, src/components/count-up.tsx, src/components/desktop-only.tsx, src/components/editable-cell.tsx
+- [x] src/components#4 (8 files)
+  src/components/egress-banner.tsx, src/components/empty-state.tsx, src/components/global-search.tsx, src/components/hr-details-form.tsx, src/components/keys-write-down.tsx, src/components/lead-settings.tsx, src/components/links-editor.tsx, src/components/log-time-form.tsx
+- [x] src/components#5 (8 files)
+  src/components/logged-day.tsx, src/components/member-photo.tsx, src/components/member-select.tsx, src/components/member-week-hours.tsx, src/components/mobile-log-time.tsx, src/components/mobile-sheet.tsx, src/components/new-leads.tsx, src/components/notifications-bell.tsx
+- [x] src/components#6 (8 files)
+  src/components/occasions-settings.tsx, src/components/overview-files.tsx, src/components/password-input.tsx, src/components/period-stepper.tsx, src/components/picture-editor.tsx, src/components/plan-entry-modal.tsx, src/components/plan-mobile.tsx, src/components/primitives.tsx
+- [x] src/components#7 (8 files)
+  src/components/public-error.tsx, src/components/report-table.tsx, src/components/resizable.tsx, src/components/share-gantt-button.tsx, src/components/show-menu.tsx, src/components/skeleton.tsx, src/components/stage-track.tsx, src/components/studio-arrow.tsx
+- [x] src/components#8 (8 files)
+  src/components/task-autocomplete.tsx, src/components/task-bulk-controls.tsx, src/components/task-list-row.tsx, src/components/task-panel.tsx, src/components/time-entry-modal.tsx, src/components/toaster.tsx, src/components/ui.tsx, src/components/user-day-details.tsx
+- [x] src/components#9 (4 files)
+  src/components/vacation.tsx, src/components/week-timesheet.tsx, src/components/weekly-plan.tsx, src/components/whats-new-modal.tsx
+- [x] src/components/client-timeline (8 files)
+  src/components/client-timeline/cells.tsx, src/components/client-timeline/columns-menu.tsx, src/components/client-timeline/headers.tsx, src/components/client-timeline/index.tsx, src/components/client-timeline/layers.tsx, src/components/client-timeline/row.tsx, src/components/client-timeline/shared.ts, src/components/client-timeline/tooltip.tsx
+- [x] src/components/client-view#1 (8 files)
+  src/components/client-view/board.tsx, src/components/client-view/groups.tsx, src/components/client-view/index.tsx, src/components/client-view/row.tsx, src/components/client-view/section.tsx, src/components/client-view/selection.tsx, src/components/client-view/shared.ts, src/components/client-view/sort.tsx
+- [x] src/components/client-view#2 (2 files)
+  src/components/client-view/stats.tsx, src/components/client-view/toolbar.tsx
+- [x] src/components/dashboard#1 (8 files)
+  src/components/dashboard/celebrations.tsx, src/components/dashboard/day-log.tsx, src/components/dashboard/graphs.tsx, src/components/dashboard/index.tsx, src/components/dashboard/member.tsx, src/components/dashboard/pace-chart.tsx, src/components/dashboard/shared.ts, src/components/dashboard/studio-pace.tsx
+- [x] src/components/dashboard#2 (2 files)
+  src/components/dashboard/team-strip.tsx, src/components/dashboard/tiles.tsx
+- [x] src/components/leads#1 (8 files)
+  src/components/leads/attention-tip.tsx, src/components/leads/estimate-fields.tsx, src/components/leads/estimate-import-panel.tsx, src/components/leads/estimate-overview.tsx, src/components/leads/estimate-scope.tsx, src/components/leads/icon-select.tsx, src/components/leads/library-settings.tsx, src/components/leads/settings-popup.tsx
+- [x] src/components/leads#2 (2 files)
+  src/components/leads/stage-look-picker.tsx, src/components/leads/stage-modals.tsx
+
+All 16 batches reviewed 2026-11-08 (report-only); findings in report-components.md.
