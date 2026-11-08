@@ -8,7 +8,7 @@
 // RLS, writes throw LeadWriteError.
 
 import { createClient } from "../supabase/client";
-import { MISSING_SCHEMA_CODES } from "../db";
+import { MISSING_SCHEMA_CODES, fetchAll, fetchAllIn } from "../db";
 import { LeadWriteError, alertOfferReview, fail } from "./actions";
 import {
   fmtHours,
@@ -210,8 +210,10 @@ export async function loadEstimate(id: string): Promise<EstimateDetail | null> {
   const actual = new Map<string, number>();
   const taskIds = ls.map((l) => l.taskId).filter((t): t is string => Boolean(t));
   if (taskIds.length) {
-    const { data: te } = await sb.from("time_entries").select("task_id,minutes").in("task_id", taskIds);
-    for (const r of (te ?? []) as Row[]) {
+    // Paged (a won estimate's tasks can pass 1000 entries); a failed read still
+    // leaves the actuals empty rather than failing the estimate.
+    const te = await fetchAllIn<Row>(sb, "time_entries", "task_id,minutes", "task_id", taskIds).catch(() => [] as Row[]);
+    for (const r of te) {
       const t = str(r.task_id);
       actual.set(t, (actual.get(t) ?? 0) + (nnum(r.minutes) ?? 0) / 60);
     }
@@ -232,23 +234,25 @@ export async function loadEstimate(id: string): Promise<EstimateDetail | null> {
  */
 export async function loadLibraryActuals(): Promise<Map<string, { avg: number; n: number }>> {
   const sb = createClient();
-  const { data: rows } = await sb
-    .from("estimate_lines")
-    .select("service_item_id,task_id")
-    .not("service_item_id", "is", null)
-    .not("task_id", "is", null);
-  const pairs = (rows ?? []) as Row[];
   const out = new Map<string, { avg: number; n: number }>();
-  if (pairs.length === 0) return out;
-  const { data: te } = await sb
-    .from("time_entries")
-    .select("task_id,minutes")
-    .in(
-      "task_id",
-      pairs.map((p) => str(p.task_id)),
+  // ⚠️ PAGED AND CHUNKED: every won line's task, and every entry on those tasks,
+  // grow without limit — one `.in()` over them all 400s (v1.66.0) and one select
+  // stops at 1000 rows, both silently. A failed read still means "no actuals yet".
+  let pairs: Row[];
+  let te: Row[];
+  try {
+    pairs = await fetchAll<Row>(sb, "estimate_lines", "service_item_id,task_id", (q) =>
+      q.not("service_item_id", "is", null).not("task_id", "is", null),
     );
+    if (pairs.length === 0) return out;
+    te = await fetchAllIn<Row>(sb, "time_entries", "task_id,minutes", "task_id", [
+      ...new Set(pairs.map((p) => str(p.task_id))),
+    ]);
+  } catch {
+    return out;
+  }
   const byTask = new Map<string, number>();
-  for (const r of (te ?? []) as Row[]) byTask.set(str(r.task_id), (byTask.get(str(r.task_id)) ?? 0) + (nnum(r.minutes) ?? 0) / 60);
+  for (const r of te) byTask.set(str(r.task_id), (byTask.get(str(r.task_id)) ?? 0) + (nnum(r.minutes) ?? 0) / 60);
   const acc = new Map<string, number[]>();
   for (const p of pairs) {
     const h = byTask.get(str(p.task_id));
@@ -576,12 +580,15 @@ export async function loadEstimateSources(): Promise<EstimateSource[]> {
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => !((r.leads ?? {}) as Row).deleted_at);
   if (rows.length === 0) return [];
   const ids = rows.map((r) => str(r.id));
-  const [lineRes, phaseRes] = await Promise.all([
-    sb.from("estimate_lines").select("*").in("estimate_id", ids).order("position"),
-    sb.from("estimate_phases").select("id,estimate_id,name,position").in("estimate_id", ids).order("position"),
+  // ⚠️ Every estimate's lines (~500 already) — paged and chunked, then put back in
+  // `position` order, which `fetchAll`'s id ordering doesn't keep. A failed read
+  // still means "no lines", as before.
+  const [lineRows, phaseRows] = await Promise.all([
+    fetchAllIn<Row>(sb, "estimate_lines", "*", "estimate_id", ids).catch(() => [] as Row[]),
+    fetchAllIn<Row>(sb, "estimate_phases", "id,estimate_id,name,position", "estimate_id", ids).catch(() => [] as Row[]),
   ]);
-  const lines = ((lineRes.data ?? []) as Row[]).map(mapLine);
-  const phases = ((phaseRes.data ?? []) as Row[]).map((r) => mapPhase(r));
+  const lines = lineRows.map(mapLine).sort((a, b) => a.position - b.position);
+  const phases = phaseRows.map((r) => mapPhase(r));
   return rows.map((r) => {
     const lead = (r.leads ?? {}) as Row;
     const st = str(r.status);
@@ -1180,9 +1187,13 @@ export async function loadBoardEstimateHours(leadIds: string[]): Promise<Map<str
   }
   const ids = [...pick.values()].map((r) => str(r.id));
   if (ids.length === 0) return out;
-  const { data: lineRows, error: lineErr } = await sb.from("estimate_lines").select("*").in("estimate_id", ids);
-  if (lineErr) return out;
-  const lines = ((lineRows ?? []) as Row[]).map(mapLine);
+  let lineRows: Row[];
+  try {
+    lineRows = await fetchAllIn<Row>(sb, "estimate_lines", "*", "estimate_id", ids);
+  } catch {
+    return out;
+  }
+  const lines = lineRows.map(mapLine);
   for (const [lead, r] of pick) {
     const ls = lines.filter((l) => l.estimateId === str(r.id));
     if (ls.length === 0) continue;

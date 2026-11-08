@@ -260,6 +260,31 @@ export async function fetchAll<T>(
   return out;
 }
 
+/**
+ * Every row of `table` whose `col` is one of `values` — both PostgREST traps at once.
+ *
+ * ⚠️ The values go in CHUNKS, because every id in one URL fails past a few hundred
+ * (`.in()` over 600+ ids 400s, v1.66.0), and each chunk is PAGED through `fetchAll`,
+ * because a response stops at 1000 rows without saying so. Rows come back in id
+ * order within each chunk; a caller that cares about order sorts them itself.
+ * Throws a `DbError` like `fetchAll`.
+ */
+export async function fetchAllIn<T>(
+  sb: SupabaseClient,
+  table: string,
+  columns: string,
+  col: string,
+  values: string[],
+  modify?: (q: any) => any,
+): Promise<T[]> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < values.length; i += 150) chunks.push(values.slice(i, i + 150));
+  const pages = await Promise.all(
+    chunks.map((c) => fetchAll<T>(sb, table, columns, (q) => (modify ? modify(q.in(col, c)) : q.in(col, c)))),
+  );
+  return pages.flat();
+}
+
 // ── row → app-type mappers ────────────────────────────────────────────────
 
 /** A nullable numeric column (Postgres numerics arrive as strings). */

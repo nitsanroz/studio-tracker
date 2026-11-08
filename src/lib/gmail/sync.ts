@@ -22,6 +22,7 @@
 // those belong.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAll, fetchAllIn } from "../db";
 import { decryptToken } from "./crypto";
 import { afterMail } from "../leads/rules";
 import { mapStage } from "../leads/stage-map";
@@ -106,30 +107,36 @@ async function ownAddresses(sb: SupabaseClient): Promise<Set<string>> {
 /** The leads a new thread may attach to — see the header. */
 export async function matchCandidates(sb: SupabaseClient, onlyLeadId?: string): Promise<MatchCandidate[]> {
   const since = new Date(Date.now() - MATCH_WINDOW_DAYS * 86_400_000).toISOString();
-  const [{ data: stages }, leadsRes] = await Promise.all([
+  type LeadRow = { id: string; stage_id: string | null; domain: string | null; last_activity_at: string };
+  // ⚠️ PAGED: 600+ leads already, and one select stops at 1000 without saying so.
+  // ⚠️ `deleted_at` on BOTH branches — the lead page auto-runs a backfill, and a
+  // deleted lead's page must not file threads onto the hidden lead (v1.63.1).
+  // A failed read still means "no candidates", as it did before paging.
+  const [{ data: stages }, leadRows] = await Promise.all([
     sb.from("lead_stages").select("id,kind"),
-    onlyLeadId
-      ? sb.from("leads").select("id,stage_id,domain,last_activity_at").eq("id", onlyLeadId)
-      : sb.from("leads").select("id,stage_id,domain,last_activity_at").is("deleted_at", null),
+    fetchAll<LeadRow>(sb, "leads", "id,stage_id,domain,last_activity_at", (q) =>
+      onlyLeadId ? q.eq("id", onlyLeadId).is("deleted_at", null) : q.is("deleted_at", null),
+    ).catch(() => [] as LeadRow[]),
   ]);
   const kind = new Map(((stages ?? []) as { id: string; kind: string }[]).map((s) => [s.id, s.kind]));
-  const leads = ((leadsRes.data ?? []) as { id: string; stage_id: string | null; domain: string | null; last_activity_at: string }[])
+  const leads = leadRows
     .map((l) => ({ ...l, open: !l.stage_id || kind.get(l.stage_id) === "open" }))
     .filter((l) => onlyLeadId || l.open || l.last_activity_at >= since);
   if (leads.length === 0) return [];
 
   const emails = new Map<string, string[]>();
-  for (let i = 0; i < leads.length; i += 200) {
-    const { data } = await sb
-      .from("lead_contacts")
-      .select("lead_id,email")
-      .in("lead_id", leads.slice(i, i + 200).map((l) => l.id))
-      .not("email", "is", null);
-    for (const c of (data ?? []) as { lead_id: string; email: string }[]) {
-      const list = emails.get(c.lead_id) ?? [];
-      list.push(c.email.toLowerCase());
-      emails.set(c.lead_id, list);
-    }
+  const contacts = await fetchAllIn<{ lead_id: string; email: string }>(
+    sb,
+    "lead_contacts",
+    "lead_id,email",
+    "lead_id",
+    leads.map((l) => l.id),
+    (q) => q.not("email", "is", null),
+  ).catch(() => [] as { lead_id: string; email: string }[]);
+  for (const c of contacts) {
+    const list = emails.get(c.lead_id) ?? [];
+    list.push(c.email.toLowerCase());
+    emails.set(c.lead_id, list);
   }
   return leads.map((l) => ({
     leadId: l.id,

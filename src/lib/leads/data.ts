@@ -8,7 +8,7 @@
 // one lead. The board never drags offers, threads or the activity log along.
 
 import { createClient } from "../supabase/client";
-import { MISSING_SCHEMA_CODES, fetchAll } from "../db";
+import { MISSING_SCHEMA_CODES, fetchAll, isMissingSchema } from "../db";
 import type { StoredRate } from "./fx";
 import { mapStage } from "./stage-map";
 import { readNudgeSettings, type NudgeSettings } from "./nudges";
@@ -265,21 +265,52 @@ export async function loadVocabulary(): Promise<Vocabulary> {
  * uses: naming a missing column fails the whole select, and Phase 1 must keep
  * working while Phase 2's migration waits to be run.
  */
-async function leadRows(filter?: { id: string }) {
+async function leadRows(filter: { id: string }) {
   const sb = createClient();
-  // ⚠️ The board skips deleted leads (0047); a single lead is fetched either
-  // way, so its page can say it was deleted and offer Undo.
-  const q = (cols: string, live: boolean) => {
-    const base = sb.from("leads").select(cols);
-    if (filter) return base.eq("id", filter.id);
-    const ordered = base.order("last_activity_at", { ascending: false });
-    return live ? ordered.is("deleted_at", null) : ordered;
-  };
-  const top = await q(LEAD_COLS_0043 + ",deleted_at", true);
+  // ⚠️ One lead, deleted or not, so its page can say it was deleted and offer
+  // Undo. The board reads through `boardRows`, which skips deleted leads (0047).
+  const q = (cols: string) => sb.from("leads").select(cols).eq("id", filter.id);
+  const top = await q(LEAD_COLS_0043 + ",deleted_at");
   if (!top.error || !MISSING_SCHEMA_CODES.has(top.error.code ?? "")) return top;
-  const full = await q(LEAD_COLS_0043, false);
+  const full = await q(LEAD_COLS_0043);
   if (!full.error || !MISSING_SCHEMA_CODES.has(full.error.code ?? "")) return full;
-  return q(LEAD_COLS, false);
+  return q(LEAD_COLS);
+}
+
+/**
+ * Every live lead for the board, PAGED, newest activity first.
+ *
+ * ⚠️ PAGED BECAUSE THE TABLE OUTGREW THE COMMENT ON `loadBoard`. 622 leads were
+ * imported from the sheet (gmail/sync.ts header); one plain select stops at 1000
+ * without saying so, and the board would silently lose its oldest leads.
+ * `fetchAll` orders by id, so the activity order is restored here.
+ *
+ * Same ladder as `leadRows`: 0047's `deleted_at`, then 0043's column, then the
+ * base set — stepping down only on a missing-schema error.
+ */
+async function boardRows(): Promise<Row[]> {
+  const sb = createClient();
+  const all = (cols: string, live: boolean) =>
+    fetchAll<Row>(sb, "leads", cols, live ? (q) => q.is("deleted_at", null) : undefined);
+  let rows: Row[];
+  try {
+    rows = await all(LEAD_COLS_0043 + ",deleted_at", true);
+  } catch (e) {
+    if (!isMissingSchema(e)) throw e;
+    try {
+      rows = await all(LEAD_COLS_0043, false);
+    } catch (e2) {
+      if (!isMissingSchema(e2)) throw e2;
+      try {
+        rows = await all(LEAD_COLS, false);
+      } catch (e3) {
+        // `check` turns a missing table into LeadsNotInstalled, as before.
+        check({ message: (e3 as Error).message, code: (e3 as { code?: string }).code });
+        throw e3;
+      }
+    }
+  }
+  return rows.sort((a, b) => str(b.last_activity_at).localeCompare(str(a.last_activity_at)));
 }
 
 /** A deleted lead's name, for the board's "X was deleted · Undo" banner. */
@@ -297,16 +328,14 @@ export async function deletedLeadName(id: string): Promise<string | null> {
 /**
  * Every lead, with its first contact's name.
  *
- * ⚠️ ALL OF THEM, INCLUDING WON AND LOST. A studio this size opens dozens of
- * leads a year, not thousands, and the board's Won/Lost columns and the summary
- * strip both need them. If that ever stops being true, filter closed leads to
- * the last N months here — not on the page.
+ * ⚠️ ALL OF THEM, INCLUDING WON AND LOST — the board's Won/Lost columns and the
+ * summary strip both need them. That is already 600+ (the sheet import), so the
+ * read is paged (`boardRows`). If the board gets slow, filter closed leads to the
+ * last N months there — not on the page.
  */
 export async function loadBoard(): Promise<Lead[]> {
   const sb = createClient();
-  const { data, error } = await leadRows();
-  check(error);
-  const leads = ((data ?? []) as unknown as Row[]).map(mapLead);
+  const leads = (await boardRows()).map(mapLead);
   if (leads.length === 0) return leads;
 
   // ⚠️ THE WHOLE TABLE, PAGED — NOT `.in("lead_id", <every lead>)`. With 600+

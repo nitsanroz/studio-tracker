@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DbError, canonicalReportLink, fetchAll, isMissingSchema, isServiceBlocked } from "./db";
+import { DbError, canonicalReportLink, fetchAll, fetchAllIn, isMissingSchema, isServiceBlocked } from "./db";
 import type { ReportLink } from "./types";
 
 describe("isMissingSchema", () => {
@@ -279,5 +279,36 @@ describe("fetchAll paging", () => {
     await new Promise((r) => setTimeout(r, 30));
     // Without the stop, all 25 pages would have been requested.
     expect(calls.ranges.length).toBeLessThan(25);
+  });
+});
+
+// Both PostgREST traps at once: too many ids for one URL, too many rows for one page.
+describe("fetchAllIn", () => {
+  it("chunks the values and pages every chunk, returning each row once", async () => {
+    const inSizes: number[] = [];
+    const sb = {
+      from: () => ({
+        select: () => {
+          const st = { a: 0, b: 0, vals: [] as string[] };
+          const chain: Record<string, unknown> = {
+            order: () => chain,
+            range: (a: number, b: number) => ((st.a = a), (st.b = b), chain),
+            in: (_col: string, vals: string[]) => (inSizes.push(vals.length), (st.vals = vals), chain),
+            // 10 rows per value, so a 150-value chunk is 1500 rows: two pages.
+            then: (res: (r: unknown) => void) => {
+              const rows = st.vals.flatMap((v) => Array.from({ length: 10 }, (_, k) => ({ id: `${v}-${k}` })));
+              res({ data: rows.slice(st.a, st.b + 1), error: null, status: 200 });
+            },
+          };
+          return chain;
+        },
+      }),
+    };
+    const values = Array.from({ length: 400 }, (_, i) => `v${i}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await fetchAllIn<{ id: string }>(sb as any, "time_entries", "*", "task_id", values);
+    expect(Math.max(...inSizes)).toBe(150);
+    expect(rows.length).toBe(4000);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(4000);
   });
 });

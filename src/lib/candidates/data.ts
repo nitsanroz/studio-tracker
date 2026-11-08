@@ -15,7 +15,7 @@
 // route down.
 
 import { createClient } from "../supabase/client";
-import { MISSING_SCHEMA_CODES, fetchAll } from "../db";
+import { MISSING_SCHEMA_CODES, fetchAllIn } from "../db";
 import type {
   Candidate,
   CandidateComment,
@@ -272,9 +272,9 @@ export async function loadBoard(
 
   const ids = candidates.map((c) => c.id);
   const [links, comments, interviews] = await Promise.all([
-    allIn(sb, "candidate_links", "candidate_id", "candidate_id", ids),
-    allIn(sb, "candidate_comments", "candidate_id", "candidate_id", ids),
-    allIn(sb, "candidate_interviews", "id,candidate_id,kind,held_on,created_at", "candidate_id", ids),
+    fetchAllIn<Row>(sb, "candidate_links", "candidate_id", "candidate_id", ids),
+    fetchAllIn<Row>(sb, "candidate_comments", "candidate_id", "candidate_id", ids),
+    fetchAllIn<Row>(sb, "candidate_interviews", "id,candidate_id,kind,held_on,created_at", "candidate_id", ids),
   ]);
 
   const tally = (rowsIn: Row[]) => {
@@ -298,10 +298,10 @@ export async function loadBoard(
   // Per INTERVIEW, not per candidate: the list shows each reading's average,
   // and the headline figure is `overallScore`'s weighted mean of them — the
   // same number the candidate page shows. ⚠️ Scores run ~11 rows a scorecard,
-  // so this is the read that passes 1000 rows first — `allIn` pages it.
+  // so this is the read that passes 1000 rows first — `fetchAllIn` pages it.
   const scoreSum = new Map<string, { total: number; n: number }>();
   if (interviews.length > 0) {
-    const scores = await allIn(sb, "candidate_scores", "interview_id,value", "interview_id", interviews.map((r) => str(r.id)));
+    const scores = await fetchAllIn<Row>(sb, "candidate_scores", "interview_id,value", "interview_id", interviews.map((r) => str(r.id)));
     for (const r of scores) {
       const iid = str(r.interview_id);
       const acc = scoreSum.get(iid) ?? { total: 0, n: 0 };
@@ -327,25 +327,6 @@ export async function loadBoard(
   }
 
   return { candidates, counts };
-}
-
-/**
- * Every row of `table` whose `col` is one of `values`. The values go in chunks,
- * because every id in one URL fails past a few hundred (CLAUDE.md: `.in()` over
- * 600+ ids 400s), and each chunk is paged, because PostgREST stops at 1000 rows
- * without saying so.
- */
-async function allIn(
-  sb: ReturnType<typeof createClient>,
-  table: string,
-  columns: string,
-  col: string,
-  values: string[],
-): Promise<Row[]> {
-  const chunks: string[][] = [];
-  for (let i = 0; i < values.length; i += 150) chunks.push(values.slice(i, i + 150));
-  const pages = await Promise.all(chunks.map((c) => fetchAll<Row>(sb, table, columns, (q) => q.in(col, c))));
-  return pages.flat();
 }
 
 /** Everything about one person. One route, one candidate, so `*` is honest here. */
