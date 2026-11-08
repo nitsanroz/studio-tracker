@@ -296,12 +296,6 @@ describe("buildReportSnapshot", () => {
   });
 
   /**
-   * The cut-off. These exist because the failure it fixes was not "a column is
-   * showing" but "the page contradicts itself": hiding the week left its hours in
-   * the row totals and the header figure. So each of these asserts a DIFFERENT
-   * figure moves together — dropping any one of them is how the bug comes back.
-   */
-  /**
    * The report's row order IS the client page's order — that page is where the
    * studio arranges its work, so the two must not disagree.
    */
@@ -380,6 +374,12 @@ describe("buildReportSnapshot", () => {
     });
   });
 
+  /**
+   * The cut-off. These exist because the failure it fixes was not "a column is
+   * showing" but "the page contradicts itself": hiding the week left its hours in
+   * the row totals and the header figure. So each of these asserts a DIFFERENT
+   * figure moves together — dropping any one of them is how the bug comes back.
+   */
   describe("through (cut-off date)", () => {
     const week2 = [
       sum("t1", "2026-08-20", 120), // Thu, inside the reported week

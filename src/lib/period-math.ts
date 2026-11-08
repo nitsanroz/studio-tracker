@@ -8,7 +8,7 @@
 // log records two boundary bugs here that were caught by eye rather than by a
 // test: the `<` vs `<=` on the period end, and the last-bucket projection.
 
-import { parseISO, shiftDays, startOfWeek, toISODate } from "./format";
+import { MONTH_NAMES_SHORT, parseISO, shiftDays, startOfWeek, toISODate } from "./format";
 
 export const HOME_RANGES = ["This week", "This month", "This year", "All time"] as const;
 export type HomeRange = (typeof HOME_RANGES)[number];
@@ -30,20 +30,6 @@ export type PeriodKey = HomeRange | "This quarter";
 /** Reports steps through periods too, but "All time" would pull every entry ever. */
 export const REPORT_RANGES = ["This week", "This month", "This year"] as const;
 
-export const MONTH_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 /** whole calendar days from a → b (both floored to local midnight) */
 export function daysBetween(a: Date, b: Date): number {
@@ -106,7 +92,7 @@ export function rangeLabel(rangeKey: PeriodKey, offset: number, now: Date = new 
     return `${b.start.getDate()}/${b.start.getMonth() + 1}–${b.end.getDate()}/${b.end.getMonth() + 1}`;
   }
   if (rangeKey === "This month") {
-    const m = MONTH_SHORT[b.start.getMonth()];
+    const m = MONTH_NAMES_SHORT[b.start.getMonth()];
     return b.start.getFullYear() === now.getFullYear() ? m : `${m} ${b.start.getFullYear()}`;
   }
   if (rangeKey === "This quarter") {
@@ -178,7 +164,7 @@ export function bucketize(dates: string[], hasRange: boolean) {
     byDay
       ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
       : byMonth
-        ? MONTH_SHORT[Number(key.slice(5, 7)) - 1] + (multiYear ? ` ${key.slice(2, 4)}` : "")
+        ? MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1] + (multiYear ? ` ${key.slice(2, 4)}` : "")
         : key;
   const unit: "day" | "month" | "year" = byDay ? "day" : byMonth ? "month" : "year";
   return { keyFor, labelFor, unit };

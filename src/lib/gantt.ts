@@ -10,7 +10,7 @@
  * silent invitation for the two to drift a day apart.
  */
 
-import { DAY_NAMES, MONTH_NAMES_SHORT, parseISO, shiftDays } from "./format";
+import { DAY_NAMES, MONTH_NAMES_SHORT, parseISO, shiftDays, toISODate } from "./format";
 
 /**
  * Re-exported so the Gantt's callers keep importing their date helpers from here.
@@ -79,11 +79,8 @@ export function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
 
-export function toISO(d: Date): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
+/** The yyyy-mm-dd of a local date — `toISODate`, under the name the Gantt's callers use. */
+export { toISODate as toISO };
 
 /** "18 Aug", and for a range "18 – 24 Aug" / "28 Aug – 2 Sep". */
 export function dateRangeLabel(start: Date, due: Date, hasStart: boolean): string {
@@ -149,7 +146,7 @@ export function tickTooltip(date: Date, zoom: Zoom, days: number): string {
 export function isWorkDay(d: Date, off: Set<string>): boolean {
   const day = d.getDay();
   if (day === 5 || day === 6) return false; // Friday, Saturday
-  return !off.has(toISO(d));
+  return !off.has(toISODate(d));
 }
 
 /** Nearest working day at or after (dir=1) / at or before (dir=-1) `d`. */

@@ -65,7 +65,7 @@ export function addEntry(
 }
 
 export function newSplit(): HoursSplit {
-  return { total: 0, billable: 0, keys: 0, other: 0 };
+  return { ...EMPTY_SPLIT };
 }
 
 export function billablePct(s: HoursSplit): number | null {

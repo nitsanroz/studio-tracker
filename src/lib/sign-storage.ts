@@ -1,5 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
 import { PUBLIC_MARKER } from "./storage-url";
+import { service } from "./supabase/service";
+
+const TTL_SECONDS = 60 * 60;
 
 /**
  * Signs one stored storage URL, SERVER-SIDE, for a page with no session.
@@ -28,8 +30,6 @@ import { PUBLIC_MARKER } from "./storage-url";
  * Returns null on any failure, which every caller renders as the client's glyph
  * or initial — the same fallback as a client who never uploaded a mark.
  */
-const TTL_SECONDS = 60 * 60;
-
 export async function signStorageUrl(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
   const at = url.indexOf(PUBLIC_MARKER);
@@ -52,12 +52,7 @@ export async function signStorageUrl(url: string | null | undefined): Promise<st
   }
 
   try {
-    const admin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } },
-    );
-    const { data, error } = await admin.storage.from(bucket).createSignedUrl(key, TTL_SECONDS);
+    const { data, error } = await service().storage.from(bucket).createSignedUrl(key, TTL_SECONDS);
     if (error || !data?.signedUrl) return null;
     return data.signedUrl;
   } catch {

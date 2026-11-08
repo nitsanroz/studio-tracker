@@ -410,7 +410,7 @@ describe("historyEpochShouldMove", () => {
 // monitor for a working day spends ~880 MB of a 5 GB monthly allowance without
 // anyone touching it. That is what got the project cut off with a 402. These
 // cases are the rule that stops it, and the 15-minute threshold is only safe
-// because waking is immediate — see `catchUp` in store.tsx.
+// because waking is immediate — see `catchUp` in store/index.tsx.
 
 const IDLE = 15 * 60_000;
 const decide = (over: Partial<Parameters<typeof pollDecision>[0]> = {}) =>

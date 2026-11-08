@@ -121,7 +121,6 @@ export interface WorkKind {
   deliverables?: boolean;
 }
 
-/** Asked of everyone, whatever the kind. */
 /**
  * The fields that identify the PERSON filling the form in, rather than describing
  * the work.
@@ -134,6 +133,7 @@ export interface WorkKind {
  */
 export const CONTACT_FIELDS = ["name", "email", "company"] as const;
 
+/** Asked of everyone, whatever the kind. */
 export const ALWAYS_ASKS: (keyof IntakeAnswers)[] = [
   "taskName",
   "dueDate",
@@ -252,12 +252,12 @@ export function kindById(id: string): WorkKind | undefined {
  */
 export function fieldsAsked(kindIds: string[] | string): (keyof IntakeAnswers)[] {
   const ids = Array.isArray(kindIds) ? kindIds : [kindIds];
-  const kinds = ids.map(kindById).filter(Boolean) as WorkKind[];
+  const kinds = ids.map(kindById).filter((k): k is WorkKind => !!k);
   // ⚠️ The UNION, not the intersection. One task can hold a roll-up and a
   // social post, and a question relevant to either is relevant to the brief.
   const asks = kinds.length
     ? [...new Set(kinds.flatMap((k) => k.asks))]
-    : (kindById("other")!.asks as (keyof IntakeAnswers)[]);
+    : kindById("other")!.asks;
   return [...ALWAYS_ASKS, ...asks, ...TECH_ALWAYS, ...CLOSING_ASKS];
 }
 

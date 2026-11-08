@@ -70,7 +70,6 @@ export function buildWeeks(
     .sort()
     .pop();
   if (!firstDay || !lastDay) return [];
-  const last = lastDay;
   const weeks: { label: string; from: string; to: string }[] = [];
 
   let cur = startOfWeek(parseISO(firstDay));
@@ -79,7 +78,7 @@ export function buildWeeks(
   // `pool.some(...)` rescan per week — 238 columns × several thousand entries.
   let i = 0;
   const sortedCuts = [...cuts].sort();
-  while (toISODate(cur) <= last) {
+  while (toISODate(cur) <= lastDay) {
     const from = toISODate(cur);
     // `startOfWeek` matters after a period cut, which drops the cursor mid-week;
     // otherwise `cur` is already a Sunday by construction.
@@ -191,9 +190,6 @@ export function buildReportSnapshot(
    * leaving those 8h inside the row totals and the header figure — so the page
    * disagreed with itself: 62.5h in the header against 54.5h in the Period column.
    * Hiding is a focus tool; scoping is arithmetic, and only this can do it.
-   *
-   * ⚠️ Stored-week columns that begin after the cut-off are dropped too, or a
-   * hand-edited list would leave an empty trailing column with no hours in it.
    */
   through?: string | null,
 ): ReportSnapshot {
@@ -230,9 +226,9 @@ export function buildReportSnapshot(
     });
     let warr = weekByTask.get(e.taskId);
     if (!warr) weekByTask.set(e.taskId, (warr = weeks.map(() => 0)));
-    weeks.forEach((w, i) => {
-      if (e.date >= w.from && e.date <= w.to) warr![i] += e.minutes;
-    });
+    // Weeks never overlap (periods can nest, so the loop above stays a scan).
+    const wi = weeks.findIndex((w) => e.date >= w.from && e.date <= w.to);
+    if (wi >= 0) warr[wi] += e.minutes;
   }
 
   const clientSections = sections

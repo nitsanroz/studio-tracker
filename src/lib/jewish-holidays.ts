@@ -50,6 +50,9 @@ function hebrewParts(d: Date): { month: string; day: number } {
   return { month, day };
 }
 
+// ⚠️ UTC on purpose, unlike the rest of the app: every date here is anchored at
+// noon UTC (`T12:00:00Z`, `getUTCDay`), so ms steps and `toISOString` can't cross
+// a day boundary. Don't "fix" these to the local helpers in format.ts.
 function iso(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
