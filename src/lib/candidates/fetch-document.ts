@@ -21,12 +21,36 @@ export const MAX_LINKED_BYTES = 20 * 1024 * 1024;
 const MAX_HOPS = 5;
 const TIMEOUT_MS = 15_000;
 
+/**
+ * The IPv4 address inside an IPv4-mapped IPv6 tail, in either spelling:
+ * "127.0.0.1" or the hex form "7f00:1". Null when it is neither.
+ *
+ * ⚠️ `new URL` REWRITES `[::ffff:127.0.0.1]` AS `[::ffff:7f00:1]`, so the hex
+ * form is what actually arrives here. Reading only the dotted form let that
+ * address — and `[::ffff:a9fe:a9fe]`, the cloud metadata service — through as
+ * "public" (found by the 2026-11-08 src/lib sweep).
+ */
+function mappedV4(tail: string): string | null {
+  if (isIP(tail) === 4) return tail;
+  const m = tail.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (!m) return null;
+  const hi = parseInt(m[1], 16);
+  const lo = parseInt(m[2], 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+}
+
 function isPrivate(ip: string): boolean {
   if (isIP(ip) === 6) {
     const v = ip.toLowerCase();
-    if (v.startsWith("::ffff:")) return isPrivate(v.slice(7));
+    if (v.startsWith("::ffff:")) {
+      const v4 = mappedV4(v.slice(7));
+      return v4 === null || isPrivate(v4);
+    }
     return v === "::1" || v === "::" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80");
   }
+  // ⚠️ FAIL CLOSED: anything that is not a well-formed IPv4 address by now is
+  // refused. A shape this function doesn't understand must never read as public.
+  if (isIP(ip) !== 4) return true;
   const [a, b] = ip.split(".").map(Number);
   return (
     a === 0 ||

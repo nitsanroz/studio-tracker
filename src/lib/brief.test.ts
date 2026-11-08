@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assembleEmailHtml,
   assembleTaskBrief,
   readSubmission,
   renderSeenEmail,
@@ -358,5 +359,19 @@ describe("the receipt for a brief the client changed", () => {
     const { html } = renderSeenEmail(null, { ...vars, taskName: '<script>alert(1)</script>' }, "update");
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+// ⚠️ Client-supplied URLs land inside a quoted href. A `"` in one must not close
+// the attribute — the escaper once skipped `"` while its comment said otherwise.
+describe("assembleEmailHtml", () => {
+  it("keeps a quote in a client link inside its href", () => {
+    const html = assembleEmailHtml(
+      answers,
+      { files: [], links: [{ title: "Ref", url: 'https://x.com/a" onmouseover="alert(1)' }] },
+      "https://tracker.example/intake-queue",
+    );
+    expect(html).not.toContain('" onmouseover="');
+    expect(html).toContain('href="https://x.com/a&quot; onmouseover=&quot;alert(1)"');
   });
 });

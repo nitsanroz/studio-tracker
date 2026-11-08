@@ -408,8 +408,11 @@ export function readSubmission(
   };
 }
 
+// ⚠️ `"` too, not just the three tag characters: the output also lands inside
+// quoted `href="…"` attributes (`anchor()`), where an unescaped `"` in a
+// client-supplied URL closes the attribute early (fixed 2026-11-08).
 const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** HTML notification email, in the studio's established format. */
 export function assembleEmailHtml(

@@ -10,6 +10,13 @@ describe("fetchLinkedPdf refuses addresses an applicant should not choose", () =
     "https://169.254.169.254/latest/meta-data",
     "https://192.168.1.1/cv.pdf",
     "https://[::1]/cv.pdf",
+    // IPv4-mapped IPv6 — `new URL` rewrites these to the hex form (::ffff:7f00:1),
+    // which the guard once failed to read and let through as public.
+    "https://[::ffff:127.0.0.1]/cv.pdf",
+    "https://[::ffff:7f00:1]/cv.pdf",
+    "https://[::ffff:a9fe:a9fe]/latest/meta-data",
+    "https://[::ffff:10.0.0.5]/cv.pdf",
+    "https://[0:0:0:0:0:ffff:c0a8:101]/cv.pdf",
     "https://example.com:8443/cv.pdf",
     "https://user:pw@example.com/cv.pdf",
   ])("%s", async (url) => {
