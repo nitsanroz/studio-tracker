@@ -7,7 +7,7 @@
 // percentages only, never ₪ (see the route's note).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchAll } from "@/lib/db";
+import { fetchAll, fetchAllIn } from "@/lib/db";
 import { parseISO, studioToday } from "@/lib/format";
 import {
   HOURLY_TERMS,
@@ -59,6 +59,16 @@ export interface LiveHours {
   today: number;
 }
 
+/**
+ * A query's rows, or a throw — `studioGoal` promises to throw on a query error,
+ * and a swallowed one here silently undercounted billable hours or dropped a
+ * freelancer from the goal (a failed fx read zeroes AB's rate). Fixed 2026-11-08.
+ */
+function rowsOf<T>(r: { data: T | null; error: { message: string } | null }, what: string): T | null {
+  if (r.error) throw new Error(`${what}: ${r.error.message}`);
+  return r.data;
+}
+
 const monthBounds = (year: number, month: number) => {
   const mm = String(month).padStart(2, "0");
   return [`${year}-${mm}-01`, `${year}-${mm}-${new Date(year, month, 0).getDate()}`] as const;
@@ -71,16 +81,18 @@ async function billableHoursForMonth(sb: SupabaseClient, year: number, month: nu
     q.gte("date", from).lte("date", to).not("minutes", "is", null),
   );
   const taskIds = [...new Set(entries.map((e) => e.task_id))];
-  const tasks: { id: string; client_id: string | null; billable: boolean }[] = [];
-  for (let i = 0; i < taskIds.length; i += 100) {
-    const { data } = await sb.from("tasks").select("id, client_id, billable").in("id", taskIds.slice(i, i + 100));
-    tasks.push(...(data ?? []));
-  }
+  const tasks = await fetchAllIn<{ id: string; client_id: string | null; billable: boolean }>(
+    sb,
+    "tasks",
+    "id, client_id, billable",
+    "id",
+    taskIds,
+  );
   const clientIds = [...new Set(tasks.map((t) => t.client_id).filter((c): c is string => !!c))];
-  const { data: clients } = clientIds.length
-    ? await sb.from("clients").select("id, billable").in("id", clientIds)
-    : { data: [] as { id: string; billable: boolean }[] };
-  const billableClient = new Set((clients ?? []).filter((c) => c.billable).map((c) => c.id));
+  const clients = clientIds.length
+    ? await fetchAllIn<{ id: string; billable: boolean }>(sb, "clients", "id, billable", "id", clientIds)
+    : [];
+  const billableClient = new Set(clients.filter((c) => c.billable).map((c) => c.id));
   const billableTask = new Set(tasks.filter((t) => t.billable && t.client_id && billableClient.has(t.client_id)).map((t) => t.id));
   const billable = entries.filter((e) => billableTask.has(e.task_id));
   const hoursOf = (list: typeof billable) => list.reduce((t, e) => t + (e.minutes ?? 0) / 60, 0);
@@ -182,11 +194,14 @@ async function slidingRateFreelancers(
   monthEnd: string,
   absentByProfile: Map<string, string[]>,
 ): Promise<FormulaFreelancer[]> {
-  const { data: people } = await sb.from("freelancers").select("profile_id, currency, rate_high, rate_low, hours_low, hours_high");
+  const people = rowsOf(
+    await sb.from("freelancers").select("profile_id, currency, rate_high, rate_low, hours_low, hours_high"),
+    "freelancers",
+  );
   if (!people?.length) return [];
   const ids = people.map((p) => p.profile_id as string);
   const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
-  const [{ data: profiles }, linkLogs, entries, { data: charges }, { data: planRows }, { data: fxRows }] = await Promise.all([
+  const [profilesRes, linkLogs, entries, chargesRes, planRes, fxRes] = await Promise.all([
     sb.from("profiles").select("id, name, has_account").in("id", ids),
     fetchAll<{ profile_id: string; date: string; minutes: number }>(sb, "freelancer_logs", "profile_id, date, minutes", (q) =>
       q.in("profile_id", ids).neq("status", "rejected").gte("date", from).lte("date", monthEnd),
@@ -198,6 +213,10 @@ async function slidingRateFreelancers(
     sb.from("finance_freelance").select("person_name, profile_id, amount").eq("year", year).eq("month", month),
     sb.from("fx_rates").select("year, month, usd_ils, eur_ils").lte("year", year).order("year", { ascending: false }).order("month", { ascending: false }),
   ]);
+  const profiles = rowsOf(profilesRes, "profiles");
+  const charges = rowsOf(chargesRes, "freelancer_charges");
+  const planRows = rowsOf(planRes, "finance_freelance");
+  const fxRows = rowsOf(fxRes, "fx_rates");
   const nameOf = new Map((profiles ?? []).map((p) => [p.id as string, p.name as string]));
   const withLogin = new Set((profiles ?? []).filter((p) => p.has_account).map((p) => p.id as string));
   const logs = [
