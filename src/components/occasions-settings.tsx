@@ -68,13 +68,17 @@ export function OccasionsSettings() {
   }, []);
 
   async function saveGroups(next: Record<Group, boolean>) {
+    const prev = groups;
     setGroups(next); // optimistic — the toggle should feel instant
     const res = await fetch("/api/occasions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ groups: next }),
-    });
-    if (!res.ok) setError("Couldn't save which groups are shown.");
+    }).catch(() => null);
+    if (!res?.ok) {
+      setGroups(prev); // a toggle that didn't save must not look saved
+      setError("Couldn't save which groups are shown.");
+    }
   }
 
   async function add(e: React.FormEvent) {
@@ -86,10 +90,10 @@ export function OccasionsSettings() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, date, icon, recurring }),
-    });
-    const body = await res.json().catch(() => ({}));
+    }).catch(() => null);
+    const body = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setError(body.error ?? "Could not add that occasion.");
       return;
     }
@@ -101,8 +105,8 @@ export function OccasionsSettings() {
   }
 
   async function remove(id: string) {
-    const res = await fetch(`/api/occasions?id=${id}`, { method: "DELETE" });
-    if (!res.ok) {
+    const res = await fetch(`/api/occasions?id=${id}`, { method: "DELETE" }).catch(() => null);
+    if (!res?.ok) {
       setError("Could not remove that occasion.");
       return;
     }

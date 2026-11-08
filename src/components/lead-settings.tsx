@@ -79,13 +79,15 @@ function MailCard() {
 
   useEffect(() => {
     let alive = true;
-    void loadMailSettings().then((v) => alive && setSaved(v));
+    loadMailSettings()
+      .then((v) => alive && setSaved(v))
+      .catch(() => alive && setErr("Couldn't load who gets these emails."));
     return () => {
       alive = false;
     };
   }, []);
 
-  if (!saved) return null;
+  if (!saved) return err ? <p className="text-xs text-danger">{err}</p> : null;
   const all = admins.map((a) => a.id);
   const row = (key: "digest_recipients" | "approver_ids", title: string, note: string) => {
     const current = (key === "digest_recipients" ? saved.digest : saved.approvers) ?? all;

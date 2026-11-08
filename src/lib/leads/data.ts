@@ -583,7 +583,10 @@ export async function searchGmailForLead(leadId: string): Promise<{ threads: num
 /** Saved recipient lists (profile ids) — null when nothing is saved, meaning "every admin". */
 export async function loadMailSettings(): Promise<{ digest: string[] | null; approvers: string[] | null }> {
   const sb = createClient();
-  const { data } = await sb.from("lead_settings").select("key,value").in("key", ["digest_recipients", "approver_ids"]);
+  const { data, error } = await sb.from("lead_settings").select("key,value").in("key", ["digest_recipients", "approver_ids"]);
+  // ⚠️ A failed read must not come back as "nothing saved", which reads as "every
+  // admin ticked" — the card would show a choice nobody made.
+  check(error);
   const get = (k: string) => {
     const v = ((data ?? []) as Row[]).find((r) => r.key === k)?.value;
     return Array.isArray(v) ? (v as string[]) : null;

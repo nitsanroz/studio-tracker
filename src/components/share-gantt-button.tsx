@@ -53,8 +53,15 @@ export function ShareGanttButton({ clientId }: { clientId: string }) {
       url.current = u;
     }
     if (!u) return;
-    await navigator.clipboard.writeText(u);
-    setCopied(true);
+    // ⚠️ After the `await` above, Safari no longer counts this as a user gesture and
+    // refuses the clipboard — the click did nothing. Fall back like the other copy
+    // buttons do.
+    try {
+      await navigator.clipboard.writeText(u);
+      setCopied(true);
+    } catch {
+      window.prompt("Copy this link:", u);
+    }
   }
 
   return (

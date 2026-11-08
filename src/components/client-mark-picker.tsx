@@ -38,10 +38,12 @@ export function ClientMarkPicker({ client }: { client: Client }) {
     const body = new FormData();
     body.append("clientId", client.id);
     body.append("file", file);
-    const res = await fetch("/api/client-icon", { method: "POST", body });
-    const json = await res.json();
+    // ⚠️ Neither the fetch nor the JSON is trusted: a network failure or a non-JSON
+    // reply (a 413, an HTML error page) used to leave "Uploading…" up for ever.
+    const res = await fetch("/api/client-icon", { method: "POST", body }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setError(json.error ?? "Upload failed");
       return;
     }
@@ -52,12 +54,20 @@ export function ClientMarkPicker({ client }: { client: Client }) {
 
   async function clearUpload() {
     setBusy(true);
-    await fetch("/api/client-icon", {
+    setError(null);
+    const res = await fetch("/api/client-icon", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: client.id }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    // Only clear it on screen once the server has: a failed delete left the
+    // picker showing no mark while the client still had one.
+    if (!res?.ok) {
+      const json = res ? await res.json().catch(() => ({})) : {};
+      setError((json as { error?: string }).error ?? "Couldn't remove the mark.");
+      return;
+    }
     patchClientLocal(client.id, { iconUrl: null });
   }
 

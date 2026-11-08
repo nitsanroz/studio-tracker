@@ -316,12 +316,20 @@ function TaskAttachments({ taskId }: { taskId: string }) {
   }
 
   async function remove(id: string) {
+    const gone = files.find((f) => f.id === id);
     removeAttachment(id);
-    await fetch("/api/task-attachments", {
+    setError(null);
+    const res = await fetch("/api/task-attachments", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
-    });
+    }).catch(() => null);
+    // A refused delete puts the file back and says so — it used to vanish on
+    // screen while it still existed.
+    if (!res?.ok) {
+      if (gone) addAttachment(gone);
+      setError(`${gone?.fileName ?? "That file"} could not be removed.`);
+    }
   }
 
   return (

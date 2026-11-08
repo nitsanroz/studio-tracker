@@ -93,14 +93,15 @@ export function HrDetailsForm({
     setBusy(true);
     setStatus(null);
     setError(null);
+    // A network failure rejects; caught as "no response" so `busy` is always cleared.
     const res = await fetch("/api/me/hr", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(confirmMode ? { ...values, confirm: true } : values),
-    });
-    const json = await res.json().catch(() => ({}));
+    }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setError(json.error ?? "Could not save your details.");
       return;
     }

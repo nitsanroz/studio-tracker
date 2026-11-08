@@ -121,7 +121,15 @@ export function WhatsNewModal({
 
   useEffect(() => {
     if (suppressed) return;
-    const found = whatsNewSince(localStorage.getItem(SEEN_KEY), isAdmin);
+    // Storage can be blocked (private window, site data off); that must not throw
+    // inside an effect — there's no error boundary. Unknown = never dismissed.
+    let seen: string | null = null;
+    try {
+      seen = localStorage.getItem(SEEN_KEY);
+    } catch {
+      /* treat as never dismissed */
+    }
+    const found = whatsNewSince(seen, isAdmin);
     if (!found) return;
     setNews(found);
     setOpen(true);
@@ -144,7 +152,11 @@ export function WhatsNewModal({
   // app whose entire job is to be read once. Closing early still counts: having
   // decided not to read it is a decision, and re-showing it would be nagging.
   function dismiss() {
-    localStorage.setItem(SEEN_KEY, APP_VERSION);
+    try {
+      localStorage.setItem(SEEN_KEY, APP_VERSION);
+    } catch {
+      /* blocked storage: it just shows again next time */
+    }
     setOpen(false);
   }
 

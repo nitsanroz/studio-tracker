@@ -31,10 +31,11 @@ function usePicture(profile: Profile, kind: "avatar" | "photo") {
     body.append("file", file);
     body.append("kind", kind);
     body.append("targetId", profile.id);
-    const res = await fetch("/api/member-image", { method: "POST", body });
-    const json = await res.json().catch(() => ({}));
+    // A network failure rejects; caught as "no response" so `busy` is always cleared.
+    const res = await fetch("/api/member-image", { method: "POST", body }).catch(() => null);
+    const json = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setError(json.error ?? "Upload failed");
       return;
     }
@@ -44,10 +45,12 @@ function usePicture(profile: Profile, kind: "avatar" | "photo") {
   async function remove() {
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/member-image?kind=${kind}&targetId=${profile.id}`, { method: "DELETE" });
-    const json = await res.json().catch(() => ({}));
+    const res = await fetch(`/api/member-image?kind=${kind}&targetId=${profile.id}`, { method: "DELETE" }).catch(
+      () => null,
+    );
+    const json = res ? await res.json().catch(() => ({})) : {};
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setError(json.error ?? "Could not remove the picture");
       return;
     }
