@@ -74,7 +74,7 @@ import {
   TASKS_EVERY_N_TICKS,
   WRITE_SETTLE_MS,
 } from "./refresh-cadence";
-import { mapTaskRequest, withGroupInvariant } from "./helpers";
+import { mapTaskRequest } from "./helpers";
 import { usePlanActions } from "./plan";
 import { useClientActions } from "./clients";
 import { useTaxonomyActions } from "./taxonomy";
@@ -91,7 +91,6 @@ import { guardPreview } from "./preview-guard";
 import { startBootProgress } from "./boot-progress";
 
 /** Re-exported so `@/lib/store` keeps the surface it has always had. */
-export { withGroupInvariant };
 export type { TaskRequest };
 
 const StoreContext = createContext<Store | null>(null);
@@ -1167,7 +1166,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // ...tasks.ts — the studio structure. Last domain out of this file, and the
       // one every other domain reaches into through `methodsRef`.
       ...taskActions,
-      // ...plan.ts — the domain's eleven methods arrive as one object, which is
+      // ...plan.ts — the domain's nine methods arrive as one object, which is
       // also why the dependency list below names `plan` once rather than each.
       ...plan,
       ...linkActions,
@@ -1246,7 +1245,7 @@ export function useDataMaybe(): Store | null {
  * since the store swaps the exposed `currentUserId`. That is the whole point of
  * reading it through here: member preview keeps working everywhere for free.
  */
-export function useMe(): Profile | null {
+function useMe(): Profile | null {
   const { profiles, currentUserId } = useData();
   return profiles.find((p) => p.id === currentUserId) ?? null;
 }

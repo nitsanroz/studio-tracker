@@ -34,7 +34,9 @@ export function useLinkActions(deps: LinkDeps) {
     methodsRef,
   } = deps;
 
-
+  // `owner` is exactly one of taskId / clientId — the DB has a CHECK saying so,
+  // and the two RLS policies differ (task links are member-writable like the
+  // brief they sit under; client links are admin-only).
   const addLink = useCallback(
     (owner: { taskId: string } | { clientId: string }, title: string, url: string) => {
       const scope =

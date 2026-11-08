@@ -474,8 +474,6 @@ export function usePlanActions(deps: PlanDeps) {
   );
   return useMemo(
     () => ({
-      restorePlanEntry,
-      plannedTaskToReopen,
       addPlanEntry,
       updatePlanEntry,
       movePlanEntry,
@@ -487,8 +485,6 @@ export function usePlanActions(deps: PlanDeps) {
       deletePlanColumn,
     }),
     [
-      restorePlanEntry,
-      plannedTaskToReopen,
       addPlanEntry,
       updatePlanEntry,
       movePlanEntry,

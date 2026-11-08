@@ -3,9 +3,9 @@
 // Clients and member profiles.
 //
 // ⚠️ `updateClient` is not a plain row update: marking a client Internal flips
-// every one of its tasks non-billable, so it edits tasks too and records the
-// whole thing as ONE undo step (`asOneStep`). Splitting that into two steps
-// would let an undo leave a client billable with non-billable tasks under it.
+// every one of its tasks non-billable, so it edits tasks too — and a patch with
+// `billable` in it records NO undo step at all, because undoing half of that
+// cascade could leave a client billable with non-billable tasks under it.
 //
 // ⚠️ `updateProfile` holds the end-date invariant that migration 0020 also
 // enforces in the DB: an end date implies inactive, and restoring somebody has
@@ -28,7 +28,7 @@ export interface ClientDeps {
   setProfiles: Dispatch<SetStateAction<Profile[]>>;
   /** tag id → name, so a task rebuilt after a billable flip keeps its tag. */
   tagNameById: Map<string, string>;
-  /** One-off banner, e.g. when a billable flip touched tasks. */
+  /** One-off info toast, e.g. when a billable flip touched tasks. */
   setNotice: (text: string) => void;
   setTasks: Dispatch<SetStateAction<Task[]>>;
   record: (action: Omit<HistoryAction, "epoch">) => void;

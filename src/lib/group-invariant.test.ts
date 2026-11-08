@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withGroupInvariant } from "./store";
+import { withGroupInvariant } from "./store/helpers";
 import type { Task, TaskGroup } from "./types";
 
 /**

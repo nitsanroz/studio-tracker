@@ -97,7 +97,7 @@ export function useTaxonomyActions(deps: TaxonomyDeps) {
 
   const addTag = useCallback(
     (name: string, color: string) => {
-      const position = Math.max(0, ...tagRows.map((_, i) => i + 1)) + 1;
+      const position = tagRows.length + 1;
       counting(
         supabase
           .from("tags")
@@ -126,7 +126,7 @@ export function useTaxonomyActions(deps: TaxonomyDeps) {
           redo: () => methodsRef.current?.updateTag(tagId, patch),
         });
       }
-      const oldName = tagRows.find((t) => t.id === tagId)?.name;
+      const oldName = beforeTag?.name;
       setTagRows((prev) => prev.map((t) => (t.id === tagId ? { ...t, ...patch } : t)));
       // tasks carry tag NAMES — keep them in sync on rename
       if (patch.name && oldName && patch.name !== oldName) {

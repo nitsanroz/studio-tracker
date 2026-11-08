@@ -294,7 +294,7 @@ export interface Store {
     date?: string,
     userId?: string,
   ) => Promise<TimeEntry | null>;
-  /** One member's entries for one date. `timeEntries` only holds the recent 400. */
+  /** One member's entries for one date. `timeEntries` only holds the recent 1000. */
   loadDayEntries: (userId: string, dateIso: string) => Promise<TimeEntry[]>;
   /** the log rows behind one hours cell of the client report — see `loadCellEntries` */
   loadCellEntries: (taskId: string, from: string, to: string) => Promise<TimeEntry[]>;
@@ -362,11 +362,6 @@ export interface Store {
    */
   serviceBlocked: boolean;
   /**
-   * A neutral, informational message — currently only "that undo expired".
-   * Deliberately NOT writeError: that banner is about failed saves and says
-   * "reload", neither of which applies here.
-   */
-  /**
    * The row created most recently, for ~600ms.
    *
    * ⚠️ A time entry lands in a DATE-SORTED list, not at the bottom, so this is
@@ -381,7 +376,8 @@ export interface Store {
    */
   freshEntryId: string | null;
   /** Say something neutral to the user — a refusal or an explanation, not an
-   *  error. Shown as an info toast (lib/toast.ts). */
+   *  error. Shown as an info toast (lib/toast.ts). Deliberately NOT writeError,
+   *  which is about failed saves and says "reload". */
   showNotice: (text: string) => void;
   /** True while a background refresh is in flight (a quiet indicator, not a blocker). */
   refreshing: boolean;

@@ -21,7 +21,7 @@
  * ⚠️ If the org ever drops back to a small allowance this is the first thing
  * to put back: `process.env.NODE_ENV === "development" ? 10 : 1`.
  */
-export const DEV_SLOWDOWN = 1;
+const DEV_SLOWDOWN = 1;
 /** Hot poll. A minute is inside "my colleague sees my drag soon" for the plan. */
 export const HOT_INTERVAL_MS = 60_000 * DEV_SLOWDOWN;
 /**
@@ -85,11 +85,11 @@ export const COLD_AFTER_AWAY_MS = 5 * 60_000;
  * pause outran COLD_AFTER_AWAY_MS, so no one can act on stale figures.
  */
 export const IDLE_AFTER_MS = idleAfterMs();
-export function idleAfterMs(): number {
+function idleAfterMs(): number {
   // ⚠️ Verifying this at 15 minutes a cycle is impractical, and an unverified
-  // idle-stop fails as PERMANENTLY STALE DATA — so dev may shorten it, the same
-  // affordance NEXT_PUBLIC_FULL_REFRESH gives the tick above. Gated on NODE_ENV,
-  // so production is provably 15 minutes whatever the environment says.
+  // idle-stop fails as PERMANENTLY STALE DATA — so dev may shorten it with
+  // NEXT_PUBLIC_IDLE_AFTER_MS. Gated on NODE_ENV, so production is provably 15
+  // minutes whatever the environment says.
   const override =
     process.env.NODE_ENV === "development" ? Number(process.env.NEXT_PUBLIC_IDLE_AFTER_MS) : 0;
   return override > 0 ? override : 15 * 60_000;
@@ -97,4 +97,3 @@ export function idleAfterMs(): number {
 /** How long an in-flight write blocks a refresh before we assume it leaked. */
 export const WRITE_SETTLE_MS = 15_000;
 
-/** prev values of exactly the patched keys — the inverse patch for undo */

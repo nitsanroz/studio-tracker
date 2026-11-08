@@ -314,7 +314,6 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
   return useMemo(
     () => ({
       applyEntryLocally,
-      restoreTimeEntry,
       addTimeEntry,
       loadDayEntries,
       loadCellEntries,
@@ -323,7 +322,6 @@ export function useTimeEntryActions(deps: TimeEntryDeps) {
     }),
     [
       applyEntryLocally,
-      restoreTimeEntry,
       addTimeEntry,
       loadDayEntries,
       loadCellEntries,

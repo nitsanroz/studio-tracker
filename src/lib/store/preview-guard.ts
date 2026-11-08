@@ -78,7 +78,7 @@ const REFUSAL: Partial<Record<keyof Store, (reason: string) => unknown>> = {
 
 /**
  * The store as a previewed member sees it: every write replaced by a no-op that
- * explains itself once, through the same neutral `notice` banner an expired undo
+ * explains itself once, through the same neutral `notice` toast an expired undo
  * uses. `viewingAs` null returns the store untouched, so the normal path costs
  * nothing.
  */

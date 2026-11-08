@@ -191,6 +191,8 @@ export function useRequestActions(deps: RequestDeps) {
     [currentUserId, setTaskRequests],
   );
 
+  const updatedRequests = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
+
   /**
    * "I've read the client's changes" — snapshots the current answers as the new
    * baseline, so the UPDATED badge clears and the next revision is measured from
@@ -201,8 +203,6 @@ export function useRequestActions(deps: RequestDeps) {
    * the brief or telling the client anything, and folding those together is how
    * an admin would end up approving a change they had only glanced at.
    */
-  const updatedRequests = useMemo(() => taskRequests.filter(needsReview), [taskRequests]);
-
   const markRevisionReviewed = useCallback(
     (requestId: string) => {
       const req = taskRequests.find((r) => r.id === requestId);

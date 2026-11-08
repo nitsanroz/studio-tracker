@@ -91,10 +91,6 @@ export function useTimelineActions(deps: TimelineDeps) {
     [supabase, tasks, record, wrote, methodsRef, setTasks],
   );
 
-  // ── reference links (0022) ────────────────────────────────────────────
-  // `owner` is exactly one of taskId / clientId — the DB has a CHECK saying so,
-  // and the two RLS policies differ (task links are member-writable like the
-  // brief they sit under; client links are admin-only).
   /**
    * Timeline milestones. Creating one is NOT undoable, like everything else that
    * creates a row here; renaming, moving and deleting are.

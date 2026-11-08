@@ -183,7 +183,6 @@ export function useBillingActions(deps: BillingDeps) {
 
   return useMemo(
     () => ({
-      restoreBillingPeriod,
       addBillingPeriod,
       updateBillingPeriod,
       deleteBillingPeriod,
@@ -191,7 +190,6 @@ export function useBillingActions(deps: BillingDeps) {
       deleteDayState,
     }),
     [
-      restoreBillingPeriod,
       addBillingPeriod,
       updateBillingPeriod,
       deleteBillingPeriod,

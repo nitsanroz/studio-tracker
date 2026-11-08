@@ -7,6 +7,7 @@
 import type { Task, TaskGroup } from "../types";
 import type { TaskRequest } from "./types";
 
+/** prev values of exactly the patched keys — the inverse patch for undo */
 export function inversePatch<T extends object>(before: T, patch: Partial<T>): Partial<T> {
   const prev: Partial<T> = {};
   for (const k of Object.keys(patch) as (keyof T)[]) prev[k] = before[k];
