@@ -50,11 +50,14 @@ const touch = async (candidateId: string) => {
  * about moving them would be the tail wagging the dog. It logs and moves on.
  */
 async function logEvent(candidateId: string, kind: string, detail: string | null, actorId: string | null) {
+  // ⚠️ supabase-js RETURNS `{ error }` rather than throwing, so the catch alone
+  // never saw a refused insert — both paths log (fixed 2026-11-08).
   try {
     const sb = createClient();
-    await sb
+    const { error } = await sb
       .from("candidate_events")
       .insert({ candidate_id: candidateId, kind, detail, actor_id: actorId });
+    if (error) console.error("[candidates] event not recorded", kind, error.message);
   } catch (e) {
     console.error("[candidates] event not recorded", kind, e);
   }

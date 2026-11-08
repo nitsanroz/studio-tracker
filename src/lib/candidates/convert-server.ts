@@ -27,11 +27,13 @@ export async function convertBlocked(admin: SupabaseClient, candidateId: string)
     return "This candidate has already been converted.";
   }
   if (!exists) return "That candidate no longer exists.";
-  const { count } = await admin
+  const { count, error: countErr } = await admin
     .from("candidate_events")
     .select("id", { count: "exact", head: true })
     .eq("candidate_id", candidateId)
     .in("kind", Object.values(CONVERT_EVENT));
+  // ⚠️ Fail CLOSED: a guard that can't read its events must not say "go ahead".
+  if (countErr) return "The candidate could not be read.";
   return count ? "This candidate has already been converted." : null;
 }
 

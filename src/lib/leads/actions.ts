@@ -10,6 +10,7 @@
 // and a write that forgets it leaves a lead flagged as quiet while somebody is
 // actively working it.
 
+import { MISSING_SCHEMA_CODES } from "../db";
 import { createClient } from "../supabase/client";
 import { domainOf } from "./types";
 import { afterOfferStatus, type Suggestion } from "./rules";
@@ -57,9 +58,12 @@ async function logEvent(
   actorId: string | null,
   meta: Record<string, unknown> | null = null,
 ) {
+  // ⚠️ supabase-js RETURNS `{ error }` rather than throwing, so the catch alone
+  // never saw a refused insert — both paths log (fixed 2026-11-08).
   try {
     const sb = createClient();
-    await sb.from("lead_events").insert({ lead_id: leadId, kind, body, meta, actor_id: actorId });
+    const { error } = await sb.from("lead_events").insert({ lead_id: leadId, kind, body, meta, actor_id: actorId });
+    if (error) console.error("[leads] event not recorded", kind, error.message);
   } catch (e) {
     console.error("[leads] event not recorded", kind, e);
   }
@@ -580,9 +584,12 @@ export async function convertToClient(plan: ConvertPlan, actorId: string | null)
     await insertTasks(sectionId, null, sec.tasks);
   }
 
-  await Promise.all(
+  const linked = await Promise.all(
     lineTask.map(({ lineId, taskId }) => sb.from("estimate_lines").update({ task_id: taskId }).eq("id", lineId)),
   );
+  // "Says so" (see the doc): a line left unlinked would quietly drop out of the
+  // library's actuals, so a refused link-back is reported, not swallowed.
+  fail("link the estimate lines to their tasks", linked.find((r) => r.error)?.error ?? null);
 
   if (plan.contactIds.length) {
     const [{ data: leadContacts }, { data: clientContacts }] = await Promise.all([
@@ -774,9 +781,13 @@ export async function proposeSuggestion(leadId: string, s: Suggestion | null) {
   if (!s) return;
   try {
     const sb = createClient();
-    await sb
+    const { error } = await sb
       .from("lead_suggestions")
       .insert({ lead_id: leadId, rule: s.rule, to_stage_id: s.toStageId, reason: s.reason });
+    // The two expected refusals stay quiet; anything else is logged.
+    if (error && error.code !== "23505" && !MISSING_SCHEMA_CODES.has(error.code ?? "")) {
+      console.error("[leads] suggestion not recorded", error.message);
+    }
   } catch (e) {
     console.error("[leads] suggestion not recorded", e);
   }
@@ -795,13 +806,17 @@ export async function decideSuggestion(id: string, status: "accepted" | "dismiss
 async function supersede(leadId: string) {
   try {
     const sb = createClient();
-    await sb
+    const { error } = await sb
       .from("lead_suggestions")
       .update({ status: "superseded", decided_at: nowIso() })
       .eq("lead_id", leadId)
       .eq("status", "pending");
-  } catch {
-    // Before 0044 there is nothing to supersede.
+    // Before 0044 there is nothing to supersede; any other refusal is logged.
+    if (error && !MISSING_SCHEMA_CODES.has(error.code ?? "")) {
+      console.error("[leads] suggestions not superseded", error.message);
+    }
+  } catch (e) {
+    console.error("[leads] suggestions not superseded", e);
   }
 }
 

@@ -354,18 +354,21 @@ export async function loadCandidate(id: string): Promise<CandidateDetail | null>
       .order("created_at", { ascending: false })
       .limit(40),
   ]);
+  // ⚠️ A failed read must surface as "Could not load", not render as an empty
+  // dossier or unscored cards that look like the truth.
+  for (const r of [links, interviews, comments, events]) if (r.error) throw r.error;
 
   const interviewRows = (interviews.data ?? []) as Row[];
   const scoresByInterview = new Map<string, Record<string, number>>();
   if (interviewRows.length > 0) {
-    const { data: scoreRows } = await sb
-      .from("candidate_scores")
-      .select("interview_id,param_id,value")
-      .in(
-        "interview_id",
-        interviewRows.map((r) => str(r.id)),
-      );
-    for (const r of (scoreRows ?? []) as Row[]) {
+    const scoreRows = await fetchAllIn<Row>(
+      sb,
+      "candidate_scores",
+      "interview_id,param_id,value",
+      "interview_id",
+      interviewRows.map((r) => str(r.id)),
+    );
+    for (const r of scoreRows) {
       const iid = str(r.interview_id);
       const map = scoresByInterview.get(iid) ?? {};
       map[str(r.param_id)] = num(r.value);

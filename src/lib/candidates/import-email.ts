@@ -109,12 +109,14 @@ export async function importApplicationEmail(
   const sb = createClient();
   let existing: { id: string; name: string; phone: string | null; email: string | null } | null = null;
   if (applicant) {
-    const { data } = await sb
+    const { data, error } = await sb
       .from("candidates")
       .select("id, name, phone, email")
       .ilike("email", likeLiteral(applicant.email))
       .order("created_at")
       .limit(1);
+    // ⚠️ A failed lookup must stop here: read as "nobody yet", it makes a duplicate.
+    if (error) throw new CandidateWriteError("look up the applicant", error.message);
     existing = (data ?? [])[0] ?? null;
   }
 
@@ -135,10 +137,12 @@ export async function importApplicationEmail(
     ));
 
   // What they already hold, so a second import of the same mail adds nothing twice.
-  const { data: held } = await sb
+  const { data: held, error: heldErr } = await sb
     .from("candidate_links")
     .select("title, url, kind, storage_path")
     .eq("candidate_id", candidateId);
+  // Read as "holds nothing", a failure would add every file and link a second time.
+  if (heldErr) throw new CandidateWriteError("read what they already hold", heldErr.message);
   const heldLinks = held ?? [];
   const heldFiles = new Set(heldLinks.filter((l) => l.storage_path).map((l) => l.title.toLowerCase()));
   const heldUrls = new Set(heldLinks.map((l) => l.url.toLowerCase().replace(/\/$/, "")));
