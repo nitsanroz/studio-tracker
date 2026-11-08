@@ -108,13 +108,22 @@ export function Advice() {
   const [open, setOpen] = useState(false);
   const ctx = usePageContext();
   const peekRef = useRef<() => Promise<void>>(async () => {});
+  // ⚠️ ONE retry timer: every failed peek used to start its own 60s loop, so an
+  // outage stacked them (one more per close) and they outlived the button.
+  const retryRef = useRef<number | null>(null);
 
   const peek = useCallback(async () => {
     const res = await fetch("/api/advice?peek=1").catch(() => null);
     // Only "not signed in" or "not the owner" hides the button. Anything else
     // (a blip, a 500) keeps what we had and tries again in a minute — it used
     // to hide the owner's button until a reload.
-    const retry = () => window.setTimeout(() => void peekRef.current(), 60_000);
+    const retry = () => {
+      if (retryRef.current != null) window.clearTimeout(retryRef.current);
+      retryRef.current = window.setTimeout(() => {
+        retryRef.current = null;
+        void peekRef.current();
+      }, 60_000);
+    };
     if (!res) return void retry();
     // 503 = migration not run yet: the owner still gets the button, to see why.
     if (res.status === 503) {
@@ -132,6 +141,9 @@ export function Advice() {
     peekRef.current = peek;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one fetch on mount
     void peek();
+    return () => {
+      if (retryRef.current != null) window.clearTimeout(retryRef.current);
+    };
   }, [peek]);
   const close = useCallback(() => {
     setOpen(false);

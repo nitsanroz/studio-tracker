@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { LinksEditor } from "./links-editor";
 import type { Client } from "@/lib/types";
@@ -21,12 +21,14 @@ export function ClientNotes({ client }: { client: Client }) {
   const { updateClient } = useData();
   const isAdmin = useIsAdmin();
   const [notes, setNotes] = useState(client.notes);
+  const typing = useRef(false);
 
-  // A background refresh (or another admin) can change the notes under us. Only
-  // adopt the incoming value — never clobber what someone is part-way through
-  // typing, which is why this keys on the STORED value, not on every render.
+  // A background refresh (or another admin) can change the notes under us. Adopt
+  // the incoming value — but ⚠️ NOT while the field has focus: keying on the stored
+  // value alone still overwrote what someone was part-way through typing whenever
+  // a refresh landed mid-edit. Their blur commits their own text anyway.
   useEffect(() => {
-    setNotes(client.notes);
+    if (!typing.current) setNotes(client.notes);
   }, [client.notes]);
 
   return (
@@ -37,7 +39,9 @@ export function ClientNotes({ client }: { client: Client }) {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            onFocus={() => (typing.current = true)}
             onBlur={() => {
+              typing.current = false;
               if (notes !== client.notes) updateClient(client.id, { notes });
             }}
             placeholder="Standing context for this client — tone of voice, who signs off, where the assets live…"

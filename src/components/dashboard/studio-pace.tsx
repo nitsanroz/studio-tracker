@@ -6,6 +6,7 @@ import {
   Clock,
 } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
+import { studioToday } from "@/lib/format";
 import { InfoDot } from "../ui";
 
 // The studio's pace this month against the billable hours a workday that cover
@@ -40,11 +41,24 @@ const dayLabel = (iso: string) => `${SHORT[Number(iso.slice(5, 7)) - 1]} ${Numbe
 // One request per page load, shared: the banner and the home's pace chart both
 // read the goal, and two panes mounting together must not fetch it twice.
 let goalRequest: Promise<Goal | null> | null = null;
+// ⚠️ Shared per STUDIO DAY, and never a failure: one failed or slow fetch used to
+// cache `null` for the tab's life (banner + goal band gone until a reload), and a
+// morning tab kept `todayCounted: false` past 17:30.
+let goalDay = "";
 function loadGoal(): Promise<Goal | null> {
+  const day = studioToday();
+  if (day !== goalDay) {
+    goalDay = day;
+    goalRequest = null;
+  }
   goalRequest ??= fetch("/api/hours-goal")
     .then((r) => (r.ok ? r.json() : null))
     .then((j: { goal: Goal | null } | null) => j?.goal ?? null)
-    .catch(() => null);
+    .catch(() => null)
+    .then((g) => {
+      if (!g) goalRequest = null; // the next reader asks again
+      return g;
+    });
   return goalRequest;
 }
 

@@ -306,7 +306,14 @@ export function EditableDateCell({
                 setEditing(false);
               }
             }}
-            onChange={(e) => onCommit(e.target.value || null)}
+            // ⚠️ Chrome fires `change` as each segment becomes valid, so typing a year
+            // saved 0002 → 0020 → 0202 → 2026: four writes and four undo steps. A
+            // year before 1900 is a year still being typed — wait for the rest.
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v && Number(v.slice(0, 4)) < 1900) return;
+              onCommit(v || null);
+            }}
             // the browser's own glyph is hidden: the button beside it is the picker
             className="w-[124px] rounded-md border border-border bg-surface px-1.5 py-1 text-xs tabular-nums text-foreground outline-none focus:border-brand [&::-webkit-calendar-picker-indicator]:hidden"
           />

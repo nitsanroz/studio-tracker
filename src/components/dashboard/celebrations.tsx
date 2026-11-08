@@ -162,7 +162,8 @@ export function Celebrations({ inline = false }: { inline?: boolean }) {
             <div className="flex items-center gap-1.5">
               {upcoming.map((o, i) => (
                 <button
-                  key={o.at}
+                  // date + text: a holiday and a birthday can share a day
+                  key={o.at + o.text}
                   onClick={() => setAt(i)}
                   aria-label={`Occasion ${i + 1} of ${upcoming.length}`}
                   aria-current={i === idx}

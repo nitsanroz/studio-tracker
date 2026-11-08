@@ -669,9 +669,18 @@ function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setFolded(localStorage.getItem("sidebar.folded") === "1");
   }, []);
-  useEffect(() => {
-    localStorage.setItem("sidebar.folded", folded ? "1" : "0");
-  }, [folded]);
+  // ⚠️ Saved where it is CHANGED, not in an effect on `folded`: under dev
+  // StrictMode that effect ran before the read above landed and stored "0", so the
+  // fold never survived a reload in dev.
+  const toggleFolded = () =>
+    setFolded((f) => {
+      try {
+        localStorage.setItem("sidebar.folded", f ? "0" : "1");
+      } catch {
+        /* blocked storage: it just won't be remembered */
+      }
+      return !f;
+    });
 
   // A drawer that survives navigation would cover the page it just opened.
   useEffect(() => {
@@ -774,7 +783,7 @@ function Shell({ children }: { children: ReactNode }) {
             />
           </Link>
           <button
-            onClick={() => setFolded((f) => !f)}
+            onClick={toggleFolded}
             title={folded ? "Expand the menu" : "Collapse the menu"}
             aria-label={folded ? "Expand the menu" : "Collapse the menu"}
             aria-expanded={!folded}

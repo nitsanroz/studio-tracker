@@ -862,7 +862,8 @@ export function TaskPanel() {
               [
                 ["details", "Details"],
                 ["time", `Time${entries.length ? ` · ${entries.length}` : ""}`],
-                ["talk", `Talk${comments.length ? ` · ${comments.length}` : ""}`],
+                // this task's comments — `comments` holds every task loaded this session
+                ["talk", `Talk${taskComments.length ? ` · ${taskComments.length}` : ""}`],
               ] as const
             ).map(([id, label]) => (
               <button
