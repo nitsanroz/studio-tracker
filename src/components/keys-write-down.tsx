@@ -23,6 +23,15 @@ import { KeyRound, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { formatHoursDecimal, formatHoursShort } from "@/lib/format";
 import type { TimeEntry } from "@/lib/types";
+import { parseWriteDown, type WriteDownProblem } from "@/lib/write-down-hours";
+
+/** The words for a refused figure — the same three sentences as before. */
+function problemText(problem: WriteDownProblem | null, over: string): string | null {
+  if (problem === "positive") return "hours must be a positive number";
+  if (problem === "minute") return "not a whole number of minutes";
+  if (problem === "over") return over;
+  return null;
+}
 
 export type KeysWriteDownState = {
   /** false when there is nothing to offer — see the rules in the hook */
@@ -88,17 +97,14 @@ export function useKeysWriteDown(
    * a value that does not land on a whole minute is REFUSED rather than rounded,
    * because rounding down under-bills the studio a minute at a time and rounding up
    * over-bills the client, and neither is a decision this field should make quietly.
+   * The rule lives in `lib/write-down-hours.ts` (shared with the per-member field);
+   * the untouched pre-fill means the entry's exact minutes — see there.
    */
-  const raw = Number(hours.trim());
-  const asMinutes = raw * 60;
-  let minutes: number | null = null;
-  let problem: string | null = null;
-  if (!hours.trim()) problem = null;
-  else if (!Number.isFinite(raw) || raw <= 0) problem = "hours must be a positive number";
-  else if (!Number.isInteger(asMinutes)) problem = "not a whole number of minutes";
-  else if (entry && asMinutes > entry.minutes)
-    problem = `this entry only holds ${formatHoursDecimal(entry.minutes)}h`;
-  else minutes = asMinutes;
+  const max = entry?.minutes ?? 0;
+  const prefill = entry ? { text: formatHoursDecimal(entry.minutes), minutes: entry.minutes } : undefined;
+  const parsed = parseWriteDown(hours, max, prefill);
+  const minutes = parsed.minutes;
+  const problem = problemText(parsed.problem, `this entry only holds ${formatHoursDecimal(max)}h`);
 
   const commit = () => {
     if (!entry || !keysTaskId || minutes == null || busy) return;
@@ -128,7 +134,7 @@ export function useKeysWriteDown(
     setHours,
     minutes,
     problem,
-    max: entry?.minutes ?? 0,
+    max,
     busy,
     commit,
     size,
@@ -291,16 +297,10 @@ export function useKeysTaskWriteDown({
   const chosen = usable.find((o) => o.userId === userId) ?? usable[0];
   const max = chosen?.minutes ?? 0;
 
-  const raw = Number(hours.trim());
-  const asMinutes = raw * 60;
-  let minutes: number | null = null;
-  let problem: string | null = null;
-  if (!hours.trim()) problem = null;
-  else if (!Number.isFinite(raw) || raw <= 0) problem = "hours must be a positive number";
-  else if (!Number.isInteger(asMinutes)) problem = "not a whole number of minutes";
-  else if (asMinutes > max)
-    problem = `${chosen?.name ?? "that person"} has ${formatHoursDecimal(max)}h here`;
-  else minutes = asMinutes;
+  // No pre-fill here (see `toggle`), so only the shared whole-minute rule applies.
+  const parsed = parseWriteDown(hours, max);
+  const minutes = parsed.minutes;
+  const problem = problemText(parsed.problem, `${chosen?.name ?? "that person"} has ${formatHoursDecimal(max)}h here`);
 
   const commit = () => {
     if (!keysTaskId || !chosen || minutes == null || busy) return;
