@@ -13,7 +13,7 @@ import type { Task } from "./types";
  * this: the remainder has neither a date nor an author.
  */
 export function taskMinutesDone(task: Task, taskMinutes: (id: string) => number): number {
-  return taskMinutes(task.id) + (task.legacyHours ?? 0) * 60;
+  return taskMinutes(task.id) + taskLegacyMinutes(task);
 }
 
 /** The part of `taskMinutesDone` that isn't itemised, so the UI can explain it. */

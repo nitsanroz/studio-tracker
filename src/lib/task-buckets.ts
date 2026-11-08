@@ -37,11 +37,13 @@ export function bucketTasks<T extends { dueDate: string | null }>(
   const by = new Map<TaskBucket, T[]>();
   for (const t of tasks) {
     const b = taskBucket(t.dueDate, todayIso);
-    by.set(b, [...(by.get(b) ?? []), t]);
+    const list = by.get(b);
+    if (list) list.push(t);
+    else by.set(b, [t]);
   }
   return BUCKET_ORDER.filter((b) => by.has(b)).map((b) => ({
     bucket: b,
     // Stable for equal dates; undated keeps the order it came in.
-    tasks: [...by.get(b)!].sort((a, z) => (a.dueDate ?? "").localeCompare(z.dueDate ?? "")),
+    tasks: by.get(b)!.sort((a, z) => (a.dueDate ?? "").localeCompare(z.dueDate ?? "")),
   }));
 }

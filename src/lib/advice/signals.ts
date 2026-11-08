@@ -9,7 +9,16 @@
 // and dates only: the tracker never shows money (Nitsan, 2026-10-24). The P&L
 // enters as revenues/expenses and leaves as one ratio.
 
-import { formatHoursShort, parseISO, shiftDays, shortDate, shortRangeLabel, studioDate, toISODate } from "../format";
+import {
+  formatHoursShort,
+  parseISO,
+  shiftDays,
+  shortDate,
+  shortRangeLabel,
+  startOfWeek,
+  studioDate,
+  toISODate,
+} from "../format";
 import { workdays as studioWorkdays } from "../vacation";
 import { daysBetween, lastCompleteWeekEnd } from "../period-math";
 
@@ -62,7 +71,7 @@ export interface AdviceData {
   }[];
   sections: { id: string; name: string }[];
   groups: { id: string; name: string }[];
-  /** non-legacy entries, at least the last four months */
+  /** non-legacy entries, at least the last six months — the pulse's six 30-day windows read them (`entriesFrom` in run.ts) */
   entries: { taskId: string; date: string; minutes: number; userId?: string }[];
   periods: { clientId: string; label: string; dateFrom: string; dateTo: string; hourCap: number | null; paid: boolean }[];
   /** active report links */
@@ -266,7 +275,7 @@ export function capFilling(data: AdviceData): Finding[] {
 }
 
 /** The studio's payment terms: an invoice goes out when its period ends and is due 14 days later (Nitsan, 2026-10-25). */
-export const PAYMENT_TERMS_DAYS = 14;
+const PAYMENT_TERMS_DAYS = 14;
 
 /**
  * A client's LAST ended billing period had hours, isn't marked paid, and is past
@@ -482,7 +491,7 @@ function estimateRoom(data: AdviceData): { name: string; minutes: number }[] {
 }
 
 /** Income ÷ costs per complete P&L month, oldest first. */
-export function incomeCostSeries(data: AdviceData): { month: string; ratio: number }[] {
+function incomeCostSeries(data: AdviceData): { month: string; ratio: number }[] {
   const current = monthKey(data.today);
   return data.pnl
     .map((r) => ({ month: `${r.year}-${String(r.month).padStart(2, "0")}`, r }))
@@ -519,7 +528,7 @@ export function incomeVsCosts(data: AdviceData): Finding[] {
   ];
 }
 
-export const SIGNALS = [
+const SIGNALS = [
   reportDue,
   capFilling,
   estimateBudget,
@@ -594,7 +603,7 @@ function nextWorkdays(data: AdviceData, n: number): string[] {
  * studio plans a day or two ahead (Nitsan, 2026-10-25) — next week being empty
  * on a Sunday is normal, tomorrow being empty is not.
  */
-export function openPlanDays(data: AdviceData): { profileId: string; name: string; days: string[] }[] {
+function openPlanDays(data: AdviceData): { profileId: string; name: string; days: string[] }[] {
   const days = nextWorkdays(data, 2);
   const planned = new Set((data.planEntries ?? []).map((e) => `${e.columnId}|${e.date}`));
   return salaried(data).flatMap((c) => {
@@ -660,7 +669,7 @@ export function missingHours(data: AdviceData): Finding[] {
   return [
     {
       // The week and the people: dismissed stays dismissed for them this week.
-      key: `missing-hours:${toISODate(shiftDays(t, -t.getDay()))}:${hashOf(missing.map((m) => m.id))}`,
+      key: `missing-hours:${toISODate(startOfWeek(t))}:${hashOf(missing.map((m) => m.id))}`,
       signal: "missing-hours",
       kind: "heads",
       area: "Team",
@@ -1114,8 +1123,9 @@ export function pulse(data: AdviceData, findings: Finding[] = findAll(data)): Pu
 
   // Concentration: the biggest client's share of billable hours, per 30 days.
   const wins = windows(data.today, 6);
-  const shares = wins.map(([f, t]) => {
-    const by = billableByClient(data, f, t);
+  // Built once: the per-client share lines below read the same six maps.
+  const byWindow = wins.map(([f, t]) => billableByClient(data, f, t));
+  const shares = byWindow.map((by) => {
     const total = [...by.values()].reduce((a, b) => a + b, 0);
     const top = [...by].sort((a, b) => b[1] - a[1])[0];
     return total && top ? { id: top[0], share: top[1] / total } : null;
@@ -1228,8 +1238,7 @@ export function pulse(data: AdviceData, findings: Finding[] = findAll(data)): Pu
       unit: "%",
       value: total90 ? pct(mine / total90) : null,
       against: null,
-      series: wins.map(([f, t]) => {
-        const by = billableByClient(data, f, t);
+      series: byWindow.map((by) => {
         const tot = [...by.values()].reduce((a, b) => a + b, 0);
         return tot ? pct((by.get(c.id) ?? 0) / tot) : 0;
       }),

@@ -139,7 +139,7 @@ export function classifyImage(file: File): { ok: true; contentType: string } | {
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  // Trailing `.0` dropped: the cap is a round 10MB and "10.0 MB each" in the
+  // Trailing `.0` dropped: the cap is a round number of MB and "30.0 MB" in the
   // form's own hint reads like a machine wrote it.
   return `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, "")} MB`;
 }

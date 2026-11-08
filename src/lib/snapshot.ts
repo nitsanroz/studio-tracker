@@ -91,7 +91,7 @@ async function entrySumRows(sb: Sb, opts?: FetchAllOptions): Promise<EntrySum[]>
 }
 
 /** What `entry_sums_packed()` returns. flags: 1 = legacy, 2 = date_estimated. */
-export interface PackedEntrySums {
+interface PackedEntrySums {
   tasks: string[];
   users: string[];
   rows: [id: string, task: number, user: number | null, date: string, minutes: number, flags: number][];
@@ -600,7 +600,7 @@ export function idleTransition(
  * above because it is driven by input, not by the clock.
  */
 export function wakeTransition(paused: boolean): { paused: boolean; catchUp: boolean } {
-  return paused ? { paused: false, catchUp: true } : { paused: false, catchUp: false };
+  return { paused: false, catchUp: paused };
 }
 
 /**
