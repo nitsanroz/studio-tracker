@@ -116,6 +116,21 @@ describe("capFilling", () => {
     expect(sev(125)).toBe(4);
   });
 
+  // ⚠️ Client Reports' cap counts billable, NON-PENDING tasks; the pane must agree.
+  it("leaves a pending task's hours out, as Client Reports does", () => {
+    const f = capFilling(
+      base({
+        tasks: [
+          { id: "t1", clientId: "lumen", sectionId: "s1", groupId: null, title: "Homepage", billable: true },
+          { id: "tp", clientId: "lumen", sectionId: "s1", groupId: null, title: "Waiting", billable: true, pending: true },
+        ],
+        periods: [period],
+        entries: [e("t1", "2026-10-05", 85), e("tp", "2026-10-06", 30)],
+      }),
+    );
+    expect(f[0].facts.usedPct).toBe(85); // 115 if the pending task counted
+  });
+
   it("uses the period's own cap when the client has none", () => {
     const f = capFilling(
       base({

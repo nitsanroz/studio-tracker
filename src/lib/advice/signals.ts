@@ -127,9 +127,9 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 export const workdayCount = (from: string, to: string) => studioWorkdays(from, to, []).length;
 
 interface Index {
-  /** a billable task of a billable client, Keys tasks never — the cap and estimate budgets */
+  /** a billable task of a billable client, Keys tasks never — the estimate budgets and the studio-wide shares */
   billable: Set<string>;
-  /** the hours a client report counts: billable, non-pending (report-snapshot.ts's own filter) */
+  /** the hours a client report counts: billable, non-pending (report-snapshot.ts's own filter) — report due, unpaid, cap */
   report: Set<string>;
   tasksOf: Map<string, AdviceData["tasks"]>;
   entriesOf: Map<string, AdviceData["entries"]>;
@@ -237,15 +237,19 @@ export function reportDue(data: AdviceData): Finding[] {
  * A client's current billing period is filling its hour cap — or will by its
  * end, at the pace so far. The cap is the client's own (0033), else the
  * period's, exactly as the report reads it. Billable hours only; keys tasks out.
+ *
+ * ⚠️ THE HOURS ARE CLIENT REPORTS' OWN SET (`report`: billable, not pending), not
+ * `billable`. The cap is a figure that page shows and the studio invoices from;
+ * counting a pending task here made the pane's % disagree with it (2026-11-08).
  */
 export function capFilling(data: AdviceData): Finding[] {
-  const { billable } = index(data);
+  const { report } = index(data);
   const out: Finding[] = [];
   for (const c of liveClients(data)) {
     const current = currentCap(data, c);
     if (!current) continue;
     const { period, cap } = current;
-    const minutes = minutesOn(data, c.id, billable, period.dateFrom, period.dateTo);
+    const minutes = minutesOn(data, c.id, report, period.dateFrom, period.dateTo);
     const used = minutes / 60 / cap;
     const done = workdayCount(period.dateFrom, data.today);
     const total = workdayCount(period.dateFrom, period.dateTo);
