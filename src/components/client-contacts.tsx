@@ -18,6 +18,7 @@ import { useIsAdmin } from "@/lib/store";
 import { leadForClient, loadClientContacts } from "@/lib/leads/data";
 import { addClientContact, removeClientContact, updateClientContact } from "@/lib/leads/actions";
 import type { ClientContact } from "@/lib/leads/types";
+import { askConfirm } from "./confirm-dialog";
 
 const QUIET =
   "min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 hover:border-border focus:border-border focus:bg-surface focus:outline-none";
@@ -136,8 +137,9 @@ export function ClientContacts({ clientId }: { clientId: string }) {
                 />
               </span>
               <button
-                onClick={() => {
-                  if (window.confirm(`Remove ${c.name}?`)) void run(() => removeClientContact(c.id));
+                onClick={async () => {
+                  if (await askConfirm(`Remove ${c.name}?`, { action: "Remove", danger: true }))
+                    void run(() => removeClientContact(c.id));
                 }}
                 aria-label={`Remove ${c.name}`}
                 className="ml-auto text-faint opacity-0 hover:text-danger group-hover:opacity-100"

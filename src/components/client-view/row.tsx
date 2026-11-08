@@ -8,7 +8,7 @@
 // job. That separation is what lets this file be about what a row looks like.
 
 import { EditableDateCell, EditableNumberCell, EditableSelectCell } from "../editable-cell";
-import { askConfirm } from "../confirm-dialog";
+import { askConfirm, askText } from "../confirm-dialog";
 import { Avatar, BudgetBar, ContextMenu, TagBadge } from "../ui";
 import { BASE_PL, COLS, LEAD_TIGHT, TASK_DRAG_TYPE, drag, useColCell, useNameCell, useSelection, useShowCol } from "./shared";
 import { formatDayMonth, formatHoursDecimal, formatHoursShort } from "@/lib/format";
@@ -605,11 +605,12 @@ export function TaskRunRows({
                     label: `Group the ${gatherable(menu.taskId)!.length} selected tasks…`,
                     onClick: () => {
                       const ids = gatherable(menu.taskId)!;
-                      const name = prompt("Name for the new group")?.trim();
-                      if (!name) return;
-                      void groupTasksIntoNew(ids, name).then((err) => {
-                        if (err) showNotice(err);
-                        else sel?.setMany(ids, false);
+                      void askText("Name for the new group", { action: "Group" }).then((name) => {
+                        if (!name) return;
+                        void groupTasksIntoNew(ids, name).then((err) => {
+                          if (err) showNotice(err);
+                          else sel?.setMany(ids, false);
+                        });
                       });
                     },
                   },

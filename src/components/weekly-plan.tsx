@@ -38,6 +38,7 @@ import type { AbsenceType, DevStatus, PlanEntry } from "@/lib/types";
 import { useVacation } from "@/lib/use-vacation";
 import { requestDays } from "@/lib/vacation";
 import { VacationRequestModal } from "./vacation";
+import { askConfirm } from "./confirm-dialog";
 
 const DEV_STATUS: Record<DevStatus, { label: string; chip: string }> = {
   pricing: { label: "Pricing", chip: "bg-gray-100 text-gray-800" },
@@ -311,8 +312,8 @@ function ColumnManager({ onClose }: { onClose: () => void }) {
               </button>
               {!col.profileId && col.type === "member" && (
                 <button
-                  onClick={() => {
-                    if (confirm(`Delete column "${col.name}" and its plan entries?`))
+                  onClick={async () => {
+                    if (await askConfirm(`Delete column "${col.name}" and its plan entries?`, { action: "Delete", danger: true }))
                       deletePlanColumn(col.id);
                   }}
                   className="rounded-full border border-border px-2 py-0.5 text-xs text-muted hover:border-danger hover:text-danger"

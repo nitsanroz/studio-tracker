@@ -39,6 +39,7 @@ import { GridLayer, MarkLayer, TodayLine } from "./layers";
 import { TimelineRow } from "./row";
 import { CARD_BOTTOM_GAP, CARD_MIN_H, STICKY_W, TL_COL_KEYS, TL_INDENT, allRowsOf, beginRowDrag, blockKey, containerKey, dragRow, endRowDrag, leftWidth } from "./shared";
 import type { Block, DragState, Group, Row, TlCol } from "./shared";
+import { askText } from "../confirm-dialog";
 
 
 /**
@@ -1214,11 +1215,12 @@ export function ClientTimeline({
                     label: `Group the ${selected.size} selected tasks…`,
                     onClick: () => {
                       const ids = [...selected];
-                      const name = prompt("Name for the new group")?.trim();
-                      if (!name) return;
-                      void groupTasksIntoNew(ids, name).then((err) => {
-                        if (err) showNotice(err);
-                        else setSelected(new Set());
+                      void askText("Name for the new group", { action: "Group" }).then((name) => {
+                        if (!name) return;
+                        void groupTasksIntoNew(ids, name).then((err) => {
+                          if (err) showNotice(err);
+                          else setSelected(new Set());
+                        });
                       });
                     },
                   },
@@ -1229,13 +1231,14 @@ export function ClientTimeline({
                     onClick: () => {
                       const task = tasks.find((t) => t.id === rowMenu.taskId);
                       if (!task) return;
-                      const name = prompt("Name for the new group")?.trim();
-                      if (!name) return;
-                      void addTaskGroup(clientId, task.sectionId ?? null, name);
-                      setCollapsed((prev) => {
-                        const next = new Set(prev);
-                        next.delete(task.sectionId ?? "");
-                        return next;
+                      void askText("Name for the new group", { action: "Add" }).then((name) => {
+                        if (!name) return;
+                        void addTaskGroup(clientId, task.sectionId ?? null, name);
+                        setCollapsed((prev) => {
+                          const next = new Set(prev);
+                          next.delete(task.sectionId ?? "");
+                          return next;
+                        });
                       });
                     },
                   },
@@ -1243,8 +1246,9 @@ export function ClientTimeline({
             {
               label: "New section…",
               onClick: () => {
-                const name = prompt("Name for the new section")?.trim();
-                if (name) addSection(clientId, name);
+                void askText("Name for the new section", { action: "Add" }).then((name) => {
+                  if (name) addSection(clientId, name);
+                });
               },
             },
           ]}

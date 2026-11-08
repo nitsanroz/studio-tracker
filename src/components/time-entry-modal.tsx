@@ -14,6 +14,7 @@ import { LogTimeForm } from "./log-time-form";
 import { MemberSelect } from "./member-select";
 import { useKeysWriteDown, KeysButton, KeysField } from "./keys-write-down";
 import type { TimeEntry } from "@/lib/types";
+import { askConfirm } from "./confirm-dialog";
 
 /** Who may change an entry at all. Also re-asserted inside, never trusted from the caller. */
 export function canEditEntry(
@@ -150,8 +151,9 @@ export function TimeEntryModal({
     onClose();
   }
 
-  function remove() {
-    if (!confirm("Delete this time entry? Its hours come off the task total.")) return;
+  async function remove() {
+    if (!(await askConfirm("Delete this time entry? Its hours come off the task total.", { action: "Delete", danger: true })))
+      return;
     deleteTimeEntry(entry!.id, entry!);
     onDeleted?.();
     onClose();

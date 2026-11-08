@@ -40,6 +40,7 @@ import { SortHeader, makeComparator } from "./sort";
 import type { Sort, SortKey } from "./sort";
 import { ClientStats } from "./stats";
 import { ColumnsMenu, TimelineHintDot } from "./toolbar";
+import { askText } from "../confirm-dialog";
 
 
 export function ClientView({ clientId }: { clientId: string }) {
@@ -317,16 +318,18 @@ export function ClientView({ clientId }: { clientId: string }) {
 
   /** Right-click → "New section…": a sibling of the section the row sits in. */
   const promptNewSection = () => {
-    const name = prompt("Name for the new section")?.trim();
-    if (name) addSection(clientId, name);
+    void askText("Name for the new section", { action: "Add" }).then((name) => {
+      if (name) addSection(clientId, name);
+    });
   };
 
   /** Right-click → "New group…": name it, then it appears empty in that section. */
   const promptNewGroup = (sectionId: string | null) => {
-    const name = prompt("Name for the new group")?.trim();
-    if (!name) return;
-    void addTaskGroup(clientId, sectionId, name);
-    reveal(sectionId ?? ""); // a group you just made must not land in a folded section
+    void askText("Name for the new group", { action: "Add" }).then((name) => {
+      if (!name) return;
+      void addTaskGroup(clientId, sectionId, name);
+      reveal(sectionId ?? ""); // a group you just made must not land in a folded section
+    });
   };
 
   // ── the "Section totals" strips ───────────────────────────────────────

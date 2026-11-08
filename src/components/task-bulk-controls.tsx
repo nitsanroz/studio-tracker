@@ -2,6 +2,7 @@
 
 import { Layers } from "lucide-react";
 import { useData } from "@/lib/store";
+import { askText } from "./confirm-dialog";
 
 /**
  * Set a field on every selected task at once — status, type, due date.
@@ -47,11 +48,12 @@ export function TaskBulkControls({
       {canGroup && (
         <button
           onClick={() => {
-            const name = prompt("Name for the new group")?.trim();
-            if (!name) return;
-            void groupTasksIntoNew(ids, name).then((err) => {
-              if (err) showNotice(err);
-              else onDone();
+            void askText("Name for the new group", { action: "Group" }).then((name) => {
+              if (!name) return;
+              void groupTasksIntoNew(ids, name).then((err) => {
+                if (err) showNotice(err);
+                else onDone();
+              });
             });
           }}
           title="Gather the selected tasks into a new group"
