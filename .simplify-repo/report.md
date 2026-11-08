@@ -4,6 +4,13 @@ Scope: 164 files in `src/lib` (~31k lines; `version.ts` and `whats-new.ts` exclu
 Reviewed by six read-only reviewers, then **every finding below was checked against the code by hand** — line
 numbers are as of commit 2261157. Nothing in `src/` was changed. Format: `file:line — lens — what — fix`.
 
+## Apply pass (2026-11-08)
+The "Findings by batch" safe simplifications were applied in six commits (`simplify-repo(...)`, 16812b7…d8958fa)
+except those listed as "Not applied" per group in `ledger.md` — mostly store/DB-path consolidations that only a
+browser can verify, typing changes that ripple, and test-fixture tidy-ups. Gates after: tsc clean, eslint 0 errors /
+38 warnings (unchanged), 869 tests, build clean; Home, Weekly Plan and the Leads board smoke-checked on localhost.
+**Everything under Bugs, Behaviour-changing ideas and Cross-cutting below is still open** (except the two marked FIXED).
+
 ## Bugs noticed
 Ordered by severity. Security first.
 

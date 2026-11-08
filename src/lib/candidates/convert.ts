@@ -19,7 +19,8 @@ export const CONVERT_EVENT: Record<ConvertedAs, string> = {
  * What a candidate was converted into, or null if they never were.
  *
  * ⚠️ THE EVENT IS READ FIRST, NOT THE PROFILE LINK, because 0061's
- * `candidates.profile_id` may be missing where 0061 hasn't run (production: applied 2026-11-05) and
+ * `candidates.profile_id` may be missing where 0061 hasn't run (applied in
+ * production 2026-11-05) and
  * the event is written either way. Without it, a converted candidate would
  * offer "Convert to…" again. The linked profile decides only when no event is
  * on hand: a person with no login (`hasAccount === false`) is a freelancer.
