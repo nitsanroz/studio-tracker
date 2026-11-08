@@ -14,7 +14,16 @@ import { useEffect, useMemo, useState } from "react";
 import { SkeletonRows } from "@/components/skeleton";
 
 
-export function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id: string) => void }) {
+export function DayLogRow({
+  entry,
+  onDelete,
+  onSaved,
+}: {
+  entry: TimeEntry;
+  onDelete: (id: string) => void;
+  /** the patch just written, for the host's own fetched copy of the day */
+  onSaved?: (patch: Partial<TimeEntry>) => void;
+}) {
   const { tasks, clients, updateTimeEntry } = useData();
   const [editing, setEditing] = useState(false);
   const [duration, setDuration] = useState("");
@@ -36,7 +45,9 @@ export function DayLogRow({ entry, onDelete }: { entry: TimeEntry; onDelete: (id
     // (an old Everhour row) still lets the minutes be fixed.
     const changed = description !== entry.description;
     if (minutes == null || minutes <= 0 || (changed && !description.trim())) return;
-    updateTimeEntry(entry.id, changed ? { minutes, description: description.trim() } : { minutes });
+    const patch = changed ? { minutes, description: description.trim() } : { minutes };
+    updateTimeEntry(entry.id, patch);
+    onSaved?.(patch);
     setEditing(false);
   }
 
@@ -227,6 +238,10 @@ export function DayLog() {
           <DayLogRow
             key={e.id}
             entry={e}
+            // ⚠️ Patch the local fetch too, as delete does: on a day older than the
+            // store's recent window the store has no copy to update, so the row
+            // kept its old minutes and description after a save.
+            onSaved={(patch) => setLoaded((prev) => prev.map((x) => (x.id === e.id ? { ...x, ...patch } : x)))}
             onDelete={(id) => {
               // remove from the local fetch snapshot too, or the row reappears
               setLoaded((prev) => prev.filter((x) => x.id !== id));

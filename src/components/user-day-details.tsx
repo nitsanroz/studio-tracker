@@ -19,9 +19,16 @@ import { SkeletonRows } from "@/components/skeleton";
 export function EntryEditRow({
   entry,
   leading,
+  onChanged,
 }: {
   entry: TimeEntry;
   leading?: React.ReactNode;
+  /**
+   * Told what this row just wrote, for a host holding its OWN fetched copy of the
+   * day (UserDayDetails). The store only patches rows inside its recent window, so
+   * without this an edit or delete on an older day looked like it did nothing.
+   */
+  onChanged?: (change: { deleted: true } | { patch: Partial<TimeEntry> }) => void;
 }) {
   const { profiles, updateTimeEntry, deleteTimeEntry } = useData();
   const [duration, setDuration] = useState(formatHoursShort(entry.minutes));
@@ -30,9 +37,10 @@ export function EntryEditRow({
   const user = profiles.find((p) => p.id === entry.userId) ?? null;
   // ⚠️ The duration field is seeded once, so a write-down has to correct it here
   // or the row keeps showing the pre-move figure and Save would write it back.
-  const keys = useKeysWriteDown(entry, (moved) =>
-    setDuration(formatHoursShort(entry.minutes - moved)),
-  );
+  const keys = useKeysWriteDown(entry, (moved) => {
+    setDuration(formatHoursShort(entry.minutes - moved));
+    onChanged?.({ patch: { minutes: entry.minutes - moved } });
+  });
 
   const minutes = parseDuration(duration);
   const dirty =
@@ -46,7 +54,9 @@ export function EntryEditRow({
   const describes = description.trim().length > 0 || !descChanged;
   function save() {
     if (minutes == null || minutes <= 0 || !date || !describes) return;
-    updateTimeEntry(entry.id, descChanged ? { minutes, description: description.trim(), date } : { minutes, date });
+    const patch = descChanged ? { minutes, description: description.trim(), date } : { minutes, date };
+    updateTimeEntry(entry.id, patch);
+    onChanged?.({ patch });
   }
 
   return (
@@ -91,7 +101,10 @@ export function EntryEditRow({
       <KeysButton state={keys} label={false} />
       <button
         // the row is passed so an entry outside the feed window keeps its undo
-        onClick={() => deleteTimeEntry(entry.id, entry)}
+        onClick={() => {
+          deleteTimeEntry(entry.id, entry);
+          onChanged?.({ deleted: true });
+        }}
         title="Delete this time log"
         className="shrink-0 rounded p-0.5 text-faint opacity-0 hover:text-danger group-hover:opacity-100"
       >
@@ -151,7 +164,11 @@ export function UserDayDetails({
   const entries = useMemo(() => {
     // only the fetch that matches the currently selected person+day counts
     const rows = fetched?.key === dayKey ? fetched.rows : [];
-    const byId = new Map(rows.map((e) => [e.id, e]));
+    const byId = new Map(
+      rows
+        .filter((e) => e.userId === targetUserId && e.date === targetDate && e.minutes > 0)
+        .map((e) => [e.id, e]),
+    );
     // the store's copy wins: it reflects edits and adds made since the fetch
     for (const e of timeEntries) {
       if (e.userId === targetUserId && e.date === targetDate && e.minutes > 0) byId.set(e.id, e);
@@ -212,6 +229,22 @@ export function UserDayDetails({
               <EntryEditRow
                 key={e.id}
                 entry={e}
+                onChanged={(change) =>
+                  // ⚠️ Patch the fetched copy too: the store only holds recent rows,
+                  // and its copy can override the fetch but never remove from it — so
+                  // a deleted, moved or written-down-to-0 entry stayed in this list.
+                  setFetched((f) =>
+                    f && f.key === dayKey
+                      ? {
+                          ...f,
+                          rows:
+                            "deleted" in change
+                              ? f.rows.filter((r) => r.id !== e.id)
+                              : f.rows.map((r) => (r.id === e.id ? { ...r, ...change.patch } : r)),
+                        }
+                      : f,
+                  )
+                }
                 leading={
                   // client on its own line — a bare task title ("Homepage") reads
                   // the same for half the studio's clients

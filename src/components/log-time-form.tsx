@@ -69,6 +69,10 @@ export function LogTimeForm({
       fixedUserId ?? forUserId,
     );
     setBusy(false);
+    // ⚠️ A failed save (write error, refused description) keeps what was typed and
+    // the popup open; the store has already said why. Clearing here, then calling
+    // `onAdded` — which two hosts answer by closing — threw the work away.
+    if (!entry) return;
     setDuration("");
     setDescription("");
     if (!fixedTaskId) {
