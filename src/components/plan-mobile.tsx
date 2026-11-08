@@ -430,6 +430,12 @@ function MoveSheet({
   const toName = profiles.find((p) => p.id === to)?.name ?? col?.name;
   // the waiting list is dateless, so picking it fixes the date too
   const targetDate = col?.type === "waiting_list" ? null : date === WAITING ? null : date;
+  // ⚠️ A DATELESS ENTRY ONLY EXISTS IN THE WAITING LIST — both plan builds show
+  // null-date rows there and nowhere else, so `{ date: null, columnId: <person> }`
+  // made the entry vanish (a waiting entry moved to a person, or "No date" picked
+  // for one). Choosing a person gives it a day; "No date" means the waiting list.
+  const today = toISODate(new Date());
+  const dayOnScreen = days.some((d) => toISODate(d) === today) ? today : days[0] ? toISODate(days[0]) : today;
 
   return (
     <MobileSheet title="Move to" onClose={onClose}>
@@ -440,7 +446,10 @@ function MoveSheet({
             {columns.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setColumnId(c.id)}
+                onClick={() => {
+                  setColumnId(c.id);
+                  if (c.type !== "waiting_list" && date === WAITING) setDate(dayOnScreen);
+                }}
                 className={`min-h-11 rounded-xl border px-3 text-xs font-medium ${
                   c.id === columnId
                     ? "border-brand bg-brand-soft text-brand-dark"
@@ -476,7 +485,10 @@ function MoveSheet({
               })}
               {waitingCol && (
                 <button
-                  onClick={() => setDate(WAITING)}
+                  onClick={() => {
+                    setDate(WAITING);
+                    setColumnId(waitingCol.id);
+                  }}
                   className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-medium ${
                     date === WAITING
                       ? "border-brand bg-brand-soft text-brand-dark"
@@ -496,7 +508,9 @@ function MoveSheet({
         )}
         <button
           onClick={() => {
-            movePlanEntryToCell(entry.id, { date: targetDate, columnId });
+            // last guard for the rule above: never a dateless row outside the waiting list
+            const into = targetDate == null && col?.type !== "waiting_list" && waitingCol ? waitingCol.id : columnId;
+            movePlanEntryToCell(entry.id, { date: targetDate, columnId: into });
             onClose();
           }}
           className="min-h-11 rounded-xl bg-brand px-3 text-sm font-semibold text-white"
