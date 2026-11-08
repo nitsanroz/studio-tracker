@@ -6,7 +6,14 @@
 /** A link's secret part: the segment after the last dash (or all of it, for a
  * link minted before names were added). */
 export function tokenFromSegment(segment: string): string {
-  const s = decodeURIComponent(segment);
+  // A stray "%" makes decodeURIComponent throw; the raw segment then just fails
+  // to match any link (404), instead of the public route answering 500.
+  let s = segment;
+  try {
+    s = decodeURIComponent(segment);
+  } catch {
+    /* keep the raw segment */
+  }
   return /^[A-Za-z0-9_-]{24,}$/.test(s) && !/^[a-z0-9]+-[A-Za-z0-9]{24,}$/.test(s) ? s : s.slice(s.lastIndexOf("-") + 1);
 }
 

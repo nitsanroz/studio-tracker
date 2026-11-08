@@ -124,9 +124,16 @@ export function useVacation({ enabled = true }: { enabled?: boolean } = {}): Vac
         setUnavailable(true);
         return setReady(false);
       }
+      // ⚠️ ANY OTHER FAILURE KEEPS WHAT IS ON SCREEN. Read as empty, it showed "no
+      // payslip, no requests" as if that were true (snapshot.ts calls that
+      // "indistinguishable from the truth"). A first load stays not-ready, and
+      // the poll / next visibility change tries again.
+      const failed = [me.error, reqs.error, appr.error].find(Boolean);
+      if (failed) return console.error("[vacation] not loaded", failed.message);
       const isApprover = appr.data === true;
       const all = isApprover ? await sb.rpc("vacation_balances") : null;
       if (!live) return;
+      if (all?.error) return console.error("[vacation] balances not loaded", all.error.message);
       const map = new Map(((all?.data as BalanceRow[] | null) ?? []).map((r) => [r.profile_id!, mapBalance(r)]));
       const first = ((me.data as BalanceRow[] | null) ?? [])[0];
       // Previewing a member (`?viewAs=`): show THEIR balance and requests — the

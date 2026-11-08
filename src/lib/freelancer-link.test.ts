@@ -12,6 +12,10 @@ describe("freelancer link", () => {
     expect(tokenFromSegment("gibSAdUR6RvGC-y-4xRERoCORs7bZZJe")).toBe("gibSAdUR6RvGC-y-4xRERoCORs7bZZJe");
   });
 
+  it("doesn't throw on a malformed segment (a stray %)", () => {
+    expect(() => tokenFromSegment("abolfazi-%E0%A4%A")).not.toThrow();
+  });
+
   it("never lets the name decide anything", () => {
     expect(linkSlug("עמיחי שטרית")).toBe("freelancer");
     expect(tokenFromSegment("someoneelse-Xa82kQ9mZpL3tR7vB1nC4dE6")).toBe("Xa82kQ9mZpL3tR7vB1nC4dE6");

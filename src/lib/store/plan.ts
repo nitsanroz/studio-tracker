@@ -18,6 +18,7 @@
 import { useCallback, useMemo, type Dispatch, type RefObject, type SetStateAction } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapPlanColumn, mapPlanEntry } from "../db";
+import { inversePatch } from "./helpers";
 import { PLAN_ENTRY_FIELDS, type HistoryAction, type NewPlanEntry, type PlanEntryPatch, type Store } from "./types";
 import type { PlanColumn, PlanEntry, Task } from "../types";
 
@@ -414,7 +415,10 @@ export function usePlanActions(deps: PlanDeps) {
 
   const updatePlanColumn = useCallback(
     (columnId: string, patch: Partial<Pick<PlanColumn, "name" | "hidden" | "position">>) => {
-      const prev = planColumns;
+      // ⚠️ Roll back THIS column's patched keys only — restoring the whole list as
+      // it was at call time wiped any edit or refresh that landed in between.
+      const before = planColumns.find((c) => c.id === columnId);
+      const prev = before ? inversePatch(before, patch) : null;
       setPlanColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, ...patch } : c)));
       supabase
         .from("plan_columns")
@@ -422,7 +426,8 @@ export function usePlanActions(deps: PlanDeps) {
         .eq("id", columnId)
         .then((res) => {
           wrote("updatePlanColumn")(res);
-          if (res.error) setPlanColumns(prev); // e.g. `hidden` migration not applied yet
+          // e.g. `hidden` migration not applied yet
+          if (res.error && prev) setPlanColumns((cols) => cols.map((c) => (c.id === columnId ? { ...c, ...prev } : c)));
         });
     },
     [supabase, planColumns, wrote, setPlanColumns],
