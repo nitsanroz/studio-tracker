@@ -42,6 +42,7 @@ import {
   previousPeriodIndex,
 } from "@/lib/report-period-focus";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
+import { paidMonthsFor, periodPaidInFinance, type MonthPaidRow } from "@/lib/finance-paid";
 import type { BillingPeriod, Client, ReportLink, ReportSnapshot } from "@/lib/types";
 
 /** "Show all" hands the table an empty fold list; a module constant so the identity
@@ -123,6 +124,37 @@ function IncludeRow({
 
 // ── payment periods pane (below the report table) + info pane + graph ──────
 
+/**
+ * The months finance-admin's Plan has marked Paid for this client, over the span
+ * of its payment periods (migration 0064, `client_months_paid` — booleans only).
+ *
+ * ⚠️ Any failure — the function not yet created, a network error — reads as "nothing
+ * paid in finance": this only ever ADDS a paid mark, so the safe fallback is the
+ * page exactly as it was before 0064.
+ */
+function useFinancePaidMonths(clientId: string, periods: BillingPeriod[]): Set<string> {
+  const from = periods.reduce<string | null>((m, p) => (m == null || p.dateFrom < m ? p.dateFrom : m), null);
+  const to = periods.reduce<string | null>((m, p) => (m == null || p.dateTo > m ? p.dateTo : m), null);
+  const [state, setState] = useState<{ key: string; months: Set<string> } | null>(null);
+  const key = `${clientId}|${from}|${to}`;
+  useEffect(() => {
+    if (!from || !to) return;
+    let live = true;
+    createClient()
+      .rpc("client_months_paid", { client_ids: [clientId], from_month: from, to_month: to })
+      .then(({ data, error }) => {
+        if (!live) return;
+        const rows = error ? [] : ((data ?? []) as MonthPaidRow[]);
+        setState({ key, months: paidMonthsFor(rows, clientId) });
+      });
+    return () => {
+      live = false;
+    };
+  }, [clientId, from, to, key]);
+  return state?.key === key ? state.months : EMPTY_MONTHS;
+}
+const EMPTY_MONTHS = new Set<string>();
+
 function PaymentPeriods({ client }: { client: Client }) {
   const {
     billingPeriods,
@@ -134,6 +166,7 @@ function PaymentPeriods({ client }: { client: Client }) {
     updateClient,
   } = useData();
   const periods = billingPeriods.filter((p) => p.clientId === client.id);
+  const financePaidMonths = useFinancePaidMonths(client.id, periods);
   /**
    * What the Keys-task picker may offer: this client's NON-BILLABLE tasks, with
    * keys-shaped titles first so the usual answer is at the top.
@@ -306,21 +339,35 @@ function PaymentPeriods({ client }: { client: Client }) {
         </div>
         {periods.map((p) => {
           const isCurrent = p.id === current?.id;
-          const strike = p.paid ? "line-through" : "";
+          // Paid = its own tick, OR every month it spans marked Paid on the
+          // finance Plan (0064). The tick is never written from finance.
+          const financePaid = periodPaidInFinance(p, financePaidMonths);
+          const paid = p.paid || financePaid;
+          const strike = paid ? "line-through" : "";
           return (
             <div
               key={p.id}
               className={`group flex items-center gap-3 border-b border-border px-3 py-1.5 text-sm last:border-b-0 ${
                 isCurrent ? "bg-brand-soft/50" : ""
-              } ${p.paid ? "opacity-60" : ""}`}
+              } ${paid ? "opacity-60" : ""}`}
               title={isCurrent ? "Current period" : undefined}
             >
-              <span className={`min-w-0 flex-1 ${strike}`}>
-                <EditableTextCell
-                  value={p.label}
-                  onCommit={(v) => v && updateBillingPeriod(p.id, { label: v })}
-                  className={isCurrent ? "font-medium text-brand-dark" : ""}
-                />
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                <span className={`min-w-0 flex-1 ${strike}`}>
+                  <EditableTextCell
+                    value={p.label}
+                    onCommit={(v) => v && updateBillingPeriod(p.id, { label: v })}
+                    className={isCurrent ? "font-medium text-brand-dark" : ""}
+                  />
+                </span>
+                {financePaid && !p.paid && (
+                  <span
+                    className="shrink-0 rounded-full bg-success/10 px-1.5 text-[11px] font-medium text-success"
+                    title="Every month of this period is marked Paid on the finance Plan"
+                  >
+                    paid · from finance
+                  </span>
+                )}
               </span>
               <span className={`flex w-56 shrink-0 items-center gap-1 text-xs ${strike}`}>
                 <span className="w-[5.5rem]">
@@ -345,9 +392,21 @@ function PaymentPeriods({ client }: { client: Client }) {
               <span className="flex w-14 shrink-0 items-center justify-end gap-0.5">
                 <button
                   onClick={() => updateBillingPeriod(p.id, { paid: !p.paid })}
-                  title={p.paid ? "Paid — click to mark as not paid" : "Mark this period as paid"}
+                  title={
+                    p.paid
+                      ? financePaid
+                        ? "Paid — click to untick here (the finance Plan also has it paid, so it stays paid)"
+                        : "Paid — click to mark as not paid"
+                      : financePaid
+                        ? "Paid on the finance Plan — click to also tick it here"
+                        : "Mark this period as paid"
+                  }
                   className={`rounded p-1 ${
-                    p.paid ? "text-success" : "invisible text-muted hover:text-success group-hover:visible"
+                    p.paid
+                      ? "text-success"
+                      : financePaid
+                        ? "text-success/50 hover:text-success"
+                        : "invisible text-muted hover:text-success group-hover:visible"
                   }`}
                 >
                   <Banknote size={14} />
