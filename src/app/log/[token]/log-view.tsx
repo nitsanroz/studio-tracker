@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Info, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Info, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ClientAvatar } from "@/components/client-avatar";
 import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 
@@ -446,14 +446,15 @@ function Composer({
   const [kind, setKind] = useState<"hours" | "charge">(charge ? "charge" : "hours");
   const [date, setDate] = useState(log?.date ?? charge?.date ?? data.today);
   const [clientId, setClientId] = useState(log ? (log.clientId ?? "") : data.clients.length === 1 ? data.clients[0].id : "");
-  const [task, setTask] = useState(log ? (log.task ?? log.taskHint ?? "") : (charge?.title ?? ""));
+  const initialTask = log ? (log.task ?? log.taskHint ?? "") : (charge?.title ?? "");
+  const [task, setTask] = useState(initialTask);
   const [hours, setHours] = useState(log ? String(log.hours) : "");
   const [text, setText] = useState(log ? (log.description !== (log.task ?? log.taskHint) ? log.description : "") : (charge?.note ?? ""));
   const [amount, setAmount] = useState(charge ? String(charge.amount) : "");
   const [currency, setCurrency] = useState(charge?.currency ?? data.summary.currency);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const tasks = useMemo(() => (clientId ? data.tasks.filter((t) => t.clientId === clientId) : data.tasks), [data.tasks, clientId]);
+  const tasks = useMemo(() => data.tasks.filter((t) => t.clientId === clientId), [data.tasks, clientId]);
 
   async function submit() {
     setError(null);
@@ -462,7 +463,13 @@ function Composer({
       const h = Number(hours.replace(",", "."));
       if (!(h > 0 && h <= 24)) return setError("Enter the hours, e.g. 3.5");
       if (!text.trim() && !task.trim()) return setError("Say what you worked on.");
-      const known = tasks.find((t) => t.title.toLowerCase() === task.trim().toLowerCase());
+      // Only a picked client's tasks can match — "not sure" is always free text.
+      // A line he's editing keeps the task it's filed on while he leaves the
+      // text alone (its title may not be on his list — see the API's HEBREW).
+      const known = clientId
+        ? (tasks.find((t) => t.title.toLowerCase() === task.trim().toLowerCase()) ??
+          (log?.taskId && clientId === log.clientId && task === initialTask ? { id: log.taskId, clientId } : undefined))
+        : undefined;
       body = {
         date,
         minutes: Math.round(h * 60),
@@ -527,7 +534,9 @@ function Composer({
         </div>
       </div>
       {kind === "hours" ? (
-        <div className="grid grid-cols-[150px_170px_minmax(0,1fr)_80px_minmax(0,1.3fr)_auto] items-start gap-2">
+        // Two lines: where it goes (date, client, the task at full width), then
+        // what it was (hours on the left, the description long, Add).
+        <div className="grid grid-cols-[150px_170px_minmax(0,1fr)] items-start gap-2">
           <input type="date" value={date} min={data.earliest} max={data.today} onChange={(e) => setDate(e.target.value)} className={field} aria-label="Date" />
           <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={field} aria-label="Client">
             <option value="">Client — not sure</option>
@@ -537,17 +546,18 @@ function Composer({
               </option>
             ))}
           </select>
-          <div>
-            <input list="his-tasks" value={task} onChange={(e) => setTask(e.target.value)} onKeyDown={onEnter} placeholder="Task" maxLength={120} className={field} />
-            <datalist id="his-tasks">
-              {tasks.map((t) => (
-                <option key={t.id} value={t.title} />
-              ))}
-            </datalist>
+          {/* Client "not sure" → the task is his own words, no list to pick from:
+              a guessed task is worse than none. */}
+          {clientId ? (
+            <TaskPicker value={task} onChange={setTask} tasks={tasks} onEnter={() => void submit()} />
+          ) : (
+            <input value={task} onChange={(e) => setTask(e.target.value)} onKeyDown={onEnter} placeholder="Task (your words)" maxLength={120} className={field} />
+          )}
+          <div className="col-span-3 grid grid-cols-[150px_minmax(0,1fr)_auto] items-start gap-2">
+            <input inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value)} onKeyDown={onEnter} placeholder="Hours" className={field} />
+            <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onEnter} placeholder="What you did" maxLength={600} className={field} />
+            <AddButton saving={saving} label={editing ? "Save" : "Add"} onClick={() => void submit()} />
           </div>
-          <input inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value)} onKeyDown={onEnter} placeholder="Hours" className={`${field} text-right`} />
-          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onEnter} placeholder="What you did" maxLength={600} className={field} />
-          <AddButton saving={saving} label={editing ? "Save" : "Add"} onClick={() => void submit()} />
         </div>
       ) : (
         <div className="grid grid-cols-[150px_minmax(0,1.3fr)_110px_70px_minmax(0,1fr)_auto] items-start gap-2">
@@ -574,6 +584,98 @@ function Composer({
         <p className="mt-2 text-xs text-faint">
           Money you&apos;re charging on top of your hours — another freelancer you brought in, a purchase.
         </p>
+      )}
+    </div>
+  );
+}
+
+/** The task field with the client's tasks under it — the tracker's own list,
+ * not a browser datalist: that one is as narrow as the field and crops a long
+ * title. Opens UP (the box is pinned to the bottom of the screen), at least
+ * 340px wide, and wraps a title rather than cutting it. Typing filters it; the
+ * text stays his own words when nothing fits. */
+function TaskPicker({
+  value,
+  onChange,
+  tasks,
+  onEnter,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  tasks: { id: string; title: string }[];
+  onEnter: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const listId = useId();
+  const q = value.trim().toLowerCase();
+  // An exact pick shows the whole list again, so he can change his mind.
+  const exact = tasks.some((t) => t.title.toLowerCase() === q);
+  const shown = !q || exact ? tasks : tasks.filter((t) => t.title.toLowerCase().includes(q));
+  const pick = (t: string) => {
+    onChange(t);
+    setOpen(false);
+    setActive(-1);
+  };
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setOpen(true);
+            setActive(-1);
+          }}
+          onFocus={() => setOpen(true)}
+          onClick={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              setOpen(true);
+              const n = shown.length;
+              if (n) setActive((a) => (e.key === "ArrowDown" ? (a + 1) % n : (a - 1 + n) % n));
+            } else if (e.key === "Escape") setOpen(false);
+            else if (e.key === "Enter") {
+              e.preventDefault();
+              if (open && active >= 0 && shown[active]) pick(shown[active].title);
+              else onEnter();
+            }
+          }}
+          placeholder="Task"
+          maxLength={120}
+          role="combobox"
+          aria-controls={listId}
+          aria-expanded={open && shown.length > 0}
+          aria-autocomplete="list"
+          className={`${field} pr-8`}
+        />
+        <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-faint" />
+      </div>
+      {open && shown.length > 0 && (
+        <ul
+          id={listId}
+          role="listbox"
+          // Kept open through the click: blur would close it before the pick lands.
+          onMouseDown={(e) => e.preventDefault()}
+          className="absolute bottom-full left-0 z-30 mb-1 max-h-72 w-max min-w-full max-w-[min(480px,90vw)] overflow-auto rounded-xl bg-surface p-1 text-sm shadow-[0_12px_40px_rgba(6,17,47,0.18)] sm:min-w-[340px]"
+        >
+          {shown.map((t, i) => (
+            <li
+              key={t.id}
+              role="option"
+              aria-selected={i === active}
+              onClick={() => pick(t.title)}
+              onMouseEnter={() => setActive(i)}
+              className={`cursor-pointer rounded-lg px-3 py-1.5 break-words ${
+                i === active ? "bg-brand-soft text-brand-dark" : ""
+              } ${t.title.toLowerCase() === q ? "font-medium text-brand" : ""}`}
+            >
+              {t.title}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

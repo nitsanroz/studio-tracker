@@ -59,6 +59,9 @@ const terms = (f: Freelancer): RateTerms => ({
 function today(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(new Date());
 }
+/** Any Hebrew letter — kept off a freelancer's page. */
+const HEBREW = /[\u0590-\u05FF]/;
+const noHebrew = (t: string | undefined) => (t && !HEBREW.test(t) ? t : null);
 /** The first day he may write to: his own lines live in the current month only
  * — past months are history (billed, maybe already in a client's report). */
 const editableFrom = () => `${today().slice(0, 7)}-01`;
@@ -208,7 +211,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
     period,
     firstPeriod: (allLogs ?? []).reduce((min, l) => ((l.date as string) < min ? (l.date as string) : min), now).slice(0, 7),
     clients: clients.map((c) => chipOf.get(c.id) ?? { ...c, color: "#98a0b3", icon: null, iconUrl: null }),
-    tasks,
+    // ⚠️ No Hebrew on his page (Nitsan, 2026-11-09): he doesn't read it. A
+    // Hebrew-titled task is left out of his picker — `allowed()` still knows it,
+    // so a line already filed on one validates when he edits it.
+    tasks: tasks.filter((x) => !HEBREW.test(x.title)),
     summary: { ...monthBill(hours, t, extra), currency: t.currency },
     charges: extra.map((c) => ({
       id: c.id,
@@ -227,7 +233,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       date: l.date,
       hours: l.minutes / 60,
       client: l.client_id ? (chipOf.get(l.client_id) ?? null) : null,
-      task: l.task_id ? (taskTitle.get(l.task_id) ?? null) : null,
+      // A Hebrew title isn't shown — his own name for it (taskHint) stands in.
+      task: l.task_id ? noHebrew(taskTitle.get(l.task_id)) : null,
       // His own name for the task — what he sees until it's filed on one.
       taskHint: l.task_hint,
       description: l.description,
