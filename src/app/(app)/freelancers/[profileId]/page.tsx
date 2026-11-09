@@ -883,7 +883,12 @@ function Side({
           <Users size={18} strokeWidth={1.75} className="text-brand" /> Clients they can log against
           {!editingClients && (
             <button
-              onClick={() => setEditingClients(true)}
+              onClick={() => {
+                // ⚠️ From the CURRENT list: an approval can open a new client after this
+                // mounted, and Save rewrites the whole list — a stale set dropped it.
+                setPicked(new Set(f.clientIds));
+                setEditingClients(true);
+              }}
               className="ml-auto text-[13px] font-normal text-brand hover:underline"
             >
               Edit

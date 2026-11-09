@@ -97,6 +97,32 @@ export async function POST(req: NextRequest) {
   }
 
   /**
+   * ⚠️⚠️ CLAIM THE SEND BEFORE MAILING. Reading, sending and THEN stamping let two
+   * concurrent clicks both read the same `client_notified_at` and both mail the
+   * client (found 2026-11-09). The claim moves it from exactly the value this
+   * request read to `now`; a second request still holding the old value matches
+   * no row and stops. A failed send puts the old value back below, so "try again"
+   * still works. If the claim itself errors, the send goes ahead as before.
+   */
+  const claimQ = admin.from("task_requests").update({ client_notified_at: now }).eq("id", requestId);
+  const { data: claimed, error: claimError } = await (request.client_notified_at
+    ? claimQ.eq("client_notified_at", request.client_notified_at)
+    : claimQ.is("client_notified_at", null)
+  ).select("id");
+  if (claimError) console.error("intake receipt claim failed", claimError);
+  else if (!claimed?.length) {
+    return NextResponse.json({ seenAt: request.seen_at ?? now, clientNotifiedAt: now, alreadySent: true });
+  }
+  const releaseClaim = async () => {
+    if (claimError) return;
+    await admin
+      .from("task_requests")
+      .update({ client_notified_at: request.client_notified_at ?? null })
+      .eq("id", requestId)
+      .eq("client_notified_at", now);
+  };
+
+  /**
    * ⚠️ WHICH receipt this is. A brief the client has changed since the studio
    * last acknowledged it gets the UPDATE wording — Nitsan's ask, and the honest
    * message: "your changes reached us", not "your brief reached us", which for a
@@ -144,6 +170,7 @@ export async function POST(req: NextRequest) {
   }).catch(() => null);
 
   if (!mail?.ok) {
+    await releaseClaim();
     // ⚠️ `seen_at` is still stamped. The admin DID read it, and leaving the row
     // untouched because a mail server was down would make the queue lie about
     // what has been looked at. `client_notified_at` stays null, so the button

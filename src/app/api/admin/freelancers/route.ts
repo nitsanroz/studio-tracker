@@ -379,7 +379,7 @@ export async function POST(req: NextRequest) {
         entryId = inserted.id as string;
         fresh = true;
       }
-      const { error: e2 } = await updateLog(
+      const { data: written, error: e2 } = await updateLog(
         sb,
         log.id,
         {
@@ -397,6 +397,15 @@ export async function POST(req: NextRequest) {
         // Don't leave hours in the tracker that the log doesn't point at.
         if (fresh) await sb.from("time_entries").delete().eq("id", entryId);
         return NextResponse.json({ error: e2.message }, { status: 500 });
+      }
+      // ⚠️ NOTHING UPDATED = another approval won the race (a double click, or two
+      // admins). Undo THIS request's entry write — a fresh entry is deleted, a
+      // synced one is moved back — so the hours are never counted twice. editLog
+      // answers the same 409 (2026-11-09).
+      if (!written?.length) {
+        if (fresh) await sb.from("time_entries").delete().eq("id", entryId);
+        else if (before) await syncEntry(sb, entryId, now, before);
+        return NextResponse.json({ error: "It changed meanwhile — reload and try again." }, { status: 409 });
       }
       // Filed on a client he wasn't open for: open it, so this task is in his
       // picker next time (0055 — he names the work, the admin files it).

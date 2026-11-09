@@ -185,7 +185,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     const { data: known } = await sb
       .from("lead_contacts")
       .select("lead_id, leads!inner(id, company, created_at)")
-      .ilike("email", email)
+      // ⚠️ ESCAPED: `ilike` reads `_` and `%` as wildcards, and `_` is common in real
+      // addresses — unescaped, a submission could match another person's contact
+      // and be logged on the wrong lead (found 2026-11-09).
+      .ilike("email", email.replace(/[\\%_]/g, (c) => `\\${c}`))
       .gte("leads.created_at", cutoff)
       .is("leads.deleted_at", null)
       .limit(1);

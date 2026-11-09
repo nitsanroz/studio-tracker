@@ -46,6 +46,17 @@ export async function POST(req: NextRequest) {
   const mine = me?.user?.email?.toLowerCase();
   const to = (await recipients(sb, "approver_ids")).filter((e) => e.toLowerCase() !== mine);
   const company = o.leads?.company ?? "A lead";
+  // ⚠️ Claim before sending: two in-review flips at once both passed the
+  // `review_alerted_at` check above and mailed the approvers twice. Only the
+  // request whose stamp lands sends; a failed send gives the claim back.
+  const stamp = new Date().toISOString();
+  const { data: claimed } = await sb
+    .from("lead_offers")
+    .update({ review_alerted_at: stamp })
+    .eq("id", offerId)
+    .is("review_alerted_at", null)
+    .select("id");
+  if (!claimed?.length) return NextResponse.json({ sent: false });
   const ok = await sendMail(
     to,
     `Offer to review: ${company} v${o.version}`,
@@ -53,6 +64,6 @@ export async function POST(req: NextRequest) {
       (o.scope_summary ? `<p style="white-space:pre-wrap;color:#555">${esc(o.scope_summary)}</p>` : "") +
       `<p><a href="${leadUrl(o.lead_id)}">Open the lead → Offers</a></p>`,
   );
-  if (ok) await sb.from("lead_offers").update({ review_alerted_at: new Date().toISOString() }).eq("id", offerId);
+  if (!ok) await sb.from("lead_offers").update({ review_alerted_at: null }).eq("id", offerId).eq("review_alerted_at", stamp);
   return NextResponse.json({ sent: ok, to: to.length });
 }

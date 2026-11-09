@@ -359,7 +359,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     const { data: found } = await sb.storage
       .from("intake")
       .list(item.path.slice(0, slash), { search: item.path.slice(slash + 1), limit: 1 });
-    const object = found?.[0];
+    // ⚠️ `search` matches by PREFIX — an object merely STARTING with the claimed
+    // name must not stand in for it (its size and type would be read instead).
+    const object = found?.find((o) => o.name === item.path.slice(slash + 1));
     if (!object) {
       dropped.push(`${item.name} — the upload didn't finish`);
       continue;

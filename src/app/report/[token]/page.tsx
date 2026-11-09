@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { studioDate } from "@/lib/format";
 import { signStorageUrl } from "@/lib/sign-storage";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 import { sanitizeSnapshot } from "@/lib/report-sanitize";
@@ -94,7 +95,9 @@ export default async function PublicReportPage({
          publish date is the honest as-of for them. */
       asOf={
         ((link.through_date as string | null) ?? null) ??
-        (link.published_at ? String(link.published_at).slice(0, 10) : null)
+        // The STUDIO's date of the publish, not the UTC one: published before 02:00/03:00
+        // Israel time, the UTC slice read a day early and "days in period" was off by one.
+        (link.published_at ? studioDate(String(link.published_at)) : null)
       }
       hiddenColumns={leadingHidden}
       periodTotals={periodTotals}
