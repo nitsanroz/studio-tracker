@@ -9,56 +9,57 @@ Format: `file:line — lens — what — fix`.
 missing, none late. The one security bug is on the sign-in confirmation route (open redirect).
 
 ## Bugs noticed
+**Fixed 2026-11-09 (4e3dbd3…4206184).** Still open: 8 (listed without ✅ below).
 Security and money first.
 
-- **src/app/(app)/freelancers/[profileId]/page.tsx:812/:886 — saving a freelancer's client list can silently drop a client (billing scope).** `picked` is set once from `f.clientIds`; approving a line on a new client adds that client server-side (route.ts:404 upsert) and refreshes `f`, but "Edit" opens the stale set, and Save deletes and re-inserts the whole list (route.ts:492) — dropping the client the approval just opened. Fix: `setPicked(new Set(f.clientIds))` when Edit opens.
-- **src/app/(app)/freelancers/shared.tsx:55 — `act()` rejects on a network failure**, leaving Approve / Save terms / Save stuck busy (+ unhandled rejection) at ~8 call sites — the class 90485ac fixed in components. One try/catch inside `act`.
-- src/app/(app)/freelancers/[profileId]/page.tsx:647/856/921 — Charges `run`, New link, Switch on/off and Save clients discard `act`'s error: a refused change looks done, and Save clients closes the editor on failure.
-- src/app/(app)/freelancers/shared.tsx:97 — rate/hours inputs are controlled by `String(Number(...))`: typing "47." collapses to "47", so a decimal rate can't be typed (only pasted), and clearing snaps to 0 — keep raw strings, convert on submit.
-- src/app/(app)/freelancers/[profileId]/page.tsx:566 — WaitingRow keeps the previous client's tasks in the select until the new list arrives, so an approve can file on the wrong client's task — `setFetched(null)` on change, as EditLineModal does. (med)
-- src/app/(app)/freelancers/[profileId]/page.tsx:856 — native `confirm("Make a new link?…")`: dead in the desktop pane — `askConfirm`.
-- src/app/(app)/freelancers/[profileId]/page.tsx:631/:699 — native `prompt()` to turn down a log AND a charge. The note is optional (the route stores empty as null), so `askText` needs an `allowEmpty` option (empty → "", cancel → null).
-- src/app/(app)/freelancers/[profileId]/page.tsx:838 — `clipboard.writeText` uncaught — the tolerated copy fallback. (med)
-- src/app/(app)/feed/page.tsx:614/573/592 — in a period view (rows from `fetched`), delete and edit change only the store, so the row stays unchanged on screen; delete passes no `known` row, so no ⌘Z outside the store window — pass the row and patch `fetched` (the user-day-details fix, 3c05571).
-- src/app/(app)/feed/page.tsx:224 — switching a preset to "Recent" mid-fetch cancels it and `setLoading(false)` never runs: "loading…" sticks and the empty state never shows.
-- src/app/(app)/feed/page.tsx:88 — CellDetails ignores a fetch error; its skeleton spins forever. (med)
-- **src/app/(app)/leads/[leadId]/page.tsx:269 — `run()` catches every error and resolves, so callers' "on success" steps run after a failure and what was typed is lost**: the activity composer clears (`.finally`, :1043), the link-by-hand email form clears and closes (:1449), the new-offer form resets and closes (:1926), `finishStep` refocuses (:358). Have `run` return ok/false and clear only on success.
-- **src/app/(app)/leads/[leadId]/page.tsx:628/:1989 — the date-typing bug fixed in editable-cell (e56f772)**: next-step due and offer sent dates save 0002 → 0020 → 0202 → 2026 while a year is typed, and each save reloads and re-keys (`d${…}`), remounting the field mid-typing — the same `< 1900` guard, or commit on blur.
-- src/app/(app)/leads/page.tsx:1066 — the board's `reload()` after Settings closes doesn't re-read nudge settings, so edited rules don't reach the cards until a full reload. (med)
-- src/app/(app)/leads/page.tsx:1408/:1435 — the List view with zero leads shows two empty messages.
+- ✅ FIXED (4e3dbd3) — **src/app/(app)/freelancers/[profileId]/page.tsx:812/:886 — saving a freelancer's client list can silently drop a client (billing scope).** `picked` is set once from `f.clientIds`; approving a line on a new client adds that client server-side (route.ts:404 upsert) and refreshes `f`, but "Edit" opens the stale set, and Save deletes and re-inserts the whole list (route.ts:492) — dropping the client the approval just opened. Fix: `setPicked(new Set(f.clientIds))` when Edit opens.
+- ✅ FIXED (627b870) — **src/app/(app)/freelancers/shared.tsx:55 — `act()` rejects on a network failure**, leaving Approve / Save terms / Save stuck busy (+ unhandled rejection) at ~8 call sites — the class 90485ac fixed in components. One try/catch inside `act`.
+- ✅ FIXED (627b870) — src/app/(app)/freelancers/[profileId]/page.tsx:647/856/921 — Charges `run`, New link, Switch on/off and Save clients discard `act`'s error: a refused change looks done, and Save clients closes the editor on failure.
+- ✅ FIXED (627b870) — src/app/(app)/freelancers/shared.tsx:97 — rate/hours inputs are controlled by `String(Number(...))`: typing "47." collapses to "47", so a decimal rate can't be typed (only pasted), and clearing snaps to 0 — keep raw strings, convert on submit.
+- ✅ FIXED (627b870) — src/app/(app)/freelancers/[profileId]/page.tsx:566 — WaitingRow keeps the previous client's tasks in the select until the new list arrives, so an approve can file on the wrong client's task — `setFetched(null)` on change, as EditLineModal does. (med)
+- ✅ FIXED (41fe64c) — src/app/(app)/freelancers/[profileId]/page.tsx:856 — native `confirm("Make a new link?…")`: dead in the desktop pane — `askConfirm`.
+- ✅ FIXED (41fe64c) — src/app/(app)/freelancers/[profileId]/page.tsx:631/:699 — native `prompt()` to turn down a log AND a charge. The note is optional (the route stores empty as null), so `askText` needs an `allowEmpty` option (empty → "", cancel → null).
+- ✅ FIXED (627b870) — src/app/(app)/freelancers/[profileId]/page.tsx:838 — `clipboard.writeText` uncaught — the tolerated copy fallback. (med)
+- ✅ FIXED (cc7b978) — src/app/(app)/feed/page.tsx:614/573/592 — in a period view (rows from `fetched`), delete and edit change only the store, so the row stays unchanged on screen; delete passes no `known` row, so no ⌘Z outside the store window — pass the row and patch `fetched` (the user-day-details fix, 3c05571).
+- ✅ FIXED (cc7b978) — src/app/(app)/feed/page.tsx:224 — switching a preset to "Recent" mid-fetch cancels it and `setLoading(false)` never runs: "loading…" sticks and the empty state never shows.
+- ✅ FIXED (4206184) — src/app/(app)/feed/page.tsx:88 — CellDetails ignores a fetch error; its skeleton spins forever. (med)
+- ✅ FIXED (cc7b978) — **src/app/(app)/leads/[leadId]/page.tsx:269 — `run()` catches every error and resolves, so callers' "on success" steps run after a failure and what was typed is lost**: the activity composer clears (`.finally`, :1043), the link-by-hand email form clears and closes (:1449), the new-offer form resets and closes (:1926), `finishStep` refocuses (:358). Have `run` return ok/false and clear only on success.
+- ✅ FIXED (cc7b978) — **src/app/(app)/leads/[leadId]/page.tsx:628/:1989 — the date-typing bug fixed in editable-cell (e56f772)**: next-step due and offer sent dates save 0002 → 0020 → 0202 → 2026 while a year is typed, and each save reloads and re-keys (`d${…}`), remounting the field mid-typing — the same `< 1900` guard, or commit on blur.
+- ✅ FIXED (4206184) — src/app/(app)/leads/page.tsx:1066 — the board's `reload()` after Settings closes doesn't re-read nudge settings, so edited rules don't reach the cards until a full reload. (med)
+- ✅ FIXED (4206184) — src/app/(app)/leads/page.tsx:1408/:1435 — the List view with zero leads shows two empty messages.
 - src/app/(app)/leads/page.tsx:913 vs :395 — the header's "N open · ₪X in play" counts no-stage/unknown-stage leads as open; the Summary tile doesn't — they disagree when "No stage" has cards. (med)
 - src/app/(app)/leads/[leadId]/page.tsx:1609/:1816 — `loadEstimateSources()`/`loadEstimates()` uncaught: a failed read leaves the loading state forever. (med)
 - src/app/(app)/leads/[leadId]/convert/page.tsx:134/:427 — `pickEstimate` uncaught and unguarded against stale responses (two quick switches can build from the older estimate). (med)
 - src/app/(app)/leads/[leadId]/convert/page.tsx:181/:242 — `suggested` can be an ARCHIVED client the select doesn't list: Review shows an empty client and Create throws "Pick the client." (med)
-- src/app/(app)/intake-queue/page.tsx:369/:379 — `clipboard.writeText` unguarded (Safari after an await) — catch + notice / copy fallback. (med)
+- ✅ FIXED (627b870) — src/app/(app)/intake-queue/page.tsx:369/:379 — `clipboard.writeText` unguarded (Safari after an await) — catch + notice / copy fallback. (med)
 - src/app/(app)/leads/[leadId]/page.tsx:1156/:1483 — `<p>` as a direct child of `<ol>`/`<ul>` (invalid HTML). (med)
-- **src/app/auth/confirm/route.ts:10/19/22 — open redirect (security).** `next` goes unchecked into `${origin}${next}`; `next=@evil.com` makes `https://tracker.studionmore.com@evil.com`, which sends the browser to evil.com after a successful sign-in link (an attacker can use a link for their own account). Accept `next` only if it starts with "/" and not "//" or "/\", else "/".
-- **src/app/api/admin/freelancers/route.ts:382 — racing approvals double-count a freelancer's hours.** Approve never checks that `updateLog(..., "pending")` updated a row: a double click or two admins both insert a time entry, the second log update matches 0 rows with no error, and an orphan entry double-counts. `editLog` (:450) already answers 409 on `!written?.length` — do the same (and delete the fresh entry).
-- **src/app/api/leads/inbound/[token]/route.ts:188 — the website-lead email match is a pattern.** `.ilike("email", email)` treats `_` (common in real addresses) and `%` as wildcards, so a submission can match someone else's contact and log on the wrong lead — escape first (candidates' `likeLiteral` exists).
-- **src/app/report/[token]/page.tsx:97 — a published report's as-of date is the UTC date (client-facing money page).** `String(published_at).slice(0, 10)`: published 00:00–02:00/03:00 Israel time reads a day early, so "days in period" is off by one — `studioDate(...)`.
-- src/app/api/intake/[token]/route.ts:359 — the upload check `list(..., { search: basename, limit: 1 })` matches by PREFIX: a claimed path that doesn't exist can be "verified" by another object whose name starts with it, and its size/mime are read from that object — require `object.name === basename`.
+- ✅ FIXED (4e3dbd3) — **src/app/auth/confirm/route.ts:10/19/22 — open redirect (security).** `next` goes unchecked into `${origin}${next}`; `next=@evil.com` makes `https://tracker.studionmore.com@evil.com`, which sends the browser to evil.com after a successful sign-in link (an attacker can use a link for their own account). Accept `next` only if it starts with "/" and not "//" or "/\", else "/".
+- ✅ FIXED (4e3dbd3) — **src/app/api/admin/freelancers/route.ts:382 — racing approvals double-count a freelancer's hours.** Approve never checks that `updateLog(..., "pending")` updated a row: a double click or two admins both insert a time entry, the second log update matches 0 rows with no error, and an orphan entry double-counts. `editLog` (:450) already answers 409 on `!written?.length` — do the same (and delete the fresh entry).
+- ✅ FIXED (4e3dbd3) — **src/app/api/leads/inbound/[token]/route.ts:188 — the website-lead email match is a pattern.** `.ilike("email", email)` treats `_` (common in real addresses) and `%` as wildcards, so a submission can match someone else's contact and log on the wrong lead — escape first (candidates' `likeLiteral` exists).
+- ✅ FIXED (4e3dbd3) — **src/app/report/[token]/page.tsx:97 — a published report's as-of date is the UTC date (client-facing money page).** `String(published_at).slice(0, 10)`: published 00:00–02:00/03:00 Israel time reads a day early, so "days in period" is off by one — `studioDate(...)`.
+- ✅ FIXED (4e3dbd3) — src/app/api/intake/[token]/route.ts:359 — the upload check `list(..., { search: basename, limit: 1 })` matches by PREFIX: a claimed path that doesn't exist can be "verified" by another object whose name starts with it, and its size/mime are read from that object — require `object.name === basename`.
 - src/app/api/client-file/route.ts:97 — the browser PUTs bytes with its own Content-Type and nothing re-checks what storage stored (task-attachments does at commit) — an `x.png` stored as `text/html` would render through `/api/file`. Add a server commit step (lead-file has the same gap, admin-only). (med)
-- src/app/api/intake/seen/route.ts:48, leads/offer-alert/route.ts:41 — read → send → stamp with no claim first: two concurrent clicks mail the client (or approvers) twice — guarded stamp before sending. (med)
-- src/app/api/admin/users/route.ts:45 — a failed profile insert leaves the auth user behind (a retry then says "already registered"); the plan_columns insert error is ignored. (med)
-- src/app/api/log/[token]/route.ts:158, admin/freelancers/route.ts:269 — full-history log and charge reads are unpaged; 0056 sheet history can pass 1000 rows — `fetchAll`. (med)
-- src/app/api/intake/[token]/briefs/route.ts:55 — one non-UUID among the remembered ids fails the whole `.in()` and the chooser comes back empty. (med)
-- src/app/intake/[token]/page.tsx:1306 — the brief submit fetch is uncaught: a network failure leaves "Sending…" stuck for the CLIENT. log/[token]/log-view.tsx:482/:646 — the freelancer's composer and deliverables add, same. (the 90485ac class)
-- src/app/log/[token]/log-view.tsx:351/405/677 — DELETEs never check `r.ok`: a failed delete reloads with the row still there and no message. (med)
-- src/app/log/[token]/log-view.tsx:298/:676 — native `confirm()` on the freelancer's page — `askConfirm` (it mounts its own root, works outside AppShell).
-- src/app/gantt/[token]/public-gantt-view.tsx:233 — public timeline's `today` memoized once (the ea07cbb fix, not applied here). (med)
-- src/app/(app)/settings/page.tsx:317 — "Reset to default" on the UPDATE-receipt editor loads the FIRST receipt's text (`SEEN_EMAIL_DEFAULT` instead of `fallback`); Save would store it as the update email.
-- src/app/(app)/team/[profileId]/page.tsx:133 — age = ms / 365.25 days from a UTC-parsed birth date: on the birthday itself it can show the old age (born 2000-03-01 reads 25 on 2026-03-01) — calendar arithmetic.
-- src/app/(app)/reports/page.tsx:537 — `exportCSV` sorts the memoized `enriched` array IN PLACE, reordering page state — `[...enriched].sort`.
-- src/app/(app)/team/page.tsx:65 — Add user: no try/finally — stuck "Adding…" on a network failure or non-JSON 500.
-- src/app/(app)/team/[profileId]/page.tsx:117 — HR `saveField` updates optimistically and never reverts; the same value can't be re-saved and the error only reaches the console. (med)
-- src/app/(app)/settings/page.tsx:386 — clipboard not awaited: "Link copied ✓" shows even when it failed. (med)
+- ✅ FIXED (4e3dbd3) — src/app/api/intake/seen/route.ts:48, leads/offer-alert/route.ts:41 — read → send → stamp with no claim first: two concurrent clicks mail the client (or approvers) twice — guarded stamp before sending. (med)
+- ✅ FIXED (4206184) — src/app/api/admin/users/route.ts:45 — a failed profile insert leaves the auth user behind (a retry then says "already registered"); the plan_columns insert error is ignored. (med)
+- ✅ FIXED (4206184) — src/app/api/log/[token]/route.ts:158, admin/freelancers/route.ts:269 — full-history log and charge reads are unpaged; 0056 sheet history can pass 1000 rows — `fetchAll`. (med)
+- ✅ FIXED (4206184) — src/app/api/intake/[token]/briefs/route.ts:55 — one non-UUID among the remembered ids fails the whole `.in()` and the chooser comes back empty. (med)
+- ✅ FIXED (627b870) — src/app/intake/[token]/page.tsx:1306 — the brief submit fetch is uncaught: a network failure leaves "Sending…" stuck for the CLIENT. log/[token]/log-view.tsx:482/:646 — the freelancer's composer and deliverables add, same. (the 90485ac class)
+- ✅ FIXED (627b870) — src/app/log/[token]/log-view.tsx:351/405/677 — DELETEs never check `r.ok`: a failed delete reloads with the row still there and no message. (med)
+- ✅ FIXED (41fe64c) — src/app/log/[token]/log-view.tsx:298/:676 — native `confirm()` on the freelancer's page — `askConfirm` (it mounts its own root, works outside AppShell).
+- ✅ FIXED (4206184) — src/app/gantt/[token]/public-gantt-view.tsx:233 — public timeline's `today` memoized once (the ea07cbb fix, not applied here). (med)
+- ✅ FIXED (4206184) — src/app/(app)/settings/page.tsx:317 — "Reset to default" on the UPDATE-receipt editor loads the FIRST receipt's text (`SEEN_EMAIL_DEFAULT` instead of `fallback`); Save would store it as the update email.
+- ✅ FIXED (4206184) — src/app/(app)/team/[profileId]/page.tsx:133 — age = ms / 365.25 days from a UTC-parsed birth date: on the birthday itself it can show the old age (born 2000-03-01 reads 25 on 2026-03-01) — calendar arithmetic.
+- ✅ FIXED (4206184) — src/app/(app)/reports/page.tsx:537 — `exportCSV` sorts the memoized `enriched` array IN PLACE, reordering page state — `[...enriched].sort`.
+- ✅ FIXED (627b870) — src/app/(app)/team/page.tsx:65 — Add user: no try/finally — stuck "Adding…" on a network failure or non-JSON 500.
+- ✅ FIXED (627b870) — src/app/(app)/team/[profileId]/page.tsx:117 — HR `saveField` updates optimistically and never reverts; the same value can't be re-saved and the error only reaches the console. (med)
+- ✅ FIXED (627b870) — src/app/(app)/settings/page.tsx:386 — clipboard not awaited: "Link copied ✓" shows even when it failed. (med)
 - src/app/(app)/settings/page.tsx:900 — CSP "since" compares UTC dates but shows local ones. (med)
-- src/app/(app)/candidates/[candidateId]/page.tsx:1511/:2022 — native `window.confirm` for deleting a candidate and an interview — dead in the desktop pane — `askConfirm`.
-- src/app/(app)/candidates/page.tsx:128 — `ago()` floors 24h blocks (the same as leads; one shared fix).
-- src/app/(app)/client-reports/page.tsx:1310 — `copyLink` awaits the clipboard uncaught: a refusal is unhandled with no feedback — the `publish` pattern (:1295) + fallback.
-- src/app/(app)/candidates/[candidateId]/page.tsx:686/:1006 — `await res.json()` uncaught: a 500 with HTML shows "Unexpected token…". (med)
+- ✅ FIXED (41fe64c) — src/app/(app)/candidates/[candidateId]/page.tsx:1511/:2022 — native `window.confirm` for deleting a candidate and an interview — dead in the desktop pane — `askConfirm`.
+- ✅ FIXED (4206184) — src/app/(app)/candidates/page.tsx:128 — `ago()` floors 24h blocks (the same as leads; one shared fix).
+- ✅ FIXED (627b870) — src/app/(app)/client-reports/page.tsx:1310 — `copyLink` awaits the clipboard uncaught: a refusal is unhandled with no feedback — the `publish` pattern (:1295) + fallback.
+- ✅ FIXED (627b870) — src/app/(app)/candidates/[candidateId]/page.tsx:686/:1006 — `await res.json()` uncaught: a 500 with HTML shows "Unexpected token…". (med)
 - src/app/(app)/candidates/page.tsx:649, [candidateId]/page.tsx:2115/2179 — `.slice(0,10)` on timestamps = UTC day; items made before 02:00/03:00 land on the previous day. (med)
-- src/app/(app)/candidates/page.tsx:407 — switching In play / On hold / Archive shows the previous view's rows until the fetch lands. (med)
+- ✅ FIXED (4206184) — src/app/(app)/candidates/page.tsx:407 — switching In play / On hold / Archive shows the previous view's rows until the fetch lands. (med)
 
 ## Behaviour-changing ideas
 
