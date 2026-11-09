@@ -53,11 +53,14 @@ export const shiftMonth = (p: string, by: number) => {
 export const otherLine = (o: { currency: string; amount: number }[]) => o.map((x) => ` + ${money(x.amount, x.currency)}`).join("");
 
 export async function act(body: Record<string, unknown>): Promise<string | null> {
+  // ⚠️ A network failure is an ERROR STRING too, never a throw: a rejection left
+  // Approve / Save terms / Save stuck busy at every caller (the 90485ac class).
   const r = await fetch("/api/admin/freelancers", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }).catch(() => null);
+  if (!r) return "Couldn't reach the server — try again.";
   if (r.ok) return null;
   const j = await r.json().catch(() => ({}));
   return j.error ?? "Something went wrong";
@@ -90,11 +93,18 @@ export function TermsForm({
   const [flat, setFlat] = useState(initial.rateHigh === initial.rateLow);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ⚠️ The field shows what was TYPED, not `String(Number(...))`: that turned "47."
+  // back into "47" mid-typing (a decimal rate couldn't be typed, only pasted) and
+  // snapped a cleared field to 0. The number saved is computed exactly as before.
+  const [typed, setTyped] = useState<Partial<Record<keyof Omit<Terms, "currency">, string>>>({});
   const num = (k: keyof Omit<Terms, "currency">) => (
     <input
       inputMode="decimal"
-      value={String(t[k])}
-      onChange={(e) => setT({ ...t, [k]: Number(e.target.value.replace(",", ".")) || 0 })}
+      value={typed[k] ?? String(t[k])}
+      onChange={(e) => {
+        setTyped({ ...typed, [k]: e.target.value });
+        setT({ ...t, [k]: Number(e.target.value.replace(",", ".")) || 0 });
+      }}
       className={numCls}
     />
   );

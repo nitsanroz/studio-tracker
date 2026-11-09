@@ -684,7 +684,7 @@ function JoinTeamModal({
           candidateId: candidate.id,
         }),
       });
-      const body = (await res.json()) as { id?: string; warnings?: string[]; error?: string };
+      const body = (await res.json().catch(() => ({}))) as { id?: string; warnings?: string[]; error?: string };
       if (!res.ok || !body.id) throw new Error(body.error ?? "They could not be added.");
       onDone(body.id, body.warnings ?? []);
     } catch (err) {
@@ -1004,7 +1004,7 @@ export default function CandidatePage() {
         body.append("file", file);
         body.append("candidateId", id);
         const res = await fetch("/api/candidate-file", { method: "POST", body });
-        const json = (await res.json()) as { path?: string; url?: string; error?: string };
+        const json = (await res.json().catch(() => ({}))) as { path?: string; url?: string; error?: string };
         if (!res.ok || !json.url || !json.path) {
           throw new Error(json.error ?? "That file could not be stored.");
         }

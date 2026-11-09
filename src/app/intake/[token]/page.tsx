@@ -1303,7 +1303,14 @@ export default function IntakeFormPage({ params }: { params: Promise<{ token: st
       body.set("editKey", editing.key);
     }
 
-    const res = await fetch(`/api/intake/${token}`, { method: "POST", body });
+    // ⚠️ A network failure must hand the form back, not leave the CLIENT on a
+    // dead "Sending…" button with their brief unsent.
+    const res = await fetch(`/api/intake/${token}`, { method: "POST", body }).catch(() => null);
+    if (!res) {
+      setError("We couldn't reach the studio — check your connection and send again. Nothing you typed is lost.");
+      setState("form");
+      return;
+    }
     if (!res.ok) {
       // ⚠️ 413 comes from the PLATFORM, not from the route — the function is
       // never invoked, so there is no `{error}` to read and the old code fell

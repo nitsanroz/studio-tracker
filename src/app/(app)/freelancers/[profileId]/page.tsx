@@ -49,6 +49,7 @@ import {
   type Freelancer,
 } from "../shared";
 import { askConfirm, askText } from "@/components/confirm-dialog";
+import { toast } from "@/lib/toast";
 
 // One freelancer's month, the table he sees on his own page — with every row
 // still waiting for review filed right here: pick the client and task, approve
@@ -568,6 +569,9 @@ function WaitingRow({
           onChange={(e) => {
             setClientId(e.target.value);
             setTaskId("");
+            // The previous client's tasks must not stay pickable while the new list
+            // loads — an approve could file on the wrong client's task.
+            setFetched(null);
           }}
           className={`${select} max-w-56 flex-1`}
           aria-label="Client"
@@ -652,8 +656,9 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
   if (data.charges.length === 0) return null;
   async function run(body: Record<string, unknown>) {
     setBusy(body.id as string);
-    await act(body);
+    const err = await act(body);
     setBusy(null);
+    if (err) toast(err, { tone: "info" }); // a refused approve/turn-down must not look done
     onChanged();
   }
   return (
@@ -843,7 +848,12 @@ function Side({
         <div className="mt-2 flex flex-wrap gap-1.5">
           <button
             onClick={async () => {
-              await navigator.clipboard.writeText(link);
+              try {
+                await navigator.clipboard.writeText(link);
+              } catch {
+                window.prompt("Copy this link:", link);
+                return;
+              }
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}
@@ -863,7 +873,8 @@ function Side({
             onClick={async () => {
               if (!(await askConfirm("Make a new link? The current one stops working.", { action: "Make a new link", danger: true })))
                 return;
-              await act({ action: "regenerate", profileId: f.profileId });
+              const err = await act({ action: "regenerate", profileId: f.profileId });
+              if (err) toast(err, { tone: "info" });
               onChanged();
             }}
             className={btn}
@@ -872,11 +883,12 @@ function Side({
           </button>
           <button
             onClick={async () => {
-              await act({
+              const err = await act({
                 action: "active",
                 profileId: f.profileId,
                 active: !f.active,
               });
+              if (err) toast(err, { tone: "info" });
               onChanged();
             }}
             className={btn}
@@ -933,11 +945,13 @@ function Side({
             <div className="mt-2 flex gap-2">
               <button
                 onClick={async () => {
-                  await act({
+                  const err = await act({
                     action: "clients",
                     profileId: f.profileId,
                     clientIds: [...picked],
                   });
+                  // Keep the editor open on a refusal — closing it looked like a save.
+                  if (err) return void toast(err, { tone: "info" });
                   setEditingClients(false);
                   onChanged();
                 }}
@@ -1074,10 +1088,10 @@ function Details({ profileId }: { profileId: string }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "details", profileId, ...form }),
-    });
-    const j = (await r.json().catch(() => ({}))) as { error?: string; warning?: string };
+    }).catch(() => null);
+    const j = (r ? await r.json().catch(() => ({})) : {}) as { error?: string; warning?: string };
     setBusy(false);
-    if (!r.ok) return setError(j.error ?? "Couldn't save");
+    if (!r?.ok) return setError(j.error ?? "Couldn't save");
     if (j.warning) setError(j.warning);
     setEditing(false);
     setVersion((v) => v + 1);

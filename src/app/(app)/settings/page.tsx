@@ -36,6 +36,7 @@ import {
 } from "@/lib/brief";
 import type { Tag, TaskType } from "@/lib/types";
 import { askConfirm } from "@/components/confirm-dialog";
+import { copyText } from "@/lib/clipboard";
 
 function MyProfile() {
   const { profiles, currentUserId } = useData();
@@ -383,9 +384,8 @@ function IntakeSettings() {
                 {link}
               </code>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(link);
-                  setStatus("Link copied ✓");
+                onClick={async () => {
+                  if (await copyText(link)) setStatus("Link copied ✓");
                 }}
                 className="shrink-0 rounded-xl bg-background px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand-soft"
               >

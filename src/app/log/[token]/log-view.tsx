@@ -287,9 +287,18 @@ export function FreelancerLogView({ token }: { token: string }) {
 }
 
 /** Edit / delete on a row that's still his to change (shown on hover). */
+/** Deletes a row, or throws — a refused or failed delete must not look done. */
+async function removeOrThrow(url: string) {
+  const r = await fetch(url, { method: "DELETE" }).catch(() => null);
+  if (!r?.ok) throw new Error("not deleted");
+}
+
 function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => void; onRemove?: () => Promise<void> }) {
+  // This page is outside the app shell (no toasts), so a failed delete says so here.
+  const [failed, setFailed] = useState(false);
   return (
     <div className="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+      {failed && <span className="text-xs text-danger">Couldn&rsquo;t delete — try again</span>}
       <button onClick={onEdit} className="text-faint hover:text-brand" aria-label={`Edit ${label}`} title="Edit">
         <Pencil size={14} />
       </button>
@@ -297,7 +306,8 @@ function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => 
         <button
           onClick={async () => {
             if (!(await askConfirm(`Delete this ${label}?`, { action: "Delete", danger: true }))) return;
-            await onRemove();
+            setFailed(false);
+            await onRemove().catch(() => setFailed(true));
           }}
           className="text-faint hover:text-danger"
           aria-label={`Delete ${label}`}
@@ -349,7 +359,7 @@ function HoursTable({ data, api, onChanged, onEdit }: { data: Data; api: string;
                     onRemove={
                       l.removable
                         ? async () => {
-                            await fetch(`${api}?id=${encodeURIComponent(l.id)}`, { method: "DELETE" });
+                            await removeOrThrow(`${api}?id=${encodeURIComponent(l.id)}`);
                             onChanged();
                           }
                         : undefined
@@ -403,7 +413,7 @@ function ChargesTable({ data, api, onChanged, onEdit }: { data: Data; api: strin
                     label="charge"
                     onEdit={() => onEdit(c)}
                     onRemove={async () => {
-                      await fetch(`${api}?charge=${encodeURIComponent(c.id)}`, { method: "DELETE" });
+                      await removeOrThrow(`${api}?charge=${encodeURIComponent(c.id)}`);
                       onChanged();
                     }}
                   />
@@ -487,14 +497,15 @@ function Composer({
     }
     setSaving(true);
     const id = log?.id ?? charge?.id;
+    // A network failure is "couldn't save", never a throw — it left Save stuck.
     const r = await fetch(api, {
       method: id ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(id ? { ...body, id, type: kind === "charge" ? "charge" : "hours" } : body),
-    });
-    const j = await r.json().catch(() => ({}));
+    }).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : {};
     setSaving(false);
-    if (!r.ok) return setError(j.error ?? "Couldn't save — try again.");
+    if (!r?.ok) return setError(j.error ?? "Couldn't save — try again.");
     setTask("");
     setHours("");
     setText("");
@@ -750,10 +761,10 @@ function Deliverables({ data, api, onChanged }: { data: Data; api: string; onCha
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "link", title, url }),
-    });
-    const j = await r.json().catch(() => ({}));
+    }).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : {};
     setSaving(false);
-    if (!r.ok) return setError(j.error ?? "Couldn't save — try again.");
+    if (!r?.ok) return setError(j.error ?? "Couldn't save — try again.");
     setTitle("");
     setUrl("");
     onChanged();
@@ -777,7 +788,12 @@ function Deliverables({ data, api, onChanged }: { data: Data; api: string; onCha
             <button
               onClick={async () => {
                 if (!(await askConfirm("Remove this link?", { action: "Remove", danger: true }))) return;
-                await fetch(`${api}?link=${encodeURIComponent(d.id)}`, { method: "DELETE" });
+                setError(null);
+                try {
+                  await removeOrThrow(`${api}?link=${encodeURIComponent(d.id)}`);
+                } catch {
+                  return setError("Couldn't remove that link — try again.");
+                }
                 onChanged();
               }}
               className="shrink-0 text-faint opacity-0 hover:text-danger group-hover:opacity-100"

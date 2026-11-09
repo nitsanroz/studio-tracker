@@ -19,6 +19,7 @@ import { ClientChip, Tabs, TagBadge } from "@/components/ui";
 import { PictureEditBadge } from "@/components/picture-editor";
 import { HBar, MultiLineChart } from "@/components/charts";
 import type { Role } from "@/lib/types";
+import { toast } from "@/lib/toast";
 
 function NotesField({ profileId }: { profileId: string }) {
   const supabase = useMemo(() => createClient(), []);
@@ -113,13 +114,19 @@ function HrFields({ profileId }: { profileId: string }) {
 
   async function saveField(key: HrKey, raw: string) {
     const value = raw === "" ? null : raw;
-    if ((row?.[key] ?? null) === value) return;
+    const before = row?.[key] ?? null;
+    if (before === value) return;
     setRow((r) => ({ ...r, [key]: value }));
     const { error } = await supabase
       .from("member_hr")
       .upsert({ profile_id: profileId, [key]: value, updated_at: new Date().toISOString() });
-    if (error) console.error("hr save failed", error.message);
-    else {
+    if (error) {
+      // ⚠️ Put the stored value back and SAY so: the optimistic value stayed and
+      // the same entry could then never be re-saved (it equalled `row`).
+      console.error("hr save failed", error.message);
+      setRow((r) => ({ ...r, [key]: before }));
+      toast("That detail didn't save — try again.", { tone: "info" });
+    } else {
       setSavedAt(key);
       setTimeout(() => setSavedAt(null), 1500);
     }

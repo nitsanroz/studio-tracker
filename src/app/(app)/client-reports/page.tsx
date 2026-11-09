@@ -44,6 +44,7 @@ import {
 import { buildReportSnapshot } from "@/lib/report-snapshot";
 import { paidMonthsFor, periodPaidInFinance, type MonthPaidRow } from "@/lib/finance-paid";
 import type { BillingPeriod, Client, ReportLink, ReportSnapshot } from "@/lib/types";
+import { copyText } from "@/lib/clipboard";
 
 /** "Show all" hands the table an empty fold list; a module constant so the identity
     is stable across renders rather than a fresh [] each time. */
@@ -1307,8 +1308,7 @@ function PublishWorkspace() {
     if (!selectedClient) return;
     const link = await ensureLink(selectedClient.id);
     if (!link) return;
-    await navigator.clipboard.writeText(`${window.location.origin}/report/${link.token}`);
-    showToast("Link to report copied to clipboard");
+    if (await copyText(`${window.location.origin}/report/${link.token}`)) showToast("Link to report copied to clipboard");
   }
 
   const currentLink = selectedClient ? links.get(selectedClient.id) : undefined;

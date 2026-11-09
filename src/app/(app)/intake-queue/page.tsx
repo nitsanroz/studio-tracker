@@ -13,6 +13,7 @@ import { kindById } from "@/lib/intake-fields";
 import { diffBriefs, needsReview } from "@/lib/brief-diff";
 import { ClientChip } from "@/components/ui";
 import { askConfirm } from "@/components/confirm-dialog";
+import { copyText } from "@/lib/clipboard";
 
 /**
  * The pending card's form controls — five of them, all the same shape.
@@ -368,8 +369,7 @@ function CopyFormLinkButton() {
   async function copy() {
     setError(null);
     if (url) {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
+      if (await copyText(url)) setCopied(true);
       return;
     }
     const made = await ensureStudioIntakeLink();
@@ -378,8 +378,7 @@ function CopyFormLinkButton() {
       return;
     }
     setUrl(made);
-    await navigator.clipboard.writeText(made);
-    setCopied(true);
+    if (await copyText(made)) setCopied(true);
   }
 
   return (

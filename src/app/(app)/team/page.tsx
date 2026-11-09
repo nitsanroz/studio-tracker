@@ -62,15 +62,17 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setBusy(true);
     setStatus(null);
+    // Neither the network nor the reply is trusted: a failure or a non-JSON 500
+    // used to leave the button stuck on "Adding…".
     const res = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
-    });
-    const body = await res.json();
+    }).catch(() => null);
+    const body = (res ? await res.json().catch(() => ({})) : {}) as { id?: string; error?: string };
     setBusy(false);
-    if (!res.ok) {
-      setStatus(body.error ?? "Failed");
+    if (!res?.ok) {
+      setStatus(body.error ?? (res ? "Failed" : "Couldn't reach the server — try again."));
       return;
     }
     // straight to their member page to add pictures and finish setting them up
