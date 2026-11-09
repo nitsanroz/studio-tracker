@@ -3,12 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
 import { approvedSnap, snapOf, syncEntry, updateLog, type LogSnap } from "@/lib/freelancer-sync";
-import { createClient } from "@/lib/supabase/server";
 import { monthBill } from "@/lib/freelance-rate";
 import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 import { cleanDetails } from "@/lib/freelancer-details";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 // Admin-only: freelancers' logs waiting for review, and each freelancer's
 // private link, clients and terms (0054). The review page (/freelancers)
@@ -52,15 +52,9 @@ function readTerms(body: Record<string, unknown>) {
 }
 
 async function adminOnly() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return { error: NextResponse.json({ error: "Admins only" }, { status: 403 }) };
-  const sb = service();
-  return { sb, userId: user.id };
+  const a = await requireAdmin(); // the shared check (lib/api-auth.ts)
+  if ("response" in a) return { error: a.response };
+  return { sb: service(), userId: a.userId };
 }
 
 type LogRow = LogSnap & { id: string; profile_id: string; status: string; time_entry_id: string | null; approved?: LogSnap | null };

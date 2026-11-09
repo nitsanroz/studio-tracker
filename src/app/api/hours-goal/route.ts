@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { studioGoal } from "@/lib/hours-goal-server";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 /**
  * Admin-only: the studio's pace this month against the billable hours a
@@ -17,13 +17,8 @@ import { service } from "@/lib/supabase/service";
  * figure only refreshes when someone opens the finance app.
  */
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
 
   const sb = service();
 

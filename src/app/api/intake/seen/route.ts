@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateWithOptional } from "@/lib/db";
 import { needsReview } from "@/lib/brief-diff";
-import { createClient } from "@/lib/supabase/server";
 import { renderSeenEmail, type SeenEmailTemplate } from "@/lib/brief";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 /**
  * "Someone at the studio has read your brief" — the receipt an admin sends a
@@ -27,14 +27,9 @@ import { service } from "@/lib/supabase/service";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
+  const { user } = auth;
 
   const { requestId } = (await req.json().catch(() => ({}))) as { requestId?: string };
   if (!requestId) return NextResponse.json({ error: "Missing requestId" }, { status: 400 });

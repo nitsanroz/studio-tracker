@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import {
   estimateCycle,
   egressLevel,
@@ -10,6 +9,7 @@ import {
   type EgressState,
 } from "@/lib/egress";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 /**
  * Admin-only: how much of the org's monthly egress allowance this cycle has used.
@@ -65,13 +65,8 @@ async function pollProject(ref: string, token: string): Promise<DaySample[]> {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
 
   // Service role: `app_settings` is admin-write by RLS, and the poll must work the
   // same for any admin regardless of their own grants.

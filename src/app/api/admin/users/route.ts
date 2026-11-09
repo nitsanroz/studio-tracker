@@ -1,22 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 // Admin-only: create a team member (auth user + profile).
 // The caller's session is verified server-side; the service key never leaves the server.
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") {
-    return NextResponse.json({ error: "Admins only" }, { status: 403 });
-  }
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
+  const { user } = auth;
 
   const { email, name, role, startDate, candidateId, position } = await request.json();
   if (!email || !name || !["admin", "designer"].includes(role)) {

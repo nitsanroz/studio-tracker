@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { appOrigin } from "@/lib/app-origin";
 import {
   EMPTY_STORE,
@@ -9,6 +8,7 @@ import {
   type ReportStore,
 } from "@/lib/csp-reports";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 /**
  * Where the browser posts Content-Security-Policy violations.
@@ -239,13 +239,8 @@ export async function POST(req: NextRequest) {
 
 /** Admin-only: what has been refused, most recent first. */
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
 
   const { data: row } = await service()
     .from("app_settings")

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 // Admin-only: { [profileId]: email } for every member.
 //
@@ -12,14 +12,8 @@ import { service } from "@/lib/supabase/service";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
 
   const admin = service();
 

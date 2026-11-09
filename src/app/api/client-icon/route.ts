@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { classifyImage } from "@/lib/uploads";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin as adminSession } from "@/lib/api-auth";
 
 /**
  * Upload a client's mark (migration 0023).
@@ -19,20 +19,8 @@ import { service } from "@/lib/supabase/service";
  * can't be served back as active content from the studio's own domain.
  */
 async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profile?.role !== "admin") {
-    return { error: NextResponse.json({ error: "Admins only" }, { status: 403 }) };
-  }
-  return { user };
+  const a = await adminSession(); // the shared check (lib/api-auth.ts)
+  return "response" in a ? { error: a.response } : { user: a.user };
 }
 
 export async function POST(request: NextRequest) {

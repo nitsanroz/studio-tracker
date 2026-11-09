@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { appOrigin } from "@/lib/app-origin";
 import { service } from "@/lib/supabase/service";
+import { requireAdmin } from "@/lib/api-auth";
 
 // Admin-only: send a member their "set your password" link.
 //
@@ -18,14 +18,8 @@ import { service } from "@/lib/supabase/service";
 // carries no browser state and works on any device.
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
+  const auth = await requireAdmin();
+  if ("response" in auth) return auth.response;
 
   const { profileId, email: emailArg } = await request.json();
   if (!profileId && !emailArg) {

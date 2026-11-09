@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin as adminSession } from "@/lib/api-auth";
 
 // Admin CRUD for custom occasions, plus the group on/off switches.
 //
@@ -13,15 +13,10 @@ export const dynamic = "force-dynamic";
 const GROUPS = ["birthday", "anniversary", "holiday", "studioday", "custom"] as const;
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (me?.role !== "admin")
-    return { error: NextResponse.json({ error: "Admins only" }, { status: 403 }) };
-  return { supabase, userId: user.id };
+  // The shared check; this route keeps the caller's SESSION client (its writes go
+  // through RLS, not the service key).
+  const a = await adminSession();
+  return "response" in a ? { error: a.response } : { supabase: a.supabase, userId: a.userId };
 }
 
 export async function GET() {
