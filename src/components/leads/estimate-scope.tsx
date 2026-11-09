@@ -50,7 +50,7 @@ import {
 } from "@/lib/leads/estimate";
 import { NumField, QUIET, TextField } from "./estimate-fields";
 
-const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
+const CARD = "rounded-2xl bg-surface p-5 shadow-card";
 const COLS = "grid grid-cols-[16px_1fr_110px_150px_150px_24px] gap-2";
 
 type Drag = { kind: "line" | "group" | "phase"; id: string };
@@ -377,7 +377,7 @@ export function EstimateScope({
                 value={p.name}
                 disabled={locked}
                 onCommit={(v) => void run(() => updatePhase(e.id, p.id, { name: v ?? "Phase" }))}
-                className="min-w-0 flex-1 text-[15px] font-semibold"
+                className="min-w-0 flex-1 text-[20px] font-medium leading-7 text-brand"
               />
               {/* Shown beside the section title on the client page (0053). */}
               {(!locked || p.timeframe) && (

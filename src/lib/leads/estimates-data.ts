@@ -899,60 +899,73 @@ export async function movePhase(estimateId: string, phaseId: string, beforeId: s
 export async function submitForReview(estimateId: string, actorId: string | null) {
   const d = await loadEstimate(estimateId);
   if (!d) throw new LeadWriteError("send the estimate", "it no longer exists");
-  const e = d.estimate;
-  if (e.status === "approved") throw new LeadWriteError("send the estimate", LOCKED);
-  const t = totals(d.lines, e.rate, e.vatPercent, e.discountPercent);
-  const summary = `Estimate v${e.version}: ${fmtHours(t.totalHours)} · ${fmtNis(t.net)} + VAT`;
+  if (d.estimate.status === "approved") throw new LeadWriteError("send the estimate", LOCKED);
+  const offerId = await ensureOffer(d, actorId, "in_review");
   const sb = createClient();
-  let offerId = e.offerId;
-  if (offerId) {
-    const { error } = await sb
-      .from("lead_offers")
-      .update({ amount: Math.round(t.net.max), currency: "ILS", scope_summary: summary, status: "in_review" })
-      .eq("id", offerId);
-    fail("update the offer", error);
-  } else {
-    const { data: last } = await sb
-      .from("lead_offers")
-      .select("version")
-      .eq("lead_id", e.leadId)
-      .order("version", { ascending: false })
-      .limit(1);
-    const version = (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
-    const { data, error } = await sb
-      .from("lead_offers")
-      .insert({
-        lead_id: e.leadId,
-        version,
-        amount: Math.round(t.net.max),
-        currency: "ILS",
-        scope_summary: summary,
-        status: "in_review",
-        created_by: actorId,
-      })
-      .select("id")
-      .single();
-    fail("create the offer", error);
-    offerId = (data as { id: string }).id;
-  }
   const { error } = await sb.from("lead_estimates").update({ status: "in_review", offer_id: offerId }).eq("id", estimateId);
   fail("send the estimate", error);
   await alertOfferReview(offerId);
 }
 
-/** Approve: locks the version and marks its offer approved by whoever pressed it. */
+/**
+ * The estimate's offer row on the lead (the pipeline's figure), created on
+ * first need and refreshed after. Review is optional since v1.96.0, so both
+ * "Ask for a review" and "Approve" straight from a draft go through here.
+ */
+async function ensureOffer(d: EstimateDetail, actorId: string | null, status: "in_review" | "draft"): Promise<string> {
+  const e = d.estimate;
+  const t = totals(d.lines, e.rate, e.vatPercent, e.discountPercent);
+  const summary = `Estimate v${e.version}: ${fmtHours(t.totalHours)} · ${fmtNis(t.net)} + VAT`;
+  const sb = createClient();
+  if (e.offerId) {
+    const { error } = await sb
+      .from("lead_offers")
+      .update({ amount: Math.round(t.net.max), currency: "ILS", scope_summary: summary, status })
+      .eq("id", e.offerId);
+    fail("update the offer", error);
+    return e.offerId;
+  }
+  const { data: last } = await sb
+    .from("lead_offers")
+    .select("version")
+    .eq("lead_id", e.leadId)
+    .order("version", { ascending: false })
+    .limit(1);
+  const version = (((last ?? [])[0] as { version?: number } | undefined)?.version ?? 0) + 1;
+  const { data, error } = await sb
+    .from("lead_offers")
+    .insert({
+      lead_id: e.leadId,
+      version,
+      amount: Math.round(t.net.max),
+      currency: "ILS",
+      scope_summary: summary,
+      status,
+      created_by: actorId,
+    })
+    .select("id")
+    .single();
+  fail("create the offer", error);
+  return (data as { id: string }).id;
+}
+
+/**
+ * Approve: locks the version and marks its offer approved by whoever pressed it.
+ * Works straight from a draft (v1.96.0, Nitsan: review is "an option to share
+ * with a colleague, not a must"), in which case the offer row is made here.
+ */
 export async function approveEstimate(estimateId: string, actorId: string | null) {
+  const d = await loadEstimate(estimateId);
+  if (!d) throw new LeadWriteError("approve the estimate", "it no longer exists");
+  const offerId = d.estimate.offerId ?? (await ensureOffer(d, actorId, "draft"));
   const sb = createClient();
   const now = new Date().toISOString();
-  const { data, error } = await sb
+  const { error } = await sb
     .from("lead_estimates")
-    .update({ status: "approved", approved_by: actorId, approved_at: now })
-    .eq("id", estimateId)
-    .select("offer_id,lead_id")
-    .single();
+    .update({ status: "approved", approved_by: actorId, approved_at: now, offer_id: offerId })
+    .eq("id", estimateId);
   fail("approve the estimate", error);
-  const offerId = (data as { offer_id: string | null }).offer_id;
-  if (offerId) await sb.from("lead_offers").update({ approved_by: actorId, approved_at: now }).eq("id", offerId);
+  await sb.from("lead_offers").update({ approved_by: actorId, approved_at: now }).eq("id", offerId);
 }
 
 /** Back to draft from review (not from approved — that needs a new version). */
@@ -1037,33 +1050,15 @@ export interface PublishedEstimate {
 }
 
 /**
- * Publish to the client: freezes what they will see into `published_snapshot`
- * and returns the link. Approved versions only — no price goes out without
- * review (US17).
- *
- * ⚠️ A SNAPSHOT, LIKE THE CLIENT REPORTS. Editing the estimate afterwards (in a
- * new version) never changes the page a client already has; publishing the new
- * version gives it its own link.
- *
- * ⚠️⚠️ EVERY PUBLISH MINTS A NEW LINK (0053, Nitsan 2026-10-12: "every new offer
- * should be a unique url"). Re-publishing used to reuse `share_token` and
- * overwrite the snapshot, so a link already in a client's inbox silently turned
- * into the next offer. Each publish now inserts its own `estimate_publications`
- * row and the earlier links keep showing what they were sent with;
- * `lead_estimates.share_token`/`published_snapshot` mirror the LATEST one, which
- * is what the app shows and opens. Before 0053 is applied the insert reports a
- * missing table and this falls back to the old reuse-the-link behaviour, so
- * publishing never breaks over a migration that has not run.
+ * What a client is shown, frozen from the estimate as it stands. Publish stores
+ * it; Preview (v1.96.0) renders it without storing anything, so the studio sees
+ * exactly the client's page before a link exists.
  */
-export async function publishEstimate(estimateId: string, company: string, publishedBy?: string | null): Promise<string> {
-  const d = await loadEstimate(estimateId);
-  if (!d) throw new LeadWriteError("publish", "the estimate no longer exists");
+export function buildSnapshot(d: EstimateDetail, company: string, now: string): PublishedEstimate {
   const e = d.estimate;
-  if (e.status !== "approved") throw new LeadWriteError("publish", "approve the estimate first.");
   const t = totals(d.lines, e.rate, e.vatPercent, e.discountPercent);
   const winners = groupWinners(d.lines);
-  const now = new Date().toISOString();
-  const snap: PublishedEstimate = {
+  return {
     company,
     version: e.version,
     rate: e.rate,
@@ -1111,6 +1106,34 @@ export async function publishEstimate(estimateId: string, company: string, publi
     net: t.net,
     publishedAt: now,
   };
+}
+
+/**
+ * Publish to the client: freezes what they will see into `published_snapshot`
+ * and returns the link. Approved versions only — no price goes out without
+ * review (US17).
+ *
+ * ⚠️ A SNAPSHOT, LIKE THE CLIENT REPORTS. Editing the estimate afterwards (in a
+ * new version) never changes the page a client already has; publishing the new
+ * version gives it its own link.
+ *
+ * ⚠️⚠️ EVERY PUBLISH MINTS A NEW LINK (0053, Nitsan 2026-10-12: "every new offer
+ * should be a unique url"). Re-publishing used to reuse `share_token` and
+ * overwrite the snapshot, so a link already in a client's inbox silently turned
+ * into the next offer. Each publish now inserts its own `estimate_publications`
+ * row and the earlier links keep showing what they were sent with;
+ * `lead_estimates.share_token`/`published_snapshot` mirror the LATEST one, which
+ * is what the app shows and opens. Before 0053 is applied the insert reports a
+ * missing table and this falls back to the old reuse-the-link behaviour, so
+ * publishing never breaks over a migration that has not run.
+ */
+export async function publishEstimate(estimateId: string, company: string, publishedBy?: string | null): Promise<string> {
+  const d = await loadEstimate(estimateId);
+  if (!d) throw new LeadWriteError("publish", "the estimate no longer exists");
+  const e = d.estimate;
+  if (e.status !== "approved") throw new LeadWriteError("publish", "approve the estimate first.");
+  const now = new Date().toISOString();
+  const snap = buildSnapshot(d, company, now);
   const sb = createClient();
   const fresh = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const pub = await sb

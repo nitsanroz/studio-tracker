@@ -18,7 +18,7 @@ import {
   AlarmClock,
   ArrowRightLeft,
   Briefcase,
-  Calculator,
+  X,
   CalendarClock,
   Check,
   CheckCircle2,
@@ -31,6 +31,7 @@ import {
   History,
   Info,
   Lightbulb,
+  MoreHorizontal,
   Mail,
   Phone,
   Plus,
@@ -108,7 +109,6 @@ import {
   copyEstimate,
   createEstimate,
   createEstimateFromImport,
-  loadBoardEstimateHours,
   loadEstimateSources,
   loadEstimates,
   type EstimateSource,
@@ -120,11 +120,11 @@ import { AttentionTip } from "@/components/leads/attention-tip";
 import { EstimateImportPanel } from "@/components/leads/estimate-import-panel";
 import type { ImportedEstimate } from "@/lib/leads/estimate-import";
 import { DEFAULT_NUDGES, daysSince, nudgesFor, type NudgeKind, type NudgeSettings } from "@/lib/leads/nudges";
-import { fmtHours, fmtNis, type Range } from "@/lib/leads/estimate";
+import { fmtHours, fmtNis } from "@/lib/leads/estimate";
 import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
 import { StageTrack } from "@/components/stage-track";
 
-type Tab = "emails" | "offers" | "estimates" | "activity";
+type Tab = "emails" | "offers" | "activity";
 
 /** A field that looks like text until you reach for it. */
 const QUIET =
@@ -219,19 +219,8 @@ export default function LeadPage() {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("activity");
-  // The current estimate's hours, for the "Estimate" fact tile — the same
-  // reader the board card uses, asked for this one lead.
-  const [estHours, setEstHours] = useState<Range | null>(null);
   const [editingValue, setEditingValue] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    loadBoardEstimateHours([id])
-      .then((m) => alive && setEstHours(m.get(id) ?? null))
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, [id, detail]);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [pending, setPending] = useState<{ from: LeadStage | null; to: LeadStage; suggestionId?: string } | null>(
     null,
   );
@@ -342,7 +331,6 @@ export default function LeadPage() {
   const lostReason = l.lostReasonId ? vocab.lostReasons.find((r) => r.id === l.lostReasonId) : null;
   const valueIls = toIls(l.estValue, l.currency, quote);
   const daysLate = overdue && l.nextStepDue ? daysSince(l.nextStepDue, now) : 0;
-  const latest = events.reduce<LeadEvent | null>((a, e) => (!a || e.at > a.at ? e : a), null);
   /** "Done — set the next": the finished step goes on the record as a note, the
    *  field empties, and the cursor goes there for the next one.
    *  ⚠️ It records what the FIELD says, not the saved `l.nextStep`: someone who
@@ -411,8 +399,8 @@ export default function LeadPage() {
       )}
 
       {/* ── header: the company, what it is, and the one destructive action ── */}
-      <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="min-w-0 flex-[1_1_18rem]">
           <input
             ref={nameRef}
             key={l.company}
@@ -426,7 +414,7 @@ export default function LeadPage() {
               if (e.key === "Enter") e.currentTarget.blur();
             }}
             aria-label="Company"
-            className={`page-title bidi-auto -ml-1 w-full max-w-3xl ${QUIET}`}
+            className={`page-title bidi-auto -ml-1 w-full ${QUIET}`}
           />
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-muted">
             {l.source && (
@@ -452,77 +440,166 @@ export default function LeadPage() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 pt-2">
-          {!l.deletedAt && (
+        {open && (
+        // ⚠️ A brand band, not a card (v1.96.0, Nitsan: "what's next should look
+          // different than the content parts of the page") — it's the one thing to
+          // DO here, so it doesn't share the white cards' look. Late or missing
+          // shows as a chip on the band; the band itself stays brand. It sits in the
+          // header between the name and Delete (Nitsan, same day).
+          <section className="flex min-w-0 flex-[2_1_34rem] flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-brand px-4 py-3 text-white shadow-card">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
+              {l.nextStep ? <CalendarClock size={20} strokeWidth={1.75} /> : <CircleDashed size={20} strokeWidth={1.75} />}
+            </span>
+            <div className="min-w-0 flex-1 basis-64">
+              <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-white/75">
+                What&apos;s next
+                {l.nextStep && overdue && (
+                  <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-danger">
+                    {daysLate === 1 ? "1 day" : `${daysLate} days`} late
+                  </span>
+                )}
+                {!l.nextStep && <span className="rounded-full bg-white px-2 py-0.5 text-[12px] text-[#855800]">Not set</span>}
+                <label className="ml-1 flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-0.5">
+                  <span className="font-normal">Due</span>
+                  <input
+                    type="date"
+                    key={`d${l.nextStepDue}`}
+                    defaultValue={l.nextStepDue ?? ""}
+                    onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
+                    className="bg-transparent text-[13px] font-medium text-white outline-none [color-scheme:dark]"
+                    aria-label="Next step due"
+                  />
+                </label>
+              </div>
+              <textarea
+                id="lead-next-step"
+                key={`n${l.nextStep}`}
+                defaultValue={l.nextStep ?? ""}
+                placeholder="Every open lead needs one — what happens next?"
+                rows={1}
+                onBlur={(e) => {
+                  const v = e.target.value.trim() || null;
+                  if (v !== l.nextStep) void run(() => updateLead(l.id, { nextStep: v }));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+                className="bidi-auto -mx-1.5 mt-1 w-[calc(100%+0.75rem)] resize-none rounded-lg bg-transparent px-1.5 text-[17px] font-medium leading-snug text-white outline-none [field-sizing:content] placeholder:font-normal placeholder:text-white/60 hover:bg-white/10 focus:bg-white/10"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => {
+                  setTab("activity");
+                  setTimeout(() => {
+                    const el = document.getElementById("lead-composer");
+                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el?.focus();
+                  }, 50);
+                }}
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-white px-4 text-sm font-medium text-brand hover:bg-white/90"
+              >
+                <Phone size={15} strokeWidth={1.75} /> Log a call
+              </button>
+              {l.nextStep && (
+                <button
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={finishStep}
+                  title="Records the step as done in the activity, then clears it for the next"
+                  className="flex h-10 items-center gap-1.5 rounded-lg bg-white/15 px-4 text-sm font-medium text-white hover:bg-white/25"
+                >
+                  <Check size={15} strokeWidth={2} /> Done — set the next
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Delete sits behind the dots (v1.96.0, Nitsan): it is rare, and a
+            labelled button took header room from What's next. */}
+        {!l.deletedAt && (
+          <div className="relative shrink-0">
             <button
-              onClick={async () => {
-                // Confirmed (Nitsan asked to keep it) even though the board
-                // offers Undo right after.
-                if (
-                  !(await askConfirm(`Delete ${l.company || "this lead"}? You can undo it from the Leads page for a few minutes.`, {
-                    action: "Delete",
-                    danger: true,
-                  }))
-                )
-                  return;
-                try {
-                  await deleteLead(l.id, currentUserId);
-                  router.push(`/leads?deleted=${l.id}`);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Could not delete the lead.");
-                }
-              }}
-              aria-label="Delete the lead"
-              title="Delete"
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[13.5px] text-muted hover:border-danger/40 hover:text-danger"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="More actions"
+              aria-expanded={menuOpen}
+              className="flex size-10 items-center justify-center rounded-xl bg-surface text-muted shadow-card hover:text-foreground"
             >
-              <Trash2 size={15} strokeWidth={1.75} /> Delete
+              <MoreHorizontal size={16} strokeWidth={1.75} />
             </button>
-          )}
-        </div>
+            {menuOpen && (
+              <>
+                <button aria-hidden tabIndex={-1} onClick={() => setMenuOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+                <div className="absolute right-0 z-50 mt-1 w-48 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-card">
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      // Confirmed (Nitsan asked to keep it) even though the board
+                      // offers Undo right after.
+                      if (
+                        !(await askConfirm(`Delete ${l.company || "this lead"}? You can undo it from the Leads page for a few minutes.`, {
+                          action: "Delete",
+                          danger: true,
+                        }))
+                      )
+                        return;
+                      try {
+                        await deleteLead(l.id, currentUserId);
+                        router.push(`/leads?deleted=${l.id}`);
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Could not delete the lead.");
+                      }
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[14px] text-danger hover:bg-danger/5"
+                  >
+                    <Trash2 size={15} strokeWidth={1.75} /> Delete lead
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── where it stands: the open stages as one track, then the two ways out ──
           ⚠️ Won and Lost still ask first (a client to convert, a reason), through
           `changeStage` — the same path the old stage picker took. */}
       <div className="flex flex-wrap items-stretch gap-2">
-        {/* Neutral track (2026-10-23, Nitsan's pick): one white bar, the current
-            stage a solid brand tile, stages behind it a grey tick, and each
-            stage's own colour only as a dot — a row of seven tinted backgrounds
-            was the loudest thing on the page. */}
+        {/* Steps (v1.96.0): the open stages as numbered steps on one line, the
+            current one carries its stage icon. Won and Lost are the two ways
+            out, stacked at the end — outcomes, not further steps. */}
         <StageTrack
           stages={openStages}
           current={stage && open ? openStages.findIndex((x) => x.id === stage.id) : open ? -1 : openStages.length}
           onPick={changeStage}
-          mark={(s, place) =>
-            place === "at" ? (
-              <StageIconWhite stage={s} />
-            ) : place === "ahead" ? (
-              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: s.color || NEUTRAL }} aria-hidden />
-            ) : undefined
-          }
+          mark={(s, place) => (place === "at" ? <StageIconWhite stage={s} /> : undefined)}
         />
-        {closedStages.map((s) => {
-          const at = stage?.id === s.id;
-          const color = s.color || NEUTRAL;
-          return (
-            <button
-              key={s.id}
-              onClick={() => changeStage(s)}
-              aria-current={at ? "step" : undefined}
-              title={at ? `${s.name} — current stage` : `Mark as ${s.name.toLowerCase()}`}
-              className={`flex h-12 items-center gap-2 rounded-xl px-4 text-sm font-medium shadow-card transition-colors ${
-                at ? "text-white" : "bg-surface text-foreground hover:bg-background"
-              }`}
-              // Won and Lost keep their colour when they ARE the stage: that is
-              // the outcome, and green/grey says it at a glance.
-              style={at ? { backgroundColor: color } : undefined}
-            >
-              {at ? <StageIconWhite stage={s} /> : <StageIcon stage={s} size={15} />}
-              <span className="bidi-auto">{s.name}</span>
-            </button>
-          );
-        })}
+        <div className="flex min-w-[8.5rem] flex-col gap-2">
+          {closedStages.map((s) => {
+            const at = stage?.id === s.id;
+            const color = s.color || NEUTRAL;
+            return (
+              <button
+                key={s.id}
+                onClick={() => changeStage(s)}
+                aria-current={at ? "step" : undefined}
+                title={at ? `${s.name} — current stage` : `Mark as ${s.name.toLowerCase()}`}
+                className={`flex flex-1 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium shadow-card transition-colors ${
+                  at ? "text-white" : "bg-surface text-foreground hover:bg-background"
+                }`}
+                // Won and Lost keep their colour when they ARE the stage: that is
+                // the outcome, and green/grey says it at a glance.
+                style={at ? { backgroundColor: color } : undefined}
+              >
+                {at ? <StageIconWhite stage={s} /> : <StageIcon stage={s} size={15} />}
+                <span className="bidi-auto">{s.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── suggestions (Phase 3, rule-based) ── */}
@@ -599,159 +676,6 @@ export default function LeadPage() {
           leads the page, because "what do I do about this lead?" is the reason
           to open it. Editable in place, with the two things you do from here:
           log the call, or close the step and set the next. Open leads only. */}
-      {open && (
-        <section className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-surface p-5 shadow-card">
-          <span
-            className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${
-              !l.nextStep ? "bg-warning/15 text-[#855800]" : overdue ? "bg-danger/10 text-danger" : "bg-brand-soft text-brand"
-            }`}
-          >
-            {l.nextStep ? <CalendarClock size={20} strokeWidth={1.75} /> : <CircleDashed size={20} strokeWidth={1.75} />}
-          </span>
-          <div className="min-w-0 flex-1 basis-80">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
-              What&apos;s next
-              {l.nextStep && overdue && (
-                <span className="rounded-full bg-danger/10 px-2 py-0.5 normal-case tracking-normal text-danger">
-                  {daysLate === 1 ? "1 day" : `${daysLate} days`} late
-                </span>
-              )}
-              {!l.nextStep && (
-                <span className="rounded-full bg-warning/15 px-2 py-0.5 normal-case tracking-normal text-[#855800]">Not set</span>
-              )}
-              <label className="ml-1 flex items-center gap-1.5 normal-case tracking-normal">
-                <span className="font-normal">Due</span>
-                <input
-                  type="date"
-                  key={`d${l.nextStepDue}`}
-                  defaultValue={l.nextStepDue ?? ""}
-                  onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
-                  className={`${QUIET} text-[13px] font-medium ${overdue ? "text-danger" : "text-foreground"}`}
-                  aria-label="Next step due"
-                />
-              </label>
-            </div>
-            <textarea
-              id="lead-next-step"
-              key={`n${l.nextStep}`}
-              defaultValue={l.nextStep ?? ""}
-              placeholder="Every open lead needs one — what happens next?"
-              rows={1}
-              onBlur={(e) => {
-                const v = e.target.value.trim() || null;
-                if (v !== l.nextStep) void run(() => updateLead(l.id, { nextStep: v }));
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  e.currentTarget.blur();
-                }
-              }}
-              className={`bidi-auto -mx-1 mt-1 w-[calc(100%+0.5rem)] resize-none text-xl font-medium leading-snug [field-sizing:content] ${QUIET} placeholder:font-normal placeholder:text-[#855800]`}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => {
-                setTab("activity");
-                setTimeout(() => {
-                  const el = document.getElementById("lead-composer");
-                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  el?.focus();
-                }, 50);
-              }}
-              className="flex h-10 items-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark"
-            >
-              <Phone size={15} strokeWidth={1.75} /> Log a call
-            </button>
-            {l.nextStep && (
-              <button
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={finishStep}
-                title="Records the step as done in the activity, then clears it for the next"
-                className="flex h-10 items-center gap-1.5 rounded-lg bg-background px-4 text-sm font-medium hover:bg-track"
-              >
-                <Check size={15} strokeWidth={2} /> Done — set the next
-              </button>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ── the deal's facts, at a glance (Page B) ── */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <div className="rounded-2xl bg-surface p-5 shadow-card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Estimated value</div>
-          <div className="mt-1 flex items-center gap-1">
-            {/* Read as money (₪242,900), edited as a number: a number field
-                cannot show the thousands separator, so it appears on click. */}
-            {editingValue || l.estValue === null ? (
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                autoFocus={editingValue}
-                key={`v${l.estValue}`}
-                defaultValue={l.estValue ?? ""}
-                placeholder="Add a value"
-                aria-label="Estimated value"
-                onBlur={(e) => {
-                  setEditingValue(false);
-                  const v = e.target.value === "" ? null : Number(e.target.value);
-                  if (v !== l.estValue && (v === null || Number.isFinite(v))) void run(() => updateLead(l.id, { estValue: v }));
-                }}
-                className={`keeps-font-size -ml-1 w-full min-w-0 font-serif-accent text-[34px] leading-tight placeholder:font-sans placeholder:text-[15px] placeholder:not-italic placeholder:text-faint ${QUIET}`}
-              />
-            ) : (
-              <button
-                onClick={() => setEditingValue(true)}
-                title="Change the value"
-                className="-ml-1 min-w-0 flex-1 truncate rounded px-1 text-left font-serif-accent text-[34px] leading-tight hover:bg-background"
-              >
-                {formatMoney(l.estValue, l.currency)}
-              </button>
-            )}
-            <select
-              value={l.currency}
-              onChange={(e) => void run(() => updateLead(l.id, { currency: e.target.value as Currency }))}
-              className={`${QUIET} shrink-0 cursor-pointer text-sm text-muted`}
-              aria-label="Currency"
-            >
-              <option value="ILS">₪ ILS</option>
-              <option value="USD">$ USD</option>
-            </select>
-          </div>
-          {l.currency === "USD" && l.estValue !== null && (
-            <p className="text-[13px] text-muted" title="Bank of Israel rate, 5% worse">
-              ≈ {formatIls(valueIls)} at {quote.rate.toFixed(3)}
-              {quote.date ? ` (BoI ${formatDate(quote.date)} − 5%)` : " (fallback rate)"}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => setTab("estimates")}
-          className="rounded-2xl bg-surface p-5 text-left shadow-card"
-          title="Open the estimates"
-        >
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Estimate</div>
-          <div className="mt-2 text-xl font-medium tabular-nums">{estHours ? fmtHours(estHours) : "—"}</div>
-          <div className="mt-1 text-[13px] text-muted">{estHours ? "the current estimate" : "None yet"}</div>
-        </button>
-        <div className="rounded-2xl bg-surface p-5 shadow-card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">{stage ? `In ${stage.name}` : "Stage"}</div>
-          <div className={`mt-2 text-xl font-medium tabular-nums ${stalled ? "text-[#855800]" : ""}`}>
-            {daysInStage(l, now)} {daysInStage(l, now) === 1 ? "day" : "days"}
-          </div>
-          <div className="mt-1 text-[13px] text-muted">
-            {stage?.stallDays ? `limit ${stage.stallDays} working days` : "no limit for this stage"}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-surface p-5 shadow-card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Last activity</div>
-          <div className="mt-2 text-xl font-medium">{formatDate(l.lastActivityAt)}</div>
-          <div className="mt-1 truncate text-[13px] text-muted">{latest ? (latest.kind === "stage_change" ? "Stage change" : EVENT_LABEL[latest.kind]) : "—"}</div>
-        </div>
-      </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
         {/* ── main: what happened, what we sent ── */}
@@ -764,8 +688,7 @@ export default function LeadPage() {
               items={[
                 { value: "activity", label: tabTip("Activity", ["stalled"]), count: events.length, icon: Activity },
                 { value: "emails", label: tabTip("Emails", ["reply"]), count: threads.length, icon: Mail },
-                { value: "offers", label: tabTip("Offers", ["offer"]), count: offers.length, icon: FileText },
-                { value: "estimates", label: tabTip("Estimates", ["estimate"]), icon: Calculator },
+                { value: "offers", label: tabTip("Offers", ["offer", "estimate"]), icon: FileText },
               ]}
             />
           </div>
@@ -792,25 +715,30 @@ export default function LeadPage() {
                 onSearched={reload}
               />
             )}
-            {tab === "estimates" && (
-              <EstimatesTab
-                leadId={l.id}
-                company={l.company}
-                clientId={l.clientId}
-                profileName={(id) => profileById.get(id)?.name ?? null}
-              />
-            )}
             {tab === "offers" && (
               <OffersTab
                 leadId={l.id}
+                company={l.company}
+                clientId={l.clientId}
                 offers={offers}
-                defaultCurrency={l.currency}
-                profileById={profileById}
-                quoteRate={quote.rate}
+                profileName={(id) => profileById.get(id)?.name ?? null}
                 run={run}
                 currentUserId={currentUserId}
-                onError={setError}
                 rules={{ current: stage ?? undefined, stages: vocab.stages }}
+                outside={(linked) => (
+                  <OutsideOffers
+                    leadId={l.id}
+                    offers={offers}
+                    linked={linked}
+                    defaultCurrency={l.currency}
+                    profileById={profileById}
+                    quoteRate={quote.rate}
+                    run={run}
+                    currentUserId={currentUserId}
+                    onError={setError}
+                    rules={{ current: stage ?? undefined, stages: vocab.stages }}
+                  />
+                )}
               />
             )}
           </div>
@@ -863,6 +791,53 @@ export default function LeadPage() {
                         {p.name}
                       </option>
                     ))}
+                  </select>
+                </dd>
+              </div>
+              {/* The estimated value moved here from its big tile (v1.96.0): the
+                  estimate itself lives in the Offers tab; this is only the
+                  figure the board's pipeline totals count. */}
+              <div className="flex items-center gap-2 py-2">
+                <dt className="w-20 shrink-0 text-muted">Value</dt>
+                <dd className="flex min-w-0 flex-1 items-center gap-1">
+                  {editingValue || l.estValue === null ? (
+                    <input
+                      type="number"
+                      min={0}
+                      step={1000}
+                      autoFocus={editingValue}
+                      key={`v${l.estValue}`}
+                      defaultValue={l.estValue ?? ""}
+                      placeholder="Add a value"
+                      aria-label="Estimated value"
+                      onBlur={(e) => {
+                        setEditingValue(false);
+                        const v = e.target.value === "" ? null : Number(e.target.value);
+                        if (v !== l.estValue && (v === null || Number.isFinite(v))) void run(() => updateLead(l.id, { estValue: v }));
+                      }}
+                      className={`-ml-1 w-full min-w-0 tabular-nums ${QUIET}`}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setEditingValue(true)}
+                      title={
+                        l.currency === "USD"
+                          ? `≈ ${formatIls(valueIls)} at ${quote.rate.toFixed(3)}${quote.date ? ` (BoI ${formatDate(quote.date)} − 5%)` : ""}`
+                          : "Change the value"
+                      }
+                      className="-ml-1 min-w-0 truncate rounded px-1 text-left tabular-nums hover:bg-background"
+                    >
+                      {formatMoney(l.estValue, l.currency)}
+                    </button>
+                  )}
+                  <select
+                    value={l.currency}
+                    onChange={(e) => void run(() => updateLead(l.id, { currency: e.target.value as Currency }))}
+                    className={`${QUIET} ml-auto shrink-0 cursor-pointer text-[13px] text-muted`}
+                    aria-label="Currency"
+                  >
+                    <option value="ILS">₪ ILS</option>
+                    <option value="USD">$ USD</option>
                   </select>
                 </dd>
               </div>
@@ -1488,11 +1463,6 @@ function EmailsTab({
 
 // ── estimates ───────────────────────────────────────────────────────────────
 
-const EST_STATUS: Record<string, string> = {
-  draft: "bg-background text-muted",
-  in_review: "bg-[#fdf3e3] text-[#8a5a09]",
-  approved: "bg-[#eaf6ee] text-[#12693d]",
-};
 
 /**
  * "New estimate" — blank, or a copy of any estimate to edit (Nitsan,
@@ -1797,16 +1767,44 @@ function NewEstimateModal({
   );
 }
 
-function EstimatesTab({
+/**
+ * Offers — ONE list (v1.96.0, Nitsan: "an offer is just an estimate that was
+ * sent to the client"). Each estimate version is a row that moves Draft → In
+ * review → Approved → Sent → Accepted / Declined; Sent is set by publishing,
+ * Accepted / Declined here. The `lead_offers` rows stay underneath (pipeline
+ * figure, reminders, stage rules) but are never a second list — except quotes
+ * made outside the tracker, which have no estimate and are listed after.
+ */
+const LIFE: Record<string, { label: string; cls: string }> = {
+  draft: { label: "Draft", cls: "bg-background text-muted" },
+  in_review: { label: "In review", cls: "bg-[#fdf3e3] text-[#8a5a09]" },
+  approved: { label: "Approved", cls: "bg-[#eaf6ee] text-[#12693d]" },
+  sent: { label: "Sent", cls: "bg-brand-soft text-brand" },
+  accepted: { label: "Accepted", cls: "bg-[#12693d] text-white" },
+  declined: { label: "Declined", cls: "bg-foreground/[0.08] text-muted" },
+};
+
+function OffersTab({
   leadId,
   company,
   clientId,
+  offers,
   profileName,
+  run,
+  currentUserId,
+  rules,
+  outside,
 }: {
   leadId: string;
   company: string;
   clientId: string | null;
+  offers: LeadOffer[];
   profileName: (id: string) => string | null;
+  run: (fn: () => Promise<unknown>) => Promise<void>;
+  currentUserId: string | null;
+  rules: RuleContext;
+  /** the outside-offers block (list + add form), rendered by the page */
+  outside: (linked: Set<string>) => React.ReactNode;
 }) {
   const [list, setList] = useState<EstimateSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
@@ -1819,62 +1817,97 @@ function EstimatesTab({
     };
   }, [leadId]);
 
+  const offerById = useMemo(() => new Map(offers.map((o) => [o.id, o])), [offers]);
+  const linked = useMemo(() => new Set((list ?? []).flatMap((e) => (e.offerId ? [e.offerId] : []))), [list]);
+
   return (
     <div className="flex flex-col gap-2">
       {list === null && <SkeletonRows rows={3} avatar={false} />}
-      {(list ?? []).map((e) => (
-        // ⚠️ A container, not one big Link: the client-link button is an anchor
-        // too, and an <a> inside an <a> is invalid HTML (the browser re-parents
-        // it — the same family as the nested-button bug in v1.18.0).
-        <div
-          key={e.id}
-          className="flex items-center rounded-lg border border-border hover:border-brand"
-        >
-          <Link
-            href={`/leads/${leadId}/estimates/${e.id}`}
-            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5"
-          >
-            <span className="text-[14.5px] font-medium">v{e.version}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${EST_STATUS[e.status]}`}>
-              {e.status === "in_review" ? "In review" : e.status === "approved" ? "Approved" : "Draft"}
-            </span>
-            <span className="text-[14px] tabular-nums">
-              {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
-            </span>
-            {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[13px] text-muted">{e.changeNote}</span>}
-            <span className="ml-auto text-[12.5px] text-faint">
-              {e.approvedBy ? `approved by ${profileName(e.approvedBy) ?? "?"} · ` : ""}
-              {formatDate(e.createdAt)}
-            </span>
-          </Link>
-          {e.shareToken && (
-            <a
-              href={`/estimate/${e.shareToken}`}
-              target="_blank"
-              rel="noreferrer"
-              title="Open the page the client sees — the version last published"
-              className="mr-2 flex shrink-0 items-center gap-1 rounded-full border border-[#cde8d6] bg-[#eaf6ee] px-2.5 py-1 text-[13px] text-[#12693d] hover:border-[#12693d]"
+      {(list ?? []).map((e) => {
+        const o = e.offerId ? offerById.get(e.offerId) : undefined;
+        const answered = o?.status === "accepted" || o?.status === "declined";
+        const life =
+          o && (o.status === "sent" || answered) ? o.status : e.status === "approved" || e.status === "in_review" ? e.status : "draft";
+        const answer = (status: OfferStatus) =>
+          o && void run(() => updateOffer(o.id, leadId, o.version, { status }, currentUserId, rules));
+        return (
+          // ⚠️ A container, not one big Link: the client-link button is an anchor
+          // too, and an <a> inside an <a> is invalid HTML (the browser re-parents
+          // it — the same family as the nested-button bug in v1.18.0).
+          <div key={e.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border pr-2 hover:border-brand">
+            <Link
+              href={`/leads/${leadId}/estimates/${e.id}`}
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-3"
             >
-              <ExternalLink size={12} /> Client link
-            </a>
-          )}
-        </div>
-      ))}
-      {list?.length === 0 && <p className="text-[13.5px] text-faint">No estimate yet.</p>}
+              <span className="text-[15px] font-medium">v{e.version}</span>
+              <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${LIFE[life].cls}`}>{LIFE[life].label}</span>
+              <span className="text-[14px] tabular-nums">
+                {fmtHours(e.hours)} · {fmtNis(e.net)} + VAT
+              </span>
+              {e.changeNote && <span className="bidi-auto min-w-0 truncate text-[13px] text-muted">{e.changeNote}</span>}
+              <span className="ml-auto text-[12.5px] text-faint">
+                {o?.sentAt && (life === "sent" || answered)
+                  ? `sent ${formatDate(o.sentAt)}`
+                  : e.approvedBy
+                    ? `approved by ${profileName(e.approvedBy) ?? "?"} · ${formatDate(e.createdAt)}`
+                    : formatDate(e.createdAt)}
+              </span>
+            </Link>
+            {e.shareToken && (
+              <a
+                href={`/estimate/${e.shareToken}`}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the page the client sees — the version last published"
+                className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[13px] text-muted hover:bg-background hover:text-brand"
+              >
+                <ExternalLink size={13} /> Client link
+              </a>
+            )}
+            {/* The client's answer: only once it's been sent, and changeable
+                (a declined offer that comes back is just "Sent" again). */}
+            {o && life === "sent" && (
+              <span className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => answer("accepted")}
+                  className="flex h-8 items-center gap-1 rounded-lg px-2.5 text-[13px] text-[#12693d] ring-1 ring-inset ring-[#cde8d6] hover:bg-[#eaf6ee]"
+                >
+                  <Check size={14} strokeWidth={2} /> Accepted
+                </button>
+                <button
+                  onClick={() => answer("declined")}
+                  className="flex h-8 items-center gap-1 rounded-lg px-2.5 text-[13px] text-muted ring-1 ring-inset ring-border hover:text-foreground"
+                >
+                  <X size={14} strokeWidth={2} /> Declined
+                </button>
+              </span>
+            )}
+            {o && answered && (
+              <button
+                onClick={() => answer("sent")}
+                title="Undo the answer — back to Sent"
+                className="shrink-0 rounded-lg px-2 py-1 text-[13px] text-faint hover:bg-background hover:text-foreground"
+              >
+                Undo
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {list?.length === 0 && <p className="text-[13.5px] text-faint">No offers yet — start one below.</p>}
       {choosing && (
         <NewEstimateModal leadId={leadId} company={company} clientId={clientId} onClose={() => setChoosing(false)} />
       )}
-      <div className="flex flex-wrap items-start gap-2">
+      {list !== null && outside(linked)}
+      <div className="mt-1 flex flex-wrap items-start gap-2">
         <div>
-        <button
-          onClick={() => setChoosing(true)}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[13px] text-muted hover:border-brand hover:text-brand"
-        >
-          <Plus size={13} /> New estimate…
-        </button>
-        {list && list.length > 0 && (
+          <button
+            onClick={() => setChoosing(true)}
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-[13.5px] font-medium text-white hover:bg-brand-dark"
+          >
+            <Plus size={15} /> New offer
+          </button>
           <p className="mt-1 text-[12.5px] text-faint">Start blank or from any earlier estimate — this client&rsquo;s or another project&rsquo;s.</p>
-        )}
         </div>
         <span className="ml-auto">
           <SettingsPopupButton which="pricing" label="Settings" />
@@ -1887,9 +1920,10 @@ function EstimatesTab({
 // ── offers ──────────────────────────────────────────────────────────────────
 
 
-function OffersTab({
+function OutsideOffers({
   leadId,
   offers,
+  linked,
   defaultCurrency,
   profileById,
   quoteRate,
@@ -1900,6 +1934,8 @@ function OffersTab({
 }: {
   leadId: string;
   offers: LeadOffer[];
+  /** offers made by an estimate — shown on its version row, not here */
+  linked: Set<string>;
   defaultCurrency: Currency;
   profileById: Map<string, Parameters<typeof Avatar>[0]["profile"]>;
   quoteRate: number;
@@ -1911,7 +1947,7 @@ function OffersTab({
   const [adding, setAdding] = useState(false);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-  const [status, setStatus] = useState<OfferStatus>("in_review");
+  const [status, setStatus] = useState<OfferStatus>("sent");
   const [sentAt, setSentAt] = useState("");
   const [scope, setScope] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -1954,7 +1990,7 @@ function OffersTab({
 
   return (
     <div className="flex flex-col gap-2">
-      {offers.map((o) => {
+      {offers.filter((o) => !linked.has(o.id)).map((o) => {
         const approver = o.approvedBy ? profileById.get(o.approvedBy) : null;
         return (
           <div key={o.id} className="group rounded-lg border border-border p-3">
@@ -2034,7 +2070,6 @@ function OffersTab({
           </div>
         );
       })}
-      {offers.length === 0 && !adding && <p className="text-[13.5px] text-faint">No offers yet.</p>}
 
       {adding ? (
         <form
@@ -2044,7 +2079,8 @@ function OffersTab({
           }}
           className="flex flex-col gap-2 rounded-lg border border-brand/40 bg-brand-soft/30 p-3"
         >
-          <div className="text-[14px] font-medium">New offer · v{nextVersion}</div>
+          <div className="text-[14px] font-medium">Outside offer · v{nextVersion}</div>
+          <p className="text-[12.5px] text-muted">A quote made outside the tracker — attach its file.</p>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="number"
@@ -2122,7 +2158,7 @@ function OffersTab({
             }}
             className="flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-2.5 py-1 text-[13px] text-muted hover:border-brand hover:text-brand"
           >
-            <Plus size={13} /> Add an offer
+            <Plus size={13} /> Add an outside offer
           </button>
         </div>
       )}

@@ -130,7 +130,7 @@ function NavItem({
       aria-label={label}
       // `is-current` fills the icon with a wash (globals.css, icons); a nav item
       // you are not on nudges 3px right on hover (motion round 2, 2026-10-23).
-      className={`group/nav font-heading relative flex items-center rounded-md py-2.5 text-sm transition-[background-color,transform] duration-150 ${
+      className={`group/nav font-heading relative flex items-center rounded-md py-[7px] text-sm transition-[background-color,transform] duration-150 ${
         folded ? "justify-center px-0" : "gap-3 px-3"
       } ${active ? "is-current" : folded ? "" : "hover:translate-x-[3px]"}`}
       style={
@@ -377,9 +377,12 @@ function FootLink({
   label,
   title,
   folded = false,
+  small = false,
   onClick,
 }: {
   Icon: LucideIcon;
+  /** a quieter icon for the not-a-page rows (About, Latest updates) */
+  small?: boolean;
   label: string;
   /** longer hover text, when the label alone is too terse */
   title?: string;
@@ -391,11 +394,11 @@ function FootLink({
       onClick={onClick}
       title={title ?? label}
       className={`flex items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
-        folded ? "size-9 min-h-9 justify-center" : "min-h-11 gap-2.5 px-2 text-left"
+        folded ? `${small ? "size-7 min-h-7 opacity-70" : "size-9 min-h-9"} justify-center` : "min-h-11 gap-2.5 px-2 text-left md:min-h-9"
       }`}
       style={{ color: "var(--sb-muted)" }}
     >
-      <Icon size={17} strokeWidth={1.75} className="shrink-0" />
+      <Icon size={small ? 14 : 17} strokeWidth={1.75} className="shrink-0" />
       {!folded && label}
     </button>
   );
@@ -768,7 +771,7 @@ function Shell({ children }: { children: ReactNode }) {
             edge, which is where it already is when expanded, so it doesn't
             move between states. */}
         <div
-          className={`relative flex items-center pb-4 pt-5 ${folded ? "justify-center px-1" : "gap-2 px-4"}`}
+          className={`relative flex items-center pb-3 pt-4 ${folded ? "justify-center px-1" : "gap-2 px-4"}`}
         >
           {/* The real logo artwork's crops (.brand-amp / .brand-ampmore),
               not typeset text standing in for them — same masks the public
@@ -795,7 +798,9 @@ function Shell({ children }: { children: ReactNode }) {
             {folded ? <ChevronsRight size={14} strokeWidth={2} /> : <ChevronsLeft size={16} strokeWidth={2} />}
           </button>
         </div>
-        <nav className="flex flex-1 flex-col gap-2 px-2">
+        {/* Tight (v1.96.0): every item must fit a 13" laptop without the rail
+            scrolling — 36px rows, 2px apart. The scroll is only a fallback. */}
+        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 [scrollbar-width:none]">
           {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => (
             <NavItem
               key={href}
@@ -808,7 +813,7 @@ function Shell({ children }: { children: ReactNode }) {
           ))}
           {isAdmin && (
             <div
-              className="mx-3 my-2 border-t"
+              className="mx-3 my-1.5 border-t"
               style={{ borderColor: "var(--sb-border)" }}
               aria-hidden
             />
@@ -870,27 +875,31 @@ function Shell({ children }: { children: ReactNode }) {
         {/* No rule above it. The nav ends where the list of items ends, and
             these three read as three more items in the same column — a divider
             was drawing a boundary between things that don't need separating. */}
-        <div
-          className={`flex py-2 ${folded ? "flex-col items-center gap-1 px-2" : "flex-col px-2"}`}
-        >
-          <FootLink Icon={Info} label="About" title="About the tracker" folded={folded} onClick={() => setAboutOpen(true)} />
-          <FootLink Icon={Sparkles} label="Latest updates" folded={folded} onClick={() => setNewsOpen(true)} />
-          <FootLink Icon={LogOut} label="Logout" folded={folded} onClick={signOut} />
-        </div>
-        {!folded && (
-          <div className="flex items-center justify-end gap-2 px-4 pb-2 text-[10px]">
-            {/* "About" used to be a word here too. It has moved up into the
-                footer block with Latest updates and Logout, so what's left is
-                the version stamp — which still opens the same panel, because
-                the version number is the thing people click when they want to
-                know what this build is. */}
-            <button
-              onClick={() => setAboutOpen(true)}
-              title="About the tracker"
-              className="text-white/50 transition-colors hover:text-white/90"
-            >
-              {APP_VERSION}
-            </button>
+        {/* About and Latest updates are not pages, so they are not rows like the
+            nav (v1.96.0, Nitsan): a small line of words with the version, under
+            Logout. Folded, they stay icons with tooltips. */}
+        {folded ? (
+          <div className="flex flex-col items-center gap-0.5 px-2 py-2">
+            <FootLink Icon={LogOut} label="Logout" folded onClick={signOut} />
+            <FootLink Icon={Sparkles} label="Latest updates" folded small onClick={() => setNewsOpen(true)} />
+            <FootLink Icon={Info} label="About" title="About the tracker" folded small onClick={() => setAboutOpen(true)} />
+          </div>
+        ) : (
+          <div className="flex flex-col px-2 pb-2.5 pt-1">
+            <FootLink Icon={LogOut} label="Logout" onClick={signOut} />
+            <div className="mt-1 flex items-center gap-1 px-2 text-[11px] text-white/55">
+              <button onClick={() => setNewsOpen(true)} className="transition-colors hover:text-white/90">
+                Latest updates
+              </button>
+              <span aria-hidden>·</span>
+              <button onClick={() => setAboutOpen(true)} title="About the tracker" className="transition-colors hover:text-white/90">
+                About
+              </button>
+              <span aria-hidden>·</span>
+              <button onClick={() => setAboutOpen(true)} title="About the tracker" className="transition-colors hover:text-white/90">
+                {APP_VERSION}
+              </button>
+            </div>
           </div>
         )}
       </aside>

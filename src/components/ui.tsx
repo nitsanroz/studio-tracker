@@ -164,9 +164,12 @@ export function Tabs<T extends string>({
         : `shrink-0 rounded-lg font-medium transition-colors disabled:opacity-40 ${
             size === "sm" ? "px-2.5 py-1 text-xs" : "px-3.5 py-1.5 text-sm"
           } ${
+            // ⚠️ Brand wash, not a white pill (v1.96.0, Nitsan: "doesn't look
+            // like it's a selectable tab") — a white pill vanished on every strip
+            // that sits inside a white card, like the lead page's.
             active
-              ? "bg-surface text-foreground shadow-card"
-              : "text-muted hover:bg-surface/60 hover:text-foreground"
+              ? "bg-brand-soft text-brand"
+              : "text-muted hover:bg-foreground/[0.05] hover:text-foreground"
           }`;
     const button = (
       <button
