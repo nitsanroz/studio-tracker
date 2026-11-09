@@ -12,6 +12,7 @@ import { isSafeUrl } from "@/lib/links";
 import { kindById } from "@/lib/intake-fields";
 import { diffBriefs, needsReview } from "@/lib/brief-diff";
 import { ClientChip } from "@/components/ui";
+import { askConfirm } from "@/components/confirm-dialog";
 
 /**
  * The pending card's form controls — five of them, all the same shape.
@@ -267,15 +268,16 @@ function DeleteRequestButton({ request }: { request: TaskRequest }) {
   if (!isAdmin) return null;
   return (
     <button
-      onClick={() => {
+      onClick={async () => {
         if (
-          confirm(
+          await askConfirm(
             `Delete this submission from ${request.submitterName || "the client"}?\n\n` +
               `"${request.title}"\n\n` +
               // Said plainly, because it's true and there is no undo here.
               (request.createdTaskId
                 ? "The task it created stays — only this queue entry goes."
-                : "This can't be undone.")
+                : "This can't be undone."),
+            { action: "Delete", danger: true },
           )
         ) {
           deleteRequest(request.id);
@@ -706,8 +708,8 @@ function ReviewCard({
           <NotifyClientButton request={request} />
         </div>
         <button
-          onClick={() => {
-            if (confirm("Reject this submission?")) rejectRequest(request.id);
+          onClick={async () => {
+            if (await askConfirm("Reject this submission?", { action: "Reject", danger: true })) rejectRequest(request.id);
           }}
           className="min-h-11 rounded-lg border border-border px-3 text-sm text-muted hover:border-danger hover:text-danger sm:min-h-0 sm:py-1.5"
         >

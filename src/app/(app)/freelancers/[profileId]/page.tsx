@@ -48,6 +48,7 @@ import {
   termsLine,
   type Freelancer,
 } from "../shared";
+import { askConfirm, askText } from "@/components/confirm-dialog";
 
 // One freelancer's month, the table he sees on his own page — with every row
 // still waiting for review filed right here: pick the client and task, approve
@@ -626,9 +627,14 @@ function WaitingRow({
         </button>
         <button
           disabled={busy}
-          onClick={() => {
+          onClick={async () => {
             if (row.before) return void run({ action: "reject", id: row.id });
-            const note = prompt("Turn this log down? Add a note for them (optional):");
+            // An OPTIONAL note: empty submits "" (stored as no note), Cancel is null.
+            const note = await askText("Turn this log down? Add a note for them (optional):", {
+              action: "Turn down",
+              allowEmpty: true,
+              danger: true,
+            });
             if (note !== null) void run({ action: "reject", id: row.id, note });
           }}
           className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-surface hover:text-danger"
@@ -695,10 +701,12 @@ function Charges({ data, onChanged }: { data: Data; onChanged: () => void }) {
                     </button>
                     <button
                       disabled={busy === c.id}
-                      onClick={() => {
-                        const note = prompt(
-                          "Turn this charge down? Add a note for them (optional):",
-                        );
+                      onClick={async () => {
+                        const note = await askText("Turn this charge down? Add a note for them (optional):", {
+                          action: "Turn down",
+                          allowEmpty: true,
+                          danger: true,
+                        });
                         if (note !== null)
                           void run({ action: "rejectCharge", id: c.id, note });
                       }}
@@ -853,7 +861,7 @@ function Side({
           </a>
           <button
             onClick={async () => {
-              if (!confirm("Make a new link? The current one stops working."))
+              if (!(await askConfirm("Make a new link? The current one stops working.", { action: "Make a new link", danger: true })))
                 return;
               await act({ action: "regenerate", profileId: f.profileId });
               onChanged();

@@ -81,6 +81,7 @@ import {
 } from "@/lib/candidates/convert";
 import { TermsForm } from "@/app/(app)/freelancers/shared";
 import { StageTrack } from "@/components/stage-track";
+import { askConfirm } from "@/components/confirm-dialog";
 
 /**
  * What kind of meeting a scorecard describes.
@@ -1490,7 +1491,7 @@ export default function CandidatePage() {
             )}
             <div className="my-1 border-t border-border" />
             <button
-              onClick={() => {
+              onClick={async () => {
                 setMenuOpen(false);
                 const bits = [
                   interviews.length &&
@@ -1508,9 +1509,10 @@ export default function CandidatePage() {
                 ].filter(Boolean);
                 const tail = bits.length ? `, along with ${bits.join(", ")}` : "";
                 if (
-                  !window.confirm(
+                  !(await askConfirm(
                     `Delete ${c.name} for good${tail}? This cannot be undone — Archive keeps them and takes them off the board.`,
-                  )
+                    { action: "Delete", danger: true },
+                  ))
                 )
                   return;
                 void (async () => {
@@ -2016,14 +2018,15 @@ export default function CandidatePage() {
                       interview's rows cascade (0039) and there is no undo in
                       this section by design. */}
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const n = Object.keys(iv.scores).length;
                       if (
-                        !window.confirm(
+                        !(await askConfirm(
                           n > 0
                             ? `Delete this ${iv.kind.toLowerCase()} and its ${n} score${n === 1 ? "" : "s"}? This cannot be undone.`
                             : "Delete this interview? This cannot be undone.",
-                        )
+                          { action: "Delete", danger: true },
+                        ))
                       )
                         return;
                       void run(() => removeInterview(iv.id, c.id));

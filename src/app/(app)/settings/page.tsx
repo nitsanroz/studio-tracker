@@ -35,6 +35,7 @@ import {
   type SeenEmailTemplate,
 } from "@/lib/brief";
 import type { Tag, TaskType } from "@/lib/types";
+import { askConfirm } from "@/components/confirm-dialog";
 
 function MyProfile() {
   const { profiles, currentUserId } = useData();
@@ -474,8 +475,8 @@ function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
       />
       <TagBadge tag={tag.name} />
       <button
-        onClick={() => {
-          if (confirm(`Delete status "${tag.name}"? Tasks using it will lose it.`))
+        onClick={async () => {
+          if (await askConfirm(`Delete status "${tag.name}"? Tasks using it will lose it.`, { action: "Delete", danger: true }))
             deleteTag(tag.id);
         }}
         className="shrink-0 rounded p-1.5 text-muted hover:bg-red-50 hover:text-danger"
@@ -530,13 +531,13 @@ function TaskTypeRow({ type }: { type: TaskType }) {
         {inUse === 0 ? "unused" : `${inUse} task${inUse === 1 ? "" : "s"}`}
       </span>
       <button
-        onClick={() => {
+        onClick={async () => {
           // The FK is ON DELETE SET NULL, so nothing is lost but the label —
           // say how many tasks that affects rather than asking blind.
           const warn = inUse
             ? `Delete type "${type.name}"? ${inUse} task${inUse === 1 ? "" : "s"} will lose it.`
             : `Delete type "${type.name}"?`;
-          if (confirm(warn)) deleteTaskType(type.id);
+          if (await askConfirm(warn, { action: "Delete", danger: true })) deleteTaskType(type.id);
         }}
         className="shrink-0 rounded p-1.5 text-muted hover:bg-red-50 hover:text-danger"
         title="Delete type"

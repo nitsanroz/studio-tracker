@@ -36,7 +36,8 @@ function ConfirmBox({
   return (
     // `raised`: it is often opened from inside another modal (a settings popup).
     <Modal onClose={() => answer(false)} width="md" align="center" layer="raised" labelledBy="confirm-msg">
-      <p id="confirm-msg" className="bidi-auto text-[13.5px] leading-relaxed">
+      {/* pre-line: a message may carry its own paragraph breaks ("\n\n") */}
+      <p id="confirm-msg" className="bidi-auto whitespace-pre-line text-[13.5px] leading-relaxed">
         {message}
       </p>
       <div className="mt-4 flex justify-end gap-2">
@@ -96,16 +97,20 @@ function TextBox({
   action,
   initial,
   placeholder,
+  allowEmpty,
+  danger,
   answer,
 }: {
   message: string;
   action: string;
   initial: string;
   placeholder?: string;
+  allowEmpty: boolean;
+  danger: boolean;
   answer: (value: string | null) => void;
 }) {
   const [value, setValue] = useState(initial);
-  const submit = () => value.trim() && answer(value.trim());
+  const submit = () => (allowEmpty || value.trim()) && answer(value.trim());
   return (
     <Modal onClose={() => answer(null)} width="md" align="center" layer="raised" labelledBy="ask-text-msg">
       <form
@@ -131,8 +136,8 @@ function TextBox({
           </button>
           <button
             type="submit"
-            disabled={!value.trim()}
-            className="h-8 rounded-lg bg-brand px-3 text-[12.5px] font-medium text-white disabled:opacity-50"
+            disabled={!allowEmpty && !value.trim()}
+            className={`h-8 rounded-lg px-3 text-[12.5px] font-medium text-white disabled:opacity-50 ${danger ? "bg-danger" : "bg-brand"}`}
           >
             {action}
           </button>
@@ -147,13 +152,15 @@ function TextBox({
  * the desktop pane answers native dialogs at once (`prompt()` returns null without
  * showing anything), so "+ New section" / "New group" silently did nothing there.
  * Resolves to the trimmed text, or null when cancelled. Shares `askConfirm`'s
- * one-at-a-time guard.
+ * one-at-a-time guard. `allowEmpty` is for an OPTIONAL note (turning a freelancer's
+ * log down): submitting empty resolves "", which a caller must tell apart from the
+ * null of Cancel.
  *
  *   const name = await askText("Name for the new group", { action: "Add" });
  */
 export function askText(
   message: string,
-  opts?: { action?: string; initial?: string; placeholder?: string },
+  opts?: { action?: string; initial?: string; placeholder?: string; allowEmpty?: boolean; danger?: boolean },
 ): Promise<string | null> {
   if (open) return Promise.resolve(null);
   open = true;
@@ -178,6 +185,8 @@ export function askText(
         action={opts?.action ?? "OK"}
         initial={opts?.initial ?? ""}
         placeholder={opts?.placeholder}
+        allowEmpty={opts?.allowEmpty ?? false}
+        danger={opts?.danger ?? false}
         answer={answer}
       />,
     );

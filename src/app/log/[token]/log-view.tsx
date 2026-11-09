@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Info, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ClientAvatar } from "@/components/client-avatar";
 import { LoadingLine, PageSkeleton } from "@/components/skeleton";
+import { askConfirm } from "@/components/confirm-dialog";
 
 // A freelancer's page (0054–0057): his hours as a table, a month at a time,
 // like the sheet he billed from; his extra charges below; a floating box to add
@@ -295,7 +296,7 @@ function RowActions({ label, onEdit, onRemove }: { label: string; onEdit: () => 
       {onRemove && (
         <button
           onClick={async () => {
-            if (!confirm(`Delete this ${label}?`)) return;
+            if (!(await askConfirm(`Delete this ${label}?`, { action: "Delete", danger: true }))) return;
             await onRemove();
           }}
           className="text-faint hover:text-danger"
@@ -775,7 +776,7 @@ function Deliverables({ data, api, onChanged }: { data: Data; api: string; onCha
             <span className="shrink-0 text-xs text-faint">{dayLabel(d.date)}</span>
             <button
               onClick={async () => {
-                if (!confirm("Remove this link?")) return;
+                if (!(await askConfirm("Remove this link?", { action: "Remove", danger: true }))) return;
                 await fetch(`${api}?link=${encodeURIComponent(d.id)}`, { method: "DELETE" });
                 onChanged();
               }}
