@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { parseProxyRequest } from "@/lib/storage-url";
-import { mustDownload } from "@/lib/uploads";
+import { mustDownload, opensInline } from "@/lib/uploads";
 
 /**
  * Serves one object out of a PRIVATE storage bucket to a signed-in member.
@@ -47,11 +47,19 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
   );
+  // An .html attachment is SAVED, never opened as a page on the storage origin
+  // — on top of its stored octet-stream type (see `classifyTaskAttachment`).
+  let download = mustDownload(target.path);
+  // ⚠️ And anything whose STORED type isn't one we choose — the browser set it
+  // when uploading directly (see `opensInline`). `avatars` is written only by our
+  // own routes, which set the type themselves, so its images skip the lookup.
+  if (!download && target.bucket !== "avatars") {
+    const { data: meta } = await admin.storage.from(target.bucket).info(target.path);
+    download = !opensInline(meta?.contentType);
+  }
   const { data, error } = await admin.storage
     .from(target.bucket)
-    // An .html attachment is SAVED, never opened as a page on the storage origin
-    // — on top of its stored octet-stream type (see `classifyTaskAttachment`).
-    .createSignedUrl(target.path, SIGNED_TTL, mustDownload(target.path) ? { download: true } : undefined);
+    .createSignedUrl(target.path, SIGNED_TTL, download ? { download: true } : undefined);
   if (error || !data?.signedUrl) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

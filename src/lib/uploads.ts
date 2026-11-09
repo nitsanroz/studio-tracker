@@ -129,6 +129,21 @@ export function mustDownload(path: string): boolean {
   return DOWNLOAD_ONLY_EXTS.has(extOf(path));
 }
 
+/**
+ * Whether a stored object's Content-Type is one this app ever chooses — so it may
+ * be OPENED in the browser. Anything else (text/html, image/svg+xml, a missing
+ * type) is served as a download.
+ *
+ * ⚠️ WHY AT SERVE TIME: a browser uploading straight to storage (signed upload
+ * URL) sets its own Content-Type, and only the `intake` bucket refuses foreign
+ * types itself (`allowed_mime_types`). An `x.png` stored as `text/html` in
+ * `task-files` would otherwise open as a page on the storage domain (2026-11-09).
+ */
+export function opensInline(storedType: string | null | undefined): boolean {
+  const base = String(storedType ?? "").split(";")[0].trim().toLowerCase();
+  return base !== "" && STORED_CONTENT_TYPES.includes(base);
+}
+
 /** Stricter variant for images only (avatars). */
 export function classifyImage(file: File): { ok: true; contentType: string } | { ok: false } {
   const ct = IMAGE_TYPES[extOf(file.name)];

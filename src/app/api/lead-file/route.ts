@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { classifyUpload, formatSize, MAX_INTAKE_BYTES } from "@/lib/uploads";
+import { classifyUpload, formatSize, MAX_INTAKE_BYTES, mustDownload, opensInline } from "@/lib/uploads";
 
 /**
  * Offer files — the PDF a client actually received — for ADMINS only.
@@ -58,7 +58,14 @@ export async function GET(request: NextRequest) {
   const path = safePath(request.nextUrl.searchParams.get("p"));
   if (!path) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { data, error } = await service().storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
+  // Saved, not opened, unless storage holds a type we chose (see `opensInline`):
+  // the browser set it when uploading straight to the bucket.
+  const sb = service();
+  const { data: meta } = await sb.storage.from(BUCKET).info(path);
+  const download = mustDownload(path) || !opensInline(meta?.contentType);
+  const { data, error } = await sb.storage
+    .from(BUCKET)
+    .createSignedUrl(path, SIGNED_TTL, download ? { download: true } : undefined);
   if (error || !data?.signedUrl) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.redirect(data.signedUrl, { status: 307, headers: { "Cache-Control": "no-store" } });
 }

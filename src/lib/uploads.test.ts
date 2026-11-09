@@ -3,6 +3,7 @@ import {
   MAX_INTAKE_BYTES,
   MAX_INTAKE_TOTAL_BYTES,
   STORED_CONTENT_TYPES,
+  opensInline,
   describeUploadSet,
   classifyImage,
   classifyUpload,
@@ -257,5 +258,22 @@ describe("classifyTaskAttachment — tasks also take HTML, as a download", () =>
     expect(mustDownload("task/1791907720356-Mayors_Page.html")).toBe(true);
     expect(mustDownload("task/a.htm")).toBe(true);
     expect(mustDownload("task/a.pdf")).toBe(false);
+  });
+});
+
+// ⚠️ Served-type check: a browser uploading straight to storage picks its own
+// Content-Type, so only types this app chooses may open in the browser.
+describe("opensInline", () => {
+  it("opens only the types the allowlist stores", () => {
+    expect(opensInline("image/png")).toBe(true);
+    expect(opensInline("application/pdf")).toBe(true);
+    expect(opensInline("text/plain; charset=utf-8")).toBe(true);
+  });
+  it("downloads anything a browser could have chosen instead", () => {
+    expect(opensInline("text/html")).toBe(false);
+    expect(opensInline("image/svg+xml")).toBe(false);
+    expect(opensInline("application/javascript")).toBe(false);
+    expect(opensInline("")).toBe(false);
+    expect(opensInline(undefined)).toBe(false);
   });
 });

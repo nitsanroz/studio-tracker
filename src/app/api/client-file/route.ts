@@ -94,7 +94,10 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  // ⚠️ The Content-Type is ours, from the allowlist, never the browser's (v1.0.1).
+  // ⚠️ The Content-Type we HAND BACK is ours, from the allowlist (v1.0.1) — but the
+  // browser sends the bytes itself and could claim another. Serving catches that
+  // (`opensInline` in /api/file); `scripts/configure-file-buckets.mjs` makes the
+  // bucket refuse it outright.
   const kind = classifyUpload({ name } as File);
   if (!kind.ok) {
     return NextResponse.json(
