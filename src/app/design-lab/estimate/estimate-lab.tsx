@@ -89,13 +89,18 @@ const FIXTURE: PublishedEstimate = {
       name: "Website",
       description: "Design of the marketing site, ready for your developers.",
       timeframe: "Weeks 6–10",
-      hours: r(88, 122),
+      hours: r(100, 138.5),
       groups: [],
       lines: [
-        L("UX & wireframes", r(30, 40)),
-        L("UI design — up to 8 pages", r(50, 70), "Desktop and mobile, with a small component library."),
-        L("Developer handoff", r(8, 12)),
-        L("Motion & micro-interactions", r(12, 20), null, { optional: true }),
+        L("UX & wireframes", r(30, 40), null, { category: "website" }),
+        L("UI design — up to 8 pages", r(50, 70), "Desktop, with a small component library.", { category: "website" }),
+        L("Three more page templates", r(12, 18), null, { category: "website", optional: true }),
+        L("Mobile adaptation", r(12, 16.5), "15% of the website design.", {
+          category: "website",
+          percent: { of: "website", percent: 15 },
+        }),
+        L("Developer handoff", r(8, 12), null, { category: "other" }),
+        L("Motion & micro-interactions", r(12, 20), null, { category: "other", optional: true }),
       ],
     },
     {
@@ -110,10 +115,10 @@ const FIXTURE: PublishedEstimate = {
       ],
     },
   ],
-  totalHours: r(182, 250),
-  subtotal: r(63700, 87500),
-  discount: r(6370, 8750),
-  net: r(57330, 78750),
+  totalHours: r(194, 266.5),
+  subtotal: r(67900, 93275),
+  discount: r(6790, 9327.5),
+  net: r(61110, 83947.5),
   publishedAt: "2026-11-09T10:00:00.000Z",
 };
 

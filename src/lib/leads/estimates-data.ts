@@ -1018,6 +1018,15 @@ export interface PublishedEstimate {
        * groups-first, as on the client page.
        */
       group?: number | null;
+      /**
+       * What the client page needs to re-work this line when the client ticks
+       * an optional item or picks another option (offer-selection.ts): every
+       * line's category, and a percentage line's percent of which category.
+       * Absent from snapshots published before 2026-11-09 — those keep their
+       * frozen hours.
+       */
+      category?: Category;
+      percent?: { of: Category; percent: number } | null;
     }[];
   }[];
   totalHours: { min: number; max: number };
@@ -1074,6 +1083,8 @@ export async function publishEstimate(estimateId: string, company: string, publi
           altGroup: l.altGroup,
           chosen: l.altGroup ? winners.get(l.altGroup) === l.id : true,
           group,
+          category: l.category,
+          percent: l.kind === "percent" && l.percentOf ? { of: l.percentOf, percent: l.percent ?? 0 } : null,
         });
       return {
         name: p.name,
