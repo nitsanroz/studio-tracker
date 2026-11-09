@@ -61,7 +61,7 @@ Ordered roughly by severity — money and lost work first.
 - **report-table.tsx:949 (client-facing)** — a task row prints `${estimateHours}h` unrounded while section/total rows use `fmtEst` (one decimal): 2.25h in the row, 2.3h in the subtotal. Pick one.
 - lead-settings.tsx:333 inline Gmail-disconnect fetch, new-leads.tsx:40/63 Supabase reads/writes from a component — move into src/lib/leads.
 - task-panel.tsx:403, weekly-plan.tsx:236/374 — hand-rolled overlays (no Escape/focus/stack) where `Modal` was built to replace exactly that.
-- task-panel.tsx:424 — Move-entries finds the Keys task by `/keys/i.test(title)` — use `client.keysTaskId` (CLAUDE.md: chosen, never matched by name; client-reports/page.tsx:169 does the same).
+- task-panel.tsx:424 — Move-entries finds the Keys task by `/keys/i.test(title)` — use `client.keysTaskId` (CLAUDE.md: chosen, never matched by name). [Corrected 2026-11-09: client-reports/page.tsx does NOT do the same — it uses `keysTaskId`; `/keys/i` only orders its picker.]
 - task-panel.tsx:349 — removing an attachment is irreversible (no undo path) and unconfirmed — `askConfirm`.
 - task-panel.tsx:1405 — a leftover "Current tag:" footer repeats the status shown twice above.
 - user-day-details.tsx:19 — offers editing on legacy rows that `TimeEntryModal` gates with `canEditEntry` (and trigger 0038 refuses for members).

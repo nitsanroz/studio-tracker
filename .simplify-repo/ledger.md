@@ -127,3 +127,44 @@ Same digest and project.md. Reviewer brief: brief-components.md. 106 files, 16 b
   src/components/leads/stage-look-picker.tsx, src/components/leads/stage-modals.tsx
 
 All 16 batches reviewed 2026-11-08 (report-only); findings in report-components.md.
+
+## Sweep 3 — src/app (report-only, started 2026-11-08)
+Brief: brief-app.md. 87 files (design-lab/* skipped: dev-only mock routes, notFound() in production, kept on purpose).
+- [x] src/app (4 files)
+  src/app/global-error.tsx, src/app/globals.css, src/app/layout.tsx, src/app/not-found.tsx
+- [x] src/app/(app)#1 (8 files)
+  src/app/(app)/error.tsx, src/app/(app)/layout.tsx, src/app/(app)/page.tsx, src/app/(app)/candidates/page.tsx, src/app/(app)/candidates/[candidateId]/page.tsx, src/app/(app)/client-reports/page.tsx, src/app/(app)/clients/page.tsx, src/app/(app)/clients/[clientId]/page.tsx
+- [x] src/app/(app)#2 (8 files)
+  src/app/(app)/feed/page.tsx, src/app/(app)/freelancers/page.tsx, src/app/(app)/freelancers/shared.tsx, src/app/(app)/freelancers/[profileId]/page.tsx, src/app/(app)/intake-queue/page.tsx, src/app/(app)/leads/page.tsx, src/app/(app)/leads/[leadId]/page.tsx, src/app/(app)/leads/[leadId]/convert/page.tsx
+- [x] src/app/(app)#3 (8 files)
+  src/app/(app)/leads/[leadId]/estimates/[estimateId]/page.tsx, src/app/(app)/my-tasks/page.tsx, src/app/(app)/plan/page.tsx, src/app/(app)/reports/page.tsx, src/app/(app)/settings/page.tsx, src/app/(app)/team/member-table.tsx, src/app/(app)/team/page.tsx, src/app/(app)/team/[profileId]/page.tsx
+- [x] src/app/(app)#4 (2 files)
+  src/app/(app)/vacation/page.tsx, src/app/(app)/welcome/page.tsx
+- [x] src/app/api#1 (8 files)
+  src/app/api/admin/freelancers/route.ts, src/app/api/admin/invite/route.ts, src/app/api/admin/member-emails/route.ts, src/app/api/admin/users/route.ts, src/app/api/advice/route.ts, src/app/api/advice/[id]/route.ts, src/app/api/avatar/route.ts, src/app/api/candidate-file/route.ts
+- [x] src/app/api#2 (8 files)
+  src/app/api/celebrations/route.ts, src/app/api/client-file/route.ts, src/app/api/client-icon/route.ts, src/app/api/csp-report/route.ts, src/app/api/egress/route.ts, src/app/api/file/route.ts, src/app/api/gmail/backfill/route.ts, src/app/api/gmail/callback/route.ts
+- [x] src/app/api#3 (8 files)
+  src/app/api/gmail/connect/route.ts, src/app/api/gmail/disconnect/route.ts, src/app/api/gmail/push/route.ts, src/app/api/gmail/renew/route.ts, src/app/api/gmail/status/route.ts, src/app/api/hours-goal/route.ts, src/app/api/intake/[token]/route.ts, src/app/api/intake/[token]/briefs/route.ts
+- [x] src/app/api#4 (8 files)
+  src/app/api/intake/[token]/briefs/[id]/route.ts, src/app/api/intake/[token]/upload/route.ts, src/app/api/intake/seen/route.ts, src/app/api/lead-file/route.ts, src/app/api/leads/digest/route.ts, src/app/api/leads/fx/route.ts, src/app/api/leads/inbound/[token]/route.ts, src/app/api/leads/offer-alert/route.ts
+- [x] src/app/api#5 (6 files)
+  src/app/api/log/[token]/route.ts, src/app/api/me/hr/route.ts, src/app/api/member-avatars/route.ts, src/app/api/member-image/route.ts, src/app/api/occasions/route.ts, src/app/api/task-attachments/route.ts
+- [x] src/app/auth/confirm (1 files)
+  src/app/auth/confirm/route.ts
+- [x] src/app/estimate/[token] (3 files)
+  src/app/estimate/[token]/error.tsx, src/app/estimate/[token]/page.tsx, src/app/estimate/[token]/public-estimate-view.tsx
+- [x] src/app/gantt/[token] (3 files)
+  src/app/gantt/[token]/error.tsx, src/app/gantt/[token]/page.tsx, src/app/gantt/[token]/public-gantt-view.tsx
+- [x] src/app/intake/[token] (2 files)
+  src/app/intake/[token]/error.tsx, src/app/intake/[token]/page.tsx
+- [x] src/app/log/[token] (2 files)
+  src/app/log/[token]/log-view.tsx, src/app/log/[token]/page.tsx
+- [x] src/app/login (2 files)
+  src/app/login/layout.tsx, src/app/login/page.tsx
+- [x] src/app/report/[token] (3 files)
+  src/app/report/[token]/error.tsx, src/app/report/[token]/page.tsx, src/app/report/[token]/public-report-view.tsx
+- [x] src/app/reset (3 files)
+  src/app/reset/layout.tsx, src/app/reset/page.tsx, src/app/reset/update/page.tsx
+
+All src/app batches reviewed 2026-11-09 (report-only); findings in report-app.md.
