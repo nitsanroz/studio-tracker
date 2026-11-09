@@ -24,7 +24,7 @@ appended after a real token silently shadows it and every API call 401s.
 | Script | Status | Notes |
 | --- | --- | --- |
 | `build-about-stats.mjs` | **repeatable** | Regenerates `src/lib/about-data.json`, the figures behind the About panel (sidebar → version number). Reads Supabase, `git`, and the local Claude Code transcripts; writes only that one JSON. Preview with no flag, write with `--apply`. Re-run whenever the panel looks stale — it is the only way those numbers change. |
-| `configure-file-buckets.mjs` | **repeatable** | Sets `allowed_mime_types` on `task-files` and `lead-files` to the eight types `SAFE_TYPES` produces, so a browser's direct upload can't store `text/html` (2026-11-09). Public flag and size limit passed through unchanged. Dry-run by default, `--apply` to write. Re-run whenever `SAFE_TYPES` changes, as with `configure-intake-bucket.mjs`. |
+| `configure-file-buckets.mjs` | **repeatable** | Sets `allowed_mime_types` on `task-files` and `lead-files` to the eight types `SAFE_TYPES` produces, so a browser's direct upload can't store `text/html` (2026-11-09). Public flag and size limit passed through unchanged. Dry-run by default, `--apply` to write. **Applied to production 2026-11-09.** Re-run whenever `SAFE_TYPES` changes, as with `configure-intake-bucket.mjs`. |
 | `compare-finance-hours.mjs` | **read-only** | Tracker vs `finance_client_monthly`, per client-year. Run any time. |
 | `report-missing-clients.mjs` | **read-only** | → `data/missing-clients.csv`. Clients the plan sheets bill for that the tracker is short on. |
 | `report-overages.mjs` | **read-only** | Where the tracker exceeds the finance sheets. |
