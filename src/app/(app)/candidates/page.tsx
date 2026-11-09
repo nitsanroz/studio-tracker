@@ -46,6 +46,7 @@ import {
 } from "@/lib/candidates/types";
 import { SkeletonCard } from "@/components/skeleton";
 import { EmptyState } from "@/components/empty-state";
+import { shortAgo } from "@/lib/period-math";
 
 const TONE: Record<string, string> = {
   high: "bg-[#eaf6ee] text-[#12693d]",
@@ -122,16 +123,8 @@ function storeLayout(next: "board" | "list", view: CandidateStatus): void {
 }
 
 /** How long ago, in the shorthand the board reads in. */
-function ago(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d`;
-  const months = Math.round(days / 30);
-  return months < 12 ? `${months}mo` : `${Math.round(days / 365)}y`;
-}
+/** Calendar days ago — see `shortAgo` (it was 24-hour blocks here). */
+const ago = (iso: string) => shortAgo(iso, new Date());
 
 function ScorePill({ value, table = false }: { value: number | null; table?: boolean }) {
   const tone = scoreTone(value);
@@ -540,6 +533,9 @@ export default function CandidatesPage() {
    * long as the detour does.
    */
   const switchView = (next: CandidateStatus) => {
+    // Loading until the new view's rows land — the previous tab's people stayed
+    // on screen under the new tab's name meanwhile.
+    if (next !== view) setBusy(true);
     setView(next);
     setLayout(next === "active" ? storedLayout() : "list");
   };

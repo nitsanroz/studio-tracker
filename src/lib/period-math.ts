@@ -363,3 +363,29 @@ export function presenceFraction(o: {
   const days = daysBetween(parseISO(start), parseISO(end)) + 1;
   return Math.min(1, days / periodDays);
 }
+
+/**
+ * "today" / "yesterday" / "5d" / "3mo" / "2y" since `iso`, in CALENDAR days.
+ *
+ * ⚠️ Not `(now - then) / 86_400_000`: floored 24-hour blocks read something done
+ * at 23:00 last night as "today" at 08:00, and drift across a clocks change. The
+ * leads and candidates boards each had that copy (fixed 2026-11-09).
+ */
+export function shortAgo(iso: string, now: Date): string {
+  const then = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? parseISO(iso) : new Date(iso);
+  if (Number.isNaN(then.getTime())) return "";
+  const days = Math.max(0, daysBetween(then, now));
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days}d`;
+  const months = Math.round(days / 30);
+  return months < 12 ? `${months}mo` : `${Math.round(days / 365)}y`;
+}
+
+/** Whole years since a yyyy-mm-dd birth date, as of `today` (yyyy-mm-dd). */
+export function ageOn(birth: string, today: string): number {
+  const [by, bm, bd] = birth.slice(0, 10).split("-").map(Number);
+  const [ty, tm, td] = today.slice(0, 10).split("-").map(Number);
+  // The birthday itself counts: a year is added ON the day, not the day after.
+  return ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+}

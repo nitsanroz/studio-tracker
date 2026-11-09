@@ -533,7 +533,8 @@ export default function ReportsPage() {
     };
     const lines = [
       ["Date", "User", "Client", "Section", "Task", "Hours", "Billable", "Description"].join(","),
-      ...enriched
+      // A copy: sorting the memoized list in place reordered the page itself.
+      ...[...enriched]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((e) =>
           [

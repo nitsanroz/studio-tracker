@@ -59,7 +59,12 @@ export async function POST(request: NextRequest) {
     // why). Left out when empty, so Team → Add user writes what it always did.
     ...(cleanPosition(position) ? { position: cleanPosition(position) } : {}),
   });
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 });
+  if (pErr) {
+    // Don't leave a sign-in with no person behind it: the retry would then fail
+    // with "already registered" and the account could never be finished.
+    await admin.auth.admin.deleteUser(created.user.id);
+    return NextResponse.json({ error: pErr.message }, { status: 400 });
+  }
 
   // Every new member gets a weekly-plan column automatically
   const { data: cols } = await admin

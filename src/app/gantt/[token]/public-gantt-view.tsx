@@ -230,10 +230,10 @@ export function PublicGanttView({
       .filter((g) => g.tasks.length > 0 || g.blocks.length > 0);
   }, [groups, hiddenTypes]);
 
-  const today = useMemo(() => {
-    const n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-  }, []);
+  // Keyed on today's DATE, as the studio Timeline is (ea07cbb): memoized once, a
+  // tab left open past midnight kept yesterday's today-line and past-shading.
+  const todayKey = toISO(new Date());
+  const today = useMemo(() => parseISO(todayKey), [todayKey]);
 
   /**
    * Off days, and — for the ones that have one — the NAME the weekly plan gave

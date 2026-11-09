@@ -55,7 +55,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   const { data, error } = await sb
     .from("task_requests")
     .select("id, title, status, created_at, edited_at, edit_key, intake_link_id, answers")
-    .in("id", asked.map((a) => a.id));
+    // Only real ids: one malformed remembered id made the whole `.in()` fail, and
+    // the chooser came back empty.
+    .in(
+      "id",
+      asked.map((a) => a.id).filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)),
+    );
   if (error) {
     // ⚠️ Almost certainly migration 0029 not yet applied (no `edit_key` column).
     // An empty list is the right degradation: the chooser then offers only "new",

@@ -86,8 +86,10 @@ function CellDetails({
       .not("minutes", "is", null)
       .order("created_at")
       .then(({ data, error }) => {
-        if (cancelled || error) return;
-        const rows = (data ?? []).map(mapTimeEntry);
+        if (cancelled) return;
+        // On an error, settle with no fetched rows (the store's rows still show)
+        // rather than leaving the skeleton spinning for ever.
+        const rows = error ? [] : (data ?? []).map(mapTimeEntry);
         setLoaded(rows);
         setLoadedIds(rows.map((r) => r.id));
       });

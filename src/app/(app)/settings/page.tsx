@@ -316,7 +316,9 @@ function ClientEmailSettings({
             Save
           </button>
           <button
-            onClick={() => setTpl(SEEN_EMAIL_DEFAULT)}
+            // THIS editor's default — the update-receipt editor used to load the
+            // first receipt's text, which Save would then store as the update email.
+            onClick={() => setTpl(fallback)}
             className="rounded-xl bg-background px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand-soft"
           >
             Reset to default

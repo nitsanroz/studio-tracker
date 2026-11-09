@@ -266,8 +266,20 @@ export async function GET(req: NextRequest) {
       ? fetchAll<{ date: string; minutes: number }>(sb, "time_entries", "date, minutes", (q) =>
           q.eq("user_id", one).not("minutes", "is", null),
         ).then((data) => ({ data: data.map((e) => ({ ...e, status: "approved" })) }))
-      : sb.from("freelancer_logs").select("date, minutes, status").eq("profile_id", one),
-    sb.from("freelancer_charges").select("date, amount, currency, status").eq("profile_id", one),
+      : // PAGED, as the login branch above: sheet history (0056) can pass 1000 rows.
+        fetchAll<{ date: string; minutes: number; status: string }>(sb, "freelancer_logs", "date, minutes, status", (q) =>
+          q.eq("profile_id", one),
+        )
+          .then((data) => ({ data }))
+          .catch(() => ({ data: null })),
+    fetchAll<{ date: string; amount: number; currency: string; status: string }>(
+      sb,
+      "freelancer_charges",
+      "date, amount, currency, status",
+      (q) => q.eq("profile_id", one),
+    )
+      .then((data) => ({ data }))
+      .catch(() => ({ data: null })),
   ]);
   // Every month he has, newest first — hours, that month's rate, the bill — for
   // the months pane beside the table.

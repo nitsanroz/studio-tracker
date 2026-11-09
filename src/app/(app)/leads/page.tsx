@@ -89,6 +89,7 @@ import { deletedLeadName } from "@/lib/leads/data";
 import { eraseLead, restoreLead } from "@/lib/leads/actions";
 import { useNewLeads } from "@/components/new-leads";
 import { SkeletonCard, SkeletonRows } from "@/components/skeleton";
+import { shortAgo } from "@/lib/period-math";
 
 const LAYOUT_KEY = "leads.layout";
 const PANE_KEY = "leads.pane";
@@ -133,16 +134,8 @@ function store(key: string, value: string) {
   }
 }
 
-function ago(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "";
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d`;
-  const months = Math.round(days / 30);
-  return months < 12 ? `${months}mo` : `${Math.round(days / 365)}y`;
-}
+/** Calendar days ago — see `shortAgo` (it was 24-hour blocks here). */
+const ago = (iso: string) => shortAgo(iso, new Date());
 
 
 /** A board column: grows to share the width, shrinks to 15rem before the board scrolls. */
@@ -821,10 +814,18 @@ export default function LeadsPage() {
   }, []);
 
   const reload = useCallback(async () => {
-    const [v, b, sg] = await Promise.all([loadVocabulary(), loadBoard(), loadPendingSuggestions()]);
+    // Nudge rules too: they are edited in the Settings popup this reload follows,
+    // and without them the cards kept the old rules until a full page reload.
+    const [v, b, sg, nr] = await Promise.all([
+      loadVocabulary(),
+      loadBoard(),
+      loadPendingSuggestions(),
+      loadNudgeSettings().catch(() => DEFAULT_NUDGES),
+    ]);
     setVocab(v);
     setRows(b);
     setSuggestions(sg);
+    setNudgeRules(nr);
   }, []);
 
   useEffect(() => {
@@ -1432,7 +1433,9 @@ export default function LeadsPage() {
             </div>
           )}
 
-          {!busy && rows.length === 0 && !error && (
+          {/* The board's own line — the List view already shows its EmptyState, and
+              both together said "No leads yet." twice. */}
+          {!busy && rows.length === 0 && !error && layout !== "list" && (
             <p className="py-6 text-sm text-faint">
               No leads yet. Add one, or wait for the website form — it lands here as {stages[0]?.name ?? "the first stage"}.
             </p>

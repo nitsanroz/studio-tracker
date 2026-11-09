@@ -12,6 +12,8 @@ import {
   rangeLabel,
   lastCompleteWeekEnd,
   cutoffIsStale,
+  shortAgo,
+  ageOn,
 } from "./period-math";
 
 // These are the numbers the admin home reads its KPI deltas and chart
@@ -486,5 +488,28 @@ describe("presenceFraction", () => {
 
   it("is 1 when the period has not begun, so nothing is divided by zero", () => {
     expect(presenceFraction({ ...base, asOf: "2026-08-01" })).toBe(1);
+  });
+});
+
+describe("shortAgo", () => {
+  it("counts calendar days, not 24-hour blocks", () => {
+    // 23:00 last night, read at 08:00 — the old floor said "today"
+    expect(shortAgo("2026-11-08T23:00:00", new Date(2026, 10, 9, 8, 0))).toBe("yesterday");
+    expect(shortAgo("2026-11-09T07:00:00", new Date(2026, 10, 9, 8, 0))).toBe("today");
+  });
+  it("keeps the old buckets", () => {
+    const now = new Date(2026, 10, 9, 12);
+    expect(shortAgo("2026-11-04", now)).toBe("5d");
+    expect(shortAgo("2026-08-01", now)).toBe("3mo");
+    expect(shortAgo("2024-11-01", now)).toBe("2y");
+    expect(shortAgo("not a date", now)).toBe("");
+  });
+});
+
+describe("ageOn", () => {
+  it("adds the year ON the birthday", () => {
+    expect(ageOn("2000-03-01", "2026-02-28")).toBe(25);
+    expect(ageOn("2000-03-01", "2026-03-01")).toBe(26); // the old ms maths said 25
+    expect(ageOn("1990-12-31", "2026-11-09")).toBe(35);
   });
 });

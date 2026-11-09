@@ -158,8 +158,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ token: stri
       .order("date")
       .order("created_at"),
     // Every month he has, for the months pane (and how far back he can step).
-    sb.from("freelancer_logs").select("date, minutes").eq("profile_id", f.profile_id).neq("status", "rejected"),
-    sb.from("freelancer_charges").select("date, amount, currency").eq("profile_id", f.profile_id).neq("status", "rejected"),
+    // ⚠️ PAGED: 0056's imported sheet history can pass 1000 rows, and a plain
+    // select would silently drop the oldest months. A failed read stays empty.
+    fetchAll<{ date: string; minutes: number }>(sb, "freelancer_logs", "date, minutes", (q) =>
+      q.eq("profile_id", f.profile_id).neq("status", "rejected"),
+    )
+      .then((data) => ({ data }))
+      .catch(() => ({ data: null })),
+    fetchAll<{ date: string; amount: number; currency: string }>(sb, "freelancer_charges", "date, amount, currency", (q) =>
+      q.eq("profile_id", f.profile_id).neq("status", "rejected"),
+    )
+      .then((data) => ({ data }))
+      .catch(() => ({ data: null })),
   ]);
 
   // Names for the clients and tasks on his own logs — only those.

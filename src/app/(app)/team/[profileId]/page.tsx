@@ -20,6 +20,8 @@ import { PictureEditBadge } from "@/components/picture-editor";
 import { HBar, MultiLineChart } from "@/components/charts";
 import type { Role } from "@/lib/types";
 import { toast } from "@/lib/toast";
+import { ageOn } from "@/lib/period-math";
+import { studioToday } from "@/lib/format";
 
 function NotesField({ profileId }: { profileId: string }) {
   const supabase = useMemo(() => createClient(), []);
@@ -136,9 +138,9 @@ function HrFields({ profileId }: { profileId: string }) {
 
   // age + derived hints
   const birth = row.birth_date ? String(row.birth_date) : null;
-  const age = birth
-    ? Math.floor((Date.now() - new Date(birth).getTime()) / (365.25 * 86400000))
-    : null;
+  // Calendar years from the studio's today: the ms maths read the old age on the
+  // birthday itself (and parsed the date as UTC midnight).
+  const age = birth ? ageOn(birth, studioToday()) : null;
 
   return (
     <div className="flex flex-col gap-2">
