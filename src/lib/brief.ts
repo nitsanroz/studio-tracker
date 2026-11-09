@@ -9,6 +9,7 @@
 // ⚠️ `intake-fields` imports only a TYPE back from here, so this pair does not
 // form a runtime cycle — keep it that way.
 import { fieldsAsked } from "./intake-fields";
+import { escapeHtml } from "./html";
 
 /**
  * One named piece of work inside a single brief — "Roll-up 1", "Banner 2",
@@ -409,11 +410,10 @@ export function readSubmission(
   };
 }
 
-// ⚠️ `"` too, not just the three tag characters: the output also lands inside
-// quoted `href="…"` attributes (`anchor()`), where an unescaped `"` in a
-// client-supplied URL closes the attribute early (fixed 2026-11-08).
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// ⚠️ `escapeHtml` (lib/html.ts) escapes `"` too, not just the three tag
+// characters: the output also lands inside quoted `href="…"` attributes
+// (`anchor()`), where an unescaped `"` in a client-supplied URL closes the
+// attribute early (fixed 2026-11-08).
 
 /** HTML notification email, in the studio's established format. */
 export function assembleEmailHtml(

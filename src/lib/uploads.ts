@@ -124,6 +124,17 @@ export function classifyTaskAttachment(file: File): { ok: true; contentType: str
   return classifyUpload(file);
 }
 
+/**
+ * A file name made safe for a storage key: anything but letters, digits, `.`,
+ * `_` and `-` becomes `_`, keeping the LAST `max` characters (the extension
+ * survives). ONE copy for every upload route — and for the browser-side email
+ * import, whose re-import dedupe only works while it names files exactly as
+ * /api/candidate-file stores them. Callers add their own fallback for "".
+ */
+export function storageSafeName(name: string, max = 120): string {
+  return name.replace(/[^\w.\-]+/g, "_").slice(-max);
+}
+
 /** A stored object a browser must save rather than open, whatever its Content-Type says. */
 export function mustDownload(path: string): boolean {
   return DOWNLOAD_ONLY_EXTS.has(extOf(path));

@@ -13,6 +13,7 @@
 
 import { toISODate } from "../format";
 import type { CandidateLinkKind } from "./types";
+import { storageSafeName } from "../uploads";
 
 /** The parts of a parsed message this file reads — postal-mime's shape. */
 export interface ParsedMailbox {
@@ -459,7 +460,7 @@ export function storedNameOf(url: string): string | null {
     return null;
   }
   if (!/\.pdf$/i.test(last)) return null;
-  return last.replace(/[^\w.\-]+/g, "_").slice(-120);
+  return storageSafeName(last);
 }
 
 /** "ecebb389-89b5-…-9e82665438e9-CVEllaZell.pdf" → "CVEllaZell.pdf". */

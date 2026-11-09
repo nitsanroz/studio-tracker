@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { classifyUpload, formatSize, MAX_INTAKE_BYTES, mustDownload, opensInline } from "@/lib/uploads";
+import { classifyUpload, formatSize, MAX_INTAKE_BYTES, mustDownload, opensInline, storageSafeName } from "@/lib/uploads";
 import { service } from "@/lib/supabase/service";
 
 /**
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   // Idempotent: already-there is the normal case after the first upload ever.
   await admin.storage.createBucket(BUCKET, { public: false }).catch(() => undefined);
 
-  const safeName = name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+  const safeName = storageSafeName(name) || "file";
   const path = `${leadId}/${Date.now()}-${safeName}`;
   const { data, error } = await admin.storage.from(BUCKET).createSignedUploadUrl(path);
   if (error || !data) {

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { classifyUpload, formatSize, MAX_INTAKE_BYTES } from "@/lib/uploads";
+import { classifyUpload, formatSize, MAX_INTAKE_BYTES, storageSafeName } from "@/lib/uploads";
 import { fetchLinkedPdf } from "@/lib/candidates/fetch-document";
 import { cleanFileName } from "@/lib/candidates/email-import";
 import { service } from "@/lib/supabase/service";
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
   // `storeAs` (a linked PDF's own filename) keys the object so a re-import can
   // tell it already holds this file; the title shown can still be "CV".
   const storeAs = String(form.get("storeAs") ?? "").trim();
-  const safeName = (storeAs || name).replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+  const safeName = storageSafeName(storeAs || name) || "file";
   const path = `${candidateId}/${Date.now()}-${safeName}`;
   const { error } = await admin.storage
     .from(BUCKET)

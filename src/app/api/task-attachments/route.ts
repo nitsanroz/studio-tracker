@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { classifyTaskAttachment, formatSize } from "@/lib/uploads";
+import { classifyTaskAttachment, formatSize, storageSafeName } from "@/lib/uploads";
 import { service } from "@/lib/supabase/service";
 
 /**
@@ -22,7 +22,7 @@ import { service } from "@/lib/supabase/service";
 const BUCKET = "task-files";
 const MAX_BYTES = 25 * 1024 * 1024;
 const UUID = /^[0-9a-f-]{36}$/i;
-const safeName = (name: string) => name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+const safeName = (name: string) => storageSafeName(name) || "file";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();

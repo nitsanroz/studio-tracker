@@ -8,7 +8,16 @@ import type { NextRequest } from "next/server";
  */
 export function isCronRequest(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET ?? "";
-  const want = `Bearer ${secret}`;
-  const got = req.headers.get("authorization") ?? "";
-  return secret.length >= 16 && got.length === want.length && timingSafeEqual(Buffer.from(got), Buffer.from(want));
+  return secret.length >= 16 && safeEqual(req.headers.get("authorization") ?? "", `Bearer ${secret}`);
+}
+
+/**
+ * Constant-time string compare, so a refusal can't be used to guess a secret a
+ * byte at a time. ONE copy (2026-11-09) for the cron gate, the Gmail push token
+ * and the website-lead token, which each had their own.
+ */
+export function safeEqual(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
 }

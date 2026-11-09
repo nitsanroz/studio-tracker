@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { classifyUpload, formatSize } from "@/lib/uploads";
+import { classifyUpload, formatSize, storageSafeName } from "@/lib/uploads";
 import { service } from "@/lib/supabase/service";
 
 /**
@@ -33,7 +33,7 @@ async function whoAmI(): Promise<{ id: string; admin: boolean } | null> {
   return { id: user.id, admin: me?.role === "admin" };
 }
 
-const safeName = (name: string) => name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
+const safeName = (name: string) => storageSafeName(name) || "file";
 const UUID = /^[0-9a-f-]{36}$/i;
 
 export async function POST(request: NextRequest) {

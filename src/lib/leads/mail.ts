@@ -4,9 +4,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { appOrigin } from "../app-origin";
+import { escapeHtml } from "../html";
 
-export const esc = (s: string) =>
-  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+/** The shared escaper (lib/html.ts), under the name the leads routes import. */
+export const esc = escapeHtml;
 
 export async function sendMail(to: string[], subject: string, html: string): Promise<boolean> {
   if (!process.env.RESEND_API_KEY || to.length === 0) return false;

@@ -4,6 +4,7 @@ import {
   MAX_INTAKE_TOTAL_BYTES,
   STORED_CONTENT_TYPES,
   opensInline,
+  storageSafeName,
   describeUploadSet,
   classifyImage,
   classifyUpload,
@@ -275,5 +276,17 @@ describe("opensInline", () => {
     expect(opensInline("application/javascript")).toBe(false);
     expect(opensInline("")).toBe(false);
     expect(opensInline(undefined)).toBe(false);
+  });
+});
+
+// ⚠️ Pinned: /api/candidate-file stores CVs under this name and the browser-side
+// email import compares against it to skip files a candidate already holds.
+describe("storageSafeName", () => {
+  it("keeps letters, digits, dot, underscore and dash; the tail survives", () => {
+    expect(storageSafeName("Dana CV (final).pdf")).toBe("Dana_CV_final_.pdf");
+    expect(storageSafeName("קורות חיים.pdf")).toBe("_.pdf");
+    expect(storageSafeName("a".repeat(130) + ".pdf").length).toBe(120);
+    expect(storageSafeName("a".repeat(130) + ".pdf").endsWith(".pdf")).toBe(true);
+    expect(storageSafeName("x".repeat(100), 80).length).toBe(80);
   });
 });

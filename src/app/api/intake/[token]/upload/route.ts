@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, classifyUpload, formatSize } from "@/lib/uploads";
+import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, classifyUpload, formatSize, storageSafeName } from "@/lib/uploads";
 import { makeMintCap } from "@/lib/mint-cap";
 import { service } from "@/lib/supabase/service";
 
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   // ⚠️ Namespaced under the LINK id and given a random segment: the submission
   // route later refuses any path outside this prefix, so one client's brief can
   // never claim a file another client uploaded.
-  const safe = name.replace(/[^\w.\-]+/g, "_").slice(-80);
+  const safe = storageSafeName(name, 80);
   const path = `${link.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safe}`;
 
   const { data, error } = await sb.storage.from("intake").createSignedUploadUrl(path);

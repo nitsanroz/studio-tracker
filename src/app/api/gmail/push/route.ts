@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { after, NextResponse, type NextRequest } from "next/server";
 import { accountByEmail, service, syncAccount } from "@/lib/gmail/sync";
+import { safeEqual } from "@/lib/cron";
 
 export const maxDuration = 60;
 
@@ -15,16 +15,10 @@ export const maxDuration = 60;
  * (GMAIL_PUSH_SECRET) is what proves it came from our subscription, and the
  * mailbox it names must be one somebody connected.
  */
-function same(a: string, b: string) {
-  const x = Buffer.from(a);
-  const y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
-}
-
 export async function POST(req: NextRequest) {
   const secret = process.env.GMAIL_PUSH_SECRET ?? "";
   const token = req.nextUrl.searchParams.get("token") ?? "";
-  if (secret.length < 32 || !same(token, secret)) {
+  if (secret.length < 32 || !safeEqual(token, secret)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const body = (await req.json().catch(() => null)) as { message?: { data?: string } } | null;

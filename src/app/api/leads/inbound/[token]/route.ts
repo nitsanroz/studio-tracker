@@ -1,9 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { appOrigin } from "@/lib/app-origin";
 import { MISSING_SCHEMA_CODES } from "@/lib/db";
 import { domainOf } from "@/lib/leads/types";
 import { service } from "@/lib/supabase/service";
+import { escapeHtml as esc } from "@/lib/html";
+import { safeEqual } from "@/lib/cron";
 
 /**
  * The studionmore.com contact form → a lead in the first stage.
@@ -64,12 +65,6 @@ async function readFields(req: NextRequest): Promise<Record<string, string>> {
   return out;
 }
 
-/** Constant-time, so the 404 cannot be used to guess the secret a byte at a time. */
-function sameSecret(a: string, b: string): boolean {
-  const x = Buffer.from(a);
-  const y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
-}
 
 const norm = (k: string) => k.toLowerCase().replace(/[^a-z]/g, "");
 
@@ -95,8 +90,6 @@ async function notify(
     const { data } = await sb.auth.admin.listUsers({ perPage: 200 });
     const to = (data?.users ?? []).filter((u) => ids.has(u.id) && u.email).map((u) => u.email!);
     if (to.length === 0) return;
-    const esc = (s: string) =>
-      s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
     const rows = Object.entries(fields)
       .map(
         ([k, v]) =>
@@ -134,7 +127,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
     .eq("key", "inbound_token")
     .maybeSingle();
   const expected = (secret as { value?: unknown } | null)?.value;
-  if (typeof expected !== "string" || expected.length < 32 || !sameSecret(token, expected)) {
+  if (typeof expected !== "string" || expected.length < 32 || !safeEqual(token, expected)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
