@@ -255,14 +255,22 @@ export default function LeadPage() {
     };
   }, [isAdmin, reload]);
 
+  /**
+   * Runs a write, reloads, and says whether it WORKED. ⚠️ It never rejects — the
+   * error is shown here — so a caller that clears a form afterwards must check the
+   * result: clearing on any settle threw away what was typed whenever a save
+   * failed (the activity composer, the link-by-hand form, the new-offer form).
+   */
   const run = useCallback(
-    async (fn: () => Promise<unknown>) => {
+    async (fn: () => Promise<unknown>): Promise<boolean> => {
       setError(null);
       try {
         await fn();
         await reload();
+        return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : "That change could not be saved.");
+        return false;
       }
     },
     [reload],
@@ -465,7 +473,14 @@ export default function LeadPage() {
                     type="date"
                     key={`d${l.nextStepDue}`}
                     defaultValue={l.nextStepDue ?? ""}
-                    onChange={(e) => void run(() => updateLead(l.id, { nextStepDue: e.target.value || null }))}
+                    // ⚠️ A year before 1900 is one still being typed (Chrome fires change per
+                    // segment): saving it wrote 0002 → 0020 → 0202 → 2026, and each save
+                    // re-keyed and remounted this field mid-typing. Same guard as editable-cell.
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v && Number(v.slice(0, 4)) < 1900) return;
+                      void run(() => updateLead(l.id, { nextStepDue: v || null }));
+                    }}
                     className="bg-transparent text-[13px] font-medium text-white outline-none [color-scheme:dark]"
                     aria-label="Next step due"
                   />
@@ -999,8 +1014,8 @@ function ActivityTab({
 }: {
   events: LeadEvent[];
   profileById: Map<string, Parameters<typeof Avatar>[0]["profile"]>;
-  onLog: (kind: LeadEventKind, body: string, at: string | null) => Promise<void>;
-  onRemove: (id: string) => Promise<void>;
+  onLog: (kind: LeadEventKind, body: string, at: string | null) => Promise<boolean>;
+  onRemove: (id: string) => Promise<unknown>;
 }) {
   const [kind, setKind] = useState<LeadEventKind>("call");
   const [body, setBody] = useState("");
@@ -1015,8 +1030,9 @@ function ActivityTab({
           e.preventDefault();
           if (!body.trim() || saving) return;
           setSaving(true);
-          void onLog(kind, body, at || null).finally(() => {
+          void onLog(kind, body, at || null).then((ok) => {
             setSaving(false);
+            if (!ok) return; // keep what was typed — the error is on screen
             setBody("");
             setAt("");
           });
@@ -1142,7 +1158,7 @@ function ContactsList({
   onRemove,
 }: {
   contacts: LeadContact[];
-  onSave: (c: LeadContact, f: ContactFields) => Promise<void>;
+  onSave: (c: LeadContact, f: ContactFields) => Promise<unknown>;
   onRemove: (c: LeadContact) => void;
 }) {
   if (contacts.length === 0) return <p className="text-[14px] text-faint">No contacts yet.</p>;
@@ -1353,8 +1369,8 @@ function EmailsTab({
   leadId: string;
   threads: LeadDetail["threads"];
   backfilledAt: string | null;
-  onLink: (url: string, subject: string | null) => Promise<void>;
-  onUnlink: (t: LeadDetail["threads"][number]) => Promise<void>;
+  onLink: (url: string, subject: string | null) => Promise<boolean>;
+  onUnlink: (t: LeadDetail["threads"][number]) => Promise<boolean>;
   onSearched: () => Promise<void>;
 }) {
   const [url, setUrl] = useState("");
@@ -1421,7 +1437,8 @@ function EmailsTab({
               return;
             }
             setBad(false);
-            void onLink(u, subject.trim() || null).then(() => {
+            void onLink(u, subject.trim() || null).then((ok) => {
+              if (!ok) return;
               setUrl("");
               setSubject("");
               setByHand(false);
@@ -1800,7 +1817,7 @@ function OffersTab({
   clientId: string | null;
   offers: LeadOffer[];
   profileName: (id: string) => string | null;
-  run: (fn: () => Promise<unknown>) => Promise<void>;
+  run: (fn: () => Promise<unknown>) => Promise<boolean>;
   currentUserId: string | null;
   rules: RuleContext;
   /** the outside-offers block (list + add form), rendered by the page */
@@ -1939,7 +1956,7 @@ function OutsideOffers({
   defaultCurrency: Currency;
   profileById: Map<string, Parameters<typeof Avatar>[0]["profile"]>;
   quoteRate: number;
-  run: (fn: () => Promise<unknown>) => Promise<void>;
+  run: (fn: () => Promise<unknown>) => Promise<boolean>;
   currentUserId: string;
   onError: (msg: string | null) => void;
   rules: RuleContext;
@@ -1959,7 +1976,7 @@ function OutsideOffers({
     onError(null);
     try {
       const uploaded = file ? { path: await uploadLeadFile(leadId, file), name: file.name } : null;
-      await run(() =>
+      const ok = await run(() =>
         addOffer(
           leadId,
           nextVersion,
@@ -1976,6 +1993,7 @@ function OutsideOffers({
           rules,
         ),
       );
+      if (!ok) return; // the form stays open with what was typed
       setAdding(false);
       setAmount("");
       setScope("");
@@ -2022,9 +2040,11 @@ function OutsideOffers({
                   type="date"
                   key={`s${o.sentAt}`}
                   defaultValue={o.sentAt ?? ""}
-                  onChange={(e) =>
-                    void run(() => updateOffer(o.id, leadId, o.version, { sentAt: e.target.value || null }, currentUserId))
-                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v && Number(v.slice(0, 4)) < 1900) return; // a year still being typed
+                    void run(() => updateOffer(o.id, leadId, o.version, { sentAt: v || null }, currentUserId));
+                  }}
                   className={`${QUIET} text-muted`}
                 />
               </label>

@@ -223,6 +223,9 @@ function FeedPageContent() {
   useEffect(() => {
     if (!feedRange) {
       setFetched(null);
+      // ⚠️ A fetch cancelled by switching back to "Recent" never reaches its
+      // `finally`, so "loading…" stuck and the empty state never showed.
+      setLoading(false);
       return;
     }
     let cancelled = false;
@@ -239,6 +242,20 @@ function FeedPageContent() {
       cancelled = true;
     };
   }, [supabase, feedRange?.from, feedRange?.to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * ⚠️ Row writes in a PERIOD view must patch the fetched copy too: the store only
+   * holds recent rows, so an edit or delete left the row unchanged on screen. The
+   * delete passes the row, so ⌘Z works outside the store's window as well.
+   */
+  const editRow = (entry: TimeEntry, patch: { minutes?: number; description?: string }) => {
+    updateTimeEntry(entry.id, patch);
+    setFetched((f) => f && f.map((e) => (e.id === entry.id ? { ...e, ...patch } : e)));
+  };
+  const deleteRow = (entry: TimeEntry) => {
+    deleteTimeEntry(entry.id, entry);
+    setFetched((f) => f && f.filter((e) => e.id !== entry.id));
+  };
 
   function pickPeriod(p: Period) {
     setPeriod(p);
@@ -570,7 +587,7 @@ function FeedPageContent() {
                       onCommit={(v) => {
                         const minutes = parseDuration(v);
                         if (minutes != null && minutes > 0 && minutes !== entry.minutes)
-                          updateTimeEntry(entry.id, { minutes });
+                          editRow(entry, { minutes });
                       }}
                     />
                   </span>
@@ -589,7 +606,7 @@ function FeedPageContent() {
                     <EditableTextCell
                       value={entry.description}
                       placeholder="no description"
-                      onCommit={(v) => v && updateTimeEntry(entry.id, { description: v })}
+                      onCommit={(v) => v && editRow(entry, { description: v })}
                     />
                   </span>
                   {entry.movedFromTaskId && (
@@ -611,7 +628,7 @@ function FeedPageContent() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteTimeEntry(entry.id);
+                        deleteRow(entry);
                       }}
                       title="Delete this time log"
                       className="rounded p-1 text-muted hover:text-danger"
