@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { avatarVariantFor, type AvatarVariant } from "@/lib/avatar-variant";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Which default cut-out to draw for each member, when they haven't uploaded a
@@ -27,14 +27,6 @@ import { avatarVariantFor, type AvatarVariant } from "@/lib/avatar-variant";
  */
 export const dynamic = "force-dynamic";
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function GET() {
   // Any signed-in member may read this — it decides a picture on a team card they
   // can already see. Signed out, they get nothing.
@@ -44,7 +36,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ avatars: {} }, { status: 401 });
 
-  const { data, error } = await admin().from("member_hr").select("profile_id, gender");
+  const { data, error } = await service().from("member_hr").select("profile_id, gender");
   if (error) {
     // A missing table or column must read as "no preferences", not as a failure:
     // the caller's fallback is the neutral cut-out, which is what shipped before

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { appOrigin } from "@/lib/app-origin";
+import { service } from "@/lib/supabase/service";
 
 // Admin-only: send a member their "set your password" link.
 //
@@ -32,11 +32,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "profileId or email is required" }, { status: 400 });
   }
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   // Prefer resolving the address from auth.users — `profiles` doesn't store it,
   // so asking the admin to retype it was a chance to mistype it.

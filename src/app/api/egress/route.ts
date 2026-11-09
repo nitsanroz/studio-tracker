@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import {
   estimateCycle,
@@ -10,6 +9,7 @@ import {
   type DaySample,
   type EgressState,
 } from "@/lib/egress";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Admin-only: how much of the org's monthly egress allowance this cycle has used.
@@ -75,11 +75,7 @@ export async function GET() {
 
   // Service role: `app_settings` is admin-write by RLS, and the poll must work the
   // same for any admin regardless of their own grants.
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   const { data: row } = await admin
     .from("app_settings")

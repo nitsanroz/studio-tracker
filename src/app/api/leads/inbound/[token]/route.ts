@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { appOrigin } from "@/lib/app-origin";
 import { MISSING_SCHEMA_CODES } from "@/lib/db";
 import { domainOf } from "@/lib/leads/types";
+import { service } from "@/lib/supabase/service";
 
 /**
  * The studionmore.com contact form → a lead in the first stage.
@@ -34,14 +34,6 @@ const RATE_LIMIT_MAX = 8;
 const MAX_FIELD = 5000;
 const MAX_FIELDS = 40;
 const RECENT_DAYS = 90;
-
-function service() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
 
 /** Flatten whatever arrived into label → text, capped. */
 async function readFields(req: NextRequest): Promise<Record<string, string>> {

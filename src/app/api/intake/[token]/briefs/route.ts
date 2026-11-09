@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { service } from "@/lib/supabase/service";
 
 /**
  * The briefs a client can re-use: given the `{id, key}` pairs their own browser
@@ -20,17 +20,9 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 const MAX_ASKED = 30;
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function POST(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
 
   const { data: link } = await sb
     .from("intake_links")

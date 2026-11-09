@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { service } from "@/lib/supabase/service";
 
 /**
  * The signed-in member's own HR details, for the first-sign-in "confirm your
@@ -59,14 +59,6 @@ async function me() {
     data: { user },
   } = await supabase.auth.getUser();
   return user?.id ?? null;
-}
-
-function service() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
 }
 
 export async function GET() {

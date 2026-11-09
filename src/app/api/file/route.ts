@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { parseProxyRequest } from "@/lib/storage-url";
 import { mustDownload, opensInline } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Serves one object out of a PRIVATE storage bucket to a signed-in member.
@@ -42,11 +42,7 @@ export async function GET(request: NextRequest) {
   // endpoint must not become a way to test whether an object exists.
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
   // An .html attachment is SAVED, never opened as a page on the storage origin
   // — on top of its stored octet-stream type (see `classifyTaskAttachment`).
   let download = mustDownload(target.path);

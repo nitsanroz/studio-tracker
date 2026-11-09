@@ -1,22 +1,14 @@
 import { notFound } from "next/navigation";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { studioDate } from "@/lib/format";
 import { signStorageUrl } from "@/lib/sign-storage";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 import { sanitizeSnapshot } from "@/lib/report-sanitize";
 import { PublicReportView } from "./public-report-view";
+import { service } from "@/lib/supabase/service";
 
 // Public, token-gated client report. Shows ONLY the frozen snapshot that an
 // admin explicitly published — never live hours.
 export const dynamic = "force-dynamic";
-
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
 
 export default async function PublicReportPage({
   params,
@@ -24,7 +16,7 @@ export default async function PublicReportPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const sb = admin();
+  const sb = service();
 
   const { data: link } = await sb
     .from("report_links")

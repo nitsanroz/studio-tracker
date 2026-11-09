@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyImage } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Upload a client's mark (migration 0023).
@@ -35,14 +35,6 @@ async function requireAdmin() {
   return { user };
 }
 
-function serviceClient() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function POST(request: NextRequest) {
   const gate = await requireAdmin();
   if (gate.error) return gate.error;
@@ -64,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Use a PNG, JPG, GIF or WebP image" }, { status: 400 });
   }
 
-  const admin = serviceClient();
+  const admin = service();
   const ext = (file.name.split(".").pop() || "png").toLowerCase();
   // Date.now() in the path is cache-busting: the same client re-uploading would
   // otherwise keep serving the previous mark from the CDN.
@@ -99,7 +91,7 @@ export async function DELETE(request: NextRequest) {
   if (typeof clientId !== "string" || !clientId) {
     return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   }
-  const { error } = await serviceClient()
+  const { error } = await service()
     .from("clients")
     .update({ icon_url: null })
     .eq("id", clientId);

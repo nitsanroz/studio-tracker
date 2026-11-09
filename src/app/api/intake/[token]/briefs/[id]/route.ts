@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { service } from "@/lib/supabase/service";
 
 /**
  * One brief's answers, for prefilling a duplicate or an edit.
@@ -11,20 +11,12 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
  * and nothing about how the studio is handling them.
  */
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ token: string; id: string }> },
 ) {
   const { token, id } = await ctx.params;
-  const sb = admin();
+  const sb = service();
 
   const { data: link } = await sb
     .from("intake_links")

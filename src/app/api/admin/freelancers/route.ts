@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
 import { approvedSnap, snapOf, syncEntry, updateLog, type LogSnap } from "@/lib/freelancer-sync";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +8,7 @@ import { monthBill } from "@/lib/freelance-rate";
 import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 import { cleanDetails } from "@/lib/freelancer-details";
+import { service } from "@/lib/supabase/service";
 
 // Admin-only: freelancers' logs waiting for review, and each freelancer's
 // private link, clients and terms (0054). The review page (/freelancers)
@@ -58,9 +59,7 @@ async function adminOnly() {
   if (!user) return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (me?.role !== "admin") return { error: NextResponse.json({ error: "Admins only" }, { status: 403 }) };
-  const sb = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false },
-  });
+  const sb = service();
   return { sb, userId: user.id };
 }
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { jewishHolidays } from "@/lib/jewish-holidays";
 import { STUDIO_DAYS } from "@/lib/studio-days";
+import { service } from "@/lib/supabase/service";
 
 // Everything for the home "Coming up" pane, from four sources:
 //   birthdays      — member_hr.birth_date
@@ -55,11 +55,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   type ProfileRow = { id: string; name: string; active: boolean; start_date: string | null };
   type HrRow = { profile_id: string; birth_date: string | null };

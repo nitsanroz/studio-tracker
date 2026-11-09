@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateWithOptional } from "@/lib/db";
 import { needsReview } from "@/lib/brief-diff";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { renderSeenEmail, type SeenEmailTemplate } from "@/lib/brief";
+import { service } from "@/lib/supabase/service";
 
 /**
  * "Someone at the studio has read your brief" — the receipt an admin sends a
@@ -39,11 +39,7 @@ export async function POST(req: NextRequest) {
   const { requestId } = (await req.json().catch(() => ({}))) as { requestId?: string };
   if (!requestId) return NextResponse.json({ error: "Missing requestId" }, { status: 400 });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   const { data: request, error } = await admin
     .from("task_requests")

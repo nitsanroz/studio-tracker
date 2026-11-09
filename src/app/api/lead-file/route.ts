@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyUpload, formatSize, MAX_INTAKE_BYTES, mustDownload, opensInline } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Offer files — the PDF a client actually received — for ADMINS only.
@@ -20,14 +20,6 @@ import { classifyUpload, formatSize, MAX_INTAKE_BYTES, mustDownload, opensInline
 
 const BUCKET = "lead-files";
 const SIGNED_TTL = 60;
-
-function service() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
 
 async function isAdmin(): Promise<"none" | "user" | "admin"> {
   const supabase = await createClient();

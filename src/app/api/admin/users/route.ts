@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
+import { service } from "@/lib/supabase/service";
 
 // Admin-only: create a team member (auth user + profile).
 // The caller's session is verified server-side; the service key never leaves the server.
@@ -29,11 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "candidateId must be a string" }, { status: 400 });
   }
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   // "Convert to a team member" from a candidate: refuse a second conversion
   // before an account exists (convert-server.ts).

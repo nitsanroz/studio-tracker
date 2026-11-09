@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyImage } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Upload / clear a member picture. Two kinds:
@@ -59,11 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Use a PNG, JPG, GIF or WebP image" }, { status: 400 });
   }
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   const ext = (file.name.split(".").pop() || "png").toLowerCase();
   const path = `${kind}-${target.profileId}-${Date.now()}.${ext}`;
@@ -96,11 +92,7 @@ export async function DELETE(request: NextRequest) {
   const target = await resolveTarget(url.searchParams.get("targetId"));
   if ("error" in target) return NextResponse.json({ error: target.error }, { status: target.status });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
   const { error } = await admin
     .from("profiles")
     .update({ [COLUMN[kind]]: null })

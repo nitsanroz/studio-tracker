@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { monthBill, type RateTerms } from "@/lib/freelance-rate";
 import { signStorageUrl } from "@/lib/sign-storage";
 import { tokenFromSegment } from "@/lib/freelancer-link";
 import { fetchAll, MISSING_SCHEMA_CODES } from "@/lib/db";
 import { snapOf, updateLog, type LogSnap } from "@/lib/freelancer-sync";
+import { service } from "@/lib/supabase/service";
 
 // Public endpoint behind a freelancer's private link (/log/[token], 0054).
 // Token-gated; every read and write uses the service key on the server and is
@@ -17,12 +18,6 @@ import { snapOf, updateLog, type LogSnap } from "@/lib/freelancer-sync";
 const RATE_LIMIT_WINDOW_MIN = 60;
 const RATE_LIMIT_MAX = 30;
 const MAX_DESCRIPTION = 600;
-
-function admin() {
-  return createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false },
-  });
-}
 
 interface Freelancer {
   profile_id: string;
@@ -107,7 +102,7 @@ async function allowed(sb: SupabaseClient, profileId: string) {
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
   const f = await freelancerFor(sb, token);
   if (!f) return NextResponse.json({ error: "This link isn't active." }, { status: 404 });
 
@@ -346,7 +341,7 @@ async function addDeliverable(sb: SupabaseClient, profileId: string, body: Recor
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
   const f = await freelancerFor(sb, token);
   if (!f) return NextResponse.json({ error: "This link isn't active." }, { status: 404 });
 
@@ -386,7 +381,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
  * old one (which restores the line from it) — see /api/admin/freelancers. */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
   const f = await freelancerFor(sb, token);
   if (!f) return NextResponse.json({ error: "This link isn't active." }, { status: 404 });
   let body: Record<string, unknown>;
@@ -444,7 +439,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ token: st
 /** He can take back a line until it's reviewed (current month only, as above). */
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
   const f = await freelancerFor(sb, token);
   if (!f) return NextResponse.json({ error: "This link isn't active." }, { status: 404 });
   const chargeId = req.nextUrl.searchParams.get("charge");

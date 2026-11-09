@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { PublishedEstimate } from "@/lib/leads/estimates-data";
 import { PublicEstimateView } from "./public-estimate-view";
+import { service } from "@/lib/supabase/service";
 
 // The client's copy of an approved estimate — public, token-gated, FROZEN.
 //
@@ -21,16 +21,10 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Offer — Studio&more", robots: { index: false } };
 
-function admin() {
-  return createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false },
-  });
-}
-
 export default async function PublicEstimatePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!/^[0-9a-f]{64}$/.test(token)) notFound();
-  const sb = admin();
+  const sb = service();
   const { data: pub } = await sb.from("estimate_publications").select("snapshot").eq("token", token).maybeSingle();
   let s = (pub as { snapshot?: PublishedEstimate | null } | null)?.snapshot ?? null;
   if (!s) {

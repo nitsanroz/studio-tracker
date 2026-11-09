@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { service } from "@/lib/supabase/service";
 
 // Admin-only: { [profileId]: email } for every member.
 //
@@ -21,11 +21,7 @@ export async function GET() {
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   // perPage is capped server-side; 200 covers the studio with room to spare.
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 200 });

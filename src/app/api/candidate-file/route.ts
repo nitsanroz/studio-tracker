@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyUpload, formatSize, MAX_INTAKE_BYTES } from "@/lib/uploads";
 import { fetchLinkedPdf } from "@/lib/candidates/fetch-document";
 import { cleanFileName } from "@/lib/candidates/email-import";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Serves one candidate file — a CV, a portfolio PDF — to an ADMIN.
@@ -68,11 +68,7 @@ export async function GET(request: NextRequest) {
   // not become a way to test whether a given candidate's file exists.
   if (!path) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
   const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(path, SIGNED_TTL);
   if (error || !data?.signedUrl) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -171,11 +167,7 @@ export async function POST(request: NextRequest) {
     contentType = kind.contentType;
   }
 
-  const admin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  const admin = service();
 
   // Idempotent: already-there is the normal case after the first upload ever.
   await admin.storage.createBucket(BUCKET, { public: false }).catch(() => undefined);

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { signStorageUrl } from "@/lib/sign-storage";
 import {
   PublicGanttView,
@@ -7,6 +6,7 @@ import {
   type PublicGanttGroup,
   type PublicGanttTask,
 } from "./public-gantt-view";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Public, token-gated client Gantt — LIVE, unlike `/report/[token]`.
@@ -29,21 +29,13 @@ import {
  */
 export const dynamic = "force-dynamic";
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export default async function PublicGanttPage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const sb = admin();
+  const sb = service();
 
   const { data: link } = await sb
     .from("gantt_links")

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { classifyTaskAttachment, formatSize } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Task attachments. Session-verified; storage and the `attachments` row via the
@@ -24,14 +24,6 @@ const MAX_BYTES = 25 * 1024 * 1024;
 const UUID = /^[0-9a-f-]{36}$/i;
 const safeName = (name: string) => name.replace(/[^\w.\-]+/g, "_").slice(-120) || "file";
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -48,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "taskId and file are required" }, { status: 400 });
   }
 
-  const sb = admin();
+  const sb = service();
 
   // Guard: the target task must exist (blocks attaching to arbitrary/guessed ids).
   const { data: task } = await sb.from("tasks").select("id").eq("id", taskId).maybeSingle();
@@ -142,7 +134,7 @@ export async function DELETE(request: NextRequest) {
   const { id } = await request.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const sb = admin();
+  const sb = service();
   const { data: row } = await sb
     .from("attachments")
     .select("file_path, uploaded_by")

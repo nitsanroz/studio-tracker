@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { appOrigin } from "@/lib/app-origin";
 import {
@@ -9,6 +8,7 @@ import {
   parseReports,
   type ReportStore,
 } from "@/lib/csp-reports";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Where the browser posts Content-Security-Policy violations.
@@ -42,14 +42,6 @@ import {
 const SETTINGS_KEY = "csp_reports";
 /** Generous for a report (they are ~1 KB) and small enough to be cheap to refuse. */
 const MAX_BODY = 16 * 1024;
-
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
 
 /**
  * Origins whose pages we accept reports about.
@@ -93,7 +85,7 @@ function logViolations(violations: { directive: string; blocked: string; documen
  * so losing the race is an ERROR we can see and retry instead of quietly
  * overwriting whoever got there first.
  */
-async function claimRow(db: ReturnType<typeof admin>, store: ReportStore): Promise<boolean> {
+async function claimRow(db: ReturnType<typeof service>, store: ReportStore): Promise<boolean> {
   const { error } = await db.from("app_settings").insert({ key: SETTINGS_KEY, value: store });
   return !error;
 }
@@ -107,7 +99,7 @@ async function claimRow(db: ReturnType<typeof admin>, store: ReportStore): Promi
  * an absent or null key yields SQL NULL, which `eq` never matches.
  */
 async function replaceRow(
-  db: ReturnType<typeof admin>,
+  db: ReturnType<typeof service>,
   store: ReportStore,
   seenAt: string | null,
 ): Promise<boolean> {
@@ -191,7 +183,7 @@ export async function POST(req: NextRequest) {
   if (violations.length === 0) return done;
 
   try {
-    const db = admin();
+    const db = service();
     /**
      * ⚠️⚠️ COMPARE-AND-SET, NOT A BARE UPSERT — the whole store is ONE jsonb row,
      * so a plain read-then-write loses a concurrent report entirely. Two colleagues
@@ -255,7 +247,7 @@ export async function GET() {
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (me?.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
 
-  const { data: row } = await admin()
+  const { data: row } = await service()
     .from("app_settings")
     .select("value")
     .eq("key", SETTINGS_KEY)

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { MAX_INTAKE_BYTES, MAX_INTAKE_FILES, classifyUpload, formatSize } from "@/lib/uploads";
 import { makeMintCap } from "@/lib/mint-cap";
+import { service } from "@/lib/supabase/service";
 
 /**
  * Mints a one-shot signed upload URL so the CLIENT'S BROWSER can put a file
@@ -41,17 +41,9 @@ const FLOOD_MAX = 40;
  */
 const mintCap = makeMintCap(FLOOD_MAX, FLOOD_WINDOW_MIN * 60_000);
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 export async function POST(req: NextRequest, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
-  const sb = admin();
+  const sb = service();
 
   const { data: link } = await sb
     .from("intake_links")

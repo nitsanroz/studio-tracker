@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DbError, isMissingSchema } from "@/lib/db";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import {
   assembleEmailHtml,
   assembleTaskBrief,
@@ -20,6 +19,7 @@ import {
   classifyUpload,
   formatSize,
 } from "@/lib/uploads";
+import { service } from "@/lib/supabase/service";
 
 // Anti-flood: max submissions accepted per intake link within the window.
 const RATE_LIMIT_WINDOW_MIN = 10;
@@ -34,14 +34,6 @@ const MAX_LINK_TITLE = 120;
 // Public endpoint for the client intake form. Token-gated; all DB access via
 // the service key on the server (nothing is exposed to anonymous clients).
 
-function admin() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
-
 type IntakeLink = {
   id: string;
   client_id: string | null;
@@ -50,7 +42,7 @@ type IntakeLink = {
 };
 
 async function resolveLink(token: string): Promise<IntakeLink | null> {
-  const sb = admin();
+  const sb = service();
   const { data } = await sb
     .from("intake_links")
     .select("id, client_id, active, clients(name)")
@@ -176,7 +168,7 @@ function parseUploaded(raw: string): { path: string; name: string }[] {
 }
 
 /** Match "Company" text + email domain against client names. */
-async function suggestClient(sb: ReturnType<typeof admin>, company: string, email: string) {
+async function suggestClient(sb: ReturnType<typeof service>, company: string, email: string) {
   const { data: clients } = await sb.from("clients").select("id, name").eq("archived", false);
   if (!clients) return null;
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -202,7 +194,7 @@ async function suggestClient(sb: ReturnType<typeof admin>, company: string, emai
  * already, and a revision they never hear about is worse than no revision.
  */
 async function notify(
-  sb: ReturnType<typeof admin>,
+  sb: ReturnType<typeof service>,
   answers: IntakeAnswers,
   extras: { files: IntakeFile[]; links: BriefLink[]; dropped: string[] },
   updated: boolean,
@@ -243,7 +235,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ token: str
   const link = await resolveLink(token);
   if (!link) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
 
-  const sb = admin();
+  const sb = service();
 
   /**
    * Rate limit: cap accepted submissions per link per window (serverless-safe,
