@@ -56,9 +56,9 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
         assertOk("finance_pnl_monthly", res);
         return (res.data ?? []) as Row[];
       }),
-    // 0065, read on its own: naming a missing column fails the whole select, and
-    // the clients query above must not wait on that migration.
-    soft(fetchAll<Row>(sb, "clients", "id, payment_terms_days")),
+    // 0065/0066, read on their own and as `*`: naming a missing column fails the
+    // whole select, and neither query may wait on those migrations.
+    soft(fetchAll<Row>(sb, "clients", "*")),
   ]);
 
   // This month's billable hours, from the entries already in hand — the goal
@@ -102,7 +102,9 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   const paceHours = goal ? (goal.todayCounted ? goal.soFar : Math.max(0, goal.soFar - liveHours.today)) : 0;
 
   const termsById = new Map(
-    termsRows.filter((r) => r.payment_terms_days != null).map((r) => [String(r.id), Number(r.payment_terms_days)]),
+    termsRows
+      .filter((r) => r.payment_terms_days != null)
+      .map((r) => [String(r.id), { days: Number(r.payment_terms_days), net: r.payment_terms_net === true }]),
   );
 
   return {
@@ -115,7 +117,8 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
       archived: Boolean(c.archived),
       hourCap: c.hour_cap == null ? null : Number(c.hour_cap),
       keysTaskId: (c.keys_task_id as string | null) ?? null,
-      paymentTermsDays: termsById.get(String(c.id)),
+      paymentTermsDays: termsById.get(String(c.id))?.days,
+      paymentTermsNet: termsById.get(String(c.id))?.net,
     })),
     tasks: tasks.map((t) => ({
       id: String(t.id),

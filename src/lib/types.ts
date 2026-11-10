@@ -72,11 +72,13 @@ export interface Client {
   /** Hours agreed per billing period, studio-wide for this client (0033). null = no cap. */
   hourCap: number | null;
   /**
-   * Days the client has to pay an invoice, counted from the invoice (0065).
-   * 14 for the studio's usual terms; Maccabi is on 30. Read by &advice here and
-   * by the finance app's receivables + &advice — one number for both apps.
+   * Days the client has to pay an invoice (0065) — 14 for the studio's usual
+   * terms. With `paymentTermsNet` (0066) it is net+N instead: counted from the
+   * end of the invoice's month, paid in the run by the 5th after (Maccabi,
+   * net+30). See lib/payment-terms.ts; the finance app reads the same columns.
    */
   paymentTermsDays: number;
+  paymentTermsNet: boolean;
   /** Internal notes on the client-reports page. NEVER sent to a client (0033). */
   reportNotes: string;
   /**

@@ -407,6 +407,7 @@ export const mapClient = (r: any): Client => ({
   invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
   hourCap: numOrNull(r.hour_cap), // 0033
   paymentTermsDays: numOrNull(r.payment_terms_days) ?? DEFAULT_PAYMENT_TERMS_DAYS, // 0065
+  paymentTermsNet: r.payment_terms_net === true, // 0066
   reportNotes: r.report_notes ?? "", // 0033
   // 0037; null until the migration runs, which simply hides the write-down control
   keysTaskId: (r.keys_task_id as string | null) ?? null,

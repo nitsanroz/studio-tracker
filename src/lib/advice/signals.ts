@@ -66,6 +66,8 @@ export interface AdviceData {
     keysTaskId: string | null;
     /** days from invoice to payment (0065); missing = the studio's usual 14 */
     paymentTermsDays?: number;
+    /** net+N rather than N days (0066) — see lib/payment-terms.ts */
+    paymentTermsNet?: boolean;
   }[];
   tasks: {
     id: string;
@@ -292,7 +294,7 @@ export function capFilling(data: AdviceData): Finding[] {
  * A client's LAST ended billing period had hours, isn't marked paid, and is past
  * its payment date — never before: inside the client's terms nothing is late.
  * The payment date is the invoice day (the day after the period ends) plus the
- * client's own terms — 14 days, Maccabi 30 (`paymentDueFor`, migration 0065;
+ * client's own terms — 14 days, or Maccabi's net+30 (`paymentDueFor`, 0065/0066;
  * the finance app counts the same way).
  * Only the last period, and only until 60 days after it ended (Nitsan,
  * 2026-10-24): 'paid' was ticked on 54 of 176 old periods, so looking further
@@ -307,7 +309,7 @@ export function periodUnpaid(data: AdviceData): Finding[] {
   for (const c of liveClients(data)) {
     const p = data.periods.filter((x) => x.clientId === c.id && x.dateTo < data.today).sort((a, b) => b.dateTo.localeCompare(a.dateTo))[0];
     if (!p || p.paid) continue;
-    const terms = c.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+    const terms = { days: c.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS, net: c.paymentTermsNet === true };
     const due = paymentDueFor(p.dateTo, terms);
     const late = daysBetween(parseISO(due), parseISO(data.today));
     // Quiet after 45 days late — about two months after a 14-day client's period,
@@ -327,7 +329,7 @@ export function periodUnpaid(data: AdviceData): Finding[] {
       facts: { client: c.name, period: p.label, dueDate: due, daysLate: late, hours: hrs(minutes), hoursSince: hrs(since) },
       title: `${c.name}: ${p.label} is ${late} ${late === 1 ? "day" : "days"} past its payment date`,
       body:
-        `${formatHoursShort(minutes)} in the period; payment was due ${shortDate(due)} (${terms}-day terms).` +
+        `${formatHoursShort(minutes)} in the period; payment was due ${shortDate(due)} (${terms.net ? `net+${terms.days}` : `${terms.days}-day`} terms).` +
         (onCredit
           ? ` The team has logged ${formatHoursShort(since)} for them since — a polite nudge now, before more work goes out on credit.`
           : " If it's paid, tick it; if not, a short reminder."),

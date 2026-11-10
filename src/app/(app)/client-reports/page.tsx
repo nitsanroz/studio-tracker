@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { invoiceDayToStore, nextPeriod, parseInvoiceDay } from "@/lib/billing-rollover";
-import { termsToStore } from "@/lib/payment-terms";
+import { paymentDueFor, termsLabel, termsToStore } from "@/lib/payment-terms";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import { capTone } from "@/lib/cap";
@@ -264,11 +264,12 @@ function PaymentPeriods({ client }: { client: Client }) {
     updateClient(c.id, { invoiceNote: next });
   };
 
-  /** Payment terms, in days (0065). Refused rather than coerced — see `termsToStore`. */
+  /** Payment terms (0065/0066): "14", "net+30". Refused rather than coerced — see `termsToStore`. */
   const commitTerms = (c: Client, raw: string) => {
     const next = termsToStore(raw);
-    if (next === null || next === c.paymentTermsDays) return;
-    updateClient(c.id, { paymentTermsDays: next });
+    if (next === null) return;
+    if (next.days === c.paymentTermsDays && next.net === c.paymentTermsNet) return;
+    updateClient(c.id, { paymentTermsDays: next.days, paymentTermsNet: next.net });
   };
 
   const commitClientCap = (c: Client, raw: string) => {
@@ -284,13 +285,6 @@ function PaymentPeriods({ client }: { client: Client }) {
 
   const current = periods.find((p) => todayIso >= p.dateFrom && todayIso <= p.dateTo);
   const currentMinutes = current ? minutesIn(current.dateFrom, current.dateTo) : 0;
-  const activeTasks = useMemo(() => {
-    if (!current) return 0;
-    const ids = new Set<string>();
-    for (const e of clientEntries)
-      if (e.date >= current.dateFrom && e.date <= current.dateTo) ids.add(e.taskId);
-    return ids.size;
-  }, [clientEntries, current]);
 
   const byMonth = useMemo(() => {
     const map = new Map<string, number>();
@@ -512,25 +506,6 @@ function PaymentPeriods({ client }: { client: Client }) {
                   inputClassName="text-2xl tabular-nums"
                 />
               </div>
-              {/* Payment terms (0065): days from the invoice to the payment date.
-                  A line under the invoice day rather than a fifth figure — the four
-                  figures fill this grid exactly, and the two belong together: the
-                  payment is due this many days after that day. &advice and the
-                  finance app both count from here. */}
-              <div
-                className="mt-0.5 flex items-baseline gap-1 text-xs text-muted"
-                title="Days the client has to pay, counted from the invoice. 14 is the studio's usual terms; Maccabi is on 30. &advice and the finance app use this to say when a payment is late. Click to edit."
-              >
-                pays in
-                <EditableTextCell
-                  value={String(client.paymentTermsDays)}
-                  bidi={false}
-                  onCommit={(v) => commitTerms(client, v)}
-                  className="font-medium tabular-nums text-foreground"
-                  inputClassName="w-12 tabular-nums"
-                />
-                days
-              </div>
             </div>
             {/* ⚠️⚠️ THE KEYS TASK IS CHOSEN, NEVER GUESSED — see `Client.keysTaskId`.
                 The real data holds `--- Keys ---` SEPARATOR rows and two keys-shaped
@@ -572,11 +547,30 @@ function PaymentPeriods({ client }: { client: Client }) {
                 </div>
               </div>
             )}
-            <div title="Tasks with hours logged in the current payment period">
-              <div className="text-xs text-muted">Active tasks</div>
-              <div className="mt-1 font-serif-accent text-[32px] leading-10 tabular-nums">
-                {current ? activeTasks : "–"}
+            {/* Payment terms (0065/0066), in the slot "Active tasks" had — Nitsan,
+                2026-11-10: the count said little, and the terms are what &advice
+                and the finance app decide "late" by. "14 days" or "Net+30"; type
+                either (or שוטף+30). The line under it is the payment date this
+                period's invoice will have, so the rule can be checked at a glance. */}
+            <div title="How long the client has to pay. A number is days after the invoice (the studio's usual 14); Net+30 counts from the end of the invoice's month and is paid in the run by the 5th after — Maccabi. &advice and the finance app use this to say when a payment is late. Click to edit.">
+              <div className="text-xs text-muted">Payment terms</div>
+              <div className="mt-1">
+                <EditableTextCell
+                  value={termsLabel({ days: client.paymentTermsDays, net: client.paymentTermsNet })}
+                  bidi={false}
+                  onCommit={(v) => commitTerms(client, v)}
+                  className="font-serif-accent text-[32px] leading-10 tabular-nums whitespace-nowrap"
+                  inputClassName="text-2xl tabular-nums"
+                />
               </div>
+              {current && (
+                <div
+                  className="mt-0.5 whitespace-nowrap text-xs text-muted"
+                  title="When this period's payment is due: its invoice goes out the day after it ends"
+                >
+                  paid by {formatDayMonth(paymentDueFor(current.dateTo, { days: client.paymentTermsDays, net: client.paymentTermsNet }))}
+                </div>
+              )}
             </div>
           </div>
         </div>

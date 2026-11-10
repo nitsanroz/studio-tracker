@@ -185,6 +185,18 @@ describe("periodUnpaid", () => {
     expect(later[0].body).toMatch(/30-day terms/);
   });
 
+  it("net+30 counts from the end of the invoice's month, paid by the 5th after", () => {
+    // September, invoiced 1 Oct, net+30 → due 5 Dec
+    const periods = [p("September 2026", "2026-09-01", "2026-09-30")];
+    const entries = [e("t1", "2026-09-10", 10)];
+    const net = (data: AdviceData) => ({ ...data, clients: data.clients.map((c) => (c.id === "lumen" ? { ...c, paymentTermsDays: 30, paymentTermsNet: true } : c)) });
+    expect(periodUnpaid(net(base({ periods, entries, today: "2026-11-03" })))).toEqual([]);
+    expect(periodUnpaid(net(base({ periods, entries, today: "2026-12-05" })))).toEqual([]);
+    const late = periodUnpaid(net(base({ periods, entries, today: "2026-12-08" })));
+    expect(late[0].facts).toMatchObject({ dueDate: "2026-12-05", daysLate: 3 });
+    expect(late[0].body).toMatch(/net\+30 terms/);
+  });
+
   it("says how much has been logged since — work on credit makes it worse", () => {
     const periods = [p("September 2026", "2026-09-01", "2026-09-30")];
     const plain = periodUnpaid(base({ periods, entries: [e("t1", "2026-09-10", 10)] }))[0];

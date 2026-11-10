@@ -214,13 +214,14 @@ export function useClientActions(deps: ClientDeps) {
       if ("keysTaskId" in patch) optional.keys_task_id = patch.keysTaskId;
       // 0065, optional for the same reason.
       if ("paymentTermsDays" in patch) optional.payment_terms_days = patch.paymentTermsDays;
+      if ("paymentTermsNet" in patch) optional.payment_terms_net = patch.paymentTermsNet;
       const tail = wrote("updateClient");
       void updateWithOptional(supabase, "clients", { id: clientId }, row, optional).then((res) => {
         tail(res);
         // ⚠️ Say so rather than leaving local state claiming a value the database
         // does not have — it would look saved until the next refresh took it away.
         if (res.degraded && Object.keys(optional).length) {
-          setNotice("The cap, notes, keys task or payment terms weren't saved — migration 0033/0037/0065 hasn't been run yet.");
+          setNotice("The cap, notes, keys task or payment terms weren't saved — migration 0033/0037/0065/0066 hasn't been run yet.");
         }
       });
       // Marking a client internal makes all its existing tasks non-billable.
