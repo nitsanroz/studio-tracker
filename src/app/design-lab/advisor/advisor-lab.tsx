@@ -752,6 +752,8 @@ const FIXTURE: AdviceView = {
   ],
   hidden: 2,
   wordingOff: "Plain wording — no Claude API key",
+  checkedAt: "2026-10-26T11:32:00.000Z",
+  wordedAt: null,
 };
 
 /** components/advice.tsx as built, with its API answered here — the lab never reads the database. */

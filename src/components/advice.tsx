@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { Check, ChevronDown, Clock3, Info, Lightbulb, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Check, ChevronDown, Clock3, Info, Lightbulb, RotateCw, TrendingDown, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { StudioArrow } from "./studio-arrow";
@@ -174,6 +174,23 @@ export function Advice() {
   );
 }
 
+/** "14:32", Israel time — the studio's clock wherever the laptop is. */
+const clock = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" });
+/** "Sun", for a time on another day than the check. */
+const weekday = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", timeZone: "Asia/Jerusalem" });
+const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+
+/** "Checked 14:32 · worded 07:40" — the check is live, the wording is the morning run's. */
+function checkedLine(view: AdviceView): string {
+  const parts = [`Checked ${clock(view.checkedAt)}`];
+  if (view.wordedAt) {
+    const sameDay = dayOf(view.wordedAt) === dayOf(view.checkedAt);
+    parts.push(`worded ${sameDay ? "" : weekday(view.wordedAt) + " "}${clock(view.wordedAt)}`);
+  }
+  return parts.join(" · ");
+}
+
 function AdvicePane({ onClose }: { onClose: () => void }) {
   const [view, setView] = useState<AdviceView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -183,8 +200,12 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const openTask = useDataMaybe()?.openTask;
 
+  /** a check is running — the refresh icon spins while the cards stay put */
+  const [checking, setChecking] = useState(false);
   const load = useCallback(async () => {
+    setChecking(true);
     const res = await fetch("/api/advice").catch(() => null);
+    setChecking(false);
     if (!res) return setError("Couldn't reach the tracker.");
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return setError(j.error ?? "Something went wrong.");
@@ -346,8 +367,24 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
         <span className="flex size-9 items-center justify-center rounded-xl bg-brand-soft">
           <span className="brand-amp w-4" style={{ backgroundColor: AQUA }} />
         </span>
-        {/* No date or "updated" line: opening the pane IS the check, so it's always now. */}
-        <p className="card-title min-w-0 flex-1">&amp;advice</p>
+        {/*
+          Opening the pane IS the check, but the time is shown anyway (Nitsan,
+          2026-11-10): a note that outlived a fix should say how old it is, and
+          the wording comes from the morning run, not from this check.
+        */}
+        <div className="min-w-0 flex-1">
+          <p className="card-title">&amp;advice</p>
+          {view && <p className="text-[12px] leading-4 text-faint">{checkedLine(view)}</p>}
+        </div>
+        <button
+          onClick={() => void load()}
+          disabled={checking}
+          aria-label="Check again"
+          title="Check again"
+          className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground disabled:hover:bg-transparent"
+        >
+          <RotateCw size={18} strokeWidth={1.75} className={checking ? "animate-spin" : ""} />
+        </button>
         <button onClick={onClose} aria-label="Close" className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground">
           <X size={20} strokeWidth={1.75} />
         </button>

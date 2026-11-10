@@ -60,3 +60,38 @@ export function periodPaidInFinance(
   const months = monthsSpanned(period.dateFrom, period.dateTo);
   return months.length > 0 && months.every((k) => paidMonths.has(k));
 }
+
+/** A `finance_client_monthly` row, read with the service key: only what "paid" needs. */
+export interface PlanMonthRow {
+  client_id: string | null;
+  client_canon: string;
+  year: number;
+  month: number;
+  paid_at: string | null;
+}
+
+/**
+ * `client_months_paid` (0064) done in code, for the server-side readers that
+ * hold the service key — &advice. ⚠️ The SQL function can't serve them: it is
+ * gated on `is_admin()`, which reads `auth.uid()`, and the service role has
+ * none, so it answers with no rows.
+ *
+ * Same rule as the SQL, so &advice and Client Reports never disagree: a Plan
+ * row belongs to a client by `client_id` OR by `client_canon` = its name, and a
+ * client-month is paid only when EVERY one of its rows (sub-accounts) is.
+ */
+export function monthsPaidFromPlan(rows: PlanMonthRow[], clients: { id: string; name: string }[]): MonthPaidRow[] {
+  const byName = new Map<string, string[]>();
+  for (const c of clients) byName.set(c.name, [...(byName.get(c.name) ?? []), c.id]);
+  const months = new Map<string, MonthPaidRow>();
+  for (const r of rows) {
+    const owners = new Set([...(r.client_id ? [r.client_id] : []), ...(byName.get(r.client_canon) ?? [])]);
+    for (const id of owners) {
+      const k = `${id}|${r.year}|${r.month}`;
+      const cur = months.get(k) ?? { client_id: id, year: r.year, month: r.month, paid: true };
+      cur.paid = cur.paid && r.paid_at != null;
+      months.set(k, cur);
+    }
+  }
+  return [...months.values()];
+}

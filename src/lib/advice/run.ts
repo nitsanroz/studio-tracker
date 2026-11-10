@@ -14,6 +14,7 @@ import { HOURLY_TERMS, LINE, evenSpread } from "@/lib/hours-goal";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow } from "./merge";
 import { findAll, pulse, type AdviceData, type PulseTile } from "./signals";
 import { totals, type EstimateLine } from "@/lib/leads/estimate";
+import { monthsPaidFromPlan, paidMonthsFor, periodPaidInFinance, type MonthPaidRow, type PlanMonthRow } from "@/lib/finance-paid";
 
 type Row = Record<string, unknown>;
 
@@ -68,9 +69,10 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   const liveHours = { total: hoursOf(billableNow), today: hoursOf(billableNow.filter((e) => String(e.date) === today)) };
 
   // The rest doesn't depend on itself — run it side by side.
-  const [estimates, pages, goal] = await Promise.all([
+  const [estimates, pages, planMonths, goal] = await Promise.all([
     loadEstimates(sb, pubs),
     loadPageData(sb, today),
+    loadPlanPaid(sb, y, clients),
     // The pace is a nice-to-have: a finance hiccup must not take the pane down.
     studioGoal(sb, liveHours).catch(() => null),
   ]);
@@ -128,7 +130,15 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
       dateFrom: String(p.date_from),
       dateTo: String(p.date_to),
       hourCap: p.hour_cap == null ? null : Number(p.hour_cap),
-      paid: Boolean(p.paid),
+      // The tracker's tick, OR every month of the period marked Paid on
+      // finance's Plan — Client Reports' own rule (v1.94.0), so the pane
+      // never nags about a period that page shows as paid.
+      paid:
+        Boolean(p.paid) ||
+        periodPaidInFinance(
+          { dateFrom: String(p.date_from), dateTo: String(p.date_to) },
+          paidMonthsFor(planMonths, String(p.client_id)),
+        ),
     })),
     reportLinks: links.map((l) => ({
       clientId: String(l.client_id),
@@ -139,6 +149,22 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     pnl: [...pnlByMonth.values()],
     pace: goal ? { soFar: paceHours, expectedByNow: goal.profit.hours * dueShare } : null,
   };
+}
+
+/**
+ * Which client-months finance's Plan has marked Paid, this year and last.
+ * ⚠️ Only `paid_at` and the month — never hours, rates or revenue. Any failure
+ * reads as "nothing paid there", as Client Reports does: it only ever ADDS paid.
+ */
+async function loadPlanPaid(sb: SupabaseClient, year: number, clients: Row[]): Promise<MonthPaidRow[]> {
+  try {
+    const rows = await fetchAll<PlanMonthRow>(sb, "finance_client_monthly", "id, client_id, client_canon, year, month, paid_at", (q) =>
+      q.gte("year", year - 1),
+    );
+    return monthsPaidFromPlan(rows, clients.map((c) => ({ id: String(c.id), name: String(c.name) })));
+  } catch {
+    return [];
+  }
 }
 
 /** A table a page signal reads that this database may not have yet: no rows, never a broken pane. */
@@ -285,6 +311,10 @@ export interface AdviceView {
   hidden: number;
   /** null when Claude wording is on; otherwise why not, in a few words */
   wordingOff: string | null;
+  /** when this check ran (ISO) — the pane's "Checked 14:32" */
+  checkedAt: string;
+  /** when the daily run last worded the items (ISO); null when wording is off or failed */
+  wordedAt: string | null;
 }
 
 /** Run every rule and write the result: the pane's view, plus every stored row for the daily run. */
@@ -296,7 +326,7 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
     loadAdviceData(sb, today),
     loadRows(sb),
     // Only read when it can matter: without a key the footer says so anyway.
-    wordingOn ? sb.from("advice_runs").select("error").order("run_at", { ascending: false }).limit(1).maybeSingle() : null,
+    wordingOn ? sb.from("advice_runs").select("run_at, error").order("run_at", { ascending: false }).limit(1).maybeSingle() : null,
   ]);
   const findings = findAll(data);
   const plan = mergeFindings(rows, findings, now);
@@ -339,6 +369,8 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
       pulse: pulse(data, findings),
       hidden: fresh.filter((r) => !r.resolvedAt).length - shown.length,
       wordingOff: !wordingOn ? "Plain wording — no Claude API key" : lastRun?.data?.error ? "Plain wording — the last Claude run failed" : null,
+      checkedAt: now,
+      wordedAt: wordingOn && lastRun?.data && !lastRun.data.error ? String(lastRun.data.run_at) : null,
     },
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { monthKey, monthsSpanned, paidMonthsFor, periodPaidInFinance } from "./finance-paid";
+import { monthKey, monthsPaidFromPlan, monthsSpanned, paidMonthsFor, periodPaidInFinance } from "./finance-paid";
 
 describe("monthsSpanned", () => {
   it("a calendar month is one month", () => {
@@ -47,5 +47,45 @@ describe("periodPaidInFinance", () => {
   });
   it("an inverted period is never paid", () => {
     expect(periodPaidInFinance({ dateFrom: "2026-10-31", dateTo: "2026-10-01" }, a)).toBe(false);
+  });
+});
+
+describe("monthsPaidFromPlan", () => {
+  const clients = [
+    { id: "v", name: "Visitt" },
+    { id: "o", name: "Other" },
+  ];
+  const row = (over: Partial<import("./finance-paid").PlanMonthRow>) => ({
+    client_id: null,
+    client_canon: "Visitt",
+    year: 2026,
+    month: 10,
+    paid_at: "2026-11-09T12:00:00Z",
+    ...over,
+  });
+
+  it("matches by name when the row has no client id", () => {
+    expect(monthsPaidFromPlan([row({})], clients)).toEqual([{ client_id: "v", year: 2026, month: 10, paid: true }]);
+  });
+  it("matches by client id even when the name differs", () => {
+    expect(monthsPaidFromPlan([row({ client_id: "o", client_canon: "Other Ltd" })], clients)).toEqual([
+      { client_id: "o", year: 2026, month: 10, paid: true },
+    ]);
+  });
+  it("a month is paid only when every sub-account row is", () => {
+    const out = monthsPaidFromPlan([row({}), row({ paid_at: null })], clients);
+    expect(out).toEqual([{ client_id: "v", year: 2026, month: 10, paid: false }]);
+  });
+  it("a row matching by id and by name counts once", () => {
+    expect(monthsPaidFromPlan([row({ client_id: "v" })], clients)).toHaveLength(1);
+  });
+  it("feeds periodPaidInFinance: Oct (21 Sep – 20 Oct) paid once Sep and Oct are", () => {
+    const rows = monthsPaidFromPlan([row({ month: 9 }), row({ month: 10 }), row({ month: 11, paid_at: null })], clients);
+    const paid = paidMonthsFor(rows, "v");
+    expect(periodPaidInFinance({ dateFrom: "2026-09-21", dateTo: "2026-10-20" }, paid)).toBe(true);
+    expect(periodPaidInFinance({ dateFrom: "2026-10-21", dateTo: "2026-11-19" }, paid)).toBe(false);
+  });
+  it("a row of an unknown client is dropped", () => {
+    expect(monthsPaidFromPlan([row({ client_canon: "Nobody" })], clients)).toEqual([]);
   });
 });
