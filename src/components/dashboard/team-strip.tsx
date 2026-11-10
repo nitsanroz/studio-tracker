@@ -19,12 +19,11 @@ import { useMemo } from "react";
 
 /** Compact studio roster on the admin home: per-designer hours + billable bar. */
 export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
-  // entrySumsAll, NOT entrySums: the legacy-free list is empty before 2022 (every
-  // entry that far back is recovered pre-Everhour history), so the pane rendered
-  // nothing at all for those years while the tiles above it reported thousands of
-  // hours. About a third of those old entries DO name a person; the rest name
-  // nobody, and `unattributed` below owns up to that instead of quietly shrinking
-  // the studio's total.
+  // entrySumsAll, so the period's hours still add up — but ⚠️ RECOVERED
+  // (pre-Everhour) HOURS NEVER GO ON A PERSON'S CARD, even the third of them that
+  // name one: who did an old billing sheet's hours is a guess (Nitsan,
+  // 2026-11-10). They all land in `unattributed`, which owns up to them instead
+  // of quietly shrinking the studio's total; cards are hours people logged.
   const { entrySumsAll, tasks, profiles, clients } = useData();
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
@@ -42,7 +41,7 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
       if (filter.clientId && task?.clientId !== filter.clientId) continue;
       if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) continue;
       const kind = { billable: !!task?.billable, keys: keysIds.has(e.taskId) };
-      if (e.userId) per.set(e.userId, addEntry(per.get(e.userId) ?? newSplit(), e.minutes, kind));
+      if (e.userId && !e.legacy) per.set(e.userId, addEntry(per.get(e.userId) ?? newSplit(), e.minutes, kind));
       else orphan = addEntry(orphan, e.minutes, kind);
     }
     // Archived people are NOT filtered out: the pane describes a period, and
@@ -76,7 +75,9 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
     return { rows, unattributed: filter.billableOnly ? orphan.billable : orphan.total };
   }, [entrySumsAll, taskById, clients, profiles, filter]);
 
-  if (rows.length === 0) return null;
+  // A year before 2022 has no logged hours, only recovered ones — keep the pane so
+  // the unattributed line still says where the studio's hours went.
+  if (rows.length === 0 && unattributed === 0) return null;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
@@ -88,9 +89,9 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
             // total — most old recovered entries name nobody at all.
             <span
               className="ml-1.5 font-normal text-faint"
-              title="Recovered pre-Everhour hours whose author isn't recorded. They count in the studio totals above but can't be put on anyone's card."
+              title="Recovered pre-Everhour hours. They count in the studio totals above, but nobody logged them, so they aren't put on anyone's card."
             >
-              · {formatHoursShort(unattributed)} unattributed
+              · {formatHoursShort(unattributed)} recovered history, not on a card
             </span>
           )}
         </h2>

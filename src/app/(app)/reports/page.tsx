@@ -233,10 +233,10 @@ function RangeStats({
   const productivity = total > 0 ? Math.round((billable / total) * 100) : null;
 
   const byUser = useMemo(() => {
-    // Recovered pre-Everhour rows may name an author who has no profile (they left
-    // long before the current roster). Dropping them — as a `.filter(r => r.profile)`
-    // used to — left their hours in the period total but missing from these bars, so
-    // the breakdown silently failed to add up. They are grouped by their raw name.
+    // ⚠️ RECOVERED (pre-Everhour) rows are ONE bar, never a person's: who did an old
+    // billing sheet's hours is a guess, even where a name was recorded (Nitsan,
+    // 2026-11-10). They are not dropped either — the breakdown must still add up to
+    // the period total, which counts them.
     /**
      * ⚠️ Accumulated in place with plain fields rather than through
      * `addEntry` — the React Compiler could not preserve this `useMemo` when the
@@ -247,7 +247,7 @@ function RangeStats({
     const keysIds = keysTaskIds(clients);
     const map = new Map<string, { minutes: number; billable: number; keys: number }>();
     for (const e of enriched) {
-      const key = e.user_id ?? `name:${e.legacy_author_name || "Unknown"}`;
+      const key = e.legacy ? `name:${RECOVERED}` : (e.user_id ?? `name:${e.legacy_author_name || "Unknown"}`);
       const row = map.get(key) ?? { minutes: 0, billable: 0, keys: 0 };
       row.minutes += e.minutes;
       if (e.task?.billable) row.billable += e.minutes;
@@ -379,7 +379,14 @@ function RangeStats({
                   {profile.name}
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-muted" title="Recovered from the pre-Everhour Asana history; this person has no account here">
+                <span
+                  className="flex items-center gap-1.5 text-muted"
+                  title={
+                    formerName === RECOVERED
+                      ? "Recovered pre-Everhour hours. They count in the period total, but nobody logged them, so they aren't put on a person."
+                      : "Recovered from the pre-Everhour Asana history; this person has no account here"
+                  }
+                >
                   <span className="size-4 shrink-0 rounded-full border border-dashed border-border-strong" />
                   {formerName}
                 </span>
@@ -407,6 +414,9 @@ function RangeStats({
 }
 
 // ── page ────────────────────────────────────────────────────────────────────
+
+/** The one bar for recovered pre-Everhour hours — never split by guessed author. */
+const RECOVERED = "Recovered history (not attributed)";
 
 export default function ReportsPage() {
   const { tasks, sections, clients, profiles } = useData();

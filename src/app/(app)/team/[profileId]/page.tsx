@@ -245,7 +245,7 @@ export default function MemberPage({
   params: Promise<{ profileId: string }>;
 }) {
   const { profileId } = use(params);
-  const { profiles, tasks, clients, entrySumsAll, updateProfile } = useData();
+  const { profiles, tasks, clients, entrySums, updateProfile } = useData();
   const isAdmin = useIsAdmin();
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
@@ -264,10 +264,12 @@ export default function MemberPage({
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
-  // Includes recovered pre-Everhour entries: this page IS the person's history.
+  // ⚠️ Hours this person LOGGED only. Recovered (pre-Everhour) rows are left out
+  // even when they carry this person's name — who did an old billing sheet's hours
+  // is a guess (Nitsan, 2026-11-10). They still count in every studio-wide total.
   const mine = useMemo(
-    () => entrySumsAll.filter((e) => e.userId === profileId),
-    [entrySumsAll, profileId],
+    () => entrySums.filter((e) => e.userId === profileId),
+    [entrySums, profileId],
   );
 
   // ── stats ──

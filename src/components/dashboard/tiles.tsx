@@ -112,12 +112,11 @@ export function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange
         // A task was worked whoever logged it — no author gate here, or every year
         // before 2022 read "0 tasks worked" beside thousands of hours.
         if (counts && e.minutes > 0) worked.add(e.taskId);
-        // The average needs a divisor, so it counts only ATTRIBUTED hours: recovered
-        // entries that name a person are in (they are two thirds of the 2019 total's
-        // problem solved), the authorless ones are out of both halves of the
-        // fraction. This used to exclude every legacy row, which made the tile read
-        // "0h · 0 designers" for any year before 2022.
-        if (counts && e.minutes > 0 && e.userId) {
+        // The average is PER PERSON, so it counts only hours people LOGGED: recovered
+        // (pre-Everhour) rows are out of both halves of the fraction, even those that
+        // name someone — who did them is a guess (Nitsan, 2026-11-10). A year before
+        // 2022 therefore reads no average, which is the honest answer.
+        if (counts && e.minutes > 0 && e.userId && !e.legacy) {
           curLive += e.minutes;
           designers.add(e.userId);
         }

@@ -173,7 +173,7 @@ function Stat({
 }
 
 export default function TeamPage() {
-  const { profiles, tasks, entrySumsAll, clients } = useData();
+  const { profiles, tasks, entrySums, clients } = useData();
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
   const [addOpen, setAddOpen] = useState(false);
@@ -218,13 +218,12 @@ export default function TeamPage() {
     const keysIds = keysTaskIds(clients);
     const map = new Map<string, HoursSplit>();
     const spans = new Map<string, { first: string; last: string }>();
-    // entrySumsAll, not entrySums: a member page is a HISTORICAL record, so it
-    // should show the pre-Everhour hours too — that is the whole point of having
-    // former staff here. The home page keeps using the legacy-free list, so
-    // nobody's days-worked or tenure counter can be moved by a 2019 entry.
-    for (const e of entrySumsAll) {
+    // ⚠️ Hours people LOGGED only: recovered (pre-Everhour) rows are left out even
+    // when they name someone — putting old billing-sheet hours on a person is a
+    // guess (Nitsan, 2026-11-10). They still count in every studio-wide total.
+    for (const e of entrySums) {
       if (range && (e.date < range.from || e.date > range.to)) continue;
-      if (!e.userId) continue; // recovered row whose author has no profile at all
+      if (!e.userId) continue;
       const span = spans.get(e.userId);
       if (!span) spans.set(e.userId, { first: e.date, last: e.date });
       else {
@@ -240,7 +239,7 @@ export default function TeamPage() {
       );
     }
     return { map, spans };
-  }, [entrySumsAll, tasks, clients, range]);
+  }, [entrySums, tasks, clients, range]);
 
   /**
    * Who is on the page: everyone still here, plus every former member who logged
