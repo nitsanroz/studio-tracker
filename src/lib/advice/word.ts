@@ -26,7 +26,7 @@ You get the findings the tracker's own checks produced today, with their figures
 - title: one short line saying what's happening (max ~70 characters).
 - body: one or two plain sentences on why it matters and what to do. Use only the figures given; never invent a number, a name or a date.
 
-Then suggest at most three ideas: things worth doing that follow from these figures taken together (for example two clients near their caps in the same week). Skip ideas rather than stretch. Each idea has a title, a body and an area (one or two words).
+Then suggest at most three ideas: things worth doing that follow from these figures taken together (for example two clients near their caps in the same week). Skip ideas rather than stretch. Each idea has a title, a body, an area (one or two words) and basedOn: the keys of every finding it relies on — if one of those findings goes away, the idea is withdrawn, so list each one whose figure the idea quotes.
 
 Never mention money amounts or currencies. Percentages, hours and dates only. Plain English.`;
 
@@ -46,8 +46,13 @@ const SCHEMA = {
       type: "array",
       items: {
         type: "object",
-        properties: { title: { type: "string" }, body: { type: "string" }, area: { type: "string" } },
-        required: ["title", "body", "area"],
+        properties: {
+          title: { type: "string" },
+          body: { type: "string" },
+          area: { type: "string" },
+          basedOn: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "body", "area", "basedOn"],
         additionalProperties: false,
       },
     },
@@ -58,7 +63,7 @@ const SCHEMA = {
 
 interface Worded {
   items: { key: string; title: string; body: string }[];
-  ideas: { title: string; body: string; area: string }[];
+  ideas: { title: string; body: string; area: string; basedOn?: string[] }[];
 }
 
 /** What Claude is given: the findings as the rules wrote them, minus internal links. */
@@ -131,7 +136,9 @@ export async function dailyRun(sb: SupabaseClient): Promise<{ worded: number; id
               kind: "idea",
               area: i.area.trim() || "Studio",
               severity: 0,
-              facts: {},
+              // Only keys of findings it was actually given — an invented key would
+              // read as "gone" and withdraw the idea on the next check.
+              facts: { basedOn: (i.basedOn ?? []).filter((k) => byKey.has(k)) },
               title: i.title.trim(),
               body: i.body.trim(),
               isReminder: false,

@@ -22,8 +22,9 @@ export interface AdviceRow {
   area: string;
   clientId: string | null;
   severity: number;
-  /** the finding's facts, plus `href`/`action`, `changed`, and `list` (the things it links) */
-  facts: Record<string, string | number | boolean | null | FindingLink[]>;
+  /** the finding's facts, plus `href`/`action`, `changed`, and `list` (the things it links);
+   *  an idea's facts hold `basedOn`, the keys of the findings it was written from */
+  facts: Record<string, string | number | boolean | null | FindingLink[] | string[]>;
   title: string;
   body: string;
   wordedTitle: string | null;
@@ -70,7 +71,12 @@ function factsOf(f: Finding): AdviceRow["facts"] {
 
 /**
  * Ideas come from the daily Claude run, not from the rules, so a rule check
- * never resolves them — the next run replaces them.
+ * never resolves them on its own — the next run replaces them. EXCEPT when a
+ * finding an idea was written from goes away (`facts.basedOn`): the idea then
+ * quotes something no longer true, so it goes with it. Hit 2026-11-10: the
+ * 06:40 run wrote "the payment is also 13 days late" from NoTraffic's unpaid
+ * finding, the finding resolved at 09:07 once October read as Paid, and the
+ * idea kept saying it all day.
  */
 export function mergeFindings(rows: AdviceRow[], findings: Finding[], nowIso: string): MergePlan {
   const byKey = new Map(rows.map((r) => [r.key, r]));
@@ -146,7 +152,11 @@ export function mergeFindings(rows: AdviceRow[], findings: Finding[], nowIso: st
 
   for (const r of rows) {
     if (r.resolvedAt || seen.has(r.key)) continue;
-    if (r.signal === "idea") continue;
+    if (r.signal === "idea") {
+      const basedOn = r.facts.basedOn;
+      if (Array.isArray(basedOn) && basedOn.some((k) => typeof k === "string" && !seen.has(k))) plan.resolve.push(r.id);
+      continue;
+    }
     plan.resolve.push(r.id);
   }
   return plan;

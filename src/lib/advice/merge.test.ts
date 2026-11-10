@@ -52,8 +52,16 @@ describe("mergeFindings", () => {
     expect(mergeFindings([row()], [], NOW).resolve).toEqual(["r1"]);
   });
 
-  it("never resolves the daily run's ideas", () => {
+  it("never resolves the daily run's ideas on its own", () => {
     expect(mergeFindings([row({ signal: "idea", key: "idea:1" })], [], NOW).resolve).toEqual([]);
+    expect(mergeFindings([row({ signal: "idea", key: "idea:1", facts: { basedOn: [] } })], [], NOW).resolve).toEqual([]);
+  });
+
+  it("withdraws an idea once a finding it was written from goes away", () => {
+    const idea = row({ id: "i1", signal: "idea", key: "idea:1", facts: { basedOn: ["unpaid:nt", "client-quiet:nt"] } });
+    const quiet = finding({ key: "client-quiet:nt" });
+    expect(mergeFindings([idea], [quiet], NOW).resolve).toEqual(["i1"]);
+    expect(mergeFindings([idea], [quiet, finding({ key: "unpaid:nt" })], NOW).resolve).toEqual([]);
   });
 
   it("keeps a snooze while the finding is no worse", () => {

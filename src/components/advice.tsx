@@ -261,7 +261,7 @@ function AdvicePane({ onClose }: { onClose: () => void }) {
     const target = typeof it.facts.href === "string" ? it.facts.href : null;
     const href = target && !isCurrent(target, ctx.pathname, ctx.params) ? target : null;
     const action = typeof it.facts.action === "string" ? it.facts.action : null;
-    const list = Array.isArray(it.facts.list) ? it.facts.list : [];
+    const list = (Array.isArray(it.facts.list) ? it.facts.list : []) as FindingLink[];
     const full = expanded.has(it.id);
     return (
       <li key={it.id} className="group/item relative mt-2 rounded-2xl bg-surface p-4 pr-20">
