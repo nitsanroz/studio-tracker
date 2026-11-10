@@ -1,19 +1,29 @@
 "use client";
 
-// The left table's column picker.
-
-import { TL_COLS } from "./shared";
-import type { TlCol } from "./shared";
 import { ChevronDown, Columns3 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-
-export function TimelineColumnsMenu({
+/**
+ * "Columns ▾" — the show/hide picker above a client's Tasks table and its
+ * Timeline. ONE component on purpose: two buttons that do the same thing on two
+ * tabs of one page had no business looking like different controls (they were
+ * line-for-line copies until 2026-11-10).
+ *
+ * `options` are the columns that can be hidden; `total` is every column the
+ * table has, so the count beside the label reads "columns on screen".
+ */
+export function ColumnsMenu<K extends string>({
   hidden,
   onToggle,
+  options,
+  total,
+  menuWidth = "w-44",
 }: {
   hidden: Set<string>;
-  onToggle: (key: TlCol, on: boolean) => void;
+  onToggle: (key: K, on: boolean) => void;
+  options: readonly { key: K; label: string }[];
+  total: number;
+  menuWidth?: string;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -33,21 +43,18 @@ export function TimelineColumnsMenu({
         onClick={() => setOpen((o) => !o)}
         title="Show or hide columns"
         aria-label="Show or hide columns"
-        // Identical to the Tasks tab's Columns button, down to the padding and
-        // the count: two buttons that do the same thing on two tabs of one page
-        // had no business looking like different controls.
         className="flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-sm font-medium text-muted transition-colors hover:border-brand hover:text-brand"
       >
         <Columns3 size={14} />
         Columns
-        {hidden.size > 0 && (
-          <span className="text-xs tabular-nums text-faint">{TL_COLS.length - hidden.size}</span>
-        )}
+        {hidden.size > 0 && <span className="text-xs tabular-nums text-faint">{total - hidden.size}</span>}
         <ChevronDown size={13} className="text-faint" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 flex w-40 flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in">
-          {TL_COLS.map((c) => (
+        <div
+          className={`absolute right-0 top-full z-50 mt-1 flex ${menuWidth} flex-col rounded-xl border border-border bg-surface p-1 shadow-xl pop-in`}
+        >
+          {options.map((c) => (
             <label
               key={c.key}
               className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-background"

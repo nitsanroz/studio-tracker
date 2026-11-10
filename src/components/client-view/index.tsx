@@ -32,12 +32,13 @@ import type { Section, Task, TaskGroup } from "@/lib/types";
 import { BoardCard } from "./board";
 import { SectionGroup, SummaryStrip } from "./section";
 import { SelectAllBox, SelectionBar } from "./selection";
-import { ALL_COLS, COLS, COL_DEFAULTS, ColWidthsContext, HiddenColsContext, LEAD_TIGHT, NAME_MIN, SelectionContext, drag } from "./shared";
+import { ALL_COLS, COLS, OPTIONAL_COLS, COL_DEFAULTS, ColWidthsContext, HiddenColsContext, LEAD_TIGHT, NAME_MIN, SelectionContext, drag } from "./shared";
 import type { ColKey, SelectionCtx, TaskTab } from "./shared";
 import { SortHeader, makeComparator } from "./sort";
 import type { Sort, SortKey } from "./sort";
 import { ClientStats } from "./stats";
-import { ColumnsMenu, TimelineHintDot } from "./toolbar";
+import { TimelineHintDot } from "./toolbar";
+import { ColumnsMenu } from "../columns-menu";
 import { askText } from "../confirm-dialog";
 
 
@@ -242,10 +243,15 @@ export function ClientView({ clientId }: { clientId: string }) {
     // Measured against ALL tasks, and an EMPTY section stays visible: it has
     // nothing finished to hide behind, and a section you just created must not
     // disappear the moment you make it.
-    const open = all.filter((sec) => {
-      const own = tasks.filter((t) => t.sectionId === sec.id);
-      return own.length === 0 || own.some((t) => t.status !== "done");
-    });
+    // per section: does it have any task, and any not done — one pass over tasks
+    const has = new Set<string>();
+    const hasOpen = new Set<string>();
+    for (const t of tasks) {
+      if (!t.sectionId) continue;
+      has.add(t.sectionId);
+      if (t.status !== "done") hasOpen.add(t.sectionId);
+    }
+    const open = all.filter((sec) => !has.has(sec.id) || hasOpen.has(sec.id));
     return { clientSections: open, hiddenSections: all.length - open.length };
   }, [sections, clientId, tasks, showDone]);
 
@@ -266,6 +272,18 @@ export function ClientView({ clientId }: { clientId: string }) {
     return { clientTasks: list, hiddenByShow: mine.length - list.length };
   }, [tasks, clientId, showDone, showUndated, hiddenTypes, sort, profiles, taskMinutes, typeName]);
 
+  /** `clientTasks` by section (null = no section), each in display order — one pass. */
+  const bySection = useMemo(() => {
+    const m = new Map<string | null, Task[]>();
+    for (const t of clientTasks) {
+      const list = m.get(t.sectionId);
+      if (list) list.push(t);
+      else m.set(t.sectionId, [t]);
+    }
+    return m;
+  }, [clientTasks]);
+  const tasksIn = (sectionId: string | null): Task[] => bySection.get(sectionId) ?? [];
+
   if (!client) return <div className="text-muted">Client not found.</div>;
 
   // the billing note is xl-only inline, so the full text always lives on the title
@@ -273,7 +291,7 @@ export function ClientView({ clientId }: { clientId: string }) {
     ? `${client.name} — billing: ${client.billingPeriodNote}`
     : client.name;
 
-  const noSection = clientTasks.filter((t) => t.sectionId === null);
+  const noSection = tasksIn(null);
 
   /** This client's groups for one section key, in position order. */
   const groupsIn = (sectionId: string | null) =>
@@ -362,10 +380,7 @@ export function ClientView({ clientId }: { clientId: string }) {
   const orderedIds = [
     ...orderedIn(null, noSection),
     ...clientSections.flatMap((s) =>
-      orderedIn(
-        s.id,
-        clientTasks.filter((t) => t.sectionId === s.id),
-      ),
+      orderedIn(s.id, tasksIn(s.id)),
     ),
   ].map((t) => t.id);
 
@@ -601,7 +616,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             {/* The Timeline portals its legend and Columns button into this
                 slot; Tasks renders its own Columns beside the same Show menu. */}
             <span ref={setTlToolbar} className="flex min-w-0 items-center gap-3" />
-            {tab === "tasks" && <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />}
+            {tab === "tasks" && <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} options={OPTIONAL_COLS} total={ALL_COLS.length} />}
             {tab !== "overview" && (
               <ShowMenu
                 showDone={showDone}
@@ -661,10 +676,11 @@ export function ClientView({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      {/* Both task arrangements live in this block. It stays MOUNTED and
-          hidden rather than unmounting, as it always has — the table's column
-          widths, its selection and its collapsed sections are all local state
-          that a round trip through another tab would throw away. */}
+      {/* Both task arrangements live in this block, and only the one whose tab
+          is open renders (the Board used to render, hidden, on Timeline and
+          Overview too). Column widths, the selection and collapsed sections are
+          the page's state, not the table's, so a round trip through another tab
+          keeps them. */}
       <div className={`flex gap-4 ${tab === "tasks" || tab === "board" ? "" : "hidden"}`}>
         <div className="min-w-0 flex-1">
       {tab === "tasks" ? (
@@ -792,7 +808,7 @@ export function ClientView({ clientId }: { clientId: string }) {
               <SectionGroup
                 key={section.id}
                 section={section}
-                tasks={clientTasks.filter((t) => t.sectionId === section.id)}
+                tasks={tasksIn(section.id)}
                 groups={groupsIn(section.id)}
                 clientId={clientId}
                 reorderable={sort === null}
@@ -804,10 +820,7 @@ export function ClientView({ clientId }: { clientId: string }) {
                 onOpenGroup={(id) => reveal(gKey(id))}
                 onNewGroup={() => promptNewGroup(section.id)}
                 onNewSection={promptNewSection}
-                summary={sectionSummary(
-                  section,
-                  clientTasks.filter((t) => t.sectionId === section.id),
-                )}
+                summary={sectionSummary(section, tasksIn(section.id))}
                 groupSummary={groupSummaryStrip}
               />
             ))}
@@ -871,7 +884,7 @@ export function ClientView({ clientId }: { clientId: string }) {
         </SelectionContext.Provider>
         </HiddenColsContext.Provider>
         </ColWidthsContext.Provider>
-      ) : (
+      ) : tab === "board" ? (
         // `clientTasks`, not `tasks`: the board used to read straight from the
         // store and so ignored Show completed, Undated and the type filter
         // entirely — the two views of one client disagreed about what they were
@@ -931,7 +944,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             );
           })}
         </div>
-      )}
+      ) : null}
         </div>
       </div>
 

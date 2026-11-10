@@ -13,7 +13,7 @@
 // own call — so it gets its Keys task and shows everywhere at once. Everything
 // after that is `convertToClient`.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft, Folder, FolderTree, Layers, Paperclip } from "lucide-react";
@@ -131,7 +131,14 @@ export default function ConvertPage() {
 
   const live = useMemo(() => clients.filter((c) => !c.archived).sort((a, b) => a.name.localeCompare(b.name)), [clients]);
 
+  /**
+   * ⚠️ Only the LATEST pick may fill the tree: switching estimates twice quickly
+   * used to let the slower, older load land last and build from the wrong one.
+   * A failed load says so instead of rejecting into nothing.
+   */
+  const pickSeq = useRef(0);
   const pickEstimate = useCallback(async (id: string | null) => {
+    const seq = ++pickSeq.current;
     setEstimateId(id);
     if (!id) {
       setEstimate(null);
@@ -139,7 +146,15 @@ export default function ConvertPage() {
       setLinkOn(new Set());
       return;
     }
-    const d = await loadEstimate(id);
+    let d: EstimateDetail | null;
+    try {
+      d = await loadEstimate(id);
+    } catch (e) {
+      if (seq === pickSeq.current) setError(e instanceof Error ? e.message : "Could not load the estimate.");
+      return;
+    }
+    if (seq !== pickSeq.current) return;
+    setError(null);
     setEstimate(d);
     setDraft(d ? draftFrom(d) : []);
     setLinkOn(new Set(d ? d.estimate.links.map((_, i) => i) : []));
@@ -178,7 +193,11 @@ export default function ConvertPage() {
   const [modeChosen, setModeChosen] = useState(false);
   const suggested = useMemo(() => {
     if (!lead) return null;
-    if (lead.lead.clientId) return lead.lead.clientId;
+    // ⚠️ Only a client the picker lists: a lead linked to an ARCHIVED client used
+    // to preselect an id the select couldn't show, so Review named nobody and
+    // Create failed with "Pick the client."
+    const linked = lead.lead.clientId;
+    if (linked && live.some((c) => c.id === linked)) return linked;
     const company = lead.lead.company.trim().toLowerCase();
     return live.find((c) => c.name.trim().toLowerCase() === company)?.id ?? null;
   }, [lead, live]);

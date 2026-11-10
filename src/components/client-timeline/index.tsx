@@ -33,11 +33,11 @@ import { ContextMenu } from "../ui";
 import { TaskBulkControls } from "../task-bulk-controls";
 import { NO_TYPE } from "../show-menu";
 import { TimelineInsertRow, plannedPatch } from "./cells";
-import { TimelineColumnsMenu } from "./columns-menu";
+import { ColumnsMenu } from "../columns-menu";
 import { GroupHeaderRow, SectionHeaderRow, SummaryCells, TimelineHeader } from "./headers";
 import { GridLayer, MarkLayer, TodayLine } from "./layers";
 import { TimelineRow } from "./row";
-import { CARD_BOTTOM_GAP, CARD_MIN_H, STICKY_W, TL_COL_KEYS, TL_INDENT, allRowsOf, beginRowDrag, blockKey, containerKey, dragRow, endRowDrag, leftWidth } from "./shared";
+import { CARD_BOTTOM_GAP, CARD_MIN_H, STICKY_W, TL_COLS, TL_COL_KEYS, TL_INDENT, allRowsOf, beginRowDrag, blockKey, containerKey, dragRow, endRowDrag, leftWidth } from "./shared";
 import type { Block, DragState, Group, Row, TlCol } from "./shared";
 import { askText } from "../confirm-dialog";
 
@@ -857,7 +857,7 @@ export function ClientTimeline({
   */
   const toolbar = (
     <>
-      <TimelineColumnsMenu hidden={hiddenCols} onToggle={toggleCol} />
+      <ColumnsMenu hidden={hiddenCols} onToggle={toggleCol} options={TL_COLS} total={TL_COLS.length} menuWidth="w-40" />
     </>
   );
 

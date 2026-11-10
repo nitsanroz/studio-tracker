@@ -1593,7 +1593,15 @@ function NewEstimateModal({
 
   useEffect(() => {
     let alive = true;
-    void loadEstimateSources().then((v) => alive && setSources(v));
+    // A failed read empties the list and says so, rather than loading forever.
+    loadEstimateSources().then(
+      (v) => alive && setSources(v),
+      (ex) => {
+        if (!alive) return;
+        setSources([]);
+        setErr(ex instanceof Error ? ex.message : "Could not load past estimates.");
+      },
+    );
     return () => {
       alive = false;
     };
@@ -1824,11 +1832,24 @@ function OffersTab({
   outside: (linked: Set<string>) => React.ReactNode;
 }) {
   const [list, setList] = useState<EstimateSummary[] | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const [choosing, setChoosing] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    void loadEstimates(leadId).then((v) => alive && setList(v));
+    // A failed read shows its error instead of a skeleton that never resolves.
+    loadEstimates(leadId).then(
+      (v) => {
+        if (!alive) return;
+        setLoadErr(null);
+        setList(v);
+      },
+      (ex) => {
+        if (!alive) return;
+        setLoadErr(ex instanceof Error ? ex.message : "Could not load the estimates.");
+        setList([]);
+      },
+    );
     return () => {
       alive = false;
     };
@@ -1840,6 +1861,7 @@ function OffersTab({
   return (
     <div className="flex flex-col gap-2">
       {list === null && <SkeletonRows rows={3} avatar={false} />}
+      {loadErr && <p className="text-sm text-danger">{loadErr}</p>}
       {(list ?? []).map((e) => {
         const o = e.offerId ? offerById.get(e.offerId) : undefined;
         const answered = o?.status === "accepted" || o?.status === "declined";
