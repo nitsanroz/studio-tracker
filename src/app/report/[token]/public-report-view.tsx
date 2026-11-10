@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Clock } from "lucide-react";
-import { formatHoursShort } from "@/lib/format";
 import { capTone } from "@/lib/cap";
-import { parseISO } from "@/lib/format";
+import { formatDayMonth, formatHoursShort, parseISO } from "@/lib/format";
 import { daysCoveredInPeriod } from "@/lib/period-math";
 import { ClientAvatar } from "@/components/client-avatar";
 import { ReportTable, ViewToggle } from "@/components/report-table";
@@ -18,11 +17,6 @@ import { useIsNarrow } from "@/lib/use-is-narrow";
 import type { ReportSnapshot, ReportViewFlags } from "@/lib/types";
 
 /** `1/8` — compact enough to sit inside a period label. */
-function dm(iso: string): string {
-  const [, m, d] = iso.slice(0, 10).split("-").map(Number);
-  return `${d}/${m}`;
-}
-
 /**
  * Whole days from today to the end of the period, floored at 0.
  *
@@ -413,7 +407,7 @@ export function PublicReportView({
                       <span className="flex items-baseline gap-3 text-sm font-semibold leading-tight">
                         {shown.label}
                         <span className="font-medium text-muted">
-                          {dm(shown.from)} – {dm(shown.to)}
+                          {formatDayMonth(shown.from)} – {formatDayMonth(shown.to)}
                         </span>
                       </span>
                     </span>
@@ -472,7 +466,7 @@ export function PublicReportView({
                                   </span>
                                 </div>
                                 <div className="mt-0.5 text-[11px] text-muted">
-                                  {dm(p.from)} – {dm(p.to)}
+                                  {formatDayMonth(p.from)} – {formatDayMonth(p.to)}
                                 </div>
                               </button>
                             );
@@ -575,7 +569,7 @@ export function PublicReportView({
                 onClick={() => setPeriodIndex(currentIndex < 0 ? null : currentIndex)}
                 title={
                   currentPeriod
-                    ? `Show only ${currentPeriod.label} — ${dm(currentPeriod.from)} – ${dm(currentPeriod.to)}`
+                    ? `Show only ${currentPeriod.label} — ${formatDayMonth(currentPeriod.from)} – ${formatDayMonth(currentPeriod.to)}`
                     : "Show only the current payment period"
                 }
               >
@@ -588,9 +582,9 @@ export function PublicReportView({
                   touch
                   on={periodIndex === previousIndex}
                   onClick={() => setPeriodIndex(previousIndex)}
-                  title={`Show only ${periodSummary[previousIndex].label} — ${dm(
+                  title={`Show only ${periodSummary[previousIndex].label} — ${formatDayMonth(
                     periodSummary[previousIndex].from,
-                  )} – ${dm(periodSummary[previousIndex].to)}`}
+                  )} – ${formatDayMonth(periodSummary[previousIndex].to)}`}
                 >
                   Previous period
                 </ViewToggle>

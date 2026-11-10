@@ -1,4 +1,4 @@
-import { parseISO, shiftDays, toISODate } from "./format";
+import { parseISO, shiftDays, toISODate, MONTH_NAMES_LONG } from "./format";
 
 /**
  * Works out the billing period that should follow the last one a client has.
@@ -19,20 +19,6 @@ export type PeriodBounds = { label: string; dateFrom: string; dateTo: string };
 /** Same shape the store already holds, narrowed to what this needs. */
 export type LastPeriod = { dateFrom: string; dateTo: string };
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 /**
  * Days in a month, so an invoice day of 31 does not fall off a 30-day month.
@@ -97,7 +83,7 @@ export function periodLabel(dateFrom: string, dateTo: string): string {
     a.getMonth() === b.getMonth() &&
     a.getFullYear() === b.getFullYear() &&
     b.getDate() === daysInMonth(b.getFullYear(), b.getMonth());
-  if (wholeMonth) return `${MONTH_NAMES[a.getMonth()]} ${a.getFullYear()}`;
+  if (wholeMonth) return `${MONTH_NAMES_LONG[a.getMonth()]} ${a.getFullYear()}`;
   return `${a.getDate()}/${a.getMonth() + 1} → ${b.getDate()}/${b.getMonth() + 1}`;
 }
 

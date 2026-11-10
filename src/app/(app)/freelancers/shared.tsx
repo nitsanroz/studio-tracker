@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { dayLabel, hrs, money, monthLabel, shiftMonth, shortMonth } from "@/lib/freelancer-format";
 
 // Shared by /freelancers (everyone) and /freelancers/[profileId] (one
 // freelancer's month) — 0054–0056. Everything goes through /api/admin/freelancers.
@@ -35,19 +36,9 @@ export interface Freelancer {
   pendingMonths: string[];
 }
 
-const SYMBOL: Record<string, string> = { EUR: "€", USD: "$", ILS: "₪" };
-export const money = (n: number, c: string) =>
-  `${SYMBOL[c] ?? `${c} `}${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-export const hrs = (n: number) => `${Number(n.toFixed(2)).toLocaleString("en-US")}h`;
-export const dayLabel = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-export const monthLabel = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1]} ${p.slice(0, 4)}`;
-export const shortMonth = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1].slice(0, 3)} ${p.slice(2, 4)}`;
-export const shiftMonth = (p: string, by: number) => {
-  const i = Number(p.slice(0, 4)) * 12 + Number(p.slice(5, 7)) - 1 + by;
-  return `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`;
-};
+// The formatters live in lib/freelancer-format.ts (shared with the /log page);
+// re-exported so these pages keep importing them from here.
+export { money, hrs, dayLabel, monthLabel, shortMonth, shiftMonth };
 
 /** "+ $150.00" for charges kept in another currency. */
 export const otherLine = (o: { currency: string; amount: number }[]) => o.map((x) => ` + ${money(x.amount, x.currency)}`).join("");

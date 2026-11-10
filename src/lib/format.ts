@@ -133,10 +133,18 @@ export function formatDate(iso: string): string {
  * for anything historical (time entries, reports), where the year is the whole
  * point.
  */
+/** "2026-11-09" (or a timestamp starting with it) → "9/11". ONE copy — the task
+ * table and the public client report had their own. */
 export function formatDayMonth(iso: string): string {
-  const [, m, d] = iso.split("-").map(Number);
+  const [, m, d] = iso.slice(0, 10).split("-").map(Number);
   return `${d}/${m}`;
 }
+
+/** "January" … "December" — ONE copy (2026-11-10; there were seven). */
+export const MONTH_NAMES_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 export const MONTH_NAMES_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",

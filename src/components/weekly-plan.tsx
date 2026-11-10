@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { shiftDays, formatDayLabel, isWeekend, startOfWeek, toISODate } from "@/lib/format";
+import { shiftDays, formatDayLabel, isWeekend, startOfWeek, toISODate, MONTH_NAMES_LONG } from "@/lib/format";
 import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
 // ⚠️ The cell vocabulary and the add/edit modal live in `plan-entry-modal.tsx`
 // so the phone build shares them — see that file's header.
@@ -765,10 +765,6 @@ function PlanCell({
 
 // ── the timeline ─────────────────────────────────────────────────────────
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 /**
  * ⚠️ BOX-SHADOWS, NOT BORDERS, AND THAT IS FORCED: this table is
@@ -1097,7 +1093,7 @@ export function WeeklyPlan() {
       for (const day of days) {
         const key = toISODate(day).slice(0, 7);
         if (key !== lastMonth) {
-          out.push({ kind: "month", key, label: `${MONTH_NAMES[day.getMonth()]} ${day.getFullYear()}` });
+          out.push({ kind: "month", key, label: `${MONTH_NAMES_LONG[day.getMonth()]} ${day.getFullYear()}` });
           lastMonth = key;
         }
         if (!collapsed.has(key)) out.push({ kind: "day", date: day });

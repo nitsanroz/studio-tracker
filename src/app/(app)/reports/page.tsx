@@ -11,6 +11,7 @@ import {
   formatHours,
   formatHoursShort,
   MONTH_NAMES_SHORT,
+  formatDayMonth,
 } from "@/lib/format";
 import { periodRange, rangeLabel, REPORT_RANGES } from "@/lib/period-math";
 
@@ -286,7 +287,7 @@ function RangeStats({
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, minutes]) => ({
         label: byDay
-          ? key.slice(8).replace(/^0/, "") + "/" + key.slice(5, 7).replace(/^0/, "")
+          ? formatDayMonth(key)
           : MONTH_NAMES_SHORT[Number(key.slice(5, 7)) - 1],
         minutes,
       }));

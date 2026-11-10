@@ -6,7 +6,7 @@ import {
   Clock,
 } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
-import { studioToday } from "@/lib/format";
+import { MONTH_NAMES_LONG, MONTH_NAMES_SHORT, studioToday } from "@/lib/format";
 import { InfoDot } from "../ui";
 
 // The studio's pace this month against the billable hours a workday that cover
@@ -33,10 +33,8 @@ export interface Goal {
   away: { name: string; dates: string[] }[];
 }
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const h = (n: number) => `${Math.round(n).toLocaleString("en-US")}h`;
-const dayLabel = (iso: string) => `${SHORT[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
+const dayLabel = (iso: string) => `${MONTH_NAMES_SHORT[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
 
 // One request per page load, shared: the banner and the home's pace chart both
 // read the goal, and two panes mounting together must not fetch it twice.
@@ -81,7 +79,7 @@ export function StudioPace() {
   const goal = useHoursGoal();
   if (!goal) return null;
 
-  const month = MONTHS[goal.month - 1];
+  const month = MONTH_NAMES_LONG[goal.month - 1];
   const toGo = (l: Level) => Math.max(0, l.hours - goal.soFar);
   const away = goal.away.map(
     (a) => `${a.name} away ${a.dates.length > 1 ? `${dayLabel(a.dates[0])}–${Number(a.dates.at(-1)!.slice(8, 10))}` : dayLabel(a.dates[0])}`,

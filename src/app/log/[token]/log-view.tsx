@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, FolderOpen, Info,
 import { ClientAvatar } from "@/components/client-avatar";
 import { LoadingLine, PageSkeleton } from "@/components/skeleton";
 import { askConfirm } from "@/components/confirm-dialog";
+import { dayLabel, hrs, money, monthLabel, shiftMonth, shortMonth } from "@/lib/freelancer-format";
 
 // A freelancer's page (0054–0057): his hours as a table, a month at a time,
 // like the sheet he billed from; his extra charges below; a floating box to add
@@ -82,18 +83,6 @@ interface Data {
   deliverables: { id: string; title: string; url: string; date: string }[];
 }
 
-const SYMBOL: Record<string, string> = { EUR: "€", USD: "$", ILS: "₪" };
-const money = (n: number, c: string) =>
-  `${SYMBOL[c] ?? `${c} `}${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const hrs = (n: number) => `${Number(n.toFixed(2)).toLocaleString("en-US")}h`;
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const monthLabel = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1]} ${p.slice(0, 4)}`;
-const shift = (p: string, by: number) => {
-  const i = Number(p.slice(0, 4)) * 12 + Number(p.slice(5, 7)) - 1 + by;
-  return `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`;
-};
-const dayLabel = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
 /** The tracker's client chip (components/ui.tsx `ClientChip`), without its link —
  * his page can't open a client. */
@@ -139,7 +128,7 @@ export function FreelancerLogView({ token }: { token: string }) {
         if (!alive) return;
         setCache((c) => ({ ...c, [key]: d, [d.period]: d }));
         // Stepping back is the common move — have the month before ready.
-        const before = shift(d.period, -1);
+        const before = shiftMonth(d.period, -1);
         if (d.period > d.firstPeriod)
           load(before)
             .then((b) => setCache((c) => (c[before] ? c : { ...c, [before]: b })))
@@ -216,7 +205,7 @@ export function FreelancerLogView({ token }: { token: string }) {
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-brand px-5 py-4 text-white">
         <div className="flex items-center gap-1">
           <button
-            onClick={() => go(shift(shownPeriod, -1))}
+            onClick={() => go(shiftMonth(shownPeriod, -1))}
             disabled={shownPeriod <= data.firstPeriod}
             className="rounded-md p-1.5 hover:bg-white/15 disabled:opacity-30"
             aria-label="Previous month"
@@ -228,7 +217,7 @@ export function FreelancerLogView({ token }: { token: string }) {
             {loading && <Loader2 size={16} className="animate-spin opacity-80" aria-label="Loading" />}
           </p>
           <button
-            onClick={() => go(shift(shownPeriod, 1))}
+            onClick={() => go(shiftMonth(shownPeriod, 1))}
             disabled={shownPeriod >= thisMonth}
             className="rounded-md p-1.5 hover:bg-white/15 disabled:opacity-30"
             aria-label="Next month"
@@ -709,7 +698,6 @@ function AddButton({ saving, label, onClick }: { saving: boolean; label: string;
  * click one to open it. */
 function Months({ data, selected, onPick }: { data: Data; selected: string; onPick: (p: string) => void }) {
   const cur = data.summary.currency;
-  const short = (p: string) => `${MONTHS[Number(p.slice(5, 7)) - 1].slice(0, 3)} ${p.slice(2, 4)}`;
   return (
     <aside className={`${card} p-4 text-sm`}>
       <h2 className="card-title mb-2 px-1">Months</h2>
@@ -731,7 +719,7 @@ function Months({ data, selected, onPick }: { data: Data; selected: string; onPi
                 className={`cursor-pointer ${m.period === selected ? "bg-brand-soft font-medium text-brand-dark" : "hover:bg-background"}`}
                 title={m.extras > 0 ? `Includes ${money(m.extras, cur)} extras` : undefined}
               >
-                <td className="whitespace-nowrap rounded-l-md px-1 py-1">{short(m.period)}</td>
+                <td className="whitespace-nowrap rounded-l-md px-1 py-1">{shortMonth(m.period)}</td>
                 <td className="px-1 py-1 text-right">{hrs(m.hours)}</td>
                 <td className="px-1 py-1 text-right text-muted">{money(m.rate, cur)}</td>
                 <td className="whitespace-nowrap rounded-r-md px-1 py-1 text-right">

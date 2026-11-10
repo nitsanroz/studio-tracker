@@ -10,7 +10,7 @@
  * silent invitation for the two to drift a day apart.
  */
 
-import { DAY_NAMES, MONTH_NAMES_SHORT, parseISO, shiftDays, toISODate } from "./format";
+import { DAY_NAMES, MONTH_NAMES_LONG, MONTH_NAMES_SHORT, parseISO, shiftDays, toISODate } from "./format";
 
 /**
  * Re-exported so the Gantt's callers keep importing their date helpers from here.
@@ -95,20 +95,6 @@ export function dateRangeLabel(start: Date, due: Date, hasStart: boolean): strin
   return `${day(start)} ${mon(start)} – ${day(due)} ${mon(due)}`;
 }
 
-const MONTH_NAMES_LONG = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
 
 /**
  * What a ruler tick says on hover — the weekday, which its own label can never

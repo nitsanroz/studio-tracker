@@ -4,12 +4,11 @@
 
 import { HBar, LineChart } from "../charts";
 import { Avatar } from "../ui";
-import { formatHoursShort } from "@/lib/format";
+import { formatHoursShort, MONTH_NAMES_SHORT } from "@/lib/format";
 import { useData, useIsAdmin } from "@/lib/store";
 import { useMemo } from "react";
 
 
-export const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 
 /**
@@ -88,7 +87,7 @@ export function ClientStats({ clientId, inTab = false }: { clientId: string; inT
       .slice(-8)
       .map(([key, minutes]) => {
         const [y, m] = key.split("-").map(Number);
-        return { label: `${MONTH_SHORT[m - 1]}${m === 1 ? ` ${String(y).slice(2)}` : ""}`, minutes };
+        return { label: `${MONTH_NAMES_SHORT[m - 1]}${m === 1 ? ` ${String(y).slice(2)}` : ""}`, minutes };
       });
 
     const users = [...byUser.entries()]

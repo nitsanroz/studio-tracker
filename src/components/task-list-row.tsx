@@ -192,11 +192,6 @@ function FigmaCell({ url, onCommit }: { url: string | null; onCommit: (v: string
 }
 
 /** "12/7" — day/month, no year. */
-function formatDueShort(iso: string): string {
-  const [, m, d] = iso.split("-").map(Number);
-  return `${d}/${m}`;
-}
-
 // column order per Nitsan: Due (right after Task), Tags, Figma, Hrs/budget, %done, by me, Logged by
 const COLS: { key: string; label: string; w: number; hint?: string }[] = [
   { key: "client", label: "Client", w: 96, hint: "Client the task belongs to" },
@@ -520,12 +515,12 @@ export function TaskTable({
             <EditableDateCell
               value={task.dueDate}
               onCommit={(v) => updateTask(task.id, { dueDate: v })}
-              format={formatDueShort}
+              format={formatDayMonth}
               placeholder=""
             />
           ) : (
             <span className="px-1.5 py-0.5 tabular-nums">
-              {task.dueDate ? formatDueShort(task.dueDate) : ""}
+              {task.dueDate ? formatDayMonth(task.dueDate) : ""}
             </span>
           )}
         </span>
