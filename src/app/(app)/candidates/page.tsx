@@ -28,7 +28,7 @@ import {
 import { useData, useIsAdmin } from "@/lib/store";
 import { convertedAs } from "@/lib/candidates/convert";
 import { useIsNarrow } from "@/lib/use-is-narrow";
-import { startOfWeek, toISODate } from "@/lib/format";
+import { startOfWeek, studioDate, toISODate } from "@/lib/format";
 import type { Profile } from "@/lib/types";
 import { Avatar, NameAvatar, Tabs } from "@/components/ui";
 import { loadBoard, loadVocabulary, type BoardCounts, type Vocabulary } from "@/lib/candidates/data";
@@ -642,7 +642,7 @@ export default function CandidatesPage() {
   // one forward-looking fact the summary line can carry.
   const weekStart = toISODate(startOfWeek(new Date()));
   const interviewsThisWeek = rows.reduce(
-    (n, c) => n + c.readings.filter((r) => r.kind !== APPLICATION_REVIEW_KIND && r.at.slice(0, 10) >= weekStart).length,
+    (n, c) => n + c.readings.filter((r) => r.kind !== APPLICATION_REVIEW_KIND && studioDate(r.at) >= weekStart).length,
     0,
   );
 

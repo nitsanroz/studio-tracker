@@ -40,7 +40,7 @@ import { useIsNarrow } from "@/lib/use-is-narrow";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { Avatar, Modal, ModalClose } from "@/components/ui";
 import { hostLabel, isSafeUrl, normalizeUrl } from "@/lib/links";
-import { formatDate, toISODate } from "@/lib/format";
+import { formatDate, studioDate, toISODate } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { loadCandidate, loadVocabulary, type Vocabulary } from "@/lib/candidates/data";
 import {
@@ -2115,7 +2115,7 @@ export default function CandidatePage() {
                     <div className={`min-w-0 ${mine ? "text-right" : ""}`}>
                       <div className="mb-0.5 text-[11px] text-faint">
                         {who?.name ?? m.authorName ?? "Unknown"} ·{" "}
-                        {formatDate(m.createdAt.slice(0, 10))}
+                        {formatDate(studioDate(m.createdAt))}
                       </div>
                       <div
                         className={`bidi-auto inline-block rounded-lg px-2.5 py-2 text-left text-[12.5px] leading-relaxed ${
@@ -2179,7 +2179,7 @@ export default function CandidatePage() {
               {events.map((ev) => (
                 <div key={ev.id} className="flex gap-2">
                   <span className="w-14 shrink-0 text-faint">
-                    {formatDate(ev.createdAt.slice(0, 10))}
+                    {formatDate(studioDate(ev.createdAt))}
                   </span>
                   <span className="min-w-0">
                     {ev.kind.replace(/_/g, " ")}

@@ -900,7 +900,9 @@ function CspReportsSection() {
                       it is the honest substitute for a precise count. */}
                   <td className="py-1.5 text-muted" title={`first seen ${new Date(i.firstSeen).toLocaleString()}`}>
                     {new Date(i.lastSeen).toLocaleDateString()}
-                    {i.firstSeen.slice(0, 10) !== i.lastSeen.slice(0, 10) && (
+                    {/* Compare the dates as SHOWN (local), not UTC slices, or near
+                        midnight it printed "(since X)" with X the date already shown. */}
+                    {new Date(i.firstSeen).toLocaleDateString() !== new Date(i.lastSeen).toLocaleDateString() && (
                       <span className="text-faint">
                         {" "}
                         (since {new Date(i.firstSeen).toLocaleDateString()})

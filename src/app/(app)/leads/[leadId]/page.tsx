@@ -1144,8 +1144,8 @@ function ActivityTab({
             </li>
           );
         })}
-        {events.length === 0 && <p className="text-[14px] text-faint">Nothing logged yet.</p>}
       </ol>
+      {events.length === 0 && <p className="text-[14px] text-faint">Nothing logged yet.</p>}
     </div>
   );
 }
@@ -1472,8 +1472,8 @@ function EmailsTab({
         {threads.map((t) => (
           <ThreadRow key={t.id} t={t} onUnlink={() => void onUnlink(t)} />
         ))}
-        {threads.length === 0 && <p className="text-[13.5px] text-faint">No threads yet.</p>}
       </ul>
+      {threads.length === 0 && <p className="text-[13.5px] text-faint">No threads yet.</p>}
     </div>
   );
 }

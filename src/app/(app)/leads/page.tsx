@@ -391,7 +391,13 @@ function PipelineSummary({
     const list = leads.filter((l) => l.stageId === s.id);
     return { stage: s, count: list.length, value: list.reduce((n, l) => n + (ils(l) ?? 0), 0) };
   });
-  const openTotal = byStage.reduce((n, r) => n + r.value, 0);
+  // ⚠️ A lead with NO stage (or one whose stage was deleted) is open too — the
+  // header's "N open · ₪X in play" counts it, and the two used to disagree whenever
+  // the board's "No stage" column had cards. It has no bar of its own, but it is in
+  // the tile's total and count.
+  const unstaged = leads.filter((l) => kindOf(l) === "open" && !byStage.some((r) => r.stage.id === l.stageId));
+  const openTotal = byStage.reduce((n, r) => n + r.value, 0) + unstaged.reduce((n, l) => n + (ils(l) ?? 0), 0);
+  const openCount = byStage.reduce((n, r) => n + r.count, 0) + unstaged.length;
   const max = Math.max(1, ...byStage.map((r) => r.value));
 
   const won = leads.filter((l) => kindOf(l) === "won");
@@ -416,7 +422,7 @@ function PipelineSummary({
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-3 gap-2.5">
-        <Tile hi label="Open pipeline" value={formatIls(openTotal)} sub={`${byStage.reduce((n, r) => n + r.count, 0)} open leads`} />
+        <Tile hi label="Open pipeline" value={formatIls(openTotal)} sub={`${openCount} open leads`} />
         <Tile
           label="Won this month"
           value={String(wonMonth.length)}
