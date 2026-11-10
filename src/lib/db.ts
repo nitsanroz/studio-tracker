@@ -4,6 +4,7 @@
    type, so the type safety consumers rely on is intact. Typing each row would
    add casts on every field for no real safety gain. */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DEFAULT_PAYMENT_TERMS_DAYS } from "./payment-terms";
 import type {
   BillingPeriod,
   Client,
@@ -405,6 +406,7 @@ export const mapClient = (r: any): Client => ({
   billable: r.billable ?? true, // column exists from migration 0009
   invoiceNote: r.invoice_note ?? "", // column exists from migration 0010
   hourCap: numOrNull(r.hour_cap), // 0033
+  paymentTermsDays: numOrNull(r.payment_terms_days) ?? DEFAULT_PAYMENT_TERMS_DAYS, // 0065
   reportNotes: r.report_notes ?? "", // 0033
   // 0037; null until the migration runs, which simply hides the write-down control
   keysTaskId: (r.keys_task_id as string | null) ?? null,

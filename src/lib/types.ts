@@ -71,6 +71,12 @@ export interface Client {
   invoiceNote: string;
   /** Hours agreed per billing period, studio-wide for this client (0033). null = no cap. */
   hourCap: number | null;
+  /**
+   * Days the client has to pay an invoice, counted from the invoice (0065).
+   * 14 for the studio's usual terms; Maccabi is on 30. Read by &advice here and
+   * by the finance app's receivables + &advice — one number for both apps.
+   */
+  paymentTermsDays: number;
   /** Internal notes on the client-reports page. NEVER sent to a client (0033). */
   reportNotes: string;
   /**

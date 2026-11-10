@@ -154,8 +154,9 @@ describe("periodUnpaid", () => {
       }),
     );
     expect(f.map((x) => x.facts.period)).toEqual(["September 2026"]);
-    expect(f[0].facts).toMatchObject({ dueDate: "2026-10-14", daysLate: 8 });
-    expect(f[0].severity).toBe(2); // 8 days past its payment date
+    // invoiced 1 Oct (the day after it ended), 14 days → due 15 Oct; today 22 Oct
+    expect(f[0].facts).toMatchObject({ dueDate: "2026-10-15", daysLate: 7 });
+    expect(f[0].severity).toBe(2); // a week past its payment date
   });
 
   it("counts the report's hours: billable tasks only, so a keys write-down isn't billed twice", () => {
@@ -165,13 +166,23 @@ describe("periodUnpaid", () => {
     expect(f[0].facts.hours).toBe(81);
   });
 
-  it("is quiet when the last one is paid, inside the 14-day terms, or 60+ days after it ended", () => {
+  it("is quiet when the last one is paid, inside the 14-day terms, or 45+ days late", () => {
     const run = (periods: ReturnType<typeof p>[]) => periodUnpaid(base({ periods, entries: [e("t1", "2026-07-10", 4), e("t1", "2026-10-10", 4), e("t1", "2026-09-10", 4)] }));
     expect(run([p("August", "2026-08-01", "2026-08-31"), p("September", "2026-09-01", "2026-09-30", true)])).toEqual([]);
     expect(run([p("To 12 Oct", "2026-09-13", "2026-10-12")])).toEqual([]); // 10 days: not due yet
-    expect(run([p("To 8 Oct", "2026-09-09", "2026-10-08")])).toEqual([]); // due today: still on time
-    expect(run([p("To 7 Oct", "2026-09-08", "2026-10-07")])).toHaveLength(1); // a day late
+    expect(run([p("To 7 Oct", "2026-09-08", "2026-10-07")])).toEqual([]); // invoiced 8 Oct, due today: still on time
+    expect(run([p("To 6 Oct", "2026-09-07", "2026-10-06")])).toHaveLength(1); // a day late
     expect(run([p("July", "2026-07-01", "2026-07-31")])).toEqual([]); // 83 days
+  });
+
+  it("uses the client's own terms — net+30 isn't late at day 15", () => {
+    const periods = [p("September 2026", "2026-09-01", "2026-09-30")];
+    const entries = [e("t1", "2026-09-10", 10)];
+    const on30 = (data: AdviceData) => ({ ...data, clients: data.clients.map((c) => (c.id === "lumen" ? { ...c, paymentTermsDays: 30 } : c)) });
+    expect(periodUnpaid(on30(base({ periods, entries })))).toEqual([]); // due 31 Oct
+    const later = periodUnpaid(on30(base({ periods, entries, today: "2026-11-03" })));
+    expect(later[0].facts).toMatchObject({ dueDate: "2026-10-31", daysLate: 3 });
+    expect(later[0].body).toMatch(/30-day terms/);
   });
 
   it("says how much has been logged since — work on credit makes it worse", () => {

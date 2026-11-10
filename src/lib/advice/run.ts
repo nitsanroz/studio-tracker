@@ -29,7 +29,7 @@ function entriesFrom(today: string): string {
 
 export async function loadAdviceData(sb: SupabaseClient, today: string): Promise<AdviceData> {
   const [y] = today.split("-").map(Number);
-  const [clients, tasks, sections, groups, entries, periods, links, pubs, pnlRows] = await Promise.all([
+  const [clients, tasks, sections, groups, entries, periods, links, pubs, pnlRows, termsRows] = await Promise.all([
     fetchAll<Row>(sb, "clients", "id, name, billable, archived, hour_cap, keys_task_id"),
     fetchAll<Row>(sb, "tasks", "id, client_id, section_id, group_id, title, billable, pending, assignee_id, due_date, status"),
     fetchAll<Row>(sb, "sections", "id, name"),
@@ -56,6 +56,9 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
         assertOk("finance_pnl_monthly", res);
         return (res.data ?? []) as Row[];
       }),
+    // 0065, read on its own: naming a missing column fails the whole select, and
+    // the clients query above must not wait on that migration.
+    soft(fetchAll<Row>(sb, "clients", "id, payment_terms_days")),
   ]);
 
   // This month's billable hours, from the entries already in hand — the goal
@@ -98,6 +101,10 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   const dueShare = lastLogged >= 0 ? evenSpread(monthDays)[lastLogged] : 0;
   const paceHours = goal ? (goal.todayCounted ? goal.soFar : Math.max(0, goal.soFar - liveHours.today)) : 0;
 
+  const termsById = new Map(
+    termsRows.filter((r) => r.payment_terms_days != null).map((r) => [String(r.id), Number(r.payment_terms_days)]),
+  );
+
   return {
     today,
     ...pages,
@@ -108,6 +115,7 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
       archived: Boolean(c.archived),
       hourCap: c.hour_cap == null ? null : Number(c.hour_cap),
       keysTaskId: (c.keys_task_id as string | null) ?? null,
+      paymentTermsDays: termsById.get(String(c.id)),
     })),
     tasks: tasks.map((t) => ({
       id: String(t.id),

@@ -9,6 +9,7 @@
 // and dates only: the tracker never shows money (Nitsan, 2026-10-24). The P&L
 // enters as revenues/expenses and leaves as one ratio.
 
+import { DEFAULT_PAYMENT_TERMS_DAYS, paymentDueFor } from "@/lib/payment-terms";
 import {
   formatHoursShort,
   parseISO,
@@ -56,7 +57,16 @@ export interface Finding {
 export interface AdviceData {
   /** the studio's today, yyyy-mm-dd */
   today: string;
-  clients: { id: string; name: string; billable: boolean; archived: boolean; hourCap: number | null; keysTaskId: string | null }[];
+  clients: {
+    id: string;
+    name: string;
+    billable: boolean;
+    archived: boolean;
+    hourCap: number | null;
+    keysTaskId: string | null;
+    /** days from invoice to payment (0065); missing = the studio's usual 14 */
+    paymentTermsDays?: number;
+  }[];
   tasks: {
     id: string;
     clientId: string | null;
@@ -278,12 +288,12 @@ export function capFilling(data: AdviceData): Finding[] {
   return out;
 }
 
-/** The studio's payment terms: an invoice goes out when its period ends and is due 14 days later (Nitsan, 2026-10-25). */
-const PAYMENT_TERMS_DAYS = 14;
-
 /**
  * A client's LAST ended billing period had hours, isn't marked paid, and is past
- * its payment date — never before: inside the 14-day terms nothing is late.
+ * its payment date — never before: inside the client's terms nothing is late.
+ * The payment date is the invoice day (the day after the period ends) plus the
+ * client's own terms — 14 days, Maccabi 30 (`paymentDueFor`, migration 0065;
+ * the finance app counts the same way).
  * Only the last period, and only until 60 days after it ended (Nitsan,
  * 2026-10-24): 'paid' was ticked on 54 of 176 old periods, so looking further
  * back nagged about months long settled.
@@ -297,12 +307,14 @@ export function periodUnpaid(data: AdviceData): Finding[] {
   for (const c of liveClients(data)) {
     const p = data.periods.filter((x) => x.clientId === c.id && x.dateTo < data.today).sort((a, b) => b.dateTo.localeCompare(a.dateTo))[0];
     if (!p || p.paid) continue;
-    const days = daysBetween(parseISO(p.dateTo), parseISO(data.today));
-    const late = days - PAYMENT_TERMS_DAYS;
-    if (late < 1 || days > 60) continue;
+    const terms = c.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS;
+    const due = paymentDueFor(p.dateTo, terms);
+    const late = daysBetween(parseISO(due), parseISO(data.today));
+    // Quiet after 45 days late — about two months after a 14-day client's period,
+    // as before — whatever the terms, so a 30-day client isn't cut off earlier.
+    if (late < 1 || late > 45) continue;
     const minutes = minutesOn(data, c.id, report, p.dateFrom, p.dateTo);
     if (minutes <= 0) continue;
-    const due = toISODate(shiftDays(parseISO(p.dateTo), PAYMENT_TERMS_DAYS));
     const since = minutesOn(data, c.id, report, toISODate(shiftDays(parseISO(p.dateTo), 1)));
     const onCredit = since >= 5 * 60;
     out.push({
@@ -315,7 +327,7 @@ export function periodUnpaid(data: AdviceData): Finding[] {
       facts: { client: c.name, period: p.label, dueDate: due, daysLate: late, hours: hrs(minutes), hoursSince: hrs(since) },
       title: `${c.name}: ${p.label} is ${late} ${late === 1 ? "day" : "days"} past its payment date`,
       body:
-        `${formatHoursShort(minutes)} in the period; payment was due ${shortDate(due)} (${PAYMENT_TERMS_DAYS}-day terms).` +
+        `${formatHoursShort(minutes)} in the period; payment was due ${shortDate(due)} (${terms}-day terms).` +
         (onCredit
           ? ` The team has logged ${formatHoursShort(since)} for them since — a polite nudge now, before more work goes out on credit.`
           : " If it's paid, tick it; if not, a short reminder."),

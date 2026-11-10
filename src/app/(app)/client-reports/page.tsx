@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
 import { invoiceDayToStore, nextPeriod, parseInvoiceDay } from "@/lib/billing-rollover";
+import { termsToStore } from "@/lib/payment-terms";
 import { createClient } from "@/lib/supabase/client";
 import { canonicalReportLink, fetchAll, mapReportLink, updateWithOptional } from "@/lib/db";
 import { capTone } from "@/lib/cap";
@@ -263,6 +264,13 @@ function PaymentPeriods({ client }: { client: Client }) {
     updateClient(c.id, { invoiceNote: next });
   };
 
+  /** Payment terms, in days (0065). Refused rather than coerced — see `termsToStore`. */
+  const commitTerms = (c: Client, raw: string) => {
+    const next = termsToStore(raw);
+    if (next === null || next === c.paymentTermsDays) return;
+    updateClient(c.id, { paymentTermsDays: next });
+  };
+
   const commitClientCap = (c: Client, raw: string) => {
     const v = raw.trim();
     if (v === "") {
@@ -503,6 +511,25 @@ function PaymentPeriods({ client }: { client: Client }) {
                   className="font-serif-accent text-[32px] leading-10 tabular-nums"
                   inputClassName="text-2xl tabular-nums"
                 />
+              </div>
+              {/* Payment terms (0065): days from the invoice to the payment date.
+                  A line under the invoice day rather than a fifth figure — the four
+                  figures fill this grid exactly, and the two belong together: the
+                  payment is due this many days after that day. &advice and the
+                  finance app both count from here. */}
+              <div
+                className="mt-0.5 flex items-baseline gap-1 text-xs text-muted"
+                title="Days the client has to pay, counted from the invoice. 14 is the studio's usual terms; Maccabi is on 30. &advice and the finance app use this to say when a payment is late. Click to edit."
+              >
+                pays in
+                <EditableTextCell
+                  value={String(client.paymentTermsDays)}
+                  bidi={false}
+                  onCommit={(v) => commitTerms(client, v)}
+                  className="font-medium tabular-nums text-foreground"
+                  inputClassName="w-12 tabular-nums"
+                />
+                days
               </div>
             </div>
             {/* ⚠️⚠️ THE KEYS TASK IS CHOSEN, NEVER GUESSED — see `Client.keysTaskId`.
