@@ -18,7 +18,6 @@ export function PeriodStepper<K extends string>({
   onChange,
   onOffset,
   disabledReason = "This range has no previous period",
-  right,
   className = "",
 }: {
   ranges: readonly K[];
@@ -32,8 +31,6 @@ export function PeriodStepper<K extends string>({
   onChange: (v: K) => void;
   onOffset: (next: number) => void;
   disabledReason?: string;
-  /** trailing content on the same row (e.g. the team page's "+ Add user") */
-  right?: React.ReactNode;
   className?: string;
 }) {
   return (
@@ -95,7 +92,6 @@ export function PeriodStepper<K extends string>({
           Now
         </button>
       </div>
-      {right}
     </div>
   );
 }

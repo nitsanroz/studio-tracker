@@ -3,16 +3,6 @@
 import { useState, type CSSProperties } from "react";
 import { proxyStorageUrl } from "@/lib/storage-url";
 
-/** Shared placeholder used for every member until per-person portraits are generated.
- *  Drop real cut-out PNGs (transparent bg, white studio&more tee, blue & on the chest)
- *  at /public/brand/team/<slug>.png and pass `src` to override per member.
- *
- *  NB: this points at cutout.png, a 640px resize of photo_transparent.png. The old
- *  placeholder.png was a *flattened* export — the Photoshop transparency
- *  checkerboard was baked into its pixels at alpha 255, which is why portraits
- *  looked chequered instead of sitting on the brand circle. It was also 6.7MB. */
-export const DEFAULT_TEAM_PHOTO = "/brand/team/cutout.png";
-
 /**
  * The three cut-outs, with the alpha-channel measurements each one needs.
  *

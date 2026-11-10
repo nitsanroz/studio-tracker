@@ -6,7 +6,7 @@ import { requireAdmin as adminSession } from "@/lib/api-auth";
 /**
  * Upload a client's mark (migration 0023).
  *
- * Modelled on /api/avatar, with two differences that matter:
+ * Like /api/member-image, with two differences that matter:
  *  · **it checks the caller is an admin**, because this writes a row in
  *    `clients` — a table members may read but never write. The service-role key
  *    below bypasses RLS entirely, so this check IS the access control, not a

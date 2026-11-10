@@ -1853,7 +1853,6 @@ function PublishWorkspace() {
 // ── page ────────────────────────────────────────────────────────────────────
 
 export default function ClientReportsPage() {
-  const {  } = useData();
   const isAdmin = useIsAdmin();
 
   if (!isAdmin) {

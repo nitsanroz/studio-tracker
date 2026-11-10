@@ -4,7 +4,7 @@ import { createClient } from "./supabase/client";
 
 /**
  * The URL of this client's live Gantt link, creating one if it has none.
- * Admin-only (RLS enforced). Mirrors `ensureClientReportLink`.
+ * Admin-only (RLS enforced).
  *
  * Note the `order by created_at desc` — `limit(1)` without an order is a
  * coin toss once a client has had a link revoked and a new one issued.

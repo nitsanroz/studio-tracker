@@ -99,8 +99,6 @@ export function StudioTeamStrip({ filter }: { filter: HomeFilter }) {
           View team <StudioArrow size={15} />
         </Link>
       </div>
-      {/* half-width pane since v0.99.35 (it took the My-tasks slot), so 4 across at
-          most — 8 columns here would leave each card too narrow to read */}
       {/* full-page width again (the client-trend pane merged into its neighbour),
           so the roster fits more designers per row instead of wrapping at four */}
       {/* A LIST below `sm`, cards above it. Two columns of portrait cards on a

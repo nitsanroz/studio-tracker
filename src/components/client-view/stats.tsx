@@ -12,12 +12,9 @@ import { useMemo } from "react";
 
 
 /**
- * Client stats: totals, hours per month, hours per user.
- *
- * `inTab` drops the fixed 300px column and the `xl:` gate — it lives on the
- * Overview tab now, where it is finally reachable on a laptop.
+ * Client stats: totals, hours per month, hours per user — on the Overview tab.
  */
-export function ClientStats({ clientId, inTab = false }: { clientId: string; inTab?: boolean }) {
+export function ClientStats({ clientId }: { clientId: string }) {
   const { tasks, profiles, entrySumsAll } = useData();
   const isAdmin = useIsAdmin();
 
@@ -115,13 +112,7 @@ export function ClientStats({ clientId, inTab = false }: { clientId: string; inT
   const maxUser = stats.users[0]?.minutes ?? 0;
 
   return (
-    <aside
-      className={
-        inTab
-          ? "flex flex-col gap-4"
-          : "hidden w-[300px] shrink-0 flex-col gap-4 self-start xl:flex"
-      }
-    >
+    <aside className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border bg-surface p-3">
           <div className="text-[11px] font-medium text-muted">Total logged</div>

@@ -54,7 +54,7 @@ function MyProfile() {
   );
 }
 
-function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
+function ClientsSection() {
   const { clients, updateClient } = useData();
   const [showArchived, setShowArchived] = useState(false);
   // which client's mark is being edited — a 25-glyph grid plus an upload has no
@@ -82,78 +82,68 @@ function ClientsSection({ isAdmin }: { isAdmin: boolean }) {
       <div className="flex flex-col divide-y divide-border">
         {list.map((c) => (
           <div key={c.id} className="flex items-center gap-3 py-1.5 text-sm">
-            {isAdmin ? (
-              <span className="flex shrink-0 items-center gap-1">
-                {/* the mark itself is the button — clicking what you want to
-                    change beats hunting for a pencil three columns away */}
-                <button
-                  onClick={() => setMarkFor(c.id)}
-                  title={`Change ${c.name}'s mark — colour, glyph or image`}
-                  className="rounded-lg outline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-brand"
-                >
-                  <ClientAvatar client={c} size={26} />
-                </button>
-                {/* No swatch beside it: the mark IS the colour, and two
-                    coloured squares in a row read as two different things.
-                    The colour wheel lives in the mark popup. */}
-                <input
-                  key={c.color}
-                  defaultValue={c.color}
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    if (/^#[0-9a-fA-F]{6}$/.test(v) && v !== c.color) updateClient(c.id, { color: v });
-                    else e.target.value = c.color;
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                  className="w-[4.6rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-[11px] text-muted outline-none hover:border-border focus:border-brand"
-                  title="Hex — paste or type, Enter to apply"
-                />
-              </span>
-            ) : (
-              <ClientAvatar client={c} size={26} />
-            )}
+            <span className="flex shrink-0 items-center gap-1">
+              {/* the mark itself is the button — clicking what you want to
+                  change beats hunting for a pencil three columns away */}
+              <button
+                onClick={() => setMarkFor(c.id)}
+                title={`Change ${c.name}'s mark — colour, glyph or image`}
+                className="rounded-lg outline-offset-2 hover:opacity-80 focus-visible:outline focus-visible:outline-brand"
+              >
+                <ClientAvatar client={c} size={26} />
+              </button>
+              {/* No swatch beside it: the mark IS the colour, and two
+                  coloured squares in a row read as two different things.
+                  The colour wheel lives in the mark popup. */}
+              <input
+                key={c.color}
+                defaultValue={c.color}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (/^#[0-9a-fA-F]{6}$/.test(v) && v !== c.color) updateClient(c.id, { color: v });
+                  else e.target.value = c.color;
+                }}
+                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                className="w-[4.6rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-[11px] text-muted outline-none hover:border-border focus:border-brand"
+                title="Hex — paste or type, Enter to apply"
+              />
+            </span>
             <span className={`min-w-0 flex-1 truncate font-medium ${c.archived ? "opacity-40" : ""}`}>
               {c.name}
             </span>
             {c.archived && <span className="text-xs text-faint">archived</span>}
-            {isAdmin && (
-              <label
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 text-xs ${c.billable ? "text-muted" : "text-warning"}`}
-                title="Internal clients (unchecked) are non-billable: new tasks are created non-billable"
-              >
-                <input
-                  type="checkbox"
-                  checked={c.billable}
-                  onChange={(e) => updateClient(c.id, { billable: e.target.checked })}
-                />
-                {c.billable ? "Billable" : "Internal"}
-              </label>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() => updateClient(c.id, { archived: !c.archived })}
-                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
-                  c.archived
-                    ? "border-border text-muted hover:border-success hover:text-success"
-                    : "border-border text-muted hover:border-warning hover:text-warning"
-                }`}
-              >
-                {c.archived ? "Restore" : "Archive"}
-              </button>
-            )}
+            <label
+              className={`flex shrink-0 cursor-pointer items-center gap-1.5 text-xs ${c.billable ? "text-muted" : "text-warning"}`}
+              title="Internal clients (unchecked) are non-billable: new tasks are created non-billable"
+            >
+              <input
+                type="checkbox"
+                checked={c.billable}
+                onChange={(e) => updateClient(c.id, { billable: e.target.checked })}
+              />
+              {c.billable ? "Billable" : "Internal"}
+            </label>
+            <button
+              onClick={() => updateClient(c.id, { archived: !c.archived })}
+              className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                c.archived
+                  ? "border-border text-muted hover:border-success hover:text-success"
+                  : "border-border text-muted hover:border-warning hover:text-warning"
+              }`}
+            >
+              {c.archived ? "Restore" : "Archive"}
+            </button>
           </div>
         ))}
       </div>
       {marking && <ClientMarkModal client={marking} onClose={() => setMarkFor(null)} />}
-      {isAdmin && (
-        <p className="mt-2 text-xs text-faint">
-          Click a mark to change its colour, pick a glyph, or upload and remove the client&apos;s
-          logo. The color marks the client&apos;s chips across the app. Archived clients disappear from the
-          Clients page and pickers; their history stays in reports. Switching a client to
-          &quot;Internal&quot; marks all its tasks (existing and future) non-billable; switching back
-          only affects new tasks.
-        </p>
-      )}
+      <p className="mt-2 text-xs text-faint">
+        Click a mark to change its colour, pick a glyph, or upload and remove the client&apos;s
+        logo. The color marks the client&apos;s chips across the app. Archived clients disappear from the
+        Clients page and pickers; their history stays in reports. Switching a client to
+        &quot;Internal&quot; marks all its tasks (existing and future) non-billable; switching back
+        only affects new tasks.
+      </p>
     </section>
   );
 }
@@ -435,7 +425,7 @@ function IntakeSettings() {
   );
 }
 
-function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
+function TagRow({ tag }: { tag: Tag }) {
   const { updateTag, deleteTag } = useData();
   const [name, setName] = useState(tag.name);
 
@@ -446,14 +436,6 @@ function TagRow({ tag, isAdmin }: { tag: Tag; isAdmin: boolean }) {
       return;
     }
     updateTag(tag.id, { name: trimmed });
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center gap-3 py-1.5">
-        <TagBadge tag={tag.name} />
-      </div>
-    );
   }
 
   return (
@@ -599,7 +581,7 @@ function TaskTypesSection() {
   );
 }
 
-function TagsSection({ isAdmin }: { isAdmin: boolean }) {
+function TagsSection() {
   const { tags, addTag } = useData();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#0b43ed");
@@ -613,39 +595,37 @@ function TagsSection({ isAdmin }: { isAdmin: boolean }) {
       </p>
       <div className="flex flex-col divide-y divide-border">
         {tags.map((t) => (
-          <TagRow key={t.id} tag={t} isAdmin={isAdmin} />
+          <TagRow key={t.id} tag={t} />
         ))}
         {tags.length === 0 && <p className="py-2 text-sm text-faint">No statuses yet.</p>}
       </div>
-      {isAdmin && (
-        <form
-          className="mt-3 flex items-center gap-2 border-t border-border pt-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const trimmed = newName.trim();
-            if (!trimmed) return;
-            addTag(trimmed, newColor);
-            setNewName("");
-          }}
-        >
-          <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
-            title="New status colour"
-          />
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="New status — e.g. In review…"
-            className="flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
-          />
-          <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
-            Add
-          </button>
-        </form>
-      )}
+      <form
+        className="mt-3 flex items-center gap-2 border-t border-border pt-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const trimmed = newName.trim();
+          if (!trimmed) return;
+          addTag(trimmed, newColor);
+          setNewName("");
+        }}
+      >
+        <input
+          type="color"
+          value={newColor}
+          onChange={(e) => setNewColor(e.target.value)}
+          className="size-6 shrink-0 cursor-pointer rounded border-none bg-transparent p-0"
+          title="New status colour"
+        />
+        <input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          placeholder="New status — e.g. In review…"
+          className="flex-1 rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2"
+        />
+        <button className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark">
+          Add
+        </button>
+      </form>
     </section>
   );
 }
@@ -1042,7 +1022,7 @@ export default function SettingsPage() {
             Users are managed on the Team page
             <StudioArrow size={18} className="ml-auto text-muted" />
           </Link>
-          <ClientsSection isAdmin={isAdmin} />
+          <ClientsSection />
         </div>
       )}
 
@@ -1051,7 +1031,7 @@ export default function SettingsPage() {
         // hand-split masonry
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <TaskTypesSection />
-          <TagsSection isAdmin={isAdmin} />
+          <TagsSection />
           <OccasionsSettings />
           <CspReportsSection />
         </div>

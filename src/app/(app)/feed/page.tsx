@@ -30,12 +30,10 @@ import { presetRange, RANGE_PRESETS, type RangePreset } from "@/lib/date-ranges"
 import {
   Avatar,
   ClientChip,
-  ContextMenu,
   Modal,
   ModalClose,
   Tabs,
   TaskNameLink,
-  type ContextMenuItem,
 } from "@/components/ui";
 import { LogTimeForm } from "@/components/log-time-form";
 import { EditableTextCell } from "@/components/editable-cell";
@@ -199,7 +197,6 @@ function FeedPageContent() {
     task: 176,
   });
   const [userPopup, setUserPopup] = useState<{ userId: string; date: string } | null>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
 
   // ?mine=1 → preselect "My hours" once the current user is known
   const mineParam = searchParams.get("mine") === "1";
@@ -923,7 +920,6 @@ function FeedPageContent() {
           onClose={() => setUserPopup(null)}
         />
       )}
-      {menu && <ContextMenu x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} />}
     </div>
   );
 }

@@ -26,8 +26,6 @@ import { ClientContacts } from "../client-contacts";
 import { ClientFiles } from "../client-files";
 import { ClientTimeline, timelineHint, type Zoom } from "../client-timeline";
 import { NO_TYPE, ShowMenu } from "../show-menu";
-import {
-} from "../editable-cell";
 import { ShareGanttButton } from "../share-gantt-button";
 import { useColWidths, ResizeHandle } from "../resizable";
 import type { Section, Task, TaskGroup } from "@/lib/types";
@@ -658,7 +656,7 @@ export function ClientView({ clientId }: { clientId: string }) {
             <ClientFiles clientId={clientId} />
           </div>
           <div className="min-w-0">
-            <ClientStats clientId={clientId} inTab />
+            <ClientStats clientId={clientId} />
           </div>
         </div>
       )}
