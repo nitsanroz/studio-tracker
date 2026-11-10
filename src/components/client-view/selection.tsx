@@ -81,7 +81,10 @@ export function SelectionBar({
     () => sections.filter((s) => s.clientId === (moveTo || clientId)).sort((a, b) => a.position - b.position),
     [sections, moveTo, clientId],
   );
-  const selectedTasks = tasks.filter((t) => ids.includes(t.id));
+  const selectedTasks = useMemo(() => {
+    const picked = new Set(ids);
+    return tasks.filter((t) => picked.has(t.id));
+  }, [tasks, ids]);
   const minutes = selectedTasks.reduce((sum, t) => sum + taskMinutes(t.id), 0);
 
   const done = () => {

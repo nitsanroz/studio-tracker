@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useData } from "@/lib/store";
-import { namesClient, useClientsByRecency } from "./task-autocomplete";
+import { namesClient, narrowClientChips, useClientsByRecency } from "./task-autocomplete";
 import { ClientChip } from "./ui";
 
 interface Result {
@@ -40,10 +40,7 @@ export function GlobalSearch() {
    */
   const chipClients = useMemo(() => {
     if (picked) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return byRecency;
-    const named = byRecency.filter((c) => c.name.toLowerCase().includes(q));
-    return named.length > 0 ? named : byRecency;
+    return narrowClientChips(byRecency, query);
   }, [picked, query, byRecency]);
 
   // ⌘K / Ctrl+K focuses search

@@ -22,27 +22,13 @@ import {
   savePricing,
   updateLibraryItem,
 } from "@/lib/leads/estimates-data";
+import { NumField, QUIET } from "./estimate-fields";
 
 const CARD = "rounded-xl border border-border bg-surface p-4 shadow-card";
-const QUIET =
-  "rounded border border-transparent bg-transparent px-1 py-0.5 hover:border-border focus:border-border focus:bg-surface focus:outline-none";
 
-function Num({ value, onCommit, className = "" }: { value: number | null; onCommit: (v: number | null) => void; className?: string }) {
-  return (
-    <input
-      type="number"
-      min={0}
-      step={0.5}
-      key={String(value)}
-      defaultValue={value ?? ""}
-      onBlur={(e) => {
-        const raw = e.target.value.trim();
-        const v = raw === "" ? null : Number(raw);
-        if (v !== value && (v === null || Number.isFinite(v))) onCommit(v);
-      }}
-      className={`${QUIET} w-16 text-right tabular-nums ${className}`}
-    />
-  );
+/** The library's hour and percent fields: the estimate editor's field, in half hours. */
+function Num({ value, onCommit }: { value: number | null; onCommit: (v: number | null) => void }) {
+  return <NumField value={value} onCommit={onCommit} step={0.5} className="w-16" />;
 }
 
 export function LibrarySettings() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PortraitVariant } from "@/components/member-photo";
+import type { AvatarVariant } from "@/lib/avatar-variant";
 
 /**
  * profileId → which default cut-out to draw, from `/api/member-avatars`.
@@ -17,7 +17,7 @@ import type { PortraitVariant } from "@/components/member-photo";
  * request costs a slightly different picture — not a broken one, and not an error
  * worth putting in front of anyone.
  */
-type PortraitMap = Record<string, PortraitVariant>;
+type PortraitMap = Record<string, AvatarVariant>;
 
 let cache: PortraitMap | null = null;
 let inFlight: Promise<PortraitMap> | null = null;

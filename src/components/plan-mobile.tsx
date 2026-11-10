@@ -25,7 +25,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { DAY_NAMES, formatDayLabel, isWeekend, shiftDays, startOfWeek, toISODate } from "@/lib/format";
+import { DAY_NAMES, formatDayLabel, isWeekend, parseISO, shiftDays, startOfWeek, toISODate } from "@/lib/format";
 import { Avatar, ClientChip } from "./ui";
 import { MobileSheet } from "./mobile-sheet";
 import { ABSENCE_FILL, ABSENCE_LABELS, EntryModal, type CellTarget } from "./plan-entry-modal";
@@ -109,7 +109,7 @@ export function PlanMobile() {
 
   /** How a cell names itself in the modal's heading and the move sheet. */
   const labelFor = (col: PlanColumn, iso: string) =>
-    iso === WAITING ? col.name : `${col.name} · ${formatDayLabel(new Date(iso)).date}`;
+    iso === WAITING ? col.name : `${col.name} · ${formatDayLabel(parseISO(iso)).date}`;
 
   const jumpToToday = () => {
     const o = openingDay(new Date());

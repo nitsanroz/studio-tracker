@@ -50,11 +50,22 @@ import { useBootProgress } from "@/lib/store/boot-progress";
 import { Toaster } from "./toaster";
 import { AmpLoader } from "./amp-loader";
 
-// admin-only sections render LAST, below a thin divider.
-//
 /** ⚠️ Must equal the CSS duration on the drawer below — the `PANE_MS` rule. */
 const DRAWER_MS = 200;
 
+/** The white pill behind the sidebar item for the page you're on. */
+const ACTIVE_STYLE: React.CSSProperties = {
+  backgroundColor: "var(--sb-active-bg)",
+  color: "var(--sb-active-fg)",
+};
+
+/** Home is active only on "/" itself; every other item on its own subtree. */
+function isActive(href: string, pathname: string): boolean {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+// admin-only sections render LAST, below a thin divider.
+//
 // `mobile: false` keeps a route out of the phone drawer. It is not a permission
 // and it is not a redirect — the route still exists and still resolves; it just
 // isn't offered where it can't be used. Every one of these has a matching entry
@@ -136,7 +147,7 @@ function NavItem({
       style={
         activeStyle ??
         (active
-          ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+          ? ACTIVE_STYLE
           : { color: "var(--sb-muted)" })
       }
       onMouseEnter={(e) => {
@@ -166,7 +177,7 @@ function NavItem({
         // no transition: the point of the tooltip is that it's already there
         <span
           className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium shadow-lg group-hover/nav:block"
-          style={{ backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }}
+          style={ACTIVE_STYLE}
           role="tooltip"
         >
           {label}
@@ -336,7 +347,7 @@ function MobileBar({
       <button onClick={onLogTime} aria-label="Log time" className={BAR_ITEM}>
         <span
           className="flex size-9 items-center justify-center rounded-full"
-          style={{ backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }}
+          style={ACTIVE_STYLE}
         >
           <Plus size={20} strokeWidth={2.25} />
         </span>
@@ -477,7 +488,7 @@ function MobileDrawer({
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
           {items.map(({ href, label, Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            const active = isActive(href, pathname);
             return (
               <Link
                 key={href}
@@ -491,7 +502,7 @@ function MobileDrawer({
                 className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
                 style={
                   active
-                    ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                    ? ACTIVE_STYLE
                     : { color: "var(--sb-muted)" }
                 }
               >
@@ -507,7 +518,7 @@ function MobileDrawer({
               className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
               style={
                 pathname.startsWith("/intake-queue")
-                  ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                  ? ACTIVE_STYLE
                   : { color: "var(--sb-muted)" }
               }
             >
@@ -656,6 +667,7 @@ function Shell({ children }: { children: ReactNode }) {
    * changes, so the badge means "unread", not "ever edited".
    */
   const updatedIntake = updatedRequests.length;
+  const intakeTotal = pendingIntake + updatedIntake;
   const newLeads = useNewLeads().list;
 
   // Read in an effect, never in the useState initialiser: the server renders
@@ -808,7 +820,7 @@ function Shell({ children }: { children: ReactNode }) {
               label={label}
               Icon={Icon}
               folded={folded}
-              active={href === "/" ? pathname === "/" : pathname.startsWith(href)}
+              active={isActive(href, pathname)}
             />
           ))}
           {isAdmin && (
@@ -824,16 +836,16 @@ function Shell({ children }: { children: ReactNode }) {
               label="Intake"
               Icon={Inbox}
               folded={folded}
-              badge={pendingIntake + updatedIntake}
+              badge={intakeTotal}
               active={pathname.startsWith("/intake-queue")}
               activeStyle={
                 pathname.startsWith("/intake-queue")
-                  ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                  ? ACTIVE_STYLE
                   // ⚠️ The aqua highlight fires for an unread client EDIT too, not
                   // only for a new submission — a revision of an approved brief is
                   // not pending, so the old test would have left the nav silent on
                   // exactly the case that most needs a look.
-                  : pendingIntake + updatedIntake > 0
+                  : intakeTotal > 0
                     ? { backgroundColor: "var(--aqua)", color: "#06112f" }
                     : undefined
               }
@@ -841,7 +853,7 @@ function Shell({ children }: { children: ReactNode }) {
           )}
           {isAdmin &&
             NAV.filter((n) => n.adminOnly).map(({ href, label, Icon }) => {
-              const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+              const active = isActive(href, pathname);
               // Leads lights up like Intake while a website lead is unopened.
               const waiting = href === "/leads" ? newLeads.length : 0;
               return (
@@ -855,7 +867,7 @@ function Shell({ children }: { children: ReactNode }) {
                   active={active}
                   activeStyle={
                     active
-                      ? { backgroundColor: "var(--sb-active-bg)", color: "var(--sb-active-fg)" }
+                      ? ACTIVE_STYLE
                       : waiting > 0
                         ? { backgroundColor: "var(--aqua)", color: "#06112f" }
                         : undefined
@@ -969,7 +981,7 @@ function Shell({ children }: { children: ReactNode }) {
       <MobileBar
         pathname={pathname}
         isAdmin={isAdmin}
-        intakeBadge={pendingIntake + updatedIntake}
+        intakeBadge={intakeTotal}
         onMenu={() => setDrawerOpen(true)}
         onLogTime={() => setLogTimeOpen(true)}
       />
@@ -978,7 +990,7 @@ function Shell({ children }: { children: ReactNode }) {
           pathname={pathname}
           isAdmin={isAdmin}
           me={me}
-          intakeBadge={pendingIntake + updatedIntake}
+          intakeBadge={intakeTotal}
           onClose={() => setDrawerOpen(false)}
           onAbout={() => setAboutOpen(true)}
           onNews={() => setNewsOpen(true)}

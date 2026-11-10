@@ -673,16 +673,14 @@ export function BudgetBar({
    * What text rides beside the bar. `doneMinutes` is always required — it drives
    * the fill and the over-budget colour whichever label you pick.
    * `both` = "12/24h" (the original) · `budget` = "24h", for a table that has a
-   * separate Hours column · `none` = bar only, where the numbers are already
-   * spelled out above it.
+   * separate Hours column.
    */
-  label?: "both" | "budget" | "none";
+  label?: "both" | "budget";
 }) {
   // No budget set: still show the hours logged. This used to render nothing at all,
   // which meant a task without an estimate showed no hours anywhere on the client
   // table — the logged time was invisible unless someone opened the task.
   if (estimateHours == null) {
-    if (label === "none") return null;
     if (label === "budget") return <span className="text-xs text-faint">–</span>;
     return (
       <span className={`text-xs whitespace-nowrap ${doneMinutes > 0 ? "text-muted" : "text-faint"}`}>
@@ -701,14 +699,12 @@ export function BudgetBar({
           style={{ width: `${pct}%` }}
         />
       </div>
-      {label !== "none" && (
-        <span
-          className={`text-xs whitespace-nowrap ${over ? "text-danger font-semibold" : "text-muted"}`}
-        >
-          {label === "both" && `${formatHoursDecimal(doneMinutes)}/`}
-          {estimateHours}h
-        </span>
-      )}
+      <span
+        className={`text-xs whitespace-nowrap ${over ? "text-danger font-semibold" : "text-muted"}`}
+      >
+        {label === "both" && `${formatHoursDecimal(doneMinutes)}/`}
+        {estimateHours}h
+      </span>
     </div>
   );
 }

@@ -45,8 +45,6 @@ export const ABSENCE_CELL: Record<AbsenceType, { icon: typeof Thermometer; label
   day_off: { icon: Minus, label: null },
 };
 
-/** Display label + functional chip colors per dev-item status. */
-
 /** The absence buttons in the add/edit modal, in the order the studio reads them. */
 export const ABSENCE_CHOICES: { key: AbsenceType; label: string; chip: string }[] = [
   { key: "sick", label: "🤒 Sick", chip: "bg-black text-white" },

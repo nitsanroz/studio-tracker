@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimatePct, estimateTone } from "@/components/report-table";
+import { estimatePct, estimateTone } from "./estimate-pct";
 
 /**
  * The chip beside an estimate on the client's report answers "how much of this is

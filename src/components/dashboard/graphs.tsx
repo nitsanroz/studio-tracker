@@ -16,7 +16,6 @@ import { BAR_CLIENTS, TOTAL_SERIES, useHoursScope } from "./shared";
 import { PaceChart } from "./pace-chart";
 import type { HomeFilter } from "./shared";
 import { bucketProjection, bucketize } from "@/lib/period-math";
-import { useData } from "@/lib/store";
 import { useMemo, useState } from "react";
 
 
@@ -243,18 +242,10 @@ export function ClientBreakdown({ filter, isAdmin }: { filter: HomeFilter; isAdm
  *  Admin-only and per-client, never per-person, so it includes the recovered
  *  pre-Everhour history (entrySumsAll). */
 export function StudioClientTrend({ filter }: { filter: HomeFilter }) {
-  const { entrySumsAll, tasks, clients } = useData();
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  // the admin scope: entrySumsAll, filtered by the same range/client/billable test
+  const { scoped, taskById, clientById } = useHoursScope(filter, true);
 
   const { labels, series, projection } = useMemo(() => {
-    const scoped = entrySumsAll.filter((e) => {
-      if (filter.range && (e.date < filter.range.from || e.date > filter.range.to)) return false;
-      const task = taskById.get(e.taskId);
-      if (filter.clientId && task?.clientId !== filter.clientId) return false;
-      if (filter.billableOnly && !task?.billable) return false;
-      return true;
-    });
     const { keyFor, labelFor, unit } = bucketize(scoped.map((e) => e.date), !!filter.range);
     const keys = [...new Set(scoped.map((e) => keyFor(e.date)))].sort();
 
@@ -325,7 +316,7 @@ export function StudioClientTrend({ filter }: { filter: HomeFilter }) {
         : undefined;
 
     return { labels: keys.map(labelFor), series, projection };
-  }, [entrySumsAll, filter, taskById, clientById]);
+  }, [scoped, filter, taskById, clientById]);
 
   if (series.length === 0) return <EmptyState compact icon={Clock} text="No hours in this scope." />;
   return (

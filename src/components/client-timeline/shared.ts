@@ -16,6 +16,9 @@
 import { SECTION_H, TIP_H } from "@/lib/gantt";
 import type { Profile, Section, Task, TaskGroup, TaskType } from "@/lib/types";
 
+/* Left table geometry. The columns are fixed rather than resizable: this panel
+   is half of a two-panel layout and a drag here would desynchronise it from the
+   chart's own horizontal scroll. */
 export const GRIP_W = 16;
 
 export const CHECK_W = 22;

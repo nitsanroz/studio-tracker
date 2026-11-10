@@ -33,6 +33,19 @@ export function namesClient(client: Client, query: string): boolean {
 }
 
 /**
+ * The client chips under a picker for what has been typed: the clients whose
+ * name it matches — by `namesClient`, so a chip on screen is always one picking
+ * would treat as "reached by name" — or ALL of them when it matches none, since
+ * most of what gets typed is a task title and the filter shouldn't vanish exactly
+ * when the list is longest. One copy for the three pickers.
+ */
+export function narrowClientChips(clients: Client[], query: string): Client[] {
+  if (!query.trim()) return clients;
+  const named = clients.filter((c) => namesClient(c, query));
+  return named.length > 0 ? named : clients;
+}
+
+/**
  * Active clients, most-recently-worked-on first.
  *
  * Lifted out of the weekly plan's add-to-cell modal, which had it inline, so the
@@ -203,10 +216,7 @@ export function TaskAutocomplete({
    */
   const chipClients = useMemo(() => {
     if (!ownPicker || pickedClient) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return byRecency;
-    const named = byRecency.filter((c) => c.name.toLowerCase().includes(q));
-    return named.length > 0 ? named : byRecency;
+    return narrowClientChips(byRecency, query);
   }, [ownPicker, pickedClient, query, byRecency]);
 
   const results = useTaskMatches({ query, clientId, includeDone });

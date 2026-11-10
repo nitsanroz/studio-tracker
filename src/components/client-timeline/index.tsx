@@ -84,12 +84,6 @@ export function timelineHint(isAdmin: boolean): string {
     : "Read-only — only admins can re-schedule.";
 }
 
-
-/* Left table geometry. The columns are fixed rather than resizable: this panel
-   is half of a two-panel layout and a drag here would desynchronise it from the
-   chart's own horizontal scroll. */
-
-
 export function ClientTimeline({
   clientId,
   zoom,
@@ -1048,6 +1042,7 @@ export function ClientTimeline({
                   const key = g.section?.id ?? "";
                   const isCollapsed = collapsed.has(key);
                   const sectionId = g.section?.id ?? null;
+                  const rolled = showSummaries ? rollupOf(allRowsOf(g)) : null;
                   return (
                     <div key={key || "none"}>
                       <SectionHeaderRow
@@ -1064,16 +1059,13 @@ export function ClientTimeline({
                           g.section && updateSection(g.section.id, { name })
                         }
                         summary={
-                          showSummaries ? (
+                          rolled ? (
                             <SummaryCells
                               hidden={hiddenCols}
-                              rolled={rollupOf(allRowsOf(g))}
+                              rolled={rolled}
                               // ⚠️ The section's OWN recovered budget wins over
                               // the sum of its tasks — see sectionBudgetHours.
-                              budget={sectionBudgetHours(
-                                g.section,
-                                rollupOf(allRowsOf(g)),
-                              )}
+                              budget={sectionBudgetHours(g.section, rolled)}
                               bg="bg-surface"
                             />
                           ) : undefined
@@ -1086,6 +1078,7 @@ export function ClientTimeline({
                         g.blocks.map((b) => {
                           const bKey = blockKey(b.group.id);
                           const bCollapsed = collapsed.has(bKey);
+                          const bRolled = showSummaries ? rollupOf(b.rows) : null;
                           return (
                             <div key={b.group.id}>
                               <GroupHeaderRow
@@ -1099,13 +1092,13 @@ export function ClientTimeline({
                                 leftW={leftW}
                                 onRename={(name) => updateTaskGroup(b.group.id, { name })}
                                 summary={
-                                  showSummaries ? (
+                                  bRolled ? (
                                     <SummaryCells
                                       hidden={hiddenCols}
-                                      rolled={rollupOf(b.rows)}
+                                      rolled={bRolled}
                                       // A group has no budget of its own; it is
                                       // always the sum of its tasks.
-                                      budget={rollupOf(b.rows).estimateHours}
+                                      budget={bRolled.estimateHours}
                                       bg="bg-surface"
                                     />
                                   ) : undefined

@@ -22,6 +22,7 @@ import { toISODate } from "@/lib/format";
 import { dailyTargetMinutes } from "@/lib/members";
 import {
   namesClient,
+  narrowClientChips,
   useClientsByRecency,
   useTaskMatches,
   type TaskMatch,
@@ -66,10 +67,7 @@ export function MobileLogTimeSheet({ onClose }: { onClose: () => void }) {
   const pickedClient = byRecency.find((c) => c.id === clientId);
   const chipClients = useMemo(() => {
     if (pickedClient) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return byRecency;
-    const named = byRecency.filter((c) => c.name.toLowerCase().includes(q));
-    return named.length > 0 ? named : byRecency;
+    return narrowClientChips(byRecency, query);
   }, [pickedClient, query, byRecency]);
 
   /**

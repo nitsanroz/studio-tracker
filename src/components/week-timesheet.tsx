@@ -4,7 +4,7 @@ import { StudioArrow } from "@/components/studio-arrow";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useData } from "@/lib/store";
-import { shiftDays, formatHoursShort, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
+import { shiftDays, formatHoursShort, parseISO, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
 import { Avatar } from "./ui";
 import { UserDayDetails } from "./user-day-details";
 
@@ -96,13 +96,16 @@ export function WeekTimesheet() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [profiles, byUserDay]);
 
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+
   /** The hover card for one cell: what was logged, not just how much. */
   function cellTooltip(entries: { minutes: number; taskId: string }[] | undefined) {
     if (!entries?.length) return "No hours logged on this day — click to add them";
     return entries
       .map((e) => {
-        const task = tasks.find((t) => t.id === e.taskId);
-        const client = clients.find((c) => c.id === task?.clientId);
+        const task = taskById.get(e.taskId);
+        const client = task ? clientById.get(task.clientId) : undefined;
         const name = task?.title ?? "(deleted task)";
         return `${client ? `${client.name} · ` : ""}${name} — ${formatHoursShort(e.minutes)}`;
       })
@@ -131,7 +134,7 @@ export function WeekTimesheet() {
               </Link>
             </th>
             {days.map((iso) => {
-              const d = new Date(iso + "T00:00:00");
+              const d = parseISO(iso);
               const isToday = iso === todayIso;
               return (
                 <th

@@ -214,9 +214,7 @@ export function TimeEntryModal({
             <MemberSelect value={userId ?? currentUserId} onChange={setUserId} className={input} />
           ) : (
             <span className="px-1 py-1.5">
-              {profiles.find((p) => p.id === entry.userId)?.name ??
-                entry.legacyAuthorName ??
-                "Not recorded"}
+              {owner?.name ?? entry.legacyAuthorName ?? "Not recorded"}
             </span>
           )}
         </label>

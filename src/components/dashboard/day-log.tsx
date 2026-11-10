@@ -5,7 +5,7 @@
 import { TaskAutocomplete } from "../task-autocomplete";
 import type { TaskMatch } from "../task-autocomplete";
 import { ClientChip } from "../ui";
-import { formatFeedDate, formatHours, formatHoursShort, parseDuration, shiftDays, toISODate } from "@/lib/format";
+import { formatFeedDate, formatHours, formatHoursShort, parseDuration, parseISO, shiftDays, toISODate } from "@/lib/format";
 import { dailyTargetMinutes } from "@/lib/members";
 import { useData } from "@/lib/store";
 import type { TimeEntry } from "@/lib/types";
@@ -183,8 +183,7 @@ export function DayLog() {
   }, [timeEntries, currentUserId, tasks]);
 
   function shiftDay(delta: number) {
-    const [y, m, d] = dateIso.split("-").map(Number);
-    setDateIso(toISODate(shiftDays(new Date(y, m - 1, d), delta)));
+    setDateIso(toISODate(shiftDays(parseISO(dateIso), delta)));
   }
 
   function save() {

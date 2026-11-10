@@ -7,7 +7,7 @@
 // members see their own, and that decision is made once, here, rather than in
 // each pane that needs it.
 
-import { formatHoursAvg, formatHoursShort } from "@/lib/format";
+import { formatHoursAvg, formatHoursShort, parseISO } from "@/lib/format";
 import { useData } from "@/lib/store";
 import { useMemo } from "react";
 
@@ -91,7 +91,7 @@ export function tenureWords(startIso: string): string {
 
 /** calendar diff since start date, in whole years, months and days */
 function tenureParts(startIso: string): { y: number; m: number; d: number } {
-  const start = new Date(startIso);
+  const start = parseISO(startIso);
   const now = new Date();
   let y = now.getFullYear() - start.getFullYear();
   let m = now.getMonth() - start.getMonth();
