@@ -340,9 +340,10 @@ function PlanRow({
   onOpen: () => void;
   onActions: () => void;
 }) {
-  const { tasks, clients } = useData();
-  const task = entry.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
-  const client = clients.find((c) => c.id === (entry.clientId ?? task?.clientId));
+  const { taskById, clientById } = useData();
+  const task = entry.taskId ? taskById.get(entry.taskId) : null;
+  const clientId = entry.clientId ?? task?.clientId;
+  const client = clientId ? clientById.get(clientId) : undefined;
 
   if (entry.type === "absence") {
     const kind = entry.absenceType ?? "day_off";
@@ -419,12 +420,12 @@ function MoveSheet({
   columns: PlanColumn[];
   onClose: () => void;
 }) {
-  const { movePlanEntryToCell, tasks, profiles } = useData();
+  const { movePlanEntryToCell, taskById, profiles } = useData();
   const [columnId, setColumnId] = useState(entry.columnId);
   const [date, setDate] = useState<string>(entry.date ?? WAITING);
   const waitingCol = columns.find((c) => c.type === "waiting_list");
   const col = columns.find((c) => c.id === columnId);
-  const task = entry.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
+  const task = entry.taskId ? taskById.get(entry.taskId) : null;
   const to = col?.type === "member" ? col.profileId : null;
   const reassigns = !!task && !!to && entry.columnId !== columnId && task.assigneeId !== to;
   const toName = profiles.find((p) => p.id === to)?.name ?? col?.name;

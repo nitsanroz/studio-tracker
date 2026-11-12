@@ -54,9 +54,9 @@ export function LoggedEntryRow({
   entry: TimeEntry;
   onPick: (entry: TimeEntry) => void;
 }) {
-  const { tasks, clients, freshEntryId } = useData();
-  const task = tasks.find((t) => t.id === entry.taskId);
-  const client = clients.find((c) => c.id === task?.clientId);
+  const { taskById, clientById, freshEntryId } = useData();
+  const task = taskById.get(entry.taskId);
+  const client = task ? clientById.get(task.clientId) : undefined;
   return (
     <button
       onClick={() => onPick(entry)}

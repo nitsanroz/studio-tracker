@@ -459,6 +459,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     entrySumsRef.current = entrySumsAll;
   }, [entrySumsAll]);
 
+  // Id lookups for per-chip / per-cell renders: a `tasks.find` per chip walked
+  // every task in the studio for every chip on the weekly plan, every render.
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+
   // Task totals include the recovered history — that IS the task's real cost.
   const minutesByTask = useMemo(() => {
     const map = new Map<string, number>();
@@ -1145,6 +1150,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       taskGroups,
       tags: tagRows,
       tasks,
+      taskById,
+      clientById,
       comments,
       attachments,
       timeEntries,
@@ -1195,7 +1202,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       bootError,
     }),
     [
-      loading, profiles, clients, sections, taskGroups, tagRows, tasks, comments, attachments,
+      loading, profiles, clients, sections, taskGroups, tagRows, tasks, taskById, clientById, comments, attachments,
       timeEntries, entrySums, entrySumsAll, currentUserId, viewAsProfile, openTaskId,
       planColumns, planEntries, billingPeriods, dayStates, links, timelineMarks, taskTypes,
       isBriefLoaded, devItems, openTask, taskActions, plan, taskRequests, taskMinutes,

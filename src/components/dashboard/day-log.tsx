@@ -24,13 +24,13 @@ export function DayLogRow({
   /** the patch just written, for the host's own fetched copy of the day */
   onSaved?: (patch: Partial<TimeEntry>) => void;
 }) {
-  const { tasks, clients, updateTimeEntry } = useData();
+  const { taskById, clientById, updateTimeEntry } = useData();
   const [editing, setEditing] = useState(false);
   const [duration, setDuration] = useState("");
   const [description, setDescription] = useState("");
 
-  const task = tasks.find((t) => t.id === entry.taskId);
-  const client = clients.find((c) => c.id === task?.clientId);
+  const task = taskById.get(entry.taskId);
+  const client = task ? clientById.get(task.clientId) : undefined;
 
   const minutes = parseDuration(duration);
 

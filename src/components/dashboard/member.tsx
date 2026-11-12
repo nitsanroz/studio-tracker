@@ -25,7 +25,7 @@ import { useMemo } from "react";
 
 
 export function MyWeek() {
-  const { planColumns, planEntries, tasks, clients, currentUserId, openTask } = useData();
+  const { planColumns, planEntries, taskById, clientById, currentUserId, openTask } = useData();
   const narrow = useIsNarrow();
   const myColumn = planColumns.find((c) => c.profileId === currentUserId);
   const weekStart = startOfWeek(new Date());
@@ -125,8 +125,8 @@ export function MyWeek() {
                       </span>
                     );
                   }
-                  const task = e.taskId ? tasks.find((t) => t.id === e.taskId) : null;
-                  const client = e.clientId ? clients.find((c) => c.id === e.clientId) : null;
+                  const task = e.taskId ? taskById.get(e.taskId) : null;
+                  const client = e.clientId ? clientById.get(e.clientId) : null;
                   const label = task ? task.title : e.text;
                   return (
                     <button
@@ -175,9 +175,8 @@ export function MemberWelcome({
   /** Sits under the figures, beside the hero (My week). */
   children?: React.ReactNode;
 }) {
-  const { entrySums, timeEntries, tasks } = useData();
+  const { entrySums, timeEntries, taskById } = useData();
   const portraits = useMemberPortraits();
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   // ⚠️ The hero used to be week-scoped ("You've logged 21h across 6 active
   // tasks — 1 due this week"). It reads TODAY now, deliberately: the week's

@@ -134,7 +134,7 @@ export function UserDayDetails({
   date: string;
   onClose: () => void;
 }) {
-  const { tasks, clients, profiles, timeEntries, loadDayEntries } = useData();
+  const { taskById, clientById, profiles, timeEntries, loadDayEntries } = useData();
   const [targetUserId, setTargetUserId] = useState(userId);
   const [targetDate, setTargetDate] = useState(date);
   /**
@@ -223,8 +223,8 @@ export function UserDayDetails({
             <p className="py-3 text-center text-sm text-faint">No hours on this day.</p>
           )}
           {entries.map((e) => {
-            const task = tasks.find((t) => t.id === e.taskId);
-            const client = clients.find((c) => c.id === task?.clientId);
+            const task = taskById.get(e.taskId);
+            const client = task ? clientById.get(task.clientId) : undefined;
             return (
               <EntryEditRow
                 key={e.id}

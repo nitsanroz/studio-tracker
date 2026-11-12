@@ -93,9 +93,9 @@ function EntryChip({
    */
   onEdit?: (entry: PlanEntry) => void;
 }) {
-  const { tasks, clients, openTask, deletePlanEntry } = useData();
-  const task = entry.taskId ? tasks.find((t) => t.id === entry.taskId) : null;
-  const client = entry.clientId ? clients.find((c) => c.id === entry.clientId) : null;
+  const { taskById, clientById, openTask, deletePlanEntry } = useData();
+  const task = entry.taskId ? taskById.get(entry.taskId) : null;
+  const client = entry.clientId ? clientById.get(entry.clientId) : null;
 
   const remove = canEdit ? (
     <button

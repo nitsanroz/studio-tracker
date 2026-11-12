@@ -25,7 +25,7 @@ import { UserDayDetails } from "./user-day-details";
  * never make a designer look like they logged.
  */
 export function WeekTimesheet() {
-  const { profiles, entrySums, tasks, clients, planColumns, planEntries } = useData();
+  const { profiles, entrySums, taskById, clientById, planColumns, planEntries } = useData();
   const [popup, setPopup] = useState<{ userId: string; date: string } | null>(null);
 
   const todayIso = toISODate(new Date());
@@ -95,9 +95,6 @@ export function WeekTimesheet() {
       )
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [profiles, byUserDay]);
-
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
-  const clientById = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
 
   /** The hover card for one cell: what was logged, not just how much. */
   function cellTooltip(entries: { minutes: number; taskId: string }[] | undefined) {

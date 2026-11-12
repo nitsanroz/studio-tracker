@@ -132,6 +132,11 @@ export interface Store {
   taskGroups: TaskGroup[];
   tags: Tag[];
   tasks: Task[];
+  /** `tasks` by id, built once per change — use it instead of `tasks.find` in
+   * anything rendered per row, chip or cell (the weekly plan, the timesheet). */
+  taskById: ReadonlyMap<string, Task>;
+  /** `clients` by id — same reason as `taskById`. */
+  clientById: ReadonlyMap<string, Client>;
   comments: TaskComment[];
   attachments: Attachment[];
   timeEntries: TimeEntry[];
