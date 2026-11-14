@@ -25,6 +25,7 @@ const PAGES: { href: string; label: string; exact?: boolean }[] = [
   { href: "/finance/expenses", label: "Expenses" },
   { href: "/finance/rates", label: "Rates" },
   { href: "/finance/scenarios", label: "Scenarios" },
+  // A tab of the tracker's Settings (stage 5); the address still answers, by redirect.
   { href: "/finance/settings", label: "Settings" },
 ];
 

@@ -13,7 +13,7 @@ import { STATE_COOKIE, callbackUrl } from "@/lib/finance/mail/routes";
 export async function GET(req: NextRequest) {
   const auth = await ownerOnly();
   if ("res" in auth) return auth.res;
-  if (!mailConfigured()) return NextResponse.redirect(new URL("/finance/settings?mail=not-configured", req.url));
+  if (!mailConfigured()) return NextResponse.redirect(new URL("/settings?tab=finance&mail=not-configured", req.url));
   const state = randomBytes(24).toString("base64url");
   const hint = req.nextUrl.searchParams.get("hint") ?? undefined;
   const res = NextResponse.redirect(authUrl(callbackUrl(req), state, hint && /@studionmore\.com$/i.test(hint) ? hint : undefined));

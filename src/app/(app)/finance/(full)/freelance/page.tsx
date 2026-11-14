@@ -13,6 +13,7 @@ export default function FreelancePage() {
       addLabel="Freelancer name"
       pnlLine="freelance_salaries"
       linkPeople
+      headerLink={{ href: "/freelancers", label: "Review their hours" }}
     />
   );
 }

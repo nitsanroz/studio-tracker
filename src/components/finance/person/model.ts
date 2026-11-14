@@ -88,7 +88,6 @@ export interface Factors {
 }
 
 /** The tracker, for links out of the person page (its team page, vacation). */
-export const TRACKER_URL = "";
 
 /** "2026-03" → "March 2026". */
 export const MONTH_LONG = (key: string) =>

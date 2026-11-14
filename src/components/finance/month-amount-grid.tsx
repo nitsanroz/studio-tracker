@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, Eye, EyeOff, Link2Off, Lock, LockOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
+import { StudioArrow } from "@/components/studio-arrow";
 import { createClient } from "@/lib/finance/supabase-client";
 import { fetchAll, mapLock, updatePreservingLock, writeStep, type LockRow } from "@/lib/finance/db";
 import { MONTHS, monthLocked } from "@/lib/finance/plan-model";
@@ -224,6 +225,7 @@ export function MonthAmountGrid({
   table,
   title,
   subtitle,
+  headerLink,
   block,
   nameColumn,
   amountColumn,
@@ -235,6 +237,8 @@ export function MonthAmountGrid({
   table: string;
   title: string;
   subtitle: string;
+  /** a link beside the year picker — the page's counterpart in the tracker */
+  headerLink?: { href: string; label: string };
   block: FinanceLock["block"];
   nameColumn: string;
   amountColumn: string;
@@ -892,6 +896,12 @@ export function MonthAmountGrid({
         title={title}
         subtitle={subtitle}
         actions={
+          <>
+          {headerLink && (
+            <Link href={headerLink.href} className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background">
+              {headerLink.label} <StudioArrow size={13} />
+            </Link>
+          )}
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -903,6 +913,7 @@ export function MonthAmountGrid({
               </option>
             ))}
           </select>
+          </>
         }
       />
       {linkPeople && (table === "finance_salaries" || table === "finance_freelance") && (

@@ -15,7 +15,7 @@ import { ACCOUNTS } from "@/lib/finance/mail/scan";
  */
 export async function GET(req: NextRequest) {
   const back = (result: string) => {
-    const res = NextResponse.redirect(new URL(`/finance/settings?mail=${result}`, req.url));
+    const res = NextResponse.redirect(new URL(`/settings?tab=finance&mail=${result}`, req.url));
     res.cookies.delete({ name: STATE_COOKIE, path: "/api/finance/mail" });
     return res;
   };

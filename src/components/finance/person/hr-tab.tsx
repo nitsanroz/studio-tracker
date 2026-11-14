@@ -3,12 +3,13 @@
 // HR: who they are (the tracker's HR record), their days off, the talks and
 // salary updates on record, and the full HR timeline.
 
-import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { StudioArrow } from "@/components/studio-arrow";
 import { Card, SectionTitle } from "@/components/finance/ui";
 import { MONTH_SHORT } from "@/lib/finance/finance";
 import { formatNum } from "@/lib/finance/format";
 import { tenure } from "@/lib/finance/people";
-import { TRACKER_URL, fmtDate, latestSlip, type HrNote, type PersonModel } from "./model";
+import { fmtDate, latestSlip, type HrNote, type PersonModel } from "./model";
 
 const KIND_LABEL: Record<HrNote["kind"], string> = {
   start: "Started",
@@ -98,14 +99,9 @@ export function HrTab({ m }: { m: PersonModel }) {
           ) : (
             <p className="text-sm text-faint">No payslip yet.</p>
           )}
-          <a
-            href={`${TRACKER_URL}/vacation`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex items-center gap-1 text-xs text-brand hover:underline"
-          >
-            Requests in the tracker <ExternalLink size={11} />
-          </a>
+          <Link href="/vacation" className="mt-3 inline-flex items-center gap-1 text-xs text-brand hover:underline">
+            Vacation requests <StudioArrow size={11} />
+          </Link>
         </Card>
 
         <Card>

@@ -6,6 +6,8 @@ import { Check, Clock, Link as LinkIcon, Plus } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
 import { Button } from "@/components/primitives";
 import { useData, useIsAdmin } from "@/lib/store";
+import { atLeast } from "@/lib/access";
+import { useTier } from "@/components/tier-context";
 import { TermsForm, act, hrs, money, monthLabel, otherLine, termsLine, type Freelancer } from "./shared";
 import { PageSkeleton } from "@/components/skeleton";
 
@@ -19,6 +21,7 @@ interface Data {
 
 export default function FreelancersPage() {
   const isAdmin = useIsAdmin();
+  const tier = useTier();
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
@@ -50,11 +53,19 @@ export default function FreelancersPage() {
             their own log. Open one to review the month and file what&apos;s waiting.
           </p>
         </div>
-        {!adding && (
-          <Button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5">
-            <Plus size={16} strokeWidth={2} /> Add a freelancer
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Hours are reviewed here; what each month costs is finance's page (full finance only). */}
+          {atLeast(tier, "finance") && (
+            <Link href="/finance/freelance" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline">
+              Payments in Finance <StudioArrow size={14} />
+            </Link>
+          )}
+          {!adding && (
+            <Button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5">
+              <Plus size={16} strokeWidth={2} /> Add a freelancer
+            </Button>
+          )}
+        </div>
       </div>
 
       {adding && (

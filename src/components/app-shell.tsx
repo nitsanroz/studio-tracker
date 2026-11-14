@@ -39,6 +39,7 @@ import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
 import dynamic from "next/dynamic";
+import { TierProvider } from "./tier-context";
 import { useVacation } from "@/lib/use-vacation";
 import { NewLeadsProvider, useNewLeads } from "./new-leads";
 import { EgressBanner } from "./egress-banner";
@@ -432,6 +433,7 @@ function MobileDrawer({
   isAdmin,
   me,
   intakeBadge,
+  finance,
   onClose,
   onAbout,
   onNews,
@@ -439,6 +441,8 @@ function MobileDrawer({
   pathname: string;
   isAdmin: boolean;
   me: Profile | null;
+  /** The viewer's way into finance, by tier — null for a member, and while previewing someone. */
+  finance: { href: string; label: string } | null;
   /** New submissions PLUS unread client edits — see AppShell. */
   intakeBadge: number;
   onClose: () => void;
@@ -535,6 +539,19 @@ function MobileDrawer({
                   {intakeBadge}
                 </span>
               )}
+            </Link>
+          )}
+          {/* Finance, last, as on the desktop rail (it was missing here until the
+              merge's stage 5 — a phone had no way in). */}
+          {finance && (
+            <Link
+              href={finance.href}
+              onClick={onClose}
+              className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
+              style={pathname === "/finance" || pathname.startsWith("/finance/") ? ACTIVE_STYLE : { color: "var(--sb-muted)" }}
+            >
+              <Landmark size={20} strokeWidth={1.75} />
+              {finance.label}
             </Link>
           )}
         </nav>
@@ -662,6 +679,14 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
     dismissWriteError,
     bootError,
   } = useData();
+  // One way into finance, by tier: the whole area, or — for an admin without
+  // full finance — its one page, named. None while previewing someone.
+  const financeEntry =
+    atLeast(tier, "admin") && !viewingAs
+      ? atLeast(tier, "finance")
+        ? { href: "/finance", label: "Finance" }
+        : { href: "/finance/expenses", label: "Expenses" }
+      : null;
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
@@ -889,10 +914,10 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
               a `?viewAs=` preview can't raise it — and while previewing someone the
               entry is hidden, since it would open the admin's finance, not theirs.
               An admin without full finance has one page there, so it is named. */}
-          {atLeast(tier, "admin") && !viewingAs && (
+          {financeEntry && (
             <NavItem
-              href={atLeast(tier, "finance") ? "/finance" : "/finance/expenses"}
-              label={atLeast(tier, "finance") ? "Finance" : "Expenses"}
+              href={financeEntry.href}
+              label={financeEntry.label}
               Icon={Landmark}
               folded={folded}
               active={onFinance}
@@ -1018,6 +1043,7 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
           isAdmin={isAdmin}
           me={me}
           intakeBadge={intakeTotal}
+          finance={financeEntry}
           onClose={() => setDrawerOpen(false)}
           onAbout={() => setAboutOpen(true)}
           onNews={() => setNewsOpen(true)}
@@ -1150,7 +1176,9 @@ export function AppShell({ children, tier = "member" }: { children: ReactNode; t
     <DataProvider>
       <ThemeInit />
       <NewLeadsProvider>
-        <Shell tier={tier}>{children}</Shell>
+        <TierProvider tier={tier}>
+          <Shell tier={tier}>{children}</Shell>
+        </TierProvider>
       </NewLeadsProvider>
     </DataProvider>
   );

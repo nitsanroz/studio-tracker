@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { StudioArrow } from "@/components/studio-arrow";
 import { createClient } from "@/lib/finance/supabase-client";
 import { forgetPeople, usePeople } from "@/lib/finance/people-data";
 import { canSetOwnerPosition } from "@/lib/finance/finance-access";
@@ -46,7 +47,7 @@ import { PerformanceTab } from "@/components/finance/person/performance-tab";
 import { PayTab } from "@/components/finance/person/pay-tab";
 import { HistoryTab } from "@/components/finance/person/history-tab";
 import { HrTab } from "@/components/finance/person/hr-tab";
-import { TRACKER_URL, fmtDate, latestSlip, type Factors, type Hr, type HrNote, type PeriodId, type PersonModel, type Recent } from "@/components/finance/person/model";
+import { fmtDate, latestSlip, type Factors, type Hr, type HrNote, type PeriodId, type PersonModel, type Recent } from "@/components/finance/person/model";
 
 /** finance_payslips, as the page reads it (numerics may come back as strings). */
 interface PayslipRow {
@@ -325,14 +326,12 @@ export default function PersonPage() {
                 </option>
               ))}
             </select>
-            <a
-              href={`${TRACKER_URL}/team/${person.id}`}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href={`/team/${person.id}`}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background"
             >
-              Tracker <ExternalLink size={13} />
-            </a>
+              Their work <StudioArrow size={13} />
+            </Link>
           </>
         }
       />

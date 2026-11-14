@@ -9,6 +9,7 @@ import {
   Images,
   Inbox,
   KeyRound,
+  Landmark,
   SlidersHorizontal,
   Trash2,
   UserRoundSearch,
@@ -16,6 +17,9 @@ import {
 } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
 import { useData, useIsAdmin } from "@/lib/store";
+import { atLeast } from "@/lib/access";
+import { useTier } from "@/components/tier-context";
+import { FinanceSettings } from "@/components/finance/finance-settings";
 import { createClient } from "@/lib/supabase/client";
 import { ensureStudioIntakeLink, studioIntakeLinkUrl } from "@/lib/intake-links";
 import { Tabs, TagBadge } from "@/components/ui";
@@ -719,7 +723,8 @@ type SettingsTab =
   | "intake"
   | "hiring"
   | "leads"
-  | "pricing";
+  | "pricing"
+  | "finance";
 const TAB_KEY = "settings.tab";
 
 /**
@@ -754,6 +759,12 @@ const ADMIN_TABS = [
   // one lead — and the estimate editor opens this same panel as a popup.
   { value: "pricing" as const, label: "Pricing", icon: Calculator },
 ];
+/**
+ * Finance's settings (discreet mode, the mailboxes &advice reads) — for full
+ * finance only, by the tier the SERVER layout read. Drawing the tab is a
+ * convenience; the mail routes and RLS decide what it can do.
+ */
+const FINANCE_TAB = { value: "finance" as const, label: "Finance", icon: Landmark };
 /** v1.1.x stored a single "account" tab, which has since split into three */
 const LEGACY_TABS: Record<string, SettingsTab> = { account: "pictures" };
 
@@ -941,7 +952,8 @@ export default function SettingsPage() {
   const isAdmin = useIsAdmin();
   const [tab, setTab] = useState<SettingsTab>("pictures");
 
-  const tabs = isAdmin ? [...ACCOUNT_TABS, ...ADMIN_TABS] : ACCOUNT_TABS;
+  const fullFinance = atLeast(useTier(), "finance");
+  const tabs = isAdmin ? [...ACCOUNT_TABS, ...ADMIN_TABS, ...(fullFinance ? [FINANCE_TAB] : [])] : ACCOUNT_TABS;
   /**
    * Lazily mounted, then never unmounted — `HrDetailsForm` is controlled state
    * behind ONE explicit Save, so unmounting it on a tab switch would silently
@@ -955,14 +967,16 @@ export default function SettingsPage() {
   }, [tab]);
 
   useEffect(() => {
-    const raw = localStorage.getItem(TAB_KEY);
+    // `?tab=` wins over the remembered one: /finance/settings and Google's mail
+    // callback land here asking for a tab.
+    const raw = new URLSearchParams(window.location.search).get("tab") ?? localStorage.getItem(TAB_KEY);
     const v = raw ? (LEGACY_TABS[raw] ?? raw) : null;
     // Validated against the tabs actually visible: a stored "clients" becomes
     // invalid under ?viewAs or after a role change, and an unvalidated read would
     // render a blank page.
     if (v && tabs.some((t) => t.value === v)) setTab(v as SettingsTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, [isAdmin, fullFinance]);
   function pickTab(v: SettingsTab) {
     setTab(v);
     try {
@@ -1043,6 +1057,8 @@ export default function SettingsPage() {
       {tab === "hiring" && isAdmin && <CandidateSettings />}
       {tab === "leads" && isAdmin && <LeadSettings />}
       {tab === "pricing" && isAdmin && <LibrarySettings />}
+
+      {tab === "finance" && fullFinance && <FinanceSettings />}
 
       {tab === "intake" && isAdmin && (
         <div className="flex max-w-[860px] flex-col gap-4">
