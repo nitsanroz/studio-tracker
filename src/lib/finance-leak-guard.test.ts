@@ -7,7 +7,7 @@ import { PROFILE_COLUMNS } from "./snapshot";
  * Structural guards for the finance merge: rules about WHERE money may live,
  * checked by reading the source rather than by remembering.
  *
- *  1. Client code never imports a module that carries amounts.
+ *  1. No module that carries amounts is reachable from client code, at any depth.
  *  2. Finance code never reaches for the service key — it reads with the
  *     viewer's own session, so RLS stays the boundary.
  *  3. The boot snapshot never asks for a profile column it doesn't show.
@@ -25,34 +25,81 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 const files = walk(SRC).map((path) => ({ path: relative(SRC, path), text: readFileSync(path, "utf8") }));
-const isClient = (f: { path: string; text: string }) =>
-  /^\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*)*["']use client["']/.test(f.text) || f.path.startsWith("components/");
+const byPath = new Map(files.map((f) => [f.path, f]));
+const directive = (text: string, d: string) =>
+  new RegExp("^\\s*(\\/\\/[^\\n]*\\n|\\/\\*[\\s\\S]*?\\*\\/\\s*)*[\"']" + d + "[\"']").test(text);
 const imports = (text: string, module: string) =>
-  new RegExp(`from\\s+["'][^"']*${module}["']|import\\(\\s*["'][^"']*${module}["']`).test(text);
+  new RegExp("from\\s+[\"'][^\"']*" + module + "[\"']|import\\(\\s*[\"'][^\"']*" + module + "[\"']").test(text);
+
+/** The files a file pulls in at RUNTIME — \`import type\` is erased, so it doesn't count. */
+function valueImports(file: { path: string; text: string }): string[] {
+  const specs: string[] = [];
+  const re = /(?:^|\n)\s*(?:import|export)\s+(type\s+)?[^;"']*?from\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|(?:^|\n)\s*import\s+["']([^"']+)["']/g;
+  for (const m of file.text.matchAll(re)) {
+    if (m[1]) continue; // import type … / export type …
+    specs.push(m[2] ?? m[3] ?? m[4]);
+  }
+  const dir = file.path.split("/").slice(0, -1).join("/");
+  return specs.flatMap((spec) => {
+    let base: string;
+    if (spec.startsWith("@/")) base = spec.slice(2);
+    else if (spec.startsWith(".")) base = join(dir, spec);
+    else return []; // a package
+    const hit = [base + ".ts", base + ".tsx", base + "/index.ts", base + "/index.tsx", base].find((p) => byPath.has(p));
+    return hit ? [hit] : [];
+  });
+}
+
+/**
+ * Everything that ends up in a browser bundle: each "use client" file and
+ * whatever it imports, to any depth. A "use server" file stops the walk — the
+ * client holds only a reference to its actions, never its code.
+ *
+ * ⚠️ To any depth is the point. The first version looked one hop, and missed
+ * finance's \`overview.ts\`: not a client file itself, but imported by client
+ * pages, and carrying a freelancer's rate into their JavaScript.
+ */
+function clientBundle(): Map<string, string> {
+  const via = new Map<string, string>();
+  const queue = files.filter((f) => directive(f.text, "use client")).map((f) => f.path);
+  for (const p of queue) via.set(p, p);
+  while (queue.length) {
+    const path = queue.shift()!;
+    for (const next of valueImports(byPath.get(path)!)) {
+      if (via.has(next) || directive(byPath.get(next)!.text, "use server")) continue;
+      via.set(next, path);
+      queue.push(next);
+    }
+  }
+  return via;
+}
 
 /** Modules holding ₪ figures or rates. Server code only. */
 const AMOUNT_MODULES = [
-  "lib/hours-goal", // a freelancer's sliding ₪ rate, the target margin
-  "lib/hours-goal-server",
-  "lib/finance/accountant-years", // the accountant's yearly figures
-  "lib/finance/scenarios/facts", // balance-sheet and loan figures
+  "lib/hours-goal.ts", // a freelancer's sliding ₪ rate, the target margin
+  "lib/hours-goal-server.ts",
+  "lib/finance/hourly-terms.ts", // the same rate, as finance reads it
+  "lib/finance/accountant-years.ts", // the accountant's yearly figures
+  "lib/finance/scenarios/facts.ts", // balance-sheet and loan figures
 ];
 
 describe("finance leak guards", () => {
+  const bundle = clientBundle();
+
   it("found the source tree", () => {
     expect(files.length).toBeGreaterThan(100);
-    expect(files.some(isClient)).toBe(true);
+    expect(bundle.size).toBeGreaterThan(100);
+    for (const m of AMOUNT_MODULES) expect(byPath.has(m), m).toBe(true);
+    // the walk really follows imports: the pace chart reaches even-spread.ts
+    expect(bundle.has("lib/even-spread.ts")).toBe(true);
   });
 
-  it("keeps amount-carrying modules out of client code", () => {
-    const offenders = files
-      .filter(isClient)
-      // by file name: "@/lib/hours-goal" and "./hours-goal" both end in "/hours-goal",
-      // and the closing quote keeps "hours-goal-server" from matching "hours-goal"
-      .flatMap((f) =>
-        AMOUNT_MODULES.filter((m) => imports(f.text, "\\/" + m.split("/").pop()!)).map((m) => `${f.path} → ${m}`),
-      );
-    expect(offenders).toEqual([]);
+  it("keeps amount-carrying modules out of every browser bundle", () => {
+    const chain = (p: string): string => {
+      const from = bundle.get(p)!;
+      return from === p ? p : chain(from) + " → " + p;
+    };
+    expect(AMOUNT_MODULES.filter((m) => bundle.has(m)).map(chain)).toEqual([]);
   });
 
   it("keeps the service key out of finance code", () => {

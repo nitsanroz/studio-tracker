@@ -229,6 +229,7 @@
   --color-aqua: var(--aqua);
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2); /* finance */
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
@@ -859,3 +860,224 @@ svg.lucide[stroke-width="1.75"] {
   background: color-mix(in oklab, var(--surface) 55%, transparent) !important;
 }
 .drag-gap > * { visibility: hidden; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FINANCE (merged from finance-admin, 2026-11). Everything under /finance.
+
+   ⚠️ The finance pages do NOT sit inside `.app-canvas`: app-shell.tsx swaps
+   that class off the content column on /finance, so none of the tracker's
+   app-wide card / divider / text-snap / motion rules reach them. Their grids
+   are dense tables drawn with their own borders, and those rules were written
+   for the tracker's cards. The wrapper is `.finance-canvas`
+   ((app)/finance/layout.tsx). Colours are the tracker's own tokens — only the
+   tokens finance adds are defined here.
+   ════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --surface-2: #f7f8fa;
+  /* A tint that reads on white — panels and header strips inside white cards (Scenarios). */
+  --strip: #edf1f8;
+
+  /* Finance value states */
+  --state-predicted-bg: #fef7e7;
+  --state-predicted-fg: #92580a;
+  --state-predicted-border: #f0c65a;
+  /* final is the WEAKER green, paid the full one (Nitsan, 2026-11-01): the
+     two used to share a background and told apart only by the text colour
+     and a tick, so a locked month and a paid one read the same at a glance. */
+  --state-final-bg: #ebf8f0;
+  --state-final-fg: #0f7a43;
+  --state-final-border: #a3dbbb;
+  /* paid (reference/0011): the amount's text, a dark green softer than black */
+  --state-paid-fg: #17693f;
+  --state-paid-bg: #dcf2e5;
+  --state-paid-border: #7ccea1;
+  /* invoiced, not paid yet (Nitsan, 2026-11-02): money we're WAITING for —
+     a warm orange that keeps nagging, not final's calm green. */
+  --state-invoiced-bg: #fed7aa;
+  --state-invoiced-fg: #9a3412;
+  --state-invoiced-border: #f97316;
+  /* final but no invoice yet: something is MISSING — a red dashed outline
+     and an alert mark, so the cell reads unfinished until the invoice goes out. */
+  --state-uninvoiced: #dc2626;
+}
+
+/* ── Discreet mode ──────────────────────────────────────────────────────────
+   After the configured idle time (see Settings), PrivacyBlur stamps
+   data-privacy="on" on <html> and every numeric surface blurs: money/hours
+   cells (all use tabular-nums), numeric inputs, and chart SVG text. */
+.finance-canvas :is(.tabular-nums, input[inputmode="decimal"]),
+.finance-canvas svg text {
+  transition: filter 0.3s ease;
+}
+html[data-privacy="on"] .finance-canvas :is(.tabular-nums, input[inputmode="decimal"]) {
+  filter: blur(7px);
+}
+html[data-privacy="on"] .finance-canvas svg text {
+  filter: blur(6px);
+}
+/* Held ("Hide numbers" in the sidebar, for showing a page to a colleague):
+   ONLY THE DIGITS OF AMOUNTS go — words, dates, years, hours and percentages
+   stay readable (Nitsan, 2026-11-12). Done with a font, not a blur: "Hidden
+   Digits" (public/fonts, built by scripts/build-hidden-digits-font.py) maps
+   0-9 to one identical soft smudge and has no other characters, so first in
+   the stack it takes the digits while letters/Hebrew/₪ fall through to the
+   real font. It goes only on amounts: [data-money] (grids whose figures carry
+   no ₪) and [data-money-auto], stamped by PrivacyBlur on any element whose
+   text holds ₪/$/€ (and inputs beside one). A blur can only take a whole
+   element, and a figure shares its element with its sentence; splitting
+   React's text nodes to wrap the digits would break its updates.
+   font-display: block — while it loads, digits are invisible, never shown. */
+@font-face {
+  font-family: "Hidden Digits";
+  src: url("/fonts/hidden-digits.woff") format("woff");
+  unicode-range: U+0030-0039;
+  font-display: block;
+}
+/* "pending" (set by the inline script in app/layout.tsx on a reload with the
+   switch on): every digit, until PrivacyBlur has marked the amounts. */
+html[data-privacy="pending"] :is(body, h1, h2, h3, .font-heading, input, textarea, select, button) {
+  font-family: "Hidden Digits", "Saans", system-ui, sans-serif;
+}
+html[data-privacy="pending"] .font-serif-accent {
+  font-family: "Hidden Digits", "PP Fragment Glare", Georgia, serif;
+}
+html[data-privacy="pending"] .font-serif {
+  font-family: "Hidden Digits", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+html[data-privacy="held"] :is([data-money], [data-money] *, [data-money-auto], [data-money-auto] *) {
+  font-family: "Hidden Digits", "Saans", system-ui, sans-serif;
+}
+html[data-privacy="held"] .font-serif-accent:is([data-money], [data-money] *, [data-money-auto], [data-money-auto] *) {
+  font-family: "Hidden Digits", "PP Fragment Glare", Georgia, serif;
+}
+html[data-privacy="held"] .font-serif:is([data-money], [data-money] *, [data-money-auto], [data-money-auto] *) {
+  font-family: "Hidden Digits", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+/* Plan grid hover explanations (plan-explain.tsx): the hovered number and the
+   cells it's built from. An OUTLINE, not a box-shadow: a locked (green) cell
+   paints its colour on an inner element, which covers an inset shadow but not
+   an outline. Negative offset keeps it inside the cell, so nothing shifts. */
+/* A number with a hover card behind it: a faint thin underline, which
+   firms up to brand blue the moment the pointer is on it. (Inputs don't
+   inherit text decoration, so an editable cell's input gets it directly.) */
+[data-cell],
+[data-cell] input {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--brand) 22%, transparent);
+  transition: text-decoration-color 0.15s;
+}
+[data-cell]:hover,
+[data-cell]:hover input {
+  text-decoration-color: var(--brand);
+}
+
+/* Grid crosshair (useTableCrosshair): the hovered cell's row and column, tinted
+   as an overlay so draft/predicted/final cell colours still show through. */
+.xhair {
+  box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--brand) 5%, transparent);
+}
+
+/* Plan grid panes: income, expenses and profit are three outlined panes in ONE
+   table (so they share the month columns, the sticky header and the sideways
+   scroll), split by `pane-gap` rows. Separate borders, so a pane can round its
+   corners; a row's `border-t` is handed down to its cells, since a <tr> border
+   doesn't draw in this mode. Base layer, so a cell's own border class wins. */
+.plan-panes {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+@layer base {
+  .plan-panes td,
+  .plan-panes th {
+    border-top: inherit;
+    /* A pane is a card on the page: cells with no colour of their own (past
+       months) are near-white, not the page's lavender showing through. */
+    background-color: var(--surface-2);
+  }
+}
+.plan-panes tr:not(.pane-gap) > :first-child {
+  border-left: 1px solid var(--border);
+}
+.plan-panes tr:not(.pane-gap) > :last-child {
+  border-right: 1px solid var(--border);
+}
+.plan-panes tr.pane-top > * {
+  border-top: 1px solid var(--border);
+}
+.plan-panes tr.pane-bottom > * {
+  border-bottom: 1px solid var(--border);
+}
+.plan-panes tr.pane-top > :first-child { border-top-left-radius: 12px; }
+.plan-panes tr.pane-top > :last-child { border-top-right-radius: 12px; }
+.plan-panes tr.pane-bottom > :first-child { border-bottom-left-radius: 12px; }
+.plan-panes tr.pane-bottom > :last-child { border-bottom-right-radius: 12px; }
+
+/* List tables (Expenses): the hovered row, tinted the same way. */
+.row-hover tbody tr:hover > td {
+  box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--brand) 5%, transparent);
+}
+
+.explain-self {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.explain-src {
+  outline: 1.5px dashed var(--brand);
+  outline-offset: -2px;
+  background-color: color-mix(in srgb, var(--brand) 9%, var(--surface)) !important;
+}
+
+/* Grade sliders (person page, Beyond the hours): a thin track filled up to the
+   thumb in --range-color, ten tick marks under it. --range-fill is the filled
+   share (0–100%), set inline. */
+.grade-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+.grade-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--range-color), var(--range-color)) 0 / var(--range-fill) 100% no-repeat,
+    var(--surface-2);
+}
+.grade-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.grade-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--range-color);
+}
+.grade-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--range-color);
+  box-shadow: 0 1px 3px rgb(6 17 47 / 0.18);
+}
+.grade-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 2px solid var(--range-color);
+}
+.grade-range:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

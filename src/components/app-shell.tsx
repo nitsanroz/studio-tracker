@@ -24,11 +24,13 @@ import {
   UserRoundSearch,
   Handshake,
   UserRoundPen,
+  Landmark,
   UsersRound,
   X,
   type LucideIcon,
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
+import { atLeast, type Tier } from "@/lib/access";
 import { createClient } from "@/lib/supabase/client";
 import { useEnterTransition } from "@/lib/use-enter-transition";
 import { useIsNarrow } from "@/lib/use-is-narrow";
@@ -639,8 +641,11 @@ function LoadingScreen() {
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
+function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
   const pathname = usePathname();
+  // Finance has its own frame and its own look (globals.css, FINANCE): the
+  // tracker's app-wide card and divider rules stop at its door.
+  const onFinance = pathname === "/finance" || pathname.startsWith("/finance/");
   const {
     profiles,
     currentUserId,
@@ -875,6 +880,21 @@ function Shell({ children }: { children: ReactNode }) {
                 />
               );
             })}
+          {/* Finance — ONE entry; its pages are listed inside (finance-shell.tsx).
+              `tier` comes from the SERVER layout, from the viewer's own profile, so
+              a `?viewAs=` preview can't raise it — and while previewing someone the
+              entry is hidden, since it would open the admin's finance, not theirs.
+              An admin without full finance has one page there, so it is named. */}
+          {atLeast(tier, "admin") && !viewingAs && (
+            <NavItem
+              href={atLeast(tier, "finance") ? "/finance" : "/finance/expenses"}
+              label={atLeast(tier, "finance") ? "Finance" : "Expenses"}
+              Icon={Landmark}
+              folded={folded}
+              active={onFinance}
+              activeStyle={onFinance ? ACTIVE_STYLE : undefined}
+            />
+          )}
         </nav>
         {/* ⚠️ No avatar, no name, no role. Nitsan's note: the signed-in person is
             already named in the header's top-right menu, and repeating them at
@@ -919,7 +939,7 @@ function Shell({ children }: { children: ReactNode }) {
       {/* ⚠️ The margin is `md:`-prefixed on BOTH branches. Unprefixed it would
           still indent the content by the width of a sidebar that isn't there. */}
       <div
-        className={`app-canvas flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
+        className={`${onFinance ? "" : "app-canvas "}flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
       >
         {/* z-scale, and why the header is 30:
               sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
@@ -929,7 +949,10 @@ function Shell({ children }: { children: ReactNode }) {
             DOM) painted straight over the open search results. Every modal
             overlay is ≥40, so the task drawer still dims the header. */}
         <header
-          className="app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border px-4 backdrop-blur md:px-6"
+          // On /finance the column above drops `app-canvas`; the header keeps the
+          // tracker's look by carrying the class itself (its own bottom rule is
+          // then switched off by hand — the app-wide rule only reaches descendants).
+          className={`app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-6 ${onFinance ? "app-canvas border-transparent" : "border-border"}`}
           style={{ backgroundColor: "var(--header-bg)" }}
         >
           {/* Below md the sidebar is gone, so the header carries the wordmark —
@@ -1019,7 +1042,9 @@ function Shell({ children }: { children: ReactNode }) {
 
       {/* &advice, the owner's advisor. Checked here so other admins never even
           ask (the API still answers them 403). Not while previewing someone else. */}
-      {isAdmin && !viewingAs && me?.position === "owner" && (
+      {/* Not on /finance: that area mounts its own advisor, which reads amounts
+          (finance-shell.tsx). The two become one pane in the merge's stage 4. */}
+      {isAdmin && !viewingAs && me?.position === "owner" && !onFinance && (
         // useSearchParams inside needs a boundary; the button may render nothing anyway.
         <Suspense fallback={null}>
           <Advice />
@@ -1115,12 +1140,12 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, tier = "member" }: { children: ReactNode; tier?: Tier }) {
   return (
     <DataProvider>
       <ThemeInit />
       <NewLeadsProvider>
-        <Shell>{children}</Shell>
+        <Shell tier={tier}>{children}</Shell>
       </NewLeadsProvider>
     </DataProvider>
   );
