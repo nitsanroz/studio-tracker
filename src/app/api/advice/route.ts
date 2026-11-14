@@ -16,7 +16,7 @@ export const maxDuration = 60;
  *
  * `?peek=1` returns just each waiting item's signal, client and kind — the
  * corner button shows only on pages that have something. It reads the stored
- * rows while this server ran a check in the last three hours and runs one otherwise:
+ * rows while this server ran a check in the last twenty minutes and runs one otherwise:
  * there is no cron to write rows any more, and a peek of rows nobody wrote
  * once hid finance's button for good (2026-10-24). `&fresh=1` forces the check
  * (after a mail scan). The peek also says when the billing mail is due.
@@ -30,9 +30,14 @@ export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams;
     if (q.get("peek")) {
+      // Decide first, then load only what that branch needs — a check reads the rows and the mail state itself.
+      const ref = (r: { signal: string; clientId: string | null; kind: string }) => ({ signal: r.signal, clientId: r.clientId, kind: r.kind });
+      if (q.get("fresh") || !checkedRecently()) {
+        const { view } = await runCheck(auth.sb);
+        return NextResponse.json({ items: view.items.map(ref), mailDue: view.mailDue });
+      }
       const [stored, mail] = await Promise.all([loadRows(auth.sb), mailState(auth.sb)]);
-      const shown = !q.get("fresh") && checkedRecently() ? visible(stored, studioToday()) : (await runCheck(auth.sb)).view.items;
-      return NextResponse.json({ items: shown.map((r) => ({ signal: r.signal, clientId: r.clientId, kind: r.kind })), mailDue: mail.due });
+      return NextResponse.json({ items: visible(stored, studioToday()).map(ref), mailDue: mail.due });
     }
     return NextResponse.json((await runCheck(auth.sb)).view);
   } catch (e) {

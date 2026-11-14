@@ -75,4 +75,9 @@ describe("what Claude sends back", () => {
     expect(hasAmount("Charged 46 euros")).toBe(true);
     expect(hasAmount("Logged 46.75h, 12.50% of the month")).toBe(false);
   });
+
+  it("leaves the studio's task names alone — three capitals and a number isn't money", () => {
+    expect(stripAmounts('"SEO 2026 plan" and "CRO 3 wireframe" are overdue')).toBe('"SEO 2026 plan" and "CRO 3 wireframe" are overdue');
+    expect(stripAmounts("paid SEK 1,200 and PLN 300")).toBe("paid [amount] and [amount]");
+  });
 });

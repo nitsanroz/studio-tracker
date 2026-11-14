@@ -85,6 +85,8 @@ export interface AdviceData {
   groups: { id: string; name: string }[];
   /** non-legacy entries, at least the last six months — the pulse's six 30-day windows read them (`entriesFrom` in run.ts) */
   entries: { taskId: string; date: string; minutes: number; userId?: string }[];
+  /** the first day `entries` reach back to (load.ts `entriesFrom`) — hours before it aren't in hand */
+  entriesSince?: string;
   periods: { clientId: string; label: string; dateFrom: string; dateTo: string; hourCap: number | null; paid: boolean }[];
   /** active report links */
   reportLinks: { clientId: string; publishedAt: string | null; throughDate: string | null }[];

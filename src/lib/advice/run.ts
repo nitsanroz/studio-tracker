@@ -17,7 +17,7 @@ import { ITEMS, MAIL_EVERY_MS, lastReview, lastWordingRun, loadAdviceData as loa
 import { findAll as findMoney, pulse as moneyPulse } from "@/lib/finance/advice/signals";
 import { mailConfigured } from "@/lib/finance/mail/google";
 import { mailAccounts } from "@/lib/finance/mail/scan";
-import { debtPace, freelancerMargin, scopeValue } from "./cross";
+import { debtPace, freelancerMargin, oneDebtCard, withMoney } from "./cross";
 import { loadCrossFreelancers } from "./cross-load";
 import { loadAdviceData as loadStudioData } from "./load";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow, type Finding } from "./merge";
@@ -88,13 +88,13 @@ export async function mailState(sb: SupabaseClient): Promise<{ due: boolean; box
 
 /**
  * When this server instance last ran a check. The corner button's peek reads
- * the stored rows while that was under three hours ago and runs a check
+ * the stored rows while that was under twenty minutes ago and runs a check
  * otherwise — there is no cron to keep the rows current, and `last_seen` can't
  * say (a check that finds nothing changed writes nothing). A cold instance
  * simply checks: that is what finance's peek did every time.
  */
 let lastCheckMs = 0;
-const PEEK_FRESH_MS = 3 * 3_600_000;
+const PEEK_FRESH_MS = 20 * 60_000;
 export const checkedRecently = () => Date.now() - lastCheckMs < PEEK_FRESH_MS;
 
 /** Run every rule and write the result: the pane's view, plus every stored row for the wording run. */
@@ -117,7 +117,7 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
   const studioAll = findStudio(studio);
   const studioFound: Finding[] = studioAll.filter((f) => !SUPERSEDED.has(f.signal));
   const moneyFound: Finding[] = findMoney(money);
-  const findings: Finding[] = [...scopeValue(studioFound, money), ...moneyFound, ...freelancerMargin(studio, money, freelancers), ...debtPace(studio, money)];
+  const findings: Finding[] = oneDebtCard([...withMoney(studioFound, money), ...moneyFound, ...freelancerMargin(studio, money, freelancers), ...debtPace(studio, money)]);
   const plan = mergeFindings(stored, findings, now);
 
   // Inserts come back with their ids; updates and resolves run side by side.

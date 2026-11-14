@@ -50,22 +50,49 @@ function reportHours(studio: StudioData, clientId: string, from: string, to: str
 }
 
 /**
- * 1 · Work outside the estimate, in money. The tracker's "scope" card says
- * what share of a client's hours fell outside the published estimate; this
- * adds what those hours are worth at the client's rate today. The same card,
- * not a second one. No rate → left as it was (finance's "no rate" card says so).
+ * 1 · The studio's hour cards, in money. The tracker's rules count hours and
+ * percentages because that was all it could see; the client's rate turns each
+ * into what it is worth. The SAME card gains a figure and a sentence — never a
+ * second card:
+ *   scope       hours outside the published estimate × rate
+ *   report-due  last week's unreported hours × rate
+ *   cap         the hours OVER the period's cap × rate (nothing while under it)
+ *   estimate    the hours OVER the estimate's top × rate (nothing while under it)
+ * The rate is today's. No rate → the card is left as it was (finance's
+ * "no rate" card says so). Titles are untouched: they are what Claude is sent.
  */
-export function scopeValue(findings: Finding[], money_: MoneyData): Finding[] {
+export function withMoney(findings: Finding[], money_: MoneyData): Finding[] {
+  const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
   return findings.map((f) => {
-    if (f.signal !== "scope" || typeof f.facts.client !== "string" || typeof f.facts.outsideHours !== "number") return f;
+    if (typeof f.facts.client !== "string") return f;
+    let hours: number | null = null;
+    let says: (amount: string) => string = () => "";
+    if (f.signal === "scope") {
+      hours = num(f.facts.outsideHours);
+      says = (a) => ` At their rate that is about ${a} of work they haven't agreed to.`;
+    } else if (f.signal === "report-due") {
+      hours = num(f.facts.hours);
+      says = (a) => ` About ${a} of work they haven't seen yet.`;
+    } else if (f.signal === "cap") {
+      const [used, cap] = [num(f.facts.usedPct), num(f.facts.capHours)];
+      hours = used != null && cap != null && used > 100 ? (cap * (used - 100)) / 100 : null;
+      says = (a) => ` The hours over the cap are worth about ${a}.`;
+    } else if (f.signal === "estimate") {
+      // "40h" or "30–40h": the top of the range is the budget.
+      const top = typeof f.facts.estimated === "string" ? Number(f.facts.estimated.match(/(\d+(?:\.\d+)?)h$/)?.[1]) : NaN;
+      const logged = num(f.facts.hours);
+      hours = logged != null && Number.isFinite(top) && logged > top ? logged - top : null;
+      says = (a) => ` The hours past the estimate are worth about ${a}.`;
+    } else return f;
+    if (hours == null || hours <= 0) return f;
     const rate = rateForClientOn(money_.rates, f.facts.client, money_.today);
     if (rate == null) return f;
-    const value = f.facts.outsideHours * rate;
+    const value = hours * rate;
     return {
       ...f,
       facts: { ...f.facts, rateIls: rate, valueIls: Math.round(value) },
       figure: formatILSShort(value),
-      body: `${f.body} At their rate that is about ${money(value)} of work they haven't agreed to.`,
+      body: `${f.body}${says(money(value))}`,
     };
   });
 }
@@ -144,12 +171,16 @@ export function freelancerMargin(studio: StudioData, money_: MoneyData, freelanc
  * client's LAST period and goes quiet 45 days after its payment date. This one
  * is for what that leaves out: two or more ended periods past their payment
  * date, or one more than 45 days late — while 10h+ still went to the client in
- * the last 30 days. Periods from the last 150 days only (the hours in hand).
- * One card per client, so a snooze holds until it gets worse.
+ * the last 30 days. Only periods whose hours are all in hand (they start on or
+ * after the oldest entry loaded) — whenever they ended.
+ * One card per client, so a snooze holds until it gets worse. Where it fires,
+ * run.ts drops that client's "unpaid" card (`oneDebtCard`): the last period is
+ * already in this one's total.
  */
 export function debtPace(studio: StudioData, money_: MoneyData): Finding[] {
   const today = studio.today;
-  const since = shift(today, -150);
+  // The first day the loaded entries reach: a period starting before it has hours we can't see.
+  const since = studio.entriesSince ?? studio.entries.reduce((min, e) => (e.date < min ? e.date : min), today);
   const out: Finding[] = [];
   for (const c of liveClients(studio)) {
     const terms = { days: c.paymentTermsDays ?? DEFAULT_PAYMENT_TERMS_DAYS, net: c.paymentTermsNet === true };
@@ -203,4 +234,14 @@ export function debtPace(studio: StudioData, money_: MoneyData): Finding[] {
     });
   }
   return out;
+}
+
+/**
+ * A client with a "debt" card doesn't also get the "unpaid" card: debt adds up
+ * every period past its payment date, the last one included, so the two would
+ * state the same money twice and count as two things to do.
+ */
+export function oneDebtCard(findings: Finding[]): Finding[] {
+  const inDebt = new Set(findings.filter((f) => f.signal === "debt").map((f) => f.clientId));
+  return findings.filter((f) => !(f.signal === "unpaid" && inDebt.has(f.clientId)));
 }

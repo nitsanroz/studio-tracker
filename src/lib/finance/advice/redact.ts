@@ -28,9 +28,12 @@ const AMOUNT = new RegExp(
   ].join("|"),
   "gi",
 );
-// Any other three-letter currency code before a number (a tracker freelancer
-// can be paid in anything). Upper case only, or "for 12 days" would go too.
-const OTHER_CODE = new RegExp(String.raw`(?<![${LETTER}])[A-Z]{3}\s?\d(?:[\d,.]*\d)?(?![\d%])`, "g");
+// Other currency codes before a number (a freelancer can be paid in most
+// things). A LIST, not "any three capitals": since the merge the studio's cards
+// pass through here too, and "SEO 2026 plan" or "CRO 3" are task names, not
+// amounts. Upper case only, or "for 12 days" would go too.
+const MORE_CODES = "RSD|BAM|MKD|GEL|ISK|ARS|CLP|COP|PHP|IDR|MYR|VND|NGN|KES|MAD|QAR|KWD|SEK|NOK|DKK|PLN|CZK|HUF|RON|BGN|TRY|RUB|UAH|INR|CNY|HKD|SGD|NZD|ZAR|BRL|MXN|AED|SAR|EGP|JOD|KRW|THB";
+const OTHER_CODE = new RegExp(String.raw`(?<![${LETTER}])(?:${MORE_CODES})\s?\d(?:[\d,.]*\d)?(?![\d%])`, "g");
 
 /** "₪12K", "−₪3,400", "€46.10", "12,000 NIS", "152.90 ₪", "120 ש"ח" → "[amount]". */
 export function stripAmounts(text: string): string {

@@ -18,14 +18,19 @@ type Row = Record<string, unknown>;
  * anyone priced there and not kept on the Freelancers page), with last month's
  * hours: a login's own time entries, else their link's logs that weren't turned
  * down — the same split as hours-goal-server.ts `slidingRateFreelancers`.
- * Any failure reads as "nobody": the rule stays quiet, the pane stays up.
+ * Any failure reads as "nobody" — the rule stays quiet, the pane stays up — and is logged.
  */
 export async function loadCrossFreelancers(sb: SupabaseClient, studio: StudioData): Promise<CrossFreelancer[]> {
   try {
     const month = lastMonthOf(studio.today).key;
     const [y, m] = month.split("-").map(Number);
     const monthEnd = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
-    const people = await fetchAll<Row>(sb, "freelancers", "id, profile_id, currency, rate_high, rate_low, hours_low, hours_high");
+    // ⚠️ Not fetchAll: it pages ORDER BY id, and `freelancers` is keyed on profile_id —
+    // it has no id (0054). Naming one failed the whole select, which the catch below
+    // read as "nobody", and the rule never fired (found in review, 2026-11-14).
+    const res = await sb.from("freelancers").select("profile_id, currency, rate_high, rate_low, hours_low, hours_high");
+    if (res.error) throw Object.assign(new Error(`freelancers: ${res.error.message}`), res.error);
+    const people = (res.data ?? []) as Row[];
     const terms = new Map<string, RateTerms>(Object.entries(HOURLY_TERMS));
     for (const p of people)
       terms.set(String(p.profile_id), {
@@ -67,8 +72,9 @@ export async function loadCrossFreelancers(sb: SupabaseClient, studio: StudioDat
       }))
       .filter((f) => f.fx > 0 && f.name);
   } catch (e) {
-    if (isMissingSchema(e)) return [];
-    console.error("&advice: freelancer terms failed to load", (e as Error).message);
+    // Quiet for the pane, never for the log: a failure here looks exactly like
+    // "no freelancers", so it has to say so somewhere.
+    console.error(`&advice: freelancer terms failed to load${isMissingSchema(e) ? " (a table or column is missing)" : ""} — the freelancer rule is off:`, (e as Error).message);
     return [];
   }
 }

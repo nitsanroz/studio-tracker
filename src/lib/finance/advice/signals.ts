@@ -422,10 +422,10 @@ export function periodUnpaid(data: AdviceData): Finding[] {
         `, due ${formatShortDay(due)} (${termsAdjective(terms)} terms).` +
         (onCredit
           ? ` ${formatHours(p.hoursSince)}h more logged for them since${credit == null ? "" : ` (≈${money(credit)})`} — a polite nudge now, before more work goes out on credit.`
-          : " If it's paid, tick it in the tracker; if not, a short reminder."),
+          : " If it's paid, tick it in Client Reports; if not, a short reminder."),
       reminder: true,
       href: `/client-reports?client=${c.id}`,
-      action: "Open in the tracker",
+      action: "Open their reports",
     });
   }
   return out;
@@ -521,7 +521,7 @@ export function concentration(data: AdviceData): Finding[] {
         (leads == null ? "" : leads ? ` ${plural(leads, "lead is", "leads are")} open — which could become the second anchor?` : " No leads are open — a good month to start conversations."),
       reminder: false,
       href: "/leads",
-      action: "Open Leads in the tracker",
+      action: "Open Leads",
     },
   ];
 }

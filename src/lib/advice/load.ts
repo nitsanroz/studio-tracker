@@ -109,6 +109,7 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
 
   return {
     today,
+    entriesSince: entriesFrom(today),
     ...pages,
     clients: clients.map((c) => ({
       id: String(c.id),

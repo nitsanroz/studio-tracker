@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdviceData as MoneyData } from "@/lib/finance/advice/signals";
-import { debtPace, freelancerMargin, lastMonthOf, scopeValue, type CrossFreelancer } from "./cross";
+import { debtPace, freelancerMargin, lastMonthOf, oneDebtCard, withMoney, type CrossFreelancer } from "./cross";
 import type { Finding } from "./merge";
 import type { AdviceData as StudioData } from "./signals";
 
@@ -9,6 +9,7 @@ const TODAY = "2026-11-14";
 
 const studio = (over: Partial<StudioData> = {}): StudioData => ({
   today: TODAY,
+  entriesSince: "2026-05-01",
   clients: [{ id: "lumen", name: "Lumen", billable: true, archived: false, hourCap: null, keysTaskId: null }],
   tasks: [
     { id: "t1", clientId: "lumen", sectionId: null, groupId: null, title: "Website", billable: true },
@@ -42,7 +43,7 @@ describe("lastMonthOf", () => {
   });
 });
 
-describe("scopeValue — work outside the estimate, in money", () => {
+describe("withMoney — the studio's hour cards, in money", () => {
   const scope: Finding = {
     key: "scope:lumen:2026-09-01",
     signal: "scope",
@@ -59,7 +60,7 @@ describe("scopeValue — work outside the estimate, in money", () => {
   };
 
   it("adds what the hours are worth at the client's rate, on the same card", () => {
-    const [f] = scopeValue([scope], money(300));
+    const [f] = withMoney([scope], money(300));
     expect(f.key).toBe(scope.key);
     expect(f.figure).toBe("₪6K");
     expect(f.facts).toMatchObject({ outsideHours: 21, rateIls: 300, valueIls: 6300 });
@@ -69,9 +70,30 @@ describe("scopeValue — work outside the estimate, in money", () => {
   });
 
   it("leaves the card as it was when the client has no rate, and other cards alone", () => {
-    expect(scopeValue([scope], money(null))).toEqual([scope]);
-    const cap = { ...scope, signal: "cap", key: "cap:lumen" };
-    expect(scopeValue([cap], money(300))).toEqual([cap]);
+    expect(withMoney([scope], money(null))).toEqual([scope]);
+    const overdue = { ...scope, signal: "overdue", key: "overdue:lumen" };
+    expect(withMoney([overdue], money(300))).toEqual([overdue]);
+  });
+
+  const card = (signal: string, facts: Finding["facts"]): Finding => ({ ...scope, signal, key: `${signal}:lumen`, facts: { client: "Lumen", ...facts }, body: "Body." });
+
+  it("prices last week's unreported hours", () => {
+    const [f] = withMoney([card("report-due", { hours: 12.5 })], money(300));
+    expect(f).toMatchObject({ figure: "₪4K", body: "Body. About ₪3,750 of work they haven't seen yet." });
+  });
+
+  it("prices only the hours OVER a cap, and nothing while under it", () => {
+    // 120% of a 50h cap = 10h over.
+    expect(withMoney([card("cap", { usedPct: 120, capHours: 50 })], money(300))[0].facts).toMatchObject({ valueIls: 3000 });
+    const under = card("cap", { usedPct: 92, capHours: 50 });
+    expect(withMoney([under], money(300))).toEqual([under]);
+  });
+
+  it("prices only the hours past the top of the estimate", () => {
+    expect(withMoney([card("estimate", { hours: 46, estimated: "30–40h" })], money(300))[0].facts).toMatchObject({ valueIls: 1800 });
+    expect(withMoney([card("estimate", { hours: 46, estimated: "40h" })], money(300))[0].figure).toBe("₪2K");
+    const inside = card("estimate", { hours: 36, estimated: "30–40h" });
+    expect(withMoney([inside], money(300))).toEqual([inside]);
   });
 });
 
@@ -164,11 +186,20 @@ describe("debtPace — the pace of hours against open debt", () => {
   });
 
   it("gives a client on net+30 its own payment date", () => {
-    // September on net+30: invoiced 1 Oct, due 5 Dec — not late on 14 Nov, so only August counts.
+    // On net+30 August (invoiced 1 Sep) is due 5 Nov — 9 days late — and September
+    // (invoiced 1 Oct) is due 5 Dec, not late at all. One period, under 45 days: quiet.
+    // The same two periods on 14-day terms are both late, and that fires (above).
     const net = studio({ entries: work, periods: [aug, sep] });
     net.clients[0] = { ...net.clients[0], paymentTermsDays: 30, paymentTermsNet: true };
-    const found = debtPace(net, money(300));
-    expect(found.map((f) => f.facts.periods)).toEqual(found.length ? [1] : []);
+    expect(debtPace(net, money(300))).toEqual([]);
+    expect(debtPace(studio({ entries: work, periods: [aug, sep] }), money(300))).toHaveLength(1);
+  });
+
+  it("counts a long period that ended lately, and skips one whose hours aren't all loaded", () => {
+    // June–August in one period: 78 days late on 14 Nov, started 166 days ago.
+    const long = period("Summer 2026", "2026-06-01", "2026-08-31");
+    expect(debtPace(studio({ entries: work, periods: [long] }), money(300))[0].facts).toMatchObject({ periods: 1, debtIls: 6000 });
+    expect(debtPace(studio({ entries: work, periods: [long], entriesSince: "2026-07-01" }), money(300))).toEqual([]);
   });
 
   it("is worse with three periods or more than 60 days late", () => {
@@ -176,5 +207,13 @@ describe("debtPace — the pace of hours against open debt", () => {
     const three = studio({ entries: [...logged("t1", "dana", "2026-07-06", [5]), ...work], periods: [jul, aug, sep] });
     expect(debtPace(three, money(300))[0].severity).toBe(3);
     expect(debtPace(studio({ entries: work, periods: [aug, sep] }), money(300))[0].severity).toBe(2);
+  });
+});
+
+describe("oneDebtCard", () => {
+  const f = (signal: string, clientId: string | null) => ({ signal, clientId, key: `${signal}:${clientId}` }) as Finding;
+  it("drops a client's unpaid card when the debt card already counts that period", () => {
+    const all = [f("unpaid", "lumen"), f("debt", "lumen"), f("unpaid", "halo"), f("cap", "lumen")];
+    expect(oneDebtCard(all).map((x) => x.key)).toEqual(["debt:lumen", "unpaid:halo", "cap:lumen"]);
   });
 });
