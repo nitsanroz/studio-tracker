@@ -3,6 +3,11 @@
 Moved out of `CLAUDE.md` on 2026-10-12 (it was ~95% of that file and loaded into every session). Entries are verbatim.
 **Add new entries at the TOP of the list**, newest first: `YYYY-MM-DD — vX.YZ — what changed` (or `— data —` for a data-only change).
 "See vX.Y" references in `CLAUDE.md` and in code comments point here.
+- 2026-11-14 — **branch `merge-finance`, not released — Finance merge, stage 6: finance's schema history, scripts and rules brought into this repo.**
+  **Schema history.** finance-admin's `reference/0007–0023` → `supabase/finance-reference/finance-00NN_*.sql` with a README. ⚠️ Already run by hand; never re-run, never renumbered into `migrations/` — their numbers are different changes from the tracker's own 0007–0023. Not copied: its 0005/0006 (the tracker's own), the old code snapshots beside them, and the local HR/history SQL files (personal data — not opened).
+  **Scripts.** `import-payslips.mjs`, `import-employer-cost.mjs`, `build-hidden-digits-font.py` → `scripts/`; `npm run payslips | employer-cost | salary-docs`. The two parsers load from `src/lib/finance/` under plain Node (checked by importing them — ⚠️ the scripts themselves were NOT run: they read salary PDFs, which is Nitsan's to do). `scripts/README.md` says so.
+  **Rules.** finance-admin's CLAUDE.md is kept whole as `docs/finance.md`, under a table of what moved (paths, routes, access, &advice, hours goal). One line changed in the copy: a freelancer's two amounts were taken out. `CLAUDE.md` gained a "Finance area" section — the rules that must be known without opening that page — and a note that finance-admin is frozen.
+  No code changed. Gates: tsc clean, eslint 0 errors / 72 warnings, 1382 tests, build clean.
 - 2026-11-14 — **branch `merge-finance`, not released — Finance merge, stage 5: one way in, and links between the two halves.**
   **Phone.** The drawer had no Finance entry — a phone had no way into finance at all. It has one now, last, by tier ("Finance", or "Expenses" for an admin without full finance; none while previewing someone). One `financeEntry` in AppShell feeds the rail and the drawer.
   **Tier for pages.** `components/tier-context.tsx` — `useTier()`, the tier the SERVER layout read, "member" under `?viewAs=`. ⚠️ It only decides whether a link is drawn; the finance layouts and RLS decide who gets in.

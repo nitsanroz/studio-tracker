@@ -183,8 +183,22 @@ looks like rather than as decoration.
 
 ## Related / out of scope
 - **The admin home's "Studio pace" banner mirrors finance-admin's hours goal** (pace = finished days only, today joins at 17:30 — `studioDayLogged`; freelancers cost only what they've logged — v1.87.0) — `src/lib/hours-goal.ts`, `/api/hours-goal`, v1.72.0: ⚠️ on branch `merge-finance` this is ONE copy that finance's Overview reads too (until that branch lands, `main` still mirrors finance-admin's by hand) — and keep the route hours-only — Michal sees it without finance access.
+- ⚠️ **On branch `merge-finance` the next bullet is history**: finance is back inside the tracker — see "Finance area" below. `~/Documents/Claude/finance-admin` is FROZEN at its v1.33.0; a change made there must also be made here, and it is archived four weeks after the cutover.
 - **Finance was split out (2026-07-13) into a separate product** at `~/Documents/Claude/finance-admin/` — page/nav/lib deleted here. The `finance_*` tables + migrations 0005/0006 remain in the shared DB, untouched.
 - Executive-team Asana boards ("Clients", "Studio") were **deleted from the DB** — that data lives in Asana only; never re-import.
+
+## Finance area (branch `merge-finance` — not on `main` until v2.0.0)
+Finance-admin, merged in: the `/finance` pages, `src/lib/finance/`, `src/components/finance/`, `/api/finance/*`. **Its full reference is [`docs/finance.md`](docs/finance.md)** — finance-admin's own CLAUDE.md, kept whole, with a table of what moved. Read it before changing anything under `finance/`. What must be in your head without opening it:
+- ⚠️ **Finance DATA is read-only for Claude** unless Nitsan names a specific change. Report a gap; don't fix it. And **don't read salary, payslip or HR rows at all** — see "Session gotcha (PII)".
+- ⚠️ **Four tiers, one file** — `src/lib/access.ts`: `owner` (admin + position owner + `finance_full_access`) · `finance` (admin + the flag) · `admin` (Michal: `/finance/expenses` only) · `member` (`/finance` is a 404). The server layouts under `(app)/finance/` and each route's own check enforce it; RLS (0068, 0069) is the real boundary. Check with `supabase/checks/check-finance-access.sql` (read-only).
+- ⚠️ **Finance code never touches the service key** — it reads with the viewer's session so RLS decides. `finance-leak-guard.test.ts` fails the build's tests on an import of `supabase/service` from finance code.
+- ⚠️ **Amounts never reach a browser bundle.** `lib/hourly-terms.ts`, `lib/finance/accountant-years.ts`, `lib/finance/scenarios/facts.ts` are server-only; a server layout hands them down AFTER its tier check (`components/finance/company-figures.tsx`). The same test walks every client file's imports. A new figure-holding module joins `AMOUNT_MODULES` there.
+- ⚠️ **Server actions are public POST endpoints**: every one in `lib/finance/actions.ts` starts with `adminClient()`. A new one must too.
+- ⚠️ **The P&L recompute (`runRollup`) is the most dangerous code in the repo** — three guards in `docs/finance.md` must survive any rewrite: never zero an empty month, never overwrite an imported `final` row, sum the Plan grid's own lines. Closed years are never touched.
+- **Gmail: finance never revokes at Google** — it shares the tracker's OAuth client, and a revoke drops the tracker's connection too. `lib/gmail/*` and `lib/finance/mail/*` stay two on purpose (different token keys).
+- Finance pages sit OUTSIDE `.app-canvas` (AppShell drops the class on `/finance`) inside `.finance-canvas`; their CSS is the marked FINANCE block at the end of `globals.css`. "Hide numbers" = `html[data-privacy]`, set by `components/finance/privacy-blur.tsx`.
+- Schema history: `supabase/finance-reference/` — finance's old hand-run SQL, **already run, never re-run**. Their numbers (0007–0023) are different changes from the tracker's migrations of the same numbers, hence the `finance-` prefix. New finance changes are ordinary migrations.
+- Salary documents: `npm run payslips` / `employer-cost` / `salary-docs` read PDFs on Nitsan's Mac — **his to run, not Claude's**.
 
 ## Access control (intentional design)
 - **Studio-wide READ visibility is intentional** (decided 2026-07-24): every signed-in member can read all tasks/time entries/clients/plan (RLS `read all`). Members seeing each other's hours is accepted for this 8-person studio — the `/reports` "member sees own hours" and admin-only nav are UX scoping, not security boundaries.

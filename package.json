@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "test": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" vitest run",
-    "test:watch": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" vitest"
+    "test:watch": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" vitest",
+    "payslips": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/import-payslips.mjs",
+    "employer-cost": "PATH=\"$HOME/.local/node/node-v24.18.0-darwin-arm64/bin:$PATH\" node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/import-employer-cost.mjs",
+    "salary-docs": "npm run payslips && npm run employer-cost"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
