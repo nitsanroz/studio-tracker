@@ -38,7 +38,7 @@ import { APP_VERSION } from "@/lib/version";
 import type { Profile } from "@/lib/types";
 import { Avatar } from "./ui";
 import { NotificationsBell } from "./notifications-bell";
-import { Advice } from "./advice";
+import dynamic from "next/dynamic";
 import { useVacation } from "@/lib/use-vacation";
 import { NewLeadsProvider, useNewLeads } from "./new-leads";
 import { EgressBanner } from "./egress-banner";
@@ -53,6 +53,10 @@ import { Toaster } from "./toaster";
 import { AmpLoader } from "./amp-loader";
 
 /** ⚠️ Must equal the CSS duration on the drawer below — the `PANE_MS` rule. */
+// &advice shows amounts and is the owner's alone, so its code is fetched only
+// when the owner's shell mounts it — never part of the bundle everyone loads.
+const Advice = dynamic(() => import("./advice").then((m) => m.Advice), { ssr: false });
+
 const DRAWER_MS = 200;
 
 /** The white pill behind the sidebar item for the page you're on. */
@@ -1042,9 +1046,10 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
 
       {/* &advice, the owner's advisor. Checked here so other admins never even
           ask (the API still answers them 403). Not while previewing someone else. */}
-      {/* Not on /finance: that area mounts its own advisor, which reads amounts
-          (finance-shell.tsx). The two become one pane in the merge's stage 4. */}
-      {isAdmin && !viewingAs && me?.position === "owner" && !onFinance && (
+      {/* ONE pane for the whole app, finance's pages included (the finance
+          merge, stage 4). It shows amounts, so it is for the owner TIER — admin,
+          position owner and full finance — and its code is loaded only then. */}
+      {tier === "owner" && !viewingAs && (
         // useSearchParams inside needs a boundary; the button may render nothing anyway.
         <Suspense fallback={null}>
           <Advice />

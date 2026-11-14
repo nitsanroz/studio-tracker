@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ownerOnly } from "@/lib/finance/advice/owner";
-import { ITEMS, studioToday } from "@/lib/finance/advice/run";
+import { ownerOnly } from "@/lib/advice/owner";
+import { ITEMS, studioToday } from "@/lib/finance/advice/load";
 import type { Fix } from "@/lib/finance/advice/signals";
 import { amountFieldsOf } from "@/lib/finance/amount-vat";
 import { fetchAll } from "@/lib/finance/db";

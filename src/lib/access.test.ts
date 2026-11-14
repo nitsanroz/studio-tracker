@@ -53,7 +53,7 @@ describe("finance paths", () => {
   });
 
   it("keeps the owner's pages from everyone else", () => {
-    for (const p of ["/finance/scenarios", "/api/finance/advice", "/api/finance/advice/1/fix", "/api/finance/mail", "/api/finance/mail/scan"]) {
+    for (const p of ["/finance/scenarios", "/api/finance/scenarios/advise", "/api/finance/mail", "/api/finance/mail/scan"]) {
       expect(canOpenFinance("finance", p), p).toBe(false);
       expect(canOpenFinance("admin", p), p).toBe(false);
       expect(canOpenFinance("owner", p), p).toBe(true);

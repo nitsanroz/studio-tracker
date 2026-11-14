@@ -7,25 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 const isOwner = (p: { role?: string | null; position?: string | null; finance_full_access?: boolean | null } | null) =>
   deriveFinanceAccess(p).isAdmin && p?.position === "owner";
 
-/**
- * &advice is the OWNER's alone (Nitsan, 2026-10-24): tracker role admin +
- * position owner + full finance — the same test as the database's
- * `is_finance_owner()` (reference/0010), which guards the advice tables
- * themselves. Not every full-finance user.
- *
- * Returns the caller's own Supabase client: every table the checks read is
- * readable by the owner under RLS, so no service key is needed here.
- */
-export async function ownerOnly(): Promise<{ sb: SupabaseClient } | { res: NextResponse }> {
-  const sb = await createClient();
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-  if (!user) return { res: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: p } = await sb.from("profiles").select("role, position, finance_full_access").eq("id", user.id).single();
-  if (!isOwner(p)) return { res: NextResponse.json({ error: "Owner only" }, { status: 403 }) };
-  return { sb };
-}
+// &advice's own gate is lib/advice/owner.ts — one pane, one test (the finance
+// merge, stage 4). Re-exported so the mail routes keep one import.
+export { ownerOnly } from "@/lib/advice/owner";
 
 /**
  * Anyone who works on Expenses (v1.18.0, Nitsan 2026-11-08: "make sure Michal

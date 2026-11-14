@@ -20,7 +20,7 @@ import {
   unfiled,
   type AdviceData,
 } from "./signals";
-import { pageContext, tilesFor } from "./context";
+import { pageContext, tilesFor } from "@/lib/advice/context";
 import { ACCOUNTANT_YEARS } from "@/lib/finance/accountant-years";
 import { DEFAULT_FACTS } from "@/lib/finance/scenarios/facts";
 
@@ -382,7 +382,9 @@ describe("what Claude is sent", () => {
 describe("pulse", () => {
   it("gives each page its own figures, and the Overview no pace tile", () => {
     const tiles = pulse(paceData(300));
-    const on = (path: string) => tilesFor(tiles, pageContext(path)).map((t) => t.label);
+    // As run.ts hands them to the pane: the money side's scopes carry "fin:".
+    const paneTiles = tiles.map((t) => ({ ...t, scope: `fin:${t.scope}`, clientId: null }));
+    const on = (path: string) => tilesFor(paneTiles, pageContext(path, "")).map((t) => t.label);
     expect(on("/finance")).toEqual(["Oct profit (est.)", "Jul–Sep profit", "2026 (est.)", "Biggest client · 90 days", "Unpaid past terms"]);
     expect(on("/finance/plan")).toEqual(["Hours pace", "Sep booked"]);
     expect(on("/finance/expenses")).toEqual(["Invoices filed", "Renewals · 45 days"]);

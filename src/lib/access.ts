@@ -39,7 +39,7 @@ export function atLeast(tier: Tier, min: Tier): boolean {
 }
 
 /** The owner's own finance pages and routes. */
-const OWNER_PREFIXES = ["/finance/scenarios", "/api/finance/scenarios", "/api/finance/advice", "/api/finance/mail"];
+const OWNER_PREFIXES = ["/finance/scenarios", "/api/finance/scenarios", "/api/finance/mail"];
 /** What an admin without full finance (Michal) may reach: Expenses and the
  * receipts found in mail that the page lists. Checked before OWNER_PREFIXES,
  * since the receipts route sits under the owner's `/api/finance/mail`. */

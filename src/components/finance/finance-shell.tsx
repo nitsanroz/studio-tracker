@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { atLeast, canOpenFinance, type Tier } from "@/lib/access";
 import { HideNumbersToggle, PrivacyBlur } from "@/components/finance/privacy-blur";
-import { Advice } from "@/components/finance/advice";
 import { NewClientsPrompt } from "@/components/finance/new-clients";
 
 /**
  * The finance area's own frame, inside the tracker's shell: its page links, the
  * "Hide numbers" switch, and the helpers the finance app's shell used to mount
- * (discreet mode, &advice, the new-clients prompt).
+ * (discreet mode, the new-clients prompt).
  *
  * The sidebar carries ONE "Finance" entry; the pages are listed here, across
  * the top, so nine more rows don't push the tracker's own nav off the screen.
@@ -62,8 +61,7 @@ export function FinanceShell({ tier, children }: { tier: Tier; children: React.R
         </div>
       </div>
       {children}
-      {/* &advice — owner only; the API's 403 keeps it hidden from anyone else. */}
-      {full && <Advice />}
+      {/* &advice is mounted once, by AppShell, for the whole app (the finance merge, stage 4). */}
       {full && <NewClientsPrompt />}
     </>
   );

@@ -1,0 +1,311 @@
+// &advice's STUDIO side: what the tracker's own rules read (signals.ts) —
+// tasks, hours, the plan, the queues. The money side is
+// lib/finance/advice/load.ts; run.ts runs both and merges them.
+//
+// ⚠️ SERVER ONLY, with the OWNER's own session (owner.ts checks first) — it was
+// the service key before the finance merge (stage 4). Everything here is
+// readable by the owner under RLS, and the rows now sit beside amounts.
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { assertOk, fetchAll, isMissingSchema } from "@/lib/db";
+import { parseISO, shiftDays, toISODate } from "@/lib/format";
+import { studioGoal } from "@/lib/hours-goal-server";
+import { LINE, evenSpread } from "@/lib/hours-goal";
+import { HOURLY_TERMS } from "@/lib/hourly-terms";
+import type { AdviceData } from "./signals";
+import { totals, type EstimateLine } from "@/lib/leads/estimate";
+import { monthsPaidFromPlan, paidMonthsFor, periodPaidInFinance, type MonthPaidRow, type PlanMonthRow } from "@/lib/finance-paid";
+
+type Row = Record<string, unknown>;
+
+/** `today` moved by `n` days. */
+const shift = (today: string, n: number) => toISODate(shiftDays(parseISO(today), n));
+
+/** Six whole months back plus this one: the pulse's billable-share line and the 90-day unpaid window. */
+function entriesFrom(today: string): string {
+  const d = parseISO(today);
+  return toISODate(new Date(d.getFullYear(), d.getMonth() - 6, 1));
+}
+
+export async function loadAdviceData(sb: SupabaseClient, today: string): Promise<AdviceData> {
+  const [y] = today.split("-").map(Number);
+  const [clients, tasks, sections, groups, entries, periods, links, pubs, pnlRows, termsRows] = await Promise.all([
+    fetchAll<Row>(sb, "clients", "id, name, billable, archived, hour_cap, keys_task_id"),
+    fetchAll<Row>(sb, "tasks", "id, client_id, section_id, group_id, title, billable, pending, assignee_id, due_date, status"),
+    fetchAll<Row>(sb, "sections", "id, name"),
+    fetchAll<Row>(sb, "task_groups", "id, name"),
+    // ~25 pages: in parallel, as boot does — paged one by one this was most of an open.
+    fetchAll<Row>(
+      sb,
+      "time_entries",
+      "task_id, user_id, date, minutes",
+      (q) => q.gte("date", entriesFrom(today)).not("minutes", "is", null).eq("legacy", false),
+      { parallel: 4 },
+    ),
+    fetchAll<Row>(sb, "client_billing_periods", "client_id, label, date_from, date_to, hour_cap, paid"),
+    fetchAll<Row>(sb, "report_links", "client_id, published_at, through_date", (q) => q.eq("active", true)),
+    fetchAll<Row>(sb, "estimate_publications", "estimate_id, published_at"),
+    // ⚠️ Not fetchAll: it pages ORDER BY id, and finance_pnl_monthly has no id.
+    // Two line items over two years is a few dozen rows.
+    sb
+      .from("finance_pnl_monthly")
+      .select("year, month, line_item, value")
+      .gte("year", y - 1)
+      .in("line_item", [LINE.totalRevenues, LINE.totalExpenses])
+      .then((res) => {
+        assertOk("finance_pnl_monthly", res);
+        return (res.data ?? []) as Row[];
+      }),
+    // 0065/0066, read on their own and as `*`: naming a missing column fails the
+    // whole select, and neither query may wait on those migrations.
+    soft(fetchAll<Row>(sb, "clients", "*")),
+  ]);
+
+  // This month's billable hours, from the entries already in hand — the goal
+  // would otherwise page through the same month of time_entries a second time.
+  // Its definition: a billable task of a billable client (hours-goal-server.ts).
+  const monthKey = today.slice(0, 7);
+  const billableClient = new Set(clients.filter((c) => c.billable !== false).map((c) => String(c.id)));
+  const billableTask = new Set(tasks.filter((t) => t.billable !== false && t.client_id && billableClient.has(String(t.client_id))).map((t) => String(t.id)));
+  const billableNow = entries.filter((e) => String(e.date).startsWith(monthKey) && billableTask.has(String(e.task_id)));
+  const hoursOf = (list: typeof billableNow) => list.reduce((h, e) => h + Number(e.minutes) / 60, 0);
+  const liveHours = { total: hoursOf(billableNow), today: hoursOf(billableNow.filter((e) => String(e.date) === today)) };
+
+  // The rest doesn't depend on itself — run it side by side.
+  const [estimates, pages, planMonths, goal] = await Promise.all([
+    loadEstimates(sb, pubs),
+    loadPageData(sb, today),
+    loadPlanPaid(sb, y, clients),
+    // The pace is a nice-to-have: a finance hiccup must not take the pane down.
+    studioGoal(sb, liveHours).catch(() => null),
+  ]);
+
+  const pnlByMonth = new Map<string, { year: number; month: number; revenues: number; expenses: number }>();
+  for (const r of pnlRows) {
+    const k = `${r.year}-${r.month}`;
+    const m = pnlByMonth.get(k) ?? { year: Number(r.year), month: Number(r.month), revenues: 0, expenses: 0 };
+    if (r.line_item === LINE.totalRevenues) m.revenues = Number(r.value);
+    if (r.line_item === LINE.totalExpenses) m.expenses = Number(r.value);
+    pnlByMonth.set(k, m);
+  }
+
+  // Home's pace chart spreads the month's goal evenly over its Sun–Thu days —
+  // `evenSpread`, shared, so the pane and Home's "7% behind goal pace" chip
+  // never disagree by a point. Both compare through the last LOGGED day: today
+  // only from 17:30, with today's hours out of the count until then.
+  const t = parseISO(today);
+  const monthDays = Array.from({ length: new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate() }, (_, i) =>
+    toISODate(new Date(t.getFullYear(), t.getMonth(), i + 1)),
+  );
+  const lastLogged = t.getDate() - (goal?.todayCounted ? 1 : 2);
+  const dueShare = lastLogged >= 0 ? evenSpread(monthDays)[lastLogged] : 0;
+  const paceHours = goal ? (goal.todayCounted ? goal.soFar : Math.max(0, goal.soFar - liveHours.today)) : 0;
+
+  const termsById = new Map(
+    termsRows
+      .filter((r) => r.payment_terms_days != null)
+      .map((r) => [String(r.id), { days: Number(r.payment_terms_days), net: r.payment_terms_net === true }]),
+  );
+
+  return {
+    today,
+    ...pages,
+    clients: clients.map((c) => ({
+      id: String(c.id),
+      name: String(c.name),
+      billable: c.billable !== false,
+      archived: Boolean(c.archived),
+      hourCap: c.hour_cap == null ? null : Number(c.hour_cap),
+      keysTaskId: (c.keys_task_id as string | null) ?? null,
+      paymentTermsDays: termsById.get(String(c.id))?.days,
+      paymentTermsNet: termsById.get(String(c.id))?.net,
+    })),
+    tasks: tasks.map((t) => ({
+      id: String(t.id),
+      clientId: (t.client_id as string | null) ?? null,
+      sectionId: (t.section_id as string | null) ?? null,
+      groupId: (t.group_id as string | null) ?? null,
+      title: String(t.title ?? ""),
+      billable: t.billable !== false,
+      pending: t.pending === true,
+      assigneeId: (t.assignee_id as string | null) ?? null,
+      dueDate: (t.due_date as string | null) ?? null,
+      status: String(t.status ?? ""),
+    })),
+    sections: sections.map((s) => ({ id: String(s.id), name: String(s.name) })),
+    groups: groups.map((g) => ({ id: String(g.id), name: String(g.name) })),
+    entries: entries.map((e) => ({ taskId: String(e.task_id), userId: (e.user_id as string | null) ?? undefined, date: String(e.date), minutes: Number(e.minutes) })),
+    periods: periods.map((p) => ({
+      clientId: String(p.client_id),
+      label: String(p.label),
+      dateFrom: String(p.date_from),
+      dateTo: String(p.date_to),
+      hourCap: p.hour_cap == null ? null : Number(p.hour_cap),
+      // The tracker's tick, OR every month of the period marked Paid on
+      // finance's Plan — Client Reports' own rule (v1.94.0), so the pane
+      // never nags about a period that page shows as paid.
+      paid:
+        Boolean(p.paid) ||
+        periodPaidInFinance(
+          { dateFrom: String(p.date_from), dateTo: String(p.date_to) },
+          paidMonthsFor(planMonths, String(p.client_id)),
+        ),
+    })),
+    reportLinks: links.map((l) => ({
+      clientId: String(l.client_id),
+      publishedAt: (l.published_at as string | null) ?? null,
+      throughDate: (l.through_date as string | null) ?? null,
+    })),
+    estimates,
+    pnl: [...pnlByMonth.values()],
+    pace: goal ? { soFar: paceHours, expectedByNow: goal.profit.hours * dueShare } : null,
+  };
+}
+
+/**
+ * Which client-months finance's Plan has marked Paid, this year and last.
+ * ⚠️ Only `paid_at` and the month — never hours, rates or revenue. Any failure
+ * reads as "nothing paid there", as Client Reports does: it only ever ADDS paid.
+ */
+async function loadPlanPaid(sb: SupabaseClient, year: number, clients: Row[]): Promise<MonthPaidRow[]> {
+  try {
+    const rows = await fetchAll<PlanMonthRow>(sb, "finance_client_monthly", "id, client_id, client_canon, year, month, paid_at", (q) =>
+      q.gte("year", year - 1),
+    );
+    return monthsPaidFromPlan(rows, clients.map((c) => ({ id: String(c.id), name: String(c.name) })));
+  } catch {
+    return [];
+  }
+}
+
+/** A table a page signal reads that this database may not have yet: no rows, never a broken pane. */
+async function soft(p: Promise<Row[]>): Promise<Row[]> {
+  try {
+    return await p;
+  } catch (e) {
+    if (isMissingSchema(e)) return [];
+    throw e;
+  }
+}
+
+/** What the per-page signals read: people, the plan, and the queues that wait on the owner. */
+async function loadPageData(sb: SupabaseClient, today: string): Promise<Partial<AdviceData>> {
+  const [profiles, columns, planRows, dayStates, vacation, intake, leads, stages, threads, candidates, logs] = await Promise.all([
+    fetchAll<Row>(sb, "profiles", "id, name, role, position, active"),
+    fetchAll<Row>(sb, "plan_columns", "id, profile_id, type, hidden", (q) => q.eq("type", "member")),
+    fetchAll<Row>(sb, "plan_entries", "date, column_id, type", (q) => q.gte("date", shift(today, -10)).lte("date", shift(today, 14))),
+    soft(fetchAll<Row>(sb, "plan_day_states", "date_from, date_to", (q) => q.gte("date_to", shift(today, -10)))),
+    soft(fetchAll<Row>(sb, "vacation_requests", "created_at", (q) => q.eq("status", "pending"))),
+    soft(fetchAll<Row>(sb, "task_requests", "created_at", (q) => q.eq("status", "pending"))),
+    soft(fetchAll<Row>(sb, "leads", "id, company, stage_id, next_step_due", (q) => q.is("deleted_at", null))),
+    soft(fetchAll<Row>(sb, "lead_stages", "id, kind")),
+    soft(fetchAll<Row>(sb, "lead_threads", "lead_id, last_message_at", (q) => q.eq("reply_owed_by", "us"))),
+    soft(fetchAll<Row>(sb, "candidates", "last_activity_at", (q) => q.eq("status", "active"))),
+    soft(fetchAll<Row>(sb, "freelancer_logs", "date, minutes, created_at", (q) => q.eq("status", "pending"))),
+  ]);
+  const active = profiles.filter((p) => p.active !== false);
+  const activeIds = new Set(active.map((p) => String(p.id)));
+  const owner = profiles.find((p) => p.role === "admin" && p.position === "owner");
+  const openStage = new Set(stages.filter((st) => st.kind === "open").map((st) => String(st.id)));
+  const owedSince = new Map<string, string>();
+  for (const t of threads) {
+    const id = String(t.lead_id);
+    const at = String(t.last_message_at ?? "");
+    if (at && (!owedSince.has(id) || at < owedSince.get(id)!)) owedSince.set(id, at);
+  }
+  const openLeads = leads.filter((l) => !l.stage_id || openStage.has(String(l.stage_id)));
+  return {
+    ownerId: owner ? String(owner.id) : null,
+    hourly: Object.keys(HOURLY_TERMS),
+    leadsOpen: openLeads.length,
+    people: active.map((p) => ({ id: String(p.id), name: String(p.name ?? "") })),
+    planColumns: columns
+      .filter((c) => !c.hidden && c.profile_id && activeIds.has(String(c.profile_id)))
+      .map((c) => ({ id: String(c.id), profileId: String(c.profile_id) })),
+    planEntries: planRows.map((e) => ({ date: String(e.date), columnId: String(e.column_id) })),
+    absences: planRows.filter((e) => e.type === "absence").map((e) => ({ date: String(e.date), columnId: String(e.column_id) })),
+    dayStates: dayStates.map((d) => ({ dateFrom: String(d.date_from), dateTo: String(d.date_to) })),
+    vacationPending: vacation.map((v) => ({ createdAt: String(v.created_at) })),
+    intakePending: intake.map((r) => ({ createdAt: String(r.created_at) })),
+    // A lead with no stage is open, as the digest reads it.
+    leadsWaiting: openLeads
+      .map((l) => ({
+        id: String(l.id),
+        company: String(l.company ?? ""),
+        replyOwedSince: owedSince.get(String(l.id)) ?? null,
+        stepDue: (l.next_step_due as string | null) ?? null,
+      }))
+      .filter((l) => l.replyOwedSince || l.stepDue),
+    candidates: candidates.map((c) => ({ lastActivityAt: String(c.last_activity_at) })),
+    freelancerPending: logs.map((l) => ({ date: String(l.date), minutes: Number(l.minutes), createdAt: String(l.created_at) })),
+  };
+}
+
+const num = (v: unknown) => (v == null ? null : Number(v));
+/** An estimate_lines row in the shape leads/estimate.ts reads (estimates-data's mapper is client-only). */
+const toLine = (r: Row): EstimateLine => ({
+  id: String(r.id),
+  estimateId: String(r.estimate_id),
+  phaseId: (r.phase_id as string | null) ?? null,
+  serviceItemId: null,
+  name: String(r.name),
+  description: null,
+  category: (String(r.category ?? "") || "other") as EstimateLine["category"],
+  kind: r.kind === "percent" ? "percent" : "hours",
+  minHours: num(r.min_hours),
+  maxHours: num(r.max_hours),
+  percent: num(r.percent),
+  percentOf: (r.percent_of as EstimateLine["percentOf"]) ?? null,
+  optional: r.optional === true,
+  altGroup: (r.alt_group as string | null) ?? null,
+  chosen: r.chosen !== false,
+  position: Number(r.position ?? 0),
+  taskId: (r.task_id as string | null) ?? null,
+  groupId: null,
+});
+
+/** Each client's latest published estimate: its names, the tasks made from it, and its counted hours. */
+async function loadEstimates(sb: SupabaseClient, pubs: Row[]): Promise<AdviceData["estimates"]> {
+  // Latest publication per estimate → its lead's client → every name in it.
+  const latestByEstimate = new Map<string, string>();
+  for (const p of pubs) {
+    const id = String(p.estimate_id);
+    const at = String(p.published_at);
+    if (!latestByEstimate.has(id) || at > latestByEstimate.get(id)!) latestByEstimate.set(id, at);
+  }
+  const estimateIds = [...latestByEstimate.keys()];
+  if (!estimateIds.length) return [];
+  const estimates: AdviceData["estimates"] = [];
+  const [ests, phases, egroups, lines] = await Promise.all([
+    fetchAll<Row>(sb, "lead_estimates", "id, lead_id", (q) => q.in("id", estimateIds)),
+    fetchAll<Row>(sb, "estimate_phases", "estimate_id, name", (q) => q.in("estimate_id", estimateIds)),
+    fetchAll<Row>(sb, "estimate_groups", "estimate_id, name", (q) => q.in("estimate_id", estimateIds)),
+    fetchAll<Row>(
+      sb,
+      "estimate_lines",
+      "id, estimate_id, phase_id, name, category, kind, min_hours, max_hours, percent, percent_of, optional, alt_group, chosen, position, task_id",
+      (q) => q.in("estimate_id", estimateIds),
+    ),
+  ]);
+  const leadIds = [...new Set(ests.map((e) => String(e.lead_id)))];
+  const leads = await fetchAll<Row>(sb, "leads", "id, client_id", (q) => q.in("id", leadIds).is("deleted_at", null));
+  const clientOfLead = new Map(leads.filter((l) => l.client_id).map((l) => [String(l.id), String(l.client_id)]));
+  // A client with several estimates: the most recently published one is the scope.
+  const latestByClient = new Map<string, { estimateId: string; at: string }>();
+  for (const e of ests) {
+    const clientId = clientOfLead.get(String(e.lead_id));
+    const at = latestByEstimate.get(String(e.id));
+    if (!clientId || !at) continue;
+    const cur = latestByClient.get(clientId);
+    if (!cur || at > cur.at) latestByClient.set(clientId, { estimateId: String(e.id), at });
+  }
+  for (const [clientId, { estimateId, at }] of latestByClient) {
+    const names = [...phases, ...egroups, ...lines].filter((r) => String(r.estimate_id) === estimateId).map((r) => String(r.name));
+    const own = lines.filter((r) => String(r.estimate_id) === estimateId);
+    // Only the fields `totals` reads; money is computed at rate 0 and never used.
+    const counted = totals(own.map(toLine), 0, 0, null).totalHours;
+    const taskIds = own.map((r) => r.task_id).filter((t): t is string => typeof t === "string");
+    estimates.push({ clientId, publishedAt: at, names, taskIds, hours: counted });
+  }
+  return estimates;
+}

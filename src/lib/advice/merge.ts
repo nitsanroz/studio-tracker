@@ -1,4 +1,6 @@
-// How one check's findings meet the stored `advice_items` rows (v1.80.0).
+// How one check's findings meet the stored rows (v1.80.0) — ONE copy since the
+// finance merge (stage 4): the studio's rules, the money rules and the rules
+// that read both all land in `finance_advice_items` through here.
 //
 // ⚠️ PURE — the engine does the reads and writes; this decides them, which is
 // what lets snooze, done and escalation be tested without a database.
@@ -12,7 +14,32 @@
 // - Either one breaks when the finding gets WORSE (severity rises above the
 //   level it was hidden at): the row comes back, marked as changed.
 
-import type { AdviceKind, Finding, FindingLink } from "./signals";
+import type { AdviceKind, FindingLink } from "./signals";
+import type { Fix } from "@/lib/finance/advice/signals";
+
+/**
+ * What a rule hands over, whichever side wrote it. The studio's rules
+ * (signals.ts) may carry a `list`; the money rules (lib/finance/advice) a
+ * `figure` chip, a `focus` to light up on the page, and a one-click `fix`.
+ */
+export interface Finding {
+  key: string;
+  signal: string;
+  kind: AdviceKind;
+  area: string;
+  clientId: string | null;
+  severity: number;
+  facts: Record<string, string | number | null>;
+  title: string;
+  body: string;
+  reminder: boolean;
+  href: string;
+  action: string;
+  list?: FindingLink[];
+  figure?: string | null;
+  focus?: string;
+  fix?: Fix;
+}
 
 export interface AdviceRow {
   id: string;
@@ -66,8 +93,20 @@ function sameFacts(a: AdviceRow["facts"], b: AdviceRow["facts"]): boolean {
 }
 
 function factsOf(f: Finding): AdviceRow["facts"] {
-  return { ...f.facts, href: f.href, action: f.action, ...(f.list?.length ? { list: f.list } : {}) };
+  return {
+    ...f.facts,
+    // A money rule always states its figure (null = none); a studio rule has no such key.
+    ...(f.figure !== undefined ? { figure: f.figure } : {}),
+    href: f.href,
+    action: f.action,
+    ...(f.list?.length ? { list: f.list } : {}),
+    ...(f.focus ? { focus: f.focus } : {}),
+    ...(f.fix ? { fix: JSON.stringify(f.fix) } : {}),
+  };
 }
+
+/** Signals Claude writes, not the rules: never reworded, never resolved by a check alone. */
+export const NOT_FROM_RULES = new Set(["idea", "tools"]);
 
 /**
  * Ideas come from the daily Claude run, not from the rules, so a rule check
@@ -77,6 +116,9 @@ function factsOf(f: Finding): AdviceRow["facts"] {
  * 06:40 run wrote "the payment is also 13 days late" from NoTraffic's unpaid
  * finding, the finding resolved at 09:07 once October read as Paid, and the
  * idea kept saying it all day.
+ *
+ * "tools" items are the owner's "Review the tools" run (lib/finance/advice/
+ * review.ts): never resolved here, replaced by the next review.
  */
 export function mergeFindings(rows: AdviceRow[], findings: Finding[], nowIso: string): MergePlan {
   const byKey = new Map(rows.map((r) => [r.key, r]));
@@ -152,6 +194,7 @@ export function mergeFindings(rows: AdviceRow[], findings: Finding[], nowIso: st
 
   for (const r of rows) {
     if (r.resolvedAt || seen.has(r.key)) continue;
+    if (r.signal === "tools") continue;
     if (r.signal === "idea") {
       const basedOn = r.facts.basedOn;
       if (Array.isArray(basedOn) && basedOn.some((k) => typeof k === "string" && !seen.has(k))) plan.resolve.push(r.id);

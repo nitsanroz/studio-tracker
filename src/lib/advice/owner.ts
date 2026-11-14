@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { service } from "@/lib/supabase/service";
+import { tierOf } from "@/lib/access";
 
 /**
- * &advice is the OWNER's alone. Asked of the database's own `is_owner()` (0059 —
- * `role = 'admin' and position = 'owner'`, the vacation approver's test), so the
- * rule lives in one place. Not every admin: Michal is one and must not see it.
+ * &advice is the OWNER's alone: tracker role admin + position owner + full
+ * finance — `tierOf() === "owner"`, the same test as the database's
+ * `is_finance_owner()`, which guards the store itself. Not every admin (Michal
+ * is one and must not see it), and not every full-finance user.
  *
- * Returns the service client when the caller is the owner, else the response
- * to send. The service key is fine past this point because the routes read
- * only advice and aggregate figures, and the check has been made here.
+ * Returns the caller's OWN Supabase client. Since the finance merge (stage 4)
+ * the pane reads amounts, so nothing here touches the service key: every table
+ * the checks read is readable by the owner under RLS, and anyone else is
+ * stopped twice — here, and by the policies.
  */
 export async function ownerOnly(): Promise<{ sb: SupabaseClient } | { res: NextResponse }> {
-  const supabase = await createClient();
+  const sb = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await sb.auth.getUser();
   if (!user) return { res: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: isOwner } = await supabase.rpc("is_owner");
-  if (isOwner !== true) return { res: NextResponse.json({ error: "Owner only" }, { status: 403 }) };
-  return { sb: service() };
+  const { data: p } = await sb.from("profiles").select("role, position, finance_full_access, active").eq("id", user.id).maybeSingle();
+  if (!p || p.active === false || tierOf(p) !== "owner") return { res: NextResponse.json({ error: "Owner only" }, { status: 403 }) };
+  return { sb };
 }

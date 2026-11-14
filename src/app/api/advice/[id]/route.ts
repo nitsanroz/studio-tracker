@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ownerOnly } from "@/lib/advice/owner";
+import { ITEMS } from "@/lib/finance/advice/load";
 
 /**
  * One &advice item: snooze it, tick it done, or undo either (the toast's Undo).
@@ -17,7 +18,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params;
   const body = (await req.json().catch(() => null)) as Body | null;
 
-  const { data: row, error } = await auth.sb.from("advice_items").select("severity").eq("id", id).maybeSingle();
+  const { data: row, error } = await auth.sb.from(ITEMS).select("severity").eq("id", id).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -31,7 +32,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   } else {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
-  const { error: upd } = await auth.sb.from("advice_items").update(patch).eq("id", id);
+  const { error: upd } = await auth.sb.from(ITEMS).update(patch).eq("id", id);
   if (upd) return NextResponse.json({ error: upd.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

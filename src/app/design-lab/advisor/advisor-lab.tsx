@@ -746,12 +746,17 @@ const FIXTURE: AdviceView = {
     row("idea:1", "idea", "Planning", "Lumen and Halo both need a client note this week", "Send both notes on Sunday, before either period closes.", {}),
   ],
   pulse: [
-    { label: "Income vs costs", unit: "%", value: 112, against: 116, series: [118, 121, 116, 119, 117, 116, 112], good: true, note: "income ÷ costs, 2026-09", help: "Each finished month's income divided by its costs.", scope: "money", clientId: null },
-    { label: "Biggest client", unit: "%", value: 46, against: null, series: [38, 41, 44, 46, 47, 46], good: false, note: "Lumen Health, last 90 days", help: "The biggest client's share of billable hours.", scope: "concentration", clientId: null },
-    { label: "Over cap", unit: "", value: 1, against: null, series: [], good: false, note: "of 6 capped clients", help: "Clients past their period's hour cap.", scope: "billing", clientId: null },
+    { label: "Income vs costs", display: "112%", delta: -4, series: [118, 121, 116, 119, 117, 116, 112], good: true, note: "income ÷ costs, 2026-09", help: "Each finished month's income divided by its costs.", scope: "money", clientId: null },
+    { label: "Biggest client", display: "46%", delta: null, series: [38, 41, 44, 46, 47, 46], good: false, note: "Lumen Health, last 90 days", help: "The biggest client's share of billable hours.", scope: "concentration", clientId: null },
+    { label: "Over cap", display: "1", delta: null, series: [], good: false, note: "of 6 capped clients", help: "Clients past their period's hour cap.", scope: "billing", clientId: null },
   ],
   hidden: 2,
   wordingOff: "Plain wording — no Claude API key",
+  wordingDue: false,
+  reviewOn: false,
+  review: null,
+  mailDue: false,
+  mailboxes: null,
   checkedAt: "2026-10-26T11:32:00.000Z",
   wordedAt: null,
 };
@@ -763,7 +768,7 @@ function LiveAdvice() {
     const real = window.fetch;
     window.fetch = async (input, init) => {
       const url = String(input instanceof Request ? input.url : input);
-      if (url.includes("/api/advice?peek=1")) return Response.json({ count: 3, total: 6 });
+      if (url.includes("/api/advice?peek=1")) return Response.json({ items: FIXTURE.items.map((r) => ({ signal: r.signal, clientId: r.clientId, kind: r.kind })) });
       if (url.includes("/api/advice/")) return Response.json({ ok: true });
       if (url.includes("/api/advice")) return Response.json(FIXTURE);
       return real(input, init);

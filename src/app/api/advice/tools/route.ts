@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { adviceError, ownerOnly } from "@/lib/finance/advice/owner";
+import { ownerOnly } from "@/lib/advice/owner";
+import { adviceError } from "@/lib/finance/advice/owner";
 import { reviewTools } from "@/lib/finance/advice/review";
 
 export const maxDuration = 120;

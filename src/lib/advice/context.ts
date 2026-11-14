@@ -25,6 +25,22 @@ export interface PageContext {
  * Home's again (2026-10-25). Settings has none, so no button there.
  */
 const PAGES: [string, string, string[], string[]][] = [
+  // Finance's pages (the finance merge, stage 4): their figures are the money
+  // side's, prefixed "fin:" in run.ts so they never mix with a studio tile of
+  // the same name. Longest path first — "/finance" itself is handled below.
+  ["/finance/plan", "Plan", ["close", "fx", "loss", "year", "client-quiet", "pace", "tax-reserve", "debt"], ["fin:pace", "fin:booked"]],
+  ["/finance/salaries", "Salaries", ["salaries", "payslips", "close", "paid"], ["fin:salaries", "fin:booked"]],
+  ["/finance/freelance", "Freelance", ["freelance", "freelancer-margin", "close", "paid"], ["fin:freelance"]],
+  ["/finance/people", "People", ["salaries"], ["fin:salaries"]],
+  ["/finance/expenses", "Expenses", ["expense", "unfiled", "fx", "renewal", "overlap", "price-up", "fx-fee", "mail", "tools"], ["fin:filing", "fin:renewals"]],
+  ["/finance/rates", "Rates", ["no-rate", "unpaid", "debt", "scope", "freelancer-margin", "concentration", "client-quiet"], ["fin:clients"]],
+  [
+    "/finance/scenarios",
+    "Scenarios",
+    ["loss", "year", "pace", "salaries", "freelance", "concentration", "client-quiet", "tax-reserve", "dividend-window", "books-gap"],
+    ["fin:pace", "fin:salaries"],
+  ],
+  ["/finance/settings", "Settings", [], []],
   ["/plan", "Weekly Plan", ["plan-gaps", "unassigned", "pace"], ["plan"]],
   ["/my-tasks", "My Tasks", ["my-overdue"], []],
   ["/vacation", "Vacation", ["vacation"], []],
@@ -35,17 +51,27 @@ const PAGES: [string, string, string[], string[]][] = [
   ["/team", "Team", ["missing-hours", "vacation", "plan-gaps", "internal"], ["plan", "team"]],
   ["/candidates", "Candidates", ["candidates"], []],
   ["/leads", "Leads", ["leads", "concentration"], ["concentration"]],
-  ["/freelancers", "Freelancers", ["freelancer-logs"], []],
+  ["/freelancers", "Freelancers", ["freelancer-logs", "freelancer-margin"], []],
 ];
 
-const CLIENT_SIGNALS = new Set(["report-due", "unpaid", "cap", "estimate"]);
-const STUDIO_SIGNALS = new Set(["pace", "income", "concentration", "internal"]);
+const CLIENT_SIGNALS = new Set(["report-due", "unpaid", "debt", "cap", "estimate", "scope"]);
+const STUDIO_SIGNALS = new Set(["pace", "loss", "year", "concentration", "internal"]);
+/**
+ * Finance's Overview owns everything about money — every signal a finance page
+ * lists, plus the day's ideas. The studio's own (plan gaps, overdue tasks…)
+ * fold under "Elsewhere" there, as finance's do on a tracker page.
+ */
+const OVERVIEW_TILES = new Set(["fin:money", "fin:clients"]);
 /** Home's figures: the studio-wide ones. Plan and team figures belong to their pages. */
 const HOME_TILES = new Set(["money", "concentration", "billing"]);
 
 export function pageContext(pathname: string, search: string): PageContext {
   const none = { all: false, clientId: null, signals: null, tiles: new Set<string>() };
   if (pathname === "/") return { ...none, label: "Home", all: true, tiles: HOME_TILES };
+  if (pathname === "/finance") {
+    const money = new Set(PAGES.filter(([path]) => path.startsWith("/finance/")).flatMap(([, , signals]) => signals));
+    return { ...none, label: "Finance", signals: money.add("idea"), tiles: OVERVIEW_TILES };
+  }
   const client = pathname.match(/^\/clients\/([^/]+)/);
   if (client) return { ...none, label: "This client", clientId: client[1] };
   if (pathname.startsWith("/client-reports")) {

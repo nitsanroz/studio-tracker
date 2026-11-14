@@ -123,3 +123,17 @@ describe("toDb", () => {
     expect(toDb({ snoozedUntil: "2026-10-25", snoozedAtSeverity: 2 })).toEqual({ snoozed_until: "2026-10-25", snoozed_at_severity: 2 });
   });
 });
+
+describe("one store for both sides (the finance merge)", () => {
+  it("keeps a money rule's figure, focus and fix with its facts, and a studio rule's without a figure key", () => {
+    const fix = { label: "Remove the 18 Dec renewal", done: "Removed", remove: ["e1"] };
+    const money = mergeFindings([], [{ ...finding(), figure: "−₪12K", focus: "row:e1 month:2026-12", fix }], NOW).insert[0].facts;
+    expect(money).toMatchObject({ figure: "−₪12K", focus: "row:e1 month:2026-12", fix: JSON.stringify(fix) });
+    expect(mergeFindings([], [{ ...finding(), figure: null }], NOW).insert[0].facts).toHaveProperty("figure", null);
+    expect(mergeFindings([], [finding()], NOW).insert[0].facts).not.toHaveProperty("figure");
+  });
+
+  it("never resolves the tools review's items — the next review replaces them", () => {
+    expect(mergeFindings([row({ signal: "tools", key: "tools:figma" })], [], NOW).resolve).toEqual([]);
+  });
+});

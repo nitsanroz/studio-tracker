@@ -52,3 +52,46 @@ describe("tilesFor", () => {
     expect(of("/my-tasks")).toEqual([]);
   });
 });
+
+describe("finance's pages (one pane since the finance merge)", () => {
+  const money = [
+    { id: 1, signal: "pace", clientId: null },
+    { id: 2, signal: "unfiled", clientId: null },
+    { id: 3, signal: "no-rate", clientId: "a" },
+    { id: 4, signal: "plan-gaps", clientId: null },
+    { id: 5, signal: "idea", clientId: null },
+  ];
+
+  it("the Overview takes everything about money and folds the studio's own", () => {
+    expect(ids(splitByPage(money, pageContext("/finance", "")))).toEqual([[1, 2, 3, 5], [4]]);
+  });
+
+  it("a finance page puts its own signals first", () => {
+    expect(ids(splitByPage(money, pageContext("/finance/expenses", "")))).toEqual([[2], [1, 3, 4, 5]]);
+    expect(pageContext("/finance/plan", "").label).toBe("Plan");
+    expect(pageContext("/plan", "").label).toBe("Weekly Plan");
+  });
+
+  it("has nothing on finance's Settings, and a person's page is People", () => {
+    expect(splitByPage(money, pageContext("/finance/settings", "")).here).toEqual([]);
+    expect(pageContext("/finance/people/abc", "").label).toBe("People");
+  });
+
+  it("shows the money side's figures only on finance's pages", () => {
+    const tiles = [
+      { scope: "money", clientId: null },
+      { scope: "fin:money", clientId: null },
+      { scope: "fin:filing", clientId: null },
+    ];
+    expect(tilesFor(tiles, pageContext("/", "")).map((t) => t.scope)).toEqual(["money"]);
+    expect(tilesFor(tiles, pageContext("/finance", "")).map((t) => t.scope)).toEqual(["fin:money"]);
+    expect(tilesFor(tiles, pageContext("/finance/expenses", "")).map((t) => t.scope)).toEqual(["fin:filing"]);
+  });
+
+  it("the rules that read both sides have a home on each side", () => {
+    expect(pageContext("/finance/rates", "").signals?.has("scope")).toBe(true);
+    expect(pageContext("/freelancers", "").signals?.has("freelancer-margin")).toBe(true);
+    expect(pageContext("/finance/freelance", "").signals?.has("freelancer-margin")).toBe(true);
+    expect(pageContext("/client-reports", "").signals?.has("debt")).toBe(true);
+  });
+});

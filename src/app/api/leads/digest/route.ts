@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isCronRequest } from "@/lib/cron";
 import { service } from "@/lib/supabase/service";
-import { dailyRun } from "@/lib/advice/word";
 import { boardUrl, esc, leadUrl, recipients, sendMail } from "@/lib/leads/mail";
 import { mapStage } from "@/lib/leads/stage-map";
 import { isStalled } from "@/lib/leads/stalled";
@@ -19,21 +18,16 @@ export const maxDuration = 120;
  *
  * `?preview=1` with the cron secret returns the HTML instead of sending it.
  *
- * It also runs &advice's morning step (v1.80.0): every rule check, then
- * Claude's wording when there's an API key. It rides this cron because the
- * Vercel plan allows two (see gmail/renew), and it wants the same 07:00 slot.
+ * ⚠️ It no longer runs &advice's morning step (it did from v1.80.0 until the
+ * finance merge, stage 4). The one pane now holds amounts and reads with the
+ * owner's own session, so nothing with the service key may run it; the day's
+ * first pane open asks for the wording instead (/api/advice/word).
  */
 type Row = Record<string, unknown>;
 
 export async function GET(req: NextRequest) {
   if (!isCronRequest(req)) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (req.nextUrl.searchParams.get("preview") === "1") return digest(req);
-  // Side by side, and neither can sink the other: the digest's answer carries the advice result.
-  const [res, advice] = await Promise.all([
-    digest(req),
-    dailyRun(service()).catch((e: unknown) => ({ error: e instanceof Error ? e.message : String(e) })),
-  ]);
-  return NextResponse.json({ ...(await res.json()), advice });
+  return digest(req);
 }
 
 async function digest(req: NextRequest): Promise<NextResponse> {

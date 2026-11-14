@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hasAmount, plainFacts, promptFor, stripAmounts } from "./redact";
-import type { AdviceRow } from "./merge";
+import type { AdviceRow } from "@/lib/advice/merge";
 
 const row = (over: Partial<AdviceRow> = {}): AdviceRow => ({
   id: "r1",
@@ -56,7 +56,7 @@ describe("what Claude is sent", () => {
   });
 
   it("holds no currency anywhere in the prompt", () => {
-    const prompt = promptFor([row()], [{ label: "Oct profit (est.)", display: "−₪12K", series: [], good: false, note: "−4% margin on ₪1.2M", help: "", scope: "money" }], "2026-10-24");
+    const prompt = promptFor([row()], [{ label: "Oct profit (est.)", display: "−₪12K", note: "−4% margin on ₪1.2M" }], "2026-10-24");
     expect(prompt).not.toMatch(/[₪€$]/);
     expect(prompt).not.toContain("3,000");
     expect(prompt).toContain("[amount]");

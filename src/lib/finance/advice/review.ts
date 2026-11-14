@@ -18,10 +18,11 @@ import { buildFxTable, type FxRow } from "@/lib/finance/fx";
 import { formatILS, formatILSShort } from "@/lib/finance/format";
 import { monthsBack } from "@/lib/finance/overview";
 import { TOOL_MAIL } from "@/lib/finance/mail/scan";
-import { toDb } from "./merge";
+import { toDb } from "@/lib/advice/merge";
 import { hasAmount } from "./redact";
 import { acceptReview, REVIEW_SCHEMA, REVIEW_SYSTEM, reviewPrompt, type Reviewed, type Verdict } from "./review-prompt";
-import { ITEMS, REVIEW_RUN, RUNS, runCheck, studioToday, type AdviceView } from "./run";
+import { runCheck, type AdviceView } from "@/lib/advice/run";
+import { ITEMS, REVIEW_RUN, RUNS, studioToday } from "./load";
 import { toolHref } from "./signals";
 import { liveTools, shiftIso, subscriptionsOf } from "./tools";
 

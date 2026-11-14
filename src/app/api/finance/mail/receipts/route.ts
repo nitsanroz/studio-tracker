@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { expensesUser } from "@/lib/finance/advice/owner";
-import { MAIL_EVERY_MS } from "@/lib/finance/advice/run";
+import { MAIL_EVERY_MS } from "@/lib/finance/advice/load";
 import { billingUrl } from "@/lib/finance/advice/signals";
 import { loadSuggestions } from "@/lib/finance/mail/receipts-data";
 import { mailAccounts } from "@/lib/finance/mail/scan";

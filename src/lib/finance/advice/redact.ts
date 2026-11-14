@@ -2,8 +2,7 @@
 // word.ts so it stays pure and tested. Nitsan, 2026-10-24: Claude words the
 // finance advice WITHOUT amounts; the card shows the rule's exact figure.
 
-import type { AdviceRow } from "./merge";
-import type { PulseTile } from "./signals";
+import type { AdviceRow } from "@/lib/advice/merge";
 
 // Amounts come in every shape the mail and expense rows hold: the symbol or
 // code before the number or after it, with or without a space, Hebrew ש"ח —
@@ -51,18 +50,18 @@ export function hasAmount(text: string): boolean {
   );
 }
 
-/** Facts a model may see: no money keys, no figure, no internal links. */
+/** Facts a model may see: no money keys, no figure, no internal links (task and lead ids mean nothing to it). */
 export function plainFacts(facts: AdviceRow["facts"]): AdviceRow["facts"] {
   const out: AdviceRow["facts"] = {};
   for (const [k, v] of Object.entries(facts)) {
-    if (/(?:Ils|Eur)$/.test(k) || ["figure", "href", "action", "focus", "changed", "fix"].includes(k)) continue;
+    if (/(?:Ils|Eur)$/.test(k) || ["figure", "href", "action", "focus", "changed", "fix", "list", "basedOn"].includes(k)) continue;
     out[k] = typeof v === "string" ? stripAmounts(v) : v;
   }
   return out;
 }
 
 /** What Claude is given — amount-free. */
-export function promptFor(rows: AdviceRow[], pulse: PulseTile[], today: string): string {
+export function promptFor(rows: AdviceRow[], pulse: { label: string; display: string | null; note: string }[], today: string): string {
   const findings = rows.map((r) => ({
     key: r.key,
     kind: r.kind,

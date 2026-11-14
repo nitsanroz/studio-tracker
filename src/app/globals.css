@@ -915,6 +915,14 @@ html[data-privacy="on"] .finance-canvas :is(.tabular-nums, input[inputmode="deci
 html[data-privacy="on"] .finance-canvas svg text {
   filter: blur(6px);
 }
+/* &advice sits beside the canvas, not in it (one pane for the whole app since
+   the finance merge): its figures blur with the page's. */
+.advice-pane .tabular-nums {
+  transition: filter 0.3s ease;
+}
+html[data-privacy="on"] .advice-pane .tabular-nums {
+  filter: blur(7px);
+}
 /* Held ("Hide numbers" in the sidebar, for showing a page to a colleague):
    ONLY THE DIGITS OF AMOUNTS go — words, dates, years, hours and percentages
    stay readable (Nitsan, 2026-11-12). Done with a font, not a blur: "Hidden
@@ -952,6 +960,17 @@ html[data-privacy="held"] .font-serif-accent:is([data-money], [data-money] *, [d
 }
 html[data-privacy="held"] .font-serif:is([data-money], [data-money] *, [data-money-auto], [data-money-auto] *) {
   font-family: "Hidden Digits", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+/* &advice with "Hide numbers" on, opened on a page OUTSIDE finance: nothing
+   there marks the amounts (PrivacyBlur runs on finance's pages only), so the
+   pane smudges every digit it shows — components/advice.tsx `useHold`. */
+.advice-hold,
+.advice-hold :is(p, span, button, a, li, div) {
+  font-family: "Hidden Digits", "Saans", system-ui, sans-serif;
+}
+.advice-hold .font-serif-accent {
+  font-family: "Hidden Digits", "PP Fragment Glare", Georgia, serif;
 }
 
 /* Plan grid hover explanations (plan-explain.tsx): the hovered number and the

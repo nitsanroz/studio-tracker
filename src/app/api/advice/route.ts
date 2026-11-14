@@ -2,18 +2,24 @@ import { NextResponse, type NextRequest } from "next/server";
 import { MISSING_SCHEMA_CODES } from "@/lib/db";
 import { ownerOnly } from "@/lib/advice/owner";
 import { studioToday } from "@/lib/format";
-import { checkNow, loadRows } from "@/lib/advice/run";
+import { loadRows, mailState, checkedRecently, runCheck } from "@/lib/advice/run";
 import { visible } from "@/lib/advice/merge";
 
 export const maxDuration = 60;
 
 /**
- * &advice, owner only (v1.80.0).
+ * &advice, owner only — ONE route for the one pane (it was this and
+ * /api/finance/advice until the finance merge, stage 4).
  *
- * GET runs every rule check and returns what the pane shows — opening the pane
- * IS the refresh (Nitsan, 2026-10-24: daily wording + live checks on open).
- * `?peek=1` skips the checks and returns each waiting item's signal, client
- * and kind — the corner button shows only on pages that have something.
+ * GET runs every rule check, the studio's and the money's, and returns what
+ * the pane shows — opening the pane IS the refresh (Nitsan, 2026-10-24).
+ *
+ * `?peek=1` returns just each waiting item's signal, client and kind — the
+ * corner button shows only on pages that have something. It reads the stored
+ * rows while this server ran a check in the last three hours and runs one otherwise:
+ * there is no cron to write rows any more, and a peek of rows nobody wrote
+ * once hid finance's button for good (2026-10-24). `&fresh=1` forces the check
+ * (after a mail scan). The peek also says when the billing mail is due.
  *
  * 403 for anyone but the owner, which is also how the button learns to stay
  * hidden for other admins.
@@ -22,17 +28,19 @@ export async function GET(req: NextRequest) {
   const auth = await ownerOnly();
   if ("res" in auth) return auth.res;
   try {
-    if (req.nextUrl.searchParams.get("peek")) {
-      const shown = visible(await loadRows(auth.sb), studioToday());
-      // Just enough for the button to know which pages have something to say.
-      return NextResponse.json({ items: shown.map((r) => ({ signal: r.signal, clientId: r.clientId, kind: r.kind })) });
+    const q = req.nextUrl.searchParams;
+    if (q.get("peek")) {
+      const [stored, mail] = await Promise.all([loadRows(auth.sb), mailState(auth.sb)]);
+      const shown = !q.get("fresh") && checkedRecently() ? visible(stored, studioToday()) : (await runCheck(auth.sb)).view.items;
+      return NextResponse.json({ items: shown.map((r) => ({ signal: r.signal, clientId: r.clientId, kind: r.kind })), mailDue: mail.due });
     }
-    return NextResponse.json(await checkNow(auth.sb));
+    return NextResponse.json((await runCheck(auth.sb)).view);
   } catch (e) {
-    // Before 0059 is run the tables don't exist: say so instead of a bare 500.
-    // `detail` names the table or column, so a missing piece that ISN'T 0059 is obvious.
-    if (MISSING_SCHEMA_CODES.has(String((e as { code?: string }).code)))
-      return NextResponse.json({ error: "A table or column is missing — has 0059_advice.sql been run?", detail: (e as Error).message }, { status: 503 });
-    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+    // A table that isn't there yet: say so instead of a bare 500. `detail`
+    // names the table or column.
+    const err = e as { code?: string; message?: string };
+    if (MISSING_SCHEMA_CODES.has(String(err.code)) || /does not exist|schema cache|Could not find the table/i.test(err.message ?? ""))
+      return NextResponse.json({ error: "A table or column &advice reads is missing.", detail: err.message }, { status: 503 });
+    return NextResponse.json({ error: err.message ?? "Something went wrong" }, { status: 500 });
   }
 }

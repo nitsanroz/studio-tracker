@@ -111,6 +111,9 @@ export async function fetchAllOptional<T>(
 const PAGE_KEYS: Record<string, string[]> = {
   finance_pnl_monthly: ["year", "month", "line_item"],
   fx_rates: ["year", "month"],
+  // No `id` (checked against the live schema 2026-11-14 — ordering by one answered 400
+  // and the Expenses page lost its sheet check for a day on the branch).
+  finance_expense_month_check: ["year", "month", "category"],
   finance_person_factors: ["profile_id"],
   finance_not_hourly: ["client_id"],
   finance_mail_ignored: ["domain"],

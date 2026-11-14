@@ -1,11 +1,10 @@
-// &advice's engine (v1.6.0): load what the checks need, run them, and bring
-// `finance_advice_items` in line with what they found. Called on every pane
-// open (the live refresh); the day's first open also asks Claude for wording
-// (word.ts). The tracker's run.ts is the model.
+// &advice's MONEY side: what the finance rules read (signals.ts here), and the
+// names of the one store both sides write. The engine itself — run the rules,
+// merge, write — is src/lib/advice/run.ts since the finance merge (stage 4).
 //
-// ⚠️ SERVER ONLY, with the OWNER's own session (owner.ts checks first): the
-// finance tables, the tracker tables it reads and the advice tables are all
-// readable by the owner under RLS.
+// ⚠️ SERVER ONLY, with the OWNER's own session (lib/advice/owner.ts checks
+// first): the finance tables, the tracker tables it reads and the advice tables
+// are all readable by the owner under RLS. Never the service key.
 
 import { termsFromClientRow, type ClientTerms } from "@/lib/payment-terms";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -14,10 +13,8 @@ import { buildFxTable, type FxRow } from "@/lib/finance/fx";
 import { getGoalInputs } from "@/lib/finance/actions";
 import { SYNTHETIC_YEARLY_MARKER } from "@/lib/finance/finance";
 import { studioToday } from "@/lib/finance/format";
-import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow } from "./merge";
-import { findAll, monthKey, monthsBack, pulse, type AdviceData, type PulseTile, type ToolMail } from "./signals";
-import { mailConfigured } from "@/lib/finance/mail/google";
-import { mailAccounts, TOOL_MAIL } from "@/lib/finance/mail/scan";
+import { monthKey, monthsBack, type AdviceData, type ToolMail } from "./signals";
+import { TOOL_MAIL } from "@/lib/finance/mail/scan";
 import { loadSuggestions } from "@/lib/finance/mail/receipts-data";
 import { shiftIso, subscriptionsOf } from "./tools";
 import { monthsPaidFromPlan } from "@/lib/finance-paid";
@@ -157,6 +154,9 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
 
   return {
     today,
+    // The accountant's figures and the company facts: loaded HERE, on the server,
+    // so signals.ts (which the client pane also imports) never names them.
+    figures: { accountantYears: ACCOUNTANT_YEARS, facts: DEFAULT_FACTS },
     pnl: pnl.map(mapPnl),
     goalInputs,
     clients: clients.map((c) => ({
@@ -185,9 +185,6 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
       const [clientId, from, to] = [String(p.client_id), String(p.date_from), String(p.date_to)];
       const mine = reportEntries.filter((e) => e.clientId === clientId);
       return {
-    // The accountant’s figures and the company facts: loaded HERE, on the server,
-    // so signals.ts (which the client pane also imports) never names them.
-    figures: { accountantYears: ACCOUNTANT_YEARS, facts: DEFAULT_FACTS },
         clientId,
         label: String(p.label),
         dateFrom: from,
@@ -234,35 +231,12 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   };
 }
 
-export async function loadRows(sb: SupabaseClient): Promise<AdviceRow[]> {
-  return (await fetchAll<Row>(sb, ITEMS, "*")).map(mapAdviceRow);
-}
-
-export interface AdviceView {
-  today: string;
-  items: AdviceRow[];
-  pulse: PulseTile[];
-  /** how many are snoozed or done right now, for the footer */
-  hidden: number;
-  /** null when Claude wording is on; otherwise why not, in a few words */
-  wordingOff: string | null;
-  /** today's wording hasn't run yet: the pane asks for it in the background */
-  wordingDue: boolean;
-  /** the tools review (review.ts): whether it can run, and the last one */
-  reviewOn: boolean;
-  review: ReviewState | null;
-  /** a connected mailbox hasn't been scanned today: the pane asks for it in the background */
-  mailDue: boolean;
-  /** connected mailboxes, for the footer — null before reference/0015 */
-  mailboxes: number | null;
-}
-
 /** The latest wording run: whether it was today, and whether it failed. */
-export async function lastWordingRun(sb: SupabaseClient, today: string): Promise<{ today: boolean; error: string | null } | null> {
+export async function lastWordingRun(sb: SupabaseClient, today: string): Promise<{ today: boolean; at: string; error: string | null } | null> {
   // The tools review logs its runs here too (model "tools-review/…"); they aren't the day's wording.
   const { data } = await sb.from(RUNS).select("run_at, error").not("model", "like", `${REVIEW_RUN}%`).order("run_at", { ascending: false }).limit(1).maybeSingle();
   if (!data) return null;
-  return { today: studioToday(new Date(String(data.run_at))) === today, error: (data.error as string | null) ?? null };
+  return { today: studioToday(new Date(String(data.run_at))) === today, at: String(data.run_at), error: (data.error as string | null) ?? null };
 }
 
 /** The latest review: when, its summary, and its error if it failed. */
@@ -277,40 +251,4 @@ export async function lastReview(sb: SupabaseClient): Promise<ReviewState | null
   if (!data) return null;
   const ideas = data.ideas as { summary?: string }[] | null;
   return { at: String(data.run_at), summary: ideas?.[0]?.summary ?? null, error: (data.error as string | null) ?? null };
-}
-
-/** Run every rule and write the result: the pane's view, plus every stored row for the wording run. */
-export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; rows: AdviceRow[] }> {
-  const today = studioToday();
-  const now = new Date().toISOString();
-  const wordingOn = !!process.env.ANTHROPIC_API_KEY;
-  const [data, stored, run, review, mail] = await Promise.all([loadAdviceData(sb, today), loadRows(sb), wordingOn ? lastWordingRun(sb, today) : null, lastReview(sb), mailAccounts(sb).catch(() => null)]);
-  const findings = findAll(data);
-  const plan = mergeFindings(stored, findings, now);
-
-  // Inserts come back with their ids; updates and resolves run side by side.
-  const [inserted] = await Promise.all([
-    plan.insert.length ? sb.from(ITEMS).insert(plan.insert.map(toDb)).select("*").then((r) => rows(ITEMS, r).map(mapAdviceRow)) : [],
-    ...plan.update.map((u) => sb.from(ITEMS).update(toDb(u.patch)).eq("id", u.id).then((r) => rows(ITEMS, r))),
-    plan.resolve.length ? sb.from(ITEMS).update({ resolved_at: now }).in("id", plan.resolve).then((r) => rows(ITEMS, r)) : null,
-  ]);
-
-  const fresh = applyPlan(stored, plan, inserted, now);
-  const shown = visible(fresh, today);
-  return {
-    rows: fresh,
-    view: {
-      today,
-      items: shown,
-      pulse: pulse(data, findings),
-      hidden: fresh.filter((r) => !r.resolvedAt).length - shown.length,
-      wordingOff: !wordingOn ? "Plain wording — no Claude API key" : run?.error ? "Plain wording — the last Claude run failed" : null,
-      wordingDue: wordingOn && !run?.today,
-      reviewOn: wordingOn,
-      review,
-      // Every few hours, from any page (v1.13.0 — Nitsan: "why not automatically?").
-      mailDue: mailConfigured() && !!mail?.some((a) => a.status !== "revoked" && (!a.lastScanAt || Date.now() - new Date(a.lastScanAt).getTime() > MAIL_EVERY_MS)),
-      mailboxes: mail ? mail.filter((a) => a.status !== "revoked").length : null,
-    },
-  };
 }

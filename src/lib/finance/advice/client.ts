@@ -28,7 +28,7 @@ export function scanMail(): Promise<boolean> {
 type Row = Record<string, unknown> & { id: string };
 
 export async function applyFix(id: string): Promise<{ done: string; undo: () => Promise<boolean> } | { error: string }> {
-  const res = await fetch(`/api/finance/advice/${id}/fix`, { method: "POST" }).catch(() => null);
+  const res = await fetch(`/api/advice/${id}/fix`, { method: "POST" }).catch(() => null);
   const j = (res ? await res.json().catch(() => ({})) : {}) as { error?: string; done?: string; before?: Row[]; added?: string | null };
   if (!res?.ok) return { error: j.error ?? "Couldn't make that change — try again" };
   changed();
@@ -36,7 +36,7 @@ export async function applyFix(id: string): Promise<{ done: string; undo: () => 
   return {
     done: j.done ?? "Done",
     undo: async () => {
-      const r = await fetch(`/api/finance/advice/${id}/fix`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ undo: before, added: j.added ?? undefined }) }).catch(() => null);
+      const r = await fetch(`/api/advice/${id}/fix`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ undo: before, added: j.added ?? undefined }) }).catch(() => null);
       if (r?.ok) changed();
       return !!r?.ok;
     },
