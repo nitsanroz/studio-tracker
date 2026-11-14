@@ -277,7 +277,7 @@ describe("costs", () => {
           recent: [7, 8, 9].map((m) => ({ year: 2026, month: m, hours: 100, pay: 12_000 })),
           soFar: 80,
           absent: [],
-          terms: { rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 },
+          terms: { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 },
         },
       ],
     };

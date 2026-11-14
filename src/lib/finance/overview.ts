@@ -15,7 +15,6 @@ import {
   type YearSummary,
 } from "@/lib/finance/finance";
 import type { ExpenseRowDb } from "@/lib/finance/db";
-import { billFor, type RateTerms } from "@/lib/finance/freelance-rate";
 import { formatILSShort } from "@/lib/finance/format";
 import type {
   CostYear,
@@ -238,291 +237,24 @@ export function projectMonths(pnl: PnlMonthly[], year: number, today = new Date(
 }
 
 // ── This month's hours goal ─────────────────────────────────────────────────
-/** Designers away on each day of a month, from the tracker's weekly plan
- * ("2026-10-18" → 1). */
-export type AbsentByDate = Record<string, number>;
-
-/** A freelancer paid by the hours they log in the tracker (Dima): their pay
- * and hours in the 3 months before, hours so far, and their own days away. */
-export interface GoalFreelancer {
-  name: string;
-  /** This month's planned amount. */
-  planned: number;
-  recent: { year: number; month: number; hours: number; pay: number }[];
-  soFar: number;
-  absent: string[];
-  /** Their sliding rate, if they're on one (HOURLY_TERMS): the month is priced
-   * through it instead of at their recent ₪/hour. */
-  terms?: RateTerms;
-}
-
-// HOURLY_TERMS (an hourly freelancer's sliding ₪ rate, by profile id) is not
-// here any more: this file is imported by client pages, and the rate must not
-// ship in their JavaScript. One copy, server only — lib/finance/hourly-terms.ts.
-
-/** A freelancer billed on a sliding rate through the tracker (AB, Milica,
- * Dima): their hours come from the tracker, their price from their terms —
- * not from past pay. */
-export interface FormulaFreelancer {
-  /** Their tracker profile — a finance row tied to it isn't costed twice. */
-  profileId?: string;
-  name: string;
-  /** This month's planned amount in the finance plan, ₪. */
-  planned: number;
-  terms: RateTerms;
-  /** ₪ per unit of his currency — the official rate, as finance books him. */
-  fx: number;
-  /** Hours logged so far this month (link logs not turned down, or a login's time entries). */
-  soFar: number;
-  /** Extra charges so far this month, in his currency (another freelancer he brought in). */
-  charges: number;
-  /** Hours in each of the 3 months before. */
-  recent: { year: number; month: number; hours: number }[];
-  absent: string[];
-}
-
-/** Tracker facts the goal reads (getGoalInputs). */
-export interface GoalInputs {
-  absent: AbsentByDate;
-  /** Who's away and when — for naming them in the goal. */
-  away: { name: string; dates: string[] }[];
-  freelancers: GoalFreelancer[];
-  formulaFreelancers?: FormulaFreelancer[];
-  /** Of the month's billable hours so far, those dated today — the pace leaves
-   * them out until the day counts. The tracker passes them as an option instead. */
-  hoursToday?: number;
-}
-
-/** An hourly freelancer's month, costed at what they've logged instead of the plan. */
-export interface FreelanceForecast {
-  name: string;
-  planned: number;
-  /** Hours logged so far this month — no guess at the rest (Nitsan, 2026-11-02). */
-  hours: number;
-  soFar: number;
-  /** ₪ an hour: their sliding rate at these hours, else their recent pay ÷ hours. */
-  rate: number;
-  cost: number;
-}
-
-/** One Sun–Thu day of the month and how much of a full workday it can carry. */
-export interface GoalDay {
-  date: string;
-  /** Designers away that day (weekly plan). */
-  absent: number;
-  /** Share of a full-team workday: holidays spread over the month (the
-   * sheet's workdays ÷ Sun–Thu days), less the designers away. */
-  weight: number;
-}
-
-/** One level of the hours goal — break-even, or a profit target. Daily and
- * weekly figures are for a full-team workday; a day with designers away
- * needs proportionally less (see `days`). */
-export interface GoalLevel {
-  hours: number;
-  perDay: number;
-  perWeek: number;
-  expectedByNow: number;
-  neededPerDay: number | null;
-}
-
-/** The billable hours the month in progress needs to cover its costs, as a
- * daily and weekly target, and how the month is doing against it. */
-export interface HoursGoal extends GoalLevel {
-  month: number;
-  /** The month's costs: as planned, with hourly freelancers at what they've logged. */
-  costs: number;
-  /** The month's costs exactly as entered in the Plan. */
-  plannedCosts: number;
-  /** Hourly freelancers costed at what they've logged (their planned amount swapped out). */
-  freelance: FreelanceForecast[];
-  /** Fixed-fee project income booked for the month — it covers part of the
-   * costs, so the hours only need to cover the rest. */
-  projectIncome: number;
-  /** ₪/hour the goal is priced at: the last 3 months' hourly income ÷ hours.
-   * The month's own rate isn't used — early in a month it rests on a few
-   * days, and a month not started has none. */
-  rate: number;
-  /** Months the rate was averaged over, oldest first. */
-  rateMonths: { year: number; month: number }[];
-  /** The month's workdays (holidays out). */
-  workdays: number;
-  /** Designers in the team this month (the sheet's count, may be fractional). */
-  team: number;
-  /** Designer-days away in the month, from the weekly plan. */
-  absentDays: number;
-  /** Who's away on the month's workdays, and on which. */
-  away: { name: string; dates: string[] }[];
-  /** Workdays in full-team terms: the month's workdays less the absences. */
-  effectiveWorkdays: number;
-  days: GoalDay[];
-  soFar: number;
-  /** Workdays before today (holiday-adjusted, may be fractional). */
-  workdaysDone: number;
-  /** Workdays from today to the month's end, today included. */
-  workdaysLeft: number;
-  /** The average logged per full-team workday so far, over the days whose
-   * hours are in: today joins only once it's logged (`todayCounted`). Null
-   * before the first such day. */
-  actualPerDay: number | null;
-  /** Whether today is in `actualPerDay` — the studio logs at the end of the
-   * day, so before 17:30 today would only drag the average down. */
-  todayCounted: boolean;
-  /** The same targets for a month that also makes `margin` profit: revenue
-   * of costs ÷ (1 − margin), in hours at the same rate. */
-  profit: GoalLevel & { margin: number };
-}
-
-export const STUDIO_WEEK_DAYS = 5;
-/** When the studio's day counts as logged: hours go in around 17:30. */
-export const DAY_LOGGED_AT = { hour: 17, minute: 30 };
-
-const STUDIO_CLOCK = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jerusalem", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-
-/** Whether today's hours are in yet: past 17:30 in Tel Aviv, whatever the
- * server's or browser's own zone. */
-export function studioDayLogged(now = new Date()): boolean {
-  const [h, m] = STUDIO_CLOCK.format(now).split(":").map(Number);
-  return h * 60 + m >= DAY_LOGGED_AT.hour * 60 + DAY_LOGGED_AT.minute;
-}
-/** The profit margin the hours goal aims for above break-even. */
-export const TARGET_MARGIN = 0.15;
-
-const isoDate = (y: number, m: number, d: number) =>
-  `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-
-export function hoursGoal(
-  pnl: PnlMonthly[],
-  year: number,
-  today = new Date(),
-  {
-    margin = TARGET_MARGIN,
-    inputs,
-    todayLogged = false,
-    hoursToday = inputs?.hoursToday ?? 0,
-  }: {
-    margin?: number;
-    inputs?: GoalInputs;
-    /** Today's hours are in (studioDayLogged): today counts toward the pace. */
-    todayLogged?: boolean;
-    /** Of the month's hours so far, those dated today — left out of the pace
-     * until today counts. */
-    hoursToday?: number;
-  } = {},
-): HoursGoal | null {
-  if (year !== today.getFullYear()) return null;
-  const month = today.getMonth() + 1;
-  const cur = monthVals(pnl, year, month);
-  const plannedCosts = cur.get(LINE.totalExpenses) ?? 0;
-  if (plannedCosts <= 0) return null;
-  const absent = inputs?.absent ?? {};
-
-  const rateMonths = [3, 2, 1].map((b) => {
-    const [y, m] = monthsBack(year, month, b);
-    return { year: y, month: m };
-  });
-  let income = 0;
-  let hrs = 0;
-  for (const { year: y, month: m } of rateMonths) {
-    const vals = monthVals(pnl, y, m);
-    income += hourlyIncomeOf(vals);
-    hrs += vals.get(LINE.totalHours) ?? 0;
-  }
-  const rate = hrs ? income / hrs : 0;
-  if (rate <= 0) return null;
-
-  // Each Sun–Thu day carries a share of a full-team workday: the sheet's
-  // holiday-adjusted workdays spread evenly, less the designers away.
-  const sunThu = studioWeekdays(year, month).total;
-  const workdays = cur.get(LINE.daysInMonth) || sunThu;
-  const scale = workdays / sunThu;
-  const team = cur.get(LINE.numDesigners) ?? 0;
-  const days: GoalDay[] = [];
-  let absentDays = 0;
-  for (let d = 1; d <= new Date(year, month, 0).getDate(); d++) {
-    if (new Date(year, month - 1, d).getDay() > 4) continue; // Fri, Sat
-    const date = isoDate(year, month, d);
-    const away = team > 0 ? Math.min(team, absent[date] ?? 0) : 0;
-    absentDays += away * scale;
-    days.push({ date, absent: away, weight: scale * (team > 0 ? 1 - away / team : 1) });
-  }
-  const todayIso = isoDate(year, month, today.getDate());
-  const sumWeight = (pick: (d: GoalDay) => boolean) => days.reduce((t, d) => (pick(d) ? t + d.weight : t), 0);
-  const effectiveWorkdays = sumWeight(() => true);
-  // Today isn't done yet: it's still in the days left to make up the hours.
-  const doneWeight = sumWeight((d) => d.date < todayIso);
-  const leftWeight = effectiveWorkdays - doneWeight;
-  const throughToday = sumWeight((d) => d.date <= todayIso);
-  const workdaysDone = days.filter((d) => d.date < todayIso).length * scale;
-
-  // Hourly freelancers cost what they've LOGGED so far this month, nothing
-  // more: they work when there's work, so a projection booked AB and Milica
-  // for a month they hadn't started (Nitsan, 2026-11-02). Their planned amount
-  // is swapped out, so the goal rises as they log. Priced through their sliding
-  // rate if they have one, else at their recent ₪/hour.
-  const freelance: FreelanceForecast[] = [];
-  for (const f of inputs?.freelancers ?? []) {
-    const hoursBefore = f.recent.reduce((t, r) => t + r.hours, 0);
-    const payBefore = f.recent.reduce((t, r) => t + r.pay, 0);
-    if (!f.terms && (hoursBefore <= 0 || payBefore <= 0)) continue;
-    const hours = f.soFar;
-    const cost = f.terms ? billFor(hours, f.terms) : (hours * payBefore) / hoursBefore;
-    freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate: hours ? cost / hours : 0, cost });
-  }
-  // Sliding-rate freelancers kept in the tracker (AB, Milica, Dima): the same —
-  // what they've logged, through their terms, plus their extra charges, in ₪.
-  for (const f of inputs?.formulaFreelancers ?? []) {
-    const hours = f.soFar;
-    const cost = (billFor(hours, f.terms) + f.charges) * f.fx;
-    freelance.push({ name: f.name, planned: f.planned, hours, soFar: f.soFar, rate: hours ? cost / hours : 0, cost });
-  }
-  const costs = plannedCosts + freelance.reduce((t, f) => t + f.cost - f.planned, 0);
-
-  const projectIncome = cur.get(LINE.projectIncome) ?? 0;
-  const soFar = cur.get(LINE.totalHours) ?? 0;
-  const level = (target: number): GoalLevel => {
-    const perDay = effectiveWorkdays ? target / effectiveWorkdays : 0;
-    const remaining = Math.max(0, target - soFar);
-    return {
-      hours: target,
-      perDay,
-      perWeek: perDay * STUDIO_WEEK_DAYS,
-      expectedByNow: perDay * doneWeight,
-      neededPerDay: remaining === 0 ? 0 : leftWeight > 0 ? remaining / leftWeight : null,
-    };
-  };
-  const profitRevenue = costs / (1 - margin);
-  return {
-    ...level(Math.max(0, costs - projectIncome) / rate),
-    month,
-    costs,
-    plannedCosts,
-    freelance,
-    projectIncome,
-    rate,
-    rateMonths,
-    workdays,
-    team,
-    absentDays,
-    away: (inputs?.away ?? [])
-      .map((a) => ({ name: a.name, dates: a.dates.filter((d) => days.some((x) => x.date === d)) }))
-      .filter((a) => a.dates.length > 0),
-    effectiveWorkdays,
-    days,
-    soFar,
-    workdaysDone,
-    workdaysLeft: workdays - workdaysDone,
-    actualPerDay: todayLogged
-      ? throughToday > 0
-        ? soFar / throughToday
-        : null
-      : doneWeight > 0
-        ? Math.max(0, soFar - hoursToday) / doneWeight
-        : null,
-    todayCounted: todayLogged,
-    profit: { ...level(Math.max(0, profitRevenue - projectIncome) / rate), margin },
-  };
-}
+// ONE copy for the whole app: lib/hours-goal.ts. This file used to carry a
+// line-for-line mirror of it ("change in both"); re-exported here so finance's
+// own imports keep working.
+export {
+  DAY_LOGGED_AT,
+  STUDIO_WEEK_DAYS,
+  TARGET_MARGIN,
+  hoursGoal,
+  studioDayLogged,
+  type AbsentByDate,
+  type FormulaFreelancer,
+  type FreelanceForecast,
+  type GoalDay,
+  type GoalFreelancer,
+  type GoalInputs,
+  type GoalLevel,
+  type HoursGoal,
+} from "@/lib/hours-goal";
 
 // ── Monthly series (when a single year is selected) ──────────────────────────
 interface MonthCells {

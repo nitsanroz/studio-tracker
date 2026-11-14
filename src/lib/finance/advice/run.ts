@@ -7,7 +7,7 @@
 // finance tables, the tracker tables it reads and the advice tables are all
 // readable by the owner under RLS.
 
-import { termsFromClientRow, type ClientTerms } from "@/lib/finance/payment-terms";
+import { termsFromClientRow, type ClientTerms } from "@/lib/payment-terms";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll, mapClientRate, mapPnl, type ClientRateRow, type PnlRow } from "@/lib/finance/db";
 import { buildFxTable, type FxRow } from "@/lib/finance/fx";
@@ -20,6 +20,7 @@ import { mailConfigured } from "@/lib/finance/mail/google";
 import { mailAccounts, TOOL_MAIL } from "@/lib/finance/mail/scan";
 import { loadSuggestions } from "@/lib/finance/mail/receipts-data";
 import { shiftIso, subscriptionsOf } from "./tools";
+import { monthsPaidFromPlan } from "@/lib/finance-paid";
 import { ACCOUNTANT_YEARS } from "@/lib/finance/accountant-years";
 import { DEFAULT_FACTS } from "@/lib/finance/scenarios/facts";
 
@@ -86,8 +87,10 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     // Final and unpaid before last month (olderUnpaid); filtered to the window below.
     fetchAll<Row>(sb, "finance_salaries", "id, employee_name, year, month, gross_amount", (q) => q.eq("state", "final").is("paid_at", null).gte("year", oy)),
     fetchAll<Row>(sb, "finance_freelance", "id, person_name, year, month, amount", (q) => q.eq("state", "final").is("paid_at", null).gte("year", oy)),
-    // Client months marked paid on the Plan — periodUnpaid defers to them. Periods reach back 60 days at most.
-    fetchAll<Row>(sb, "finance_client_monthly", "client_id, client_canon, year, month", (q) => q.not("paid_at", "is", null).gte("year", y - 1)),
+    // Every Plan row of the client months periodUnpaid may ask about — paid AND
+    // unpaid: a month counts as paid only when ALL of its rows (sub-accounts) are,
+    // so the unpaid ones have to be here to say no. Periods reach back 60 days at most.
+    fetchAll<Row>(sb, "finance_client_monthly", "client_id, client_canon, year, month, paid_at", (q) => q.gte("year", y - 1)),
     // The Tools checks: every monthly and yearly row from two years back, so a
     // renewal has the one before it. A failed load leaves them quiet, not the pane down.
     fetchAll<Row>(sb, "finance_expenses", "id, date, end_date, category, vendor, description, amount_gross, amount_no_vat, currency, vat_included, renew_months, state", (q) =>
@@ -203,7 +206,15 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
       ...olderSalaries.filter(inWindow).map((r) => ({ table: "salaries" as const, month: monthKey(Number(r.year), Number(r.month)), amount: Number(r.gross_amount), id: String(r.id), name: String(r.employee_name ?? "") })),
       ...olderFreelance.filter(inWindow).map((r) => ({ table: "freelance" as const, month: monthKey(Number(r.year), Number(r.month)), amount: Number(r.amount), id: String(r.id), name: String(r.person_name ?? "") })),
     ],
-    planPaid: planPaid.map((r) => ({ clientId: (r.client_id as string | null) ?? null, client: String(r.client_canon), month: monthKey(Number(r.year), Number(r.month)) })),
+    // ONE rule for "the client paid this month", the tracker's (lib/finance-paid.ts,
+    // the same as SQL 0064): Client Reports and this pane can't disagree. This file
+    // used to take any single paid row as the whole month.
+    planPaid: monthsPaidFromPlan(
+      planPaid.map((r) => ({ client_id: (r.client_id as string | null) ?? null, client_canon: String(r.client_canon), year: Number(r.year), month: Number(r.month), paid_at: (r.paid_at as string | null) ?? null })),
+      clients.map((c) => ({ id: String(c.id), name: String(c.name) })),
+    )
+      .filter((r) => r.paid)
+      .map((r) => ({ clientId: r.client_id, client: "", month: monthKey(r.year, r.month) })),
     payslips: { [monthKey(ly, lm)]: payslips },
     fxMonths: fx.filter((r) => r.usd_ils != null && r.eur_ils != null).map((r) => monthKey(Number(r.year), Number(r.month))),
     monthlyExpenses: monthly.filter((r) => r.description !== SYNTHETIC_YEARLY_MARKER).map((r) => ({ date: String(r.date), endDate: (r.end_date as string | null) ?? null, filedAt: (r.filed_at as string | null) ?? null })),

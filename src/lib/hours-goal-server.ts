@@ -10,7 +10,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll, fetchAllIn } from "@/lib/db";
 import { parseISO, studioToday } from "@/lib/format";
 import {
-  HOURLY_TERMS,
   LINE,
   hoursGoal,
   studioDayLogged,
@@ -19,6 +18,7 @@ import {
   type GoalInputs,
   type PnlMonthly,
 } from "@/lib/hours-goal";
+import { HOURLY_TERMS } from "@/lib/hourly-terms";
 
 /**
  * This month's goal reading, or null when the P&L can't produce one. Throws on a
@@ -99,9 +99,10 @@ async function billableHoursForMonth(sb: SupabaseClient, year: number, month: nu
   return { total: hoursOf(billable), today: hoursOf(billable.filter((e) => e.date === todayIso)) };
 }
 
-/** Designers away (weekly plan) and hourly freelancers' pace — finance-admin's
- * getGoalInputs, mirrored. */
-async function goalInputs(sb: SupabaseClient, year: number, month: number): Promise<GoalInputs> {
+/** Designers away (weekly plan) and hourly freelancers' pace. Exported: finance's
+ * `getGoalInputs` action (lib/finance/actions.ts) calls it with the VIEWER's
+ * session client, so its reads pass through their own RLS. */
+export async function goalInputs(sb: SupabaseClient, year: number, month: number): Promise<GoalInputs> {
   const [from, monthEnd] = monthBounds(year, month);
   const [fromYear, fromMonth] = month > 3 ? [year, month - 3] : [year - 1, month + 9];
   const ym = (yy: number, mm: number) => yy * 12 + mm;
@@ -181,12 +182,12 @@ async function goalInputs(sb: SupabaseClient, year: number, month: number): Prom
 }
 
 /** Freelancers billed on a sliding rate through the tracker (AB, Milica, Dima)
- * — finance-admin's slidingRateFreelancers (actions.ts), mirrored. Read only:
+ * — one copy; finance's actions call it too. Read only:
  * their terms, their hours, this month's charges, their planned amount
  * (matched by profile, else by name) and the month's official rate. Hours are
  * their link's logs (not turned down) — or, for one with a login (Dima), his
  * own time entries: he logs like a designer, with no link and no review. */
-async function slidingRateFreelancers(
+export async function slidingRateFreelancers(
   sb: SupabaseClient,
   year: number,
   month: number,

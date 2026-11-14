@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getAccess } from "@/lib/access-server";
 import { atLeast } from "@/lib/access";
 import { ACCOUNTANT_YEARS } from "@/lib/finance/accountant-years";
-import { HOURLY_TERMS } from "@/lib/finance/hourly-terms";
+import { HOURLY_TERMS } from "@/lib/hourly-terms";
 import { CompanyFiguresProvider } from "@/components/finance/company-figures";
 
 /**

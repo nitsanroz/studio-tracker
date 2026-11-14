@@ -76,9 +76,8 @@ function clientBundle(): Map<string, string> {
 
 /** Modules holding ₪ figures or rates. Server code only. */
 const AMOUNT_MODULES = [
-  "lib/hours-goal.ts", // a freelancer's sliding ₪ rate, the target margin
+  "lib/hourly-terms.ts", // a freelancer's sliding ₪ rate
   "lib/hours-goal-server.ts",
-  "lib/finance/hourly-terms.ts", // the same rate, as finance reads it
   "lib/finance/accountant-years.ts", // the accountant's yearly figures
   "lib/finance/scenarios/facts.ts", // balance-sheet and loan figures
 ];

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { MONTH_SHORT, type ClientMonthly } from "@/lib/finance/finance";
 import { formatILS, formatShortDay, isoDate, studioDay } from "@/lib/finance/format";
-import { DEFAULT_TERMS, termsLabel } from "@/lib/finance/payment-terms";
+import { DEFAULT_CLIENT_TERMS, termsAdjective } from "@/lib/payment-terms";
 import { RECEIVABLE_TERMS_DAYS, receivables, type IncomeLike, type Receivable, type TermsByClient } from "@/lib/finance/receivables";
 import { InvoicedMark } from "@/components/finance/ui";
 
@@ -35,7 +35,7 @@ export function ReceivablesCard({
 }) {
   const [open, setOpen] = useState(false);
   const list = useMemo(() => receivables(clientMonthly, income, isoDate(new Date()), terms), [clientMonthly, income, terms]);
-  const other = [...new Set(list.filter((r) => r.termsLabel !== termsLabel(DEFAULT_TERMS)).map((r) => `${r.name} ${r.termsLabel}`))];
+  const other = [...new Set(list.filter((r) => r.termsLabel !== termsAdjective(DEFAULT_CLIENT_TERMS)).map((r) => `${r.name} ${r.termsLabel}`))];
   if (!list.length) return null;
   const total = list.reduce((t, r) => t + r.withVat, 0);
   const late = list.filter((r) => r.daysLate > 0);

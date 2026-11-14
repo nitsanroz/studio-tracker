@@ -7,7 +7,7 @@
 // demand from history: the three futures are HIS inputs; the past only shows
 // as reference marks beside them.
 
-import type { RateTerms } from "@/lib/finance/freelance-rate";
+import type { RateTerms } from "@/lib/freelance-rate";
 
 /** "YYYY-MM" */
 export type Ym = string;

@@ -11,7 +11,7 @@ import { MONTH_SHORT } from "@/lib/finance/finance";
 import { formatILS, formatNum, formatPct } from "@/lib/finance/format";
 import { TARGET_MARGIN } from "@/lib/finance/overview";
 import { isHourlySlip, monthsEnding, monthsOf, recommendedTerms, sickDays, type GrossPay, type PayAdvice, type PayslipMonth } from "@/lib/finance/people";
-import { billFor, rateFor, type RateTerms } from "@/lib/finance/freelance-rate";
+import { billFor, rateFor, type RateTerms } from "@/lib/freelance-rate";
 import { RateCurve, SalaryBars, Segmented } from "./visuals";
 import { RaiseBox } from "./raise-box";
 import { FactorsCard } from "./factors-card";

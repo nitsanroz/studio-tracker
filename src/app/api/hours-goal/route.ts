@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/api-auth";
  * Admin-only: the studio's pace this month against the billable hours a
  * workday that cover its costs (the "Studio pace" strip on the admin home).
  *
- * The goal is finance-admin's (src/lib/hours-goal.ts mirrors it), worked out
+ * The goal is the one in src/lib/hours-goal.ts (finance's Overview reads the same file), worked out
  * here from the finance P&L with the service key — and the response carries
  * HOURS ONLY. Tracker admins include people without finance access (Michal),
  * so no ₪ figure — costs, rates, a freelancer's pay — ever leaves this route.

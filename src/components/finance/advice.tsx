@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Info, Lightbulb, Minus, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { StudioArrow } from "./studio-arrow";
+import { StudioArrow } from "@/components/studio-arrow";
 import type { AdviceRow } from "@/lib/finance/advice/merge";
 import type { AdviceKind, Fix, PulseTile } from "@/lib/finance/advice/signals";
 import type { AdviceView } from "@/lib/finance/advice/run";

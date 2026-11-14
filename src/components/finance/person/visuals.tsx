@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { InfoDot } from "@/components/finance/ui";
 import { formatILS, formatNum, formatPct } from "@/lib/finance/format";
 import type { PersonSummary } from "@/lib/finance/people";
-import { rateFor, type RateTerms } from "@/lib/finance/freelance-rate";
+import { rateFor, type RateTerms } from "@/lib/freelance-rate";
 
 /** Where hours go, in the order they're worth something. */
 const HOUR_KINDS = [

@@ -21,9 +21,9 @@ import { getFinanceAccess } from "@/lib/finance/finance-access";
 import { studioToday } from "@/lib/finance/format";
 import { EXPENSE_LINES, planHoursCells } from "@/lib/finance/plan-model";
 import { buildFxTable, monthEndRates, type FxRow } from "@/lib/finance/fx";
-import { billFor } from "@/lib/finance/freelance-rate";
-import { type FormulaFreelancer, type GoalFreelancer, type GoalInputs } from "@/lib/finance/overview";
-import { HOURLY_TERMS } from "@/lib/finance/hourly-terms";
+import { billFor } from "@/lib/freelance-rate";
+import type { GoalInputs } from "@/lib/hours-goal";
+import { goalInputs, slidingRateFreelancers } from "@/lib/hours-goal-server";
 
 const BOI_SERIES = (currency: "USD" | "EUR", from: string, to: string) =>
   `https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_${currency}_ILS?startperiod=${from}&endperiod=${to}&format=csv`;
@@ -141,86 +141,18 @@ export async function getTrackerHoursForMonth(year: number, month: number): Prom
  */
 export async function getGoalInputs(year: number, month: number): Promise<GoalInputs> {
   const { sb } = await adminClient();
-  const { first: monthStart, last: monthEnd } = monthBounds(year, month);
-  const [fromYear, fromMonth] = month > 3 ? [year, month - 3] : [year - 1, month + 9];
-  const from = monthBounds(fromYear, fromMonth).first;
-  const ym = (y: number, m: number) => y * 12 + m;
-
-  const [members, absences, pay] = await Promise.all([
-    fetchAll<{ id: string; name: string; profile_id: string | null }>(sb, "plan_columns", "id, name, profile_id", (q) =>
-      q.eq("type", "member"),
-    ),
-    fetchAll<{ date: string; column_id: string }>(sb, "plan_entries", "date, column_id", (q) =>
-      q.eq("type", "absence").gte("date", monthStart).lte("date", monthEnd),
-    ),
-    fetchAll<{ person_name: string; profile_id: string | null; year: number; month: number; amount: number | string }>(
-      sb,
-      "finance_freelance",
-      "person_name, profile_id, year, month, amount",
-      (q) => q.gte("year", fromYear).lte("year", year).not("profile_id", "is", null),
-    ),
-  ]);
-
-  const profileOfColumn = new Map(members.map((c) => [c.id, c.profile_id]));
-  const nameOfColumn = new Map(members.map((c) => [c.id, c.name]));
-  const awayByName = new Map<string, string[]>();
-  const seen = new Set<string>();
-  const absent: Record<string, number> = {};
-  const absentByProfile = new Map<string, string[]>();
-  for (const e of absences) {
-    const key = `${e.date}|${e.column_id}`;
-    if (!profileOfColumn.has(e.column_id) || seen.has(key)) continue;
-    seen.add(key);
-    absent[e.date] = (absent[e.date] ?? 0) + 1;
-    const name = nameOfColumn.get(e.column_id)!;
-    awayByName.set(name, [...(awayByName.get(name) ?? []), e.date]);
-    const pid = profileOfColumn.get(e.column_id);
-    if (pid) absentByProfile.set(pid, [...(absentByProfile.get(pid) ?? []), e.date]);
-  }
-
-  const inRange = pay.filter((r) => ym(r.year, r.month) >= ym(fromYear, fromMonth) && ym(r.year, r.month) <= ym(year, month));
-  const profiles = [...new Set(inRange.map((r) => r.profile_id!))];
-
-  // The tracker's sliding-rate freelancers are costed by slidingRateFreelancers;
-  // counting one here too booked Milica twice once a finance row named her.
-  // Today's billable hours ride along: the pace leaves them out until 17:30.
+  // The queries themselves are the tracker's (lib/hours-goal-server.ts) — one copy,
+  // run here with the viewer's own session. Today's billable hours ride along:
+  // the pace leaves them out until 17:30.
   const today = studioToday();
-  const [entries, formulaFreelancers, hoursToday] = await Promise.all([
-    profiles.length
-      ? fetchAll<{ user_id: string; date: string; minutes: number | null }>(sb, "time_entries", "user_id, date, minutes", (q) =>
-          q.in("user_id", profiles).gte("date", from).lte("date", monthEnd).not("minutes", "is", null),
-        )
-      : [],
-    slidingRateFreelancers(sb, year, month, from, monthEnd, absentByProfile),
-    today.startsWith(monthStart.slice(0, 7))
+  const thisMonth = today.startsWith(monthBounds(year, month).first.slice(0, 7));
+  const [inputs, hoursToday] = await Promise.all([
+    goalInputs(sb, year, month),
+    thisMonth
       ? billableEntriesForMonth(sb, year, month).then((es) => es.filter((e) => e.date === today).reduce((t, e) => t + e.hours, 0))
       : 0,
   ]);
-  const kept = new Set(formulaFreelancers.map((f) => f.profileId));
-  const freelancers: GoalFreelancer[] = profiles.filter((pid) => !kept.has(pid)).map((pid) => {
-    const rows = inRange.filter((r) => r.profile_id === pid);
-    const hoursIn = (y: number, m: number) =>
-      entries
-        .filter((e) => e.user_id === pid && Number(e.date.slice(0, 4)) === y && Number(e.date.slice(5, 7)) === m)
-        .reduce((t, e) => t + (e.minutes ?? 0) / 60, 0);
-    const payIn = (y: number, m: number) =>
-      rows.filter((r) => r.year === y && r.month === m).reduce((t, r) => t + Number(r.amount), 0);
-    const recent = [0, 1, 2].map((i) => {
-      const n = ym(fromYear, fromMonth) + i - 1;
-      const [y, m] = [Math.floor(n / 12), (n % 12) + 1];
-      return { year: y, month: m, hours: hoursIn(y, m), pay: payIn(y, m) };
-    });
-    return {
-      name: rows[rows.length - 1].person_name,
-      planned: payIn(year, month),
-      recent,
-      soFar: hoursIn(year, month),
-      absent: absentByProfile.get(pid) ?? [],
-      terms: HOURLY_TERMS[pid],
-    };
-  });
-  const away = [...awayByName].map(([name, dates]) => ({ name, dates: dates.sort() }));
-  return { absent, away, freelancers, formulaFreelancers, hoursToday };
+  return { ...inputs, hoursToday };
 }
 
 /**
@@ -243,114 +175,6 @@ export async function getFreelanceTracked(
     hours: f.soFar,
     cost: (billFor(f.soFar, f.terms) + f.charges) * f.fx,
   }));
-}
-
-/**
- * Freelancers billed on a sliding rate through the tracker (AB, Milica, Dima —
- * tracker migrations 0054–0057). Read only: his terms (`freelancers`), his hours
- * (`freelancer_logs`, not turned down — his own logs and his imported sheet; or,
- * for one with a tracker login (Dima), his own time entries — he logs like a
- * designer, with no link and no review),
- * this month's extra charges, his planned amount in finance_freelance (matched
- * by profile, else by name — his finance rows aren't linked to his profile, and
- * finance data is not ours to change), and the month's official rate (finance
- * books him at it, without the bank markup).
- *
- * ⚠️ Every read goes through `fetchAll`, which THROWS on an error. supabase-js
- * itself RETURNS `{ error }` rather than throwing, and these goal reads used to
- * drop it: a failed fx read zeroed AB's rate and quietly took him out of the
- * goal; a failed task batch undercounted billable hours. Every caller already
- * catches, so a failure shows no figure instead of a wrong one (2026-11-08,
- * mirroring studio-tracker v1.92.0).
- */
-async function slidingRateFreelancers(
-  sb: Sb,
-  year: number,
-  month: number,
-  from: string,
-  monthEnd: string,
-  absentByProfile: Map<string, string[]>,
-): Promise<FormulaFreelancer[]> {
-  type Num = number | string;
-  const people = await fetchAll<{ profile_id: string; currency: string; rate_high: Num; rate_low: Num; hours_low: Num; hours_high: Num }>(
-    sb,
-    "freelancers",
-    "profile_id, currency, rate_high, rate_low, hours_low, hours_high",
-  );
-  if (!people.length) return [];
-  const ids = people.map((p) => p.profile_id);
-  const monthStart = monthBounds(year, month).first;
-  const [profiles, linkLogs, entries, charges, planRows, fxRows] = await Promise.all([
-    fetchAll<{ id: string; name: string; has_account: boolean }>(sb, "profiles", "id, name, has_account", (q) => q.in("id", ids)),
-    fetchAll<{ profile_id: string; date: string; minutes: number }>(sb, "freelancer_logs", "profile_id, date, minutes", (q) =>
-      q.in("profile_id", ids).neq("status", "rejected").gte("date", from).lte("date", monthEnd),
-    ),
-    fetchAll<{ user_id: string; date: string; minutes: number | null }>(sb, "time_entries", "user_id, date, minutes", (q) =>
-      q.in("user_id", ids).gte("date", from).lte("date", monthEnd).not("minutes", "is", null),
-    ),
-    fetchAll<{ profile_id: string; amount: Num; currency: string }>(sb, "freelancer_charges", "profile_id, amount, currency", (q) =>
-      q.in("profile_id", ids).neq("status", "rejected").gte("date", monthStart).lte("date", monthEnd),
-    ),
-    fetchAll<{ person_name: string; profile_id: string | null; amount: Num }>(sb, "finance_freelance", "person_name, profile_id, amount", (q) =>
-      q.eq("year", year).eq("month", month),
-    ),
-    fetchAll<{ year: number; month: number; usd_ils: Num | null; eur_ils: Num | null }>(sb, "fx_rates", "year, month, usd_ils, eur_ils", (q) =>
-      q.lte("year", year).order("year", { ascending: false }).order("month", { ascending: false }),
-    ),
-  ]);
-  const nameOf = new Map(profiles.map((p) => [p.id, p.name]));
-  const withLogin = new Set(profiles.filter((p) => p.has_account).map((p) => p.id));
-  const logs = [
-    ...linkLogs.filter((l) => !withLogin.has(l.profile_id)),
-    ...entries.filter((e) => withLogin.has(e.user_id)).map((e) => ({ profile_id: e.user_id, date: e.date, minutes: e.minutes ?? 0 })),
-  ];
-  // This month's official rate, else the latest one stored FOR THAT CURRENCY —
-  // a month can hold a dollar rate before its euro one (Nov 2026), and taking
-  // the row as a whole dropped AB out of the goal.
-  const fxOf = (currency: string) => {
-    if (currency === "ILS") return 1;
-    const col = currency === "USD" ? "usd_ils" : "eur_ils";
-    const row = fxRows.find((r) => (r.year < year || (r.year === year && r.month <= month)) && r[col] != null);
-    return Number(row?.[col] ?? 0);
-  };
-  const [fy, fm] = [Number(from.slice(0, 4)), Number(from.slice(5, 7))];
-  const recentMonths = [0, 1, 2].map((i) => {
-    const n = fy * 12 + fm - 1 + i;
-    return { year: Math.floor(n / 12), month: (n % 12) + 1 };
-  });
-  const hoursIn = (pid: string, y: number, m: number) =>
-    logs
-      .filter((l) => l.profile_id === pid && Number(l.date.slice(0, 4)) === y && Number(l.date.slice(5, 7)) === m)
-      .reduce((t, l) => t + l.minutes / 60, 0);
-
-  return people
-    .map((p) => {
-      const pid = p.profile_id;
-      const name = nameOf.get(pid) ?? "";
-      const fx = fxOf(p.currency);
-      return {
-        profileId: pid,
-        name,
-        planned: planRows
-          .filter((r) => r.profile_id === pid || (!r.profile_id && r.person_name.trim().toLowerCase() === name.trim().toLowerCase()))
-          .reduce((t, r) => t + Number(r.amount), 0),
-        terms: {
-          rateHigh: Number(p.rate_high),
-          rateLow: Number(p.rate_low),
-          hoursLow: Number(p.hours_low),
-          hoursHigh: Number(p.hours_high),
-        },
-        fx,
-        soFar: hoursIn(pid, year, month),
-        charges: charges
-          .filter((c) => c.profile_id === pid && c.currency === p.currency)
-          .reduce((t, c) => t + Number(c.amount), 0),
-        recent: recentMonths.map((r) => ({ ...r, hours: hoursIn(pid, r.year, r.month) })),
-        absent: absentByProfile.get(pid) ?? [],
-      };
-    })
-    // Without a rate to price him in ₪ the forecast would be noise — leave him on the plan.
-    .filter((f) => f.fx > 0);
 }
 
 /** One month's time entries that count as billable work (billable task of a

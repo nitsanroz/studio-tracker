@@ -104,7 +104,31 @@ export async function fetchAllOptional<T>(
   }
 }
 
-/** Supabase caps selects at 1000 rows — page through everything. */
+/**
+ * What to page a table by when it has no `id` column — its primary key.
+ * Everything else pages by `id`.
+ */
+const PAGE_KEYS: Record<string, string[]> = {
+  finance_pnl_monthly: ["year", "month", "line_item"],
+  fx_rates: ["year", "month"],
+  finance_person_factors: ["profile_id"],
+  finance_not_hourly: ["client_id"],
+  finance_mail_ignored: ["domain"],
+  finance_tracker_ignored: ["profile_id", "kind"],
+  freelancers: ["profile_id"],
+  member_hr: ["profile_id"],
+};
+
+/**
+ * Supabase caps selects at 1000 rows — page through everything.
+ *
+ * ⚠️ ORDERED BY THE PRIMARY KEY. A paged query with no ORDER BY has no stable
+ * order: Postgres may hand back any order per request, so page 2 can repeat a
+ * row of page 1 and skip another — nothing errors, a sum is just wrong. The
+ * P&L is ~2,700 rows (three pages) and was read that way. The tracker's own
+ * `fetchAll` learned this first (its v1.26.0); the key is added AFTER `modify`,
+ * so a caller's own ordering stays the primary one and this only breaks ties.
+ */
 export async function fetchAll<T>(
   sb: SupabaseClient,
   table: string,
@@ -115,7 +139,8 @@ export async function fetchAll<T>(
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
     const base = sb.from(table).select(columns).range(from, from + PAGE - 1);
-    const q = modify ? modify(base as unknown as QueryModifier) : base;
+    let q = (modify ? modify(base as unknown as QueryModifier) : base) as unknown as { order: (column: string) => typeof q };
+    for (const key of PAGE_KEYS[table] ?? ["id"]) q = q.order(key);
     const { data, error } = (await (q as unknown as PromiseLike<{
       data: T[] | null;
       error: { message: string } | null;

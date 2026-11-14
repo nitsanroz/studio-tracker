@@ -40,7 +40,7 @@ import {
 import type { FxTable } from "@/lib/finance/fx";
 import { EXPENSE_LINES, MONTHS, cellRevenue, computeMonthRollup, expenseLinesFor, monthRates, rateSummary, type ClientRow, type RatePart } from "@/lib/finance/plan-model";
 import { formatHours, formatILS, formatPct, formatShortDay, studioDay } from "@/lib/finance/format";
-import { DEFAULT_TERMS, invoiceDueFor, paymentDue, termsLabel, type ClientTerms } from "@/lib/finance/payment-terms";
+import { DEFAULT_CLIENT_TERMS, invoiceDueFor, paymentDue, termsAdjective, type ClientTerms } from "@/lib/payment-terms";
 import type { TermsByClient } from "@/lib/finance/receivables";
 import { daysBetween } from "@/lib/finance/advice/tools";
 
@@ -149,15 +149,15 @@ function moneyNote(
 ): string | null {
   if (!cell?.state) return null;
   const step = stepOf(cell.state, cell.paidAt ?? null, cell.invoicedAt ?? null);
-  const t = terms ?? DEFAULT_TERMS;
+  const t = terms ?? DEFAULT_CLIENT_TERMS;
   if (step === "paid") return cell.paidAt ? `Paid ${day(cell.paidAt)}` : "Paid";
   if (step === "invoiced" && cell.invoicedAt) {
     const due = paymentDue(studioDay(cell.invoicedAt), t);
-    return `Invoiced ${day(cell.invoicedAt)} · payment due ${day(due)} (${termsLabel(t)} terms)${late(due, today)}`;
+    return `Invoiced ${day(cell.invoicedAt)} · payment due ${day(due)} (${termsAdjective(t)} terms)${late(due, today)}`;
   }
   if (!terms) return null;
   const invoice = invoiceDueFor(year, m, terms);
-  return `Invoice due ${day(invoice)}${late(invoice, today)} · then paid by ${day(paymentDue(invoice, terms))} (${termsLabel(terms)} terms)`;
+  return `Invoice due ${day(invoice)}${late(invoice, today)} · then paid by ${day(paymentDue(invoice, terms))} (${termsAdjective(terms)} terms)`;
 }
 const fmtDate = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
@@ -274,7 +274,7 @@ function explainBase(key: string, d: ExplainData): Explanation | null {
           : null,
         billable && monthTotal ? `${formatPct(hours / monthTotal, 0)} of the month's billable hours` : null,
         billable && hours > 0
-          ? moneyNote(row.cells.get(m), (row.clientId ? d.terms?.get(row.clientId) : undefined) ?? d.terms?.get(client) ?? DEFAULT_TERMS, d.year, m, d.today)
+          ? moneyNote(row.cells.get(m), (row.clientId ? d.terms?.get(row.clientId) : undefined) ?? d.terms?.get(client) ?? DEFAULT_CLIENT_TERMS, d.year, m, d.today)
           : null,
       ].filter(notNull),
       series,

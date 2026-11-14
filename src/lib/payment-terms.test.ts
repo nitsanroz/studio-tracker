@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PAYMENT_TERMS_DAYS,
   invoiceDateFor,
+  invoiceDueFor,
+  termsAdjective,
+  termsFromClientRow,
   paymentDue,
   paymentDueFor,
   termsLabel,
@@ -75,5 +78,35 @@ describe("termsLabel / termsToStore", () => {
     expect(termsToStore("two weeks")).toBeNull();
     expect(termsToStore("181")).toBeNull();
     expect(termsToStore("net")).toBeNull();
+  });
+});
+
+// From finance-admin's own test file, which tested its mirror of this module.
+describe("what finance reads on top", () => {
+  it("takes a timestamp as well as a date", () => {
+    expect(paymentDue("2026-10-20T09:00:00Z", { days: 14, net: false })).toBe("2026-11-03");
+  });
+
+  it("invoiceDueFor: the client's invoice day in the month after", () => {
+    expect(invoiceDueFor(2026, 10, { invoiceDay: 15 })).toBe("2026-11-15"); // NoTraffic
+    expect(invoiceDueFor(2026, 10, { invoiceDay: 20 })).toBe("2026-11-20"); // Maccabi, Visitt
+    expect(invoiceDueFor(2026, 10, { invoiceDay: null })).toBe("2026-11-01");
+    expect(invoiceDueFor(2026, 12, { invoiceDay: 1 })).toBe("2027-01-01");
+  });
+
+  it("invoiceDueFor clamps a late day to a short month", () => {
+    expect(invoiceDueFor(2026, 1, { invoiceDay: 31 })).toBe("2026-02-28");
+  });
+
+  it("termsFromClientRow defaults what a row doesn't have", () => {
+    expect(termsFromClientRow({})).toEqual({ days: 14, net: false, invoiceDay: null });
+    expect(termsFromClientRow({ payment_terms_days: 30, payment_terms_net: true, invoice_note: "20" })).toEqual({ days: 30, net: true, invoiceDay: 20 });
+    // a note about terms is not a day
+    expect(termsFromClientRow({ invoice_note: "Net 30" }).invoiceDay).toBeNull();
+  });
+
+  it("termsAdjective reads in a sentence", () => {
+    expect(termsAdjective({ days: 14, net: false })).toBe("14-day");
+    expect(termsAdjective({ days: 30, net: true })).toBe("Net+30");
   });
 });

@@ -25,13 +25,14 @@ import {
   type PnlMonthly,
 } from "@/lib/finance/finance";
 import { formatHours, formatILS, formatILSShort, formatPct, formatShortDay } from "@/lib/finance/format";
-import { billFor, rateFor, type RateTerms } from "@/lib/finance/freelance-rate";
+import { billFor, rateFor, type RateTerms } from "@/lib/freelance-rate";
 import { PLAN_COST_UPLIFT, TARGET_MARGIN, hoursGoal, monthsBack, projectCurrentMonth, projectYear, type GoalInputs } from "@/lib/finance/overview";
 import { isFiled } from "@/lib/finance/filing";
 import { FX_MARKUP } from "@/lib/finance/fx";
 import { RECEIVABLE_TERMS_DAYS } from "@/lib/finance/receivables";
-import { paymentDue, termsLabel } from "@/lib/finance/payment-terms";
+import { paymentDue, termsAdjective } from "@/lib/payment-terms";
 import { booksGap, dividendWindow, taxReserve } from "./tax";
+import { periodPaidInFinance } from "@/lib/finance-paid";
 import type { AccountantYear } from "@/lib/finance/accountant";
 import type { CompanyFacts } from "@/lib/finance/scenarios/types";
 import { canon, chainsOf, daysBetween as daysApart, liveTools, renews, shiftIso, type Chain, type Subscription, type ToolKind } from "./tools";
@@ -129,8 +130,9 @@ export interface AdviceData {
    */
   olderUnpaid?: { table: "salaries" | "freelance"; month: string; amount: number; id: string; name: string }[];
   /**
-   * Client months marked paid on the Plan (finance_client_monthly.paid_at,
-   * reference/0012), by tracker client id and by name — the Plan's word on
+   * Client months marked paid on the Plan (finance_client_monthly.paid_at) —
+   * a month is here only when EVERY one of the client's rows for it is paid
+   * (run.ts, the tracker's monthsPaidFromPlan) — by tracker client id and by name — the Plan's word on
    * "the client paid", which `periodUnpaid` defers to.
    */
   planPaid?: { clientId: string | null; client: string; month: string }[];
@@ -417,7 +419,7 @@ export function periodUnpaid(data: AdviceData): Finding[] {
         (amount == null
           ? `${formatHours(p.hours)}h in the period and no rate on its last day`
           : `${formatHours(p.hours)}h × ${formatILS(rate!)} = ${formatILS(Math.round(amount))} before VAT`) +
-        `, due ${formatShortDay(due)} (${termsLabel(terms)} terms).` +
+        `, due ${formatShortDay(due)} (${termsAdjective(terms)} terms).` +
         (onCredit
           ? ` ${formatHours(p.hoursSince)}h more logged for them since${credit == null ? "" : ` (≈${money(credit)})`} — a polite nudge now, before more work goes out on credit.`
           : " If it's paid, tick it in the tracker; if not, a short reminder."),
@@ -438,12 +440,7 @@ export function periodUnpaid(data: AdviceData): Finding[] {
 function paidOnPlan(data: AdviceData, c: { id: string; name: string }, from: string, to: string): boolean {
   if (!data.planPaid?.length) return false;
   const paid = new Set(data.planPaid.filter((r) => r.clientId === c.id || r.client === c.name).map((r) => r.month));
-  let [y, m] = from.split("-").map(Number);
-  const end = to.slice(0, 7);
-  for (let k = monthKey(y, m); k <= end; [y, m] = m === 12 ? [y + 1, 1] : [y, m + 1], k = monthKey(y, m)) {
-    if (!paid.has(k)) return false;
-  }
-  return true;
+  return periodPaidInFinance({ dateFrom: from, dateTo: to }, paid);
 }
 
 /** A billable client with hours this month or last and no rate: the P&L counts those hours as ₪0. */

@@ -1,4 +1,5 @@
 import { parseISO, shiftDays, toISODate } from "./format";
+import { parseInvoiceDay } from "./billing-rollover";
 
 /**
  * When a client's payment is due (Nitsan, 2026-11-10). The invoice goes out on
@@ -12,8 +13,8 @@ import { parseISO, shiftDays, toISODate } from "./format";
  *    after that. So an invoice of 20 Oct is due 5 Dec — 40–45 days later, as it
  *    really arrives — not 19 Nov.
  *
- * ⚠️ The finance app has the same rule in its own `lib/payment-terms.ts` (its
- * receivables, &advice and the Plan's hover cards). Change it in both repos.
+ * ONE copy since the finance merge (2026-11): finance's receivables, &advice and
+ * the Plan's hover cards read this file too (the block at its end).
  */
 
 export interface PaymentTerms {
@@ -72,4 +73,43 @@ export function termsToStore(raw: string): PaymentTerms | null {
   if (!/^\d+$/.test(v)) return null;
   const n = Number(v);
   return n <= 180 ? { days: n, net } : null;
+}
+
+// ── What finance reads on top (merged from finance-admin, 2026-11) ───────────
+// Its receivables, Plan hover cards and &advice used a hand-kept mirror of this
+// file that had drifted: UTC dates where this uses the studio's local ones, and
+// its own, stricter copy of parseInvoiceDay. One copy now.
+
+/** A client's terms together with the day of the month their invoice goes out. */
+export interface ClientTerms extends PaymentTerms {
+  /** day of the month the invoice goes out (1–31); null = the 1st, a calendar month */
+  invoiceDay: number | null;
+}
+
+export const DEFAULT_CLIENT_TERMS: ClientTerms = { ...DEFAULT_PAYMENT_TERMS, invoiceDay: null };
+
+/**
+ * When the invoice for a calendar month's hours is due to go out: the client's
+ * invoice day in the FOLLOWING month (the period holding the month's last days
+ * closes the day before it), clamped to that month's length; the 1st when the
+ * client has none. NoTraffic (the 15th): October's hours → 15 Nov.
+ */
+export function invoiceDueFor(year: number, month: number, terms: Pick<ClientTerms, "invoiceDay"> = DEFAULT_CLIENT_TERMS): string {
+  const day = terms.invoiceDay ?? 1;
+  const last = new Date(year, month + 1, 0).getDate(); // the next month's length
+  return toISODate(new Date(year, month, Math.min(day, last)));
+}
+
+/** The terms as an adjective, for a sentence: "(14-day terms)", "(Net+30 terms)". */
+export function termsAdjective(terms: PaymentTerms): string {
+  return terms.net ? `Net+${terms.days}` : `${terms.days}-day`;
+}
+
+/** A `clients` row (selected as `*`, so missing columns are simply absent) → its terms. */
+export function termsFromClientRow(r: { payment_terms_days?: unknown; payment_terms_net?: unknown; invoice_note?: unknown }): ClientTerms {
+  return {
+    days: r.payment_terms_days == null ? DEFAULT_PAYMENT_TERMS_DAYS : Number(r.payment_terms_days),
+    net: r.payment_terms_net === true,
+    invoiceDay: parseInvoiceDay(r.invoice_note as string | null | undefined),
+  };
 }

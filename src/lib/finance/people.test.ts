@@ -480,7 +480,7 @@ describe("raiseAdvice", () => {
 });
 
 describe("recommendedTerms", () => {
-  const dima = { rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 };
+  const dima = { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 };
   const pay = (actual: number, recommended: number) => ({
     actual, recommended, gap: recommended - actual, revenue: 0, overhead: 1.5, studioShare: 0, hours: 118, billableHours: 100, workdays: 21, months: 3, keys: [],
   });
@@ -488,7 +488,7 @@ describe("recommendedTerms", () => {
   it("scales both rates by what the work supports over what's paid, to ₪5", () => {
     const r = recommendedTerms(dima, pay(14_000, 15_400))!;
     expect(r.factor).toBeCloseTo(1.1);
-    expect(r.terms).toEqual({ rateHigh: 155, rateLow: 110, hoursLow: 50, hoursHigh: 150 });
+    expect(r.terms).toEqual({ currency: "ILS", rateHigh: 155, rateLow: 110, hoursLow: 50, hoursHigh: 150 });
   });
 
   it("would have paid the supported amount at any hours (before rounding)", () => {

@@ -16,7 +16,7 @@
 // The point the AI shift makes visible: billing by the hour, faster work is
 // less revenue; per deliverable, it is margin.
 
-import { billFor } from "@/lib/finance/freelance-rate";
+import { billFor } from "@/lib/freelance-rate";
 import { addMonths, monthsBetween, type Decision } from "./decisions";
 import { ARRANGEMENTS_LAW } from "./facts-shared";
 import { FUTURE_IDS, type Baseline, type CompanyFacts, type Future, type FutureId, type Futures, type Member, type Price, type Ym } from "./types";

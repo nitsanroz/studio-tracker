@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo } from "react";
 import type { AccountantYear } from "@/lib/finance/accountant";
 import type { CompanyFacts } from "@/lib/finance/scenarios/types";
-import type { RateTerms } from "@/lib/finance/freelance-rate";
+import type { RateTerms } from "@/lib/freelance-rate";
 
 /**
  * The company's own figures that used to be constants in client code — the
@@ -24,7 +24,7 @@ import type { RateTerms } from "@/lib/finance/freelance-rate";
  */
 export interface CompanyFigures {
   accountantYears: AccountantYear[];
-  /** Hourly freelancers' sliding ₪ rates, by profile id (lib/finance/hourly-terms.ts). */
+  /** Hourly freelancers' sliding ₪ rates, by profile id (lib/hourly-terms.ts). */
   hourlyTerms: Record<string, RateTerms>;
   defaultFacts: CompanyFacts | null;
   factSource: Partial<Record<keyof CompanyFacts, string>>;

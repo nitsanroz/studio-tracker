@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/finance/supabase-client";
-import { termsFromClientRow } from "@/lib/finance/payment-terms";
+import { termsFromClientRow } from "@/lib/payment-terms";
 import type { TermsByClient } from "@/lib/finance/receivables";
 
 /**

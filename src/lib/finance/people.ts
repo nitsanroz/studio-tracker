@@ -1,7 +1,7 @@
 import { LINE, NON_BILLABLE_CLIENT_CANON, rateForMonth, type ClientRate, type PnlMonthly } from "@/lib/finance/finance";
 import { formatILS, formatNum, formatPct } from "@/lib/finance/format";
 import { TARGET_MARGIN, studioWeekdays } from "@/lib/finance/overview";
-import type { RateTerms } from "@/lib/finance/freelance-rate";
+import type { RateTerms } from "@/lib/freelance-rate";
 
 // One person = one tracker `profiles` row. Finance knows what they cost
 // (salary + freelance, linked by profile_id); the tracker knows what they

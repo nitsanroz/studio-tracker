@@ -28,7 +28,7 @@ function handoff(): Baseline {
       member("S", "staff", 15_000),
       member("E1", "designer", 23_000, 115),
       member("E2", "designer", 12_000, 92),
-      member("F1", "freelancer", 0, 300, { price: { kind: "terms", currency: "ILS", terms: { rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 } }, paidWritedowns: true }),
+      member("F1", "freelancer", 0, 300, { price: { kind: "terms", currency: "ILS", terms: { currency: "ILS", rateHigh: 140, rateLow: 100, hoursLow: 50, hoursHigh: 150 } }, paidWritedowns: true }),
     ],
     otherPayroll: 0,
     office: 21_500,

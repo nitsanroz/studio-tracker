@@ -1,7 +1,7 @@
 // What the person page works out once (page.tsx) and every tab reads.
 
 import { studioDay } from "@/lib/finance/format";
-import type { RateTerms } from "@/lib/finance/freelance-rate";
+import type { RateTerms } from "@/lib/freelance-rate";
 import type { Advice, Efficiency, FactorLevels, GrossPay, HrNoteKind, Ledger, PayAdvice, PayslipMonth, Person, RaisePlan } from "@/lib/finance/people";
 
 /** HR details the studio keeps in the tracker (member_hr, admin-only by RLS). */

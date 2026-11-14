@@ -1,4 +1,4 @@
-import { DEFAULT_TERMS, DEFAULT_TERMS_DAYS, invoiceDueFor, paymentDue, termsLabel, type ClientTerms } from "@/lib/finance/payment-terms";
+import { DEFAULT_CLIENT_TERMS, DEFAULT_PAYMENT_TERMS_DAYS, invoiceDueFor, paymentDue, termsAdjective, type ClientTerms } from "@/lib/payment-terms";
 import { NON_BILLABLE_CLIENT_CANON, round2, stepOf, vatRate, type ClientMonthly, type FinanceState } from "@/lib/finance/finance";
 import { studioDay } from "@/lib/finance/format";
 
@@ -19,7 +19,7 @@ import { studioDay } from "@/lib/finance/format";
  */
 
 /** The studio's usual terms — the tracker's `DEFAULT_PAYMENT_TERMS_DAYS`. */
-export const RECEIVABLE_TERMS_DAYS = DEFAULT_TERMS_DAYS;
+export const RECEIVABLE_TERMS_DAYS = DEFAULT_PAYMENT_TERMS_DAYS;
 
 /** A client's terms by its id and by its name (the Plan's canon). */
 export type TermsByClient = Map<string, ClientTerms>;
@@ -87,7 +87,7 @@ export function receivables(
   };
   for (const r of clientMonthly) {
     if (r.clientCanon === NON_BILLABLE_CLIENT_CANON) continue;
-    const t = (r.clientId ? terms.get(r.clientId) : undefined) ?? terms.get(r.clientCanon) ?? DEFAULT_TERMS;
+    const t = (r.clientId ? terms.get(r.clientId) : undefined) ?? terms.get(r.clientCanon) ?? DEFAULT_CLIENT_TERMS;
     add({ kind: "hours", name: r.clientCanon, year: r.year, month: r.month, amount: r.revenueGross || 0, terms: t }, r.state, r.paidAt ?? null, r.invoicedAt ?? null);
   }
   for (const r of income) {
@@ -98,7 +98,7 @@ export function receivables(
   for (const g of groups.values()) {
     if (!g.open || g.amount <= 0) continue;
     const invoiced = g.allInvoiced && g.invoicedAt != null;
-    const t = g.terms ?? DEFAULT_TERMS;
+    const t = g.terms ?? DEFAULT_CLIENT_TERMS;
     // The invoice's studio day: sliced, one marked 00:00–03:00 in Tel Aviv
     // counted from the day before, and fell due a day early.
     const from = invoiced ? studioDay(g.invoicedAt!) : g.terms ? invoiceDueFor(g.year, g.month, g.terms) : lastDay(g.year, g.month);
@@ -113,7 +113,7 @@ export function receivables(
       step: invoiced ? "invoiced" : "final",
       invoicedAt: invoiced ? g.invoicedAt : null,
       due,
-      termsLabel: termsLabel(t),
+      termsLabel: termsAdjective(t),
       daysLate: daysBetween(due, today),
     });
   }
