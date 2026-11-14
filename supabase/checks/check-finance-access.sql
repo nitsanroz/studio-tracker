@@ -39,7 +39,7 @@ declare
   ];
   -- Admins may (the Expenses page, HR, billing, freelancers); members may not.
   admin_only text[] := array[
-    'finance_expenses', 'finance_locks', 'fx_rates', 'finance_mail_receipts', 'finance_mail_ignored',
+    'finance_expenses', 'finance_expense_month_check', 'finance_locks', 'fx_rates', 'finance_mail_receipts', 'finance_mail_ignored',
     'finance_documents', 'member_hr', 'member_notes', 'client_billing_periods',
     'freelancers', 'freelancer_logs', 'freelancer_charges'
   ];
