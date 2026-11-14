@@ -16,7 +16,7 @@
 
 import { useMemo, useState } from "react";
 import { DAY_NAMES, MONTH_NAMES_SHORT, formatHoursShort, parseISO, shiftDays, toISODate } from "@/lib/format";
-import { evenSpread } from "@/lib/hours-goal";
+import { evenSpread } from "@/lib/even-spread";
 import { periodRange } from "@/lib/period-math";
 import { useHoursScope } from "./shared";
 import type { HomeFilter } from "./shared";

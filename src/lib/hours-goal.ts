@@ -347,18 +347,7 @@ export function hoursGoal(
   };
 }
 
-/**
- * The share of a month's goal that's "due" by each day: the goal spread evenly
- * over the month's Sun–Thu days, a day counting once it has started. Home's pace
- * chart draws this line and &advice reads its value for today — one copy, so the
- * pane's "93%" and Home's "7% behind goal pace" can't drift apart.
- */
-export function evenSpread(days: string[]): number[] {
-  const isWork = days.map((d) => {
-    const [y, m, dd] = d.split("-").map(Number);
-    return new Date(y, m - 1, dd).getDay() <= 4;
-  });
-  const total = isWork.filter(Boolean).length || 1;
-  let n = 0;
-  return isWork.map((w) => (n += w ? 1 : 0) / total);
-}
+// `evenSpread` lives in even-spread.ts so the (client) pace chart can use it
+// without importing this file — see the note there. Server code may take it
+// from either.
+export { evenSpread } from "./even-spread";

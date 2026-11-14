@@ -230,6 +230,10 @@ function optionalTable<T>(p: Promise<T[]>): Promise<T[]> {
   });
 }
 
+/** Exactly what `mapProfile` reads — keep the two in step. */
+export const PROFILE_COLUMNS =
+  "id, name, role, position, avatar_url, photo_url, active, has_account, start_date, end_date, capacity_hours_week";
+
 /** `entries` is boot's paging for the time-entry fallback; refreshes pass nothing (serial). */
 export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<ColdSnapshot> {
   const [
@@ -247,8 +251,15 @@ export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<Cold
     groupRows,
     sums,
   ] = await Promise.all([
-    // "*" keeps boot working whether or not migration 0004 is applied
-    fetchAll<DbRow>(sb, "profiles", "*"),
+    // Named, not "*": this response reaches every member's browser, and
+    // `profiles` also carries columns the app never shows (finance_full_access
+    // today, whatever is added tomorrow). The mapper dropped them, but the
+    // network response didn't. A database missing one of these falls back to
+    // "*" rather than failing boot.
+    fetchAll<DbRow>(sb, "profiles", PROFILE_COLUMNS).catch((e) => {
+      if (isMissingSchema(e)) return fetchAll<DbRow>(sb, "profiles", "*");
+      throw e;
+    }),
     fetchAll<DbRow>(sb, "clients", "*"),
     // legacy layer: only used to derive client_id before migration 0007
     fetchAll<DbRow>(sb, "projects", "id, client_id"),
