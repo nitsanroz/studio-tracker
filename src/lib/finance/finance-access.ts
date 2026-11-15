@@ -18,9 +18,12 @@ export interface FinanceAccess {
  * also needs `name` in the same query, so it can't share the query below).
  */
 export function deriveFinanceAccess(
-  profile: { role?: string | null; finance_full_access?: boolean | null } | null,
+  profile: { role?: string | null; finance_full_access?: boolean | null; active?: boolean | null } | null,
 ): FinanceAccess {
-  const isTrackerAdmin = profile?.role === "admin";
+  // An archived profile (`active` false, or an `end_date` that forced it) has no
+  // finance at all — the same answer `getAccess()` gives the page layouts. A row
+  // read without the column is taken as active.
+  const isTrackerAdmin = profile?.role === "admin" && profile.active !== false;
   const isAdmin = isTrackerAdmin && profile?.finance_full_access === true;
   return { isAdmin, expensesOnly: isTrackerAdmin && !isAdmin };
 }
@@ -33,7 +36,7 @@ export async function getFinanceAccess(
 ): Promise<FinanceAccess> {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, finance_full_access")
+    .select("role, finance_full_access, active")
     .eq("id", userId)
     .single();
   return deriveFinanceAccess(profile);

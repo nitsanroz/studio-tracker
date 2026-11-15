@@ -16,10 +16,11 @@ import type { RateTerms } from "@/lib/freelance-rate";
  *   accountantYears,
  *   hourlyTerms       `(full)/layout.tsx`       — full finance
  *   defaultFacts,
- *   factSource        `scenarios/layout.tsx`    — the owner
+ *   factSource,
+ *   nicknames         `scenarios/layout.tsx`    — the owner
  *
- * The files holding the figures (lib/finance/accountant-years.ts and
- * scenarios/facts.ts) must never be imported by client code:
+ * The files holding the figures (lib/finance/accountant-years.ts,
+ * scenarios/facts.ts, scenarios/nicknames.ts) must never be imported by client code:
  * finance-leak-guard.test.ts fails if they are.
  */
 export interface CompanyFigures {
@@ -28,9 +29,11 @@ export interface CompanyFigures {
   hourlyTerms: Record<string, RateTerms>;
   defaultFacts: CompanyFacts | null;
   factSource: Partial<Record<keyof CompanyFacts, string>>;
+  /** What the owner calls people (lib/finance/scenarios/nicknames.ts) — the owner's page only. */
+  nicknames: Record<string, string>;
 }
 
-const EMPTY: CompanyFigures = { accountantYears: [], hourlyTerms: {}, defaultFacts: null, factSource: {} };
+const EMPTY: CompanyFigures = { accountantYears: [], hourlyTerms: {}, defaultFacts: null, factSource: {}, nicknames: {} };
 const Ctx = createContext<CompanyFigures>(EMPTY);
 
 /** Adds to whatever a layout above already provided. */

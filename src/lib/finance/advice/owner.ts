@@ -4,7 +4,7 @@ import { deriveFinanceAccess } from "@/lib/finance/finance-access";
 import { createClient } from "@/lib/supabase/server";
 
 /** Full finance (lib/finance-access.ts decides it) AND position owner. */
-const isOwner = (p: { role?: string | null; position?: string | null; finance_full_access?: boolean | null } | null) =>
+const isOwner = (p: { role?: string | null; position?: string | null; finance_full_access?: boolean | null; active?: boolean | null } | null) =>
   deriveFinanceAccess(p).isAdmin && p?.position === "owner";
 
 // &advice's own gate is lib/advice/owner.ts — one pane, one test (the finance
@@ -24,8 +24,10 @@ export async function expensesUser(): Promise<{ sb: SupabaseClient; owner: boole
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return { res: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
-  const { data: p } = await sb.from("profiles").select("role, position, finance_full_access").eq("id", user.id).single();
-  if (p?.role !== "admin") return { res: NextResponse.json({ error: "Expenses users only" }, { status: 403 }) };
+  const { data: p } = await sb.from("profiles").select("role, position, finance_full_access, active").eq("id", user.id).single();
+  // An archived admin is not an Expenses user: the page layout already turns
+  // them away (`getAccess()`), and the route must give the same answer.
+  if (p?.role !== "admin" || p.active === false) return { res: NextResponse.json({ error: "Expenses users only" }, { status: 403 }) };
   return { sb, owner: isOwner(p) };
 }
 

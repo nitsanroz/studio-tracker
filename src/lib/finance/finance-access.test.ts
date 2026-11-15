@@ -28,4 +28,13 @@ describe("deriveFinanceAccess", () => {
     expect(deriveFinanceAccess({ role: "member", finance_full_access: true })).toEqual({ isAdmin: false, expensesOnly: false });
     expect(deriveFinanceAccess(null)).toEqual({ isAdmin: false, expensesOnly: false });
   });
+
+  it("an archived admin has no finance at all, full or expenses-only", () => {
+    expect(deriveFinanceAccess({ role: "admin", finance_full_access: true, active: false })).toEqual({ isAdmin: false, expensesOnly: false });
+    expect(deriveFinanceAccess({ role: "admin", finance_full_access: false, active: false })).toEqual({ isAdmin: false, expensesOnly: false });
+  });
+
+  it("a row read without `active` is taken as active", () => {
+    expect(deriveFinanceAccess({ role: "admin", finance_full_access: true, active: null })).toEqual({ isAdmin: true, expensesOnly: false });
+  });
 });

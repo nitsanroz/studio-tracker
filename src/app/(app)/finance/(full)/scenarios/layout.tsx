@@ -2,6 +2,7 @@ import { getAccess } from "@/lib/access-server";
 import { LangProvider } from "@/components/finance/scenarios/lang";
 import { CompanyFiguresProvider } from "@/components/finance/company-figures";
 import { DEFAULT_FACTS, FACT_SOURCE } from "@/lib/finance/scenarios/facts";
+import { NICKNAMES } from "@/lib/finance/scenarios/nicknames";
 
 /**
  * Scenarios is the OWNER's alone (Nitsan, 2026-11-11: "exposed only to me and
@@ -28,7 +29,7 @@ export default async function ScenariosLayout({ children }: { children: React.Re
   }
   // English or Hebrew, chosen on the page (components/scenarios/lang.tsx).
   return (
-    <CompanyFiguresProvider value={{ defaultFacts: DEFAULT_FACTS, factSource: FACT_SOURCE }}>
+    <CompanyFiguresProvider value={{ defaultFacts: DEFAULT_FACTS, factSource: FACT_SOURCE, nicknames: NICKNAMES }}>
       <LangProvider>{children}</LangProvider>
     </CompanyFiguresProvider>
   );

@@ -183,25 +183,13 @@ export function refsOf(team: Member[]): Map<string, string> {
   return new Map(team.map((m, i) => [m.id, `P${i + 1}`]));
 }
 
-/** What the owner calls people, by their first name in the tracker. */
-const NICKNAMES: Record<string, string> = {
-  katie: "ekaterina",
-  melissa: "milica",
-  dima: "dmitry",
-  // Hebrew spellings, for scenario names written on the Hebrew page.
-  "קייטי": "ekaterina",
-  "קטיה": "ekaterina",
-  "מליסה": "milica",
-  "מיליצה": "milica",
-  "דימה": "dmitry",
-  "נדב": "nadav",
-  "אקי": "aki",
-  "שקד": "shaked",
-  "מיכל": "michal",
-  "ניצן": "nitsan",
-};
-
-export function briefOf(name: string, decisions: Decision[], r: ScenarioResult, team: Member[], refs: Map<string, string>): ScenarioBrief {
+/**
+ * `nicknames` = what the owner calls people (nickname → their first name in the
+ * tracker, lower case), so a scenario named with one is anonymised too. The
+ * list is a personal detail and lives in nicknames.ts, server only: the
+ * Scenarios layout hands it to the owner's page (useCompanyFigures).
+ */
+export function briefOf(name: string, decisions: Decision[], r: ScenarioResult, team: Member[], refs: Map<string, string>, nicknames: Record<string, string> = {}): ScenarioBrief {
   // The description names people — swap names for their initials + ref.
   // Full names first, then first names alone ("Aki + Katie + Dima").
   const tag = (m: Member) => `${m.initials} (${refs.get(m.id) ?? "?"})`;
@@ -214,7 +202,7 @@ export function briefOf(name: string, decisions: Decision[], r: ScenarioResult, 
     for (const m of team) {
       const first = m.name.split(/\s+/)[0];
       if (first && first.length > 1) t = word(t, first, tag(m));
-      for (const [nick, real] of Object.entries(NICKNAMES)) if (first.toLowerCase() === real) t = word(t, nick, tag(m));
+      for (const [nick, real] of Object.entries(nicknames)) if (first.toLowerCase() === real) t = word(t, nick, tag(m));
     }
     for (const n of added) if (n.length > 1) t = word(t, n, `${initialsOf(n)} (new)`);
     return t;

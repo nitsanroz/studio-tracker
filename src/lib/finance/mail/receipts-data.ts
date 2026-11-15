@@ -10,6 +10,7 @@ import { isPeriodLocked, type FinanceLock, type FinanceState } from "@/lib/finan
 import { matchVendor } from "./classify";
 import { goodItem, receiptDetails, rowFill, senderKey, suggestions, type Attach, type ExpenseLite, type Known, type Receipt, type SuggestionsOut } from "./receipts";
 import { rentLineOf, rentSince } from "./rent";
+import { NOT_STUDIO } from "./rent-private";
 import { DOCS, DOCS_RULES_FROM, fillReceiptDetails, readReceiptDocs, RECEIPT_DAYS, RECEIPTS, removeDocCopies } from "./scan";
 
 type Row = Record<string, unknown>;
@@ -76,7 +77,7 @@ export async function loadSuggestions(sb: SupabaseClient, owner = true): Promise
   const details = !full.error;
   const wait = details ? full : await read(base);
   if (wait.error) return null;
-  const isRent = (r: Row) => !!rentLineOf({ domain: String(r.domain), subject: String(r.subject ?? "") }) && !/^\s*(re|fwd?|fw)\s*:/i.test(String(r.subject ?? ""));
+  const isRent = (r: Row) => !!rentLineOf({ domain: String(r.domain), subject: String(r.subject ?? "") }, [], {}, NOT_STUDIO) && !/^\s*(re|fwd?|fw)\s*:/i.test(String(r.subject ?? ""));
   const pending = ((wait.data ?? []) as unknown as Row[]).filter((r) => (r.status === "new" && String(r.sent_at).slice(0, 10) >= since) || isRent(r));
   if (!pending.length) return [];
   // Each receipt's Gmail message id, for the reads below.
@@ -120,7 +121,7 @@ export async function loadSuggestions(sb: SupabaseClient, owner = true): Promise
     itemDescription: r.item_description && goodItem(String(r.item_description)) ? String(r.item_description) : null,
     invoiceUrl: typeof r.invoice_url === "string" && r.invoice_url.startsWith("https://") ? r.invoice_url : null,
   }));
-  const known = await knownOf(sb, owner);
+  const known: Known = { ...(await knownOf(sb, owner)), notStudio: NOT_STUDIO };
   const list: SuggestionList = suggestions(receipts, rows, known, matchVendor, new Date().toISOString().slice(0, 10));
   // A Rent bill's months locked on the Rent tab (Finalize month): its file and number only.
   if (list.some((x) => x.category === "rent")) {

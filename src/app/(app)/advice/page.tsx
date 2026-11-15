@@ -143,8 +143,9 @@ export default function AdvicePage() {
 
   return (
     <div dir={rtl ? "rtl" : "ltr"} className={`mx-auto flex w-full max-w-[1500px] flex-col gap-8 p-4 md:p-6 ${hold ? "advice-hold" : ""}`}>
+      {/* On a phone the title takes the first line whole and the controls sit under it; beside them it was squeezed to a word a line. */}
       <header className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="min-w-0 flex-1">
+        <div className="w-full min-w-0 md:w-auto md:flex-1">
           {/* The name reads left to right in either language — in a right-to-left line the ampersand would jump to the end. */}
           <h1 className="page-title">
             <span dir="ltr" className="inline-block">
@@ -153,7 +154,7 @@ export default function AdvicePage() {
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted">{t("The studio at a glance: what needs you, how the last three months read, and what was found and closed.")}</p>
         </div>
-        {data && <span className="text-[12px] text-faint">{he.busy ? t("Translating…") : (he.off ?? checkedLine(data, t))}</span>}
+        {data && <span className="min-w-0 flex-1 text-[12px] text-faint md:flex-none">{he.busy ? t("Translating…") : (he.off ?? checkedLine(data, t))}</span>}
         <AdviceLangSwitch />
         <button
           onClick={() => void load()}
@@ -176,7 +177,7 @@ export default function AdvicePage() {
             ))}
           </div>
           <Skeleton className="h-40 rounded-2xl" />
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-56 rounded-2xl" />
             ))}
@@ -219,7 +220,7 @@ export default function AdvicePage() {
                 {t(consulting ? "Reviewing…" : data.business && !data.business.error ? "Review again" : "Review now")}
               </button>
             </div>
-            <div className="mt-3 grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               <p className="bidi-auto text-[15px] leading-6">
                 {data.business?.summary ? tr(data.business.summary) : <span className="text-muted">{t("No review yet. One click reads the last three months as a consultant would.")}</span>}
               </p>
@@ -281,7 +282,7 @@ export default function AdvicePage() {
             {items.length === 0 ? (
               <EmptyState icon={Check} tone="success" text={t("All clear.")} />
             ) : group === "urgency" ? (
-              <div className="mt-3 grid items-start gap-4 lg:grid-cols-3">
+              <div className="mt-3 grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-3">
                 {KINDS.map((k) => {
                   const list = items.filter((i) => i.kind === k);
                   return (
@@ -314,7 +315,7 @@ export default function AdvicePage() {
           {/* 5 — Follow-up */}
           <section>
             <SectionHead title={t("Follow-up")} />
-            <div className="mt-3 grid items-start gap-4 lg:grid-cols-2">
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
               <div className="rounded-2xl bg-surface p-5 shadow-card">
                 <h3 className="card-title">{t("Snoozed and dismissed")}</h3>
                 {board.hidden.length === 0 ? (
@@ -494,7 +495,7 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
   const weekMax = Math.max(1, ...weeks.map((w) => Math.max(w.opened, w.resolved)));
   const util = f.utilization;
   return (
-    <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 xl:grid-cols-3">
       <ChartCard title={t("Profit margin")}>
         <p className="font-serif-accent text-[40px] leading-none tabular-nums" style={{ color: f.margin >= f.targetMargin ? "var(--success)" : f.margin < 0 ? "var(--danger)" : undefined }}>
           {pct(f.margin)}%
@@ -580,7 +581,7 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
       <ChartCard title={`${t("Clients")} · ${t("Share of billable hours")}`} wide>
         <ul className="flex flex-col gap-2.5">
           {f.clients.map((c) => (
-            <li key={c.name} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] items-center gap-3 text-[13px] md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3rem_minmax(0,14rem)]">
+            <li key={c.name} className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)_2.75rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3rem_minmax(0,14rem)]">
               <span className="truncate">{c.name}</span>
               <span className="relative h-3 rounded-full bg-track">
                 <span

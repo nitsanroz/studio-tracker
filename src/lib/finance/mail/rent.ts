@@ -12,7 +12,11 @@
 // electricity, arnona, water, Partner and insurance bills come by email to
 // office@; two-month bills are split over their two months; the cleaner is
 // paid in cash with no invoice (no mail to read); "קריניטי" is notebook
-// printing, not Rent. ניצנה 20 is the owner's home building — never the studio's.
+// printing, not Rent.
+//
+// The owner's home building bills through one of the same senders; the pattern
+// that tells it apart is NOT here — this file reaches the browser — but in
+// rent-private.ts, and server callers pass it in (`notStudio`).
 
 import { netOfVat } from "../finance";
 
@@ -56,8 +60,6 @@ export const RENT_SOURCES: RentSource[] = [
 
 /** A bill, an invoice, a receipt or a payment confirmation — not a newsletter or an outage notice. */
 const BILL = /חשבון|חשבונית|קבלה|תשלום|תלוש|הודעת\s+חיוב|פוליסה|bill|invoice|receipt|payment/i;
-/** The owner's home building: its building-fee confirmations are not the studio's (2026-11-09). */
-const NOT_STUDIO = /ניצנה\s*20/;
 
 /**
  * How far back Rent bills are looked for (Nitsan, 2026-11-09: "get the
@@ -86,8 +88,10 @@ export function rentLineOf(
   r: { domain: string; subject: string; key?: string },
   lines: string[] = [],
   learned: Record<string, string> = {},
+  /** rent-private.ts `NOT_STUDIO`, from server callers: a subject that is never the studio's */
+  notStudio?: RegExp,
 ): RentSource | null {
-  if (NOT_STUDIO.test(r.subject)) return null;
+  if (notStudio?.test(r.subject)) return null;
   const have = new Set(lines.map(trim));
   const taught = r.key ? learned[r.key] : undefined;
   if (taught && have.has(trim(taught))) return RENT_SOURCES.find((s) => s.line === trim(taught)) ?? { line: trim(taught), sites: [], words: /$^/, months: 1, vat: true };

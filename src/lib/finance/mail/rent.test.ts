@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isPaymentNotice, monthsHolding, monthsPaid, periodIn, rentLineOf, rentMonthsFor, rentNet, periodPair, rentQuery, rentSince, RENT_SOURCES, splitBill } from "./rent";
+import { NOT_STUDIO } from "./rent-private";
 import { receiptAmount, receiptDescription, rtlPdfTotal } from "./receipts";
 import { suggestions, type ExpenseLite, type Receipt } from "./receipts";
 
@@ -15,7 +16,7 @@ describe("rentLineOf", () => {
   });
 
   it("never the owner's home building, nor a non-bill from a known sender", () => {
-    expect(rentLineOf({ domain: "apoint.co.il", subject: "אישור תשלום מס'242936 - עבור דמי וועד בבניין ניצנה 20 , תל אביב" }, LINES)).toBeNull();
+    expect(rentLineOf({ domain: "apoint.co.il", subject: "אישור תשלום מס'242936 - עבור דמי וועד בבניין ניצנה 20 , תל אביב" }, LINES, {}, NOT_STUDIO)).toBeNull();
     expect(rentLineOf({ domain: "aluel.co.il", subject: "FW: פרוטוקול אסיפת בעלי נכסים - ניצנה 11" }, LINES)).toBeNull();
   });
 

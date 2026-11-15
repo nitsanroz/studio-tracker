@@ -582,6 +582,8 @@ export interface Known {
   freelancers: string[];
   /** a sender (site, or a processor's seller) → the Expenses vendor its receipt became before */
   learned: Record<string, string>;
+  /** rent-private.ts `NOT_STUDIO`, set by the server loader: a subject that is never a studio Rent bill */
+  notStudio?: RegExp;
 }
 
 export interface Suggestion extends Receipt {
@@ -854,7 +856,7 @@ export function suggestions(
     }
     kept.push(r);
     // A Rent tab bill (v1.24.0): its line's cell(s), not an Expenses row.
-    const rent = REPLY.test(r.subject) || PAYMENT_REQUEST.test(r.subject) ? null : rentLineOf({ domain: r.domain, subject: r.subject, key: senderKey(r) }, rentLines, known?.learned);
+    const rent = REPLY.test(r.subject) || PAYMENT_REQUEST.test(r.subject) ? null : rentLineOf({ domain: r.domain, subject: r.subject, key: senderKey(r) }, rentLines, known?.learned, known?.notStudio);
     if (rent) {
       // A payment confirmation for a login-only bill (Milgam's for Mei Avivim) — the bill came on its own.
       if (isPaymentNotice(rent, r)) {

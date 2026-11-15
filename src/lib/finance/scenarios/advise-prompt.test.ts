@@ -52,6 +52,15 @@ describe("advisor input", () => {
     expect(text).toContain("AC (P2)");
     expect(text).toContain('"ref": "P2"');
   });
+
+  it("swaps a nickname it was handed, and knows none of its own", () => {
+    const refs = refsOf(baseline.team);
+    const r = runScenario(baseline, [], futuresFrom(defaultDemand(baseline)), DEFAULT_FACTS);
+    // nickname → first name in the tracker, lower case (the server's list, made up here)
+    expect(briefOf("Without Avko", [], r, baseline.team, refs, { avko: "avi" }).name).toBe("Without AC (P2)");
+    // with no list — a page that isn't the owner's — the word is left as written
+    expect(briefOf("Without Avko", [], r, baseline.team, refs).name).toBe("Without Avko");
+  });
 });
 
 describe("accepting advice", () => {

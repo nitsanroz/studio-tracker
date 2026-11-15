@@ -82,13 +82,19 @@ const AMOUNT_MODULES = [
   "lib/finance/scenarios/facts.ts", // balance-sheet and loan figures
 ];
 
+/** Modules holding a personal detail — an address, what the owner calls people. Server code only. */
+const PRIVATE_MODULES = [
+  "lib/finance/mail/rent-private.ts", // the owner's home building
+  "lib/finance/scenarios/nicknames.ts", // the owner's names for people
+];
+
 describe("finance leak guards", () => {
   const bundle = clientBundle();
 
   it("found the source tree", () => {
     expect(files.length).toBeGreaterThan(100);
     expect(bundle.size).toBeGreaterThan(100);
-    for (const m of AMOUNT_MODULES) expect(byPath.has(m), m).toBe(true);
+    for (const m of [...AMOUNT_MODULES, ...PRIVATE_MODULES]) expect(byPath.has(m), m).toBe(true);
     // the walk really follows imports: the pace chart reaches even-spread.ts
     expect(bundle.has("lib/even-spread.ts")).toBe(true);
   });
@@ -99,6 +105,14 @@ describe("finance leak guards", () => {
       return from === p ? p : chain(from) + " → " + p;
     };
     expect(AMOUNT_MODULES.filter((m) => bundle.has(m)).map(chain)).toEqual([]);
+  });
+
+  it("keeps personal details out of every browser bundle", () => {
+    const chain = (p: string): string => {
+      const from = bundle.get(p)!;
+      return from === p ? p : chain(from) + " → " + p;
+    };
+    expect(PRIVATE_MODULES.filter((m) => bundle.has(m)).map(chain)).toEqual([]);
   });
 
   it("keeps the service key out of finance code", () => {

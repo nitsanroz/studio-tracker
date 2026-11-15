@@ -33,7 +33,7 @@ import { boardFor, groupIdOf, roleOf } from "@/lib/finance/scenarios/board";
 import { cleanDecision, newId, type Decision } from "@/lib/finance/scenarios/decisions";
 import { cashFloorOf, HORIZON, monthMoney, runScenario, stateAt, type ScenarioResult } from "@/lib/finance/scenarios/engine";
 import { factsFrom } from "@/lib/finance/scenarios/facts-shared";
-import { useDefaultFacts } from "@/components/finance/company-figures";
+import { useCompanyFigures, useDefaultFacts } from "@/components/finance/company-figures";
 import { adviceInput, briefOf, refsOf, type Advice, type AdviceKind } from "@/lib/finance/scenarios/advise-prompt";
 import { defaultDemand, demandFrom, futuresFrom, starters, type Demand } from "@/lib/finance/scenarios/starters";
 import { tipsFor } from "@/lib/finance/scenarios/tips";
@@ -129,6 +129,7 @@ export default function ScenariosPage() {
   }, []);
 
   const defaultFacts = useDefaultFacts();
+  const { nicknames } = useCompanyFigures();
   const facts = useMemo(() => factsFrom(settings?.facts, defaultFacts), [settings, defaultFacts]);
   const [factsLocal, setFactsLocal] = useState<CompanyFacts | null>(null);
   const factsNow = factsLocal ?? facts;
@@ -287,7 +288,7 @@ export default function ScenariosPage() {
 
   const buildInput = (kind: AdviceKind) => {
     const list = kind === "compare" ? (compare.length >= 2 ? shown : scenarios) : kind === "advise" ? [current] : scenarios;
-    return adviceInput(kind, baseline, factsNow, cashFloor, futures, list.map((s) => briefOf(s.name, s.decisions, results.get(s.id)!, team, refs)), refs, lang);
+    return adviceInput(kind, baseline, factsNow, cashFloor, futures, list.map((s) => briefOf(s.name, s.decisions, results.get(s.id)!, team, refs, nicknames)), refs, lang);
   };
 
   const chartBody = (

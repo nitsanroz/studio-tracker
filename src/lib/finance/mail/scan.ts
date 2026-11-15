@@ -11,11 +11,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll } from "@/lib/finance/db";
 import { amountIn, classify, matchVendor, searchQuery } from "./classify";
-import { rentLineOf, rentQuery, rentSince } from "./rent";
+import { rentLineOf as rentLine, rentQuery, rentSince } from "./rent";
+import { NOT_STUDIO } from "./rent-private";
 import { readSlip, slipCode } from "./tlv-slip";
 import { decryptToken } from "./crypto";
 import { accessTokenFor, getAttachment, getMessageFull, getMessageMeta, GmailError, listMessages, mailConfigured, type GmailFull } from "./google";
 import { attachmentsOf, bodyText, storageName, invoiceLink, linkTo, isPaidReceipt, receiptAmount, rtlPdfTotal, receiptDescription, receiptDetails, receiptQuery, senderDomain, vendorFromSender, type Attachment } from "./receipts";
+
+/** The studio's Rent line for an email — never the owner's home building (rent-private.ts). */
+const studioRentLine = (r: { domain: string; subject: string }) => rentLine(r, [], {}, NOT_STUDIO);
 
 export const ACCOUNTS = "finance_mail_accounts";
 export const TOOL_MAIL = "finance_tool_mail";
@@ -191,10 +195,10 @@ async function scanReceipts(sb: SupabaseClient, account: Row, at: string, vendor
     const subject = header(m, "Subject");
     const domain = senderDomain(from);
     // Older than the receipts' window: only a Rent bill of this year is kept.
-    if (sent < since.getTime() && !(sent >= rentFrom.getTime() && rentLineOf({ domain, subject }))) return [];
+    if (sent < since.getTime() && !(sent >= rentFrom.getTime() && studioRentLine({ domain, subject }))) return [];
     const vendor = matchVendor(from, vendors);
     // A vendor's receipt the billing scan already sorted counts; anyone else's must read as one.
-    const paid = vendorIds.has(m.id) || isPaidReceipt(from, subject, m.snippet ?? "") || !!rentLineOf({ domain, subject });
+    const paid = vendorIds.has(m.id) || isPaidReceipt(from, subject, m.snippet ?? "") || !!studioRentLine({ domain, subject });
     // The amount, invoice number and card come from the text, read here and dropped.
     const text = paid ? bodyText(m.payload) : "";
     const money = paid ? (receiptAmount(text) ?? amountIn(`${subject} ${m.snippet ?? ""}`)) : null;
@@ -212,7 +216,7 @@ async function scanReceipts(sb: SupabaseClient, account: Row, at: string, vendor
         amount: money?.amount ?? null,
         currency: money?.currency ?? null,
         // A Rent bill goes through even from a site on "never suggest" (Aluel was, before Rent existed).
-        status: paid && (!ignored.has(domain) || !!rentLineOf({ domain, subject })) ? "new" : "skipped",
+        status: paid && (!ignored.has(domain) || !!studioRentLine({ domain, subject })) ? "new" : "skipped",
         // "" = read, none found (reference/0018)
         invoice_number: details ? (details.invoice ?? "") : null,
         paid_with: details ? (details.paidWith ?? "") : null,
@@ -386,7 +390,7 @@ export async function readReceiptDocs(sb: SupabaseClient, rows: MessageRef[]): P
     // Their own columns (reference/0020, 0021): a failure there mustn't lose the rest.
     await sb.from(RECEIPTS).update({ item_description: item ?? "" }).eq("id", r.id);
     // A bill behind a login (water): the email's own link to the supplier's site, whatever its button says.
-    const src = rentLineOf({ domain: senderDomain(header(m, "From")), subject });
+    const src = studioRentLine({ domain: senderDomain(header(m, "From")), subject });
     const link = invoiceLink(m.payload) ?? (src?.loginOnly ? linkTo(m.payload, src.sites[0] ?? "") : null);
     await sb.from(RECEIPTS).update({ invoice_url: link }).eq("id", r.id);
     // Tel Aviv's arnona slip (v1.24.6): the email only links to it — the slip's site gives its total,
