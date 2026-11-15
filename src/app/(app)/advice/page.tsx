@@ -20,7 +20,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Clock3, RotateCw, Sparkles, Undo2, X } from "lucide-react";
-import { AdviceLangSwitch, useAdviceLang, useHebrew, type Hebrew } from "@/components/advice-lang";
+import { AdviceLangSwitch, said, useAdviceLang, useHebrew, type Hebrew } from "@/components/advice-lang";
+import { InfoTip, Tip, TipRows, TipScope } from "@/components/advice-tip";
 import { FIX_CLASS, UNDO_FAILED, checkedLine, dayLabel, dayOf, fixOf, patch, snoozeLabel, snoozeOptions } from "@/components/advice";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/skeleton";
@@ -41,6 +42,13 @@ const KINDS: AdviceKind[] = ["now", "heads", "idea"];
 const KIND_LABEL: Record<AdviceKind, string> = { now: "Do now", heads: "Heads-up", idea: "Idea" };
 const KIND_PLURAL: Record<AdviceKind, string> = { now: "Do now", heads: "Heads-ups", idea: "Ideas" };
 const KIND_COLOR: Record<AdviceKind, string> = { now: "var(--danger)", heads: "var(--warning)", idea: "var(--brand)" };
+/** What each kind means — the hover on a count and on a card's label. */
+const KIND_TIP: Record<AdviceKind, string> = {
+  now: "Things that cost money or a client if they wait.",
+  heads: "Worth knowing this week. Nothing breaks today.",
+  idea: "Ways to run the studio better, read from the last three months as a whole. No deadline.",
+};
+const HIDDEN_TIP = "Findings you put aside. A snoozed one returns on its day; a dismissed one only if it gets worse.";
 const pct = (f: number) => Math.round(f * 100);
 const LIST_SHOWN = 5;
 
@@ -141,7 +149,10 @@ export default function AdvicePage() {
 
   const card = (it: AdviceRow) => <FindingCard key={it.id} it={it} today={data?.today ?? ""} he={he} onAct={act} onFix={fix} />;
 
+  const scope = useMemo(() => ({ rtl, hold }), [rtl, hold]);
+
   return (
+    <TipScope.Provider value={scope}>
     <div dir={rtl ? "rtl" : "ltr"} className={`mx-auto flex w-full max-w-[1500px] flex-col gap-8 p-4 md:p-6 ${hold ? "advice-hold" : ""}`}>
       {/* On a phone the title takes the first line whole and the controls sit under it; beside them it was squeezed to a word a line. */}
       <header className="flex flex-wrap items-end gap-x-4 gap-y-3">
@@ -188,10 +199,27 @@ export default function AdvicePage() {
           {/* 1 — Today */}
           <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {KINDS.map((k) => (
-              <Stat key={k} label={t(KIND_PLURAL[k])} value={items.filter((i) => i.kind === k).length} color={KIND_COLOR[k]} />
+              <Stat
+                key={k}
+                label={t(KIND_PLURAL[k])}
+                value={items.filter((i) => i.kind === k).length}
+                color={KIND_COLOR[k]}
+                tip={t(KIND_TIP[k])}
+                rows={bySubject(items.filter((i) => i.kind === k), tr, t("Other subjects"))}
+              />
             ))}
-            <Stat label={t("Snoozed or dismissed")} value={board.hidden.length} />
-            <Stat label={t("Closed in 30 days")} value={board.resolved.length} />
+            <Stat
+              label={t("Snoozed or dismissed")}
+              value={board.hidden.length}
+              tip={t(HIDDEN_TIP)}
+              rows={[[t("Snoozed, back on a date"), board.hidden.filter((i) => !i.doneAt).length] as const, [t("Dismissed, back if worse"), board.hidden.filter((i) => i.doneAt).length] as const]}
+            />
+            <Stat
+              label={t("Closed in 30 days")}
+              value={board.resolved.length}
+              tip={t("Findings that stopped being true. A check closes them by itself; there is nothing to do.")}
+              rows={bySubject(board.resolved, tr, t("Other subjects"))}
+            />
           </section>
 
           {/* 2 — The consultant's read */}
@@ -200,6 +228,9 @@ export default function AdvicePage() {
               <h2 className="card-title flex min-w-0 flex-1 items-center gap-2">
                 <Sparkles size={18} strokeWidth={1.75} className="shrink-0 text-brand" />
                 {t("The consultant's read")}
+                <InfoTip title={t("The consultant's read")}>
+                  {t("One Claude call per click, about a minute. It reads the last three months as shares, percentages, hours and rates as an index. No amount in ₪ is sent.")}
+                </InfoTip>
               </h2>
               <span className="text-[12px] text-faint">
                 {!data.reviewOn
@@ -221,15 +252,21 @@ export default function AdvicePage() {
               </button>
             </div>
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-              <p className="bidi-auto text-[15px] leading-6">
-                {data.business?.summary ? tr(data.business.summary) : <span className="text-muted">{t("No review yet. One click reads the last three months as a consultant would.")}</span>}
-              </p>
+              {data.business?.summary ? (
+                <p {...said(he, tr(data.business.summary), "text-[15px] leading-6")}>{tr(data.business.summary)}</p>
+              ) : (
+                <p className="text-[15px] leading-6 text-muted">{t("No review yet. One click reads the last three months as a consultant would.")}</p>
+              )}
               {!!data.business?.questions.length && (
                 <div>
-                  <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted">{t("Questions only you can answer")}</p>
+                  <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
+                    <Tip mark body={t("What the figures alone could not settle. They are for you to think over; nothing is sent back.")}>
+                      {t("Questions only you can answer")}
+                    </Tip>
+                  </p>
                   <ul className="mt-2 list-disc space-y-1.5 ps-4 text-[13px] leading-5 text-muted">
                     {data.business.questions.map((q) => (
-                      <li key={q} className="bidi-auto">
+                      <li key={q} {...said(he, tr(q))}>
                         {tr(q)}
                       </li>
                     ))}
@@ -242,7 +279,11 @@ export default function AdvicePage() {
 
           {/* 3 — The studio in numbers */}
           <section>
-            <SectionHead title={t("The studio in numbers")} note={board.figures ? `${t("The last three complete months")} · ${board.figures.label}` : undefined} />
+            <SectionHead
+              title={t("The studio in numbers")}
+              note={board.figures ? `${t("The last three complete months")} · ${board.figures.label}` : undefined}
+              tip={t("The last three complete months together, so one odd month doesn't decide. \"A year ago\" is the same three months last year.")}
+            />
             {board.figures ? (
               <Figures f={board.figures} weeks={board.weeks} he={he} />
             ) : (
@@ -250,7 +291,11 @@ export default function AdvicePage() {
             )}
             {data.pulse.length > 0 && (
               <>
-                <p className="mt-6 text-[12px] font-medium uppercase tracking-[0.08em] text-muted">{t("The pages' own figures")}</p>
+                <p className="mt-6 text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
+                  <Tip mark body={t("The same figures the pages themselves show, each with its last weeks. Hover one for how it is counted.")}>
+                    {t("The pages' own figures")}
+                  </Tip>
+                </p>
                 <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
                   {uniqueTiles(data.pulse).map((p) => (
                     <PulseTile key={`${p.label}|${p.display}`} p={p} tr={tr} />
@@ -264,7 +309,11 @@ export default function AdvicePage() {
           <section>
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
-                <SectionHead title={t("Everything found")} note={String(items.length)} />
+                <SectionHead
+                  title={t("Everything found")}
+                  note={String(items.length)}
+                  tip={t("Every open finding. Snooze hides one until a date; dismiss hides it until it gets worse; a check closes it by itself once it is no longer true.")}
+                />
               </div>
               <div className="inline-flex rounded-full bg-surface p-0.5 text-[13px] shadow-card" role="group">
                 {(["urgency", "subject"] as const).map((g) => (
@@ -289,7 +338,9 @@ export default function AdvicePage() {
                     <div key={k} className="flex min-w-0 flex-col gap-3">
                       <p className="flex items-center gap-2 text-[13px] font-medium">
                         <span className="size-2 rounded-full" style={{ background: KIND_COLOR[k] }} />
-                        {t(KIND_PLURAL[k])}
+                        <Tip mark body={t(KIND_TIP[k])}>
+                          {t(KIND_PLURAL[k])}
+                        </Tip>
                         <span className="text-faint">{list.length}</span>
                       </p>
                       {list.length ? list.map(card) : <p className="rounded-2xl bg-surface px-4 py-3 text-[13px] text-muted">{t("Nothing here.")}</p>}
@@ -302,7 +353,7 @@ export default function AdvicePage() {
                 {groups.map(([area, list]) => (
                   <div key={area} className="mb-5 flex break-inside-avoid flex-col gap-3">
                     <p className="flex items-center gap-2 text-[13px] font-medium">
-                      <span className="bidi-auto">{tr(area)}</span>
+                      <span {...said(he, tr(area))}>{tr(area)}</span>
                       <span className="text-faint">{list.length}</span>
                     </p>
                     {list.map(card)}
@@ -314,10 +365,13 @@ export default function AdvicePage() {
 
           {/* 5 — Follow-up */}
           <section>
-            <SectionHead title={t("Follow-up")} />
+            <SectionHead title={t("Follow-up")} tip={t("What you put aside and what closed by itself, so nothing disappears without a trace.")} />
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
               <div className="rounded-2xl bg-surface p-5 shadow-card">
-                <h3 className="card-title">{t("Snoozed and dismissed")}</h3>
+                <h3 className="card-title flex items-center gap-2">
+                  {t("Snoozed and dismissed")}
+                  <InfoTip title={t("Snoozed and dismissed")}>{t(HIDDEN_TIP)}</InfoTip>
+                </h3>
                 {board.hidden.length === 0 ? (
                   <p className="mt-2 text-[13px] text-muted">{t("Nothing is snoozed or dismissed.")}</p>
                 ) : (
@@ -326,7 +380,7 @@ export default function AdvicePage() {
                       <li key={it.id} className="flex items-start gap-3 py-2.5">
                         <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: KIND_COLOR[it.kind] }} />
                         <span className="min-w-0 flex-1">
-                          <span className="bidi-auto block text-[14px] leading-5">{tr(shownTitle(it))}</span>
+                          <span {...said(he, tr(shownTitle(it)), "block text-[14px] leading-5")}>{tr(shownTitle(it))}</span>
                           <span className="block text-[12px] text-faint">
                             {tr(it.area)} · {it.doneAt ? t("dismissed") : t("back {day}", { day: dayLabel(it.snoozedUntil!, t.locale) })}
                           </span>
@@ -359,7 +413,7 @@ export default function AdvicePage() {
                       <li key={it.id} className="flex items-start gap-3 py-2">
                         <Check size={15} strokeWidth={2} className="mt-0.5 shrink-0 text-success" />
                         <span className="min-w-0 flex-1">
-                          <span className="bidi-auto block text-[14px] leading-5 text-muted">{tr(shownTitle(it))}</span>
+                          <span {...said(he, tr(shownTitle(it)), "block text-[14px] leading-5 text-muted")}>{tr(shownTitle(it))}</span>
                           <span className="block text-[12px] text-faint">
                             {tr(it.area)} · {t("closed {day}", { day: dayLabel(dayOf(it.resolvedAt!), t.locale) })}
                           </span>
@@ -374,6 +428,7 @@ export default function AdvicePage() {
         </>
       )}
     </div>
+    </TipScope.Provider>
   );
 }
 
@@ -389,18 +444,41 @@ function uniqueTiles(tiles: PaneTile[]): PaneTile[] {
   });
 }
 
-function SectionHead({ title, note }: { title: string; note?: string }) {
+/** How many of `list` sit under each subject, largest first — a stat's breakdown. */
+function bySubject(list: AdviceRow[], tr: (s: string) => string, more: string): (readonly [string, number])[] {
+  const n = new Map<string, number>();
+  for (const it of list) n.set(it.area, (n.get(it.area) ?? 0) + 1);
+  const rows = [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const shown = rows.slice(0, 6).map(([area, count]) => [tr(area), count] as const);
+  const rest = rows.slice(6).reduce((t, [, count]) => t + count, 0);
+  return rest ? [...shown, [more, rest] as const] : shown;
+}
+
+function SectionHead({ title, note, tip }: { title: string; note?: string; tip?: string }) {
   return (
     <div className="flex items-baseline gap-3">
-      <h2 className="card-title">{title}</h2>
+      <h2 className="card-title flex items-center gap-2">
+        {title}
+        {tip && <InfoTip title={title}>{tip}</InfoTip>}
+      </h2>
       {note && <span className="text-[13px] text-faint">{note}</span>}
     </div>
   );
 }
 
-function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
+function Stat({ label, value, color, tip, rows = [] }: { label: string; value: number; color?: string; tip: string; rows?: (readonly [string, number])[] }) {
   return (
-    <div className="rounded-2xl bg-surface p-4 shadow-card">
+    <Tip
+      as="div"
+      title={label}
+      body={
+        <>
+          {tip}
+          <TipRows rows={rows} />
+        </>
+      }
+      className="rounded-2xl bg-surface p-4 shadow-card"
+    >
       <p className="flex items-center gap-2 text-[12px] text-muted">
         {color && <span className="size-2 rounded-full" style={{ background: color }} />}
         {label}
@@ -408,7 +486,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
       <p className="font-serif-accent mt-2 text-[34px] leading-none tabular-nums" style={color && value > 0 ? { color } : undefined}>
         {value}
       </p>
-    </div>
+    </Tip>
   );
 }
 
@@ -418,7 +496,7 @@ function PulseTile({ p, tr }: { p: PaneTile; tr: (s: string) => string }) {
   const max = Math.max(...p.series);
   const pts = p.series.map((v, i) => `${(i / Math.max(1, p.series.length - 1)) * 100},${28 - ((v - min) / (max - min || 1)) * 24}`).join(" ");
   return (
-    <div title={tr(p.help)} className="cursor-help rounded-2xl bg-surface p-3.5 shadow-card">
+    <Tip as="div" title={tr(p.label)} body={tr(p.help)} className="rounded-2xl bg-surface p-3.5 shadow-card">
       <p className="truncate text-[12px] text-muted">{tr(p.label)}</p>
       <p dir="ltr" className="font-serif-accent mt-1.5 text-start text-[24px] leading-none tabular-nums" style={p.good ? undefined : { color }}>
         {p.display}
@@ -429,23 +507,38 @@ function PulseTile({ p, tr }: { p: PaneTile; tr: (s: string) => string }) {
         </svg>
       )}
       <p className="mt-1 truncate text-[11px] text-faint">{tr(p.note)}</p>
-    </div>
+    </Tip>
   );
 }
 
 /* ── the charts ─────────────────────────────────────────────────────────── */
 
-function ChartCard({ title, children, wide = false }: { title: string; children: React.ReactNode; wide?: boolean }) {
+function ChartCard({ title, tip, children, wide = false }: { title: string; tip: string; children: React.ReactNode; wide?: boolean }) {
   return (
     <div className={`rounded-2xl bg-surface p-5 shadow-card ${wide ? "md:col-span-2" : ""}`}>
-      <h3 className="text-[14px] font-medium">{title}</h3>
+      <h3 className="flex items-center gap-2 text-[14px] font-medium">
+        {title}
+        <InfoTip title={title}>{tip}</InfoTip>
+      </h3>
       <div className="mt-3">{children}</div>
     </div>
   );
 }
 
 /** A track with a fill and labelled marks along it; `scale` is the value at the track's end. */
-function Track({ value, scale, color, marks = [], band }: { value: number; scale: number; color: string; marks?: { at: number; label: string }[]; band?: [number, number] }) {
+function Track({
+  value,
+  scale,
+  color,
+  marks = [],
+  band,
+}: {
+  value: number;
+  scale: number;
+  color: string;
+  marks?: { at: number; label: string; tip: string }[];
+  band?: [number, number];
+}) {
   const x = (v: number) => `${Math.max(0, Math.min(100, (v / scale) * 100))}%`;
   return (
     <div className="pb-5">
@@ -454,7 +547,9 @@ function Track({ value, scale, color, marks = [], band }: { value: number; scale
         <div className="absolute inset-y-0 rounded-full" style={{ insetInlineStart: 0, width: x(value), background: color }} />
         {marks.map((m) => (
           <div key={m.label} className="absolute -top-1 h-5 w-px bg-foreground" style={{ insetInlineStart: x(m.at) }}>
-            <span className="absolute top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-[11px] text-faint rtl:translate-x-1/2">{m.label}</span>
+            <Tip body={m.tip} className="absolute top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-[11px] text-faint rtl:translate-x-1/2">
+              {m.label}
+            </Tip>
           </div>
         ))}
       </div>
@@ -465,20 +560,29 @@ function Track({ value, scale, color, marks = [], band }: { value: number; scale
 const SHARE_COLORS = { salaries: "#0b43ed", freelance: "#6181e8", rent: "#001e6c", tools: "#00c8d2", other: "#aeb5c6", left: "#16a34a" } as const;
 type ShareKey = keyof typeof SHARE_COLORS;
 const SHARE_LABEL: Record<ShareKey, string> = { salaries: "Salaries", freelance: "Freelancers", rent: "Rent", tools: "Tools", other: "Other", left: "Left over" };
+/** What each part of "Where the income goes" holds (business.ts `sharesOf`). */
+const SHARE_TIP: Record<ShareKey, string> = {
+  salaries: "The salaried team, with what the employer pays on top.",
+  freelance: "What freelancers were paid.",
+  rent: "Rent and the bills of the place.",
+  tools: "Everything on the Expenses page: monthly, yearly and one-off.",
+  other: "Every other cost in the books.",
+  left: "Income that no cost took: the profit margin. A loss shows as none.",
+};
 
 function sharesWithLeft(s: BoardFigures["shares"]): Record<ShareKey, number> {
   const spent = s.salaries + s.freelance + s.rent + s.tools + s.other;
   return { ...s, left: Math.max(0, 1 - spent) };
 }
 
-function Stacked({ label, shares }: { label: string; shares: Record<ShareKey, number> }) {
+function Stacked({ label, shares, tipOf }: { label: string; shares: Record<ShareKey, number>; tipOf: (k: ShareKey) => { title: string; body: React.ReactNode } }) {
   const total = Math.max(1, Object.values(shares).reduce((a, b) => a + b, 0));
   return (
     <div className="flex items-center gap-3">
       <span className="w-20 shrink-0 text-[12px] text-muted">{label}</span>
       <div className="flex h-6 min-w-0 flex-1 overflow-hidden rounded-lg">
         {(Object.keys(SHARE_COLORS) as ShareKey[]).map((k) =>
-          shares[k] > 0.004 ? <div key={k} title={`${pct(shares[k])}%`} style={{ width: `${(shares[k] / total) * 100}%`, background: SHARE_COLORS[k] }} /> : null,
+          shares[k] > 0.004 ? <Tip key={k} as="div" {...tipOf(k)} style={{ width: `${(shares[k] / total) * 100}%`, background: SHARE_COLORS[k] }}>{null}</Tip> : null,
         )}
       </div>
     </div>
@@ -494,57 +598,109 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
   const clientScale = Math.max(0.4, f.topClient * 1.15);
   const weekMax = Math.max(1, ...weeks.map((w) => Math.max(w.opened, w.resolved)));
   const util = f.utilization;
+  const short = pct(f.targetMargin) - pct(f.margin);
+  const perHour = f.avgRate - f.hourCost;
+  const shareTip = (k: ShareKey) => ({
+    title: t(SHARE_LABEL[k]),
+    body: (
+      <>
+        {t(SHARE_TIP[k])}
+        <TipRows rows={[[t("Now"), `${pct(now[k])}%`] as const, ...(then ? [[t("A year ago"), `${pct(then[k])}%`] as const] : [])]} />
+      </>
+    ),
+  });
+  const weekDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(t.locale, { day: "numeric", month: "short" });
   return (
     <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <ChartCard title={t("Profit margin")}>
-        <p className="font-serif-accent text-[40px] leading-none tabular-nums" style={{ color: f.margin >= f.targetMargin ? "var(--success)" : f.margin < 0 ? "var(--danger)" : undefined }}>
+      <ChartCard title={t("Profit margin")} tip={t("What is left of the income after every cost, as a share of the income.")}>
+        <Tip
+          as="p"
+          title={t("Profit margin")}
+          body={
+            <TipRows
+              rows={[
+                [t("Now"), `${pct(f.margin)}%`] as const,
+                [t("Target"), `${pct(f.targetMargin)}%`] as const,
+                ...(f.marginLastYear != null ? [[t("A year ago"), `${pct(f.marginLastYear)}%`] as const] : []),
+                [t(short > 0 ? "Short of the target" : "Above the target"), t("{n} points", { n: Math.abs(short) })] as const,
+              ]}
+            />
+          }
+          className="font-serif-accent inline-block text-[40px] leading-none tabular-nums"
+          style={{ color: f.margin >= f.targetMargin ? "var(--success)" : f.margin < 0 ? "var(--danger)" : undefined }}
+        >
           {pct(f.margin)}%
-        </p>
+        </Tip>
         <div className="mt-4">
           <Track
             value={Math.max(0, f.margin)}
             scale={marginScale}
             color={f.margin >= f.targetMargin ? "var(--success)" : "var(--brand)"}
-            marks={[{ at: f.targetMargin, label: `${t("Target")} ${pct(f.targetMargin)}%` }]}
+            marks={[{ at: f.targetMargin, label: `${t("Target")} ${pct(f.targetMargin)}%`, tip: t("The margin the studio aims for: the same target the hours goal on Home is built on.") }]}
           />
         </div>
         {f.marginLastYear != null && (
           <p className="mt-1 text-[13px] text-muted">
-            {t("A year ago")}: <span className="tabular-nums">{pct(f.marginLastYear)}%</span>
+            <Tip mark body={t("The same three months, last year.")}>
+              {t("A year ago")}
+            </Tip>
+            : <span className="tabular-nums">{pct(f.marginLastYear)}%</span>
           </p>
         )}
       </ChartCard>
 
-      <ChartCard title={t("Where the income goes")}>
+      <ChartCard title={t("Where the income goes")} tip={t("Each cost as a share of the income. What no cost took is left over: the profit margin.")}>
         <div className="flex flex-col gap-2">
-          <Stacked label={t("Now")} shares={now} />
-          {then && <Stacked label={t("A year ago")} shares={then} />}
+          <Stacked label={t("Now")} shares={now} tipOf={shareTip} />
+          {then && <Stacked label={t("A year ago")} shares={then} tipOf={shareTip} />}
         </div>
         <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-[12px] text-muted">
           {(Object.keys(SHARE_COLORS) as ShareKey[]).map((k) => (
-            <li key={k} className="flex items-center gap-2">
+            <Tip key={k} as="li" {...shareTip(k)} className="flex items-center gap-2">
               <span className="size-2.5 shrink-0 rounded-sm" style={{ background: SHARE_COLORS[k] }} />
               <span className="min-w-0 flex-1 truncate">{t(SHARE_LABEL[k])}</span>
               <span className="tabular-nums text-foreground">{pct(now[k])}%</span>
               {then && <span className="w-9 text-end tabular-nums text-faint">{pct(then[k])}%</span>}
-            </li>
+            </Tip>
           ))}
         </ul>
       </ChartCard>
 
-      <ChartCard title={t("An hour")}>
+      <ChartCard title={t("An hour")} tip={t("The average hour of the three months: what it is sold for, and what it has to bring in to cover every cost.")}>
         <div className="flex flex-col gap-3">
-          <HourBar label={t("Sold for")} value={f.avgRate} scale={hourScale} color="var(--brand)" />
-          <HourBar label={t("Costs the studio")} value={f.hourCost} scale={hourScale} color={f.hourCost > f.avgRate ? "var(--danger)" : "#001e6c"} />
-          {f.hourCostLastYear != null && <HourBar label={t("A year ago it cost")} value={f.hourCostLastYear} scale={hourScale} color="#aeb5c6" />}
+          <HourBar label={t("Sold for")} value={f.avgRate} scale={hourScale} color="var(--brand)" tip={t("Income from hourly work ÷ billable hours.")} />
+          <HourBar
+            label={t("Costs the studio")}
+            value={f.hourCost}
+            scale={hourScale}
+            color={f.hourCost > f.avgRate ? "var(--danger)" : "#001e6c"}
+            tip={
+              <>
+                {t("All costs ÷ billable hours: what an hour must bring in to break even.")}
+                <TipRows rows={[[t(perHour >= 0 ? "Left on each hour" : "Missing on each hour"), formatILS(Math.round(Math.abs(perHour)))] as const]} />
+              </>
+            }
+          />
+          {f.hourCostLastYear != null && (
+            <HourBar label={t("A year ago it cost")} value={f.hourCostLastYear} scale={hourScale} color="#aeb5c6" tip={t("The same sum for the same three months, last year.")} />
+          )}
         </div>
-        <p className="mt-3 text-[13px] text-muted">{t("{pct}% of income is sold by the hour", { pct: pct(f.hourlyShare) })}</p>
+        <p className="mt-3 text-[13px] text-muted">
+          <Tip mark body={t("The rest is fixed-price projects.")}>
+            {t("{pct}% of income is sold by the hour", { pct: pct(f.hourlyShare) })}
+          </Tip>
+        </p>
       </ChartCard>
 
-      <ChartCard title={t("Team")}>
+      <ChartCard title={t("Team")} tip={t("How much of the salaried team's time is billed, and who else the hours lean on.")}>
         {util != null && (
           <>
-            <p className="flex items-baseline gap-2">
+            <Tip
+              as="p"
+              title={t("of a full day billed")}
+              body={t("The salaried team's billable hours ÷ the hours of full working days, 8 a day.")}
+              className="flex items-baseline gap-2"
+            >
               <span
                 className="font-serif-accent text-[40px] leading-none tabular-nums"
                 style={{ color: util < f.bench.utilizationLow || util > f.bench.utilizationHigh ? "var(--warning)" : "var(--success)" }}
@@ -552,20 +708,38 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
                 {pct(util)}%
               </span>
               <span className="text-[13px] text-muted">{t("of a full day billed")}</span>
-            </p>
+            </Tip>
             <div className="mt-4">
               <Track value={util} scale={1} color="var(--brand)" band={[f.bench.utilizationLow, f.bench.utilizationHigh]} />
             </div>
-            <p className="-mt-1 text-[12px] text-faint">{t("Healthy range {low}–{high}% — a rule of thumb", { low: pct(f.bench.utilizationLow), high: pct(f.bench.utilizationHigh) })}</p>
+            <p className="-mt-1 text-[12px] text-faint">
+              <Tip mark body={t("Under the range people sit idle; over it there is no room for anything but client work.")}>
+                {t("Healthy range {low}–{high}% — a rule of thumb", { low: pct(f.bench.utilizationLow), high: pct(f.bench.utilizationHigh) })}
+              </Tip>
+            </p>
           </>
         )}
         <ul className="mt-3 flex flex-col gap-1 text-[13px] text-muted">
-          <li>{t("{n} salaried designers", { n: Math.round(f.designers * 10) / 10 })}</li>
-          {f.ownerShare != null && <li>{t("You bill {pct}% of the hours", { pct: pct(f.ownerShare) })}</li>}
+          <li>
+            <Tip mark body={t("Salaried people who logged real hours, averaged over the three months.")}>
+              {t("{n} salaried designers", { n: Math.round(f.designers * 10) / 10 })}
+            </Tip>
+          </li>
+          {f.ownerShare != null && (
+            <li>
+              <Tip mark body={t("Your own hours out of all billable hours. The higher it is, the more the studio depends on you.")}>
+                {t("You bill {pct}% of the hours", { pct: pct(f.ownerShare) })}
+              </Tip>
+            </li>
+          )}
         </ul>
         {f.freelancers.length > 0 && (
           <>
-            <p className="mt-3 text-[12px] text-faint">{t("Freelancers, hours a month")}</p>
+            <p className="mt-3 text-[12px] text-faint">
+              <Tip mark body={t("The hours each freelancer logged, a month on average.")}>
+                {t("Freelancers, hours a month")}
+              </Tip>
+            </p>
             <ul className="mt-1 flex flex-col gap-1 text-[13px]">
               {f.freelancers.map((x) => (
                 <li key={x.name} className="flex items-center gap-2">
@@ -578,10 +752,32 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
         )}
       </ChartCard>
 
-      <ChartCard title={`${t("Clients")} · ${t("Share of billable hours")}`} wide>
+      <ChartCard
+        title={`${t("Clients")} · ${t("Share of billable hours")}`}
+        tip={t("Each client's part of the billable hours. One client too large is a risk: if it leaves, that part of the work leaves with it.")}
+        wide
+      >
         <ul className="flex flex-col gap-2.5">
           {f.clients.map((c) => (
-            <li key={c.name} className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)_2.75rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3rem_minmax(0,14rem)]">
+            <Tip
+              key={c.name}
+              as="li"
+              title={c.name}
+              body={
+                <>
+                  <TipRows
+                    rows={[
+                      [t("Hours in the three months"), Math.round(c.hours)] as const,
+                      [t("Share of billable hours"), `${pct(c.hoursShare)}%`] as const,
+                      [t("Left after its people"), c.leftShare != null ? `${pct(c.leftShare)}%` : t("not known")] as const,
+                      ...(c.rateAgeMonths != null ? [[t("Rate unchanged"), t("{n} months", { n: c.rateAgeMonths })] as const] : []),
+                    ]}
+                  />
+                  <p className="mt-2">{t("Left after its people: its hours at its rate, less the cost of the hours people put in.")}</p>
+                </>
+              }
+              className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)_2.75rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] md:grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3rem_minmax(0,14rem)]"
+            >
               <span className="truncate">{c.name}</span>
               <span className="relative h-3 rounded-full bg-track">
                 <span
@@ -603,28 +799,33 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
                   .filter(Boolean)
                   .join(" · ")}
               </span>
-            </li>
+            </Tip>
           ))}
         </ul>
         <p className="mt-3 text-[12px] text-faint">
-          {[
-            f.otherClients.count > 0 ? `${t("{n} more clients", { n: f.otherClients.count })} · ${pct(f.otherClients.hoursShare)}%` : null,
-            t("Top three together {pct}%", { pct: pct(f.topThree) }),
-            t("Amber at {amber}%, red at {red}% — a rule of thumb", { amber: pct(f.bench.clientAmber), red: pct(f.bench.clientRed) }),
-          ]
-            .filter(Boolean)
-            .join(" · ")}
+          <Tip mark body={t("The two thin lines on each bar. Past the first, one client carries a large part of the work; past the second, losing it would be hard to absorb.")}>
+            {[
+              f.otherClients.count > 0 ? `${t("{n} more clients", { n: f.otherClients.count })} · ${pct(f.otherClients.hoursShare)}%` : null,
+              t("Top three together {pct}%", { pct: pct(f.topThree) }),
+              t("Amber at {amber}%, red at {red}% — a rule of thumb", { amber: pct(f.bench.clientAmber), red: pct(f.bench.clientRed) }),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </Tip>
         </p>
       </ChartCard>
 
-      <ChartCard title={t("Closing the gap to the target")}>
+      <ChartCard
+        title={t("Closing the gap to the target")}
+        tip={t("How far the three months fell short of the target margin, and three ways to close it. Each alone would do it; in practice, a little of each.")}
+      >
         {f.gap ? (
           <>
             <p className="text-[12px] text-faint">{t("Any one of these would do it")}</p>
             <ul className="mt-2 flex flex-col gap-2.5">
-              <Lever label={t("Raise rates")} value={`+${pct(f.gap.rateUp)}%`} />
-              <Lever label={t("Bill more hours a month")} value={`+${Math.round(f.gap.extraHoursPerMonth)}`} />
-              <Lever label={t("Cut costs")} value={`−${pct(f.gap.costCut)}%`} />
+              <Lever label={t("Raise rates")} value={`+${pct(f.gap.rateUp)}%`} tip={t("Every hourly rate up by this much, for the same hours.")} />
+              <Lever label={t("Bill more hours a month")} value={`+${Math.round(f.gap.extraHoursPerMonth)}`} tip={t("This many more billable hours every month, at today's average rate.")} />
+              <Lever label={t("Cut costs")} value={`−${pct(f.gap.costCut)}%`} tip={t("All costs down by this much, for the same income.")} />
             </ul>
           </>
         ) : (
@@ -632,24 +833,40 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
         )}
       </ChartCard>
 
-      <ChartCard title={t("Pipeline")}>
+      <ChartCard title={t("Pipeline")} tip={t("Where the next work and the next people would come from.")}>
         <div className="grid grid-cols-3 gap-3">
-          <Mini label={t("Open leads")} value={f.pipeline.openLeads} href="/leads" />
-          <Mini label={t("Waiting on us")} value={f.pipeline.waitingOnUs} href="/leads" warn={f.pipeline.waitingOnUs > 0} />
-          <Mini label={t("Active candidates")} value={f.pipeline.candidates} href="/candidates" />
+          <Mini label={t("Open leads")} value={f.pipeline.openLeads} href="/leads" tip={t("Leads that are neither won nor lost.")} />
+          <Mini
+            label={t("Waiting on us")}
+            value={f.pipeline.waitingOnUs}
+            href="/leads"
+            warn={f.pipeline.waitingOnUs > 0}
+            tip={t("Open leads that are owed a reply, or have a next step with a date.")}
+          />
+          <Mini label={t("Active candidates")} value={f.pipeline.candidates} href="/candidates" tip={t("Candidates still in the hiring process.")} />
         </div>
       </ChartCard>
 
-      <ChartCard title={t("Findings, week by week")} wide>
+      <ChartCard
+        title={t("Findings, week by week")}
+        tip={t("How many findings a check opened each week, and how many it closed. More closed than opened: the list is getting shorter.")}
+        wide
+      >
         <div dir="ltr" className="flex h-32 items-end gap-3">
           {weeks.map((w) => (
-            <div key={w.start} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <Tip
+              key={w.start}
+              as="div"
+              title={t("Week of {day}", { day: weekDay(w.start) })}
+              body={<TipRows rows={[[t("Opened"), w.opened] as const, [t("Closed"), w.resolved] as const]} />}
+              className="flex min-w-0 flex-1 flex-col items-center gap-1"
+            >
               <div className="flex h-24 w-full items-end justify-center gap-1">
-                <div title={String(w.opened)} className="w-1/3 max-w-5 rounded-t-md bg-warning" style={{ height: `${(w.opened / weekMax) * 100}%`, minHeight: w.opened ? 3 : 0 }} />
-                <div title={String(w.resolved)} className="w-1/3 max-w-5 rounded-t-md bg-success" style={{ height: `${(w.resolved / weekMax) * 100}%`, minHeight: w.resolved ? 3 : 0 }} />
+                <div className="w-1/3 max-w-5 rounded-t-md bg-warning" style={{ height: `${(w.opened / weekMax) * 100}%`, minHeight: w.opened ? 3 : 0 }} />
+                <div className="w-1/3 max-w-5 rounded-t-md bg-success" style={{ height: `${(w.resolved / weekMax) * 100}%`, minHeight: w.resolved ? 3 : 0 }} />
               </div>
-              <span className="truncate text-[11px] text-faint">{new Date(`${w.start}T12:00:00`).toLocaleDateString(t.locale, { day: "numeric", month: "short" })}</span>
-            </div>
+              <span className="truncate text-[11px] text-faint">{weekDay(w.start)}</span>
+            </Tip>
           ))}
         </div>
         <p className="mt-2 flex gap-4 text-[12px] text-muted">
@@ -665,9 +882,9 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
   );
 }
 
-function HourBar({ label, value, scale, color }: { label: string; value: number; scale: number; color: string }) {
+function HourBar({ label, value, scale, color, tip }: { label: string; value: number; scale: number; color: string; tip: React.ReactNode }) {
   return (
-    <div>
+    <Tip as="div" title={label} body={tip}>
       <p className="flex items-baseline justify-between gap-3 text-[13px]">
         <span className="text-muted">{label}</span>
         <span dir="ltr" className="tabular-nums">
@@ -677,29 +894,31 @@ function HourBar({ label, value, scale, color }: { label: string; value: number;
       <div className="relative mt-1 h-3 rounded-full bg-track">
         <div className="absolute inset-y-0 rounded-full" style={{ insetInlineStart: 0, width: `${Math.min(100, (value / scale) * 100)}%`, background: color }} />
       </div>
-    </div>
+    </Tip>
   );
 }
 
-function Lever({ label, value }: { label: string; value: string }) {
+function Lever({ label, value, tip }: { label: string; value: string; tip: string }) {
   return (
-    <li className="flex items-baseline justify-between gap-3">
+    <Tip as="li" title={label} body={tip} className="flex items-baseline justify-between gap-3">
       <span className="text-[13px] text-muted">{label}</span>
       <span dir="ltr" className="font-serif-accent text-[22px] leading-none tabular-nums">
         {value}
       </span>
-    </li>
+    </Tip>
   );
 }
 
-function Mini({ label, value, href, warn = false }: { label: string; value: number; href: string; warn?: boolean }) {
+function Mini({ label, value, href, tip, warn = false }: { label: string; value: number; href: string; tip: string; warn?: boolean }) {
   return (
-    <Link href={href} className="rounded-xl bg-background p-3 hover:bg-brand-soft">
-      <p className="font-serif-accent text-[26px] leading-none tabular-nums" style={warn ? { color: "var(--warning)" } : undefined}>
-        {value}
-      </p>
-      <p className="mt-1.5 text-[12px] leading-4 text-muted">{label}</p>
-    </Link>
+    <Tip as="div" title={label} body={tip} focusable={false} className="flex">
+      <Link href={href} className="min-w-0 flex-1 rounded-xl bg-background p-3 hover:bg-brand-soft">
+        <p className="font-serif-accent text-[26px] leading-none tabular-nums" style={warn ? { color: "var(--warning)" } : undefined}>
+          {value}
+        </p>
+        <p className="mt-1.5 text-[12px] leading-4 text-muted">{label}</p>
+      </Link>
+    </Tip>
   );
 }
 
@@ -736,12 +955,15 @@ function FindingCard({
     <article className="rounded-2xl bg-surface p-4 shadow-card">
       <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
         <span className="size-2 rounded-full" style={{ background: KIND_COLOR[it.kind] }} />
-        {t(KIND_LABEL[it.kind])} · <span className="bidi-auto">{tr(it.area)}</span>
+        <Tip mark body={t(KIND_TIP[it.kind])}>
+          {t(KIND_LABEL[it.kind])}
+        </Tip>{" "}
+        · <span {...said(he, tr(it.area))}>{tr(it.area)}</span>
         {horizon && <span>· {t(horizon)}</span>}
         {it.facts.changed === true && <span className="text-danger">{t("· got worse")}</span>}
       </p>
-      <p className="bidi-auto mt-1.5 text-[15px] font-medium leading-5">{tr(shownTitle(it))}</p>
-      <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{tr(shownBody(it))}</p>
+      <p {...said(he, tr(shownTitle(it)), "mt-1.5 text-[15px] font-medium leading-5")}>{tr(shownTitle(it))}</p>
+      <p {...said(he, tr(shownBody(it)), "mt-1 text-[13px] leading-5 text-muted")}>{tr(shownBody(it))}</p>
       {figure && (
         <p dir="ltr" className="font-serif-accent mt-2 text-start text-[22px] leading-none tabular-nums" style={{ color: it.kind === "now" ? "var(--danger)" : undefined }}>
           {figure}
@@ -833,7 +1055,9 @@ function FindingCard({
             </button>
           )}
           <span className="ms-auto flex items-center gap-1 text-faint">
-            <span className="me-1 text-[12px]">{t("since {day}", { day: dayLabel(dayOf(it.firstSeen), t.locale) })}</span>
+            <Tip mark body={t("First found on this day, and true at every check since.")} className="me-1 text-[12px]">
+              {t("since {day}", { day: dayLabel(dayOf(it.firstSeen), t.locale) })}
+            </Tip>
             <button onClick={() => setSnoozing(true)} title={t("Snooze")} aria-label={t("Snooze")} className="flex size-7 items-center justify-center rounded-lg hover:bg-background hover:text-foreground">
               <Clock3 size={16} strokeWidth={1.75} />
             </button>

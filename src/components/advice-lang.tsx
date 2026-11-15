@@ -106,6 +106,26 @@ export function useHebrew(lang: AdviceLang, texts: string[]): Hebrew {
   }, [lang, map, busy, off]);
 }
 
+const HEBREW_LETTER = /[\u0590-\u05FF]/;
+
+/**
+ * Direction and class for a sentence &advice wrote — a card's title or body,
+ * a review's summary — once it is in the chosen language (`shown`).
+ *
+ * In Hebrew the line is right-to-left whatever it starts with. `bidi-auto`
+ * takes a line's direction from its first letter, so a sentence that opens
+ * with a client's English name was laid out left-to-right: aligned left, its
+ * Hebrew and English out of order (Nitsan, 2026-11-15). A sentence still in
+ * English — its Hebrew isn't in yet — stays left-to-right.
+ *
+ * In English nothing changes: `bidi-auto`, since a title may quote a Hebrew
+ * task name.
+ */
+export function said(he: { rtl: boolean }, shown: string, className = ""): { dir?: "rtl" | "ltr"; className: string } {
+  if (!he.rtl) return { className: `bidi-auto ${className}` };
+  return { dir: HEBREW_LETTER.test(shown) ? "rtl" : "ltr", className };
+}
+
 /** EN | עב — `night` for the pane's dark scheme. */
 export function AdviceLangSwitch({ night = false }: { night?: boolean }) {
   const [lang, setLang] = useAdviceLang();

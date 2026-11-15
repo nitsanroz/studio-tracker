@@ -268,6 +268,11 @@ export function TrendChart({
     arr.push(e);
     eventsByYear.set(e.year, arr);
   }
+  // A year's first event is the one the chart names (the rest are "+N"), so the
+  // order has to mean something: by month, then by name. The rows arrive in the
+  // order of their ids, which are random — and before the merge, in whatever
+  // order the database kept them (found comparing the two apps, 2026-11-15).
+  for (const arr of eventsByYear.values()) arr.sort((a, b) => (a.month ?? 0) - (b.month ?? 0) || a.event.localeCompare(b.event));
 
   return (
     <div className="relative">

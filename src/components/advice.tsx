@@ -20,7 +20,7 @@ import { PNL_UPDATED } from "@/lib/finance/auto-rollup";
 import { usePhone } from "@/lib/finance/use-phone";
 import { shownBody, shownTitle, viewTexts } from "@/lib/advice/texts";
 import type { UiT } from "@/lib/advice/he-ui";
-import { AdviceLangSwitch, useAdviceLang, useHebrew } from "./advice-lang";
+import { AdviceLangSwitch, said, useAdviceLang, useHebrew } from "./advice-lang";
 
 /**
  * &advice — the owner's advisor, ONE pane for the whole app since the finance
@@ -488,8 +488,8 @@ function AdvicePane({
           {t(KIND_LABEL[it.kind])} · {tr(it.area)}
           {it.facts.changed === true && <span style={{ color: CORAL }}>{t("· got worse")}</span>}
         </p>
-        <p className="bidi-auto text-[15px] font-medium leading-5">{tr(shownTitle(it))}</p>
-        <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{tr(shownBody(it))}</p>
+        <p {...said({ rtl }, tr(shownTitle(it)), "text-[15px] font-medium leading-5")}>{tr(shownTitle(it))}</p>
+        <p {...said({ rtl }, tr(shownBody(it)), "mt-1 text-[13px] leading-5 text-muted")}>{tr(shownBody(it))}</p>
         {/* The rule's exact amount — Claude's wording never carries one (word.ts). */}
         {figure && (
           <p className="font-serif-accent mt-2 text-[22px] leading-none tabular-nums" style={{ color: it.kind === "now" ? CORAL : undefined }}>
@@ -697,7 +697,7 @@ function AdvicePane({
                   <Sparkles size={15} strokeWidth={1.75} style={{ color: AQUA }} />
                   {t("Review the business")}
                 </p>
-                <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">
+                <p className={`${rtl ? "" : "bidi-auto "}mt-1 text-[13px] leading-5 text-muted`}>
                   {tr(
                     view.business?.summary ??
                       "Claude reads the last three months the way a business consultant would — price, team size, which clients are worth the hours, costs, tax timing — and says what it would do. It sees shares, percentages and hours, never an amount.",
@@ -706,7 +706,7 @@ function AdvicePane({
                 {!!view.business?.questions.length && (
                   <ul className="mt-2 list-disc space-y-1 ps-4 text-[13px] leading-5 text-muted">
                     {view.business.questions.map((q) => (
-                      <li key={q} className="bidi-auto">
+                      <li key={q} {...said({ rtl }, tr(q))}>
                         {tr(q)}
                       </li>
                     ))}
@@ -745,7 +745,7 @@ function AdvicePane({
                   <Sparkles size={15} strokeWidth={1.75} style={{ color: AQUA }} />
                   {t("Review the studio's tools")}
                 </p>
-                <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">
+                <p className={`${rtl ? "" : "bidi-auto "}mt-1 text-[13px] leading-5 text-muted`}>
                   {tr(
                     view.review?.summary ??
                       "Claude looks over every live subscription and says what to cancel, merge, switch or downgrade. It sees names and plans, never an amount.",
@@ -1023,10 +1023,10 @@ function Spotlight({
           </button>
         </div>
         <div dir={rtl ? "rtl" : undefined} className="px-4 pb-4 pt-1.5">
-          <p className={`bidi-auto text-[15px] font-medium leading-5 ${small ? "truncate" : ""}`}>{tr(shownTitle(it))}</p>
+          <p {...said({ rtl }, tr(shownTitle(it)), `text-[15px] font-medium leading-5 ${small ? "truncate" : ""}`)}>{tr(shownTitle(it))}</p>
           {!small && (
             <>
-              <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{tr(shownBody(it))}</p>
+              <p {...said({ rtl }, tr(shownBody(it)), "mt-1 text-[13px] leading-5 text-muted")}>{tr(shownBody(it))}</p>
               {figure && (
                 <p className="font-serif-accent mt-2 text-[22px] leading-none tabular-nums" style={{ color: it.kind === "now" ? CORAL : undefined }}>
                   {figure}
