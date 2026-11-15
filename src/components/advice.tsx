@@ -339,6 +339,22 @@ function AdvicePane({
     return () => window.removeEventListener(PNL_UPDATED, onUpdated);
   }, [load]);
 
+  // "Review the business": Claude reads the studio as a consultant would — one call per click.
+  const [consulting, setConsulting] = useState(false);
+  const [consultError, setConsultError] = useState<string | null>(null);
+  const runBusiness = async () => {
+    setConsulting(true);
+    setConsultError(null);
+    const res = await fetch("/api/advice/business", { method: "POST" }).catch(() => null);
+    const j = res ? await res.json().catch(() => ({})) : {};
+    if (!res || !res.ok) setConsultError((j as { error?: string }).error ?? "Couldn't reach the server.");
+    else {
+      setView(j as AdviceView);
+      setFilter("idea");
+    }
+    setConsulting(false);
+  };
+
   // "Review the tools" (finance's v1.11.0): one Claude call per click; its cards replace the last review's.
   const runReview = async () => {
     setReviewing(true);
@@ -652,6 +668,53 @@ function AdvicePane({
           <ul className="mt-3 flex-1 overflow-y-auto px-6 pb-6">
             {shown.length === 0 && (
               <EmptyState icon={filter === "idea" ? Lightbulb : Check} tone="success" text={filter === "idea" ? "No ideas today." : "All clear."} compact />
+            )}
+            {/* The consultant's read of the whole studio — on Home and on finance's Overview, where the whole picture is. */}
+            {(ctx.pathname === "/" || ctx.pathname === "/finance") && (
+              <li className="mt-2 rounded-2xl border border-border p-4">
+                <p className="flex items-center gap-2 text-[14px] font-medium">
+                  <Sparkles size={15} strokeWidth={1.75} style={{ color: AQUA }} />
+                  Review the business
+                </p>
+                <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">
+                  {view.business?.summary ??
+                    "Claude reads the last three months the way a business consultant would — price, team size, which clients are worth the hours, costs, tax timing — and says what it would do. It sees shares, percentages and hours, never an amount."}
+                </p>
+                {!!view.business?.questions.length && (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-[13px] leading-5 text-muted">
+                    {view.business.questions.map((q) => (
+                      <li key={q} className="bidi-auto">
+                        {q}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-3 flex items-center gap-3 text-[13px]">
+                  <button
+                    onClick={() => void runBusiness()}
+                    disabled={!view.reviewOn || !view.businessReady || consulting}
+                    className="rounded-full bg-brand px-3.5 py-1.5 font-medium text-background hover:opacity-90 disabled:opacity-50"
+                  >
+                    {consulting ? "Reviewing…" : view.business && !view.business.error ? "Review again" : "Review now"}
+                  </button>
+                  <span className="text-faint">
+                    {!view.reviewOn
+                      ? "Needs a Claude API key"
+                      : !view.businessReady
+                        ? "The last three months aren't booked yet"
+                        : consulting
+                          ? "about a minute"
+                          : view.business
+                            ? `${view.business.error ? "Last try failed" : "Last review"} ${dayLabel(dayOf(view.business.at))}`
+                            : ""}
+                  </span>
+                </div>
+                {consultError && (
+                  <p className="mt-2 text-[12px]" style={{ color: CORAL }}>
+                    {consultError}
+                  </p>
+                )}
+              </li>
             )}
             {ctx.pathname.startsWith("/finance/expenses") && (
               <li className="mt-2 rounded-2xl border border-border p-4">

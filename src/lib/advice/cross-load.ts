@@ -8,7 +8,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchAll, isMissingSchema } from "@/lib/db";
 import { HOURLY_TERMS } from "@/lib/hourly-terms";
 import type { RateTerms } from "@/lib/freelance-rate";
-import { lastMonthOf, type CrossFreelancer, type PersonCost } from "./cross";
+import { completeMonths, type MonthCost } from "./business";
+import { lastMonthOf, type CrossFreelancer } from "./cross";
 import type { AdviceData as StudioData } from "./signals";
 
 type Row = Record<string, unknown>;
@@ -80,28 +81,33 @@ export async function loadCrossFreelancers(sb: SupabaseClient, studio: StudioDat
 }
 
 /**
- * What each person cost the studio in the last complete month: the employer
+ * What each person cost the studio in each of the last three complete months: the employer
  * cost on finance's Salaries (`gross_amount` IS the employer cost) and the
  * amount on its Freelance rows, where the row is tied to a tracker profile.
  *
  * ⚠️ PERSONAL FIGURES. Read with the owner's session (RLS: full finance), used
- * only inside `clientMargin`, which turns them into a client's total. They are
+ * only inside `clientMargin` and business.ts, which turn them into a client's
+ * total or a studio average. They are
  * never returned to the browser, stored in a finding, logged, or sent to
  * Claude. Rows with no profile can't be matched to hours and are left out.
  * Any failure reads as "nobody" and is logged — the rule stays quiet.
  */
-export async function loadPeopleCost(sb: SupabaseClient, today: string): Promise<PersonCost[]> {
+export async function loadPeopleCost(sb: SupabaseClient, today: string): Promise<MonthCost[]> {
   try {
-    const [y, m] = lastMonthOf(today).key.split("-").map(Number);
-    const read = async (table: string, amount: string): Promise<PersonCost[]> => {
-      const res = await sb.from(table).select(`profile_id, ${amount}`).eq("year", y).eq("month", m).not("profile_id", "is", null);
+    // The three complete months the business picture reads; client-margin uses the last of them.
+    const months = completeMonths(today, 3);
+    const years = [...new Set(months.map((k) => Number(k.slice(0, 4))))];
+    const read = async (table: string, amount: string, kind: MonthCost["kind"]): Promise<MonthCost[]> => {
+      const res = await sb.from(table).select(`profile_id, year, month, ${amount}`).in("year", years).not("profile_id", "is", null);
       if (res.error) throw Object.assign(new Error(`${table}: ${res.error.message}`), res.error);
-      return ((res.data ?? []) as unknown as Row[]).map((r) => ({ profileId: String(r.profile_id), costIls: Number(r[amount]) || 0 }));
+      return ((res.data ?? []) as unknown as Row[])
+        .map((r) => ({ profileId: String(r.profile_id), month: `${r.year}-${String(r.month).padStart(2, "0")}`, costIls: Number(r[amount]) || 0, kind }))
+        .filter((r) => months.includes(r.month));
     };
-    const [salaries, freelance] = await Promise.all([read("finance_salaries", "gross_amount"), read("finance_freelance", "amount")]);
+    const [salaries, freelance] = await Promise.all([read("finance_salaries", "gross_amount", "salary"), read("finance_freelance", "amount", "freelance")]);
     return [...salaries, ...freelance];
   } catch (e) {
-    console.error("&advice: people's cost failed to load — the client-margin rule is off:", (e as Error).message);
+    console.error("&advice: people's cost failed to load — the client-margin and team rules are off:", (e as Error).message);
     return [];
   }
 }

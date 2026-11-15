@@ -17,7 +17,9 @@ import { ITEMS, MAIL_EVERY_MS, lastReview, lastWordingRun, loadAdviceData as loa
 import { findAll as findMoney, pulse as moneyPulse } from "@/lib/finance/advice/signals";
 import { mailConfigured } from "@/lib/finance/mail/google";
 import { mailAccounts } from "@/lib/finance/mail/scan";
-import { clientMargin, debtPace, freelancerMargin, oneCardEach, unbilledWork, withMoney } from "./cross";
+import { businessMetrics, strategy, type BusinessMetrics } from "./business";
+import { lastBusinessReview, type BusinessReviewState } from "./business-review";
+import { clientMargin, debtPace, freelancerMargin, lastMonthOf, oneCardEach, unbilledWork, withMoney } from "./cross";
 import { loadCrossFreelancers, loadPeopleCost } from "./cross-load";
 import { loadAdviceData as loadStudioData } from "./load";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow, type Finding } from "./merge";
@@ -62,6 +64,10 @@ export interface AdviceView {
   /** the tools review (lib/finance/advice/review.ts): whether it can run, and the last one */
   reviewOn: boolean;
   review: ReviewState | null;
+  /** the business review (business-review.ts): the last one, or null */
+  business: BusinessReviewState | null;
+  /** false when the last three months aren't booked — there is nothing to review yet */
+  businessReady: boolean;
   /** a connected mailbox hasn't been read for a while: the pane asks for it in the background */
   mailDue: boolean;
   /** connected mailboxes — null before the mail tables exist */
@@ -98,22 +104,24 @@ const PEEK_FRESH_MS = 20 * 60_000;
 export const checkedRecently = () => Date.now() - lastCheckMs < PEEK_FRESH_MS;
 
 /** Run every rule and write the result: the pane's view, plus every stored row for the wording run. */
-export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; rows: AdviceRow[] }> {
+export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; rows: AdviceRow[]; metrics: BusinessMetrics | null }> {
   const today = studioToday();
   const now = new Date().toISOString();
   const wordingOn = !!process.env.ANTHROPIC_API_KEY;
   // ⚠️ Both sides or neither: a side that failed to load would read as "none of
   // its findings are true any more" and resolve them all, snoozes included.
-  const [studio, money, stored, run, review, mail] = await Promise.all([
+  const [studio, money, stored, run, review, mail, business] = await Promise.all([
     loadStudioData(sb, today),
     loadMoneyData(sb, today),
     loadRows(sb),
     wordingOn ? lastWordingRun(sb, today) : null,
     lastReview(sb),
     mailState(sb),
+    lastBusinessReview(sb).catch(() => null),
   ]);
   const [freelancers, peopleCost] = await Promise.all([loadCrossFreelancers(sb, studio), loadPeopleCost(sb, today)]);
 
+  const metrics = businessMetrics(studio, money, freelancers, peopleCost);
   const studioAll = findStudio(studio);
   const studioFound: Finding[] = studioAll.filter((f) => !SUPERSEDED.has(f.signal));
   const moneyFound: Finding[] = findMoney(money);
@@ -123,7 +131,14 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
     ...freelancerMargin(studio, money, freelancers),
     ...debtPace(studio, money),
     ...unbilledWork(studio, money),
-    ...clientMargin(studio, money, freelancers, peopleCost),
+    ...clientMargin(
+      studio,
+      money,
+      freelancers,
+      peopleCost.filter((c) => c.month === lastMonthOf(today).key),
+    ),
+    // The studio as a whole over three months: pricing, team size, the path to the target.
+    ...strategy(metrics),
   ]);
   const plan = mergeFindings(stored, findings, now);
 
@@ -187,6 +202,7 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
   ];
   return {
     rows: fresh,
+    metrics,
     view: {
       today,
       items: shown,
@@ -196,6 +212,8 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
       wordingDue: wordingOn && !run?.today,
       reviewOn: wordingOn,
       review,
+      business,
+      businessReady: metrics != null,
       mailDue: mail.due,
       mailboxes: mail.boxes,
       checkedAt: now,

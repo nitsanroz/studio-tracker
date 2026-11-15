@@ -755,6 +755,8 @@ const FIXTURE: AdviceView = {
   wordingDue: false,
   reviewOn: false,
   review: null,
+  business: null,
+  businessReady: false,
   mailDue: false,
   mailboxes: null,
   checkedAt: "2026-10-26T11:32:00.000Z",

@@ -233,8 +233,8 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
 
 /** The latest wording run: whether it was today, and whether it failed. */
 export async function lastWordingRun(sb: SupabaseClient, today: string): Promise<{ today: boolean; at: string; error: string | null } | null> {
-  // The tools review logs its runs here too (model "tools-review/…"); they aren't the day's wording.
-  const { data } = await sb.from(RUNS).select("run_at, error").not("model", "like", `${REVIEW_RUN}%`).order("run_at", { ascending: false }).limit(1).maybeSingle();
+  // The tools review and the business review log their runs here too (model "…-review/…"); they aren't the day's wording.
+  const { data } = await sb.from(RUNS).select("run_at, error").not("model", "like", "%-review/%").order("run_at", { ascending: false }).limit(1).maybeSingle();
   if (!data) return null;
   return { today: studioToday(new Date(String(data.run_at))) === today, at: String(data.run_at), error: (data.error as string | null) ?? null };
 }

@@ -106,7 +106,7 @@ function factsOf(f: Finding): AdviceRow["facts"] {
 }
 
 /** Signals Claude writes, not the rules: never reworded, never resolved by a check alone. */
-export const NOT_FROM_RULES = new Set(["idea", "tools"]);
+export const NOT_FROM_RULES = new Set(["idea", "tools", "review"]);
 
 /**
  * Ideas come from the daily Claude run, not from the rules, so a rule check
@@ -194,7 +194,8 @@ export function mergeFindings(rows: AdviceRow[], findings: Finding[], nowIso: st
 
   for (const r of rows) {
     if (r.resolvedAt || seen.has(r.key)) continue;
-    if (r.signal === "tools") continue;
+    // The tools review's and the business review's cards: replaced by the next review, never by a check.
+    if (r.signal === "tools" || r.signal === "review") continue;
     if (r.signal === "idea") {
       const basedOn = r.facts.basedOn;
       if (Array.isArray(basedOn) && basedOn.some((k) => typeof k === "string" && !seen.has(k))) plan.resolve.push(r.id);
