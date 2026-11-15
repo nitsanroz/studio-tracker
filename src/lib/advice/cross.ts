@@ -174,7 +174,7 @@ export function freelancerMargin(studio: StudioData, money_: MoneyData, freelanc
  * the last 30 days. Only periods whose hours are all in hand (they start on or
  * after the oldest entry loaded) — whenever they ended.
  * One card per client, so a snooze holds until it gets worse. Where it fires,
- * run.ts drops that client's "unpaid" card (`oneDebtCard`): the last period is
+ * run.ts drops that client's "unpaid" card (`oneCardEach`): the last period is
  * already in this one's total.
  */
 export function debtPace(studio: StudioData, money_: MoneyData): Finding[] {
@@ -237,11 +237,164 @@ export function debtPace(studio: StudioData, money_: MoneyData): Finding[] {
 }
 
 /**
- * A client with a "debt" card doesn't also get the "unpaid" card: debt adds up
- * every period past its payment date, the last one included, so the two would
- * state the same money twice and count as two things to do.
+ * 4 · Work piling up with nothing to invoice it from. The studio invoices the
+ * day after a billing period ends, so hours are billed only if a period covers
+ * them. This fires for a client with a rate and NO period covering today, once
+ * a week has passed since their last one ended and 10h+ have gone to them
+ * since (a client with no period at all: 10h+ in the entries in hand). A
+ * heads-up; "do now" from 30 days. Quiet while a period is open — however long
+ * it is, an invoice is already scheduled.
  */
-export function oneDebtCard(findings: Finding[]): Finding[] {
+export function unbilledWork(studio: StudioData, money_: MoneyData): Finding[] {
+  const today = studio.today;
+  const out: Finding[] = [];
+  for (const c of liveClients(studio)) {
+    const mine = studio.periods.filter((p) => p.clientId === c.id);
+    if (mine.some((p) => p.dateFrom <= today && today <= p.dateTo)) continue;
+    const last = mine.filter((p) => p.dateTo < today).sort((a, b) => b.dateTo.localeCompare(a.dateTo))[0];
+    const from = last ? shift(last.dateTo, 1) : (studio.entriesSince ?? today);
+    const days = last ? daysBetween(parseISO(last.dateTo), parseISO(today)) : null;
+    if (days != null && days < 7) continue;
+    const hours = reportHours(studio, c.id, from, today);
+    if (hours < 10) continue;
+    const rate = rateForClientOn(money_.rates, c.name, today);
+    if (rate == null) continue;
+    const value = hours * rate;
+    const urgent = days != null && days >= 30;
+    out.push({
+      key: `unbilled:${c.id}`,
+      signal: "unbilled",
+      kind: urgent ? "now" : "heads",
+      area: "Billing",
+      clientId: c.id,
+      severity: urgent ? 3 : 2,
+      facts: { client: c.name, hours: Number(hours.toFixed(2)), daysSince: days, lastPeriod: last?.label ?? null, rateIls: rate, valueIls: Math.round(value) },
+      figure: formatILSShort(value),
+      title: last ? `${c.name}: ${h(hours)}h since ${last.label} and no billing period open` : `${c.name}: ${h(hours)}h logged and no billing period at all`,
+      body:
+        `${last ? `${last.label} ended ${days} days ago` : "They have never had a billing period"}, and nothing covers today — ` +
+        `about ${money(value)} of work (${h(hours)}h × ${formatILS(rate)}) has no invoice coming. Add the period it belongs to.`,
+      reminder: false,
+      href: `/client-reports?client=${c.id}`,
+      action: "Add a billing period",
+    });
+  }
+  return out;
+}
+
+/** What a person cost the studio in the last complete month — employer cost, or a freelance payment. */
+export interface PersonCost {
+  profileId: string;
+  costIls: number;
+}
+
+/** A month with fewer logged hours than this is priced as if it had this many (see `clientMargin`). */
+export const MIN_MONTH_HOURS = 80;
+
+/**
+ * 5 · What a client leaves after the people who worked on it — the last
+ * complete month. Income = the client's billable hours × its rate. Cost = each
+ * person's hours for the client × what an hour of theirs cost the studio that
+ * month:
+ *   · a salaried person or a paid freelancer: their month's cost (finance's
+ *     Salaries / Freelance rows) ÷ the hours they logged that month, on
+ *     anything — but never fewer than `MIN_MONTH_HOURS`, so a month mostly on
+ *     vacation doesn't price each remaining hour at several times the truth;
+ *   · a sliding-rate freelancer: their rate that month, in ₪.
+ * People's cost only — rent, tools and the rest are not in it, so "left" is
+ * what the client contributes toward them, not profit.
+ * A heads-up under 25% left, "do now" when the people cost more than the
+ * client paid. Quiet under 20 hours, with no rate, or when more than a fifth
+ * of the hours belong to people whose cost isn't known (the owner, someone
+ * with no row that month) — a margin on half the cost would be a guess.
+ * ⚠️ Nothing about one person is stored or shown: the card carries the
+ * client's totals only.
+ */
+export function clientMargin(studio: StudioData, money_: MoneyData, freelancers: CrossFreelancer[], people: PersonCost[]): Finding[] {
+  if (!people.length && !freelancers.length) return [];
+  const month = lastMonthOf(studio.today);
+  const taskOf = new Map(studio.tasks.map((t) => [t.id, t]));
+  const inMonth = studio.entries.filter((e) => e.userId && e.date.startsWith(month.key));
+  const monthHours = new Map<string, number>();
+  for (const e of inMonth) monthHours.set(e.userId!, (monthHours.get(e.userId!) ?? 0) + e.minutes / 60);
+  const sliding = new Map(freelancers.map((f) => [f.profileId, rateFor(f.monthHours, f.terms) * f.fx]));
+  const paid = new Map<string, number>();
+  for (const p of people) paid.set(p.profileId, (paid.get(p.profileId) ?? 0) + p.costIls);
+  /** ₪ an hour of this person cost last month, or null when it isn't known. */
+  const hourly = (pid: string): number | null => {
+    if (sliding.has(pid)) return sliding.get(pid)!;
+    const cost = paid.get(pid);
+    return cost == null || cost <= 0 ? null : cost / Math.max(monthHours.get(pid) ?? 0, MIN_MONTH_HOURS);
+  };
+  type Sum = { hours: number; billable: number; cost: number; unknown: number; freelance: number };
+  const byClient = new Map<string, Sum>();
+  for (const e of inMonth) {
+    const t = taskOf.get(e.taskId);
+    if (!t?.clientId) continue;
+    const hours = e.minutes / 60;
+    const s = byClient.get(t.clientId) ?? { hours: 0, billable: 0, cost: 0, unknown: 0, freelance: 0 };
+    s.hours += hours;
+    if (t.billable && t.pending !== true) s.billable += hours;
+    const rate = hourly(e.userId!);
+    if (rate == null) s.unknown += hours;
+    else {
+      s.cost += hours * rate;
+      if (sliding.has(e.userId!)) s.freelance += hours * rate;
+    }
+    byClient.set(t.clientId, s);
+  }
+  const out: Finding[] = [];
+  for (const c of liveClients(studio)) {
+    const s = byClient.get(c.id);
+    if (!s || s.hours < 20 || s.unknown / s.hours > 0.2) continue;
+    const rate = rateForClientOn(money_.rates, c.name, `${month.key}-15`);
+    if (rate == null) continue;
+    const income = s.billable * rate;
+    if (income <= 0) continue;
+    const left = income - s.cost;
+    const share = left / income;
+    if (share >= 0.25) continue;
+    const loses = left < 0;
+    out.push({
+      key: `client-margin:${c.id}:${month.key}`,
+      signal: "client-margin",
+      kind: loses ? "now" : "heads",
+      area: "Clients",
+      clientId: c.id,
+      severity: loses ? 3 : 2,
+      facts: {
+        client: c.name,
+        month: month.name,
+        hours: Number(s.hours.toFixed(2)),
+        billableHours: Number(s.billable.toFixed(2)),
+        leftPct: pct(share),
+        incomeIls: Math.round(income),
+        costIls: Math.round(s.cost),
+        freelanceIls: Math.round(s.freelance),
+      },
+      figure: loses ? `${MINUS}${formatILSShort(-left)}` : `${formatILSShort(left)} left`,
+      title: loses ? `${c.name} cost more in people than it paid (${month.name})` : `${c.name} left ${pct(share)}% after the people who worked on it (${month.name})`,
+      body:
+        `${h(s.hours)}h went to them in ${month.name} — ${money(s.cost)} of people's time` +
+        (s.freelance > 0 ? ` (${money(s.freelance)} of it freelancers)` : "") +
+        `, against ${money(income)} billed (${h(s.billable)}h × ${formatILS(rate)}). ` +
+        (s.billable < s.hours - 0.5 ? `${h(s.hours - s.billable)}h of it wasn't billable. ` : "") +
+        (loses ? "Before rent and tools, this client lost money." : "That is what's left toward rent, tools and profit."),
+      reminder: false,
+      href: "/finance/rates",
+      action: "Open Rates",
+    });
+  }
+  return out;
+}
+
+/**
+ * One card per story. Where two rules tell the same thing, the wider one stays:
+ *   debt           drops that client's "unpaid" (its total includes the last period);
+ *   client-margin  drops that client's "freelancer-margin" for the month (its cost includes the freelancers).
+ */
+export function oneCardEach(findings: Finding[]): Finding[] {
   const inDebt = new Set(findings.filter((f) => f.signal === "debt").map((f) => f.clientId));
-  return findings.filter((f) => !(f.signal === "unpaid" && inDebt.has(f.clientId)));
+  const thin = new Set(findings.filter((f) => f.signal === "client-margin").map((f) => f.clientId));
+  return findings.filter((f) => !(f.signal === "unpaid" && inDebt.has(f.clientId)) && !(f.signal === "freelancer-margin" && thin.has(f.clientId)));
 }

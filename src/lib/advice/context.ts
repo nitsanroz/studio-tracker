@@ -28,12 +28,12 @@ const PAGES: [string, string, string[], string[]][] = [
   // Finance's pages (the finance merge, stage 4): their figures are the money
   // side's, prefixed "fin:" in run.ts so they never mix with a studio tile of
   // the same name. Longest path first — "/finance" itself is handled below.
-  ["/finance/plan", "Plan", ["close", "fx", "loss", "year", "client-quiet", "pace", "tax-reserve", "debt"], ["fin:pace", "fin:booked"]],
+  ["/finance/plan", "Plan", ["close", "fx", "loss", "year", "client-quiet", "pace", "tax-reserve", "debt", "unbilled"], ["fin:pace", "fin:booked"]],
   ["/finance/salaries", "Salaries", ["salaries", "payslips", "close", "paid"], ["fin:salaries", "fin:booked"]],
   ["/finance/freelance", "Freelance", ["freelance", "freelancer-margin", "close", "paid"], ["fin:freelance"]],
   ["/finance/people", "People", ["salaries"], ["fin:salaries"]],
   ["/finance/expenses", "Expenses", ["expense", "unfiled", "fx", "renewal", "overlap", "price-up", "fx-fee", "mail", "tools"], ["fin:filing", "fin:renewals"]],
-  ["/finance/rates", "Rates", ["no-rate", "unpaid", "debt", "scope", "freelancer-margin", "concentration", "client-quiet"], ["fin:clients"]],
+  ["/finance/rates", "Rates", ["no-rate", "unpaid", "debt", "unbilled", "scope", "freelancer-margin", "client-margin", "concentration", "client-quiet"], ["fin:clients"]],
   [
     "/finance/scenarios",
     "Scenarios",
@@ -47,14 +47,14 @@ const PAGES: [string, string, string[], string[]][] = [
   ["/feed", "Time Feed", ["missing-hours", "internal"], ["team"]],
   ["/settings", "Settings", [], []],
   ["/intake-queue", "Intake", ["intake"], []],
-  ["/clients", "Clients", ["overdue", "unassigned", "client-quiet", "concentration"], ["concentration"]],
+  ["/clients", "Clients", ["overdue", "unassigned", "client-quiet", "concentration", "client-margin", "unbilled"], ["concentration"]],
   ["/team", "Team", ["missing-hours", "vacation", "plan-gaps", "internal"], ["plan", "team"]],
   ["/candidates", "Candidates", ["candidates"], []],
   ["/leads", "Leads", ["leads", "concentration"], ["concentration"]],
   ["/freelancers", "Freelancers", ["freelancer-logs", "freelancer-margin"], []],
 ];
 
-const CLIENT_SIGNALS = new Set(["report-due", "unpaid", "debt", "cap", "estimate", "scope"]);
+const CLIENT_SIGNALS = new Set(["report-due", "unpaid", "debt", "unbilled", "cap", "estimate", "scope"]);
 const STUDIO_SIGNALS = new Set(["pace", "loss", "year", "concentration", "internal"]);
 /**
  * Finance's Overview owns everything about money — every signal a finance page

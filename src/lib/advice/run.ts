@@ -17,8 +17,8 @@ import { ITEMS, MAIL_EVERY_MS, lastReview, lastWordingRun, loadAdviceData as loa
 import { findAll as findMoney, pulse as moneyPulse } from "@/lib/finance/advice/signals";
 import { mailConfigured } from "@/lib/finance/mail/google";
 import { mailAccounts } from "@/lib/finance/mail/scan";
-import { debtPace, freelancerMargin, oneDebtCard, withMoney } from "./cross";
-import { loadCrossFreelancers } from "./cross-load";
+import { clientMargin, debtPace, freelancerMargin, oneCardEach, unbilledWork, withMoney } from "./cross";
+import { loadCrossFreelancers, loadPeopleCost } from "./cross-load";
 import { loadAdviceData as loadStudioData } from "./load";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow, type Finding } from "./merge";
 import { findAll as findStudio, pulse as studioPulse } from "./signals";
@@ -112,12 +112,19 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
     lastReview(sb),
     mailState(sb),
   ]);
-  const freelancers = await loadCrossFreelancers(sb, studio);
+  const [freelancers, peopleCost] = await Promise.all([loadCrossFreelancers(sb, studio), loadPeopleCost(sb, today)]);
 
   const studioAll = findStudio(studio);
   const studioFound: Finding[] = studioAll.filter((f) => !SUPERSEDED.has(f.signal));
   const moneyFound: Finding[] = findMoney(money);
-  const findings: Finding[] = oneDebtCard([...withMoney(studioFound, money), ...moneyFound, ...freelancerMargin(studio, money, freelancers), ...debtPace(studio, money)]);
+  const findings: Finding[] = oneCardEach([
+    ...withMoney(studioFound, money),
+    ...moneyFound,
+    ...freelancerMargin(studio, money, freelancers),
+    ...debtPace(studio, money),
+    ...unbilledWork(studio, money),
+    ...clientMargin(studio, money, freelancers, peopleCost),
+  ]);
   const plan = mergeFindings(stored, findings, now);
 
   // Inserts come back with their ids; updates and resolves run side by side.

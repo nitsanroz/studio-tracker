@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AdviceData as MoneyData } from "@/lib/finance/advice/signals";
-import { debtPace, freelancerMargin, lastMonthOf, oneDebtCard, withMoney, type CrossFreelancer } from "./cross";
+import { MIN_MONTH_HOURS, clientMargin, debtPace, freelancerMargin, lastMonthOf, oneCardEach, unbilledWork, withMoney, type CrossFreelancer } from "./cross";
 import type { Finding } from "./merge";
 import type { AdviceData as StudioData } from "./signals";
 
@@ -210,10 +210,111 @@ describe("debtPace — the pace of hours against open debt", () => {
   });
 });
 
-describe("oneDebtCard", () => {
+describe("unbilledWork — hours with no billing period to invoice them from", () => {
+  const period = (label: string, dateFrom: string, dateTo: string) => ({ clientId: "lumen", label, dateFrom, dateTo, hourCap: null, paid: true });
+  const october = period("October 2026", "2026-10-01", "2026-10-31");
+  const since = logged("t1", "dana", "2026-11-02", [6, 6]); // 12h since October ended
+
+  it("fires once a week has passed since the last period and nothing covers today", () => {
+    const [f] = unbilledWork(studio({ entries: since, periods: [october] }), money(300));
+    expect(f).toMatchObject({ key: "unbilled:lumen", signal: "unbilled", kind: "heads", severity: 2, figure: "₪4K" });
+    expect(f.facts).toMatchObject({ hours: 12, daysSince: 14, lastPeriod: "October 2026", valueIls: 3600 });
+    expect(f.title).toBe("Lumen: 12h since October 2026 and no billing period open");
+    expect(f.title).not.toMatch(/₪/);
+  });
+
+  it("is 'do now' from 30 days", () => {
+    const september = period("September 2026", "2026-09-01", "2026-09-30");
+    expect(unbilledWork(studio({ entries: since, periods: [september] }), money(300))[0]).toMatchObject({ kind: "now", severity: 3 });
+  });
+
+  it("stays quiet while a period is open, in the first week, under 10 hours, and with no rate", () => {
+    const november = period("November 2026", "2026-11-01", "2026-11-30");
+    expect(unbilledWork(studio({ entries: since, periods: [october, november] }), money(300))).toEqual([]);
+    expect(unbilledWork(studio({ entries: since, periods: [period("Early Nov", "2026-11-01", "2026-11-10")] }), money(300))).toEqual([]);
+    expect(unbilledWork(studio({ entries: since.slice(0, 1), periods: [october] }), money(300))).toEqual([]);
+    expect(unbilledWork(studio({ entries: since, periods: [october] }), money(null))).toEqual([]);
+  });
+
+  it("speaks up for a client who never had a period", () => {
+    const [f] = unbilledWork(studio({ entries: since }), money(300));
+    expect(f).toMatchObject({ kind: "heads", title: "Lumen: 12h logged and no billing period at all" });
+    expect(f.facts.daysSince).toBeNull();
+  });
+
+  it("counts only what a report would — the keys task is out", () => {
+    const data = studio({ entries: [...since, ...logged("keys", "dana", "2026-11-04", [8])], periods: [october] });
+    expect(unbilledWork(data, money(300))[0].facts.hours).toBe(12);
+  });
+});
+
+describe("clientMargin — what a client leaves after the people who worked on it", () => {
+  // Dana cost 16,000 in October and logged 160h → 100 an hour. Made-up figures.
+  const dana = { profileId: "dana", costIls: 16_000 };
+  const full = [...logged("t1", "dana", "2026-10-05", [8, 8, 8, 8, 8]), ...logged("other", "dana", "2026-10-12", [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8])];
+  const withOther = (over: Partial<StudioData> = {}) => {
+    const d = studio(over);
+    d.tasks.push({ id: "other", clientId: "halo", sectionId: null, groupId: null, title: "Other client", billable: true });
+    d.clients.push({ id: "halo", name: "Halo", billable: true, archived: false, hourCap: null, keysTaskId: null });
+    return d;
+  };
+
+  it("is a heads-up when under a quarter is left", () => {
+    // 40h × 100 = 4,000 of people's time; 40h × 120 = 4,800 billed → 17% left.
+    const [f] = clientMargin(withOther({ entries: full }), money(120), [], [dana]);
+    expect(f).toMatchObject({ key: "client-margin:lumen:2026-10", signal: "client-margin", kind: "heads", severity: 2, figure: "₪800 left" });
+    expect(f.facts).toMatchObject({ hours: 40, billableHours: 40, leftPct: 17, incomeIls: 4800, costIls: 4000, freelanceIls: 0 });
+    expect(f.title).toBe("Lumen left 17% after the people who worked on it (October)");
+  });
+
+  it("is 'do now' when the people cost more than the client paid", () => {
+    const [f] = clientMargin(withOther({ entries: full }), money(80), [], [dana]);
+    expect(f).toMatchObject({ kind: "now", severity: 3, figure: "−₪800", title: "Lumen cost more in people than it paid (October)" });
+  });
+
+  it("stays quiet with a healthy margin, under 20 hours, and with no rate", () => {
+    expect(clientMargin(withOther({ entries: full }), money(300), [], [dana])).toEqual([]);
+    expect(clientMargin(withOther({ entries: full.slice(0, 2) }), money(80), [], [dana])).toEqual([]);
+    expect(clientMargin(withOther({ entries: full }), money(null), [], [dana])).toEqual([]);
+  });
+
+  it("never prices a thin month by its few hours", () => {
+    // 24h logged in a month mostly away: 16,000 ÷ 24 would be 667 an hour; the floor makes it 200.
+    const thin = withOther({ entries: logged("t1", "dana", "2026-10-05", [8, 8, 8]) });
+    const [f] = clientMargin(thin, money(220), [], [dana]);
+    expect(f.facts.costIls).toBe(Math.round((24 * 16_000) / MIN_MONTH_HOURS));
+  });
+
+  it("stays quiet when too many of the hours belong to someone whose cost isn't known", () => {
+    const mixed = withOther({ entries: [...full, ...logged("t1", "owner", "2026-10-19", [8, 8])] }); // 16 of 56h unknown
+    expect(clientMargin(mixed, money(80), [], [dana])).toEqual([]);
+    const mostly = withOther({ entries: [...full, ...logged("t1", "owner", "2026-10-19", [4])] }); // 4 of 44h
+    expect(clientMargin(mostly, money(80), [], [dana])).toHaveLength(1);
+  });
+
+  it("prices a sliding-rate freelancer at their rate, and says how much of the cost they are", () => {
+    const ab: CrossFreelancer = { profileId: "ab", name: "Avi Bar", terms: { currency: "ILS", rateHigh: 250, rateLow: 250, hoursLow: 50, hoursHigh: 150 }, fx: 1, monthHours: 20 };
+    const data = withOther({ entries: [...full, ...logged("t1", "ab", "2026-10-20", [8, 8, 4])] });
+    // 4,000 (Dana) + 5,000 (AB) against 60h × 120 = 7,200.
+    const [f] = clientMargin(data, money(120), [ab], [dana]);
+    expect(f.facts).toMatchObject({ costIls: 9000, freelanceIls: 5000, incomeIls: 7200 });
+    expect(f.body).toContain("of it freelancers");
+  });
+
+  it("carries the client's totals only — nothing that names or prices one person", () => {
+    const [f] = clientMargin(withOther({ entries: full }), money(120), [], [dana]);
+    expect(JSON.stringify(f)).not.toMatch(/dana|16000|16,000/i);
+  });
+});
+
+describe("oneCardEach", () => {
   const f = (signal: string, clientId: string | null) => ({ signal, clientId, key: `${signal}:${clientId}` }) as Finding;
   it("drops a client's unpaid card when the debt card already counts that period", () => {
     const all = [f("unpaid", "lumen"), f("debt", "lumen"), f("unpaid", "halo"), f("cap", "lumen")];
-    expect(oneDebtCard(all).map((x) => x.key)).toEqual(["debt:lumen", "unpaid:halo", "cap:lumen"]);
+    expect(oneCardEach(all).map((x) => x.key)).toEqual(["debt:lumen", "unpaid:halo", "cap:lumen"]);
+  });
+  it("drops a client's freelancer card when the client-margin card already counts them", () => {
+    const all = [f("freelancer-margin", "lumen"), f("client-margin", "lumen"), f("freelancer-margin", "halo")];
+    expect(oneCardEach(all).map((x) => x.key)).toEqual(["client-margin:lumen", "freelancer-margin:halo"]);
   });
 });
