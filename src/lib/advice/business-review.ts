@@ -54,7 +54,7 @@ Write:
 - recommendations: three to six, most important first. Each has: area (one of the list), horizon (one of the list), title (one short line, max ~80 characters), why (one or two sentences citing the figures given), action (one or two sentences: the concrete next step, who or which client, by when).
 - questions: up to three questions only the owner can answer, that would change your advice.
 
-Never write a money amount, a currency, or an index number as if it were a price. Use percentages, hours, counts and names. Refer to people by name, never "he" or "she". Plain English.`;
+Never write a money amount, a currency, or an index number as if it were a price. Use percentages, hours, counts and names. Refer to every person by name, including freelancers and Nitsan. Never use "he", "she", "him", "her", "his" or "hers" for anyone: repeat the name (the person's name and "'s hours", not "his hours") or write "they". Plain English.`;
 
 export const BUSINESS_SCHEMA = {
   type: "object",
