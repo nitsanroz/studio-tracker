@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Plus, Table2, X } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { canCreateAdmin } from "@/lib/access";
 import { periodRange, presenceFraction, rangeLabel, TEAM_RANGES, type PeriodKey } from "@/lib/period-math";
 import { toISODate } from "@/lib/format";
 import { formatHoursAvg, formatHoursShort } from "@/lib/format";
@@ -57,6 +58,10 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
   });
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Only the owner adds an admin (lib/access.ts `canCreateAdmin`; the route
+  // refuses anyone else). Shown greyed rather than hidden, so an admin sees why.
+  const { profiles, currentUserId } = useData();
+  const mayAddAdmin = canCreateAdmin(profiles.find((p) => p.id === currentUserId));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,7 +139,9 @@ function AddUserModal({ onClose }: { onClose: () => void }) {
             className="rounded-xl bg-background px-3 py-2 text-sm outline-none ring-brand focus:bg-surface focus:ring-2 text-foreground"
           >
             <option value="designer">designer</option>
-            <option value="admin">admin</option>
+            <option value="admin" disabled={!mayAddAdmin}>
+              {mayAddAdmin ? "admin" : "admin — only the owner can add one"}
+            </option>
           </select>
         </label>
         <button

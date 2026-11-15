@@ -4,6 +4,7 @@ import { ownerOnly } from "@/lib/advice/owner";
 import { studioToday } from "@/lib/format";
 import { loadRows, mailState, checkedRecently, runCheck } from "@/lib/advice/run";
 import { visible } from "@/lib/advice/merge";
+import { boardOf } from "@/lib/advice/board";
 
 export const maxDuration = 60;
 
@@ -20,6 +21,8 @@ export const maxDuration = 60;
  * there is no cron to write rows any more, and a peek of rows nobody wrote
  * once hid finance's button for good (2026-10-24). `&fresh=1` forces the check
  * (after a mail scan). The peek also says when the billing mail is due.
+ *
+ * `?board=1` adds what the /advice page draws beyond the pane.
  *
  * 403 for anyone but the owner, which is also how the button learns to stay
  * hidden for other admins.
@@ -39,7 +42,10 @@ export async function GET(req: NextRequest) {
       const [stored, mail] = await Promise.all([loadRows(auth.sb), mailState(auth.sb)]);
       return NextResponse.json({ items: visible(stored, studioToday()).map(ref), mailDue: mail.due });
     }
-    return NextResponse.json((await runCheck(auth.sb)).view);
+    const { view, rows, metrics } = await runCheck(auth.sb);
+    // The /advice page: the same view plus the charts' figures and the store's history (board.ts).
+    if (q.get("board")) return NextResponse.json({ ...view, board: boardOf(metrics, rows, view.today) });
+    return NextResponse.json(view);
   } catch (e) {
     // A table that isn't there yet: say so instead of a bare 500. `detail`
     // names the table or column.

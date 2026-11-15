@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Info, Lightbulb, Minus, RotateCw, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Info, Lightbulb, Maximize2, Minus, RotateCw, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { StudioArrow } from "./studio-arrow";
@@ -18,6 +18,9 @@ import type { Fix } from "@/lib/finance/advice/signals";
 import { applyFix, scanMail } from "@/lib/finance/advice/client";
 import { PNL_UPDATED } from "@/lib/finance/auto-rollup";
 import { usePhone } from "@/lib/finance/use-phone";
+import { shownBody, shownTitle, viewTexts } from "@/lib/advice/texts";
+import type { UiT } from "@/lib/advice/he-ui";
+import { AdviceLangSwitch, useAdviceLang, useHebrew } from "./advice-lang";
 
 /**
  * &advice — the owner's advisor, ONE pane for the whole app since the finance
@@ -61,13 +64,13 @@ const TONE: Record<AdviceKind, string> = { now: CORAL, heads: "#ffd27a", idea: A
 const KIND_LABEL: Record<AdviceKind, string> = { now: "Do now", heads: "Heads-up", idea: "Idea" };
 const FILTER_LABEL: Record<AdviceKind, string> = { now: "Do now", heads: "Heads-ups", idea: "Ideas" };
 
-async function patch(id: string, body: object): Promise<boolean> {
+export async function patch(id: string, body: object): Promise<boolean> {
   // A network failure rejects fetch: without the catch the card vanished and nothing was said.
   const res = await fetch(`/api/advice/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
   return !!res?.ok;
 }
 /** An Undo that failed says so — it used to reload as if it had worked. */
-const UNDO_FAILED = "Couldn't undo that — try again";
+export const UNDO_FAILED = "Couldn't undo that — try again";
 
 /**
  * The snooze choices, in the studio's week (Sun–Thu): the next workday, the
@@ -88,10 +91,15 @@ export function snoozeOptions(today: string): { label: string; until: string }[]
     { label: "In 2 weeks", until: toISODate(twoWeeks) },
   ];
 }
-const dayLabel = (iso: string) => parseISO(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+export const dayLabel = (iso: string, locale = "en-GB") => parseISO(iso).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+
+/** A snooze choice's label: the fixed ones translate, a weekday is named in the language's own words. */
+export function snoozeLabel(o: { label: string; until: string }, t: UiT): string {
+  return ["Tomorrow", "Next week", "In 2 weeks"].includes(o.label) ? t(o.label) : parseISO(o.until).toLocaleDateString(t.locale, { weekday: "long" });
+}
 
 /** The card's one-click fix, if it has one (finance's `Fix`, stored as JSON in its facts). */
-function fixOf(it: AdviceRow): Fix | null {
+export function fixOf(it: AdviceRow): Fix | null {
   if (typeof it.facts.fix !== "string") return null;
   try {
     return JSON.parse(it.facts.fix) as Fix;
@@ -99,7 +107,7 @@ function fixOf(it: AdviceRow): Fix | null {
     return null;
   }
 }
-const FIX_CLASS = "rounded-full px-3.5 py-1.5 text-[13px] font-medium text-[#06112f] hover:opacity-90 disabled:opacity-50";
+export const FIX_CLASS = "rounded-full px-3.5 py-1.5 text-[13px] font-medium text-[#06112f] hover:opacity-90 disabled:opacity-50";
 
 type ItemRef = { signal: string; clientId: string | null; kind: AdviceKind };
 
@@ -204,7 +212,8 @@ export function Advice() {
     void peek();
   }, [peek]);
 
-  if (!allowed) return null;
+  // The /advice page is the whole of it: no corner button, no pane over it.
+  if (!allowed || ctx.pathname === "/advice") return null;
   if (open)
     return (
       <AdvicePane
@@ -281,15 +290,15 @@ export function Advice() {
 /** "14:32", Israel time — the studio's clock wherever the laptop is. */
 const clock = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jerusalem" });
 /** "Sun", for a time on another day than the check. */
-const weekday = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", timeZone: "Asia/Jerusalem" });
-const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+const weekday = (iso: string, locale = "en-GB") => new Date(iso).toLocaleDateString(locale, { weekday: "short", timeZone: "Asia/Jerusalem" });
+export const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
 
 /** "Checked 14:32 · worded 07:40" — the check is live, the wording is the day's first open. */
-function checkedLine(view: AdviceView): string {
-  const parts = [`Checked ${clock(view.checkedAt)}`];
+export function checkedLine(view: AdviceView, t: UiT): string {
+  const parts = [t("Checked {time}", { time: clock(view.checkedAt) })];
   if (view.wordedAt) {
     const sameDay = dayOf(view.wordedAt) === dayOf(view.checkedAt);
-    parts.push(`worded ${sameDay ? "" : weekday(view.wordedAt) + " "}${clock(view.wordedAt)}`);
+    parts.push(t("worded {time}", { time: `${sameDay ? "" : weekday(view.wordedAt, t.locale) + " "}${clock(view.wordedAt)}` }));
   }
   return parts.join(" · ");
 }
@@ -315,6 +324,10 @@ function AdvicePane({
   const [reviewError, setReviewError] = useState<string | null>(null);
   const wordAsked = useRef(false);
   const openTask = useDataMaybe()?.openTask;
+  // English or Hebrew (advice-lang.tsx): the cards' sentences are translated on the server.
+  const [lang] = useAdviceLang();
+  const texts = useMemo(() => (view ? viewTexts(view) : []), [view]);
+  const { t, tr, rtl, busy: translating, off: hebrewOff } = useHebrew(lang, texts);
 
   /** a check is running — the refresh icon spins while the cards stay put */
   const [checking, setChecking] = useState(false);
@@ -407,7 +420,7 @@ function AdvicePane({
     setSnoozing(null);
     void patch(it.id, body).then((ok) => {
       if (!ok) {
-        toast("Couldn't save that — try again", { tone: "info" });
+        toast(t("Couldn't save that — try again"), { tone: "info" });
         void load();
         return;
       }
@@ -415,7 +428,7 @@ function AdvicePane({
         tone,
         onUndo: () =>
           void patch(it.id, { action: "undo" }).then((undone) => {
-            if (!undone) toast(UNDO_FAILED, { tone: "info" });
+            if (!undone) toast(t(UNDO_FAILED), { tone: "info" });
             void load();
           }),
       });
@@ -469,14 +482,14 @@ function AdvicePane({
     const full = expanded.has(it.id);
     const linkClass = "inline-flex items-center gap-1.5 font-medium text-brand hover:underline";
     return (
-      <li key={it.id} className="group/item relative mt-2 rounded-2xl bg-surface p-4 pr-20">
+      <li key={it.id} dir={rtl ? "rtl" : undefined} className="group/item relative mt-2 rounded-2xl bg-surface p-4 pr-20">
         <p className="mb-1.5 flex items-center gap-2 text-[12px] text-muted">
           <span className="size-2 rounded-full" style={{ background: TONE[it.kind] }} />
-          {KIND_LABEL[it.kind]} · {it.area}
-          {it.facts.changed === true && <span style={{ color: CORAL }}>· got worse</span>}
+          {t(KIND_LABEL[it.kind])} · {tr(it.area)}
+          {it.facts.changed === true && <span style={{ color: CORAL }}>{t("· got worse")}</span>}
         </p>
-        <p className="bidi-auto text-[15px] font-medium leading-5">{it.wordedTitle ?? it.title}</p>
-        <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{it.wordedBody ?? it.body}</p>
+        <p className="bidi-auto text-[15px] font-medium leading-5">{tr(shownTitle(it))}</p>
+        <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{tr(shownBody(it))}</p>
         {/* The rule's exact amount — Claude's wording never carries one (word.ts). */}
         {figure && (
           <p className="font-serif-accent mt-2 text-[22px] leading-none tabular-nums" style={{ color: it.kind === "now" ? CORAL : undefined }}>
@@ -503,7 +516,7 @@ function AdvicePane({
                   }
                   className="px-2 py-1 text-[12px] text-muted hover:text-foreground"
                 >
-                  {full ? "Show fewer" : `Show all ${list.length}`}
+                  {full ? t("Show fewer") : t("Show all {n}", { n: list.length })}
                 </button>
               </li>
             )}
@@ -511,18 +524,18 @@ function AdvicePane({
         )}
         {snoozing === it.id ? (
           <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
-            <span className="text-muted">Snooze until</span>
+            <span className="text-muted">{t("Snooze until")}</span>
             {(view ? snoozeOptions(view.today) : []).map((o) => (
               <button
                 key={o.label}
-                onClick={() => hide(it, { action: "snooze", until: o.until }, `Snoozed until ${dayLabel(o.until)}`, "info")}
+                onClick={() => hide(it, { action: "snooze", until: o.until }, t("Snoozed until {day}", { day: dayLabel(o.until, t.locale) }), "info")}
                 className="rounded-full bg-[#1f2c57] px-2.5 py-1 hover:bg-[#2a3a6e]"
               >
-                {o.label}
+                {snoozeLabel(o, t)}
               </button>
             ))}
             <button onClick={() => setSnoozing(null)} className="px-1.5 text-faint hover:text-foreground">
-              Cancel
+              {t("Cancel")}
             </button>
           </div>
         ) : (
@@ -530,28 +543,28 @@ function AdvicePane({
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
               {fix && (
                 <button onClick={() => void runFix(it)} disabled={fixing === it.id} className={FIX_CLASS} style={{ background: AQUA }}>
-                  {fixing === it.id ? "Saving…" : fix.label}
+                  {fixing === it.id ? t("Saving…") : tr(fix.label)}
                 </button>
               )}
               {href &&
                 action &&
                 (external ? (
                   <a href={href} target="_blank" rel="noreferrer" className={linkClass}>
-                    {action}
+                    {tr(action)}
                     <StudioArrow size={14} up />
                   </a>
                 ) : (
                   <Link href={href} onClick={() => onFollow(it, href)} className={linkClass}>
-                    {action}
-                    <StudioArrow size={14} />
+                    {tr(action)}
+                    <StudioArrow size={14} className={rtl ? "-scale-x-100" : ""} />
                   </Link>
                 ))}
               {it.isReminder && (
                 <button
-                  onClick={() => hide(it, { action: "done" }, `Done — ${it.title}`, "done")}
+                  onClick={() => hide(it, { action: "done" }, t("Done — {title}", { title: tr(shownTitle(it)) }), "done")}
                   className="inline-flex items-center gap-1.5 text-muted hover:text-foreground"
                 >
-                  <Check size={14} strokeWidth={2} /> Mark done
+                  <Check size={14} strokeWidth={2} /> {t("Mark done")}
                 </button>
               )}
             </div>
@@ -561,16 +574,16 @@ function AdvicePane({
         <div className="absolute right-2.5 top-2.5 flex gap-0.5 opacity-40 transition-opacity group-hover/item:opacity-100">
           <button
             onClick={() => setSnoozing(snoozing === it.id ? null : it.id)}
-            title="Snooze"
-            aria-label="Snooze"
+            title={t("Snooze")}
+            aria-label={t("Snooze")}
             className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-[#1f2c57] hover:text-foreground"
           >
             <Clock3 size={16} strokeWidth={1.75} />
           </button>
           <button
-            onClick={() => hide(it, { action: "done" }, "Dismissed", "info")}
-            title="Dismiss — it comes back only if it gets worse"
-            aria-label="Dismiss"
+            onClick={() => hide(it, { action: "done" }, t("Dismissed"), "info")}
+            title={t("Dismiss — it comes back only if it gets worse")}
+            aria-label={t("Dismiss")}
             className="flex size-7 items-center justify-center rounded-lg text-muted hover:bg-[#1f2c57] hover:text-foreground"
           >
             <X size={16} strokeWidth={1.75} />
@@ -597,25 +610,36 @@ function AdvicePane({
         */}
         <div className="min-w-0 flex-1">
           <p className="card-title">&amp;advice</p>
-          {view && <p className="text-[12px] leading-4 text-faint">{checkedLine(view)}</p>}
+          {view && <p className="text-[12px] leading-4 text-faint">{checkedLine(view, t)}</p>}
         </div>
+        <AdviceLangSwitch night />
+        {/* Everything on one page, with the charts and the history (/advice). */}
+        <Link
+          href="/advice"
+          onClick={onClose}
+          aria-label={t("Open the full page")}
+          title={t("Open the full page")}
+          className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground"
+        >
+          <Maximize2 size={17} strokeWidth={1.75} />
+        </Link>
         <button
           onClick={() => void load()}
           disabled={checking}
-          aria-label="Check again"
-          title="Check again"
+          aria-label={t("Check again")}
+          title={t("Check again")}
           className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground disabled:hover:bg-transparent"
         >
           <RotateCw size={18} strokeWidth={1.75} className={checking ? "animate-spin" : ""} />
         </button>
-        <button onClick={onClose} aria-label="Close" className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground">
+        <button onClick={onClose} aria-label={t("Close")} className="flex size-9 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-foreground">
           <X size={20} strokeWidth={1.75} />
         </button>
       </header>
 
       {error ? (
         <div className="px-6">
-          <p className="rounded-2xl bg-surface p-4 text-sm text-muted">{error}</p>
+          <p className="rounded-2xl bg-surface p-4 text-sm text-muted">{t(error)}</p>
         </div>
       ) : !view ? (
         <div className="flex flex-col gap-2 px-6">
@@ -632,34 +656,31 @@ function AdvicePane({
       ) : (
         <>
           <div className="px-6">
-            <p className="text-[22px] leading-8">
+            <p dir={rtl ? "rtl" : undefined} className="text-[22px] leading-8">
               {nowCount ? (
                 <>
-                  <span className="font-serif-accent">
-                    {nowCount} {nowCount === 1 ? "thing needs" : "things need"}
-                  </span>{" "}
-                  you today.
+                  <span className="font-serif-accent">{t(nowCount === 1 ? "{n} thing needs" : "{n} things need", { n: nowCount })}</span> {t("you today.")}
                 </>
               ) : (
-                "Nothing urgent today."
+                t("Nothing urgent today.")
               )}
             </p>
             {tiles.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {tiles.map((p, i, all) => (
                   // An odd last tile spans the row rather than leaving a hole beside it.
-                  <Tile key={`${p.scope}:${p.label}`} p={p} wide={all.length % 2 === 1 && i === all.length - 1} right={i % 2 === 1} />
+                  <Tile key={`${p.scope}:${p.label}`} p={p} wide={all.length % 2 === 1 && i === all.length - 1} right={i % 2 === 1} tr={tr} rtl={rtl} />
                 ))}
               </div>
             )}
-            <div className="mt-5 flex gap-1 rounded-xl bg-surface p-1 text-[13px]">
+            <div dir={rtl ? "rtl" : undefined} className="mt-5 flex gap-1 rounded-xl bg-surface p-1 text-[13px]">
               {(["all", "now", "heads", "idea"] as const).map((k) => (
                 <button
                   key={k}
                   onClick={() => setFilter(k)}
                   className={`flex-1 rounded-lg py-1.5 ${filter === k ? "bg-[#1f2c57] font-medium text-foreground" : "text-muted hover:text-foreground"}`}
                 >
-                  {k === "all" ? `All ${items.length}` : `${FILTER_LABEL[k]} ${counts(k)}`}
+                  {k === "all" ? t("All {n}", { n: items.length }) : `${t(FILTER_LABEL[k])} ${counts(k)}`}
                 </button>
               ))}
             </div>
@@ -667,24 +688,26 @@ function AdvicePane({
 
           <ul className="mt-3 flex-1 overflow-y-auto px-6 pb-6">
             {shown.length === 0 && (
-              <EmptyState icon={filter === "idea" ? Lightbulb : Check} tone="success" text={filter === "idea" ? "No ideas today." : "All clear."} compact />
+              <EmptyState icon={filter === "idea" ? Lightbulb : Check} tone="success" text={t(filter === "idea" ? "No ideas today." : "All clear.")} compact />
             )}
             {/* The consultant's read of the whole studio — on Home and on finance's Overview, where the whole picture is. */}
             {(ctx.pathname === "/" || ctx.pathname === "/finance") && (
-              <li className="mt-2 rounded-2xl border border-border p-4">
+              <li dir={rtl ? "rtl" : undefined} className="mt-2 rounded-2xl border border-border p-4">
                 <p className="flex items-center gap-2 text-[14px] font-medium">
                   <Sparkles size={15} strokeWidth={1.75} style={{ color: AQUA }} />
-                  Review the business
+                  {t("Review the business")}
                 </p>
                 <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">
-                  {view.business?.summary ??
-                    "Claude reads the last three months the way a business consultant would — price, team size, which clients are worth the hours, costs, tax timing — and says what it would do. It sees shares, percentages and hours, never an amount."}
+                  {tr(
+                    view.business?.summary ??
+                      "Claude reads the last three months the way a business consultant would — price, team size, which clients are worth the hours, costs, tax timing — and says what it would do. It sees shares, percentages and hours, never an amount.",
+                  )}
                 </p>
                 {!!view.business?.questions.length && (
-                  <ul className="mt-2 list-disc space-y-1 pl-4 text-[13px] leading-5 text-muted">
+                  <ul className="mt-2 list-disc space-y-1 ps-4 text-[13px] leading-5 text-muted">
                     {view.business.questions.map((q) => (
                       <li key={q} className="bidi-auto">
-                        {q}
+                        {tr(q)}
                       </li>
                     ))}
                   </ul>
@@ -695,17 +718,17 @@ function AdvicePane({
                     disabled={!view.reviewOn || !view.businessReady || consulting}
                     className="rounded-full bg-brand px-3.5 py-1.5 font-medium text-background hover:opacity-90 disabled:opacity-50"
                   >
-                    {consulting ? "Reviewing…" : view.business && !view.business.error ? "Review again" : "Review now"}
+                    {t(consulting ? "Reviewing…" : view.business && !view.business.error ? "Review again" : "Review now")}
                   </button>
                   <span className="text-faint">
                     {!view.reviewOn
-                      ? "Needs a Claude API key"
+                      ? t("Needs a Claude API key")
                       : !view.businessReady
-                        ? "The last three months aren't booked yet"
+                        ? t("The last three months aren't booked yet")
                         : consulting
-                          ? "about a minute"
+                          ? t("about a minute")
                           : view.business
-                            ? `${view.business.error ? "Last try failed" : "Last review"} ${dayLabel(dayOf(view.business.at))}`
+                            ? t(view.business.error ? "Last try failed {day}" : "Last review {day}", { day: dayLabel(dayOf(view.business.at), t.locale) })
                             : ""}
                   </span>
                 </div>
@@ -717,14 +740,16 @@ function AdvicePane({
               </li>
             )}
             {ctx.pathname.startsWith("/finance/expenses") && (
-              <li className="mt-2 rounded-2xl border border-border p-4">
+              <li dir={rtl ? "rtl" : undefined} className="mt-2 rounded-2xl border border-border p-4">
                 <p className="flex items-center gap-2 text-[14px] font-medium">
                   <Sparkles size={15} strokeWidth={1.75} style={{ color: AQUA }} />
-                  Review the studio&apos;s tools
+                  {t("Review the studio's tools")}
                 </p>
-                <p className="mt-1 text-[13px] leading-5 text-muted">
-                  {view.review?.summary ??
-                    "Claude looks over every live subscription and says what to cancel, merge, switch or downgrade. It sees names and plans, never an amount."}
+                <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">
+                  {tr(
+                    view.review?.summary ??
+                      "Claude looks over every live subscription and says what to cancel, merge, switch or downgrade. It sees names and plans, never an amount.",
+                  )}
                 </p>
                 <div className="mt-3 flex items-center gap-3 text-[13px]">
                   <button
@@ -732,15 +757,15 @@ function AdvicePane({
                     disabled={!view.reviewOn || reviewing}
                     className="rounded-full bg-brand px-3.5 py-1.5 font-medium text-background hover:opacity-90 disabled:opacity-50"
                   >
-                    {reviewing ? "Reviewing…" : view.review && !view.review.error ? "Review again" : "Review now"}
+                    {t(reviewing ? "Reviewing…" : view.review && !view.review.error ? "Review again" : "Review now")}
                   </button>
                   <span className="text-faint">
                     {!view.reviewOn
-                      ? "Needs a Claude API key"
+                      ? t("Needs a Claude API key")
                       : reviewing
-                        ? "about a minute"
+                        ? t("about a minute")
                         : view.review
-                          ? `${view.review.error ? "Last try failed" : "Last review"} ${dayLabel(dayOf(view.review.at))}`
+                          ? t(view.review.error ? "Last try failed {day}" : "Last review {day}", { day: dayLabel(dayOf(view.review.at), t.locale) })
                           : ""}
                   </span>
                 </div>
@@ -755,16 +780,24 @@ function AdvicePane({
               shown.map(card)
             ) : (
               <>
-                <li className="mt-1 text-[12px] font-medium uppercase tracking-[0.08em] text-muted">Here · {hereLabel}</li>
-                {here.length ? here.map(card) : <li className="mt-2 rounded-2xl bg-surface px-4 py-3 text-[13px] text-muted">Nothing about this page today.</li>}
+                <li dir={rtl ? "rtl" : undefined} className="mt-1 text-[12px] font-medium uppercase tracking-[0.08em] text-muted">
+                  {t("Here · {label}", { label: hereLabel })}
+                </li>
+                {here.length ? (
+                  here.map(card)
+                ) : (
+                  <li dir={rtl ? "rtl" : undefined} className="mt-2 rounded-2xl bg-surface px-4 py-3 text-[13px] text-muted">
+                    {t("Nothing about this page today.")}
+                  </li>
+                )}
                 {elsewhere.length > 0 && (
-                  <li className="mt-5">
+                  <li dir={rtl ? "rtl" : undefined} className="mt-5">
                     <button
                       onClick={() => setShowElsewhere((v) => !v)}
                       aria-expanded={showElsewhere}
                       className="flex w-full items-center gap-2 text-[12px] font-medium uppercase tracking-[0.08em] text-muted hover:text-foreground"
                     >
-                      Elsewhere · {elsewhere.length}
+                      {t("Elsewhere · {n}", { n: elsewhere.length })}
                       <ChevronDown size={14} strokeWidth={2} className={`transition-transform ${showElsewhere ? "rotate-180" : ""}`} />
                     </button>
                   </li>
@@ -773,11 +806,13 @@ function AdvicePane({
               </>
             )}
           </ul>
-          <footer className="flex items-center justify-between gap-3 border-t border-border px-6 py-3 text-[12px] text-faint">
+          <footer dir={rtl ? "rtl" : undefined} className="flex items-center justify-between gap-3 border-t border-border px-6 py-3 text-[12px] text-faint">
             <span>
-              {wording ? "Wording today's advice…" : readingMail ? "Reading billing mail…" : (view.wordingOff ?? "Claude words it; the amounts are the app's own")}
+              {translating
+                ? t("Translating…")
+                : (hebrewOff ?? t(wording ? "Wording today's advice…" : readingMail ? "Reading billing mail…" : (view.wordingOff ?? "Claude words it; the amounts are the app's own")))}
             </span>
-            {view.hidden > 0 && <span>{view.hidden} snoozed or dismissed</span>}
+            {view.hidden > 0 && <span>{t("{n} snoozed or dismissed", { n: view.hidden })}</span>}
           </footer>
         </>
       )}
@@ -790,15 +825,15 @@ function AdvicePane({
  * it's counted (Nitsan, 2026-10-25) — anchored to the tile's outer edge so it
  * never leaves the pane.
  */
-function Tile({ p, wide, right }: { p: PaneTile; wide: boolean; right: boolean }) {
+function Tile({ p, wide, right, tr, rtl }: { p: PaneTile; wide: boolean; right: boolean; tr: (s: string) => string; rtl: boolean }) {
   const color = p.good ? AQUA : CORAL;
   return (
-    <div tabIndex={0} className={`group/tile relative cursor-help rounded-xl bg-surface px-3.5 py-3 outline-none ${wide ? "col-span-2" : ""}`}>
+    <div tabIndex={0} dir={rtl ? "rtl" : undefined} className={`group/tile relative cursor-help rounded-xl bg-surface px-3.5 py-3 outline-none ${wide ? "col-span-2" : ""}`}>
       <p className="flex items-center gap-1.5 text-[12px] text-muted">
-        <span className="truncate">{p.label}</span>
+        <span className="truncate">{tr(p.label)}</span>
         <Info size={12} strokeWidth={2} className="shrink-0 text-faint" />
         {p.delta != null && p.delta !== 0 && (
-          <span className="ml-auto inline-flex items-center gap-1 whitespace-nowrap" style={{ color }}>
+          <span dir="ltr" className="ms-auto inline-flex items-center gap-1 whitespace-nowrap" style={{ color }}>
             {p.delta > 0 ? <TrendingUp size={14} strokeWidth={2} /> : <TrendingDown size={14} strokeWidth={2} />}
             {p.delta > 0 ? "+" : "−"}
             {Math.abs(p.delta)} pts
@@ -810,12 +845,12 @@ function Tile({ p, wide, right }: { p: PaneTile; wide: boolean; right: boolean }
       </p>
       {p.series.length >= 2 && <Spark series={p.series} color={color} />}
       {/* What the figure is measured against — "+18 pts" means nothing without it. */}
-      <p className="mt-1 truncate text-[11px] text-faint">{p.note}</p>
+      <p className="mt-1 truncate text-[11px] text-faint">{tr(p.note)}</p>
       <div
         role="tooltip"
         className={`pointer-events-none absolute top-full z-10 mt-1.5 w-[260px] rounded-xl bg-[#1f2c57] px-3.5 py-3 text-[12px] leading-[18px] text-foreground opacity-0 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.6)] transition-opacity group-hover/tile:opacity-100 group-focus/tile:opacity-100 ${right && !wide ? "right-0" : "left-0"}`}
       >
-        {p.help}
+        {tr(p.help)}
       </div>
     </div>
   );
@@ -897,6 +932,9 @@ function Spotlight({
 }) {
   const fix = fixOf(it);
   const [fixing, setFixing] = useState(false);
+  const [lang] = useAdviceLang();
+  const texts = useMemo(() => [shownTitle(it), shownBody(it), it.area, ...(fixOf(it) ? [fixOf(it)!.label] : [])], [it]);
+  const { t, tr, rtl } = useHebrew(lang, texts);
   const pathname = usePathname();
   const phone = usePhone();
   const [small, setSmall] = useState(phone);
@@ -969,8 +1007,8 @@ function Spotlight({
         <div className="flex items-center gap-2 px-4 pt-3 text-[12px] text-muted">
           <span className="brand-amp w-3" style={{ backgroundColor: AQUA }} />
           <span className="size-2 rounded-full" style={{ background: TONE[it.kind] }} />
-          <span className="min-w-0 flex-1 truncate">
-            {KIND_LABEL[it.kind]} · {it.area}
+          <span dir={rtl ? "rtl" : undefined} className="min-w-0 flex-1 truncate">
+            {t(KIND_LABEL[it.kind])} · {tr(it.area)}
           </span>
           <button
             onClick={() => setSmall((v) => !v)}
@@ -984,11 +1022,11 @@ function Spotlight({
             <X size={16} strokeWidth={1.75} />
           </button>
         </div>
-        <div className="px-4 pb-4 pt-1.5">
-          <p className={`bidi-auto text-[15px] font-medium leading-5 ${small ? "truncate" : ""}`}>{it.wordedTitle ?? it.title}</p>
+        <div dir={rtl ? "rtl" : undefined} className="px-4 pb-4 pt-1.5">
+          <p className={`bidi-auto text-[15px] font-medium leading-5 ${small ? "truncate" : ""}`}>{tr(shownTitle(it))}</p>
           {!small && (
             <>
-              <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{it.wordedBody ?? it.body}</p>
+              <p className="bidi-auto mt-1 text-[13px] leading-5 text-muted">{tr(shownBody(it))}</p>
               {figure && (
                 <p className="font-serif-accent mt-2 text-[22px] leading-none tabular-nums" style={{ color: it.kind === "now" ? CORAL : undefined }}>
                   {figure}
@@ -997,7 +1035,9 @@ function Spotlight({
               {cells.length > 0 && found != null && (
                 <div role="status" className="mt-2 flex items-center gap-2 text-[12px]" style={{ color: found ? AQUA : CORAL }}>
                   <span className="min-w-0 flex-1">
-                    {found ? `Highlighted on the page${found > 1 ? ` · ${at + 1} of ${found}` : ""}` : "Couldn't find it on the page — a hidden row, or another year?"}
+                    {found
+                      ? `${t("Highlighted on the page")}${found > 1 ? ` · ${t("{at} of {n}", { at: at + 1, n: found })}` : ""}`
+                      : t("Couldn't find it on the page — a hidden row, or another year?")}
                   </span>
                   {found > 1 && (
                     <>
@@ -1022,15 +1062,15 @@ function Spotlight({
                     className={FIX_CLASS}
                     style={{ background: AQUA }}
                   >
-                    {fixing ? "Saving…" : fix.label}
+                    {fixing ? t("Saving…") : tr(fix.label)}
                   </button>
                 )}
                 <button onClick={onBack} className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline">
-                  Back to &amp;advice
+                  {t("Back to &advice")}
                 </button>
                 {it.isReminder && (
                   <button onClick={onDone} className="inline-flex items-center gap-1.5 text-muted hover:text-foreground">
-                    <Check size={14} strokeWidth={2} /> Mark done
+                    <Check size={14} strokeWidth={2} /> {t("Mark done")}
                   </button>
                 )}
               </div>

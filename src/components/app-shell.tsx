@@ -25,6 +25,7 @@ import {
   Handshake,
   UserRoundPen,
   Landmark,
+  Lightbulb,
   UsersRound,
   X,
   type LucideIcon,
@@ -922,6 +923,18 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
               folded={folded}
               active={onFinance}
               activeStyle={onFinance ? ACTIVE_STYLE : undefined}
+            />
+          )}
+          {/* &advice laid out in full — the owner's alone, like the pane (the
+              page's own layout answers anyone else with a 404). */}
+          {tier === "owner" && !viewingAs && (
+            <NavItem
+              href="/advice"
+              label="&advice"
+              Icon={Lightbulb}
+              folded={folded}
+              active={pathname === "/advice"}
+              activeStyle={pathname === "/advice" ? ACTIVE_STYLE : undefined}
             />
           )}
         </nav>

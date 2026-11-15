@@ -13,6 +13,7 @@ import { studioGoal } from "@/lib/hours-goal-server";
 import { LINE, evenSpread } from "@/lib/hours-goal";
 import { HOURLY_TERMS } from "@/lib/hourly-terms";
 import type { AdviceData } from "./signals";
+import { studioEntries, studioEntriesFrom, type SharedEntries } from "./entries";
 import { totals, type EstimateLine } from "@/lib/leads/estimate";
 import { monthsPaidFromPlan, paidMonthsFor, periodPaidInFinance, type MonthPaidRow, type PlanMonthRow } from "@/lib/finance-paid";
 
@@ -21,13 +22,14 @@ type Row = Record<string, unknown>;
 /** `today` moved by `n` days. */
 const shift = (today: string, n: number) => toISODate(shiftDays(parseISO(today), n));
 
-/** Six whole months back plus this one: the pulse's billable-share line and the 90-day unpaid window. */
-function entriesFrom(today: string): string {
-  const d = parseISO(today);
-  return toISODate(new Date(d.getFullYear(), d.getMonth() - 6, 1));
-}
+const entriesFrom = studioEntriesFrom;
 
-export async function loadAdviceData(sb: SupabaseClient, today: string): Promise<AdviceData> {
+/**
+ * `shared`: the check's one fetch of logged hours (entries.ts), when run.ts has
+ * started it — this side then reads its rows from there instead of paging
+ * `time_entries` itself.
+ */
+export async function loadAdviceData(sb: SupabaseClient, today: string, shared?: Promise<SharedEntries>): Promise<AdviceData> {
   const [y] = today.split("-").map(Number);
   const [clients, tasks, sections, groups, entries, periods, links, pubs, pnlRows, termsRows] = await Promise.all([
     fetchAll<Row>(sb, "clients", "id, name, billable, archived, hour_cap, keys_task_id"),
@@ -35,13 +37,15 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     fetchAll<Row>(sb, "sections", "id, name"),
     fetchAll<Row>(sb, "task_groups", "id, name"),
     // ~25 pages: in parallel, as boot does — paged one by one this was most of an open.
-    fetchAll<Row>(
-      sb,
-      "time_entries",
-      "task_id, user_id, date, minutes",
-      (q) => q.gte("date", entriesFrom(today)).not("minutes", "is", null).eq("legacy", false),
-      { parallel: 4 },
-    ),
+    shared
+      ? shared.then((sh) => studioEntries(sh, today) as unknown as Row[])
+      : fetchAll<Row>(
+          sb,
+          "time_entries",
+          "task_id, user_id, date, minutes",
+          (q) => q.gte("date", entriesFrom(today)).not("minutes", "is", null).eq("legacy", false),
+          { parallel: 4 },
+        ),
     fetchAll<Row>(sb, "client_billing_periods", "client_id, label, date_from, date_to, hour_cap, paid"),
     fetchAll<Row>(sb, "report_links", "client_id, published_at, through_date", (q) => q.eq("active", true)),
     fetchAll<Row>(sb, "estimate_publications", "estimate_id, published_at"),

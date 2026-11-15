@@ -21,6 +21,7 @@ import { businessMetrics, strategy, type BusinessMetrics } from "./business";
 import { lastBusinessReview, type BusinessReviewState } from "./business-review";
 import { clientMargin, debtPace, freelancerMargin, lastMonthOf, oneCardEach, unbilledWork, withMoney } from "./cross";
 import { loadCrossFreelancers, loadPeopleCost } from "./cross-load";
+import { loadSharedEntries } from "./entries";
 import { loadAdviceData as loadStudioData } from "./load";
 import { applyPlan, mapAdviceRow, mergeFindings, toDb, visible, type AdviceRow, type Finding } from "./merge";
 import { findAll as findStudio, pulse as studioPulse } from "./signals";
@@ -110,9 +111,12 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
   const wordingOn = !!process.env.ANTHROPIC_API_KEY;
   // ⚠️ Both sides or neither: a side that failed to load would read as "none of
   // its findings are true any more" and resolve them all, snoozes included.
+  // Logged hours: ONE fetch for both sides (entries.ts) — each used to page
+  // `time_entries` for itself.
+  const entries = loadSharedEntries(sb, today);
   const [studio, money, stored, run, review, mail, business] = await Promise.all([
-    loadStudioData(sb, today),
-    loadMoneyData(sb, today),
+    loadStudioData(sb, today, entries),
+    loadMoneyData(sb, today, entries),
     loadRows(sb),
     wordingOn ? lastWordingRun(sb, today) : null,
     lastReview(sb),

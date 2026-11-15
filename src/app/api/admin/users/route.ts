@@ -3,6 +3,7 @@ import { cleanPosition } from "@/lib/candidates/convert";
 import { convertBlocked, finishConversion } from "@/lib/candidates/convert-server";
 import { service } from "@/lib/supabase/service";
 import { requireAdmin } from "@/lib/api-auth";
+import { canCreateAdmin } from "@/lib/access";
 
 // Admin-only: create a team member (auth user + profile).
 // The caller's session is verified server-side; the service key never leaves the server.
@@ -20,6 +21,15 @@ export async function POST(request: NextRequest) {
   }
   if (candidateId !== undefined && typeof candidateId !== "string") {
     return NextResponse.json({ error: "candidateId must be a string" }, { status: 400 });
+  }
+
+  // ⚠️ Only the owner makes an admin — the database's own rule (0068:
+  // moving anyone into role admin needs `is_owner()`). This route writes with
+  // the service key, which that trigger exempts, so without this check any
+  // admin could mint another one here.
+  if (role === "admin") {
+    const { data: me } = await auth.supabase.from("profiles").select("role, position, active").eq("id", user.id).maybeSingle();
+    if (!canCreateAdmin(me)) return NextResponse.json({ error: "Only the owner can add an admin." }, { status: 403 });
   }
 
   const admin = service();

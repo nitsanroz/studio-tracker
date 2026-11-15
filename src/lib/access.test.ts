@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atLeast, canOpenFinance, financeTierFor, tierOf } from "./access";
+import { atLeast, canCreateAdmin, canOpenFinance, financeTierFor, tierOf } from "./access";
 
 describe("tierOf", () => {
   it("reads the four tiers", () => {
@@ -70,5 +70,20 @@ describe("finance paths", () => {
     for (const p of ["/finance", "/finance/plan", "/finance/expenses", "/finance/people/1"]) {
       expect(canOpenFinance("finance", p), p).toBe(true);
     }
+  });
+});
+
+describe("canCreateAdmin", () => {
+  it("is the owner alone, as the database's is_owner() reads it", () => {
+    expect(canCreateAdmin({ role: "admin", position: "owner" })).toBe(true);
+    // The finance flag is a different question.
+    expect(canCreateAdmin({ role: "admin", position: "owner", finance_full_access: false })).toBe(true);
+  });
+  it("refuses every other admin, a member, and nobody", () => {
+    expect(canCreateAdmin({ role: "admin", position: "Studio manager" })).toBe(false);
+    expect(canCreateAdmin({ role: "admin", finance_full_access: true })).toBe(false);
+    expect(canCreateAdmin({ role: "designer", position: "owner" })).toBe(false);
+    expect(canCreateAdmin({ role: "admin", position: "owner", active: false })).toBe(false);
+    expect(canCreateAdmin(null)).toBe(false);
   });
 });

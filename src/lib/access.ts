@@ -38,6 +38,15 @@ export function atLeast(tier: Tier, min: Tier): boolean {
   return RANK[tier] >= RANK[min];
 }
 
+/**
+ * Who may make someone an admin: the owner — role admin + position owner, the
+ * database's `is_owner()` (0068 guards the same move on `profiles`). Not the
+ * finance flag: that is `is_finance_owner()`, a different question.
+ */
+export function canCreateAdmin(profile: (AccessProfile & { active?: boolean | null }) | null | undefined): boolean {
+  return profile?.role === "admin" && profile.position === "owner" && profile.active !== false;
+}
+
 /** The owner's own finance pages and routes. */
 const OWNER_PREFIXES = ["/finance/scenarios", "/api/finance/scenarios", "/api/finance/mail"];
 /** What an admin without full finance (Michal) may reach: Expenses and the

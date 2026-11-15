@@ -40,6 +40,33 @@ export function stripAmounts(text: string): string {
   return text.replace(AMOUNT, "[amount]").replace(OTHER_CODE, "[amount]");
 }
 
+/**
+ * Amounts swapped for numbered marks — "{{1}}", "{{2}}" — and the amounts
+ * themselves, in order. For translation (lib/advice/hebrew.ts): Claude gets the
+ * marked text, and the server puts each amount back where its mark landed, so a
+ * Hebrew card keeps its figures without one of them leaving the server.
+ */
+export function maskAmounts(text: string): { masked: string; amounts: string[] } {
+  const amounts: string[] = [];
+  const mark = (m: string) => {
+    amounts.push(m);
+    return `{{${amounts.length}}}`;
+  };
+  return { masked: text.replace(AMOUNT, mark).replace(OTHER_CODE, mark), amounts };
+}
+
+const MARK = /\{\{(\d+)\}\}/g;
+
+/** The marks a text carries, sorted — a translation must carry exactly the same. */
+export function marksIn(text: string): string {
+  return [...text.matchAll(MARK)].map((m) => m[1]).sort().join(",");
+}
+
+/** A marked text with its amounts back in place. */
+export function unmaskAmounts(masked: string, amounts: string[]): string {
+  return masked.replace(MARK, (m, n: string) => amounts[Number(n) - 1] ?? m);
+}
+
 const CURRENCY_MENTION = new RegExp(String.raw`[₪€$£]|\[amount\]|(?<![${LETTER}])(?:${CODES}|${WORDS})(?![${LETTER}])`, "i");
 
 /** Does Claude's text carry an amount after all? Then it isn't used. */
@@ -48,8 +75,8 @@ export function hasAmount(text: string): boolean {
     CURRENCY_MENTION.test(text) ||
     /\d{1,3}(?:,\d{3})+/.test(text) ||
     /\d(?:\.\d+)?\s?[KM]\b/.test(text) ||
-    // A price with cents ("152.90") — hours and shares ("46.75h", "12.50%") aren't.
-    /\d\.\d{2}(?![\d%])(?!\s?(?:h\b|hours?\b))/.test(text)
+    // A price with cents ("152.90") — hours and shares ("46.75h", "12.50%", "46.75 שעות") aren't.
+    /\d\.\d{2}(?![\d%])(?!\s?(?:h\b|hours?\b|שעות|ש׳))/.test(text)
   );
 }
 

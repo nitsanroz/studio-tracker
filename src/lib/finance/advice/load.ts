@@ -18,6 +18,7 @@ import { TOOL_MAIL } from "@/lib/finance/mail/scan";
 import { loadSuggestions } from "@/lib/finance/mail/receipts-data";
 import { shiftIso, subscriptionsOf } from "./tools";
 import { monthsPaidFromPlan } from "@/lib/finance-paid";
+import { PERIOD_REACH_DAYS, moneyEntries, moneyEntriesFrom, type SharedEntries } from "@/lib/advice/entries";
 import { ACCOUNTANT_YEARS } from "@/lib/finance/accountant-years";
 import { DEFAULT_FACTS } from "@/lib/finance/scenarios/facts";
 
@@ -42,7 +43,11 @@ function rows<T = Row>(table: string, res: { data: unknown; error: { message: st
 const lastMonth = (sb: SupabaseClient, table: string, cols: string, y: number, m: number): Promise<Row[]> =>
   Promise.resolve(sb.from(table).select(`${cols}, paid_at`).eq("year", y).eq("month", m)).then((r) => rows(table, r));
 
-export async function loadAdviceData(sb: SupabaseClient, today: string): Promise<AdviceData> {
+/**
+ * `shared`: the check's one fetch of logged hours (lib/advice/entries.ts), when
+ * run.ts has started it — used when it reaches back far enough for this side.
+ */
+export async function loadAdviceData(sb: SupabaseClient, today: string, shared?: Promise<SharedEntries>): Promise<AdviceData> {
   const [y, m] = today.split("-").map(Number);
   const [ly, lm] = monthsBack(y, m, 1);
   const [fy, fm] = monthsBack(y, m, 4);
@@ -59,7 +64,7 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
     fetchAll<ClientRateRow>(sb, "client_rates", "id, client_id, client_canon, rate, effective_from, effective_to, note"),
     // Only periods that can be "the last one, up to 45 days late" need their hours —
     // 100 days covers net+30 (1 + 30 + 45 = 76) with room.
-    fetchAll<Row>(sb, "client_billing_periods", "client_id, label, date_from, date_to, paid", (q) => q.gte("date_to", shiftIso(today, -100))),
+    fetchAll<Row>(sb, "client_billing_periods", "client_id, label, date_from, date_to, paid", (q) => q.gte("date_to", shiftIso(today, -PERIOD_REACH_DAYS))),
     lastMonth(sb, "finance_salaries", "id, employee_name, state, gross_amount", ly, lm),
     lastMonth(sb, "finance_freelance", "id, person_name, state, amount", ly, lm),
     sb.from("finance_income").select("id, state, amount").gte("date", lastFrom).lt("date", `${monthKey(y, m)}-01`).then((r) => rows("finance_income", r)),
@@ -109,8 +114,17 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
   // tracker's &advice set), and the periods' report hours — one pass over the
   // entries, from whichever starts first.
   const daysFrom = shiftIso(today, -120);
-  const earliest = periods.reduce((min, p) => (String(p.date_from) < min ? String(p.date_from) : min), hoursFrom < daysFrom ? hoursFrom : daysFrom);
-  const entries = await fetchAll<Row>(sb, "time_entries", "task_id, date, minutes", (q) => q.gte("date", earliest).not("minutes", "is", null));
+  const earliest = moneyEntriesFrom(
+    today,
+    periods.map((p) => String(p.date_from)),
+  );
+  // The check's shared fetch when it covers this side's window (a period added
+  // between the two reads could start earlier — then this side fetches its own).
+  const sh = shared ? await shared : null;
+  const entries: Row[] =
+    sh && sh.from <= earliest
+      ? (moneyEntries(sh, earliest) as unknown as Row[])
+      : await fetchAll<Row>(sb, "time_entries", "task_id, date, minutes", (q) => q.gte("date", earliest).not("minutes", "is", null));
   const billableClient = new Set(clients.filter((c) => c.billable !== false).map((c) => String(c.id)));
   const keysTasks = new Set(clients.map((c) => c.keys_task_id).filter(Boolean).map(String));
   const byDay = new Map<string, number>();
@@ -234,7 +248,8 @@ export async function loadAdviceData(sb: SupabaseClient, today: string): Promise
 /** The latest wording run: whether it was today, and whether it failed. */
 export async function lastWordingRun(sb: SupabaseClient, today: string): Promise<{ today: boolean; at: string; error: string | null } | null> {
   // The tools review and the business review log their runs here too (model "…-review/…"); they aren't the day's wording.
-  const { data } = await sb.from(RUNS).select("run_at, error").not("model", "like", "%-review/%").order("run_at", { ascending: false }).limit(1).maybeSingle();
+  // …and so do the Hebrew translations (lib/advice/hebrew.ts, model "hebrew/…").
+  const { data } = await sb.from(RUNS).select("run_at, error").not("model", "like", "%-review/%").not("model", "like", "hebrew/%").order("run_at", { ascending: false }).limit(1).maybeSingle();
   if (!data) return null;
   return { today: studioToday(new Date(String(data.run_at))) === today, at: String(data.run_at), error: (data.error as string | null) ?? null };
 }
