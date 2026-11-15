@@ -9,7 +9,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { StudioArrow } from "@/components/studio-arrow";
 import { createClient } from "@/lib/finance/supabase-client";
 import { forgetPeople, usePeople } from "@/lib/finance/people-data";
 import { canSetOwnerPosition } from "@/lib/finance/finance-access";
@@ -40,6 +39,7 @@ import { fetchAll, mapPnl, type PnlRow } from "@/lib/finance/db";
 import { LINE, MONTH_SHORT, type PnlMonthly } from "@/lib/finance/finance";
 import { useCompanyFigures } from "@/components/finance/company-figures";
 import { PageHeader, Loading, ErrorState } from "@/components/finance/ui";
+import { PageViews, personViews } from "@/components/page-views";
 import { formatILS, formatNum } from "@/lib/finance/format";
 import { Kpi } from "@/components/finance/person/visuals";
 import { OverviewTab } from "@/components/finance/person/overview-tab";
@@ -299,9 +299,13 @@ export default function PersonPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Link href="/finance/people" className="mb-2 inline-flex items-center gap-1 text-xs text-muted hover:text-foreground">
-        <ArrowLeft size={13} /> People
-      </Link>
+      <div className="mb-2 flex flex-wrap items-center gap-3">
+        <Link href="/finance/people" className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground">
+          <ArrowLeft size={13} /> Pay &amp; HR
+        </Link>
+        {/* Profile | Pay & HR — the same person's two pages. */}
+        <PageViews views={personViews(person.id)} />
+      </div>
       <PageHeader
         title={person.name}
         subtitle={[
@@ -326,12 +330,6 @@ export default function PersonPage() {
                 </option>
               ))}
             </select>
-            <Link
-              href={`/team/${person.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background"
-            >
-              Their work <StudioArrow size={13} />
-            </Link>
           </>
         }
       />

@@ -22,6 +22,7 @@ import Link from "next/link";
 import { Check, Clock3, RotateCw, Sparkles, Undo2, X } from "lucide-react";
 import { AdviceLangSwitch, said, useAdviceLang, useHebrew, type Hebrew } from "@/components/advice-lang";
 import { InfoTip, Tip, TipRows, TipScope } from "@/components/advice-tip";
+import { ADVICE_VIEWS, PageViews } from "@/components/page-views";
 import { FIX_CLASS, UNDO_FAILED, checkedLine, dayLabel, dayOf, fixOf, patch, snoozeLabel, snoozeOptions } from "@/components/advice";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/skeleton";
@@ -33,6 +34,7 @@ import type { AdviceKind, FindingLink } from "@/lib/advice/signals";
 import { shownBody, shownTitle, viewTexts } from "@/lib/advice/texts";
 import { applyFix } from "@/lib/finance/advice/client";
 import { formatILS } from "@/lib/finance/format";
+import { PRIVACY_EVENT, loadHold } from "@/lib/finance/privacy";
 import { useDataMaybe } from "@/lib/store";
 import { toast } from "@/lib/toast";
 
@@ -76,12 +78,14 @@ export default function AdvicePage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- opening the page IS the check
     void load();
-    try {
-      setHold(window.localStorage.getItem("finance-privacy-hold") === "1");
-    } catch {
-      /* no storage: numbers show */
-    }
   }, [load]);
+  // "Hide numbers" is the header's switch; the page follows it at once.
+  useEffect(() => {
+    const read = () => setHold(loadHold());
+    read();
+    window.addEventListener(PRIVACY_EVENT, read);
+    return () => window.removeEventListener(PRIVACY_EVENT, read);
+  }, []);
 
   // The day's first open asks Claude for wording, as the pane does; the cards change when it lands.
   const wordAsked = useRef(false);
@@ -154,6 +158,8 @@ export default function AdvicePage() {
   return (
     <TipScope.Provider value={scope}>
     <div dir={rtl ? "rtl" : "ltr"} className={`mx-auto flex w-full max-w-[1500px] flex-col gap-8 p-4 md:p-6 ${hold ? "advice-hold" : ""}`}>
+      {/* &advice | Scenarios — the what-if page is a tab of this one. */}
+      <PageViews views={ADVICE_VIEWS} className="-mb-4 self-start" />
       {/* On a phone the title takes the first line whole and the controls sit under it; beside them it was squeezed to a word a line. */}
       <header className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="w-full min-w-0 md:w-auto md:flex-1">

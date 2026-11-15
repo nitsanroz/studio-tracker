@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/finance/supabase-client";
 import { fetchAll, type ClientRateRow } from "@/lib/finance/db";
 import { PageHeader, Loading, ErrorState, ConfirmDialog } from "@/components/finance/ui";
+import { CLIENT_VIEWS, PageViews } from "@/components/page-views";
 import { addClientRate, deleteClientRate, rateSummary } from "@/lib/finance/client-rate";
 import { studioYear } from "@/lib/finance/format";
 
@@ -115,6 +116,8 @@ export default function RatesPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      {/* Clients | Rates — this is the Clients page's money view. */}
+      <PageViews views={CLIENT_VIEWS} className="mb-3" />
       <PageHeader
         title="Rates"
         subtitle="Per-client hourly rate over time. A rate change = a new row dated to the change (e.g. 300 → 350)."

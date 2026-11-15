@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   CalendarDays,
   ChartPie,
@@ -24,14 +24,18 @@ import {
   UserRoundSearch,
   Handshake,
   UserRoundPen,
-  Landmark,
-  Lightbulb,
   UsersRound,
   X,
+  Banknote,
+  ChevronDown,
+  CreditCard,
+  LayoutDashboard,
+  Table2,
   type LucideIcon,
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
-import { atLeast, type Tier } from "@/lib/access";
+import { atLeast, canOpenFinance, type Tier } from "@/lib/access";
+import { HideNumbersButton, PrivacyBlur } from "@/components/finance/privacy-blur";
 import { createClient } from "@/lib/supabase/client";
 import { useEnterTransition } from "@/lib/use-enter-transition";
 import { useIsNarrow } from "@/lib/use-is-narrow";
@@ -67,9 +71,74 @@ const ACTIVE_STYLE: React.CSSProperties = {
   color: "var(--sb-active-fg)",
 };
 
-/** Home is active only on "/" itself; every other item on its own subtree. */
+const under = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(prefix + "/");
+
+/**
+ * Finance pages that are a VIEW of a tracker page, not a page of their own
+ * (Nitsan, 2026-11-15): People is Team's "Pay & HR" view, finance's Freelance is
+ * Freelancers' "Payments" view, Rates is a view of Clients, Scenarios a tab of
+ * the advisor. They keep their own addresses — and so their own server gates —
+ * and the tracker page's row lights up for them. The switch between a page and
+ * its view is `components/page-views.tsx`.
+ */
+const VIEW_OF: Record<string, string> = {
+  "/team": "/finance/people",
+  "/freelancers": "/finance/freelance",
+  "/clients": "/finance/rates",
+  "/advice": "/finance/scenarios",
+};
+
+/** Home is active only on "/" itself; every other item on its own subtree, or on its finance view. */
 function isActive(href: string, pathname: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  if (href === "/") return pathname === "/";
+  return under(pathname, href) || (VIEW_OF[href] != null && under(pathname, VIEW_OF[href]));
+}
+
+/**
+ * Finance's own pages, as rows of the main menu under a "Finance" heading that
+ * folds away. Each is shown only to a tier that may open it (lib/access.ts);
+ * the server layouts and RLS are what keep a page shut.
+ */
+const FINANCE_NAV: { href: string; label: string; Icon: LucideIcon; exact?: boolean }[] = [
+  { href: "/finance", label: "Overview", Icon: LayoutDashboard, exact: true },
+  { href: "/finance/plan", label: "Plan", Icon: Table2 },
+  { href: "/finance/salaries", label: "Salaries", Icon: Banknote },
+  { href: "/finance/expenses", label: "Expenses", Icon: CreditCard },
+];
+const financeActive = (p: { href: string; exact?: boolean }, pathname: string) => (p.exact ? pathname === p.href : under(pathname, p.href));
+
+const FLAG_EVENT = "sidebar:flag";
+function subscribeFlag(onChange: () => void) {
+  window.addEventListener(FLAG_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(FLAG_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+/** An on/off choice kept in this browser ("1"/"0"); the server and a blocked storage get `fallback`. */
+function useStoredFlag(key: string, fallback: boolean): [boolean, () => void] {
+  const on = useSyncExternalStore(
+    subscribeFlag,
+    () => {
+      try {
+        const v = window.localStorage.getItem(key);
+        return v == null ? fallback : v === "1";
+      } catch {
+        return fallback;
+      }
+    },
+    () => fallback,
+  );
+  const toggle = () => {
+    try {
+      window.localStorage.setItem(key, on ? "0" : "1");
+    } catch {
+      /* blocked storage: it just won't be remembered */
+    }
+    window.dispatchEvent(new Event(FLAG_EVENT));
+  };
+  return [on, toggle];
 }
 
 // admin-only sections render LAST, below a thin divider.
@@ -90,7 +159,8 @@ const NAV = [
   // Your balance and requests; the owner decides them here too (0058).
   { href: "/vacation", label: "Vacation", Icon: TreePalm, mobile: true },
   { href: "/feed", label: "Time Feed", Icon: History, mobile: false },
-  { href: "/settings", label: "Settings", Icon: Settings, mobile: true },
+  // `foot`: on the desktop rail it is the gear at the bottom, not a row of the list.
+  { href: "/settings", label: "Settings", Icon: Settings, mobile: true, foot: true },
   // `mobile: true` since v1.14.0 — `client-mobile.tsx` gives both /clients and
   // /clients/[id] a phone build (task list only; no Timeline or Board).
   { href: "/clients", label: "Clients", Icon: Users, adminOnly: true, mobile: true },
@@ -398,6 +468,8 @@ function FootLink({
   folded = false,
   small = false,
   onClick,
+  href,
+  active = false,
 }: {
   Icon: LucideIcon;
   /** a quieter icon for the not-a-page rows (About, Latest updates) */
@@ -406,19 +478,30 @@ function FootLink({
   /** longer hover text, when the label alone is too terse */
   title?: string;
   folded?: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  /** a page (Settings) rather than an action */
+  href?: string;
+  active?: boolean;
 }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title ?? label}
-      className={`flex items-center rounded-lg text-[13px] transition-colors hover:bg-white/10 ${
-        folded ? `${small ? "size-7 min-h-7 opacity-70" : "size-9 min-h-9"} justify-center` : "min-h-11 gap-2.5 px-2 text-left md:min-h-9"
-      }`}
-      style={{ color: "var(--sb-muted)" }}
-    >
+  const className = `flex items-center rounded-lg text-[13px] transition-colors ${active ? "" : "hover:bg-white/10"} ${
+    folded ? `${small ? "size-7 min-h-7 opacity-70" : "size-9 min-h-9"} justify-center` : "min-h-11 gap-2.5 px-2 text-left md:min-h-9"
+  }`;
+  const style = active ? ACTIVE_STYLE : { color: "var(--sb-muted)" };
+  const inner = (
+    <>
       <Icon size={small ? 14 : 17} strokeWidth={1.75} className="shrink-0" />
       {!folded && label}
+    </>
+  );
+  if (href)
+    return (
+      <Link href={href} title={title ?? label} aria-current={active ? "page" : undefined} className={className} style={style}>
+        {inner}
+      </Link>
+    );
+  return (
+    <button onClick={onClick} title={title ?? label} className={className} style={style}>
+      {inner}
     </button>
   );
 }
@@ -435,6 +518,7 @@ function MobileDrawer({
   me,
   intakeBadge,
   finance,
+  advice,
   onClose,
   onAbout,
   onNews,
@@ -442,8 +526,10 @@ function MobileDrawer({
   pathname: string;
   isAdmin: boolean;
   me: Profile | null;
-  /** The viewer's way into finance, by tier — null for a member, and while previewing someone. */
-  finance: { href: string; label: string } | null;
+  /** Finance's pages the viewer may open, by tier — none for a member, and while previewing someone. */
+  finance: typeof FINANCE_NAV;
+  /** the owner's advisor */
+  advice: boolean;
   /** New submissions PLUS unread client edits — see AppShell. */
   intakeBadge: number;
   onClose: () => void;
@@ -544,15 +630,31 @@ function MobileDrawer({
           )}
           {/* Finance, last, as on the desktop rail (it was missing here until the
               merge's stage 5 — a phone had no way in). */}
-          {finance && (
+          {finance.length > 1 && (
+            <p className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--sb-muted)" }}>
+              Finance
+            </p>
+          )}
+          {finance.map((p) => (
             <Link
-              href={finance.href}
+              key={p.href}
+              href={p.href}
               onClick={onClose}
               className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-base"
-              style={pathname === "/finance" || pathname.startsWith("/finance/") ? ACTIVE_STYLE : { color: "var(--sb-muted)" }}
+              style={financeActive(p, pathname) ? ACTIVE_STYLE : { color: "var(--sb-muted)" }}
             >
-              <Landmark size={20} strokeWidth={1.75} />
-              {finance.label}
+              <p.Icon size={20} strokeWidth={1.75} />
+              {p.label}
+            </Link>
+          ))}
+          {advice && (
+            <Link
+              href="/advice"
+              onClick={onClose}
+              className="mt-2 flex min-h-12 items-center gap-3 rounded-xl bg-[#06112f] px-3 text-base text-white"
+            >
+              <span className="brand-amp w-5 shrink-0" style={{ backgroundColor: "var(--aqua)" }} />
+              advice
             </Link>
           )}
         </nav>
@@ -680,14 +782,17 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
     dismissWriteError,
     bootError,
   } = useData();
-  // One way into finance, by tier: the whole area, or — for an admin without
-  // full finance — its one page, named. None while previewing someone.
-  const financeEntry =
-    atLeast(tier, "admin") && !viewingAs
-      ? atLeast(tier, "finance")
-        ? { href: "/finance", label: "Finance" }
-        : { href: "/finance/expenses", label: "Expenses" }
-      : null;
+  // Finance's rows, by tier: all four for full finance, Expenses alone for an
+  // admin without it, none for a member — and none while previewing someone.
+  const financePages = viewingAs ? [] : FINANCE_NAV.filter((p) => canOpenFinance(tier, p.href));
+  const [financeOpen, toggleFinance] = useStoredFlag("sidebar.finance", true);
+  // On a short screen the list scrolls; the row you are on is brought into view.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    navRef.current?.querySelector(".is-current")?.scrollIntoView({ block: "nearest" });
+  }, [pathname, financeOpen, loading]);
+  const showAdvice = tier === "owner" && !viewingAs;
+  const adviceActive = isActive("/advice", pathname);
   const me = profiles.find((p) => p.id === currentUserId) ?? null;
   const isAdmin = useIsAdmin();
   const pendingIntake = taskRequests.filter((r) => r.status === "pending").length;
@@ -847,8 +952,8 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
         </div>
         {/* Tight (v1.96.0): every item must fit a 13" laptop without the rail
             scrolling — 36px rows, 2px apart. The scroll is only a fallback. */}
-        <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 [scrollbar-width:none]">
-          {NAV.filter((n) => !n.adminOnly).map(({ href, label, Icon }) => (
+        <nav ref={navRef} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 [scrollbar-width:none]">
+          {NAV.filter((n) => !n.adminOnly && !n.foot).map(({ href, label, Icon }) => (
             <NavItem
               key={href}
               href={href}
@@ -910,33 +1015,33 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
                 />
               );
             })}
-          {/* Finance — ONE entry; its pages are listed inside (finance-shell.tsx).
-              `tier` comes from the SERVER layout, from the viewer's own profile, so
-              a `?viewAs=` preview can't raise it — and while previewing someone the
-              entry is hidden, since it would open the admin's finance, not theirs.
-              An admin without full finance has one page there, so it is named. */}
-          {financeEntry && (
-            <NavItem
-              href={financeEntry.href}
-              label={financeEntry.label}
-              Icon={Landmark}
-              folded={folded}
-              active={onFinance}
-              activeStyle={onFinance ? ACTIVE_STYLE : undefined}
-            />
-          )}
-          {/* &advice laid out in full — the owner's alone, like the pane (the
-              page's own layout answers anyone else with a 404). */}
-          {tier === "owner" && !viewingAs && (
-            <NavItem
-              href="/advice"
-              label="&advice"
-              Icon={Lightbulb}
-              folded={folded}
-              active={pathname === "/advice"}
-              activeStyle={pathname === "/advice" ? ACTIVE_STYLE : undefined}
-            />
-          )}
+          {/* Finance — its pages are rows of this menu, under a heading that folds
+              (Nitsan, 2026-11-15). `tier` comes from the SERVER layout, from the
+              viewer's own profile, so a `?viewAs=` preview can't raise it — and
+              while previewing someone the rows are hidden, since they would open
+              the admin's finance, not theirs. An admin without full finance has
+              one page there, so it is a plain row with no heading. */}
+          {financePages.length > 1 &&
+            (folded ? (
+              <div className="mx-3 my-1.5 border-t" style={{ borderColor: "var(--sb-border)" }} aria-hidden />
+            ) : (
+              <button
+                onClick={toggleFinance}
+                aria-expanded={financeOpen}
+                className="mt-2 flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-white/10"
+                style={{ color: "var(--sb-muted)" }}
+              >
+                Finance
+                <ChevronDown size={13} strokeWidth={2} className={`ml-auto transition-transform duration-150 ${financeOpen ? "" : "-rotate-90"}`} />
+              </button>
+            ))}
+          {financePages
+            // Folded away, the page you are on keeps its row: you never lose your place.
+            .filter((p) => folded || financeOpen || financePages.length === 1 || financeActive(p, pathname))
+            .map((p) => {
+              const active = financeActive(p, pathname);
+              return <NavItem key={p.href} href={p.href} label={p.label} Icon={p.Icon} folded={folded} active={active} activeStyle={active ? ACTIVE_STYLE : undefined} />;
+            })}
         </nav>
         {/* ⚠️ No avatar, no name, no role. Nitsan's note: the signed-in person is
             already named in the header's top-right menu, and repeating them at
@@ -952,15 +1057,42 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
         {/* About and Latest updates are not pages, so they are not rows like the
             nav (v1.96.0, Nitsan): a small line of words with the version, under
             Logout. Folded, they stay icons with tooltips. */}
+        {/* The advisor, in its own night colours (the pane's): it is not one more
+            page of the list, it is the thing that reads all of them — the owner's
+            alone, like the pane (its layout answers anyone else with a 404). */}
+        {showAdvice && (
+          <div className={folded ? "flex justify-center px-2 pt-2" : "px-2 pt-2"}>
+            <Link
+              href="/advice"
+              aria-label="&advice"
+              aria-current={adviceActive ? "page" : undefined}
+              title={folded ? "&advice" : undefined}
+              className={`flex items-center rounded-xl bg-[#06112f] text-white transition-[box-shadow,transform] duration-150 hover:-translate-y-px ${
+                folded ? "size-10 justify-center" : "gap-2.5 px-3 py-2.5 text-sm"
+              } ${adviceActive ? "ring-2 ring-[var(--aqua)]" : "ring-1 ring-white/15"}`}
+            >
+              <span className="brand-amp w-4 shrink-0" style={{ backgroundColor: "var(--aqua)" }} />
+              {!folded && <span className="font-heading">advice</span>}
+            </Link>
+          </div>
+        )}
         {folded ? (
           <div className="flex flex-col items-center gap-0.5 px-2 py-2">
+            <FootLink Icon={Settings} label="Settings" folded href="/settings" active={under(pathname, "/settings")} />
             <FootLink Icon={LogOut} label="Logout" folded onClick={signOut} />
             <FootLink Icon={Sparkles} label="Latest updates" folded small onClick={() => setNewsOpen(true)} />
             <FootLink Icon={Info} label="About" title="About the tracker" folded small onClick={() => setAboutOpen(true)} />
           </div>
         ) : (
           <div className="flex flex-col px-2 pb-2.5 pt-1">
-            <FootLink Icon={LogOut} label="Logout" onClick={signOut} />
+            {/* One line: the gear on the left, the way out on the right. Two rows
+                here pushed the list above into scrolling on a 13" laptop. */}
+            <div className="flex items-center gap-1">
+              <div className="min-w-0 flex-1 [&>a]:w-full">
+                <FootLink Icon={Settings} label="Settings" href="/settings" active={under(pathname, "/settings")} />
+              </div>
+              <FootLink Icon={LogOut} label="Logout" folded onClick={signOut} />
+            </div>
             <div className="mt-1 flex items-center gap-1 px-2 text-[11px] text-white/55">
               <button onClick={() => setNewsOpen(true)} className="transition-colors hover:text-white/90">
                 Latest updates
@@ -1016,6 +1148,10 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
           </div>
           <div className="ml-auto flex items-center gap-2.5">
             <SyncDot />
+            {/* Hide numbers, for whoever can see money at all: an admin's
+                Expenses, full finance's pages, the owner's advisor. One switch
+                for the whole app, beside the bell (Nitsan, 2026-11-15). */}
+            {atLeast(tier, "admin") && !viewingAs && <HideNumbersButton />}
             {isAdmin && (
               <NotificationsBell
                 pendingIntake={pendingIntake}
@@ -1056,7 +1192,8 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
           isAdmin={isAdmin}
           me={me}
           intakeBadge={intakeTotal}
-          finance={financeEntry}
+          finance={financePages}
+          advice={showAdvice}
           onClose={() => setDrawerOpen(false)}
           onAbout={() => setAboutOpen(true)}
           onNews={() => setNewsOpen(true)}
@@ -1188,6 +1325,13 @@ export function AppShell({ children, tier = "member" }: { children: ReactNode; t
   return (
     <DataProvider>
       <ThemeInit />
+      {/* "Hide numbers" for the whole app (the header's switch): while it is on,
+          every amount of money on any page is smudged — a salary, a client's
+          rate, a lead's estimate, a freelancer's pay. Hours, dates and counts
+          are not money and stay readable. Mounted here, outside the Shell, so it
+          is already watching when the first page paints. Only for someone who
+          can see money at all. */}
+      {atLeast(tier, "admin") && <PrivacyBlur />}
       <NewLeadsProvider>
         <TierProvider tier={tier}>
           <Shell tier={tier}>{children}</Shell>

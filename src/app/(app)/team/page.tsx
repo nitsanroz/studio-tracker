@@ -26,6 +26,7 @@ import {
   type HoursSplit,
 } from "@/lib/hours-split";
 import { MemberTable, type MemberRow } from "./member-table";
+import { PageViews, TEAM_VIEWS } from "@/components/page-views";
 
 type Layout = "cards" | "table";
 const LAYOUT_KEY = "team.layout";
@@ -372,6 +373,8 @@ export default function TeamPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
+      {/* Team | Pay & HR — what each person costs is finance's page (full finance only). */}
+      <PageViews views={TEAM_VIEWS} className="self-start" />
       <div>
         <h1 className="page-title">
           The <span className="font-serif-accent">team</span>

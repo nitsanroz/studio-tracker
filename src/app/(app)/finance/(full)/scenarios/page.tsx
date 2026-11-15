@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Columns3, Copy, Plus, Save, Trash2 } from "lucide-react";
 import { ConfirmDialog, ErrorState, Loading, PageHeader } from "@/components/finance/ui";
+import { ADVICE_VIEWS, PageViews } from "@/components/page-views";
 import { Segmented } from "@/components/finance/person/visuals";
 import { DecisionBoard } from "@/components/finance/scenarios/board";
 import { DemandCard, FactsCard, StripCard } from "@/components/finance/scenarios/futures";
@@ -313,6 +314,8 @@ export default function ScenariosPage() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* &advice | Scenarios — the what-if page is a tab of the advisor. */}
+      <PageViews views={ADVICE_VIEWS} className="self-start" />
       <PageHeader title={t("Scenarios")} actions={<LangSwitch />} />
       <p className="-mt-5 max-w-[80ch] text-[15px] leading-6 text-muted">
         {t("Tick what you'd change, set how much work you expect, and see what happens over the next 12 months. The past is a reference, not a forecast.")}

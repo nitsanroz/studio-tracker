@@ -18,6 +18,7 @@ import type { Fix } from "@/lib/finance/advice/signals";
 import { applyFix, scanMail } from "@/lib/finance/advice/client";
 import { PNL_UPDATED } from "@/lib/finance/auto-rollup";
 import { usePhone } from "@/lib/finance/use-phone";
+import { PRIVACY_EVENT } from "@/lib/finance/privacy";
 import { shownBody, shownTitle, viewTexts } from "@/lib/advice/texts";
 import type { UiT } from "@/lib/advice/he-ui";
 import { AdviceLangSwitch, said, useAdviceLang, useHebrew } from "./advice-lang";
@@ -142,12 +143,17 @@ function isCurrent(href: string, pathname: string, params: URLSearchParams): boo
 function useHold(pathname: string): boolean {
   const [hold, setHold] = useState(false);
   useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- read once per page, from storage
-      setHold(window.localStorage.getItem("finance-privacy-hold") === "1");
-    } catch {
-      setHold(false);
-    }
+    const read = () => {
+      try {
+        setHold(window.localStorage.getItem("finance-privacy-hold") === "1");
+      } catch {
+        setHold(false);
+      }
+    };
+    read();
+    // The header's switch (HideNumbersButton) fires this: the pane follows at once.
+    window.addEventListener(PRIVACY_EVENT, read);
+    return () => window.removeEventListener(PRIVACY_EVENT, read);
   }, [pathname]);
   return hold && !pathname.startsWith("/finance");
 }

@@ -123,6 +123,44 @@ export function PrivacyBlur() {
   return null;
 }
 
+/**
+ * "Hide numbers" for the app's header, beside the bell (Nitsan, 2026-11-15: one
+ * switch for the whole app, hiding only what finance kept private — salaries,
+ * clients' money, costs). It flips the same hold as the switch below: finance's
+ * pages smudge their amounts (PrivacyBlur), and the advisor's pane and page
+ * smudge theirs (`advice-hold`). The tracker's own figures — hours, dates,
+ * counts — are not money and stay readable.
+ */
+export function HideNumbersButton() {
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    const sync = () => setHold(loadHold());
+    sync();
+    window.addEventListener(PRIVACY_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(PRIVACY_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const Icon = hold ? EyeOff : Eye;
+  const label = hold ? "Amounts are hidden — press to show them" : "Hide amounts: salaries, clients' money, costs";
+  return (
+    <button
+      role="switch"
+      aria-checked={hold}
+      aria-label="Hide numbers"
+      title={label}
+      onClick={() => saveHold(!hold)}
+      className={`flex size-10 shrink-0 items-center justify-center rounded-xl shadow-card transition-colors ${
+        hold ? "bg-brand text-white hover:bg-brand-dark" : "bg-surface text-muted hover:text-foreground"
+      }`}
+    >
+      <Icon size={20} strokeWidth={1.75} />
+    </button>
+  );
+}
+
 /** The "Hide numbers" switch: keeps every figure blurred until pressed again —
  * for showing a page (Scenarios, a salary) to a colleague. A SWITCH, not a menu
  * row (Nitsan, 2026-11-12: as a row it read as one more page): a framed pill

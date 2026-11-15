@@ -247,7 +247,10 @@ export default function OverviewPage() {
     : String(selYear);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    // The whole width of the screen (Nitsan, 2026-11-15) — it was a 1152px column
+    // with empty margins on a wide monitor. The charts below flow in two columns,
+    // three from 1536px, with the main chart across two of them.
+    <div className="w-full">
       <PageHeader
         title="Overview"
         subtitle={
@@ -307,7 +310,8 @@ export default function OverviewPage() {
 
       <InsightsPanel insights={buildInsights(kpiCtx)} period={isAll ? "all time" : `${selYear}${partial ? " so far" : ""}`} />
 
-      <Card className="mt-4">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+      <Card className="lg:col-span-2">
         <SectionTitle
           hint={isAll ? "bars = revenue · line = margin %" : "by month"}
           info="Bars are gross revenue for each year (or month); the line is profit margin (profit ÷ revenue), read off the right-hand axis. A lighter, dashed bar marks a period that's still in progress, so it isn't a fair comparison to a complete one yet. In a single year, the month in progress is projected to its end: the solid part is what's come in so far, the outline is the estimate — the workdays left, at a pace that blends this month's so far with last month's; later months at the last three months' pace. In All time, this year's bar is likewise its estimated full year: the months still to come at the last three booked months' pace per workday. Unfinished months' costs are the Plan's plus 15%, since its figures run light."
@@ -332,7 +336,6 @@ export default function OverviewPage() {
         {showAccountant && isAll && <AccountantProfitChart summaries={summaries} />}
       </Card>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <SectionTitle
             hint={isAll ? "₪ total · by year" : "₪ total · by month"}

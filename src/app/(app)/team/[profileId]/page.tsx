@@ -10,9 +10,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { atLeast } from "@/lib/access";
-import { useTier } from "@/components/tier-context";
-import { StudioArrow } from "@/components/studio-arrow";
+import { PageViews, personViews } from "@/components/page-views";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
 import { formatHoursShort, toISODate, MONTH_NAMES_SHORT } from "@/lib/format";
@@ -250,7 +248,6 @@ export default function MemberPage({
   const { profileId } = use(params);
   const { profiles, tasks, clients, entrySums, updateProfile } = useData();
   const isAdmin = useIsAdmin();
-  const tier = useTier();
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "hr">("overview");
@@ -413,12 +410,8 @@ export default function MemberPage({
             {email ? <span className="normal-case"> · {email}</span> : null}
           </p>
         </div>
-        {/* Pay, payslips and HR live on finance's page for this person (full finance only). */}
-        {atLeast(tier, "finance") && (
-          <Link href={`/finance/people/${profile.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline">
-            Finance <StudioArrow size={14} />
-          </Link>
-        )}
+        {/* Profile | Pay & HR — pay, payslips and HR are finance's page for this person (full finance only). */}
+        <PageViews views={personViews(profile.id)} />
         <select
           value={profile.role}
           onChange={(e) => updateProfile(profile.id, { role: e.target.value as Role })}

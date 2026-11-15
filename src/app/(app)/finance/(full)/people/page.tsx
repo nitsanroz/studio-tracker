@@ -7,6 +7,7 @@ import { usePeople } from "@/lib/finance/people-data";
 import { PositionTag } from "@/components/finance/position-tag";
 import { SHARED_ACCOUNT_NAME, finishedThrough, hoursAreOwnWork, summarize, type PersonSummary } from "@/lib/finance/people";
 import { PageHeader, Loading, ErrorState, InfoDot } from "@/components/finance/ui";
+import { PageViews, TEAM_VIEWS } from "@/components/page-views";
 import { formatILS, formatNum, formatPct } from "@/lib/finance/format";
 
 type SortKey = "name" | "cost" | "hours" | "costPerHour" | "revenue" | "returnRatio";
@@ -72,8 +73,10 @@ export default function PeoplePage() {
 
   return (
     <div className="mx-auto max-w-6xl">
+      {/* Team | Pay & HR — this is the Team page's money view. */}
+      <PageViews views={TEAM_VIEWS} className="mb-3" />
       <PageHeader
-        title="People"
+        title="Pay & HR"
         subtitle="What each person cost against the work their hours brought in."
         actions={
           <>

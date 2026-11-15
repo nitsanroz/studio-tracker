@@ -13,6 +13,8 @@ import { EditableTextCell } from "@/components/editable-cell";
 import { ClientAvatar } from "@/components/client-avatar";
 import { MobileClientsList } from "@/components/client-mobile";
 import { useIsNarrow } from "@/lib/use-is-narrow";
+import { CLIENT_VIEWS, PageViews } from "@/components/page-views";
+import { toast } from "@/lib/toast";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -151,6 +153,10 @@ export default function ClientsPage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>(null);
   const [creating, setCreating] = useState(false);
+  // Clients that were archived: out of every list and picker, their hours and
+  // reports kept. Shown here so one can be looked up or brought back.
+  const [archive, setArchive] = useState(false);
+  const archivedCount = useMemo(() => clients.filter((c) => c.archived).length, [clients]);
 
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
@@ -187,7 +193,7 @@ export default function ClientsPage() {
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = clients
-      .filter((c) => !c.archived && (q === "" || c.name.toLowerCase().includes(q)))
+      .filter((c) => c.archived === archive && (q === "" || c.name.toLowerCase().includes(q)))
       .map((client) => ({
         client,
         openTasks: tasks.filter((t) => t.clientId === client.id && t.status !== "done").length,
@@ -207,7 +213,7 @@ export default function ClientsPage() {
       });
     }
     return list;
-  }, [clients, tasks, weekMinutes, monthMinutes, totalMinutes, lastActivity, query, sort]);
+  }, [clients, tasks, weekMinutes, monthMinutes, totalMinutes, lastActivity, query, sort, archive]);
 
   const { widths, startResize } = useColWidths("clients", { open: 48, week: 64, month: 64, total: 64 });
 
@@ -230,6 +236,8 @@ export default function ClientsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[650px] flex-col gap-4">
+      {/* Clients | Rates — what each client is charged is finance's page (full finance only). */}
+      <PageViews views={CLIENT_VIEWS} className="self-start" />
       <div className="flex items-center justify-between gap-3">
         <h1 className="page-title">Clients</h1>
         {isAdmin && (
@@ -243,14 +251,30 @@ export default function ClientsPage() {
         )}
       </div>
 
-      <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3">
-        <Search size={15} className="shrink-0 text-faint" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search clients…"
-          className="bidi-auto h-9 w-full bg-transparent text-sm outline-none placeholder:text-faint"
-        />
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-3">
+          <Search size={15} className="shrink-0 text-faint" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={archive ? "Search the archive…" : "Search clients…"}
+            className="bidi-auto h-9 w-full bg-transparent text-sm outline-none placeholder:text-faint"
+          />
+        </div>
+        {archivedCount > 0 && (
+          <div className="inline-flex shrink-0 rounded-full bg-surface p-0.5 text-[13px] shadow-card" role="group" aria-label="Which clients">
+            {([false, true] as const).map((a) => (
+              <button
+                key={String(a)}
+                onClick={() => setArchive(a)}
+                aria-pressed={archive === a}
+                className={`rounded-full px-3 py-1 font-medium ${archive === a ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
+              >
+                {a ? `Archive ${archivedCount}` : "Active"}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -301,10 +325,23 @@ export default function ClientsPage() {
             {numCell(week, widths.week)}
             {numCell(month, widths.month)}
             {numCell(total, widths.total)}
+            {archive && (
+              <button
+                onClick={(e) => {
+                  // The row is a link; this is a button on it.
+                  e.preventDefault();
+                  updateClient(client.id, { archived: false });
+                  toast(`${client.name} is back with the active clients`);
+                }}
+                className="shrink-0 rounded-full bg-background px-2.5 py-1 text-[12px] font-medium text-brand hover:bg-brand-soft"
+              >
+                Restore
+              </button>
+            )}
           </Link>
         ))}
         {rows.length === 0 && (
-          <div className="p-8 text-center text-sm text-faint">No clients match &quot;{query}&quot;.</div>
+          <div className="p-8 text-center text-sm text-faint">{query ? <>No clients match &quot;{query}&quot;.</> : archive ? "Nothing in the archive." : "No clients yet."}</div>
         )}
       </div>
 

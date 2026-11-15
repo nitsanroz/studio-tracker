@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, Eye, EyeOff, Link2Off, Lock, LockOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
-import { StudioArrow } from "@/components/studio-arrow";
 import { createClient } from "@/lib/finance/supabase-client";
 import { fetchAll, mapLock, updatePreservingLock, writeStep, type LockRow } from "@/lib/finance/db";
 import { MONTHS, monthLocked } from "@/lib/finance/plan-model";
@@ -20,6 +19,7 @@ import { CellStateCard, stepOf, type Step } from "@/components/finance/cell-stat
 import { useCellSelection, selectionSummary, singleCell } from "@/lib/finance/cell-selection";
 import { FIRST_YEAR, useYearParam } from "@/lib/finance/use-year-param";
 import { SelectionBubble } from "@/components/finance/selection-bubble";
+import { TrendsPanel } from "@/components/finance/trends-panel";
 import { MONTH_NAMES, MONTH_SHORT, NOUNS, breakdownCard, trend, useExplainHover, type Explanation } from "@/components/finance/explain-card";
 
 /** ₪ tolerance below which a stored-vs-fresh difference isn't worth flagging. */
@@ -225,7 +225,6 @@ export function MonthAmountGrid({
   table,
   title,
   subtitle,
-  headerLink,
   block,
   nameColumn,
   amountColumn,
@@ -237,8 +236,6 @@ export function MonthAmountGrid({
   table: string;
   title: string;
   subtitle: string;
-  /** a link beside the year picker — the page's counterpart in the tracker */
-  headerLink?: { href: string; label: string };
   block: FinanceLock["block"];
   nameColumn: string;
   amountColumn: string;
@@ -429,6 +426,8 @@ export function MonthAmountGrid({
     return [...byName.values()].sort((a, b) => yearTotal(b) - yearTotal(a) || a.name.localeCompare(b.name));
   }, [rows]);
 
+  // What the side panel reads: the year's rows as they stand, an edit included.
+  const trendRows = useMemo(() => rows.map((r) => ({ year, month: r.month, name: r.name, amount: r.amount, predicted: r.state === "predicted" })), [rows, year]);
   const visiblePeople = useMemo(() => people.filter((p) => !hidden.has(p.name)), [people, hidden]);
   const hiddenPeople = useMemo(() => people.filter((p) => hidden.has(p.name)), [people, hidden]);
 
@@ -897,11 +896,6 @@ export function MonthAmountGrid({
         subtitle={subtitle}
         actions={
           <>
-          {headerLink && (
-            <Link href={headerLink.href} className="inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background">
-              {headerLink.label} <StudioArrow size={13} />
-            </Link>
-          )}
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -916,6 +910,9 @@ export function MonthAmountGrid({
           </>
         }
       />
+      {/* The grid, with its trends beside it from 1536px and above it under that (trends-panel.tsx). */}
+      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-start">
+      <div className="min-w-0 flex-1">
       {linkPeople && (table === "finance_salaries" || table === "finance_freelance") && (
         <TrackerLines
           kind={table === "finance_salaries" ? "salaries" : "freelance"}
@@ -1237,6 +1234,17 @@ export function MonthAmountGrid({
           </button>
         </div>
       )}
+      </div>
+      <TrendsPanel
+        table={table}
+        nameColumn={nameColumn}
+        amountColumn={amountColumn}
+        year={year}
+        through={year === CUR_YEAR ? CUR_MONTH : 12}
+        current={trendRows}
+        what={table === "finance_salaries" ? "salaries" : "freelance payments"}
+      />
+      </div>
     </div>
   );
 }
