@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Check, Clock, Link as LinkIcon, Plus } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
@@ -23,6 +23,11 @@ export default function FreelancersPage() {
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const [adding, setAdding] = useState(false);
+  const { profiles } = useData();
+  const nicknameOf = useMemo(
+    () => new Map(profiles.filter((p) => p.nickname).map((p) => [p.id, p.nickname as string])),
+    [profiles],
+  );
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -79,7 +84,12 @@ export default function FreelancersPage() {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="font-serif-accent truncate text-[28px] leading-9">{f.name}</h2>
+                {/* A nickname (0071) is their name here too, big; the full name
+                    goes small under it (Nitsan, 2026-11-16). */}
+                <h2 className="font-serif-accent truncate text-[28px] leading-9">
+                  {nicknameOf.get(f.profileId) ?? f.name}
+                </h2>
+                {nicknameOf.has(f.profileId) && <p className="truncate text-sm">{f.name}</p>}
                 <p className="text-[13px] text-muted">{termsLine(f.terms)}</p>
               </div>
               {/* The website's arrow (studio-arrow.tsx), as big as the title

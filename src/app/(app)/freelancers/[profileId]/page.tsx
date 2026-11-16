@@ -220,10 +220,7 @@ export default function FreelancerPage() {
       <section>
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
           <div className="min-w-0">
-            <h1 className="font-serif-accent text-[44px] leading-tight">
-              {f.name}
-            </h1>
-            <NicknameLine profileId={f.profileId} />
+            <FreelancerName profileId={f.profileId} fullName={f.name} />
             <p className="text-sm text-muted">
               {termsLine(f.terms)}
               {f.hasLogin ? (
@@ -1051,14 +1048,12 @@ function Side({
 /**
  * What the studio calls them (0071, Nitsan 2026-11-16): "Ab", "Milica". When
  * set it is the name the weekly plan, the home grid and every assignment show
- * (`mapProfile`); the full name stays the heading here. Written through the
+ * (`mapProfile`) — and the heading here, with the full name under it. Written through the
  * store, so the plan and the task lists change at once and ⌘Z takes it back.
  */
-function NicknameLine({ profileId }: { profileId: string }) {
+function FreelancerName({ profileId, fullName }: { profileId: string; fullName: string }) {
   const { profiles, updateProfile } = useData();
-  const profile = profiles.find((p) => p.id === profileId);
-  if (!profile) return null;
-  const nickname = profile.nickname ?? null;
+  const nickname = profiles.find((p) => p.id === profileId)?.nickname ?? null;
   async function edit() {
     const next = await askText("What the studio calls them — shown in the weekly plan and on assignments", {
       action: "Save",
@@ -1072,22 +1067,36 @@ function NicknameLine({ profileId }: { profileId: string }) {
     updateProfile(profileId, { nickname: clean });
     toast(clean ? `Shown as “${clean}” across the tracker` : "Nickname removed — the full name is shown");
   }
-  return (
+  const pencil = (
     <button
       type="button"
       onClick={() => void edit()}
-      className="mb-1 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
+      className="inline-flex items-center gap-1 rounded-md p-1 text-sm text-muted hover:bg-background hover:text-foreground"
       title="The name shown in the weekly plan and on assignments"
+      aria-label={nickname ? "Edit nickname" : "Add a nickname"}
     >
-      {nickname ? (
-        <>
-          Called <b className="font-medium text-foreground">{nickname}</b>
-        </>
-      ) : (
-        "Add a nickname"
-      )}
-      <Pencil size={13} strokeWidth={1.75} />
+      {!nickname && "Add a nickname"}
+      <Pencil size={14} strokeWidth={1.75} />
     </button>
+  );
+  // With a nickname it IS their name here, as everywhere else (Nitsan,
+  // 2026-11-16: "nick should be big… full name can be smaller but not that
+  // small… maybe nick can be blue") — the full name drops to a 20px line.
+  if (nickname)
+    return (
+      <>
+        <h1 className="font-serif-accent text-[44px] leading-tight text-brand">{nickname}</h1>
+        <div className="mb-1 flex items-center gap-1.5">
+          <span className="text-[20px] leading-7">{fullName}</span>
+          {pencil}
+        </div>
+      </>
+    );
+  return (
+    <>
+      <h1 className="font-serif-accent text-[44px] leading-tight">{fullName}</h1>
+      <div className="mb-1 -ml-1">{pencil}</div>
+    </>
   );
 }
 
