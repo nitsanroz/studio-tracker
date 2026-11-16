@@ -8,9 +8,14 @@
 export const OLD_FINANCE_HOST = "finance.nmore.co";
 export const TRACKER_ORIGIN = "https://tracker.studionmore.com";
 
-/** Where a request to the old finance host goes, or null for any other host. */
+/** The tracker's short alias (2026-11-16): same pages, so the same path. */
+export const ALIAS_HOST = "tracker.nmore.co";
+
+/** Where a request to the old finance host or the alias goes, or null for any other host. */
 export function financeHostTarget(host: string | null, pathname: string, search: string): string | null {
-  if (!host || host.toLowerCase().split(":")[0] !== OLD_FINANCE_HOST) return null;
+  const h = host?.toLowerCase().split(":")[0];
+  if (h === ALIAS_HOST) return `${TRACKER_ORIGIN}${pathname || "/"}${search}`;
+  if (h !== OLD_FINANCE_HOST) return null;
   const path = pathname === "/" || pathname === "" ? "/finance" : pathname.startsWith("/login") ? pathname : `/finance${pathname}`;
   return `${TRACKER_ORIGIN}${path}${search}`;
 }
