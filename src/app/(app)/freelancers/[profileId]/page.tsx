@@ -223,6 +223,7 @@ export default function FreelancerPage() {
             <h1 className="font-serif-accent text-[44px] leading-tight">
               {f.name}
             </h1>
+            <NicknameLine profileId={f.profileId} />
             <p className="text-sm text-muted">
               {termsLine(f.terms)}
               {f.hasLogin ? (
@@ -1044,6 +1045,49 @@ function Side({
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * What the studio calls them (0071, Nitsan 2026-11-16): "Ab", "Milica". When
+ * set it is the name the weekly plan, the home grid and every assignment show
+ * (`mapProfile`); the full name stays the heading here. Written through the
+ * store, so the plan and the task lists change at once and ⌘Z takes it back.
+ */
+function NicknameLine({ profileId }: { profileId: string }) {
+  const { profiles, updateProfile } = useData();
+  const profile = profiles.find((p) => p.id === profileId);
+  if (!profile) return null;
+  const nickname = profile.nickname ?? null;
+  async function edit() {
+    const next = await askText("What the studio calls them — shown in the weekly plan and on assignments", {
+      action: "Save",
+      initial: nickname ?? "",
+      placeholder: "e.g. Ab",
+      allowEmpty: true,
+    });
+    if (next === null) return;
+    const clean = next.trim().slice(0, 40) || null;
+    if (clean === nickname) return;
+    updateProfile(profileId, { nickname: clean });
+    toast(clean ? `Shown as “${clean}” across the tracker` : "Nickname removed — the full name is shown");
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => void edit()}
+      className="mb-1 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
+      title="The name shown in the weekly plan and on assignments"
+    >
+      {nickname ? (
+        <>
+          Called <b className="font-medium text-foreground">{nickname}</b>
+        </>
+      ) : (
+        "Add a nickname"
+      )}
+      <Pencil size={13} strokeWidth={1.75} />
+    </button>
   );
 }
 

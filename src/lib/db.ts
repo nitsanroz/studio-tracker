@@ -293,7 +293,12 @@ const numOrNull = (v: any): number | null => (v == null ? null : Number(v));
 
 export const mapProfile = (r: any): Profile => ({
   id: r.id,
-  name: r.name,
+  // The name the app SHOWS: a nickname (0071) wins — Nitsan, 2026-11-16, so the
+  // plan and every assignment read "Ab", not a freelancer's full name. The real
+  // name stays in `fullName` for the person's own page.
+  name: (typeof r.nickname === "string" && r.nickname.trim()) || r.name,
+  fullName: r.name,
+  nickname: (typeof r.nickname === "string" && r.nickname.trim()) || null,
   role: r.role,
   position: r.position ?? null,
   avatarUrl: r.avatar_url,

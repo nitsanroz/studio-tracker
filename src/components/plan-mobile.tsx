@@ -25,6 +25,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, MoreVertical, Plus } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { planColumnLabel } from "@/lib/members";
 import { DAY_NAMES, formatDayLabel, isWeekend, parseISO, shiftDays, startOfWeek, toISODate } from "@/lib/format";
 import { Avatar, ClientChip } from "./ui";
 import { MobileSheet } from "./mobile-sheet";
@@ -109,7 +110,7 @@ export function PlanMobile() {
 
   /** How a cell names itself in the modal's heading and the move sheet. */
   const labelFor = (col: PlanColumn, iso: string) =>
-    iso === WAITING ? col.name : `${col.name} · ${formatDayLabel(parseISO(iso)).date}`;
+    iso === WAITING ? col.name : `${planColumnLabel(col, profiles)} · ${formatDayLabel(parseISO(iso)).date}`;
 
   const jumpToToday = () => {
     const o = openingDay(new Date());
@@ -233,7 +234,7 @@ export function PlanMobile() {
             <section key={col.id} className="rounded-2xl border border-border bg-surface shadow-card">
               <header className="flex items-center gap-2 px-3 py-2">
                 {col.type === "member" && <Avatar profile={profile} size={22} emptyTitle={col.name} />}
-                <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{col.name}</h2>
+                <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{profile?.nickname || col.name}</h2>
                 {canEdit && (
                   <button
                     onClick={() => setEntryModal({ target })}

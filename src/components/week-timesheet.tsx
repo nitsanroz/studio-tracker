@@ -1,8 +1,9 @@
 "use client";
 
 import { StudioArrow } from "@/components/studio-arrow";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useData } from "@/lib/store";
 import { shiftDays, formatHoursShort, parseISO, startOfWeek, toISODate, DAY_NAMES } from "@/lib/format";
 import { Avatar } from "./ui";
@@ -23,13 +24,43 @@ import { UserDayDetails } from "./user-day-details";
  * Reads `entrySums`, which excludes the recovered pre-Everhour history — this
  * pane is about people logging time in this app, so a 2019 backfill row must
  * never make a designer look like they logged.
+ *
+ * Freelancers (no login, 0054) get a row in a week they WORKED — Nitsan,
+ * 2026-11-16. Their filed hours are ordinary time entries; hours they logged
+ * through their link and nobody has reviewed yet come from
+ * `/api/admin/freelancers?pendingFrom=…` and show with a dashed outline. They
+ * are never expected to log a given day, so a blank is never a red gap.
  */
+
+type Pending = { profileId: string; date: string; minutes: number };
 export function WeekTimesheet() {
   const { profiles, entrySums, taskById, clientById, planColumns, planEntries } = useData();
   const [popup, setPopup] = useState<{ userId: string; date: string } | null>(null);
+  const router = useRouter();
 
   const todayIso = toISODate(new Date());
   const weekStart = useMemo(() => startOfWeek(new Date()), []);
+
+  // Freelancers' unreviewed link hours for this whole week (Sun–Sat), read
+  // again when the tab comes back into view. A failure just shows none.
+  const weekFrom = toISODate(weekStart);
+  const weekTo = toISODate(shiftDays(weekStart, 6));
+  const [pending, setPending] = useState<Pending[]>([]);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch(`/api/admin/freelancers?pendingFrom=${weekFrom}&pendingTo=${weekTo}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { pending: [] }))
+        .then((j: { pending?: Pending[] }) => alive && setPending(j.pending ?? []))
+        .catch(() => undefined);
+    void load();
+    const onBack = () => document.visibilityState === "visible" && void load();
+    document.addEventListener("visibilitychange", onBack);
+    return () => {
+      alive = false;
+      document.removeEventListener("visibilitychange", onBack);
+    };
+  }, [weekFrom, weekTo]);
 
   // Sun–Thu is the studio's week. Fri/Sat are appended only when somebody
   // actually logged then, so weekend hours are never silently invisible.
@@ -37,9 +68,12 @@ export function WeekTimesheet() {
     const base = Array.from({ length: 5 }, (_, i) => toISODate(shiftDays(weekStart, i)));
     const extra = [5, 6]
       .map((i) => toISODate(shiftDays(weekStart, i)))
-      .filter((iso) => entrySums.some((e) => e.date === iso && e.minutes > 0));
+      .filter(
+        (iso) =>
+          entrySums.some((e) => e.date === iso && e.minutes > 0) || pending.some((p) => p.date === iso),
+      );
     return [...base, ...extra];
-  }, [weekStart, entrySums]);
+  }, [weekStart, entrySums, pending]);
 
   const firstDay = days[0];
   const lastDay = days[days.length - 1];
@@ -57,6 +91,18 @@ export function WeekTimesheet() {
     }
     return map;
   }, [entrySums, firstDay, lastDay]);
+
+  /** profileId → date → unreviewed freelancer minutes */
+  const pendingByUserDay = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    for (const p of pending) {
+      if (p.date < firstDay || p.date > lastDay || p.minutes <= 0) continue;
+      let forUser = map.get(p.profileId);
+      if (!forUser) map.set(p.profileId, (forUser = new Map()));
+      forUser.set(p.date, (forUser.get(p.date) ?? 0) + p.minutes);
+    }
+    return map;
+  }, [pending, firstDay, lastDay]);
 
   /** profileId → date → the absence planned for it ("Vacation", "Sick", "Day off").
    * A day someone was away is not a gap, so it must not look like one. The tile
@@ -96,19 +142,37 @@ export function WeekTimesheet() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [profiles, byUserDay]);
 
+  // Freelancers who worked this week, below the team. A login-less profile can
+  // only have this week's hours through review or its link — former staff
+  // (also login-less, 0018) cannot log at all — so "has hours" is the test.
+  const freelancers = useMemo(
+    () =>
+      profiles
+        .filter((p) => p.hasAccount === false && (byUserDay.has(p.id) || pendingByUserDay.has(p.id)))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [profiles, byUserDay, pendingByUserDay],
+  );
+  const freelancerIds = useMemo(() => new Set(freelancers.map((f) => f.id)), [freelancers]);
+  const rows = useMemo(() => [...members, ...freelancers], [members, freelancers]);
+
   /** The hover card for one cell: what was logged, not just how much. */
-  function cellTooltip(entries: { minutes: number; taskId: string }[] | undefined) {
-    if (!entries?.length) return "No hours logged on this day — click to add them";
-    return entries
+  function cellTooltip(
+    entries: { minutes: number; taskId: string }[] | undefined,
+    waiting = 0,
+    freelancer = false,
+  ) {
+    const waitingLine = waiting > 0 ? `${formatHoursShort(waiting)} logged, waiting for your review` : "";
+    if (!entries?.length)
+      return waitingLine || (freelancer ? "Nothing logged on this day" : "No hours logged on this day — click to add them");
+    return [...entries
       .map((e) => {
         const task = taskById.get(e.taskId);
         const client = task ? clientById.get(task.clientId) : undefined;
         const name = task?.title ?? "(deleted task)";
         return `${client ? `${client.name} · ` : ""}${name} — ${formatHoursShort(e.minutes)}`;
-      })
+      }), ...(waitingLine ? [waitingLine] : [])]
       .join("\n");
   }
-
   return (
     // h-full so the pane matches the KPI tile block beside it; the table then
     // spreads its rows over whatever height that turns out to be.
@@ -149,27 +213,37 @@ export function WeekTimesheet() {
           </tr>
         </thead>
         <tbody>
-          {members.map((m) => {
+          {rows.map((m) => {
             const forUser = byUserDay.get(m.id);
+            const isFreelancer = freelancerIds.has(m.id);
+            // A nickname (0071) is already the short name; otherwise the first name.
+            const short = m.nickname || m.name.split(" ")[0];
             return (
               <tr key={m.id}>
-                <td className="w-24 max-w-24 pr-1" title={m.name}>
-                  <span className="flex items-center gap-1.5">
-                    <Avatar profile={m} size={20} />
-                    <span className="min-w-0 truncate text-xs font-medium">
-                      {m.name.split(" ")[0]}
+                <td className="w-24 max-w-24 pr-1" title={isFreelancer ? `${m.fullName ?? m.name} — freelancer` : m.fullName ?? m.name}>
+                  {isFreelancer ? (
+                    <Link href={`/freelancers/${m.id}`} className="flex items-center gap-1.5 hover:text-brand">
+                      <Avatar profile={m} size={20} />
+                      <span className="min-w-0 truncate text-xs font-medium">{short}</span>
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <Avatar profile={m} size={20} />
+                      <span className="min-w-0 truncate text-xs font-medium">{short}</span>
                     </span>
-                  </span>
+                  )}
                 </td>
                 {days.map((iso) => {
                   const entries = forUser?.get(iso);
-                  const minutes = entries?.reduce((s, e) => s + e.minutes, 0) ?? 0;
+                  const waiting = pendingByUserDay.get(m.id)?.get(iso) ?? 0;
+                  const minutes = (entries?.reduce((s, e) => s + e.minutes, 0) ?? 0) + waiting;
                   const logged = minutes > 0;
                   const away = awayByUserDay.get(m.id)?.get(iso);
                   // Only a day that is OVER can be a gap. Flagging today would
                   // nag every morning about hours nobody has had time to log —
-                  // and a day the plan has them away was never one.
-                  const missed = !logged && !away && iso < todayIso;
+                  // and a day the plan has them away was never one. A freelancer
+                  // is never expected on a given day, so never has one.
+                  const missed = !isFreelancer && !logged && !away && iso < todayIso;
                   // Shade by hours: a 9h day is full strength, a 1h day barely
                   // tinted. Pre-mixed against the surface, so the tile is opaque.
                   const share = Math.min(minutes / 540, 1);
@@ -179,9 +253,19 @@ export function WeekTimesheet() {
                   return (
                     <td
                       key={iso}
-                      onClick={() => setPopup({ userId: m.id, date: iso })}
-                      title={away && !logged ? `${away} — planned in the weekly plan` : cellTooltip(entries)}
+                      // A freelancer's day opens their page — where waiting hours
+                      // are reviewed — not the "add hours" day popup.
+                      onClick={() =>
+                        isFreelancer ? router.push(`/freelancers/${m.id}`) : setPopup({ userId: m.id, date: iso })
+                      }
+                      title={
+                        away && !logged
+                          ? `${away} — planned in the weekly plan`
+                          : cellTooltip(entries, waiting, isFreelancer)
+                      }
                       className={`h-8 cursor-pointer rounded-md px-1.5 text-center text-xs tabular-nums transition-shadow hover:ring-2 hover:ring-brand/40 ${
+                        waiting > 0 ? "outline-dashed outline-1 -outline-offset-2 outline-brand " : ""
+                      }${
                         logged
                           ? `font-medium ${share > 0.5 ? "text-white" : "text-foreground"}`
                           : away

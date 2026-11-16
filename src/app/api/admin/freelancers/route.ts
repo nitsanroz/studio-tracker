@@ -140,6 +140,28 @@ export async function GET(req: NextRequest) {
       },
     });
   }
+  // The home grid's freelancer rows (Nitsan, 2026-11-16): hours logged through
+  // a link and not yet reviewed, per person and day — no task, client, note or
+  // rate. A changed approved line (it keeps `time_entry_id`) is left out: its
+  // approved hours are already tracker hours, and counting both would double it.
+  const weekFrom = req.nextUrl.searchParams.get("pendingFrom");
+  const weekTo = req.nextUrl.searchParams.get("pendingTo");
+  if (weekFrom || weekTo) {
+    const iso = /^\d{4}-\d{2}-\d{2}$/;
+    if (!weekFrom || !weekTo || !iso.test(weekFrom) || !iso.test(weekTo))
+      return NextResponse.json({ error: "pendingFrom and pendingTo are YYYY-MM-DD" }, { status: 400 });
+    const { data, error } = await sb
+      .from("freelancer_logs")
+      .select("profile_id, date, minutes")
+      .eq("status", "pending")
+      .is("time_entry_id", null)
+      .gte("date", weekFrom)
+      .lte("date", weekTo);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({
+      pending: (data ?? []).map((r) => ({ profileId: r.profile_id as string, date: r.date as string, minutes: Number(r.minutes) })),
+    });
+  }
   // The home page's alert needs only the count.
   if (req.nextUrl.searchParams.has("count")) {
     const { count } = await sb.from("freelancer_logs").select("id", { count: "exact", head: true }).eq("status", "pending");
