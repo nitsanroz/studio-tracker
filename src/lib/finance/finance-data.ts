@@ -51,17 +51,28 @@ async function loadFinanceCore(): Promise<FinanceCore> {
   };
 }
 
+/**
+ * The last core this tab loaded — so a page opened again (Scenarios after
+ * &advice, Overview after Plan) draws at once from it and refreshes quietly
+ * (Nitsan, 2026-11-16: the switch "takes 1-2 seconds till it appears"). In
+ * memory only, for this tab; never stored, and nothing a page didn't already
+ * hold.
+ */
+let lastCore: FinanceCore | null = null;
+
 export function useFinanceCore() {
-  const [data, setData] = useState<FinanceCore | null>(null);
+  const [data, setData] = useState<FinanceCore | null>(lastCore);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(lastCore == null);
 
   /** `silent` refreshes the figures in place, without the loading screen. */
   const reload = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      setData(await loadFinanceCore());
+      const core = await loadFinanceCore();
+      lastCore = core;
+      setData(core);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load finance data");
     } finally {
@@ -70,7 +81,8 @@ export function useFinanceCore() {
   }, []);
 
   useEffect(() => {
-    void reload();
+    // a page opened again starts from the last core, so this reload is silent
+    void reload(lastCore != null);
   }, [reload]);
 
   return { data, error, loading, reload };

@@ -5,7 +5,9 @@
 // English — he.test.ts lists every t("…") in the page's files and fails on
 // any without a Hebrew line.
 
-import { HE } from "./he";
+// &all: one Hebrew lookup for the whole advisor — this map and &advice's
+// (lib/advice/he-ui.ts `hebrew`), &advice's line first where both have one.
+import { hebrew } from "@/lib/advice/he-ui";
 
 export type Lang = "en" | "he";
 export type Vars = Record<string, string | number>;
@@ -18,7 +20,7 @@ export interface T {
 const fill = (s: string, v?: Vars) => (v ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m)) : s);
 
 export function tFor(lang: Lang): T {
-  const t = ((s: string, v?: Vars) => fill(lang === "he" ? (HE[s] ?? s) : s, v)) as T;
+  const t = ((s: string, v?: Vars) => fill(lang === "he" ? (hebrew(s) ?? s) : s, v)) as T;
   t.lang = lang;
   return t;
 }

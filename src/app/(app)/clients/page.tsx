@@ -150,7 +150,7 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-const RATE_W = 64;
+const RATE_W = 76;
 
 export default function ClientsPage() {
   const { clients, tasks, entrySumsAll, updateClient } = useData();

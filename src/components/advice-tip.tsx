@@ -1,9 +1,10 @@
 "use client";
 
-// The /advice page's hover boxes (Nitsan, 2026-11-15: "a hover box wherever a
-// figure, a definition or a part of a chart needs more explanation or a
-// breakdown"). One component for all of them: a figure, a chart's segment, a
-// heading's (i).
+// &all's ONE hover box (2026-11-16). Born as the /advice page's (Nitsan,
+// 2026-11-15: "a hover box wherever a figure, a definition or a part of a chart
+// needs more explanation or a breakdown"); since the &all pass every info dot
+// (`components/ui.tsx` InfoDot, finance's, Scenarios' `Hover`/`HoverTip`)
+// renders this. A new hover explanation uses `Tip` / `InfoTip`.
 //
 // The box is `fixed` and portalled to <body>, and opens above its anchor when
 // there is no room below — a box inside the page would be clipped by the first
@@ -68,6 +69,7 @@ export function Tip({
   style,
   mark = false,
   focusable = true,
+  label,
 }: {
   children: ReactNode;
   title?: ReactNode;
@@ -78,6 +80,8 @@ export function Tip({
   mark?: boolean;
   /** false when it wraps a link or a button, which takes the focus itself */
   focusable?: boolean;
+  /** read out for an icon-only trigger, e.g. the (i) */
+  label?: string;
 }) {
   const [el, setEl] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -86,10 +90,24 @@ export function Tip({
     <T
       ref={setEl}
       tabIndex={focusable ? 0 : undefined}
+      role={label ? "button" : undefined}
+      aria-label={label}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
       onBlur={() => setOpen(false)}
+      // An icon trigger (`label`) keeps its click: inside a <label> the click
+      // would otherwise go to the label's input, taking the focus and closing
+      // the box before it could be read — on a phone, every time.
+      onClick={
+        label
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(true);
+            }
+          : undefined
+      }
       style={style}
       className={`cursor-help outline-none ${mark ? "underline decoration-dotted decoration-1 underline-offset-4 [text-decoration-color:var(--faint)]" : ""} ${className}`}
     >
@@ -103,11 +121,17 @@ export function Tip({
   );
 }
 
-/** The (i) beside a heading. */
-export function InfoTip({ title, children }: { title?: ReactNode; children: ReactNode }) {
+/** The (i) beside a heading — THE info dot of &all: `components/ui.tsx`
+ *  `InfoDot`, finance's and Scenarios' `Hover` all render this. */
+export function InfoTip({ title, children, size = 14, label }: { title?: ReactNode; children: ReactNode; size?: number; /** read out — pass it translated */ label?: string }) {
   return (
-    <Tip title={title} body={children} className="inline-flex shrink-0 items-center text-faint hover:text-foreground focus:text-foreground">
-      <Info size={14} strokeWidth={2} aria-hidden />
+    <Tip
+      title={title}
+      body={children}
+      label={label ?? (typeof title === "string" ? `About ${title}` : "More about this")}
+      className="inline-flex shrink-0 items-center align-middle text-faint hover:text-foreground focus:text-foreground"
+    >
+      <Info size={size} strokeWidth={2} aria-hidden />
     </Tip>
   );
 }

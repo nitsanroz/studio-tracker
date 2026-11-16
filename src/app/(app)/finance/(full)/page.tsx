@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkline } from "@/components/line-style";
 import { ChartPie, CalendarRange } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { useEffect, useMemo, useState } from "react";
@@ -299,6 +300,7 @@ export default function OverviewPage() {
         Key figures
       </h2>
       <KpiRow
+        trend={summaries.filter((s) => !s.partial && (isAll || s.year <= (selYear ?? 0))).slice(-8)}
         explainCtx={kpiCtx}
         cur={cur}
         prior={prior}
@@ -479,6 +481,7 @@ export default function OverviewPage() {
 }
 
 function KpiRow({
+  trend,
   explainCtx,
   cur,
   prior,
@@ -487,6 +490,8 @@ function KpiRow({
   elapsed,
   allTime,
 }: {
+  /** complete years up to the one shown — each tile's little line */
+  trend: YearSummary[];
   explainCtx: KpiContext;
   cur: YearSummary;
   prior: PeriodSummary | null;
@@ -509,6 +514,8 @@ function KpiRow({
           ? `≈ ${formatILSShort(annualRev)} annualized`
           : null,
       delta: prior ? yoy(cur.revenue, prior.revenue).pct : null,
+      series: trend.map((t) => t.revenue),
+      short: formatILSShort(Math.round(cur.revenue)),
       info: `Total gross revenue for the period, from logged hours × each client's rate.${yoyNote}`,
     },
     {
@@ -516,6 +523,9 @@ function KpiRow({
       value: formatILS(Math.round(cur.expenses)),
       sub: prior ? `vs ${formatILS(Math.round(prior.expenses))}` : null,
       delta: prior ? yoy(cur.expenses, prior.expenses).pct : null,
+      series: trend.map((t) => t.expenses),
+      short: formatILSShort(Math.round(cur.expenses)),
+      upIsBad: true,
       info: `Total expenses for the period, across all expense categories.${yoyNote}`,
     },
     {
@@ -523,6 +533,8 @@ function KpiRow({
       value: formatILS(Math.round(cur.profit)),
       sub: prior ? `vs ${formatILS(Math.round(prior.profit))}` : null,
       delta: prior ? yoy(cur.profit, prior.profit).pct : null,
+      series: trend.map((t) => t.profit),
+      short: formatILSShort(Math.round(cur.profit)),
       info: `Revenue minus total expenses for the period.${yoyNote}`,
     },
     {
@@ -530,6 +542,7 @@ function KpiRow({
       value: formatPct(cur.margin, 0),
       sub: prior ? `vs ${formatPct(prior.margin, 0)}` : null,
       delta: null,
+      series: trend.map((t) => t.margin),
       info: "Profit ÷ revenue — the share of what came in that was actually kept.",
     },
     {
@@ -537,6 +550,7 @@ function KpiRow({
       value: `₪${Math.round(cur.avgRate)}`,
       sub: prior ? `vs ₪${Math.round(prior.avgRate)}` : null,
       delta: prior ? yoy(cur.avgRate, prior.avgRate).pct : null,
+      series: trend.map((t) => t.avgRate),
       info: `Revenue ÷ hours — the effective average rate actually billed, which can differ from any single client's card rate.${yoyNote}`,
       align: "right" as const,
     },
@@ -545,6 +559,8 @@ function KpiRow({
       value: formatPct(cur.salariesPctRev, 0),
       sub: prior ? `vs ${formatPct(prior.salariesPctRev, 0)}` : null,
       delta: null,
+      series: trend.map((t) => t.salariesPctRev),
+      upIsBad: true,
       info: "Salaries as a share of revenue for the period — how much of what came in went to fixed payroll.",
       align: "right" as const,
     },
@@ -557,37 +573,56 @@ function KpiRow({
       onMouseLeave={explain.onMouseLeave}
     >
       {explain.card}
-      {kpis.map((k) => (
-        <div
-          key={k.label}
-          // &all: Home's stat tile — card, small caps label, serif figure
-          className="rounded-2xl border border-border bg-surface p-4 shadow-card"
-        >
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] uppercase tracking-wide text-muted">{k.label}</span>
-            <InfoDot align={k.align}>{k.info}</InfoDot>
-          </div>
+      {kpis.map((k, i) => {
+        // &all (Nitsan, 2026-11-16: the top of Overview "too textual and
+        // boring"): Home's stat tile — the first one filled brand blue, a short
+        // serif figure (the exact one is the hover card's), a ▲/▼ chip coloured
+        // by whether the move is GOOD (expenses up is red), and the figure's
+        // own line over the complete years.
+        const hi = i === 0;
+        const kk = k as typeof k & { short?: string; upIsBad?: boolean; series?: number[] };
+        const good = k.delta == null ? null : (k.delta >= 0) !== !!kk.upIsBad;
+        return (
           <div
-            data-cell={kpiKey(k.label)}
-            className="-mx-1 mt-1.5 cursor-default rounded px-1 font-serif-accent text-[28px] leading-none tabular-nums"
+            key={k.label}
+            className={`flex flex-col rounded-2xl border p-4 shadow-card ${hi ? "border-brand bg-brand text-white" : "border-border bg-surface"}`}
           >
-            {k.value}
-          </div>
-          {k.delta != null && (
-            <div
-              className={`text-xs tabular-nums ${
-                k.delta >= 0 ? "text-success" : "text-danger"
-              }`}
-              title={priorLabel != null ? `vs ${priorLabel}` : undefined}
-            >
-              {formatSignedPct(k.delta)} YoY
+            <div className={`flex items-center gap-1 text-[11px] uppercase tracking-wide ${hi ? "text-white/80" : "text-muted"}`}>
+              {k.label}
+              <InfoDot title={k.label} align={k.align}>{k.info}</InfoDot>
             </div>
-          )}
-          {k.delta == null && k.sub && (
-            <div className="text-xs text-faint">{k.sub}</div>
-          )}
-        </div>
-      ))}
+            <div
+              data-cell={kpiKey(k.label)}
+              className="-mx-1 mt-1.5 cursor-default rounded px-1 font-serif-accent text-[30px] leading-none tabular-nums"
+            >
+              {kk.short ?? k.value}
+            </div>
+            <div className={`mt-2 flex min-h-5 flex-wrap items-center gap-1.5 text-[11px] ${hi ? "text-white/85" : "text-muted"}`}>
+              {k.delta != null ? (
+                <>
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 font-semibold tabular-nums ${
+                      hi ? "bg-white/20 text-white" : good ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                    }`}
+                  >
+                    {k.delta >= 0 ? "▲" : "▼"} {formatSignedPct(k.delta).replace(/^[+−-]/, "")}
+                  </span>
+                  <span>vs {priorLabel ?? "last year"}</span>
+                </>
+              ) : k.sub ? (
+                <span className="truncate">{k.sub}</span>
+              ) : null}
+            </div>
+            {kk.series && kk.series.length > 1 && (
+              <Sparkline
+                series={kk.series}
+                color={hi ? "#ffffff" : kk.upIsBad ? "var(--danger)" : "var(--brand)"}
+                className="mt-auto h-7 w-full pt-2"
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

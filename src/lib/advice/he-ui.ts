@@ -8,6 +8,8 @@
 // text; {name} marks are filled in. A string missing here shows in English.
 // Client-safe: no figure of the studio's.
 
+import { HE as SCENARIOS_HE } from "@/lib/finance/scenarios/he";
+
 export type AdviceLang = "en" | "he";
 export type Vars = Record<string, string | number>;
 
@@ -250,9 +252,18 @@ export interface UiT {
   locale: string;
 }
 
+/**
+ * &all's ONE Hebrew lookup (2026-11-16): &advice's interface text and Scenarios'
+ * (lib/finance/scenarios/he.ts) are read as one dictionary, so a line written
+ * for either tab is there on the other. Where both have the same English, this
+ * file wins ("Close" → סגירה, the button). Scenarios' translator reads it too
+ * (scenarios/i18n.ts). A new interface string gets its line in either file.
+ */
+export const hebrew = (s: string): string | undefined => HE[s] ?? SCENARIOS_HE[s];
+
 /** The interface's translator for a language. */
 export function uiT(lang: AdviceLang): UiT {
-  const t = ((s: string, v?: Vars) => fill(lang === "he" ? (HE[s] ?? s) : s, v)) as UiT;
+  const t = ((s: string, v?: Vars) => fill(lang === "he" ? (hebrew(s) ?? s) : s, v)) as UiT;
   t.lang = lang;
   t.locale = lang === "he" ? "he-IL" : "en-GB";
   return t;

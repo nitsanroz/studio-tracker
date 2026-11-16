@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCheck, Eye, EyeOff, Link2Off, Lock, LockOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
@@ -232,6 +234,8 @@ export function MonthAmountGrid({
   addLabel,
   pnlLine,
   linkPeople = false,
+  viewSwitch,
+  alt,
 }: {
   table: string;
   title: string;
@@ -246,6 +250,11 @@ export function MonthAmountGrid({
   /** Rows belong to a tracker person (`profile_id`): one person shared with the
    * tracker's hours and HR, so cost can later be set against their work. */
   linkPeople?: boolean;
+  /** drawn under the header — a page with another view of the same thing */
+  viewSwitch?: ReactNode;
+  /** that other view: it takes the grid's place, the header and the trends
+   *  pane stay (Freelancers' cards, 2026-11-16) */
+  alt?: ReactNode;
 }) {
   const [year, setYear] = useYearParam();
   // Read on render, not at module load: a tab left open over New Year kept
@@ -910,9 +919,11 @@ export function MonthAmountGrid({
           </>
         }
       />
+      {viewSwitch}
       {/* The grid, with its trends beside it from 1536px and above it under that (trends-panel.tsx). */}
       <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-start">
       <div className="min-w-0 flex-1">
+      {alt ?? (<>
       {linkPeople && (table === "finance_salaries" || table === "finance_freelance") && (
         <TrackerLines
           kind={table === "finance_salaries" ? "salaries" : "freelance"}
@@ -1234,6 +1245,7 @@ export function MonthAmountGrid({
           </button>
         </div>
       )}
+      </>)}
       </div>
       <TrendsPanel
         table={table}

@@ -994,7 +994,9 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
               return (
                 <NavItem
                   key={href}
-                  href={href}
+                  // Freelancers is ONE page with Payments for full finance, under
+                  // /finance (2026-11-16) — link straight to it, no redirect hop.
+                  href={href === "/freelancers" && financePages.length > 1 ? "/finance/freelance" : href}
                   label={label}
                   Icon={Icon}
                   folded={folded}

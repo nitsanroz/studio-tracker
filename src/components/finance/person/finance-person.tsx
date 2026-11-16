@@ -11,6 +11,7 @@
 // layout.tsx), and every table here is read with the viewer's own session.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/lib/finance/supabase-client";
 import { forgetPeople, usePeople } from "@/lib/finance/people-data";
 import { canSetOwnerPosition } from "@/lib/finance/finance-access";
@@ -44,6 +45,7 @@ import { Loading, ErrorState } from "@/components/finance/ui";
 import { formatILS, formatNum } from "@/lib/finance/format";
 import { Kpi } from "./visuals";
 import { OverviewTab } from "./overview-tab";
+import { PersonAdvice } from "./person-advice";
 import { PerformanceTab } from "./performance-tab";
 import { PayTab } from "./pay-tab";
 import { HistoryTab } from "./history-tab";
@@ -68,7 +70,23 @@ const numOrNull = (v: number | string | null) => (v == null ? null : Number(v));
 /** The money tabs of a person's page. "summary" is what was this page's Overview. */
 export type FinanceTab = "summary" | "performance" | "pay" | "history" | "hr";
 
-export function FinancePerson({ id, tab, onTab }: { id: string; tab: FinanceTab; onTab: (t: FinanceTab) => void }) {
+/** `only="advice"`: just &advice's card about them (`person-advice.tsx`), for
+ *  the top of the person's Work tab; nothing while it loads. */
+/** `adviceSlot`: where the page keeps &advice's column — a money tab draws the
+ *  card there itself, so the column doesn't load this person a second time. */
+export function FinancePerson({
+  id,
+  tab,
+  onTab,
+  only,
+  adviceSlot,
+}: {
+  id: string;
+  tab: FinanceTab;
+  onTab: (t: FinanceTab) => void;
+  only?: "advice";
+  adviceSlot?: HTMLElement | null;
+}) {
   const { hourlyTerms: HOURLY_TERMS } = useCompanyFigures();
   const { data, error, loading } = usePeople({ personId: id });
   const [hr, setHr] = useState<Hr | null | undefined>(undefined);
@@ -260,9 +278,14 @@ export function FinancePerson({ id, tab, onTab }: { id: string; tab: FinanceTab;
     forgetPeople();
   }
 
+  if (only === "advice" && (loading || error || !person)) return null;
   if (loading) return <Loading label="Loading person…" />;
   if (error) return <ErrorState message={error} />;
   if (!person) return <ErrorState message="No such person in the tracker." />;
+  if (only === "advice")
+    return recent ? (
+      <PersonAdvice name={person.name} advice={recent.advice} owner={person.position === "owner"} onOpen={() => onTab("summary")} />
+    ) : null;
 
   const m: PersonModel = {
     id,
@@ -356,6 +379,12 @@ export function FinancePerson({ id, tab, onTab }: { id: string; tab: FinanceTab;
       {shown === "pay" && <PayTab m={m} />}
       {shown === "history" && <HistoryTab m={m} />}
       {shown === "hr" && <HrTab m={m} />}
+      {adviceSlot &&
+        recent &&
+        createPortal(
+          <PersonAdvice name={person.name} advice={recent.advice} owner={person.position === "owner"} onOpen={() => onTab("summary")} />,
+          adviceSlot,
+        )}
     </div>
   );
 }

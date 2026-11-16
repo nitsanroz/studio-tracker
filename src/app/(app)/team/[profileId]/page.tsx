@@ -262,6 +262,7 @@ export default function MemberPage({
     const q = new URLSearchParams(window.location.search).get("tab");
     return q === "summary" || q === "performance" || q === "pay" || q === "history" || q === "hr" ? q : "overview";
   });
+  const [adviceSlot, setAdviceSlot] = useState<HTMLElement | null>(null);
   const financeTab: FinanceTab | null = money && (tab === "summary" || tab === "performance" || tab === "pay" || tab === "history" || tab === "hr") ? tab : null;
   /**
    * Lazily mounted, then never unmounted — see the HR block below. Never
@@ -452,6 +453,21 @@ export default function MemberPage({
         </button>
       </div>
 
+      {/* &advice on this person sits in a column on the RIGHT, beside every tab
+          but Summary, which says the same at length (Nitsan, 2026-11-16: "can be
+          on right side as page doesn't expand to whole page width anyway, allowing
+          to fold unfold it on small screens"). Full finance only. Below xl it
+          stacks on top, folded to its title until opened. */}
+      <div className={money && tab !== "summary" ? "grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]" : ""}>
+      {money && tab !== "summary" && (
+        // On a money tab that tab's own FinancePerson draws the card into this
+        // column (`adviceSlot`) — one load of the person, not two; on Work there
+        // is none, so the column loads it here.
+        <aside ref={setAdviceSlot} className="xl:sticky xl:top-20 xl:order-2">
+          {!financeTab && <FinancePerson id={profile.id} tab="summary" onTab={setTab} only="advice" />}
+        </aside>
+      )}
+      <div className="flex min-w-0 flex-col gap-4">
       {/* Back link, archived banner and the header stay OUTSIDE the tabs: they are
           identity and page-level state, and the Archive control must be reachable
           from either tab. */}
@@ -474,7 +490,7 @@ export default function MemberPage({
       />
 
       {/* The money tabs (full finance). HR shows the studio's details card first, then finance's HR. */}
-      {financeTab && financeTab !== "hr" && <FinancePerson id={profile.id} tab={financeTab} onTab={setTab} />}
+      {financeTab && financeTab !== "hr" && <FinancePerson id={profile.id} tab={financeTab} onTab={setTab} adviceSlot={adviceSlot} />}
 
       {/* Tiles fill the left half, the chart the right. content-start keeps the
           tile column its natural height instead of stretching four tall empty
@@ -605,7 +621,9 @@ export default function MemberPage({
         )}
       </div>
       )}
-      {financeTab === "hr" && <FinancePerson id={profile.id} tab="hr" onTab={setTab} />}
+      {financeTab === "hr" && <FinancePerson id={profile.id} tab="hr" onTab={setTab} adviceSlot={adviceSlot} />}
+      </div>
+      </div>
     </div>
   );
 }

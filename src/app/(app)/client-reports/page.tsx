@@ -31,11 +31,11 @@ import {
 } from "@/lib/format";
 import { cutoffIsStale, lastCompleteWeekEnd } from "@/lib/period-math";
 import { EditableDateCell, EditableTextCell } from "@/components/editable-cell";
-import { MiniColumns } from "@/components/charts";
+import { LineChart } from "@/components/charts";
 import { ReportTable, ViewToggle } from "@/components/report-table";
 import type { InspectableCell } from "@/components/report-table";
 import { CellInspector } from "@/components/cell-inspector";
-import { InfoDot, Modal, ModalClose } from "@/components/ui";
+import { Avatar, InfoDot, Modal, ModalClose } from "@/components/ui";
 import { toggleIn } from "@/lib/toggle";
 import {
   currentPeriodIndex,
@@ -44,7 +44,7 @@ import {
 } from "@/lib/report-period-focus";
 import { buildReportSnapshot } from "@/lib/report-snapshot";
 import { paidMonthsFor, periodPaidInFinance, type MonthPaidRow } from "@/lib/finance-paid";
-import type { BillingPeriod, Client, ReportLink, ReportSnapshot } from "@/lib/types";
+import type { BillingPeriod, Client, Profile, ReportLink, ReportSnapshot } from "@/lib/types";
 import { copyText } from "@/lib/clipboard";
 
 /** "Show all" hands the table an empty fold list; a module constant so the identity
@@ -322,9 +322,13 @@ function PaymentPeriods({ client }: { client: Client }) {
     });
   }
 
+
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+      {/* The periods table needs ~600px, not half the page (Nitsan, 2026-11-16);
+          what it frees goes to the figures and the chart on the right. */}
+      <div className="flex w-full min-w-0 flex-col gap-4 xl:w-[600px] xl:shrink-0">
+      <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="flex items-center gap-3 border-b border-border bg-background px-3 py-2 text-xs font-medium uppercase tracking-wide text-faint">
           <span className="min-w-0 flex-1" title="Payment period title — click a name to rename it">
             Payment period
@@ -438,12 +442,19 @@ function PaymentPeriods({ client }: { client: Client }) {
           + Add period
         </button>
       </div>
+      {current && (
+        <PeriodSplit entries={clientEntries} from={current.dateFrom} to={current.dateTo} label={current.label} />
+      )}
+      </div>
 
-      {/* 504 = 360 + 40%. The payment-period table beside this is `flex-1`, so it
-          simply yields the difference — one number moves both panes. */}
-      <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[504px]">
+      {/* The rest of the width: four figures in a row when there's room for them,
+          two by two when there isn't (`@container`). */}
+      <div className="@container flex w-full min-w-0 flex-1 flex-col gap-4">
         <div className="rounded-2xl border border-border bg-surface shadow-card p-4">
-          <div className="grid grid-cols-4 gap-2">
+          {/* 2 × 2, not one row of four (Nitsan, 2026-11-16: "numbers clash"):
+              four 32px serif figures in ~115px columns ran into each other —
+              "118.25h" over "none", "14 days" cut to "14 d…". */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4 @min-[640px]:grid-cols-4 [&>div]:min-w-0">
             <div
               title={
                 client.hourCap != null
@@ -519,11 +530,10 @@ function PaymentPeriods({ client }: { client: Client }) {
                 ⚠️ Amber, and it says what is broken: this is the only state in which
                 it appears, so it is a repair rather than a setting. */}
             {keysNeedsAttention && (
-              // ⚠️ Its OWN full-width row, not a fifth column: the four figures
-              // beside it fill the grid exactly, and a select squeezed into 92px of
-              // a 504px pane shows about two words of a task title.
+              // ⚠️ Its OWN full-width row, not a cell of the 2 × 2: a select
+              // squeezed into half the pane shows too little of a task title.
               <div
-                className="col-span-4 rounded-xl border border-warning/40 bg-warning/5 p-3"
+                className="col-span-2 rounded-xl border border-warning/40 bg-warning/5 p-3 @min-[640px]:col-span-4"
                 title="This client has no valid Keys task, so hours cannot be written down on its report. Only this client's non-billable tasks are offered, because a billable destination cannot reduce a bill."
               >
                 <div className="text-[11px] font-medium text-warning">
@@ -582,13 +592,85 @@ function PaymentPeriods({ client }: { client: Client }) {
             Hours by month
           </h3>
           {byMonth.length > 0 ? (
-            <MiniColumns points={byMonth} />
+            // a line, in the app's one line style (Nitsan, 2026-11-16)
+            <LineChart points={byMonth} width={640} height={170} />
           ) : (
             <p className="text-sm text-faint">No hours yet.</p>
           )}
         </div>
         <InternalNotes client={client} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * This period, by person and by task (Nitsan, 2026-11-16: with the periods
+ * table narrower, "maybe there's something else you can add below the table").
+ * PER PERSON, so LOGGED hours only — never the recovered history (CLAUDE.md,
+ * "Pre-Everhour hours"). Its own component so the split is memoised on its
+ * props, not rebuilt on every edit of the page.
+ */
+function PeriodSplit({ entries, from, to, label }: { entries: { userId: string | null; taskId: string; date: string; minutes: number; legacy?: boolean }[]; from: string; to: string; label: string }) {
+  const { profiles, tasks } = useData();
+  const split = useMemo(() => {
+    const byPerson = new Map<string, number>();
+    const byTask = new Map<string, number>();
+    for (const e of entries) {
+      if (e.legacy || e.date < from || e.date > to || e.minutes <= 0) continue;
+      if (e.userId) byPerson.set(e.userId, (byPerson.get(e.userId) ?? 0) + e.minutes);
+      byTask.set(e.taskId, (byTask.get(e.taskId) ?? 0) + e.minutes);
+    }
+    const sort = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1]);
+    return { people: sort(byPerson), tasks: sort(byTask).slice(0, 6) };
+  }, [entries, from, to]);
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+      <h3 className="card-title">This period</h3>
+      <p className="mb-3 text-xs text-muted">{label} · who worked on it and where the hours went · logged hours</p>
+      {split.people.length === 0 ? (
+        <p className="text-sm text-faint">No hours logged in this period yet.</p>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <SplitList
+            title="By person"
+            rows={split.people.map(([id, m]) => {
+              const p = profiles.find((x) => x.id === id);
+              return { key: id, label: p?.name ?? "Someone", minutes: m, profile: p ?? null };
+            })}
+          />
+          <SplitList
+            title="Top tasks"
+            rows={split.tasks.map(([id, m]) => ({ key: id, label: tasks.find((t) => t.id === id)?.title ?? "(deleted task)", minutes: m, profile: null }))}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A short list of names, each with a bar for its share and its hours. */
+function SplitList({ title, rows }: { title: string; rows: { key: string; label: string; minutes: number; profile: Profile | null }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.minutes));
+  return (
+    <div className="min-w-0">
+      <p className="mb-2 text-[11px] uppercase tracking-wide text-muted">{title}</p>
+      <ul className="flex flex-col gap-2">
+        {rows.map((r) => (
+          <li key={r.key} className="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-2 text-[13px]">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                {r.profile && <Avatar profile={r.profile} size={18} />}
+                <span className="bidi-auto truncate text-left">{r.label}</span>
+              </div>
+              <div className="mt-1 h-1.5 rounded-full bg-background">
+                <div className="h-1.5 rounded-full bg-brand" style={{ width: `${(r.minutes / max) * 100}%` }} />
+              </div>
+            </div>
+            <span className="text-right tabular-nums">{formatHoursShort(r.minutes)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

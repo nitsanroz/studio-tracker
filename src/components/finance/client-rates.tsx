@@ -69,10 +69,23 @@ export function RateCell({ rate, onOpen, width }: { rate: ClientRateRow | null; 
         onOpen();
       }}
       title="Rate history"
-      className={`shrink-0 rounded-md px-1 py-0.5 text-right text-sm tabular-nums hover:bg-brand-soft hover:text-brand ${rate ? "font-medium" : "text-faint"}`}
+      className="flex shrink-0 justify-end"
       style={{ width }}
     >
-      {rate ? `₪${Number(rate.rate)}` : "set"}
+      {/* A PRICE, so it doesn't read as one more hours column (Nitsan,
+          2026-11-16: "make rate look different then all hours data"): a money
+          pill in the paid green, "/h" after it; a client with no rate gets a
+          dashed "set rate". */}
+      {rate ? (
+        <span className="inline-flex items-baseline rounded-full bg-[var(--state-final-bg)] px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--state-final-fg)] transition-colors hover:bg-[var(--state-paid-bg)]">
+          ₪{Number(rate.rate)}
+          <span className="ml-px text-[11px] font-normal opacity-70">/h</span>
+        </span>
+      ) : (
+        <span className="rounded-full border border-dashed border-border-strong px-2 py-0.5 text-[11px] text-faint hover:border-brand hover:text-brand">
+          set rate
+        </span>
+      )}
     </button>
   );
 }

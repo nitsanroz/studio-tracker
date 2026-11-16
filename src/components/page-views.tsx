@@ -30,15 +30,31 @@ export interface PageView {
   exact?: boolean;
 }
 
-export const FREELANCER_VIEWS: PageView[] = [
-  { href: "/freelancers", label: "Hours" },
-  { href: "/finance/freelance", label: "Payments", min: "finance" },
-];
-
 export const ADVICE_VIEWS: PageView[] = [
   { href: "/advice", label: "&advice", min: "owner" },
   { href: "/finance/scenarios", label: "Scenarios", min: "owner" },
 ];
+
+/**
+ * The same pills switching views INSIDE one page — the advisor's tabs, the
+ * Freelancers / Payments switch (2026-11-16) — so all three look alike.
+ */
+export function ViewSwitch<T extends string>({ value, options, onChange, className = "" }: { value: T; options: readonly (readonly [T, string])[]; onChange: (v: T) => void; className?: string }) {
+  return (
+    <nav aria-label="Views of this page" className={`inline-flex max-w-full flex-wrap rounded-full bg-surface p-0.5 text-[13px] shadow-card ${className}`}>
+      {options.map(([id, label]) => (
+        <button
+          key={id}
+          onClick={() => onChange(id)}
+          aria-current={value === id ? "page" : undefined}
+          className={`rounded-full px-3.5 py-1 font-medium transition-colors ${value === id ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
+        >
+          <span dir="ltr">{label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 export function PageViews({ views, className = "" }: { views: PageView[]; className?: string }) {
   const here = usePathname();

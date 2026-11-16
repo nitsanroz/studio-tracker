@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, ArrowUpRight, Check, CircleAlert, Info } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Check, CircleAlert } from "lucide-react";
 import { STEPS, type Step } from "@/components/finance/cell-state-card";
 import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
+import { InfoDot, Modal } from "@/components/ui";
 
 export function PageHeader({
   title,
@@ -153,84 +154,8 @@ export function MismatchTriangle({
   );
 }
 
-/** Small circled-"i" affordance that reveals an explanation card on
- * hover/focus — for a pane whose numbers need a sentence nobody has room to
- * print underneath it. `align="right"` keeps the card from running off the
- * right edge of a narrow pane. */
-export function InfoDot({
-  children,
-  align = "left",
-}: {
-  children: ReactNode;
-  align?: "left" | "right";
-}) {
-  const [open, setOpen] = useState(false);
-  const button = useRef<HTMLButtonElement>(null);
-  const tip = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-  // Fixed to the viewport, not the dot's box: a dot inside a scrolling table
-  // (overflow-x-auto clips both ways) would otherwise cut its card off. Kept
-  // on screen, and flipped above the dot when there's no room below.
-  useLayoutEffect(() => {
-    if (!open || !button.current || !tip.current) return;
-    const b = button.current.getBoundingClientRect();
-    const t = tip.current.getBoundingClientRect();
-    const gap = 6;
-    const margin = 8;
-    const below = b.bottom + gap;
-    const top = below + t.height > window.innerHeight - margin && b.top - gap - t.height > margin ? b.top - gap - t.height : below;
-    const wanted = align === "right" ? b.right - t.width : b.left;
-    const left = Math.min(Math.max(margin, wanted), window.innerWidth - t.width - margin);
-    setPos({ top, left });
-  }, [open, align]);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
-    return () => {
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
-    };
-  }, [open]);
-
-  return (
-    <span className="relative inline-flex">
-      <button
-        ref={button}
-        type="button"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => {
-          setOpen(false);
-          setPos(null);
-        }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => {
-          setOpen(false);
-          setPos(null);
-        }}
-        aria-label="More info"
-        className="flex h-4 w-4 items-center justify-center rounded-full text-faint hover:text-muted"
-      >
-        <Info size={13} />
-      </button>
-      {open &&
-        createPortal(
-          <div
-            ref={tip}
-            role="tooltip"
-            style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: "hidden" }}
-            className="fixed z-50 w-64 max-w-[calc(100vw-16px)] rounded-lg border border-border bg-surface p-2.5 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-muted shadow-card"
-          >
-            {children}
-          </div>,
-          document.body,
-        )}
-    </span>
-  );
-}
+/** &all: finance's (i) is the app's one info dot (components/ui.tsx → InfoTip). */
+export { InfoDot };
 
 /** Draft/predicted/final color-key, shared by every grid that colors cells
  * by `cellStateClass` (Plan, Salaries, Freelance, Rent) — so a user who only
@@ -345,7 +270,10 @@ export function PaidMark() {
 
 /** Centered modal confirmation — for any destructive-ish action (delete,
  * category move) that's easy to fat-finger on a hover-only icon and
- * warrants a real popup instead of an inline affordance. */
+ * warrants a real popup instead of an inline affordance.
+ * &all (2026-11-16): drawn in the tracker's own dialog (`Modal`, the same box
+ * and buttons as `askConfirm`), and like it, a DANGEROUS one focuses Cancel so
+ * an Enter pressed out of habit can't delete anything. */
 export function ConfirmDialog({
   title,
   body,
@@ -362,31 +290,23 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-      onClick={onCancel}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-xl border border-border bg-surface p-4 shadow-lg"
-      >
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <p className="mt-1 text-sm text-muted">{body}</p>
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white ${danger ? "bg-danger hover:bg-danger/90" : "bg-brand hover:bg-brand-dark"}`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+    <Modal onClose={onCancel} width="md" align="center" layer="raised" labelledBy="finance-confirm-title">
+      <p id="finance-confirm-title" className="bidi-auto text-sm font-medium">
+        {title}
+      </p>
+      <p className="bidi-auto mt-1 whitespace-pre-line text-[13px] leading-relaxed text-muted">{body}</p>
+      <div className="mt-4 flex justify-end gap-2">
+        <button autoFocus={danger} onClick={onCancel} className="h-8 rounded-lg border border-border px-3 text-xs">
+          Cancel
+        </button>
+        <button
+          autoFocus={!danger}
+          onClick={onConfirm}
+          className={`h-8 rounded-lg px-3 text-xs font-medium text-white ${danger ? "bg-danger" : "bg-brand"}`}
+        >
+          {confirmLabel}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

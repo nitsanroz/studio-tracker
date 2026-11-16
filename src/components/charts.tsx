@@ -240,12 +240,21 @@ export function PercentRing({
  * Line chart. Values in minutes; the value of a point shows where you hover.
  * Used for "hours per month".
  */
-export function LineChart({ points }: { points: { label: string; minutes: number }[] }) {
+export function LineChart({
+  points,
+  width = 280,
+  height = 104,
+}: {
+  points: { label: string; minutes: number; title?: string }[];
+  /** the drawing's own size — a wide pane wants a wider one, or its text scales up with it */
+  width?: number;
+  height?: number;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   if (!points.length) return null;
   const max = Math.max(...points.map((p) => p.minutes), 1);
-  const W = 280;
-  const H = 104;
+  const W = width;
+  const H = height;
   const padX = 16;
   const padTop = 20;
   const padBottom = 18;

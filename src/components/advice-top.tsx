@@ -6,15 +6,30 @@
 // language: the tab switch on the left, the language switch and the page's own
 // control (Check again) on the right. Then the title, which follows the language.
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { AdviceLangSwitch } from "@/components/advice-lang";
-import { ADVICE_VIEWS, PageViews } from "@/components/page-views";
+import { ADVICE_VIEWS, PageViews, ViewSwitch } from "@/components/page-views";
+
+/**
+ * The advisor's two tabs live on ONE page (/advice, 2026-11-16: Nitsan, "switching
+ * time … can be shortened, especially if nothing changed and nothing needs to
+ * reload"). The page provides this; the bar then switches in place — no
+ * navigation, and a tab once opened stays loaded.
+ */
+export type AdvisorTab = "advice" | "scenarios";
+export const AdvisorTabs = createContext<{ tab: AdvisorTab; setTab: (t: AdvisorTab) => void } | null>(null);
+
+const TABS = [
+  ["advice", "&advice"],
+  ["scenarios", "Scenarios"],
+] as const;
 
 export function AdviceTop({ title, note, status, control, rtl }: { title: ReactNode; note?: ReactNode; status?: ReactNode; control?: ReactNode; rtl: boolean }) {
+  const tabs = useContext(AdvisorTabs);
   return (
     <div className="flex flex-col gap-3">
       <div dir="ltr" className="flex h-9 items-center gap-3">
-        <PageViews views={ADVICE_VIEWS} />
+        {tabs ? <ViewSwitch value={tabs.tab} options={TABS} onChange={tabs.setTab} /> : <PageViews views={ADVICE_VIEWS} />}
         <div className="ml-auto flex items-center gap-2">
           {status && <span className="hidden max-w-[22rem] truncate text-[12px] text-faint md:inline">{status}</span>}
           <AdviceLangSwitch />

@@ -1,11 +1,11 @@
 "use client";
 
+import { InfoTip } from "./advice-tip";
 import { useEffect, useRef, type MouseEvent } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
   ChevronRight,
-  Info,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -435,66 +435,25 @@ export function CollapseChevron({
 }
 
 /**
- * Small circled "i" that reveals an explanation on hover/focus. A real popover
- * rather than a `title` attribute: these carry two or three lines about how a
- * figure is calculated, which the native tooltip renders as one unreadable run
- * and only after a delay.
+ * Small circled "i" that reveals an explanation on hover/focus — &all's one
+ * info dot (2026-11-16): it is `InfoTip` (components/advice-tip.tsx), a box
+ * portalled to <body> that flips above when there is no room below. The old
+ * CSS-positioned card here was clipped by any scroller around it. `align` and
+ * `side` are kept for callers; the box now places itself.
  */
 export function InfoDot({
   title,
   children,
-  align = "left",
-  side = "down",
 }: {
   title?: string;
   children: React.ReactNode;
-  /** which edge of the dot the card hangs from — flip to "right" near a pane edge */
   align?: "left" | "right";
-  /**
-   * which way it opens. Flip to "up" on the last row of anything that sits in a
-   * scroller or near the bottom of a panel — a card opening downward there is
-   * clipped, and an explanation you can't finish reading is worse than none.
-   */
   side?: "down" | "up";
 }) {
   return (
-    <span className="group/info relative inline-flex align-middle">
-      <button
-        type="button"
-        aria-label={title ? `About ${title}` : "About this figure"}
-        // ⚠️ The glyph is DRAWN, not typeset. This was a bordered circle with a
-        // 9px "i" inside it, and `leading-none` makes the line box shorter than
-        // the font's own content box — so the ascent overflowed upward and the
-        // letter sat 1px high, touching the ring. Any pixel nudge that fixed it
-        // would be a fact about Rubik, and this app falls back to Rubik only
-        // until the real Saans lands (see the Brand section of CLAUDE.md) — at
-        // which point the nudge would be wrong again. An icon centres by
-        // geometry and cannot drift with the font.
-        //
-        // opacity-80, not 60: the dot usually inherits `text-muted`, and at 60%
-        // that composites to roughly 2.5:1 on white — under the 3:1 floor for a
-        // control, on a 14px target. It still reads as secondary.
-        className="flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full opacity-80 transition-opacity hover:opacity-100 focus:opacity-100 focus:outline-none"
-      >
-        <Info size={14} strokeWidth={2.25} aria-hidden />
-      </button>
-      <span
-        role="tooltip"
-        // ⚠️ `whitespace-normal` is load-bearing, not tidiness. A dot placed
-        // inside anything `whitespace-nowrap` (the About panel's donut legend)
-        // inherits it, and the card keeps its 240px box while the sentence
-        // runs out of the side as ONE line — measured at 1,277px of spill.
-        // The same reasoning as the `normal-case`/`tracking-normal`/
-        // `leading-relaxed` beside it: this card is prose, so it has to
-        // re-state every text property its host might have set for a label.
-        className={`pointer-events-none absolute z-30 hidden w-60 whitespace-normal rounded-xl border border-border bg-surface p-2.5 text-left text-[11px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-xl group-focus-within/info:block group-hover/info:block ${
-          align === "right" ? "right-0" : "left-0"
-        } ${side === "up" ? "bottom-5" : "top-5"}`}
-      >
-        {title && <span className="mb-1 block font-semibold">{title}</span>}
-        <span className="block text-muted">{children}</span>
-      </span>
-    </span>
+    <InfoTip title={title} size={14}>
+      {children}
+    </InfoTip>
   );
 }
 

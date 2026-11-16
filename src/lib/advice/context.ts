@@ -69,6 +69,8 @@ const OVERVIEW_TILES = new Set(["fin:money", "fin:clients"]);
 const HOME_TILES = new Set(["money", "concentration", "billing"]);
 
 export function pageContext(pathname: string, search: string): PageContext {
+  // Scenarios is a tab of /advice since 2026-11-16 — it keeps its own context.
+  if (pathname === "/advice" && new URLSearchParams(search).get("tab") === "scenarios") pathname = "/finance/scenarios";
   const none = { all: false, clientId: null, signals: null, tiles: new Set<string>() };
   if (pathname === "/") return { ...none, label: "Home", all: true, tiles: HOME_TILES };
   if (pathname === "/finance") {

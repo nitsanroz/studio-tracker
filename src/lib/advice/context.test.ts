@@ -95,3 +95,10 @@ describe("finance's pages (one pane since the finance merge)", () => {
     expect(pageContext("/client-reports", "").signals?.has("debt")).toBe(true);
   });
 });
+
+describe("the Scenarios tab of /advice (2026-11-16)", () => {
+  it("keeps Scenarios' own context", () => {
+    expect(pageContext("/advice", "?tab=scenarios").label).toBe("Scenarios");
+    expect(pageContext("/advice", "").label).not.toBe("Scenarios");
+  });
+});
