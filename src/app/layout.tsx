@@ -10,6 +10,12 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: "Studio&more",
   description: "Task & time tracking for Studio&more",
+  // Installable from Chrome (PWA). Absolute paths on purpose: a relative href
+  // would resolve against deep routes (/clients/… → /clients/manifest…, 404).
+  // No service worker — Chrome on desktop doesn't need one, and a cache could
+  // serve a stale version. The files live in public/, outside the sign-in gate.
+  manifest: "/manifest.webmanifest",
+  icons: { apple: "/icon-180.png" },
 };
 
 // This app had NO viewport export at all, so it ran on Next's default. That
@@ -26,6 +32,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#0b43ed",
 };
 
 export default function RootLayout({
