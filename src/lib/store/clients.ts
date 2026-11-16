@@ -160,9 +160,20 @@ export function useClientActions(deps: ClientDeps) {
           redo: () => methodsRef.current?.updateProfile(profileId, patch),
         });
       }
-      setProfiles((prev) => prev.map((p) => (p.id === profileId ? { ...p, ...patch } : p)));
+      // `name` is the SHOWN name — the nickname when there is one (mapProfile) —
+      // so a nickname change re-derives it, and `name` is never written from a
+      // patch that only came from it.
+      setProfiles((prev) =>
+        prev.map((p) => {
+          if (p.id !== profileId) return p;
+          const next = { ...p, ...patch };
+          if ("nickname" in patch) next.name = patch.nickname?.trim() || (p.fullName ?? p.name);
+          return next;
+        }),
+      );
       const row: Record<string, unknown> = {};
-      if ("name" in patch) row.name = patch.name;
+      if ("name" in patch && !("nickname" in patch)) row.name = patch.name;
+      if ("nickname" in patch) row.nickname = patch.nickname?.trim() || null;
       if ("role" in patch) row.role = patch.role;
       if ("active" in patch) row.active = patch.active;
       if ("startDate" in patch) row.start_date = patch.startDate;

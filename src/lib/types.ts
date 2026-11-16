@@ -2,7 +2,15 @@ export type Role = "admin" | "designer";
 
 export interface Profile {
   id: string;
+  /**
+   * The name to SHOW: the nickname when one is set (0071), else the full name.
+   * ⚠️ Never write this back to `profiles.name` — that is `fullName`.
+   */
   name: string;
+  /** `profiles.name` as stored — the person's own page shows it. */
+  fullName?: string;
+  /** What the studio calls them (0071) — "Ab", "Milica". Null = none. */
+  nickname?: string | null;
   role: Role;
   /** job title; 'owner' marks the studio owner (0058 vacation approver, 0059 &advice) */
   position?: string | null;

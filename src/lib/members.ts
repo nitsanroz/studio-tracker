@@ -42,3 +42,16 @@ export function dailyTargetMinutes(profile: Profile | null | undefined): number 
 export function archivedMembers(profiles: Profile[]): Profile[] {
   return profiles.filter((p) => !p.active && p.hasAccount !== false).sort((a, b) => a.name.localeCompare(b.name));
 }
+
+/**
+ * The name a weekly-plan column shows: its person's nickname (0071) when they
+ * have one — "Ab" rather than the full name the column was created with — else
+ * the column's own name. Display only: renaming a column still edits `col.name`.
+ */
+export function planColumnLabel(
+  col: { name: string; profileId?: string | null },
+  profiles: Pick<Profile, "id" | "nickname">[],
+): string {
+  if (!col.profileId) return col.name;
+  return profiles.find((p) => p.id === col.profileId)?.nickname || col.name;
+}

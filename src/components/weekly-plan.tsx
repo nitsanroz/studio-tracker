@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
+import { planColumnLabel } from "@/lib/members";
 import { shiftDays, formatDayLabel, isWeekend, startOfWeek, toISODate, MONTH_NAMES_LONG } from "@/lib/format";
 import { Avatar, ContextMenu, type ContextMenuItem } from "./ui";
 // ⚠️ The cell vocabulary and the add/edit modal live in `plan-entry-modal.tsx`
@@ -1240,7 +1241,7 @@ export function WeeklyPlan() {
                         {profile ? <Avatar profile={profile} size={20} /> : null}
                         {/* the column no longer widens to fit a long name */}
                         <span className="min-w-0 truncate" title={col.name}>
-                          {col.name}
+                          {profile?.nickname || col.name}
                         </span>
                       </div>
                     </th>
@@ -1354,7 +1355,7 @@ export function WeeklyPlan() {
                         <PlanCell
                           date={iso}
                           columnId={col.id}
-                          label={`${col.name} — ${name} ${date}`}
+                          label={`${planColumnLabel(col, profiles)} — ${name} ${date}`}
                           entries={entriesByCell.get(`${iso}::${col.id}`) ?? []}
                           canEdit={canEdit}
                           onAdd={(t) => setEntryModal({ target: t })}

@@ -232,7 +232,7 @@ function optionalTable<T>(p: Promise<T[]>): Promise<T[]> {
 
 /** Exactly what `mapProfile` reads — keep the two in step. */
 export const PROFILE_COLUMNS =
-  "id, name, role, position, avatar_url, photo_url, active, has_account, start_date, end_date, capacity_hours_week";
+  "id, name, nickname, role, position, avatar_url, photo_url, active, has_account, start_date, end_date, capacity_hours_week";
 
 /** `entries` is boot's paging for the time-entry fallback; refreshes pass nothing (serial). */
 export async function fetchCold(sb: Sb, entries?: FetchAllOptions): Promise<ColdSnapshot> {
