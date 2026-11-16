@@ -15,7 +15,7 @@
 
 import { useCallback, useMemo, type Dispatch, type RefObject, type SetStateAction } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { mapClient, mapTask, updateWithOptional } from "../db";
+import { mapClient, mapTask, shownName, updateWithOptional } from "../db";
 import { inversePatch } from "./helpers";
 import type { HistoryAction, Store } from "./types";
 import type { Client, Profile, Task } from "../types";
@@ -167,7 +167,7 @@ export function useClientActions(deps: ClientDeps) {
         prev.map((p) => {
           if (p.id !== profileId) return p;
           const next = { ...p, ...patch };
-          if ("nickname" in patch) next.name = patch.nickname?.trim() || (p.fullName ?? p.name);
+          if ("nickname" in patch) next.name = shownName(patch.nickname, p.fullName ?? p.name);
           return next;
         }),
       );

@@ -20,25 +20,18 @@ import { AdvisorTabs, type AdvisorTab } from "@/components/advice-top";
  */
 export default function AdvisorPage() {
   const params = useSearchParams();
-  const asked: AdvisorTab = params.get("tab") === "scenarios" ? "scenarios" : "advice";
-  const [tab, setTabState] = useState<AdvisorTab>(asked);
-  const [opened, setOpened] = useState<Set<AdvisorTab>>(() => new Set([asked]));
-  // A link to the other tab followed while already here (the pane's "Open
-  // Scenarios") changes only the address — follow it, during render.
-  const [seen, setSeen] = useState(asked);
-  if (seen !== asked) {
-    setSeen(asked);
-    setTabState(asked);
-    setOpened((o) => (o.has(asked) ? o : new Set([...o, asked])));
-  }
+  // The address IS the tab: a switch writes it with replaceState (which Next's
+  // useSearchParams follows), and a link to ?tab= followed while already here
+  // (the pane's "Open Scenarios") lands the same way.
+  const tab: AdvisorTab = params.get("tab") === "scenarios" ? "scenarios" : "advice";
+  // A tab once opened stays mounted (only hidden).
+  const [opened, setOpened] = useState<Set<AdvisorTab>>(() => new Set([tab]));
+  if (!opened.has(tab)) setOpened(new Set([...opened, tab]));
   const setTab = (t: AdvisorTab) => {
-    setTabState(t);
-    setOpened((o) => (o.has(t) ? o : new Set([...o, t])));
-    // the address follows, without a navigation
     const url = new URL(window.location.href);
     if (t === "scenarios") url.searchParams.set("tab", "scenarios");
     else url.searchParams.delete("tab");
-    window.history.replaceState(window.history.state, "", url);
+    window.history.replaceState(null, "", url);
   };
   return (
     <AdvisorTabs.Provider value={{ tab, setTab }}>

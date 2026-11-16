@@ -437,19 +437,10 @@ export function CollapseChevron({
 /**
  * Small circled "i" that reveals an explanation on hover/focus — &all's one
  * info dot (2026-11-16): it is `InfoTip` (components/advice-tip.tsx), a box
- * portalled to <body> that flips above when there is no room below. The old
- * CSS-positioned card here was clipped by any scroller around it. `align` and
- * `side` are kept for callers; the box now places itself.
+ * portalled to <body> that flips above when there is no room below and stays
+ * on screen. The old CSS-positioned card here was clipped by any scroller.
  */
-export function InfoDot({
-  title,
-  children,
-}: {
-  title?: string;
-  children: React.ReactNode;
-  align?: "left" | "right";
-  side?: "down" | "up";
-}) {
+export function InfoDot({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <InfoTip title={title} size={14}>
       {children}

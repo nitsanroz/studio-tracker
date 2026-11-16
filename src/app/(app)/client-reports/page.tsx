@@ -612,7 +612,7 @@ function PaymentPeriods({ client }: { client: Client }) {
  * props, not rebuilt on every edit of the page.
  */
 function PeriodSplit({ entries, from, to, label }: { entries: { userId: string | null; taskId: string; date: string; minutes: number; legacy?: boolean }[]; from: string; to: string; label: string }) {
-  const { profiles, tasks } = useData();
+  const { profiles, taskById } = useData();
   const split = useMemo(() => {
     const byPerson = new Map<string, number>();
     const byTask = new Map<string, number>();
@@ -641,7 +641,7 @@ function PeriodSplit({ entries, from, to, label }: { entries: { userId: string |
           />
           <SplitList
             title="Top tasks"
-            rows={split.tasks.map(([id, m]) => ({ key: id, label: tasks.find((t) => t.id === id)?.title ?? "(deleted task)", minutes: m, profile: null }))}
+            rows={split.tasks.map(([id, m]) => ({ key: id, label: taskById.get(id)?.title ?? "(deleted task)", minutes: m, profile: null }))}
           />
         </div>
       )}
@@ -1765,7 +1765,7 @@ function PublishWorkspace() {
                   card hanging left-to-right would open off the screen. */}
               <span className="ml-auto flex items-center gap-1.5 text-[11px] text-faint">
                 These only change your view
-                <InfoDot title="Working in this table" align="right">
+                <InfoDot title="Working in this table">
                   <p>
                     <strong>The eye icons are what the client sees</strong> — these filter pills only
                     change your own view.

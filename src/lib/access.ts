@@ -65,6 +65,13 @@ export function financeTierFor(path: string): Tier | null {
 }
 
 /** Whether a tier may open a path. Paths outside finance are not this file's call. */
+/** Where "Freelancers" lives for this tier: ONE page with Payments under /finance
+ *  for full finance (2026-11-16), the cards alone at /freelancers for anyone else.
+ *  The menu and /freelancers' redirect both read this. */
+export function freelancersHref(tier: Tier): string {
+  return atLeast(tier, "finance") ? "/finance/freelance" : "/freelancers";
+}
+
 export function canOpenFinance(tier: Tier, path: string): boolean {
   const min = financeTierFor(path);
   return min === null || atLeast(tier, min);

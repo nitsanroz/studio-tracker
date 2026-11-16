@@ -1018,6 +1018,8 @@ export function WeeklyPlan() {
 
   const columns = [...planColumns].sort((a, b) => a.position - b.position);
   const gridCols = columns.filter((c) => c.type !== "waiting_list" && !c.hidden);
+  // each column's shown name once per render, not once per cell (planColumnLabel scans profiles)
+  const colLabel = new Map(gridCols.map((c) => [c.id, planColumnLabel(c, profiles)]));
   const waitingCol = columns.find((c) => c.type === "waiting_list");
 
   const entriesByCell = useMemo(() => {
@@ -1241,7 +1243,7 @@ export function WeeklyPlan() {
                         {profile ? <Avatar profile={profile} size={20} /> : null}
                         {/* the column no longer widens to fit a long name */}
                         <span className="min-w-0 truncate" title={col.name}>
-                          {profile?.nickname || col.name}
+                          {colLabel.get(col.id) ?? col.name}
                         </span>
                       </div>
                     </th>
@@ -1355,7 +1357,7 @@ export function WeeklyPlan() {
                         <PlanCell
                           date={iso}
                           columnId={col.id}
-                          label={`${planColumnLabel(col, profiles)} — ${name} ${date}`}
+                          label={`${colLabel.get(col.id) ?? col.name} — ${name} ${date}`}
                           entries={entriesByCell.get(`${iso}::${col.id}`) ?? []}
                           canEdit={canEdit}
                           onAdd={(t) => setEntryModal({ target: t })}

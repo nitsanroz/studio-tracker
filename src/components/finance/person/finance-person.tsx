@@ -278,14 +278,15 @@ export function FinancePerson({
     forgetPeople();
   }
 
-  if (only === "advice" && (loading || error || !person)) return null;
-  if (loading) return <Loading label="Loading person…" />;
-  if (error) return <ErrorState message={error} />;
-  if (!person) return <ErrorState message="No such person in the tracker." />;
-  if (only === "advice")
-    return recent ? (
+  // &advice's card on them — drawn alone (`only`) or portalled into the page's column (`adviceSlot`).
+  const card =
+    person && recent ? (
       <PersonAdvice name={person.name} advice={recent.advice} owner={person.position === "owner"} onOpen={() => onTab("summary")} />
     ) : null;
+  if (only === "advice") return card;
+  if (loading) return <Loading label="Loading person" />;
+  if (error) return <ErrorState message={error} />;
+  if (!person) return <ErrorState message="No such person in the tracker." />;
 
   const m: PersonModel = {
     id,
@@ -379,12 +380,7 @@ export function FinancePerson({
       {shown === "pay" && <PayTab m={m} />}
       {shown === "history" && <HistoryTab m={m} />}
       {shown === "hr" && <HrTab m={m} />}
-      {adviceSlot &&
-        recent &&
-        createPortal(
-          <PersonAdvice name={person.name} advice={recent.advice} owner={person.position === "owner"} onOpen={() => onTab("summary")} />,
-          adviceSlot,
-        )}
+      {adviceSlot && card && createPortal(card, adviceSlot)}
     </div>
   );
 }

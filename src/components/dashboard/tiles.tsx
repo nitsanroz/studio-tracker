@@ -27,7 +27,6 @@ export function StatTile({
   delta,
   sub,
   info,
-  infoAlign,
 }: {
   hi?: boolean;
   label: string;
@@ -37,7 +36,6 @@ export function StatTile({
   sub?: string;
   /** what the figure counts and what the delta compares — shown behind the "i" */
   info?: React.ReactNode;
-  infoAlign?: "left" | "right";
 }) {
   const up = delta ? delta.value >= 0 : true;
   return (
@@ -49,7 +47,7 @@ export function StatTile({
       >
         {label}
         {info && (
-          <InfoDot title={label} align={infoAlign}>
+          <InfoDot title={label}>
             {info}
           </InfoDot>
         )}
@@ -217,7 +215,6 @@ export function StatTiles({ filter, prevRange }: { filter: HomeFilter; prevRange
         figure={pdFig}
         unit={pdUnit}
         sub={`${s.designers} designer${s.designers === 1 ? "" : "s"}`}
-        infoAlign="right"
         info={
           <>
             Hours logged in the period ÷ the {s.designers} {s.designers === 1 ? "person" : "people"}{" "}

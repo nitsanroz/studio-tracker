@@ -552,7 +552,6 @@ function KpiRow({
       delta: prior ? yoy(cur.avgRate, prior.avgRate).pct : null,
       series: trend.map((t) => t.avgRate),
       info: `Revenue ÷ hours — the effective average rate actually billed, which can differ from any single client's card rate.${yoyNote}`,
-      align: "right" as const,
     },
     {
       label: "Salaries % rev",
@@ -562,7 +561,6 @@ function KpiRow({
       series: trend.map((t) => t.salariesPctRev),
       upIsBad: true,
       info: "Salaries as a share of revenue for the period — how much of what came in went to fixed payroll.",
-      align: "right" as const,
     },
   ];
   const explain = useExplainHover((key) => explainKpi(key, explainCtx));
@@ -580,8 +578,7 @@ function KpiRow({
         // by whether the move is GOOD (expenses up is red), and the figure's
         // own line over the complete years.
         const hi = i === 0;
-        const kk = k as typeof k & { short?: string; upIsBad?: boolean; series?: number[] };
-        const good = k.delta == null ? null : (k.delta >= 0) !== !!kk.upIsBad;
+        const good = k.delta == null ? null : (k.delta >= 0) !== !!k.upIsBad;
         return (
           <div
             key={k.label}
@@ -589,13 +586,13 @@ function KpiRow({
           >
             <div className={`flex items-center gap-1 text-[11px] uppercase tracking-wide ${hi ? "text-white/80" : "text-muted"}`}>
               {k.label}
-              <InfoDot title={k.label} align={k.align}>{k.info}</InfoDot>
+              <InfoDot title={k.label}>{k.info}</InfoDot>
             </div>
             <div
               data-cell={kpiKey(k.label)}
               className="-mx-1 mt-1.5 cursor-default rounded px-1 font-serif-accent text-[30px] leading-none tabular-nums"
             >
-              {kk.short ?? k.value}
+              {k.short ?? k.value}
             </div>
             <div className={`mt-2 flex min-h-5 flex-wrap items-center gap-1.5 text-[11px] ${hi ? "text-white/85" : "text-muted"}`}>
               {k.delta != null ? (
@@ -613,10 +610,10 @@ function KpiRow({
                 <span className="truncate">{k.sub}</span>
               ) : null}
             </div>
-            {kk.series && kk.series.length > 1 && (
+            {k.series && k.series.length > 1 && (
               <Sparkline
-                series={kk.series}
-                color={hi ? "#ffffff" : kk.upIsBad ? "var(--danger)" : "var(--brand)"}
+                series={k.series}
+                color={hi ? "#ffffff" : k.upIsBad ? "var(--danger)" : "var(--brand)"}
                 className="mt-auto h-7 w-full pt-2"
               />
             )}

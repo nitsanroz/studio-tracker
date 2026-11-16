@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTier } from "@/components/tier-context";
-import { atLeast } from "@/lib/access";
+import { freelancersHref } from "@/lib/access";
 import { PageSkeleton } from "@/components/skeleton";
 import { FreelancerCards } from "./cards";
 
@@ -16,10 +16,11 @@ import { FreelancerCards } from "./cards";
 export default function FreelancersPage() {
   const tier = useTier();
   const router = useRouter();
-  const merged = atLeast(tier, "finance");
+  const home = freelancersHref(tier);
+  const merged = home !== "/freelancers";
   useEffect(() => {
-    if (merged) router.replace("/finance/freelance");
-  }, [merged, router]);
+    if (merged) router.replace(home);
+  }, [merged, home, router]);
   if (merged) return <PageSkeleton side={false} />;
   return <FreelancerCards />;
 }

@@ -48,13 +48,17 @@ export function WeekTimesheet() {
   const [pending, setPending] = useState<Pending[]>([]);
   useEffect(() => {
     let alive = true;
-    const load = () =>
-      fetch(`/api/admin/freelancers?pendingFrom=${weekFrom}&pendingTo=${weekTo}`, { cache: "no-store" })
+    let at = 0;
+    const load = () => {
+      at = Date.now();
+      return fetch(`/api/admin/freelancers?pendingFrom=${weekFrom}&pendingTo=${weekTo}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.json() : { pending: [] }))
         .then((j: { pending?: Pending[] }) => alive && setPending(j.pending ?? []))
         .catch(() => undefined);
+    };
     void load();
-    const onBack = () => document.visibilityState === "visible" && void load();
+    // back on the tab: read again, at most once a minute
+    const onBack = () => document.visibilityState === "visible" && Date.now() - at > 60_000 && void load();
     document.addEventListener("visibilitychange", onBack);
     return () => {
       alive = false;

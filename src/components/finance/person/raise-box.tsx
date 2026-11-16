@@ -19,7 +19,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { Card, SectionTitle } from "@/components/finance/ui";
 import { MONTH_SHORT } from "@/lib/finance/finance";
 import { formatILSShort, formatNum } from "@/lib/finance/format";
@@ -273,6 +273,7 @@ function HoursMeter({ now, need, year }: { now: number; need: number; year: numb
 /** Their salary rate on every payslip paid the same way as now (monthly, or
  * hourly), as steps — raises marked — and the recommended one ahead. */
 function SalaryHistory({ slips, unit, target, when }: { slips: PayslipMonth[]; unit: "month" | "hour"; target: number | null; when: string }) {
+  const fillId = `salary-fill${useId().replace(/:/g, "")}`;
   const pts = slips
     .filter((p) => p.salaryRate != null && isHourlySlip(p) === (unit === "hour"))
     .sort((a, b) => a.year - b.year || a.month - b.month)
@@ -322,12 +323,12 @@ function SalaryHistory({ slips, unit, target, when }: { slips: PayslipMonth[]; u
             holds until the next payslip changes it — smoothing would draw raises
             that never happened. Raise markers stay; they are events, not points. */}
         <defs>
-          <linearGradient id="salary-fill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.22} />
             <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <path d={`${d} V${H - b} H${x(idx(pts[0].k))} Z`} fill="url(#salary-fill)" />
+        <path d={`${d} V${H - b} H${x(idx(pts[0].k))} Z`} fill={`url(#${fillId})`} />
         <path d={d} fill="none" stroke="var(--brand)" strokeWidth={1.8} strokeLinejoin="round" />
         {raises.map((p) => (
           <g key={p.k}>

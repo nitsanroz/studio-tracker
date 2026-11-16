@@ -234,7 +234,7 @@ export function PlanMobile() {
             <section key={col.id} className="rounded-2xl border border-border bg-surface shadow-card">
               <header className="flex items-center gap-2 px-3 py-2">
                 {col.type === "member" && <Avatar profile={profile} size={22} emptyTitle={col.name} />}
-                <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{profile?.nickname || col.name}</h2>
+                <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{planColumnLabel(col, profiles)}</h2>
                 {canEdit && (
                   <button
                     onClick={() => setEntryModal({ target })}

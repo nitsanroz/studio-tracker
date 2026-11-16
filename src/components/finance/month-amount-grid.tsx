@@ -892,8 +892,9 @@ export function MonthAmountGrid({
     setNewName("");
   }
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorState message={error} />;
+  // The other view (Freelancers' cards) doesn't wait for this table's load.
+  if (loading && !alt) return <Loading />;
+  if (error && !alt) return <ErrorState message={error} />;
 
   const years: number[] = [];
   for (let y = CUR_YEAR + 1; y >= FIRST_YEAR; y--) years.push(y);
@@ -1012,7 +1013,7 @@ export function MonthAmountGrid({
                   >
                     <span className="inline-flex items-center gap-1">
                       {mismatch && (
-                        <MismatchTriangle align={monthNum >= 7 ? "right" : "left"}>
+                        <MismatchTriangle>
                           Locked total <span className="tabular-nums">{formatILS(mismatch.stored)}</span>{" "}
                           no longer matches the current entries (
                           <span className="tabular-nums">{formatILS(mismatch.fresh)}</span>, diff{" "}

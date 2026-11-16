@@ -77,7 +77,7 @@ export function RateCell({ rate, onOpen, width }: { rate: ClientRateRow | null; 
           pill in the paid green, "/h" after it; a client with no rate gets a
           dashed "set rate". */}
       {rate ? (
-        <span className="inline-flex items-baseline rounded-full bg-[var(--state-final-bg)] px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--state-final-fg)] transition-colors hover:bg-[var(--state-paid-bg)]">
+        <span className="inline-flex items-baseline rounded-full bg-[var(--money-bg)] px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--money-fg)] transition-colors hover:bg-[var(--money-bg-hover)]">
           ₪{Number(rate.rate)}
           <span className="ml-px text-[11px] font-normal opacity-70">/h</span>
         </span>

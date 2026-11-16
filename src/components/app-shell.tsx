@@ -34,7 +34,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DataProvider, useData, useIsAdmin } from "@/lib/store";
-import { atLeast, canOpenFinance, type Tier } from "@/lib/access";
+import { atLeast, canOpenFinance, type Tier, freelancersHref } from "@/lib/access";
 import { HideNumbersButton, PrivacyBlur } from "@/components/finance/privacy-blur";
 import { createClient } from "@/lib/supabase/client";
 import { useEnterTransition } from "@/lib/use-enter-transition";
@@ -83,7 +83,6 @@ const under = (pathname: string, prefix: string) => pathname === prefix || pathn
  */
 const VIEW_OF: Record<string, string> = {
   "/freelancers": "/finance/freelance",
-  "/advice": "/finance/scenarios",
 };
 
 /** Home is active only on "/" itself; every other item on its own subtree, or on its finance view. */
@@ -996,7 +995,7 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
                   key={href}
                   // Freelancers is ONE page with Payments for full finance, under
                   // /finance (2026-11-16) — link straight to it, no redirect hop.
-                  href={href === "/freelancers" && financePages.length > 1 ? "/finance/freelance" : href}
+                  href={href === "/freelancers" ? freelancersHref(viewingAs ? "member" : tier) : href}
                   label={label}
                   Icon={Icon}
                   folded={folded}

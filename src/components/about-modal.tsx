@@ -81,7 +81,6 @@ const STATS: {
   tab: TabId;
   value: string;
   label: string;
-  align?: "left" | "right";
   info: string;
 }[] = [
   {
@@ -118,21 +117,18 @@ const STATS: {
     tab: "build",
     value: String(ABOUT.build.migrations),
     label: "Migrations",
-    align: "right",
     info: "Database schema changes, each applied by hand in the Supabase editor rather than automatically — a deliberate gate, since several protect columns the app must never let a member write.",
   },
   {
     tab: "build",
     value: group(ABOUT.effort.toolCalls),
     label: "Tool calls",
-    align: "right",
     info: "Reads, edits, searches, builds and browser checks — every action Claude took that wasn't writing prose.",
   },
   {
     tab: "build",
     value: formatTokens(ABOUT.effort.inputTokensM + ABOUT.effort.outputTokensM),
     label: "Tokens",
-    align: "right",
     info: `${formatTokens(ABOUT.effort.inputTokensM)} read and ${
       ABOUT.effort.outputTokensM
     }M written. The read figure dwarfs the written one because this codebase goes back through the model on every single turn — that is what stops a change in one file quietly contradicting another. Nearly all of it is served from cache at a tenth of the normal price, which is why ${formatTokens(
@@ -350,7 +346,7 @@ function ModelDonut() {
         <div className="whitespace-nowrap pt-1 text-[10px] leading-snug text-muted">
           <div className="flex items-center gap-1">
             <span>at list price</span>
-            <InfoDot title="Cost of the compute" align="right" side="up">
+            <InfoDot title="Cost of the compute">
               {formatMoney(costUsd)} is what {outputTokensM}M written tokens and{" "}
               {formatTokens(inputTokensM)} read would cost at list API prices —
               a valuation of the compute,{" "}
@@ -374,7 +370,7 @@ function ModelDonut() {
                 </strong>{" "}
                 actually paid
               </span>
-              <InfoDot title="What it really cost" align="right" side="up">
+              <InfoDot title="What it really cost">
                 One Claude seat at ${ACTUAL_SPEND?.seatMonthlyUsd}/month, for
                 the {projectSpanDays()} days the build ran — about $
                 {group(Math.round(paid))}. The {formatMoney(costUsd)} beside it
@@ -408,7 +404,6 @@ function Ledger({
   segments,
   note,
   info,
-  side,
 }: {
   title: string;
   total: string;
@@ -416,7 +411,6 @@ function Ledger({
   /** omit on a bar whose total line already says everything */
   note?: string;
   info: React.ReactNode;
-  side?: "down" | "up";
 }) {
   return (
     <div>
@@ -426,7 +420,7 @@ function Ledger({
       <div className="mb-1.5 flex flex-col gap-x-3 sm:flex-row sm:items-baseline sm:justify-between">
         <span className="flex min-w-0 items-center gap-1 text-[13px]">
           {title}
-          <InfoDot title={title} side={side}>
+          <InfoDot title={title}>
             {info}
           </InfoDot>
         </span>
@@ -480,12 +474,10 @@ function Stat({
   value,
   label,
   info,
-  align = "left",
 }: {
   value: string;
   label: string;
   info: React.ReactNode;
-  align?: "left" | "right";
 }) {
   return (
     <div className="min-w-0">
@@ -494,7 +486,7 @@ function Stat({
       </div>
       <div className="mt-1 flex items-center gap-1 text-[11px] text-muted">
         <span className="truncate">{label}</span>
-        <InfoDot title={label} align={align} side="up">
+        <InfoDot title={label}>
           {info}
         </InfoDot>
       </div>
@@ -586,7 +578,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
               <span className="text-white/85">
                 <InfoDot
                   title={`${REPLACED.length} tools retired`}
-                  align="right"
+                 
                 >
                   <span className="block">
                     {REPLACED.map((r) => (
@@ -707,7 +699,6 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
               total={`${effort.wallClockHours}h together · ${effort.days} working days · ${group(
                 effort.prompts,
               )} instructions across ${effort.sessions} sessions`}
-              side="up"
               segments={[
                 {
                   value: `${effort.claudeHours}h`,
@@ -751,7 +742,7 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-4 lg:grid-cols-8">
             {STATS.map((s) => (
               <Pane key={s.label} tab={s.tab} active={tab}>
-                <Stat value={s.value} label={s.label} align={s.align} info={s.info} />
+                <Stat value={s.value} label={s.label} info={s.info} />
               </Pane>
             ))}
           </div>

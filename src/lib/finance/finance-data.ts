@@ -59,6 +59,9 @@ async function loadFinanceCore(): Promise<FinanceCore> {
  * hold.
  */
 let lastCore: FinanceCore | null = null;
+let lastAt = 0;
+/** A core this fresh is used as it is on a remount; a write calls `reload()` itself. */
+const FRESH_MS = 60_000;
 
 export function useFinanceCore() {
   const [data, setData] = useState<FinanceCore | null>(lastCore);
@@ -72,6 +75,7 @@ export function useFinanceCore() {
     try {
       const core = await loadFinanceCore();
       lastCore = core;
+      lastAt = Date.now();
       setData(core);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load finance data");
@@ -81,7 +85,9 @@ export function useFinanceCore() {
   }, []);
 
   useEffect(() => {
-    // a page opened again starts from the last core, so this reload is silent
+    // A page opened again starts from the last core; it reloads (silently) only
+    // when that core is over a minute old.
+    if (lastCore != null && Date.now() - lastAt < FRESH_MS) return;
     void reload(lastCore != null);
   }, [reload]);
 

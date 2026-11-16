@@ -63,7 +63,7 @@ export function FactorsCard({ factors, plan }: { factors: Factors; plan: RaisePl
       </SectionTitle>
 
       <div className="grid grid-cols-1 gap-x-8 gap-y-2.5 md:grid-cols-2">
-        {FACTORS.map((f, i) => {
+        {FACTORS.map((f) => {
           const Icon = ICON[f.id];
           const level = levels[f.id] ?? 0;
           const neg = f.max < 0;
@@ -79,7 +79,7 @@ export function FactorsCard({ factors, plan }: { factors: Factors; plan: RaisePl
               </span>
               <span className="flex w-28 shrink-0 items-center gap-1 text-sm font-medium">
                 <span className="truncate">{f.label}</span>
-                <InfoDot align={i % 2 ? "right" : "left"}>
+                <InfoDot>
                   <span className="block max-w-xs">
                     <b className="block">
                       {f.title} · up to {pct(f.max)}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import type { ReactNode } from "react";
+import { Tip } from "@/components/advice-tip";
 import { AlertTriangle, ArrowUpRight, Check, CircleAlert } from "lucide-react";
 import { STEPS, type Step } from "@/components/finance/cell-state-card";
 import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
@@ -101,56 +101,13 @@ export function ErrorState({ message }: { message: string }) {
  * every other number on screen blurred. Callers pass `children` built with
  * `formatILS` and wrap each amount in its own `.tabular-nums` span so those
  * figures blur individually, same as everywhere else money is shown. */
-/** `align="right"` keeps the card from running off the right edge of a
- * scrollable table — same purpose as InfoDot's `align`, see below. */
-export function MismatchTriangle({
-  children,
-  align = "left",
-}: {
-  children: ReactNode;
-  align?: "left" | "right";
-}) {
-  // Rendered in a table's sticky/scrolling header, a CSS-positioned tooltip
-  // gets clipped by that header's own overflow (and can even feed back into
-  // its auto-sizing, visibly shifting the trigger under the cursor on open).
-  // A portal escapes all of that — it's placed at the trigger's actual
-  // screen coordinates, outside any ancestor's layout or overflow entirely.
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const show = () => setRect(btnRef.current?.getBoundingClientRect() ?? null);
-  const hide = () => setRect(null);
+/** &all (2026-11-16): the app's one hover box (`Tip`), so it flips and stays on
+ *  screen like every other — the box is portalled, outside any table's overflow. */
+export function MismatchTriangle({ children }: { children: ReactNode }) {
   return (
-    <>
-      <button
-        ref={btnRef}
-        type="button"
-        onMouseEnter={show}
-        onMouseLeave={hide}
-        onFocus={show}
-        onBlur={hide}
-        aria-label="Mismatch details"
-        className="cursor-help text-danger"
-      >
-        <AlertTriangle size={12} />
-      </button>
-      {rect &&
-        createPortal(
-          <div
-            role="tooltip"
-            style={{
-              position: "fixed",
-              top: rect.bottom + 6,
-              ...(align === "right"
-                ? { right: window.innerWidth - rect.right }
-                : { left: rect.left }),
-            }}
-            className="z-50 w-72 rounded-lg border border-border bg-surface p-2.5 text-xs font-normal normal-case leading-relaxed tracking-normal text-muted shadow-card"
-          >
-            {children}
-          </div>,
-          document.body,
-        )}
-    </>
+    <Tip as="button" label="Mismatch details" body={children} className="text-danger">
+      <AlertTriangle size={12} />
+    </Tip>
   );
 }
 

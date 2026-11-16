@@ -291,12 +291,16 @@ export async function fetchAllIn<T>(
 /** A nullable numeric column (Postgres numerics arrive as strings). */
 const numOrNull = (v: any): number | null => (v == null ? null : Number(v));
 
+/** The name the app SHOWS (0071): a nickname wins, else the stored name. One rule — mapProfile and the store's optimistic write both use it. */
+export const shownName = (nickname: string | null | undefined, name: string): string =>
+  (typeof nickname === "string" && nickname.trim()) || name;
+
 export const mapProfile = (r: any): Profile => ({
   id: r.id,
   // The name the app SHOWS: a nickname (0071) wins — Nitsan, 2026-11-16, so the
   // plan and every assignment read "Ab", not a freelancer's full name. The real
   // name stays in `fullName` for the person's own page.
-  name: (typeof r.nickname === "string" && r.nickname.trim()) || r.name,
+  name: shownName(r.nickname, r.name),
   fullName: r.name,
   nickname: (typeof r.nickname === "string" && r.nickname.trim()) || null,
   role: r.role,

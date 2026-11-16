@@ -895,6 +895,11 @@ svg.lucide[stroke-width="1.75"] {
   --state-invoiced-bg: #fed7aa;
   --state-invoiced-fg: #9a3412;
   --state-invoiced-border: #f97316;
+  /* A price (Clients' rate pill, 2026-11-16) — the paid green, under its own
+     name, so recolouring a cell STATE never recolours a rate. */
+  --money-bg: var(--state-final-bg);
+  --money-bg-hover: var(--state-paid-bg);
+  --money-fg: var(--state-final-fg);
   /* final but no invoice yet: something is MISSING — a red dashed outline
      and an alert mark, so the cell reads unfinished until the invoice goes out. */
   --state-uninvoiced: #dc2626;

@@ -1571,7 +1571,7 @@ export function PlanGrid() {
                   <th key={mLabel} data-month={m} data-advice={`month:${year}-${String(m).padStart(2, "0")}`} className={`group sticky top-0 z-20 px-2 py-2 text-right ${futureColClass(m) || "bg-surface-2"}`}>
                     <div className="flex items-center justify-end gap-1">
                       {monthGaps.length > 0 && (
-                        <MismatchTriangle align={m >= 7 ? "right" : "left"}>
+                        <MismatchTriangle>
                           <div className="space-y-1">
                             {monthGaps.map((g) => (
                               <div key={g.lineItem}>

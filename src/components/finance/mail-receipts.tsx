@@ -591,7 +591,7 @@ export function MailReceipts({
             <button disabled={busy === s.id} onClick={() => void act(s, { action: "ignore" }, `Nothing from ${s.domain} will be suggested again.`)} className="hover:text-danger">
               Never suggest {s.domain}
             </button>
-            <InfoDot align="right">
+            <InfoDot>
               Stops suggesting anything from <b>{s.domain}</b> — for a sender that&apos;s never a studio expense (personal shopping, a client&apos;s billing system). Its other waiting receipts go too. To dismiss only this one, use the ✕.
             </InfoDot>
           </span>
@@ -625,7 +625,7 @@ export function MailReceipts({
         {/* When the mail was read, and when it's read next (Nitsan, 2026-11-07). */}
         <span className="ml-auto flex items-center gap-1.5 text-xs text-muted">
           {scan?.last ? `Read ${ago(scan.last, now)} · next ${nextScan(scan, now)}` : "Not read yet"}
-          <InfoDot align="right">
+          <InfoDot>
             The app reads the billing mail of {boxes || "the connected mailboxes"} every {scan?.everyHours ?? 6} hours, whenever the owner has it open — there&apos;s no background job. Receipts from the last 4 months stay listed here until someone adds or dismisses them.
             {scan?.canRead !== false && <> &ldquo;Read now&rdquo; reads the mail at once.</>}
           </InfoDot>

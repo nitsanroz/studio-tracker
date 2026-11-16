@@ -3201,7 +3201,7 @@ function MonthGroupedList({
                           <th key={k} {...t.drag(k)} className={`relative px-3 py-2 text-right tabular-nums text-muted ${DRAG_TH}`}>
                             <span className="inline-flex items-center gap-1.5">
                               {mismatch && (
-                                <MismatchTriangle align="right">
+                                <MismatchTriangle>
                                   Sheet says <span className="tabular-nums">{formatILS(check!.sheetNoVat)}</span>{" "}
                                   · App totals <span className="tabular-nums">{formatILS(subNoVat)}</span> · Diff{" "}
                                   <span className="tabular-nums">{formatILS(Math.abs(diff))}</span>
@@ -4501,7 +4501,7 @@ function RentGrid({ year, rows, editable, onReload, patchRow, setNote }: RentGri
                   >
                     <span className="inline-flex items-center gap-1">
                       {showHeaderMismatch && mismatch && (
-                        <MismatchTriangle align={monthNum >= 7 ? "right" : "left"}>
+                        <MismatchTriangle>
                           Locked rent total <span className="tabular-nums">{formatILS(mismatch.stored)}</span>{" "}
                           no longer matches the current lines (
                           <span className="tabular-nums">{formatILS(mismatch.fresh)}</span>, diff{" "}
@@ -4591,7 +4591,6 @@ function RentGrid({ year, rows, editable, onReload, patchRow, setNote }: RentGri
                             </>
                           ) : undefined
                         }
-                        mismatchAlign={mo >= 7 ? "right" : "left"}
                         files={cell && docMap && home == null ? filesIn(name, mo) : 0}
                         filesHome={home != null ? MONTH_NAMES[home - 1] : undefined}
                         onFiles={cell && docMap ? () => setFilesAt({ name, mo: home ?? mo }) : undefined}
@@ -4672,7 +4671,6 @@ function RentCell({
   onCellMouseDown,
   onCellMouseEnter,
   mismatchContent,
-  mismatchAlign = "left",
   future,
   dataCell,
   files = 0,
@@ -4692,7 +4690,6 @@ function RentCell({
   mismatchContent?: React.ReactNode;
   /** "right" for a late-year column, so the tooltip doesn't run off the
    * table's right edge. */
-  mismatchAlign?: "left" | "right";
   /** Past month — this whole table already sits on bg-surface, so a past
    * column is dimmed slightly instead of a future one being lightened. */
   future?: boolean;
@@ -4796,7 +4793,7 @@ function RentCell({
   );
   const mismatchUi = mismatchContent && (
     <span className="absolute left-0.5 top-0.5 z-10">
-      <MismatchTriangle align={mismatchAlign}>{mismatchContent}</MismatchTriangle>
+      <MismatchTriangle>{mismatchContent}</MismatchTriangle>
     </span>
   );
   if (!editable) {

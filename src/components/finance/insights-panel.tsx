@@ -67,8 +67,13 @@ export function InsightsPanel({ insights: all, period }: { insights: Insight[]; 
   const raw = useSyncExternalStore(subscribe, readRaw, () => "[]");
   const dismissed = useMemo(() => parse(raw), [raw]);
   const [showAll, setShowAll] = useState(false);
-  const hiddenCount = all.filter((i) => dismissed.includes(keyOf(i))).length;
-  const insights = showAll ? all : all.filter((i) => !dismissed.includes(keyOf(i)));
+  const goneKeys = useMemo(() => {
+    const set = new Set(dismissed);
+    return new Set(all.map(keyOf).filter((k) => set.has(k)));
+  }, [all, dismissed]);
+  const isGone = (i: Insight) => goneKeys.has(keyOf(i));
+  const hiddenCount = goneKeys.size;
+  const insights = showAll ? all : all.filter((i) => !isGone(i));
   const dismiss = (i: Insight) => writeDismissed([...dismissed.filter((k) => k !== keyOf(i)), keyOf(i)]);
   const restore = (i: Insight) => writeDismissed(dismissed.filter((k) => k !== keyOf(i)));
   if (!all.length) return null;
@@ -110,7 +115,7 @@ export function InsightsPanel({ insights: all, period }: { insights: Insight[]; 
       <div ref={scroller} className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
         {insights.map((i) => {
           const { tile, Icon } = TONE[i.tone];
-          const gone = dismissed.includes(keyOf(i));
+          const gone = isGone(i);
           return (
             <article
               key={i.id}

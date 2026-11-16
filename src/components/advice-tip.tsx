@@ -53,7 +53,7 @@ function TipBox({ anchor, title, children }: { anchor: HTMLElement; title?: Reac
   );
 }
 
-type Tag = "span" | "div" | "p" | "li";
+type Tag = "span" | "div" | "p" | "li" | "button";
 
 /**
  * Wraps what it explains: hovering it, focusing it, or a tap on a phone opens
@@ -89,25 +89,13 @@ export function Tip({
   return (
     <T
       ref={setEl}
-      tabIndex={focusable ? 0 : undefined}
-      role={label ? "button" : undefined}
+      tabIndex={focusable && as !== "button" ? 0 : undefined}
+      {...(as === "button" ? { type: "button" } : {})}
       aria-label={label}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
       onBlur={() => setOpen(false)}
-      // An icon trigger (`label`) keeps its click: inside a <label> the click
-      // would otherwise go to the label's input, taking the focus and closing
-      // the box before it could be read — on a phone, every time.
-      onClick={
-        label
-          ? (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setOpen(true);
-            }
-          : undefined
-      }
       style={style}
       className={`cursor-help outline-none ${mark ? "underline decoration-dotted decoration-1 underline-offset-4 [text-decoration-color:var(--faint)]" : ""} ${className}`}
     >
@@ -125,7 +113,10 @@ export function Tip({
  *  `InfoDot`, finance's and Scenarios' `Hover` all render this. */
 export function InfoTip({ title, children, size = 14, label }: { title?: ReactNode; children: ReactNode; size?: number; /** read out — pass it translated */ label?: string }) {
   return (
+    // A real <button>: inside a <label> (Scenarios' sliders) a click on it isn't
+    // handed to the label's input, and it takes the focus and role by itself.
     <Tip
+      as="button"
       title={title}
       body={children}
       label={label ?? (typeof title === "string" ? `About ${title}` : "More about this")}
