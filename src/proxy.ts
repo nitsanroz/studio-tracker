@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { policy } from "@/lib/csp";
+import { financeHostTarget } from "@/lib/finance-host";
 
 /**
  * Per-request Content Security Policy with a nonce.
@@ -23,6 +24,10 @@ import { policy } from "@/lib/csp";
  */
 
 export function proxy(request: NextRequest) {
+  // &all (v2.0.0): the old finance address lands on the same page here.
+  const moved = financeHostTarget(request.headers.get("host"), request.nextUrl.pathname, request.nextUrl.search);
+  if (moved) return NextResponse.redirect(moved, 308);
+
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const csp = policy(nonce, process.env.NODE_ENV === "development");
 
