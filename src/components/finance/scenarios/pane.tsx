@@ -156,7 +156,7 @@ export function TabStrip<T extends string>({ value, tabs, onChange, end }: { val
             role="tab"
             aria-selected={on}
             onClick={() => onChange(tab.id)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-t-2xl px-4 pb-2.5 pt-2 text-[15px] font-medium transition-colors ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-t-2xl px-4 pb-2.5 pt-2 text-sm font-medium transition-colors ${
               on ? "bg-surface font-semibold text-brand" : "text-[#4a5266] hover:bg-white/50 hover:text-foreground"
             }`}
           >

@@ -4,6 +4,8 @@
 // studio, what their work supports and how that's worked out, their pay over
 // time, and the payslips themselves.
 
+import { FileX } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useState } from "react";
 import { Card, SectionTitle, Loading } from "@/components/finance/ui";
 import { GapLinesChart, type GapSeries } from "@/components/finance/finance-charts";
@@ -146,7 +148,7 @@ export function PayTab({ m }: { m: PersonModel }) {
         <Card className="lg:col-span-2">
           <SectionTitle info={PAY_INFO}>What their work supports</SectionTitle>
           {!r ? (
-            <Loading label="Working it out…" />
+            <Loading label="Working it out…" inline />
           ) : !m.own ? (
             <p className="text-sm text-muted">
               Their logged hours aren&apos;t their own billable work ({m.person.position?.replace("_", " ") ?? "not a designer"}), so their pay
@@ -330,7 +332,7 @@ function CostBreakdown({ month, salary, gross, cost }: { month: string; salary: 
       >
         Where their cost goes
       </SectionTitle>
-      <div className="mb-1 text-2xl font-semibold tabular-nums">{formatILS(Math.round(cost))}</div>
+      <div className="mb-1.5 font-serif-accent text-[32px] leading-none tabular-nums">{formatILS(Math.round(cost))}</div>
       <div className="mb-3 text-xs text-faint">{(cost / gross).toFixed(2)}× the gross pay</div>
       <div className="flex h-4 overflow-hidden rounded-full bg-surface-2">
         {parts.map((p) => (p.v > 0 ? <div key={p.label} style={{ width: `${(p.v / total) * 100}%`, background: p.color }} /> : null))}
@@ -350,7 +352,7 @@ function CostBreakdown({ month, salary, gross, cost }: { month: string; salary: 
 
 function PayslipTable({ slips }: { slips: PayslipMonth[] }) {
   if (!slips.length)
-    return <p className="py-6 text-center text-sm text-faint">No payslips imported yet. Run the payslip import on the studio Mac (npm run payslips).</p>;
+    return <EmptyState compact icon={FileX} text="No payslips imported yet. Run the payslip import on the studio Mac (npm run payslips)." />;
   const rows = [...slips].sort((a, b) => b.year - a.year || b.month - a.month);
   return (
     <div className="overflow-x-auto">

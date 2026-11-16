@@ -87,7 +87,7 @@ export function RangeBar({ bad, mid, good, line, lineLabel, fmt = k }: { bad: nu
         {line != null && <BarCaret left={x(line)} offset={22} className="text-muted" title={lineLabel} />}
         <span className="absolute top-1 size-6 -translate-x-1/2 rounded-full border-[3px] border-white bg-brand shadow" style={{ left: x(mid) }} />
       </div>
-      <div className="mt-1 flex justify-between gap-2 text-[15px] tabular-nums">
+      <div className="mt-1 flex justify-between gap-2 text-sm tabular-nums">
         <span className="text-danger">
           {t("Bad")} {fmt(bad)}
         </span>
@@ -105,10 +105,10 @@ function Big({ label, info, value, tone, sub, children }: { label: string; info:
   return (
     <div className="rounded-2xl bg-[var(--strip)] p-4 @md:flex @md:items-center @md:gap-5">
       <div className="@md:w-48 @md:shrink-0">
-        <p className="flex items-center gap-1.5 text-[16px] leading-6 text-muted">
+        <p className="flex items-center gap-1.5 text-sm leading-6 text-muted">
           {label} <Hover title={label}>{info}</Hover>
         </p>
-        <p dir="ltr" className={`text-start text-[30px] font-semibold leading-9 tabular-nums ${tone === "bad" ? "text-danger" : tone === "good" ? "text-[var(--state-final-fg)]" : ""}`}>
+        <p dir="ltr" className={`text-start font-serif-accent text-[32px] leading-9 tabular-nums ${tone === "bad" ? "text-danger" : tone === "good" ? "text-[var(--state-final-fg)]" : ""}`}>
           {value}
         </p>
         <p className="text-[14px] text-faint">{t("middle future")}</p>
@@ -171,20 +171,20 @@ export function Outcome({ result: r, futures }: { result: ScenarioResult; future
       {/* Break-even against the three futures. */}
       <div className="rounded-2xl bg-[var(--strip)] p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="flex items-center gap-1.5 text-[16px] text-muted">
+          <p className="flex items-center gap-1.5 text-sm text-muted">
             {t("Hours needed to break even")}
             <Hover title={t("Break-even")}>
               {t("The billable hours a month (today's terms) at which the studio covers its costs once every decision is in. Under the bad future = safe even in a bad year.")}
             </Hover>
           </p>
-          <p className="flex items-center gap-1.5 text-[16px] tabular-nums">
+          <p className="flex items-center gap-1.5 text-sm tabular-nums">
             {t("Fixed costs")} <span className="font-semibold">{Math.round(r.fixedShare * 100)}%</span>
             <Hover title={t("Fixed costs")}>
               {t("The share of costs that don't fall when work does — salaries, office, tools. Freelancers are the variable part. Lower = safer when work drops.")}
             </Hover>
           </p>
         </div>
-        <p className={`text-[30px] font-semibold leading-9 tabular-nums ${be == null || be > futures.bad.hours ? "text-danger" : "text-[var(--state-final-fg)]"}`}>
+        <p className={`font-serif-accent text-[32px] leading-9 tabular-nums ${be == null || be > futures.bad.hours ? "text-danger" : "text-[var(--state-final-fg)]"}`}>
           {be == null ? t("Not within capacity") : t("{hours} a month", { hours: h(be) })}
         </p>
         {/* Each future hangs under the bar: a small caret pointing up at its
@@ -206,7 +206,7 @@ export function Outcome({ result: r, futures }: { result: ScenarioResult; future
             );
           })}
         </div>
-        <p className="mt-2 text-[15px] text-muted">{t("Red is loss, green is profit. Where each future sits shows which side it lands on.")}</p>
+        <p className="mt-2 text-sm text-muted">{t("Red is loss, green is profit. Where each future sits shows which side it lands on.")}</p>
       </div>
     </div>
   );
@@ -219,7 +219,7 @@ export function Tips({ tips }: { tips: Tip[] }) {
       {tips.map((tip) => (
         <li
           key={tip.text}
-          className={`flex gap-3 rounded-2xl p-4 text-[16px] leading-6 tabular-nums ${tip.tone === "danger" ? "bg-red-50" : tip.tone === "warning" ? "bg-amber-50" : "bg-[var(--state-final-bg)]"}`}
+          className={`flex gap-3 rounded-2xl p-4 text-sm leading-6 tabular-nums ${tip.tone === "danger" ? "bg-red-50" : tip.tone === "warning" ? "bg-amber-50" : "bg-[var(--state-final-bg)]"}`}
         >
           {tip.tone === "danger" ? (
             <CircleAlert size={20} className="mt-0.5 shrink-0 text-danger" />
@@ -258,9 +258,9 @@ export function Timeline({ decisions, team, facts, start }: { decisions: Decisio
       {[...byMonth].map(([m, texts]) => (
         <li key={m} className="relative">
           <span className={`absolute -start-[27px] top-1.5 size-3 rounded-full ${m < start ? "bg-border-strong" : "bg-brand"}`} />
-          <p className="text-[15px] font-medium text-brand">{monthLabel(m, lang)}</p>
+          <p className="text-sm font-medium text-brand">{monthLabel(m, lang)}</p>
           {texts.map((x) => (
-            <p key={x} className="text-[16px] leading-6 tabular-nums">
+            <p key={x} className="text-sm leading-6 tabular-nums">
               {x}
             </p>
           ))}
@@ -291,12 +291,12 @@ export function AllFigures({ result }: { result: ScenarioResult }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 text-[16px] font-medium text-brand">
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 text-sm font-medium text-brand">
         <ChevronDown size={18} className={open ? "" : "-rotate-90 rtl:rotate-90"} /> {t("All the figures")}
       </button>
       {open && (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-[15px]">
+          <table className="w-full text-sm">
             <thead>
               <tr>
                 <th />
@@ -359,7 +359,7 @@ export function Compare({ items }: { items: { name: string; color: string; resul
             <tr>
               <th />
               {items.map((it) => (
-                <th key={it.name} className="pb-3 text-end text-[16px] font-medium" style={{ color: it.color }}>
+                <th key={it.name} className="pb-3 text-end text-sm font-medium" style={{ color: it.color }}>
                   {it.name}
                 </th>
               ))}
@@ -372,7 +372,7 @@ export function Compare({ items }: { items: { name: string; color: string; resul
               const best = nums.length ? (row.better === "high" ? Math.max(...nums) : Math.min(...nums)) : null;
               return (
                 <tr key={row.label}>
-                  <td className="py-2 pe-3 text-[16px] text-muted">
+                  <td className="py-2 pe-3 text-sm text-muted">
                     <span className="inline-flex items-center gap-1.5">
                       {t(row.label)}
                       <Hover title={t(row.label)}>{metricInfo(row.label, t)}</Hover>
@@ -479,7 +479,7 @@ export function AllScenarios({
                 <span className="flex items-center gap-2.5">
                   <span className="w-4 text-end text-[13px] tabular-nums text-faint">{idx + 1}</span>
                   <span className="h-1 w-5 shrink-0 rounded-full" style={{ background: r.color }} aria-hidden />
-                  <button onClick={() => onSelect(r.id)} className="text-start text-[16px] font-medium hover:text-brand hover:underline">
+                  <button onClick={() => onSelect(r.id)} className="text-start text-sm font-medium hover:text-brand hover:underline">
                     {r.name}
                   </button>
                 </span>
@@ -493,7 +493,7 @@ export function AllScenarios({
                   className="block"
                 >
                 <span className="flex items-center gap-2">
-                  <span className={`text-[18px] font-semibold tabular-nums ${r.grade === bestGrade && rows.length > 1 ? "text-[var(--state-final-fg)]" : ""}`}>{r.grade}</span>
+                  <span className={`text-base font-semibold tabular-nums ${r.grade === bestGrade && rows.length > 1 ? "text-[var(--state-final-fg)]" : ""}`}>{r.grade}</span>
                   <span className="h-1.5 w-16 overflow-hidden rounded-full bg-border/70" dir="ltr">
                     <span
                       className="block h-full rounded-full"
@@ -513,7 +513,7 @@ export function AllScenarios({
                       body={<>{metricInfo(c.label, t)}<span className="mt-2 block text-foreground">{t("Middle")} {mid == null ? t("none") : c.fmt(mid)}{bad != null && bad !== mid ? ` · ${t("Bad")} ${c.fmt(bad)}` : ""}</span></>}
                       className="inline-block"
                     >
-                      <span className={`inline-block rounded-md px-1.5 text-[17px] font-semibold ${mid != null && mid === best[i] && rows.length > 1 ? "bg-[var(--state-final-bg)] text-[var(--state-final-fg)]" : ""}`}>
+                      <span className={`inline-block rounded-md px-1.5 text-base font-semibold ${mid != null && mid === best[i] && rows.length > 1 ? "bg-[var(--state-final-bg)] text-[var(--state-final-fg)]" : ""}`}>
                         {mid == null ? t("none") : c.fmt(mid)}
                       </span>
                       {bad != null && bad !== mid && <span className="block text-[13px] text-faint">{t("bad {value}", { value: c.fmt(bad) })}</span>}

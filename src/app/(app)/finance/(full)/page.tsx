@@ -1,5 +1,7 @@
 "use client";
 
+import { ChartPie, CalendarRange } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useEffect, useMemo, useState } from "react";
 import { useFinanceCore } from "@/lib/finance/finance-data";
 import { PNL_UPDATED, refreshPnl } from "@/lib/finance/auto-rollup";
@@ -377,11 +379,7 @@ export default function OverviewPage() {
           {utilization.length > 0 ? (
             <UtilizationChart points={utilization} />
           ) : (
-            <p className="py-10 text-center text-sm text-faint">
-              {isAll
-                ? "No capacity data before 2023."
-                : "No capacity data for this year."}
-            </p>
+            <EmptyState compact icon={CalendarRange} text={isAll ? "No capacity data before 2023." : "No capacity data for this year."} />
           )}
         </Card>
 
@@ -413,9 +411,7 @@ export default function OverviewPage() {
           {clientView.clients.length > 0 ? (
             <PieChart slices={clientPie} layout="side" size={200} amounts="hover" />
           ) : (
-            <p className="py-10 text-center text-sm text-faint">
-              No client data for {spanLabel}.
-            </p>
+            <EmptyState compact icon={ChartPie} text={`No client data for ${spanLabel}.`} />
           )}
         </Card>
 
@@ -447,9 +443,7 @@ export default function OverviewPage() {
           {vendorView.vendors.length > 0 ? (
             <PieChart slices={vendorPie} layout="side" size={200} amounts="hover" />
           ) : (
-            <p className="py-10 text-center text-sm text-faint">
-              No expense data for {spanLabel}.
-            </p>
+            <EmptyState compact icon={ChartPie} text={`No expense data for ${spanLabel}.`} />
           )}
         </Card>
 
@@ -472,15 +466,11 @@ export default function OverviewPage() {
           Break-even · {spanLabel}
         </SectionTitle>
         {selYear == null ? (
-          <p className="py-10 text-center text-sm text-faint">
-            Break-even is monthly — pick a year to see it.
-          </p>
+          <EmptyState compact icon={CalendarRange} text="Break-even is monthly — pick a year to see it." />
         ) : breakEven.length > 0 ? (
           <BreakEvenChart year={selYear} months={breakEven} />
         ) : (
-          <p className="py-10 text-center text-sm text-faint">
-            No monthly data for {selYear}.
-          </p>
+          <EmptyState compact icon={CalendarRange} text={`No monthly data for ${selYear}.`} />
         )}
       </Card>
       </div>
@@ -570,15 +560,16 @@ function KpiRow({
       {kpis.map((k) => (
         <div
           key={k.label}
-          className="rounded-xl border border-border bg-surface p-3"
+          // &all: Home's stat tile — card, small caps label, serif figure
+          className="rounded-2xl border border-border bg-surface p-4 shadow-card"
         >
           <div className="flex items-center gap-1">
-            <span className="text-[11px] font-medium text-muted">{k.label}</span>
+            <span className="text-[11px] uppercase tracking-wide text-muted">{k.label}</span>
             <InfoDot align={k.align}>{k.info}</InfoDot>
           </div>
           <div
             data-cell={kpiKey(k.label)}
-            className="-mx-1 mt-0.5 cursor-default rounded px-1 text-xl font-semibold tabular-nums"
+            className="-mx-1 mt-1.5 cursor-default rounded px-1 font-serif-accent text-[28px] leading-none tabular-nums"
           >
             {k.value}
           </div>

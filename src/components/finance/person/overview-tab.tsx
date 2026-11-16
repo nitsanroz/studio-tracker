@@ -18,7 +18,7 @@ const TONE: Record<Advice["tone"], { label: string; className: string }> = {
 
 export function OverviewTab({ m, onOpen }: { m: PersonModel; onOpen: (tab: "pay" | "performance") => void }) {
   const r = m.recent;
-  if (!r) return <Loading label="Working out pay and efficiency…" />;
+  if (!r) return <Loading label="Working out pay and efficiency…" inline />;
   const p3 = r.periods.last3;
   const s3 = p3.eff.summary;
   const g = p3.gross?.recommended != null ? p3.gross : null;

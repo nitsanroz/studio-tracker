@@ -25,7 +25,7 @@ function TipBox({ anchor, title, children }: { anchor: HTMLElement | null; title
       role="tooltip"
       dir={lang === "he" ? "rtl" : "ltr"}
       style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: "hidden" }}
-      className="pointer-events-none fixed z-50 w-80 max-w-[calc(100vw-16px)] rounded-2xl bg-surface p-4 text-start text-[15px] font-normal leading-6 text-foreground shadow-[0_12px_32px_rgba(6,17,47,0.16)] ring-1 ring-border"
+      className="pointer-events-none fixed z-50 w-80 max-w-[calc(100vw-16px)] rounded-2xl bg-surface p-4 text-start text-sm font-normal leading-6 text-foreground shadow-[0_12px_32px_rgba(6,17,47,0.16)] ring-1 ring-border"
     >
       {title && <p className="mb-1 font-medium text-brand">{title}</p>}
       <div className="text-muted">{children}</div>
@@ -104,7 +104,7 @@ export function Hover({ children, title, size = 16 }: { children: ReactNode; tit
             role="tooltip"
             dir={lang === "he" ? "rtl" : "ltr"}
             style={pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: "hidden" }}
-            className="fixed z-50 w-80 max-w-[calc(100vw-16px)] rounded-2xl bg-surface p-4 text-start text-[15px] font-normal leading-6 text-foreground shadow-[0_12px_32px_rgba(6,17,47,0.16)] ring-1 ring-border"
+            className="fixed z-50 w-80 max-w-[calc(100vw-16px)] rounded-2xl bg-surface p-4 text-start text-sm font-normal leading-6 text-foreground shadow-[0_12px_32px_rgba(6,17,47,0.16)] ring-1 ring-border"
           >
             {title && <p className="mb-1 font-medium text-brand">{title}</p>}
             <div className="text-muted">{children}</div>

@@ -39,7 +39,7 @@ export function Slider({
   const before = unit === "₪" || unit === "€" || unit === "$";
   return (
     <label className="block">
-      <span className="flex items-center justify-between gap-2 text-[15px] leading-6 text-muted">
+      <span className="flex items-center justify-between gap-2 text-sm leading-6 text-muted">
         <span className="flex items-center gap-1">
           {label}
           {hint && <Hover size={14}>{hint}</Hover>}
@@ -52,7 +52,7 @@ export function Slider({
             onChange={(e) => setText(e.target.value)}
             onBlur={(e) => commit(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && commit((e.target as HTMLInputElement).value)}
-            className="w-24 bg-transparent text-right text-[16px] font-medium outline-none"
+            className="w-24 bg-transparent text-right text-sm font-medium outline-none"
           />
           {!before && unit && <span className="text-faint">{unit}</span>}
         </span>

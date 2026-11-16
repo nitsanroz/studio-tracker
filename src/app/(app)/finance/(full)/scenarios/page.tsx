@@ -350,7 +350,7 @@ export default function ScenariosPage() {
           const color = compare.includes(s.id) ? colorOf(s) : "var(--border-strong)";
           const on = s.id === selected && view === "build";
           return (
-            <span key={s.id} className={`flex items-center rounded-full text-[15px] ${on ? "bg-foreground text-background" : "bg-[var(--strip)] text-foreground hover:bg-brand-soft"}`}>
+            <span key={s.id} className={`flex items-center rounded-full text-sm ${on ? "bg-foreground text-background" : "bg-[var(--strip)] text-foreground hover:bg-brand-soft"}`}>
               <button
                 onClick={() => {
                   setSelected(s.id);
@@ -371,7 +371,7 @@ export default function ScenariosPage() {
             </span>
           );
         })}
-        <button onClick={() => addScenario(t("New scenario"), [])} className="flex items-center gap-1 rounded-full border border-dashed border-border-strong px-3 py-1.5 text-[15px] text-muted hover:border-brand hover:text-brand">
+        <button onClick={() => addScenario(t("New scenario"), [])} className="flex items-center gap-1 rounded-full border border-dashed border-border-strong px-3 py-1.5 text-sm text-muted hover:border-brand hover:text-brand">
           <Plus size={15} /> {t("New")}
         </button>
         <Starters
@@ -385,7 +385,7 @@ export default function ScenariosPage() {
         <button
           onClick={() => setView(view === "compare" ? "build" : "compare")}
           aria-pressed={view === "compare"}
-          className={`ms-auto flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[15px] font-medium ${view === "compare" ? "bg-foreground text-background" : "bg-brand text-white hover:bg-brand-dark"}`}
+          className={`ms-auto flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium ${view === "compare" ? "bg-foreground text-background" : "bg-brand text-white hover:bg-brand-dark"}`}
         >
           <Columns3 size={16} /> {t("Compare all")}
         </button>
@@ -413,8 +413,8 @@ export default function ScenariosPage() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2 rounded-2xl bg-surface px-4 py-2.5 shadow-card">
                 {current.id === "today" ? (
-                  <p className="flex-1 text-[17px] font-medium">
-                    {t("Today")} <span className="ms-2 text-[15px] font-normal text-muted">{t("The studio as it is. Tick a decision to start a scenario.")}</span>
+                  <p className="flex-1 text-base font-medium">
+                    {t("Today")} <span className="ms-2 text-sm font-normal text-muted">{t("The studio as it is. Tick a decision to start a scenario.")}</span>
                   </p>
                 ) : (
                   <>
@@ -422,10 +422,10 @@ export default function ScenariosPage() {
                       value={current.name}
                       onChange={(e) => update({ ...current, name: e.target.value })}
                       aria-label={t("Scenario name")}
-                      className="min-w-0 flex-1 rounded-lg bg-transparent px-1 text-[19px] font-medium hover:bg-[var(--strip)] focus:bg-[var(--strip)] focus:outline-none"
+                      className="min-w-0 flex-1 rounded-lg bg-transparent px-1 text-base font-medium hover:bg-[var(--strip)] focus:bg-[var(--strip)] focus:outline-none"
                     />
                     {!current.saved && (
-                      <button onClick={() => save(current)} disabled={store !== "ready"} className="flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-[15px] font-medium text-white disabled:opacity-40">
+                      <button onClick={() => save(current)} disabled={store !== "ready"} className="flex items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40">
                         <Save size={15} /> {t("Save")}
                       </button>
                     )}
@@ -502,7 +502,7 @@ function Starters({ list, onPick }: { list: ReturnType<typeof starters>; onPick:
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-[16px] text-foreground shadow-card hover:bg-brand-soft">
+      <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1.5 rounded-full bg-surface px-4 py-2 text-sm text-foreground shadow-card hover:bg-brand-soft">
         {t("Starters")} <ChevronDown size={16} />
       </button>
       {open && (
@@ -516,8 +516,8 @@ function Starters({ list, onPick }: { list: ReturnType<typeof starters>; onPick:
               }}
               className="block w-full rounded-xl px-3 py-2.5 text-start hover:bg-[var(--strip)]"
             >
-              <span className="text-[17px] font-medium">{s.name}</span>
-              <span className="block text-[15px] leading-6 text-muted">{s.why}</span>
+              <span className="text-base font-medium">{s.name}</span>
+              <span className="block text-sm leading-6 text-muted">{s.why}</span>
             </button>
           ))}
         </div>
@@ -536,17 +536,17 @@ function TodayStudio({ baseline: b, check, bare }: { baseline: NonNullable<Retur
       bare={bare}
       title={t("Today's studio")}
       info={t("What every scenario starts from: the last 3 finished months' people, costs and hours (someone not paid last month has left). Capacity is the client hours someone can take a month: 90% of an employee's logged hours; a freelancer takes as much as the work needs.")}
-      right={<span className="text-[16px] tabular-nums text-muted">{t("₪{rate} an hour · Keys {pct}%", { rate: Math.round(b.rate), pct: Math.round(b.keysShare * 100) })}</span>}
+      right={<span className="text-sm tabular-nums text-muted">{t("₪{rate} an hour · Keys {pct}%", { rate: Math.round(b.rate), pct: Math.round(b.keysShare * 100) })}</span>}
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {b.team.map((m) => (
           <div key={m.id} className="rounded-2xl bg-[var(--strip)] p-4">
-            <p className="text-[17px] font-medium">{m.name}</p>
-            <p className="text-[15px] text-muted">{roleOf(m.kind, t)}</p>
-            <p className="mt-2 text-[16px] tabular-nums">
+            <p className="text-base font-medium">{m.name}</p>
+            <p className="text-sm text-muted">{roleOf(m.kind, t)}</p>
+            <p className="mt-2 text-sm tabular-nums">
               {m.price ? (m.price.kind === "flat" ? `₪${Math.round(m.price.rate)}/h` : `₪${Math.round(m.price.terms.rateHigh)}→${Math.round(m.price.terms.rateLow)}/h`) : t("{amount} a month", { amount: k(m.monthlyCost) })}
             </p>
-            <p className="text-[15px] tabular-nums text-muted">
+            <p className="text-sm tabular-nums text-muted">
               {t("{hours}h billed", { hours: Math.round(m.billable) })}
               {m.keys >= 1 ? ` · ${t("{hours}h written down", { hours: Math.round(m.keys) })}` : ""}
               {m.capacity ? ` · ${t("can take {hours}h", { hours: m.capacity })}` : ""}
@@ -554,12 +554,12 @@ function TodayStudio({ baseline: b, check, bare }: { baseline: NonNullable<Retur
           </div>
         ))}
       </div>
-      <p className="mt-4 text-[16px] leading-6 tabular-nums text-muted">
+      <p className="mt-4 text-sm leading-6 tabular-nums text-muted">
         {t("Office {office} · other costs {other}", { office: k(b.office), other: k(b.otherFixed) })}
         {b.otherPayroll > 0 && ` · ${t("other payroll {amount}", { amount: k(b.otherPayroll) })}`}
         {` · ${t("you + Michal {hours}h a month for clients", { hours: b.ownerHours + b.staffHours })}`}
       </p>
-      <p className={`mt-2 flex items-center gap-1.5 text-[16px] tabular-nums ${off > 10_000 ? "text-[var(--warning)]" : "text-muted"}`}>
+      <p className={`mt-2 flex items-center gap-1.5 text-sm tabular-nums ${off > 10_000 ? "text-[var(--warning)]" : "text-muted"}`}>
         {t("Check: at the last 3 months' {hours}h the model makes {model} a month; the P&L booked {booked}.", { hours: Math.round(b.soldHours), model: k(check.profit), booked: k(b.actual.profit) })}
         <Hover title={t("The model's check")}>
           {t("The model prices freelancers by their hours and keeps costs at today's run-rate, so it won't match a booked month exactly. A big gap means something is missing here — say so before trusting a scenario.")}

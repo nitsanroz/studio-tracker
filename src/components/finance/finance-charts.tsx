@@ -669,7 +669,7 @@ export function RateTrendChart({ points }: { points: RatePoint[] }) {
   return (
     <div>
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold tabular-nums">₪{Math.round(shown.rate)}</span>
+        <span className="font-serif-accent text-[32px] leading-none tabular-nums">₪{Math.round(shown.rate)}</span>
         <span className="text-xs text-muted">/h · {label(shown)}</span>
       </div>
       <svg ref={chartRef} viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Average hourly rate"
@@ -1141,7 +1141,7 @@ export function MonthlyLineChart({
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-serif text-[26px] italic leading-none">{formatValue(total)}</span>
+            <span className="font-serif-accent text-[26px] leading-none">{formatValue(total)}</span>
             {trend != null && (
               <span
                 title={trendTitle ?? `${points[actual.length - 1]?.label} vs ${points[actual.length - 2]?.label}`}
@@ -1353,13 +1353,13 @@ export function DualLineChart({
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="h-[2.5px] w-3 shrink-0 rounded-full" style={{ backgroundColor: aColor }} />
           <span className="text-[11px] text-muted">{aLabel}</span>
-          <span className="font-serif text-[15px] italic leading-none">{formatValue(totalA)}</span>
+          <span className="font-serif-accent text-sm leading-none">{formatValue(totalA)}</span>
           <TrendBadge trend={aTrend} higherIsBetter title={trendTitle} />
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="h-[2.5px] w-3 shrink-0 rounded-full" style={{ backgroundColor: bColor }} />
           <span className="text-[11px] text-muted">{bLabel}</span>
-          <span className="font-serif text-[15px] italic leading-none">{formatValue(totalB)}</span>
+          <span className="font-serif-accent text-sm leading-none">{formatValue(totalB)}</span>
           <TrendBadge trend={bTrend} higherIsBetter={false} title={trendTitle} />
         </div>
       </div>
@@ -1550,7 +1550,7 @@ export function MultiMonthlyLineChart({
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-serif text-[26px] italic leading-none">{formatILSShort(total)}</span>
+            <span className="font-serif-accent text-[26px] leading-none">{formatILSShort(total)}</span>
             {trend != null && (
               <span
                 className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
@@ -1766,7 +1766,7 @@ export function GapLinesChart({
                 <span className={`w-3 shrink-0 border-t-[2.5px] ${s.dashed ? "border-dotted" : ""}`} style={{ borderColor: s.color }} />
               )}
               <span className="text-[11px] text-muted">{s.label}</span>
-              {last != null && <span className="font-serif text-[15px] italic leading-none">{formatValue(last)}</span>}
+              {last != null && <span className="font-serif-accent text-sm leading-none">{formatValue(last)}</span>}
             </div>
           );
         })}

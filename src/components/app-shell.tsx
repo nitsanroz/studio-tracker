@@ -765,11 +765,6 @@ function LoadingScreen() {
 
 function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
   const pathname = usePathname();
-  // Finance has its own frame and its own look (globals.css, FINANCE): the
-  // tracker's app-wide card and divider rules stop at its door.
-  // Scenarios is a tab of the advisor (2026-11-15) and takes the advisor page's look,
-  // so it keeps the tracker's canvas like /advice does.
-  const onFinance = (pathname === "/finance" || pathname.startsWith("/finance/")) && !pathname.startsWith("/finance/scenarios");
   const {
     profiles,
     currentUserId,
@@ -1113,7 +1108,10 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
       {/* ⚠️ The margin is `md:`-prefixed on BOTH branches. Unprefixed it would
           still indent the content by the width of a sidebar that isn't there. */}
       <div
-        className={`${onFinance ? "" : "app-canvas "}flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
+        // &all (2026-11-16): finance pages sit in `.app-canvas` too, so they get
+        // the same cards, dividers, type snap and motion as every other page.
+        // Their grids are real tables, which those rules leave alone.
+        className={`app-canvas flex min-w-0 flex-1 flex-col transition-[margin] duration-150 ${folded ? "md:ml-16" : "md:ml-52"}`}
       >
         {/* z-scale, and why the header is 30:
               sidebar 30 · header 30 · in-page sticky rows ≤20 · overlays 40/50.
@@ -1123,10 +1121,7 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
             DOM) painted straight over the open search results. Every modal
             overlay is ≥40, so the task drawer still dims the header. */}
         <header
-          // On /finance the column above drops `app-canvas`; the header keeps the
-          // tracker's look by carrying the class itself (its own bottom rule is
-          // then switched off by hand — the app-wide rule only reaches descendants).
-          className={`app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 backdrop-blur md:px-6 ${onFinance ? "app-canvas border-transparent" : "border-border"}`}
+          className="app-header sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border px-4 backdrop-blur md:px-6"
           style={{ backgroundColor: "var(--header-bg)" }}
         >
           {/* Below md the sidebar is gone, so the header carries the wordmark —

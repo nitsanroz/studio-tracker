@@ -2656,10 +2656,10 @@ function RollupRow({
       ? month && isForecastMonth(year, month) ? "" : "bg-surface-2/60"
       : !profit || !filled ? "" : v < 0 ? "bg-danger/8" : v > 0 ? "bg-[var(--success)]/8" : "";
   const rowCls = `${edge ? `pane-${edge}` : ""} ${
-    look === "summary" ? "border-t-2 border-border-strong font-semibold" : profit ? "text-[15px] font-semibold" : "border-t border-border text-xs"
+    look === "summary" ? "border-t-2 border-border-strong font-semibold" : profit ? "text-sm font-semibold" : "border-t border-border text-xs"
   }`;
   const labelCls =
-    look === "summary" ? "bg-surface-2 font-semibold" : profit ? "bg-surface text-[15px] font-semibold" : "bg-surface text-muted";
+    look === "summary" ? "bg-surface-2 font-semibold" : profit ? "bg-surface text-sm font-semibold" : "bg-surface text-muted";
   const total = r.raw[MONTHS.length];
   return (
     <tr className={rowCls}>

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { createPortal } from "react-dom";
 import { AlertTriangle, ArrowUpRight, Check, CircleAlert, Info } from "lucide-react";
 import { STEPS, type Step } from "@/components/finance/cell-state-card";
+import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
 
 export function PageHeader({
   title,
@@ -18,7 +19,8 @@ export function PageHeader({
     // Phone: the title shares its line with the actions. Wider: title and
     // subtitle left, actions bottom-right.
     <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 md:items-end">
-      <h1 className="text-2xl">{title}</h1>
+      {/* &all: every page's title is `.page-title` (globals.css) */}
+      <h1 className="page-title">{title}</h1>
       {actions && (
         <div className="col-start-2 row-start-1 flex flex-wrap items-center justify-end gap-2 md:row-span-2 md:self-end lg:flex-nowrap [&_button]:whitespace-nowrap">
           {actions}
@@ -38,6 +40,8 @@ export function Card({
   className?: string;
 }) {
   return (
+    // &all: the tracker's page card — `.app-canvas` drops the outline and
+    // rounds it to 20px, the same as every other card in the app.
     <div className={`rounded-2xl border border-border bg-surface p-4 shadow-card md:p-5 ${className}`}>
       {children}
     </div>
@@ -58,7 +62,8 @@ export function SectionTitle({
   return (
     <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
       <span className="flex items-center gap-1.5">
-        <h2 className="text-base font-medium">{children}</h2>
+        {/* &all: every card's title is `.card-title` (globals.css) */}
+        <h2 className="card-title">{children}</h2>
         {info && <InfoDot>{info}</InfoDot>}
       </span>
       {hint && <span className="shrink-0 text-xs text-faint">{hint}</span>}
@@ -66,9 +71,13 @@ export function SectionTitle({
   );
 }
 
-export function Loading({ label = "Loading…" }: { label?: string }) {
+/** &all: a page still loading is the tracker's skeleton, never a "Loading…"
+ *  line. `label` is kept for callers and read out to screen readers. */
+export function Loading({ label = "Loading", inline = false }: { label?: string; inline?: boolean }) {
   return (
-    <div className="flex items-center justify-center py-20 text-sm text-muted">{label}</div>
+    <div aria-label={label} role="status">
+      {inline ? <SkeletonRows rows={4} avatar={false} /> : <PageSkeleton />}
+    </div>
   );
 }
 

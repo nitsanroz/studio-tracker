@@ -864,13 +864,12 @@ svg.lucide[stroke-width="1.75"] {
 /* ════════════════════════════════════════════════════════════════════════════
    FINANCE (merged from finance-admin, 2026-11). Everything under /finance.
 
-   ⚠️ The finance pages do NOT sit inside `.app-canvas`: app-shell.tsx swaps
-   that class off the content column on /finance, so none of the tracker's
-   app-wide card / divider / text-snap / motion rules reach them. Their grids
-   are dense tables drawn with their own borders, and those rules were written
-   for the tracker's cards. The wrapper is `.finance-canvas`
-   ((app)/finance/layout.tsx). Colours are the tracker's own tokens — only the
-   tokens finance adds are defined here.
+   &all (2026-11-16): the finance pages sit inside `.app-canvas` like every
+   other page, so the tracker's card / divider / type-snap / motion rules reach
+   them — one look across the app. Their grids are real tables, which those
+   rules leave alone. The inner wrapper `.finance-canvas`
+   ((app)/finance/layout.tsx) still scopes the privacy blur below. Colours are
+   the tracker's own tokens — only the tokens finance adds are defined here.
    ════════════════════════════════════════════════════════════════════════════ */
 :root {
   --surface-2: #f7f8fa;

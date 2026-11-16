@@ -36,7 +36,7 @@ export function StripCard({
     return (
       <div>
         {(info || right) && (
-          <div className="mb-3 flex items-center gap-2 text-[15px] text-muted">
+          <div className="mb-3 flex items-center gap-2 text-sm text-muted">
             {info && <Hover title={title}>{info}</Hover>}
             {right && <span className="ms-auto">{right}</span>}
           </div>
@@ -51,10 +51,10 @@ export function StripCard({
         {foldable ? (
           <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex items-center gap-2 text-start">
             <ChevronDown size={18} className={`text-faint transition-transform ${open ? "" : "-rotate-90 rtl:rotate-90"}`} />
-            <h2 className="text-[20px] font-medium leading-7 text-brand">{title}</h2>
+            <h2 className="card-title">{title}</h2>
           </button>
         ) : (
-          <h2 className="text-[20px] font-medium leading-7 text-brand">{title}</h2>
+          <h2 className="card-title">{title}</h2>
         )}
         {info && <Hover title={title}>{info}</Hover>}
         {right && <span className="ms-auto">{right}</span>}
@@ -103,7 +103,7 @@ export function DemandCard({ demand, baseline, onChange, onReset, bare }: { dema
         "Billable hours a month that clients will buy, in today's terms. Nobody knows the next year, so every scenario runs against three futures: the middle you set, a bad one under it and a good one over it, as far as the range says. The past is shown only for reference — it doesn't drive anything.",
       )}
       right={
-        <button onClick={onReset} className="flex items-center gap-1.5 text-[15px] text-muted hover:text-brand">
+        <button onClick={onReset} className="flex items-center gap-1.5 text-sm text-muted hover:text-brand">
           <RotateCcw size={15} /> {t("Last 3 months")}
         </button>
       }
@@ -138,14 +138,14 @@ export function DemandCard({ demand, baseline, onChange, onReset, bare }: { dema
           ].map((p) => (
             <span key={p.label} className="absolute top-2.5 flex -translate-x-1/2 flex-col items-center" style={{ left: scale(p.h) }}>
               <Caret dir="up" className={p.cls} />
-              <span className="mt-1 whitespace-nowrap text-[15px] leading-5 tabular-nums">
+              <span className="mt-1 whitespace-nowrap text-sm leading-5 tabular-nums">
                 <span className={`hidden font-medium sm:inline ${p.cls}`}>{p.label} </span>
                 <span className="font-semibold">{p.h}h</span>
               </span>
             </span>
           ))}
         </div>
-        <p className="mt-3 flex justify-between text-[15px] font-medium tabular-nums sm:hidden">
+        <p className="mt-3 flex justify-between text-sm font-medium tabular-nums sm:hidden">
           <span className="text-danger">{t("Bad")} {bad}h</span>
           <span className="text-brand">{t("Middle")} {demand.hours}h</span>
           <span className="text-success">{t("Good")} {good}h</span>
@@ -190,7 +190,7 @@ const FIELDS: { key: keyof CompanyFacts; label: string; unit: "₪" | "%"; min: 
 export function FactsCard({ facts, cashFloor, onChange, saved, bare }: { facts: CompanyFacts; cashFloor: number; onChange: (f: CompanyFacts) => void; saved: boolean; bare?: boolean }) {
   const { t } = useT();
   const set = (k: keyof CompanyFacts, v: number | string | null) => onChange({ ...facts, [k]: v });
-  const box = "mt-1 block w-full rounded-xl bg-surface px-3 py-2 text-[16px] ring-1 ring-border";
+  const box = "mt-1 block w-full rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-border";
   const { factSource: FACT_SOURCE } = useCompanyFigures();
   const src = (k: keyof CompanyFacts) => (FACT_SOURCE[k] ? t(FACT_SOURCE[k]!) : undefined);
   return (
@@ -198,7 +198,7 @@ export function FactsCard({ facts, cashFloor, onChange, saved, bare }: { facts: 
       bare={bare}
       title={t("Company facts")}
       info={t("From the accountant's signed 2025 report and the call with him (Nov 2026). Labelled estimates — confirm tax figures with the accountant. Nothing here changes the P&L.")}
-      right={<span className="text-[15px] text-faint">{saved ? t("saved as you change them") : t("not saved")}</span>}
+      right={<span className="text-sm text-faint">{saved ? t("saved as you change them") : t("not saved")}</span>}
     >
       <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
         <Slider
@@ -234,11 +234,11 @@ export function FactsCard({ facts, cashFloor, onChange, saved, bare }: { facts: 
             unit={f.unit}
           />
         ))}
-        <label className="block text-[15px] text-muted">
+        <label className="block text-sm text-muted">
           {t("Cash figure is from")}
           <input type="date" value={facts.cashAsOf} onChange={(e) => e.target.value && set("cashAsOf", e.target.value)} className={box} />
         </label>
-        <label className="block text-[15px] text-muted">
+        <label className="block text-sm text-muted">
           {t("Refund expected in")}
           <input type="month" value={facts.taxRefundMonth} onChange={(e) => e.target.value && set("taxRefundMonth", e.target.value)} className={box} />
         </label>

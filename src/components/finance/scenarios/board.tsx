@@ -79,8 +79,8 @@ export function DecisionBoard({
                 className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-start"
               >
                 <span className="min-w-0 flex-1 basis-40">
-                  <span className="block text-[22px] font-medium leading-8 text-brand">{g.title}</span>
-                  {g.subtitle && <span className="block text-[15px] leading-6 text-muted tabular-nums">{g.subtitle}</span>}
+                  <span className="card-title block">{g.title}</span>
+                  {g.subtitle && <span className="block text-sm leading-6 text-muted tabular-nums">{g.subtitle}</span>}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   {on > 0 && <span className="rounded-full bg-brand-soft px-3 py-1 text-[14px] font-medium text-brand">{t("{n} on", { n: on })}</span>}
@@ -115,8 +115,8 @@ export function DecisionBoard({
                           <input type="checkbox" checked={ticked} onChange={() => toggle(it)} className="sr-only" />
                           <TickBox on={ticked} />
                           <span className="min-w-0 flex-1">
-                            <span className="block text-[18px] font-medium leading-7">{it.title}</span>
-                            {!ticked && <span className="block text-[16px] leading-6 text-muted">{it.blurb}</span>}
+                            <span className="block text-base font-medium leading-7">{it.title}</span>
+                            {!ticked && <span className="block text-sm leading-6 text-muted">{it.blurb}</span>}
                           </span>
                         </label>
                         <span className="pt-1">
@@ -126,7 +126,7 @@ export function DecisionBoard({
                       {mine.map((d) => (
                         <div key={d.id} className="ms-[34px] mt-3 rounded-2xl bg-[var(--strip)] p-4">
                           <div className="flex items-start justify-between gap-3">
-                            <p className="text-[16px] font-medium leading-6 text-brand tabular-nums">{describe(d, team, t)}</p>
+                            <p className="text-sm font-medium leading-6 text-brand tabular-nums">{describe(d, team, t)}</p>
                             {it.multi && mine.length > 1 && (
                               <button onClick={() => onChange(decisions.filter((x) => x.id !== d.id))} aria-label={t("Remove this one")} className="rounded-full p-1 text-faint hover:bg-surface hover:text-danger">
                                 <X size={16} />
@@ -141,7 +141,7 @@ export function DecisionBoard({
                         </div>
                       ))}
                       {it.multi && ticked && (
-                        <button onClick={() => onChange([...decisions, decisionFor(it, baseline)])} className="ms-[34px] mt-2 flex items-center gap-1.5 text-[15px] font-medium text-brand hover:underline">
+                        <button onClick={() => onChange([...decisions, decisionFor(it, baseline)])} className="ms-[34px] mt-2 flex items-center gap-1.5 text-sm font-medium text-brand hover:underline">
                           <Plus size={16} /> {t("Add another")}
                         </button>
                       )}
@@ -170,7 +170,7 @@ function FieldInput({ field: f, decision: d, start, onChange }: { field: Field; 
       {f.hint && <Hover size={14}>{t(f.hint)}</Hover>}
     </span>
   );
-  const box = "w-full rounded-xl bg-surface px-3 py-2 text-[16px] ring-1 ring-border focus:outline-none focus:ring-2 focus:ring-brand";
+  const box = "w-full rounded-xl bg-surface px-3 py-2 text-sm ring-1 ring-border focus:outline-none focus:ring-2 focus:ring-brand";
 
   if (f.kind === "month") {
     const months = Array.from({ length: HORIZON + 3 }, (_, i) => addMonths(start, i - 1));
@@ -196,7 +196,7 @@ function FieldInput({ field: f, decision: d, start, onChange }: { field: Field; 
               key={c}
               onClick={() => set(c)}
               aria-pressed={(v ?? "ILS") === c}
-              className={`rounded-lg px-3 py-1 text-[15px] ${(v ?? "ILS") === c ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
+              className={`rounded-lg px-3 py-1 text-sm ${(v ?? "ILS") === c ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
             >
               {c === "ILS" ? "₪" : c === "EUR" ? "€" : "$"}
             </button>
@@ -206,7 +206,7 @@ function FieldInput({ field: f, decision: d, start, onChange }: { field: Field; 
     );
   if (f.kind === "bool")
     return (
-      <label className="group flex cursor-pointer items-start gap-2.5 self-end text-[15px] leading-6">
+      <label className="group flex cursor-pointer items-start gap-2.5 self-end text-sm leading-6">
         <input type="checkbox" checked={v === true} onChange={(e) => set(e.target.checked)} className="sr-only" />
         <TickBox on={v === true} />
         {t(f.label)}
@@ -236,7 +236,7 @@ function NumberInput({ label, value, prefix, suffix, step, onChange }: { label: 
     <label className="block">
       {label}
       <span dir="ltr" className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 ring-1 ring-border focus-within:ring-2 focus-within:ring-brand">
-        {prefix && <span className="text-[16px] text-faint">{prefix}</span>}
+        {prefix && <span className="text-sm text-faint">{prefix}</span>}
         <input
           type="number"
           step={step}
@@ -249,9 +249,9 @@ function NumberInput({ label, value, prefix, suffix, step, onChange }: { label: 
           }}
           onBlur={commit}
           onKeyDown={(e) => e.key === "Enter" && commit()}
-          className="w-full min-w-0 bg-transparent text-[16px] tabular-nums focus:outline-none"
+          className="w-full min-w-0 bg-transparent text-sm tabular-nums focus:outline-none"
         />
-        {suffix && <span className="text-[16px] text-faint">{suffix}</span>}
+        {suffix && <span className="text-sm text-faint">{suffix}</span>}
       </span>
     </label>
   );

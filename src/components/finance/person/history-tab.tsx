@@ -3,6 +3,8 @@
 // History: their whole time at the studio — revenue against cost and hours,
 // month by month, and every year side by side. Pick a year to zoom in.
 
+import { FileX } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useState } from "react";
 import { Card, SectionTitle } from "@/components/finance/ui";
 import { DualLineChart, MonthlyLineChart, type DualPoint, type MonthPoint } from "@/components/finance/finance-charts";
@@ -16,7 +18,7 @@ export function HistoryTab({ m }: { m: PersonModel }) {
   const { ledger, upTo, own } = m;
   const activeMonths = monthsOf(ledger, null).filter((x) => x.salary + x.freelance > 0 || x.hours >= 1);
   const years = [...new Set(activeMonths.map((x) => x.year))].sort((a, b) => b - a);
-  if (!activeMonths.length) return <p className="py-10 text-center text-sm text-faint">No pay or hours on record.</p>;
+  if (!activeMonths.length) return <EmptyState compact icon={FileX} text="No pay or hours on record." />;
 
   // Month by month: one year's twelve, or all time from their first month to
   // the last finished one, ticked at each January.

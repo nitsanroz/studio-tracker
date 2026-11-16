@@ -1,35 +1,10 @@
 "use client";
 
+import { EmptyState } from "@/components/empty-state";
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
-import {
-  ArrowDown,
-  ArrowLeftRight,
-  ArrowUp,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  CreditCard,
-  Eye,
-  EyeOff,
-  FileText,
-  Link as LinkIcon,
-  Lock,
-  LockOpen,
-  Mail,
-  PanelRightClose,
-  PanelRightOpen,
-  Paperclip,
-  Plus,
-  AlertTriangle,
-  RotateCcw,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, CreditCard, Eye, EyeOff, FileText, Link as LinkIcon, Lock, LockOpen, Mail, PanelRightClose, PanelRightOpen, Paperclip, Plus, AlertTriangle, RotateCcw, Search, Trash2, X, ChartPie } from "lucide-react";
 import { createClient } from "@/lib/finance/supabase-client";
 import {
   fetchAll,
@@ -1118,7 +1093,7 @@ function TrendsTab() {
             totalLabel="all-time total, top vendors"
           />
         ) : (
-          <p className="py-10 text-center text-sm text-faint">No vendor data.</p>
+          <EmptyState compact icon={ChartPie} text="No vendor data." />
         )}
       </div>
       <div className="rounded-xl border border-border bg-surface p-4 lg:col-span-2">
@@ -1128,7 +1103,7 @@ function TrendsTab() {
         {pie.length > 0 ? (
           <PieChart ariaLabel="Total spend by vendor" slices={pie} layout="side" size={220} />
         ) : (
-          <p className="py-10 text-center text-sm text-faint">No expense data.</p>
+          <EmptyState compact icon={ChartPie} text="No expense data." />
         )}
       </div>
     </div>

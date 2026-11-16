@@ -4,6 +4,8 @@
 // they log, what an hour of theirs earns and what that returns on their pay.
 // One window at a time (last month / 3 months / 12 months).
 
+import { CalendarRange, FileX } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { useState } from "react";
 import { Card, SectionTitle, Loading } from "@/components/finance/ui";
 import { DualLineChart, PieChart, type DualPoint } from "@/components/finance/finance-charts";
@@ -20,7 +22,7 @@ const FULL_DAY = 8.5;
 export function PerformanceTab({ m }: { m: PersonModel }) {
   const [pid, setPid] = useState<PeriodId>("last3");
   const r = m.recent;
-  if (!r) return <Loading label="Working out efficiency…" />;
+  if (!r) return <Loading label="Working out efficiency…" inline />;
   const per = r.periods[pid];
   const e = per.eff;
   const s = e.summary;
@@ -44,7 +46,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
   // Only an empty 12 months means nothing to show. An empty shorter window (no pay or hours last
   // month) used to replace the tab with this line — untrue, and with the switch gone, a dead end.
   if (!year.months)
-    return <p className="py-10 text-center text-sm text-faint">Not paid and no hours in the last 12 months.</p>;
+    return <EmptyState compact icon={CalendarRange} text="Not paid and no hours in the last 12 months." />;
 
   const header = (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -66,7 +68,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
     return (
       <div className="flex flex-col gap-4">
         {header}
-        <p className="py-10 text-center text-sm text-faint">Not paid and no hours in this window ({per.label.toLowerCase()}).</p>
+        <EmptyState compact icon={FileX} text={`Not paid and no hours in this window (${per.label.toLowerCase()}).`} />
       </div>
     );
 
@@ -86,7 +88,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
           </SectionTitle>
           {e.hoursPerWorkday != null ? (
             <>
-              <div className="mb-3 text-3xl tabular-nums">{e.hoursPerWorkday.toFixed(1)}h</div>
+              <div className="mb-3 font-serif-accent text-[32px] leading-none tabular-nums">{e.hoursPerWorkday.toFixed(1)}h</div>
               <Meter value={e.hoursPerWorkday} max={10} target={day} targetLabel="their day" format={(v) => `${v.toFixed(1)}h`} />
             </>
           ) : (
@@ -99,7 +101,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
           </SectionTitle>
           {e.earnedPerHour != null ? (
             <>
-              <div className="text-3xl tabular-nums">₪{formatNum(e.earnedPerHour)}</div>
+              <div className="font-serif-accent text-[32px] leading-none tabular-nums">₪{formatNum(e.earnedPerHour)}</div>
               <div className="mt-1 text-xs text-muted">
                 {vsYear != null ? (
                   <span className={vsYear >= 0 ? "text-success" : "text-danger"}>
@@ -128,7 +130,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
           </SectionTitle>
           {e.returnRatio != null ? (
             <>
-              <div className="mb-2 text-3xl tabular-nums">{e.returnRatio.toFixed(1)}×</div>
+              <div className="mb-2 font-serif-accent text-[32px] leading-none tabular-nums">{e.returnRatio.toFixed(1)}×</div>
               <ReturnScale value={e.returnRatio} needed={needed} />
             </>
           ) : (
@@ -163,7 +165,7 @@ export function PerformanceTab({ m }: { m: PersonModel }) {
               formatTotal={(v) => `${formatNum(v)}h`}
             />
           ) : (
-            <p className="py-10 text-center text-sm text-faint">No tracked hours.</p>
+            <EmptyState compact icon={FileX} text="No tracked hours." />
           )}
         </Card>
       </div>

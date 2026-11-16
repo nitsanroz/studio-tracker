@@ -76,7 +76,7 @@ export function Advisor({
     <button
       onClick={() => ask(kind)}
       disabled={busy != null || disabled}
-      className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-[15px] text-white hover:bg-white/20 disabled:opacity-40"
+      className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-1.5 text-sm text-white hover:bg-white/20 disabled:opacity-40"
     >
       {busy === kind ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
       {label}
@@ -87,7 +87,7 @@ export function Advisor({
     <>
       {/* The bar: one line under the page title. */}
       <section className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-[var(--foreground)] px-4 py-2.5 text-white shadow-card">
-        <span className="flex items-center gap-1.5 text-[17px] font-medium">
+        <span className="flex items-center gap-1.5 text-base font-medium">
           <span className="text-[20px] text-[var(--aqua)]">&amp;</span>
           {tr("advice on scenarios")}
           <span className="text-white/60 [&_button]:text-white/60">
@@ -100,7 +100,7 @@ export function Advisor({
           {button("suggest", tr("Suggest what I haven't tried"))}
         </div>
         {last && (
-          <button onClick={() => setOpen(true)} className="ms-auto flex items-center gap-1.5 text-[15px] text-[var(--aqua)] hover:underline">
+          <button onClick={() => setOpen(true)} className="ms-auto flex items-center gap-1.5 text-sm text-[var(--aqua)] hover:underline">
             <MessageSquareText size={16} /> {tr("Last advice")}
           </button>
         )}
@@ -120,10 +120,10 @@ export function Advisor({
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto px-5 pb-6">
-      {busy && <p className="mt-3 text-[16px] text-white/70">{tr("Thinking it through — this can take a minute…")}</p>}
-      {error && <p className="mt-3 text-[16px] text-red-300">{error}</p>}
+      {busy && <p className="mt-3 text-sm text-white/70">{tr("Thinking it through — this can take a minute…")}</p>}
+      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
       {a && !busy && (
-        <div className="space-y-4 text-[16px]">
+        <div className="space-y-4 text-sm">
           <p className="text-[22px] leading-snug">{a.bottomLine}</p>
           {a.recommendations.length > 0 && (
             <ol className="space-y-2">

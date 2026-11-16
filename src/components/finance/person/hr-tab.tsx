@@ -3,6 +3,7 @@
 // HR: who they are (the tracker's HR record), their days off, the talks and
 // salary updates on record, and the full HR timeline.
 
+import { SkeletonRows } from "@/components/skeleton";
 import Link from "next/link";
 import { StudioArrow } from "@/components/studio-arrow";
 import { Card, SectionTitle } from "@/components/finance/ui";
@@ -67,7 +68,7 @@ export function HrTab({ m }: { m: PersonModel }) {
             Details
           </SectionTitle>
           {hr === undefined ? (
-            <p className="text-sm text-faint">Loading…</p>
+            <SkeletonRows rows={3} avatar={false} />
           ) : rows.some(([, v]) => v) ? (
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
               {rows
