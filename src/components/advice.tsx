@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkline } from "@/components/line-style";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, Info, Lightbulb, Maximize2, Minus, RotateCw, Sparkles, TrendingDown, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
@@ -898,14 +899,7 @@ function ListLink({ link, onOpenTask, onClose }: { link: FindingLink; onOpenTask
 }
 
 function Spark({ series, color }: { series: number[]; color: string }) {
-  const min = Math.min(...series);
-  const max = Math.max(...series);
-  const pts = series.map((v, i) => `${(i / (series.length - 1)) * 100},${28 - ((v - min) / (max - min || 1)) * 24}`).join(" ");
-  return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="mt-1 h-7 w-full opacity-70" aria-hidden>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
+  return <Sparkline series={series} color={color} />;
 }
 
 /** The page's elements an item points at: `data-advice` holds space-separated tokens. */

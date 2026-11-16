@@ -7,7 +7,7 @@ import { StudioArrow } from "@/components/studio-arrow";
 import { FREELANCER_VIEWS, PageViews } from "@/components/page-views";
 import { Button } from "@/components/primitives";
 import { useData, useIsAdmin } from "@/lib/store";
-import { TermsForm, act, hrs, money, monthLabel, otherLine, termsLine, type Freelancer } from "./shared";
+import { TermsForm, act, hrs, money, monthLabel, otherLine, type Freelancer } from "./shared";
 import { PageSkeleton } from "@/components/skeleton";
 
 // Every freelancer at a glance (0054–0056): this month's bill and what waits
@@ -91,12 +91,13 @@ export default function FreelancersPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {/* A nickname (0071) is their name here too, big; the full name
-                    goes small under it (Nitsan, 2026-11-16). */}
-                <h2 className="font-serif-accent truncate text-[28px] leading-9">
+                    under it. No rate line — it is on their page (Nitsan,
+                    2026-11-16: "nick can be bigger and full name too, no need
+                    to add their rate in the card"). */}
+                <h2 className="font-serif-accent truncate text-[36px] leading-[44px]">
                   {nicknameOf.get(f.profileId) ?? f.name}
                 </h2>
-                {nicknameOf.has(f.profileId) && <p className="truncate text-sm">{f.name}</p>}
-                <p className="text-[13px] text-muted">{termsLine(f.terms)}</p>
+                {nicknameOf.has(f.profileId) && <p className="truncate text-base">{f.name}</p>}
               </div>
               {/* The website's arrow (studio-arrow.tsx), as big as the title
                   block allows (Nitsan, 2026-10-23) — the sign the whole card
@@ -105,39 +106,43 @@ export default function FreelancersPage() {
               <StudioArrow
                 size={48}
                 up
-                className="-mr-2 -mt-2 text-faint transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-brand"
+                className="-mr-2 -mt-2 shrink-0 text-faint transition group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-brand"
               />
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">{monthLabel(data.period)}</p>
-              <p className="font-serif-accent text-[44px] leading-none tabular-nums text-brand">
-                {money(f.month.total, f.terms.currency)}
-                {otherLine(f.month.otherExtras)}
-              </p>
-              <p className="mt-1.5 text-[13px] tabular-nums text-muted">
-                {hrs(f.month.hours)} × {money(f.month.rate, f.terms.currency)}/h
-                {f.month.extras > 0 && ` + ${money(f.month.extras, f.terms.currency)} extras`}
-              </p>
-            </div>
-            <div className="mt-auto flex flex-wrap items-center gap-2 text-[13px]">
-              {f.hasLogin ? (
-                <span className="flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 font-medium text-brand-dark">
-                  <Check size={14} /> Hours from their own log
-                </span>
-              ) : f.pendingCount > 0 ? (
-                <span className="flex items-center gap-1.5 rounded-full bg-warning/15 px-2.5 py-1 font-medium text-[#855800]">
-                  <Clock size={14} /> {f.pendingCount} waiting for review
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-medium text-success">
-                  <Check size={14} /> Nothing waiting
-                </span>
-              )}
-              {!f.active && !f.hasLogin && (
-                <span className="flex items-center gap-1.5 rounded-full bg-danger/10 px-2.5 py-1 font-medium text-danger">
-                  <LinkIcon size={14} /> Link switched off
-                </span>
-              )}
+            {/* The month on the left, its status in the bottom-right corner —
+                one row, so the card is no taller than it needs to be. */}
+            <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">{monthLabel(data.period)}</p>
+                <p className="font-serif-accent text-[44px] leading-none tabular-nums text-brand">
+                  {money(f.month.total, f.terms.currency)}
+                  {otherLine(f.month.otherExtras)}
+                </p>
+                <p className="mt-1.5 text-[13px] tabular-nums text-muted">
+                  {hrs(f.month.hours)} × {money(f.month.rate, f.terms.currency)}/h
+                  {f.month.extras > 0 && ` + ${money(f.month.extras, f.terms.currency)} extras`}
+                </p>
+              </div>
+              <div className="ml-auto flex flex-col items-end gap-2 text-[13px]">
+                {f.hasLogin ? (
+                  <span className="flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 font-medium text-brand-dark">
+                    <Check size={14} /> Hours from their own log
+                  </span>
+                ) : f.pendingCount > 0 ? (
+                  <span className="flex items-center gap-1.5 rounded-full bg-warning/15 px-2.5 py-1 font-medium text-[#855800]">
+                    <Clock size={14} /> {f.pendingCount} waiting for review
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-medium text-success">
+                    <Check size={14} /> Nothing waiting
+                  </span>
+                )}
+                {!f.active && !f.hasLogin && (
+                  <span className="flex items-center gap-1.5 rounded-full bg-danger/10 px-2.5 py-1 font-medium text-danger">
+                    <LinkIcon size={14} /> Link switched off
+                  </span>
+                )}
+              </div>
             </div>
           </Link>
         ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { smoothPath } from "@/lib/smooth-line";
+import { GridLine, HoverDot, HoverGuide } from "@/components/line-style";
 import { useState } from "react";
 import { ChartLegend, ChartTip, TipRow, niceMax, useChartText } from "@/components/finance/finance-charts";
 import { formatILSShort } from "@/lib/finance/format";
@@ -35,13 +37,13 @@ export function ScenarioChart({ months, series, floor, floorLabel }: { months: Y
   const plotH = H - PAD.t - PAD.b;
   const x = (i: number) => PAD.l + (months.length > 1 ? (i / (months.length - 1)) * plotW : plotW / 2);
   const y = (v: number) => PAD.t + ((top - v) / (top - bottom || 1)) * plotH;
-  const path = (vals: number[]) => vals.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
+  // The app's one line style (line-style.tsx): fluid lines. Several scenarios
+  // share the chart, each with its good-to-bad range, so the range band is the
+  // fill here — a gradient under every line would bury the others.
+  const pts = (vals: number[]) => vals.map((v, i) => ({ x: x(i), y: y(v) }));
+  const path = (vals: number[]) => smoothPath(pts(vals));
   const band = (lo: number[], hi: number[]) =>
-    `${hi.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")} ${lo
-      .map((v, i) => [i, v] as const)
-      .reverse()
-      .map(([i, v]) => `L${x(i)},${y(v)}`)
-      .join(" ")} Z`;
+    `${smoothPath(pts(hi))} ${smoothPath(pts(lo).reverse()).replace(/^M/, "L")} Z`;
   const ticks = 4;
   const grid = Array.from({ length: ticks + 1 }, (_, i) => bottom + ((top - bottom) * i) / ticks);
 
@@ -61,7 +63,7 @@ export function ScenarioChart({ months, series, floor, floorLabel }: { months: Y
       >
         {grid.map((v) => (
           <g key={v}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
+            <GridLine x1={PAD.l} x2={W - PAD.r} y={y(v)} />
             <text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" fontSize={t.fs(13)} fill="var(--muted)">
               {formatILSShort(v)}
             </text>
@@ -80,14 +82,14 @@ export function ScenarioChart({ months, series, floor, floorLabel }: { months: Y
           <g key={s.name}>
             <path d={band(s.bad, s.good)} fill={s.color} opacity={0.1} />
             <path d={path(s.bad)} fill="none" stroke={s.color} strokeWidth={1} strokeDasharray="3 3" opacity={0.7} />
-            <path d={path(s.mid)} fill="none" stroke={s.color} strokeWidth={2.25} strokeLinejoin="round" />
+            <path d={path(s.mid)} fill="none" stroke={s.color} strokeWidth={2.25} strokeLinejoin="round" strokeLinecap="round" />
           </g>
         ))}
         {hover != null && (
           <g pointerEvents="none">
-            <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + plotH} stroke="var(--border-strong)" />
+            <HoverGuide x={x(hover)} y1={PAD.t} y2={PAD.t + plotH} />
             {series.map((s) => (
-              <circle key={s.name} cx={x(hover)} cy={y(s.mid[hover])} r={3.5} fill={s.color} stroke="var(--surface)" strokeWidth={1.5} />
+              <HoverDot key={s.name} x={x(hover)} y={y(s.mid[hover])} color={s.color} />
             ))}
           </g>
         )}

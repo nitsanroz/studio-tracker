@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PanelFold } from "@/components/panel-fold";
+import { FilledLine, GridLine, HoverDot, HoverGuide, SmoothLine } from "@/components/line-style";
 import { useFold } from "@/lib/use-fold";
 import { createClient } from "@/lib/finance/supabase-client";
 import { fetchAll } from "@/lib/finance/db";
@@ -189,46 +190,94 @@ const CW = 300;
 const CH = 96;
 const CP = { l: 4, r: 4, t: 8, b: 16 };
 
-/** This year as a line (dashed where it is a forecast), last year as a thin grey one. */
+/** Invisible columns that tell a chart which point the pointer is over. */
+function HoverColumns({ xs, onHover }: { xs: number[]; onHover: (i: number | null) => void }) {
+  return (
+    <>
+      {xs.map((cx, i) => {
+        const left = i === 0 ? 0 : (xs[i - 1] + cx) / 2;
+        const right = i === xs.length - 1 ? CW : (cx + xs[i + 1]) / 2;
+        return (
+          <rect key={i} x={left} y={0} width={right - left} height={CH} fill="transparent"
+            onMouseEnter={() => onHover(i)} onMouseLeave={() => onHover(null)} />
+        );
+      })}
+    </>
+  );
+}
+
+/** This year as a line (dashed where it is a forecast), last year as a thin grey
+ *  one — in the app's one line style (line-style.tsx): this year filled, a dot and
+ *  its figure only where you hover. */
 function MonthLines({ months, through, max }: { months: Trends["months"]; through: number; max: number }) {
+  const [hover, setHover] = useState<number | null>(null);
   const x = (m: number) => CP.l + ((m - 1) / 11) * (CW - CP.l - CP.r);
   const y = (v: number) => CP.t + (1 - v / max) * (CH - CP.t - CP.b);
-  const path = (pts: { m: number; v: number }[]) => pts.map((p, i) => `${i ? "L" : "M"}${x(p.m).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const baseY = CH - CP.b;
+  const pts = (ms: { m: number; v: number }[]) => ms.map((p) => ({ x: x(p.m), y: y(p.v) }));
   const real = months.filter((m) => m.amount > 0 && m.month <= through && !m.predicted);
   const lastReal = real.at(-1)?.month ?? 0;
   const ahead = months.filter((m) => m.amount > 0 && m.month >= lastReal && (m.month > through || m.predicted || m.month === lastReal));
   const before = months.filter((m) => m.lastYear != null && m.lastYear > 0);
+  const hm = hover != null ? months[hover] : null;
   return (
     <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full" role="img" aria-label="This year month by month, against last year">
-      {before.length > 1 && <path d={path(before.map((m) => ({ m: m.month, v: m.lastYear ?? 0 })))} fill="none" stroke="var(--faint)" strokeWidth={1.25} />}
-      {real.length > 1 && <path d={path(real.map((m) => ({ m: m.month, v: m.amount })))} fill="none" stroke="var(--brand)" strokeWidth={2.25} strokeLinejoin="round" />}
-      {ahead.length > 1 && <path d={path(ahead.map((m) => ({ m: m.month, v: m.amount })))} fill="none" stroke="var(--brand)" strokeWidth={2} strokeDasharray="4 3" opacity={0.6} />}
-      {real.map((m) => (
-        <circle key={m.month} cx={x(m.month)} cy={y(m.amount)} r={2.25} fill="var(--brand)" />
+      {[0, 0.5, 1].map((g) => (
+        <GridLine key={g} x1={CP.l} x2={CW - CP.r} y={CP.t + g * (CH - CP.t - CP.b)} />
       ))}
+      <SmoothLine pts={pts(before.map((m) => ({ m: m.month, v: m.lastYear ?? 0 })))} color="var(--faint)" width={1.25} />
+      <FilledLine pts={pts(real.map((m) => ({ m: m.month, v: m.amount })))} baseY={baseY} color="var(--brand)" width={2.25} />
+      <SmoothLine pts={pts(ahead.map((m) => ({ m: m.month, v: m.amount })))} color="var(--brand)" dashed opacity={0.6} />
+      {hm && (
+        <>
+          <HoverGuide x={x(hm.month)} y1={CP.t} y2={baseY} />
+          {hm.lastYear != null && hm.lastYear > 0 && <HoverDot x={x(hm.month)} y={y(hm.lastYear)} color="var(--faint)" r={2.75} />}
+          {hm.amount > 0 && (
+            <>
+              <HoverDot x={x(hm.month)} y={y(hm.amount)} color="var(--brand)" r={3.25} />
+              <text x={Math.min(Math.max(x(hm.month), 22), CW - 22)} y={Math.max(y(hm.amount) - 7, 8)} textAnchor="middle"
+                fontSize={9} fontWeight={600} fill="var(--foreground)" className="tabular-nums" pointerEvents="none">
+                {formatILSShort(hm.amount)}
+              </text>
+            </>
+          )}
+        </>
+      )}
       {months.map((m) => (
-        <text key={m.month} x={x(m.month)} y={CH - 3} textAnchor="middle" fontSize={9} fill="var(--faint)">
+        <text key={m.month} x={x(m.month)} y={CH - 3} textAnchor="middle" fontSize={9}
+          fill={hover != null && months[hover].month === m.month ? "var(--foreground)" : "var(--faint)"}>
           {MONTH_SHORT[m.month - 1][0]}
         </text>
       ))}
+      <HoverColumns xs={months.map((m) => x(m.month))} onHover={setHover} />
     </svg>
   );
 }
 
-/** The last years as one line; a year still running ends in a hollow point. */
+/** The last years as one filled line, each year's figure above it; a year still
+ *  running is a hollow point of its own (it isn't comparable, so not joined). */
 function YearLine({ years, max }: { years: Trends["years"]; max: number }) {
+  const [hover, setHover] = useState<number | null>(null);
   const n = years.length;
   const x = (i: number) => CP.l + 18 + (n > 1 ? i / (n - 1) : 0.5) * (CW - CP.l - CP.r - 36);
   const y = (v: number) => CP.t + 10 + (1 - v / max) * (CH - CP.t - CP.b - 10);
-  const done = years.filter((yr) => !yr.partial);
-  const d = done.map((yr) => `${years.indexOf(yr) ? "L" : "M"}${x(years.indexOf(yr)).toFixed(1)},${y(yr.amount).toFixed(1)}`).join(" ").replace(/^L/, "M");
+  const baseY = CH - CP.b;
+  const done = years.flatMap((yr, i) => (yr.partial ? [] : [{ x: x(i), y: y(yr.amount) }]));
   return (
     <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full" role="img" aria-label="Year by year">
-      {done.length > 1 && <path d={d} fill="none" stroke="var(--brand)" strokeWidth={2.25} strokeLinejoin="round" />}
+      {[0, 1].map((g) => (
+        <GridLine key={g} x1={CP.l} x2={CW - CP.r} y={CP.t + 10 + g * (CH - CP.t - CP.b - 10)} />
+      ))}
+      <FilledLine pts={done} baseY={baseY} color="var(--brand)" width={2.25} />
       {years.map((yr, i) => (
         <g key={yr.year}>
-          <circle cx={x(i)} cy={y(yr.amount)} r={3} fill={yr.partial ? "var(--surface)" : "var(--brand)"} stroke="var(--brand)" strokeWidth={1.5} />
-          <text x={x(i)} y={y(yr.amount) - 7} textAnchor="middle" fontSize={9} fill="var(--muted)" className="tabular-nums">
+          {yr.partial ? (
+            <circle cx={x(i)} cy={y(yr.amount)} r={3} fill="var(--surface)" stroke="var(--brand)" strokeWidth={1.5} />
+          ) : (
+            hover === i && <HoverDot x={x(i)} y={y(yr.amount)} color="var(--brand)" r={3.25} />
+          )}
+          <text x={x(i)} y={y(yr.amount) - 7} textAnchor="middle" fontSize={9}
+            fill={hover === i ? "var(--foreground)" : "var(--muted)"} className="tabular-nums">
             {formatILSShort(yr.amount)}
           </text>
           <text x={x(i)} y={CH - 3} textAnchor="middle" fontSize={9} fill="var(--faint)">
@@ -236,6 +285,7 @@ function YearLine({ years, max }: { years: Trends["years"]; max: number }) {
           </text>
         </g>
       ))}
+      <HoverColumns xs={years.map((_, i) => x(i))} onHover={setHover} />
     </svg>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { smoothPath } from "@/lib/smooth-line";
+import { FilledLine, GridLine, HoverDot, HoverGuide, SmoothLine } from "@/components/line-style";
 import { formatILS, formatILSShort, formatNum, formatPct, formatShortYear } from "@/lib/finance/format";
 import { MONTH_SHORT } from "@/lib/finance/finance";
 import { usePhone } from "@/lib/finance/use-phone";
@@ -131,26 +133,9 @@ function LineTip({ leftPct, minW, children }: { leftPct: number; minW?: string; 
   );
 }
 
-/** Smooth Catmull-Rom-ish bezier through a point list — the studio tracker's
- * line-chart curve, reused so our trend lines read the same way. */
-export function smoothPath(pts: { x: number; y: number }[]): string {
-  if (pts.length === 0) return "";
-  if (pts.length < 3) return "M" + pts.map((p) => `${p.x},${p.y}`).join(" L");
-  const t = 0.16;
-  let d = `M${pts[0].x},${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    const c1x = p1.x + (p2.x - p0.x) * t;
-    const c1y = p1.y + (p2.y - p0.y) * t;
-    const c2x = p2.x - (p3.x - p1.x) * t;
-    const c2y = p2.y - (p3.y - p1.y) * t;
-    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
-  }
-  return d;
-}
+/** The app's one line curve (lib/smooth-line.ts), re-exported for the finance
+ * charts that import it from here. */
+export { smoothPath };
 
 interface FinanceEvent {
   year: number;
@@ -364,13 +349,22 @@ export function TrendChart({
       <defs>
         <clipPath id={`tc-up-${uid}`}><rect x={0} y={0} width={VB_W} height={yMar(0)} /></clipPath>
         <clipPath id={`tc-dn-${uid}`}><rect x={0} y={yMar(0)} width={VB_W} height={VB_H - yMar(0)} /></clipPath>
+        {/* the app's one line style: the fill fades toward the zero line */}
+        <linearGradient id={`tc-gup-${uid}`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={PAD.t} y2={yMar(0)}>
+          <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.22} />
+          <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
+        </linearGradient>
+        <linearGradient id={`tc-gdn-${uid}`} gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={PAD.t + plotH} y2={yMar(0)}>
+          <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.22} />
+          <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
+        </linearGradient>
       </defs>
       <g pointerEvents="none">
         <path d={marSolid} fill="none" stroke="var(--surface)" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" />
         <path d={marDashed} fill="none" stroke="var(--surface)" strokeWidth={5} strokeLinejoin="round" strokeLinecap="round" />
         {([["up", "var(--brand)"], ["dn", "var(--danger)"]] as const).map(([side, color]) => (
           <g key={side} clipPath={`url(#tc-${side}-${uid})`}>
-            <path d={marArea} fill={color} opacity={0.1} />
+            <path d={marArea} fill={`url(#tc-g${side}-${uid})`} />
             <path d={marSolid} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             <path d={marDashed} fill="none" stroke={color} strokeWidth={2} strokeDasharray="4 3"
               strokeLinejoin="round" strokeLinecap="round" opacity={0.7} />
@@ -387,9 +381,11 @@ export function TrendChart({
         <g pointerEvents="none">
           {ghostLine && <path d={ghostLine} fill="none" stroke="var(--surface)" strokeWidth={5} />}
           {ghostLine && <path d={ghostLine} fill="none" stroke={ACC_COLOR} strokeWidth={2} strokeDasharray="6 4" />}
-          {ghostPts.map((p, k) => (
-            <circle key={k} cx={p.x} cy={p.y} r={4} fill={ACC_COLOR} stroke="var(--surface)" strokeWidth={1.5} />
-          ))}
+          {/* a dot only where you hover — or the one point, when there is no line */}
+          {ghostPts.length === 1 && <HoverDot x={ghostPts[0].x} y={ghostPts[0].y} color={ACC_COLOR} r={4} />}
+          {ghostPts.length > 1 && hover != null && ghosts[hover] && (
+            <HoverDot x={cx(hover)} y={yMar(ghosts[hover]!.margin)} color={ACC_COLOR} r={4} />
+          )}
         </g>
       )}
 
@@ -683,20 +679,18 @@ export function RateTrendChart({ points }: { points: RatePoint[] }) {
           setHover(Math.max(0, Math.min(points.length - 1, Math.floor((x - pad.l) / band))));
         }}
         onMouseLeave={() => setHover(null)}>
-        <path d={smoothPath(pts.slice(0, solidEnd))} fill="none" stroke="var(--brand)" strokeWidth={2}
-          strokeLinejoin="round" strokeLinecap="round" />
+        {[0, 0.5, 1].map((g) => (
+          <GridLine key={g} x1={pad.l} x2={W - pad.r} y={pad.t + plotH * g} />
+        ))}
+        <FilledLine pts={pts.slice(0, solidEnd)} baseY={pad.t + plotH} color="var(--brand)" />
         {solidEnd < pts.length && (
-          <path d={smoothPath(pts.slice(solidEnd - 1))} fill="none" stroke="var(--brand)" strokeWidth={2}
-            strokeDasharray="3 2.5" opacity={0.55} strokeLinejoin="round" strokeLinecap="round" />
+          <SmoothLine pts={pts.slice(solidEnd - 1)} color="var(--brand)" dashed opacity={0.55} />
         )}
         {hover != null && (
           <g>
-            <line x1={pts[hover].x} x2={pts[hover].x} y1={pad.t} y2={H - pad.b} stroke="var(--border-strong)" strokeDasharray="3 3" />
-            <circle cx={pts[hover].x} cy={pts[hover].y} r={4} fill="var(--surface)" stroke="var(--brand)" strokeWidth={2} />
+            <HoverGuide x={pts[hover].x} y1={pad.t} y2={H - pad.b} />
+            <HoverDot x={pts[hover].x} y={pts[hover].y} color="var(--brand)" />
           </g>
-        )}
-        {hover == null && (
-          <circle cx={pts[lastIdx].x} cy={pts[lastIdx].y} r={3.5} fill="var(--brand)" />
         )}
         {points.map((p, i) => (
           <g key={String(p.year)}>
@@ -960,8 +954,13 @@ export function PieChart({
   size,
   formatValue = formatILS,
   formatTotal = formatILSShort,
+  amounts = "list",
 }: {
   slices: PieSlice[];
+  /** "list" shows each slice's amount in the legend; "hover" keeps the legend
+   * to names and shares, and the amount appears in the donut's middle while a
+   * slice or its row is hovered (Nitsan, 2026-11-16: "percentage is enough"). */
+  amounts?: "list" | "hover";
   /** A slice's value — ₪ by default; e.g. hours for a share of time. */
   formatValue?: (v: number) => string;
   /** The total in the donut's middle. */
@@ -1008,12 +1007,27 @@ export function PieChart({
           <path key={i} d={a.d} fill={a.color}
             opacity={hover == null || hover === i ? 1 : 0.35}
             onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
-            <title>{`${a.slice.label}: ${formatValue(a.slice.value)} (${formatPct(a.share)})`}</title>
+            {amounts === "list" && <title>{`${a.slice.label}: ${formatValue(a.slice.value)} (${formatPct(a.share)})`}</title>}
           </path>
         ))}
-        <text x={100} y={96} textAnchor="middle" fontSize={13} fill="var(--muted)">Total</text>
-        <text x={100} y={114} textAnchor="middle" fontSize={15} fontWeight={600}
-          fill="var(--foreground)">{formatTotal(total)}</text>
+        {hover != null ? (
+          // the hovered slice, in the middle: its name, amount and share
+          <>
+            <text x={100} y={88} textAnchor="middle" fontSize={11} fill="var(--muted)"
+              direction={/[\u0590-\u05FF]/.test(arcs[hover].slice.label) ? "rtl" : "ltr"}>
+              {arcs[hover].slice.label.length > 16 ? arcs[hover].slice.label.slice(0, 15) + "…" : arcs[hover].slice.label}
+            </text>
+            <text x={100} y={106} textAnchor="middle" fontSize={15} fontWeight={600}
+              fill="var(--foreground)">{formatTotal(arcs[hover].slice.value)}</text>
+            <text x={100} y={121} textAnchor="middle" fontSize={11} fill="var(--faint)">{formatPct(arcs[hover].share)}</text>
+          </>
+        ) : (
+          <>
+            <text x={100} y={96} textAnchor="middle" fontSize={13} fill="var(--muted)">Total</text>
+            <text x={100} y={114} textAnchor="middle" fontSize={15} fontWeight={600}
+              fill="var(--foreground)">{formatTotal(total)}</text>
+          </>
+        )}
       </svg>
       <ul className={layout === "side" ? "min-w-0 flex-1 space-y-1.5 self-center text-sm" : "w-full min-w-0 space-y-1 text-sm"}>
         {arcs.map((a, i) => (
@@ -1022,9 +1036,12 @@ export function PieChart({
             onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
             style={{ opacity: hover == null || hover === i ? 1 : 0.5 }}>
             <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: a.color }} />
-            <span className="bidi-auto min-w-0 flex-1 truncate">{a.slice.label}</span>
-            <span className="shrink-0 tabular-nums text-muted">{formatValue(a.slice.value)}</span>
-            <span className="w-12 shrink-0 text-right tabular-nums text-faint">{formatPct(a.share)}</span>
+            {/* Hebrew and English names on ONE left edge: plaintext gives each
+                its own reading order, text-left stops a Hebrew one from
+                aligning right against the amount (Nitsan, 2026-11-16). */}
+            <span className="bidi-auto min-w-0 flex-1 truncate text-left">{a.slice.label}</span>
+            {amounts === "list" && <span className="shrink-0 tabular-nums text-muted">{formatValue(a.slice.value)}</span>}
+            <span className={`w-12 shrink-0 text-right tabular-nums ${amounts === "list" ? "text-faint" : "text-muted"}`}>{formatPct(a.share)}</span>
           </li>
         ))}
       </ul>
@@ -1652,7 +1669,7 @@ export function MultiMonthlyLineChart({
                 <div key={r.label} className="flex items-center gap-2">
                   <span className="h-6 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: r.color }} />
                   <div className="min-w-0 flex-1">
-                    <div className="bidi-auto max-w-24 truncate text-[10px] text-muted">{r.label}</div>
+                    <div className="bidi-auto max-w-24 truncate text-left text-[10px] text-muted">{r.label}</div>
                     <div className="text-[11px] font-semibold tabular-nums">{formatILS(r.v)}</div>
                   </div>
                 </div>

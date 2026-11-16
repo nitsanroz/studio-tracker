@@ -4,6 +4,7 @@
 // condition — raiseAdvice (lib/people.ts) laid out as a verdict, three key
 // figures, the why and the condition, and their salary over time.
 
+import { BarCaret } from "@/components/caret";
 import {
   ArrowRight,
   BarChart3,
@@ -251,9 +252,12 @@ function HoursMeter({ now, need, year }: { now: number; need: number; year: numb
     <div>
       <div className="relative h-2.5 rounded-full bg-surface-2">
         <div className="h-2.5 rounded-full" style={{ width: `${(now / max) * 100}%`, background: met ? "var(--success)" : "var(--warning)" }} />
-        <div className="absolute -top-1 h-4.5 w-0.5 rounded bg-foreground" style={{ left: `${(need / max) * 100}%` }} title={`Needs ${Math.round(need)}h`} />
       </div>
-      <div className="mt-1 flex justify-between text-[11px] text-muted tabular-nums">
+      {/* what it needs: a caret under the bar pointing up at it (caret.tsx) */}
+      <div className="relative h-2">
+        <BarCaret left={`${(need / max) * 100}%`} offset={1} className="text-foreground/70" title={`Needs ${Math.round(need)}h`} />
+      </div>
+      <div className="mt-0.5 flex justify-between text-[11px] text-muted tabular-nums">
         <span>
           Now <b className="text-foreground">{Math.round(now)}h</b>
           {year != null && <span className="text-faint"> · 12 months {Math.round(year)}h</span>}
@@ -314,7 +318,16 @@ function SalaryHistory({ slips, unit, target, when }: { slips: PayslipMonth[]; u
             </text>
           </g>
         ))}
-        <path d={`${d} V${H - b} H${x(idx(pts[0].k))} Z`} fill="var(--brand)" opacity={0.07} />
+        {/* The app's line fill (line-style.tsx). Steps, not a curve: a salary
+            holds until the next payslip changes it — smoothing would draw raises
+            that never happened. Raise markers stay; they are events, not points. */}
+        <defs>
+          <linearGradient id="salary-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.22} />
+            <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={`${d} V${H - b} H${x(idx(pts[0].k))} Z`} fill="url(#salary-fill)" />
         <path d={d} fill="none" stroke="var(--brand)" strokeWidth={1.8} strokeLinejoin="round" />
         {raises.map((p) => (
           <g key={p.k}>

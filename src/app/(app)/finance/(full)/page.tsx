@@ -411,7 +411,7 @@ export default function OverviewPage() {
             </span>
           </div>
           {clientView.clients.length > 0 ? (
-            <PieChart slices={clientPie} layout="side" size={200} />
+            <PieChart slices={clientPie} layout="side" size={200} amounts="hover" />
           ) : (
             <p className="py-10 text-center text-sm text-faint">
               No client data for {spanLabel}.
@@ -445,7 +445,7 @@ export default function OverviewPage() {
             </span>
           </div>
           {vendorView.vendors.length > 0 ? (
-            <PieChart slices={vendorPie} layout="side" size={200} />
+            <PieChart slices={vendorPie} layout="side" size={200} amounts="hover" />
           ) : (
             <p className="py-10 text-center text-sm text-faint">
               No expense data for {spanLabel}.

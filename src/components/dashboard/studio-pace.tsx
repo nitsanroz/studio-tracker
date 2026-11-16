@@ -1,5 +1,6 @@
 "use client";
 
+import { BarCaret, Caret } from "@/components/caret";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -137,42 +138,40 @@ function PaceMeter({ pace, min, goal }: { pace: number | null; min: number; goal
   const tone = pace == null ? "text-white/60" : pace >= goal ? "text-[#4ade80]" : pace >= min ? "text-[#fbbf24]" : "text-[#f87171]";
   return (
     <div className="w-[44%] shrink-0" role="img" aria-label="Your pace against the minimum and the goal">
-      <div className="relative h-5">
+      {/* the pace's label, then a caret pointing down at its place on the
+          bar (no tick through the bar — caret.tsx) */}
+      <div className="relative h-6">
+        {pace != null && <BarCaret left={at(pace)} dir="down" offset={0} className={tone} />}
         {pace != null && (
           <span
-            className={`absolute bottom-0 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums ${tone}`}
+            className={`absolute top-0 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums ${tone}`}
             style={{ left: `clamp(2.5rem, ${at(pace)}, calc(100% - 2.5rem))` }}
           >
             {h(pace)} <span className="font-normal text-white/60">your pace</span>
           </span>
         )}
       </div>
-      <div className="relative mt-1 flex h-2.5 overflow-hidden rounded-full">
+      <div className="relative mt-0.5 flex h-2.5 overflow-hidden rounded-full">
         <div className="bg-[#f87171]/45" style={{ width: at(min) }} />
         <div className="bg-[#fbbf24]/45" style={{ width: `calc(${at(goal)} - ${at(min)})` }} />
         <div className="flex-1 bg-[#4ade80]/45" />
       </div>
       <div className="relative">
-        {pace != null && (
-          <div
-            className="absolute -top-[17px] h-5 w-1 -translate-x-1/2 rounded-full bg-white ring-2 ring-[#06112f]"
-            style={{ left: at(pace) }}
-          />
-        )}
         {[
           { v: min, cls: "text-[#f87171]" },
           { v: goal, cls: "text-[#4ade80]" },
         ].map((m) => (
           <span
             key={m.v}
-            className={`absolute top-1 -translate-x-1/2 text-[11px] font-medium tabular-nums ${m.cls}`}
+            className={`absolute top-0.5 flex -translate-x-1/2 flex-col items-center text-[11px] font-medium tabular-nums ${m.cls}`}
             style={{ left: at(m.v) }}
           >
+            <Caret dir="up" size={8} />
             {h(m.v)}
           </span>
         ))}
       </div>
-      <div className="h-5" />
+      <div className="h-7" />
     </div>
   );
 }

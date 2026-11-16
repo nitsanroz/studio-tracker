@@ -2,6 +2,8 @@
 
 import { useId, useState } from "react";
 import { formatHoursShort } from "@/lib/format";
+import { smoothPath } from "@/lib/smooth-line";
+import { FilledLine, GridLine, HoverDot } from "./line-style";
 
 /** Horizontal bar with a label row. Values in minutes. */
 export function HBar({
@@ -235,9 +237,8 @@ export function PercentRing({
 }
 
 /**
- * Line chart. Values in minutes. A small circle marks each point with its value
- * label above it; when points are too dense to label cleanly, the value shows on
- * hover only. Used for "hours per month".
+ * Line chart. Values in minutes; the value of a point shows where you hover.
+ * Used for "hours per month".
  */
 export function LineChart({ points }: { points: { label: string; minutes: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -253,43 +254,36 @@ export function LineChart({ points }: { points: { label: string; minutes: number
   const n = points.length;
   const x = (i: number) => (n === 1 ? W / 2 : padX + (i / (n - 1)) * innerW);
   const y = (m: number) => padTop + innerH - (m / max) * innerH;
-  const alwaysLabel = n <= 6; // enough room to show every value; else hover-only
+  const baseY = padTop + innerH;
+  const brand = "var(--brand)";
+  const pts = points.map((p, i) => ({ x: x(i), y: y(p.minutes) }));
 
-  const linePts = points.map((p, i) => `${x(i)},${y(p.minutes)}`).join(" ");
-  const brand = "var(--color-brand)";
-
+  // The app's one line style (line-style.tsx): a fluid line over a gradient,
+  // dashed gridlines, and a dot with its value only where you hover.
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Hours per month">
-      <polyline
-        points={linePts}
-        fill="none"
-        style={{ stroke: brand }}
-        strokeWidth={2}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      {[0, 0.5, 1].map((g) => (
+        <GridLine key={g} x1={padX} x2={W - padX} y={padTop + innerH * g} />
+      ))}
+      <FilledLine pts={pts} baseY={baseY} color={brand} />
+      {hover != null && (
+        <>
+          <HoverDot x={pts[hover].x} y={pts[hover].y} color={brand} />
+          <text
+            x={pts[hover].x}
+            y={pts[hover].y - 7}
+            textAnchor="middle"
+            fontSize={9}
+            fontWeight={600}
+            style={{ fill: "var(--foreground)" }}
+          >
+            {formatHoursShort(points[hover].minutes)}
+          </text>
+        </>
+      )}
       {points.map((p, i) => (
         <g key={`${p.label}-${i}`}>
-          <circle
-            cx={x(i)}
-            cy={y(p.minutes)}
-            r={hover === i ? 4 : 3}
-            style={{ fill: "var(--color-surface)", stroke: brand }}
-            strokeWidth={2}
-          />
-          {(alwaysLabel || hover === i) && (
-            <text
-              x={x(i)}
-              y={y(p.minutes) - 7}
-              textAnchor="middle"
-              fontSize={9}
-              fontWeight={600}
-              style={{ fill: "var(--color-foreground)" }}
-            >
-              {formatHoursShort(p.minutes)}
-            </text>
-          )}
-          <text x={x(i)} y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: "var(--color-faint)" }}>
+          <text x={x(i)} y={H - 5} textAnchor="middle" fontSize={8} style={{ fill: "var(--faint)" }}>
             {p.label}
           </text>
           {/* invisible hover target spanning the column */}
@@ -314,26 +308,6 @@ export function LineChart({ points }: { points: { label: string; minutes: number
  * hours; hovering dims the other lines. Values in minutes. A color legend renders
  * below. Used for the admin "hours by client over time" overview.
  */
-/** Catmull-Rom → cubic-bezier smoothing for a soft line (reference: Sales Report). */
-function smoothPath(pts: { x: number; y: number }[]): string {
-  if (pts.length === 0) return "";
-  if (pts.length < 3) return "M" + pts.map((p) => `${p.x},${p.y}`).join(" L");
-  const t = 0.16;
-  let d = `M${pts[0].x},${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    const c1x = p1.x + (p2.x - p0.x) * t;
-    const c1y = p1.y + (p2.y - p0.y) * t;
-    const c2x = p2.x - (p3.x - p1.x) * t;
-    const c2y = p2.y - (p3.y - p1.y) * t;
-    d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
-  }
-  return d;
-}
-
 export function MultiLineChart({
   labels,
   series,

@@ -4,6 +4,7 @@
 // finance-charts.tsx). Each one answers one question at a glance and keeps its
 // exact numbers one hover away.
 
+import { Caret } from "@/components/caret";
 import type { ReactNode } from "react";
 import { InfoDot } from "@/components/finance/ui";
 import { formatILS, formatNum, formatPct } from "@/lib/finance/format";
@@ -120,10 +121,11 @@ export function Meter({
     <div>
       <div className="relative h-3 rounded-full bg-surface-2">
         <div className={`h-3 rounded-full ${short ? "bg-[var(--warning)]" : "bg-brand"}`} style={{ width: pct(value) }} />
-        <div className="absolute -top-1 h-5 w-0.5 rounded bg-foreground" style={{ left: pct(target) }} title={targetLabel} />
       </div>
-      <div className="relative mt-1 h-4 text-[11px] text-faint">
-        <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(target) }}>
+      {/* the target hangs under the bar: a caret pointing up, its label beneath (caret.tsx) */}
+      <div className="relative mt-0.5 h-5 text-[11px] text-faint">
+        <span className="absolute flex -translate-x-1/2 flex-col items-center whitespace-nowrap" style={{ left: pct(target) }} title={targetLabel}>
+          <Caret dir="up" size={8} className="text-foreground/70" />
           {targetLabel} · {format(target)}
         </span>
       </div>
@@ -140,25 +142,23 @@ export function ReturnScale({ value, needed }: { value: number; needed: number |
   return (
     <div className="pt-1">
       <div className="relative h-3 rounded-full" style={{ background: "linear-gradient(to right, #fde2e2, #fef3c7 40%, #dcfce7)" }}>
-        {[1, needed].map((m, i) =>
-          m != null ? (
-            <div key={i} className="absolute -top-1 h-5 w-0.5 rounded bg-foreground/40" style={{ left: pct(m) }} />
-          ) : null,
-        )}
         <div
           className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
           style={{ left: pct(value), background: tone }}
           title={`${value.toFixed(1)}×`}
         />
       </div>
-      <div className="relative mt-1 h-8 text-[11px] leading-tight text-faint">
-        <span className="absolute -translate-x-1/2 text-center" style={{ left: pct(1) }}>
+      {/* each mark hangs under the bar: a caret pointing up, its words beneath (caret.tsx) */}
+      <div className="relative mt-0.5 h-10 text-[11px] leading-tight text-faint">
+        <span className="absolute flex -translate-x-1/2 flex-col items-center text-center" style={{ left: pct(1) }}>
+          <Caret dir="up" size={8} className="mb-0.5 text-foreground/50" />
           1×
           <br />
           covers pay
         </span>
         {needed != null && (
-          <span className="absolute -translate-x-1/2 text-center" style={{ left: pct(needed) }}>
+          <span className="absolute flex -translate-x-1/2 flex-col items-center text-center" style={{ left: pct(needed) }}>
+            <Caret dir="up" size={8} className="mb-0.5 text-foreground/50" />
             {needed.toFixed(1)}×
             <br />
             + costs &amp; margin

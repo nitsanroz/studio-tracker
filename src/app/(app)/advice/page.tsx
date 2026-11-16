@@ -17,6 +17,8 @@
 //
 // English or Hebrew, the pane's own switch (components/advice-lang.tsx).
 
+import { Sparkline } from "@/components/line-style";
+import { Caret } from "@/components/caret";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Clock3, RotateCw, Sparkles, Undo2, X } from "lucide-react";
@@ -571,20 +573,13 @@ function Stat({ label, value, color, tip, rows = [] }: { label: string; value: n
 
 function PulseTile({ p, tr }: { p: PaneTile; tr: (s: string) => string }) {
   const color = p.good ? "var(--brand)" : "var(--danger)";
-  const min = Math.min(...p.series);
-  const max = Math.max(...p.series);
-  const pts = p.series.map((v, i) => `${(i / Math.max(1, p.series.length - 1)) * 100},${28 - ((v - min) / (max - min || 1)) * 24}`).join(" ");
   return (
     <Tip as="div" title={tr(p.label)} body={tr(p.help)} className="rounded-2xl bg-surface p-3.5 shadow-card">
       <p className="truncate text-[12px] text-muted">{tr(p.label)}</p>
       <p dir="ltr" className="font-serif-accent mt-1.5 text-start text-[24px] leading-none tabular-nums" style={p.good ? undefined : { color }}>
         {p.display}
       </p>
-      {p.series.length >= 2 && (
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="mt-1 h-7 w-full opacity-70" aria-hidden>
-          <polyline points={pts} fill="none" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />
-        </svg>
-      )}
+      <Sparkline series={p.series} color={color} />
       <p className="mt-1 truncate text-[11px] text-faint">{tr(p.note)}</p>
     </Tip>
   );
@@ -620,13 +615,17 @@ function Track({
 }) {
   const x = (v: number) => `${Math.max(0, Math.min(100, (v / scale) * 100))}%`;
   return (
-    <div className="pb-5">
+    <div className="pb-7">
       <div className="relative h-3 rounded-full bg-track">
         {band && <div className="absolute inset-y-0 rounded-full bg-success/20" style={{ insetInlineStart: x(band[0]), width: `${((band[1] - band[0]) / scale) * 100}%` }} />}
         <div className="absolute inset-y-0 rounded-full" style={{ insetInlineStart: 0, width: x(value), background: color }} />
+        {/* each mark hangs under the track: a caret pointing up at its place,
+            its label beneath — no line through the bar (caret.tsx). The w-0
+            column centres both on the point in either direction. */}
         {marks.map((m) => (
-          <div key={m.label} className="absolute -top-1 h-5 w-px bg-foreground" style={{ insetInlineStart: x(m.at) }}>
-            <Tip body={m.tip} className="absolute top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-[11px] text-faint rtl:translate-x-1/2">
+          <div key={m.label} className="absolute top-full mt-0.5 flex w-0 flex-col items-center" style={{ insetInlineStart: x(m.at) }}>
+            <Caret dir="up" size={8} className="text-foreground/70" />
+            <Tip body={m.tip} className="mt-0.5 whitespace-nowrap text-[11px] text-faint">
               {m.label}
             </Tip>
           </div>
@@ -865,7 +864,17 @@ function Figures({ f, he }: { f: BoardFigures; he: Hebrew }) {
                     background: c.hoursShare >= f.bench.clientRed ? "var(--danger)" : c.hoursShare >= f.bench.clientAmber ? "var(--warning)" : "var(--brand)",
                   }}
                 />
-                {[f.bench.clientAmber, f.bench.clientRed].map((m) => (m < clientScale ? <span key={m} className="absolute -inset-y-1 w-px bg-foreground/40" style={{ insetInlineStart: `${(m / clientScale) * 100}%` }} /> : null))}
+                {/* the two thresholds as small carets under the bar, in their own colours */}
+                {[
+                  { m: f.bench.clientAmber, cls: "text-warning" },
+                  { m: f.bench.clientRed, cls: "text-danger" },
+                ].map(({ m, cls }) =>
+                  m < clientScale ? (
+                    <span key={m} className={`absolute top-full mt-px flex w-0 justify-center ${cls}`} style={{ insetInlineStart: `${(m / clientScale) * 100}%` }}>
+                      <Caret dir="up" size={7} />
+                    </span>
+                  ) : null,
+                )}
               </span>
               <span className="text-end tabular-nums">{pct(c.hoursShare)}%</span>
               <span className="col-span-3 -mt-1.5 truncate text-[12px] text-faint md:col-span-1 md:mt-0">

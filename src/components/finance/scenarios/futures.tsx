@@ -1,5 +1,6 @@
 "use client";
 
+import { Caret } from "@/components/caret";
 import { useState } from "react";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { Hover } from "@/components/finance/scenarios/hover";
@@ -123,38 +124,44 @@ export function DemandCard({ demand, baseline, onChange, onReset, bare }: { dema
       {/* The three futures on one line, with the past marked beneath. Hours run
           left to right in both languages. */}
       <div className="mt-4" dir="ltr">
-        <div className="relative h-14">
-          <div className="absolute inset-x-0 top-6 h-2 rounded-full bg-[var(--strip)] ring-1 ring-border" />
-          <div className="absolute top-6 h-2 rounded-full bg-gradient-to-r from-red-300 via-brand to-emerald-400" style={{ left: scale(bad), width: `calc(${scale(good)} - ${scale(bad)})` }} />
+        {/* The bar, then each future hanging under it: a small caret pointing
+            up at its place and its word + hours beneath (Nitsan, 2026-11-16:
+            "a triangle from the text pointing to the bar — a more delicate
+            solution" than the dark tick through it). */}
+        <div className="relative h-12">
+          <div className="absolute inset-x-0 top-0 h-2 rounded-full bg-[var(--strip)] ring-1 ring-border" />
+          <div className="absolute top-0 h-2 rounded-full bg-gradient-to-r from-red-300 via-brand to-emerald-400" style={{ left: scale(bad), width: `calc(${scale(good)} - ${scale(bad)})` }} />
           {[
             { h: bad, label: t("Bad"), cls: "text-danger" },
             { h: demand.hours, label: t("Middle"), cls: "text-brand" },
             { h: good, label: t("Good"), cls: "text-success" },
           ].map((p) => (
-            <span key={p.label} className="absolute top-0 -translate-x-1/2 text-center" style={{ left: scale(p.h) }}>
-              <span className={`hidden text-[14px] font-medium leading-5 sm:block ${p.cls}`}>{p.label}</span>
-              <span className="block h-5 sm:hidden" />
-              <span className="mx-auto mt-0.5 block h-4 w-1 rounded-full bg-foreground" />
-              <span className="block text-[15px] font-semibold tabular-nums">{p.h}h</span>
+            <span key={p.label} className="absolute top-2.5 flex -translate-x-1/2 flex-col items-center" style={{ left: scale(p.h) }}>
+              <Caret dir="up" className={p.cls} />
+              <span className="mt-1 whitespace-nowrap text-[15px] leading-5 tabular-nums">
+                <span className={`hidden font-medium sm:inline ${p.cls}`}>{p.label} </span>
+                <span className="font-semibold">{p.h}h</span>
+              </span>
             </span>
           ))}
         </div>
-        <p className="mt-6 flex justify-between text-[15px] font-medium tabular-nums sm:hidden">
+        <p className="mt-3 flex justify-between text-[15px] font-medium tabular-nums sm:hidden">
           <span className="text-danger">{t("Bad")} {bad}h</span>
           <span className="text-brand">{t("Middle")} {demand.hours}h</span>
           <span className="text-success">{t("Good")} {good}h</span>
         </p>
-        {/* The past, right under the bar: a tick up to it and a word.
-            Marks close together drop to a second row so their labels don't collide. */}
-        <div className="relative mt-5" style={{ height: `${pastRows(baseline.references, max) * 26 + 6}px` }}>
+        {/* The past, under the bar: a grey caret pointing up at its place and a
+            word. Marks close together drop to a second row so their labels
+            don't collide. */}
+        <div className="relative mt-5" style={{ height: `${pastRows(baseline.references, max) * 26 + 12}px` }}>
           {placePast(baseline.references, max).map(({ r, row }) => (
             <span
               key={r.label}
-              className="absolute -translate-x-1/2 text-center"
+              className="absolute flex -translate-x-1/2 flex-col items-center text-center"
               style={{ left: scale(r.hours), top: row * 26 }}
               title={t("{label}: {hours}h — the past, for reference only", { label: shortPast(r.label, t), hours: Math.round(r.hours) })}
             >
-              <span className="absolute bottom-full left-1/2 w-px -translate-x-1/2 bg-border-strong" style={{ height: 6 + row * 26 }} />
+              <Caret dir="up" size={8} className="text-faint" />
               <span className="block whitespace-nowrap text-[13px] leading-4 text-muted">{shortPast(r.label, t)}</span>
             </span>
           ))}

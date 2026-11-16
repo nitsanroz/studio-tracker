@@ -6,6 +6,7 @@
 // against the futures; tips; when each decision lands; the full figures folded.
 // English or Hebrew (useT); bars and figures stay left-to-right.
 
+import { BarCaret, Caret } from "@/components/caret";
 import { useState } from "react";
 import { ChevronDown, CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { Hover, HoverTip } from "@/components/finance/scenarios/hover";
@@ -79,7 +80,11 @@ export function RangeBar({ bad, mid, good, line, lineLabel, fmt = k }: { bad: nu
       <div className="relative h-8">
         <div className="absolute inset-x-0 top-3 h-2 rounded-full bg-border/60" />
         <div className="absolute top-3 h-2 rounded-full bg-gradient-to-r from-red-400 via-brand to-emerald-500 opacity-80" style={{ left: x(a), width: `calc(${x(b)} - ${x(a)})` }} />
-        {line != null && <span className="absolute top-0 h-8 w-0.5 -translate-x-1/2 bg-foreground/40" style={{ left: x(line) }} title={lineLabel} />}
+        {/* a caret under the bar at each labelled point, in its label's colour
+            — no line through the bar (caret.tsx) */}
+        <BarCaret left={x(bad)} offset={22} className="text-danger" />
+        <BarCaret left={x(good)} offset={22} className="text-success" />
+        {line != null && <BarCaret left={x(line)} offset={22} className="text-muted" title={lineLabel} />}
         <span className="absolute top-1 size-6 -translate-x-1/2 rounded-full border-[3px] border-white bg-brand shadow" style={{ left: x(mid) }} />
       </div>
       <div className="mt-1 flex justify-between gap-2 text-[15px] tabular-nums">
@@ -182,17 +187,24 @@ export function Outcome({ result: r, futures }: { result: ScenarioResult; future
         <p className={`text-[30px] font-semibold leading-9 tabular-nums ${be == null || be > futures.bad.hours ? "text-danger" : "text-[var(--state-final-fg)]"}`}>
           {be == null ? t("Not within capacity") : t("{hours} a month", { hours: h(be) })}
         </p>
-        <div className="relative mt-3 h-16" dir="ltr">
-          <div className="absolute inset-x-0 top-4 h-3 rounded-full bg-[var(--state-final-bg)]" />
-          {be != null && <div className="absolute left-0 top-4 h-3 rounded-full bg-red-300" style={{ width: px(be) }} />}
-          {FUTURE_IDS.map((id) => (
-            <span key={id} className="absolute top-0 -translate-x-1/2 text-center" style={{ left: px(futures[id].hours) }}>
-              <span className="mx-auto block h-10 w-1 rounded-full bg-foreground/70" />
-              <span className={`block whitespace-nowrap text-[14px] tabular-nums ${id === "bad" ? "text-danger" : id === "good" ? "text-success" : "text-brand"}`}>
-                {t(FUTURE_LABEL[id])} {h(futures[id].hours)}
+        {/* Each future hangs under the bar: a small caret pointing up at its
+            place, its word + hours beneath (Nitsan, 2026-11-16: "a triangle
+            from the text pointing to the bar — a more delicate solution" than
+            the dark tick through it). Same marks as the demand strip. */}
+        <div className="relative mt-3 h-12" dir="ltr">
+          <div className="absolute inset-x-0 top-0 h-3 rounded-full bg-[var(--state-final-bg)]" />
+          {be != null && <div className="absolute left-0 top-0 h-3 rounded-full bg-red-300" style={{ width: px(be) }} />}
+          {FUTURE_IDS.map((id) => {
+            const tone = id === "bad" ? "text-danger" : id === "good" ? "text-success" : "text-brand";
+            return (
+              <span key={id} className="absolute top-3.5 flex -translate-x-1/2 flex-col items-center" style={{ left: px(futures[id].hours) }}>
+                <Caret dir="up" className={tone} />
+                <span className="mt-1 whitespace-nowrap text-[14px] leading-5 tabular-nums">
+                  <span className={tone}>{t(FUTURE_LABEL[id])}</span> <span className="font-semibold">{h(futures[id].hours)}</span>
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
         <p className="mt-2 text-[15px] text-muted">{t("Red is loss, green is profit. Where each future sits shows which side it lands on.")}</p>
       </div>
