@@ -89,7 +89,7 @@ describe("finance's pages (one pane since the finance merge)", () => {
   });
 
   it("the rules that read both sides have a home on each side", () => {
-    expect(pageContext("/finance/rates", "").signals?.has("scope")).toBe(true);
+    expect(pageContext("/clients", "").signals?.has("scope")).toBe(true);
     expect(pageContext("/freelancers", "").signals?.has("freelancer-margin")).toBe(true);
     expect(pageContext("/finance/freelance", "").signals?.has("freelancer-margin")).toBe(true);
     expect(pageContext("/client-reports", "").signals?.has("debt")).toBe(true);

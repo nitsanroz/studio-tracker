@@ -24,6 +24,9 @@ export interface PageContext {
  * say something on each page"), and the figures that belong to it — never
  * Home's again (2026-10-25). Settings has none, so no button there.
  */
+/** What the Rates page used to hold. Rates are a column of Clients since 2026-11-15; the Overview still takes them all. */
+const RATE_SIGNALS = ["no-rate", "unpaid", "debt", "unbilled", "scope", "freelancer-margin", "client-margin", "hour-cost", "rate-age", "hourly-model", "concentration", "client-quiet"];
+
 const PAGES: [string, string, string[], string[]][] = [
   // Finance's pages (the finance merge, stage 4): their figures are the money
   // side's, prefixed "fin:" in run.ts so they never mix with a studio tile of
@@ -33,7 +36,6 @@ const PAGES: [string, string, string[], string[]][] = [
   ["/finance/freelance", "Freelance", ["freelance", "freelancer-margin", "freelance-or-hire", "close", "paid"], ["fin:freelance"]],
   ["/finance/people", "People", ["salaries"], ["fin:salaries"]],
   ["/finance/expenses", "Expenses", ["expense", "unfiled", "fx", "renewal", "overlap", "price-up", "fx-fee", "mail", "tools"], ["fin:filing", "fin:renewals"]],
-  ["/finance/rates", "Rates", ["no-rate", "unpaid", "debt", "unbilled", "scope", "freelancer-margin", "client-margin", "hour-cost", "rate-age", "hourly-model", "concentration", "client-quiet"], ["fin:clients"]],
   [
     "/finance/scenarios",
     "Scenarios",
@@ -47,7 +49,8 @@ const PAGES: [string, string, string[], string[]][] = [
   ["/feed", "Time Feed", ["missing-hours", "internal"], ["team"]],
   ["/settings", "Settings", [], []],
   ["/intake-queue", "Intake", ["intake"], []],
-  ["/clients", "Clients", ["overdue", "unassigned", "client-quiet", "concentration", "client-margin", "unbilled", "hour-cost", "rate-age"], ["concentration"]],
+  // Rates are a column of Clients since 2026-11-15, so the rate rules live here too.
+  ["/clients", "Clients", ["overdue", "unassigned", "client-quiet", "concentration", "client-margin", "unbilled", "hour-cost", "rate-age", "no-rate", "scope", "hourly-model"], ["concentration", "fin:clients"]],
   ["/team", "Team", ["missing-hours", "vacation", "plan-gaps", "internal", "capacity", "freelance-or-hire"], ["plan", "team"]],
   ["/candidates", "Candidates", ["candidates"], []],
   ["/leads", "Leads", ["leads", "concentration", "capacity", "hourly-model"], ["concentration"]],
@@ -69,7 +72,7 @@ export function pageContext(pathname: string, search: string): PageContext {
   const none = { all: false, clientId: null, signals: null, tiles: new Set<string>() };
   if (pathname === "/") return { ...none, label: "Home", all: true, tiles: HOME_TILES };
   if (pathname === "/finance") {
-    const money = new Set(PAGES.filter(([path]) => path.startsWith("/finance/")).flatMap(([, , signals]) => signals));
+    const money = new Set([...PAGES.filter(([path]) => path.startsWith("/finance/")).flatMap(([, , signals]) => signals), ...RATE_SIGNALS]);
     return { ...none, label: "Finance", signals: money.add("idea"), tiles: OVERVIEW_TILES };
   }
   const client = pathname.match(/^\/clients\/([^/]+)/);

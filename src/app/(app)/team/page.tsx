@@ -26,7 +26,9 @@ import {
   type HoursSplit,
 } from "@/lib/hours-split";
 import { MemberTable, type MemberRow } from "./member-table";
-import { PageViews, TEAM_VIEWS } from "@/components/page-views";
+import { useTier } from "@/components/tier-context";
+import { atLeast } from "@/lib/access";
+import { useTeamMoney, MoneyLine } from "@/components/finance/team-money";
 
 type Layout = "cards" | "table";
 const LAYOUT_KEY = "team.layout";
@@ -193,6 +195,8 @@ export default function TeamPage() {
    *  "Q2 2025" would present stale hours as if they were current. */
   const [periodOffset, setPeriodOffset] = useState(0);
   const [layout, setLayout] = useState<Layout>("cards");
+  // Cost, cost an hour and return per person — full finance only (People used to be its own page).
+  const money = useTeamMoney(atLeast(useTier(), "finance"));
 
   // localStorage in an effect, never in a useState initialiser: these pages are
   // still server-prerendered, so reading it during render is a hydration mismatch.
@@ -373,8 +377,6 @@ export default function TeamPage() {
 
   return (
     <div className="flex max-w-[1500px] flex-col gap-4">
-      {/* Team | Pay & HR — what each person costs is finance's page (full finance only). */}
-      <PageViews views={TEAM_VIEWS} className="self-start" />
       <div>
         <h1 className="page-title">
           The <span className="font-serif-accent">team</span>
@@ -445,7 +447,7 @@ export default function TeamPage() {
       {/* Portrait left, everything else stacked left-aligned beside it — wider
           cards than the old centred column, so three across rather than four. */}
       {layout === "table" ? (
-        <MemberTable rows={tableRows} periodLabel={periodLabel} />
+        <MemberTable rows={tableRows} periodLabel={periodLabel} money={money.byId.size ? money : null} />
       ) : (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {team.map((p) => {
@@ -528,6 +530,7 @@ export default function TeamPage() {
                     </div>
                   )}
                 </div>
+                <MoneyLine m={money.byId.get(p.id)} year={money.year} />
               </div>
             </Link>
           );

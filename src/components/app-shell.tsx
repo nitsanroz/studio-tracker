@@ -82,9 +82,7 @@ const under = (pathname: string, prefix: string) => pathname === prefix || pathn
  * its view is `components/page-views.tsx`.
  */
 const VIEW_OF: Record<string, string> = {
-  "/team": "/finance/people",
   "/freelancers": "/finance/freelance",
-  "/clients": "/finance/rates",
   "/advice": "/finance/scenarios",
 };
 
@@ -769,7 +767,9 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
   const pathname = usePathname();
   // Finance has its own frame and its own look (globals.css, FINANCE): the
   // tracker's app-wide card and divider rules stop at its door.
-  const onFinance = pathname === "/finance" || pathname.startsWith("/finance/");
+  // Scenarios is a tab of the advisor (2026-11-15) and takes the advisor page's look,
+  // so it keeps the tracker's canvas like /advice does.
+  const onFinance = (pathname === "/finance" || pathname.startsWith("/finance/")) && !pathname.startsWith("/finance/scenarios");
   const {
     profiles,
     currentUserId,
@@ -1031,8 +1031,8 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
                 className="mt-2 flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-white/10"
                 style={{ color: "var(--sb-muted)" }}
               >
+                <ChevronDown size={13} strokeWidth={2} className={`transition-transform duration-150 ${financeOpen ? "" : "-rotate-90"}`} />
                 Finance
-                <ChevronDown size={13} strokeWidth={2} className={`ml-auto transition-transform duration-150 ${financeOpen ? "" : "-rotate-90"}`} />
               </button>
             ))}
           {financePages

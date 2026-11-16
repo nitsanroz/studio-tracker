@@ -30,30 +30,14 @@ export interface PageView {
   exact?: boolean;
 }
 
-export const TEAM_VIEWS: PageView[] = [
-  { href: "/team", label: "Team", exact: true },
-  { href: "/finance/people", label: "Pay & HR", min: "finance", exact: true },
-];
-
 export const FREELANCER_VIEWS: PageView[] = [
   { href: "/freelancers", label: "Hours" },
   { href: "/finance/freelance", label: "Payments", min: "finance" },
 ];
 
-export const CLIENT_VIEWS: PageView[] = [
-  { href: "/clients", label: "Clients", exact: true },
-  { href: "/finance/rates", label: "Rates", min: "finance" },
-];
-
 export const ADVICE_VIEWS: PageView[] = [
   { href: "/advice", label: "&advice", min: "owner" },
   { href: "/finance/scenarios", label: "Scenarios", min: "owner" },
-];
-
-/** A person's two pages: who they are in the studio, and what they are paid. */
-export const personViews = (id: string): PageView[] => [
-  { href: `/team/${id}`, label: "Profile" },
-  { href: `/finance/people/${id}`, label: "Pay & HR", min: "finance" },
 ];
 
 export function PageViews({ views, className = "" }: { views: PageView[]; className?: string }) {

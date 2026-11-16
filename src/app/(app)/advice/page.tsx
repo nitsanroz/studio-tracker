@@ -20,9 +20,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Clock3, RotateCw, Sparkles, Undo2, X } from "lucide-react";
-import { AdviceLangSwitch, said, useAdviceLang, useHebrew, type Hebrew } from "@/components/advice-lang";
+import { said, useAdviceLang, useHebrew, type Hebrew } from "@/components/advice-lang";
 import { InfoTip, Tip, TipRows, TipScope } from "@/components/advice-tip";
-import { ADVICE_VIEWS, PageViews } from "@/components/page-views";
+import { AdviceTop } from "@/components/advice-top";
 import { FIX_CLASS, UNDO_FAILED, checkedLine, dayLabel, dayOf, fixOf, patch, snoozeLabel, snoozeOptions } from "@/components/advice";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/skeleton";
@@ -39,6 +39,13 @@ import { useDataMaybe } from "@/lib/store";
 import { toast } from "@/lib/toast";
 
 type Loaded = AdviceView & { board: AdviceBoard };
+
+type PageTab = "today" | "studio" | "follow";
+const PAGE_TABS: [PageTab, string][] = [
+  ["today", "Today"],
+  ["studio", "The studio"],
+  ["follow", "Follow-up"],
+];
 
 const KINDS: AdviceKind[] = ["now", "heads", "idea"];
 const KIND_LABEL: Record<AdviceKind, string> = { now: "Do now", heads: "Heads-up", idea: "Idea" };
@@ -58,16 +65,38 @@ export default function AdvicePage() {
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const periodRef = useRef("3m");
   const [group, setGroup] = useState<"urgency" | "subject">("urgency");
+  // The page in three tabs (Nitsan, 2026-11-15: "the page is very long — reorder it or put it in tabs"),
+  // remembered per browser; and the months "The studio in numbers" reads.
+  const [view, setView] = useState<PageTab>("today");
+  const [period, setPeriod] = useState("3m");
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("advice.tab");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read once, from storage
+      if (v === "today" || v === "studio" || v === "follow") setView(v);
+    } catch {
+      /* no storage: Today */
+    }
+  }, []);
+  const pickView = (v: PageTab) => {
+    setView(v);
+    try {
+      window.localStorage.setItem("advice.tab", v);
+    } catch {
+      /* not kept */
+    }
+  };
   const [hold, setHold] = useState(false);
   const [lang] = useAdviceLang();
   const texts = useMemo(() => (data ? viewTexts(data, data.board) : []), [data]);
   const he = useHebrew(lang, texts);
   const { t, tr, rtl } = he;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p: string = periodRef.current) => {
     setChecking(true);
-    const res = await fetch("/api/advice?board=1").catch(() => null);
+    const res = await fetch(`/api/advice?board=1&period=${encodeURIComponent(p)}`).catch(() => null);
     setChecking(false);
     if (!res) return setError("Couldn't reach the tracker.");
     const j = await res.json().catch(() => ({}));
@@ -79,6 +108,11 @@ export default function AdvicePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- opening the page IS the check
     void load();
   }, [load]);
+  const pickPeriod = (p: string) => {
+    setPeriod(p);
+    periodRef.current = p;
+    void load(p);
+  };
   // "Hide numbers" is the header's switch; the page follows it at once.
   useEffect(() => {
     const read = () => setHold(loadHold());
@@ -157,32 +191,46 @@ export default function AdvicePage() {
 
   return (
     <TipScope.Provider value={scope}>
-    <div dir={rtl ? "rtl" : "ltr"} className={`mx-auto flex w-full max-w-[1500px] flex-col gap-8 p-4 md:p-6 ${hold ? "advice-hold" : ""}`}>
-      {/* &advice | Scenarios — the what-if page is a tab of this one. */}
-      <PageViews views={ADVICE_VIEWS} className="-mb-4 self-start" />
-      {/* On a phone the title takes the first line whole and the controls sit under it; beside them it was squeezed to a word a line. */}
-      <header className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="w-full min-w-0 md:w-auto md:flex-1">
-          {/* The name reads left to right in either language — in a right-to-left line the ampersand would jump to the end. */}
-          <h1 className="page-title">
-            <span dir="ltr" className="inline-block">
-              &amp;advice
-            </span>
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted">{t("The studio at a glance: what needs you, how the last three months read, and what was found and closed.")}</p>
+    <div dir={rtl ? "rtl" : "ltr"} className={`mx-auto flex w-full max-w-[1500px] flex-col gap-6 ${hold ? "advice-hold" : ""}`}>
+      <AdviceTop
+        rtl={rtl}
+        // The name reads left to right in either language — in a right-to-left line the ampersand would jump to the end.
+        title={
+          <span dir="ltr" className="inline-block">
+            &amp;advice
+          </span>
+        }
+        note={t("The studio at a glance: what needs you, how the last three months read, and what was found and closed.")}
+        status={data ? (he.busy ? t("Translating…") : (he.off ?? checkedLine(data, t))) : null}
+        control={
+          <button
+            onClick={() => void load()}
+            disabled={checking}
+            aria-label={t("Check again")}
+            title={t("Check again")}
+            className="flex size-9 items-center justify-center rounded-xl bg-surface text-muted shadow-card hover:text-foreground"
+          >
+            <RotateCw size={18} strokeWidth={1.75} className={checking ? "animate-spin" : ""} />
+          </button>
+        }
+      />
+
+      {data && board && (
+        <div className="-mt-2 inline-flex self-start rounded-full bg-surface p-0.5 text-[13px] shadow-card" role="tablist" aria-label={t("Sections")}>
+          {PAGE_TABS.map(([v, label]) => (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={view === v}
+              onClick={() => pickView(v)}
+              className={`rounded-full px-4 py-1.5 font-medium ${view === v ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
+            >
+              {t(label)}
+              {v === "today" && items.length > 0 && <span className={`ms-1.5 tabular-nums ${view === v ? "text-white/75" : "text-faint"}`}>{items.length}</span>}
+            </button>
+          ))}
         </div>
-        {data && <span className="min-w-0 flex-1 text-[12px] text-faint md:flex-none">{he.busy ? t("Translating…") : (he.off ?? checkedLine(data, t))}</span>}
-        <AdviceLangSwitch />
-        <button
-          onClick={() => void load()}
-          disabled={checking}
-          aria-label={t("Check again")}
-          title={t("Check again")}
-          className="flex size-9 items-center justify-center rounded-xl bg-surface text-muted shadow-card hover:text-foreground"
-        >
-          <RotateCw size={18} strokeWidth={1.75} className={checking ? "animate-spin" : ""} />
-        </button>
-      </header>
+      )}
 
       {error ? (
         <p className="rounded-2xl bg-surface p-5 text-sm text-muted">{t(error)}</p>
@@ -202,7 +250,7 @@ export default function AdvicePage() {
         </div>
       ) : (
         <>
-          {/* 1 — Today */}
+          {view === "today" && (
           <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {KINDS.map((k) => (
               <Stat
@@ -227,8 +275,9 @@ export default function AdvicePage() {
               rows={bySubject(board.resolved, tr, t("Other subjects"))}
             />
           </section>
+          )}
 
-          {/* 2 — The consultant's read */}
+          {view === "studio" && (
           <section className="rounded-2xl bg-surface p-5 shadow-card md:p-6">
             <div className="flex flex-wrap items-center gap-3">
               <h2 className="card-title flex min-w-0 flex-1 items-center gap-2">
@@ -282,18 +331,36 @@ export default function AdvicePage() {
             </div>
             {consultError && <p className="mt-2 text-[12px] text-danger">{consultError}</p>}
           </section>
+          )}
 
-          {/* 3 — The studio in numbers */}
+          {view === "studio" && (
           <section>
+            <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-0 flex-1">
             <SectionHead
               title={t("The studio in numbers")}
-              note={board.figures ? `${t("The last three complete months")} · ${board.figures.label}` : undefined}
-              tip={t("The last three complete months together, so one odd month doesn't decide. \"A year ago\" is the same three months last year.")}
+              note={board.figures?.label}
+              tip={t("The months picked here, read together. \"A year ago\" is the same months last year. Three months is the default, so one odd month doesn't decide.")}
             />
+            </div>
+            <select
+              value={period}
+              onChange={(e) => pickPeriod(e.target.value)}
+              disabled={checking}
+              aria-label={t("Period")}
+              className="rounded-full bg-surface px-3.5 py-1.5 text-[13px] font-medium shadow-card outline-none ring-brand focus:ring-2 disabled:opacity-60"
+            >
+              {board.periods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {/^\d{4}-\d{2}$/.test(p.id) ? new Date(`${p.id}-15T12:00:00`).toLocaleDateString(t.locale, { month: "long", year: "numeric" }) : t(p.label)}
+                </option>
+              ))}
+            </select>
+            </div>
             {board.figures ? (
-              <Figures f={board.figures} weeks={board.weeks} he={he} />
+              <Figures f={board.figures} he={he} />
             ) : (
-              <p className="mt-3 rounded-2xl bg-surface p-5 text-sm text-muted">{t("These charts need the last three months in the books.")}</p>
+              <p className="mt-3 rounded-2xl bg-surface p-5 text-sm text-muted">{t("These charts need the months picked to be in the books.")}</p>
             )}
             {data.pulse.length > 0 && (
               <>
@@ -310,8 +377,9 @@ export default function AdvicePage() {
               </>
             )}
           </section>
+          )}
 
-          {/* 4 — Everything found */}
+          {view === "today" && (
           <section>
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
@@ -368,8 +436,9 @@ export default function AdvicePage() {
               </div>
             )}
           </section>
+          )}
 
-          {/* 5 — Follow-up */}
+          {view === "follow" && (
           <section>
             <SectionHead title={t("Follow-up")} tip={t("What you put aside and what closed by itself, so nothing disappears without a trace.")} />
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-2">
@@ -430,7 +499,11 @@ export default function AdvicePage() {
                 )}
               </div>
             </div>
+            <div className="mt-4">
+              <WeeksCard weeks={board.weeks} he={he} />
+            </div>
           </section>
+          )}
         </>
       )}
     </div>
@@ -595,14 +668,13 @@ function Stacked({ label, shares, tipOf }: { label: string; shares: Record<Share
   );
 }
 
-function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"]; he: Hebrew }) {
+function Figures({ f, he }: { f: BoardFigures; he: Hebrew }) {
   const { t } = he;
   const now = sharesWithLeft(f.shares);
   const then = f.sharesLastYear ? sharesWithLeft(f.sharesLastYear) : null;
   const marginScale = Math.max(0.4, f.targetMargin * 1.5, f.margin * 1.2, (f.marginLastYear ?? 0) * 1.2);
   const hourScale = Math.max(f.avgRate, f.hourCost, f.hourCostLastYear ?? 0) * 1.1;
   const clientScale = Math.max(0.4, f.topClient * 1.15);
-  const weekMax = Math.max(1, ...weeks.map((w) => Math.max(w.opened, w.resolved)));
   const util = f.utilization;
   const short = pct(f.targetMargin) - pct(f.margin);
   const perHour = f.avgRate - f.hourCost;
@@ -615,7 +687,6 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
       </>
     ),
   });
-  const weekDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(t.locale, { day: "numeric", month: "short" });
   return (
     <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 xl:grid-cols-3">
       <ChartCard title={t("Profit margin")} tip={t("What is left of the income after every cost, as a share of the income.")}>
@@ -853,10 +924,20 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
         </div>
       </ChartCard>
 
+    </div>
+  );
+}
+
+/** How many findings each week opened and closed — on the Follow-up tab. */
+function WeeksCard({ weeks, he }: { weeks: AdviceBoard["weeks"]; he: Hebrew }) {
+  const { t } = he;
+  const weekMax = Math.max(1, ...weeks.map((w) => Math.max(w.opened, w.resolved)));
+  const weekDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(t.locale, { day: "numeric", month: "short" });
+  return (
       <ChartCard
         title={t("Findings, week by week")}
         tip={t("How many findings a check opened each week, and how many it closed. More closed than opened: the list is getting shorter.")}
-        wide
+        
       >
         <div dir="ltr" className="flex h-32 items-end gap-3">
           {weeks.map((w) => (
@@ -884,7 +965,6 @@ function Figures({ f, weeks, he }: { f: BoardFigures; weeks: AdviceBoard["weeks"
           </span>
         </p>
       </ChartCard>
-    </div>
   );
 }
 

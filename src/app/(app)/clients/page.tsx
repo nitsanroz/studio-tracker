@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown, Plus, Search } from "lucide-react";
@@ -13,8 +13,10 @@ import { EditableTextCell } from "@/components/editable-cell";
 import { ClientAvatar } from "@/components/client-avatar";
 import { MobileClientsList } from "@/components/client-mobile";
 import { useIsNarrow } from "@/lib/use-is-narrow";
-import { CLIENT_VIEWS, PageViews } from "@/components/page-views";
 import { toast } from "@/lib/toast";
+import { useTier } from "@/components/tier-context";
+import { atLeast } from "@/lib/access";
+import { ClientRatesDialog, RateCell, currentRate, ratesOf, useClientRates } from "@/components/finance/client-rates";
 
 type SortKey = "client" | "open" | "week" | "month" | "total";
 type Sort = { key: SortKey; dir: 1 | -1 } | null;
@@ -148,6 +150,8 @@ function CreateClientModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+const RATE_W = 64;
+
 export default function ClientsPage() {
   const { clients, tasks, entrySumsAll, updateClient } = useData();
   const [query, setQuery] = useState("");
@@ -160,6 +164,21 @@ export default function ClientsPage() {
 
   const isAdmin = useIsAdmin();
   const isNarrow = useIsNarrow();
+  // Each client's current rate, for full finance only (Rates used to be a page of its own).
+  const showRates = atLeast(useTier(), "finance");
+  const rates = useClientRates(showRates);
+  const [rateFor, setRateFor] = useState<{ id: string; name: string; from?: string | null } | null>(null);
+  // An &advice "no rate" card links here with the client and the month to cover.
+  useEffect(() => {
+    if (!showRates) return;
+    const q = new URLSearchParams(window.location.search);
+    const name = q.get("rate");
+    if (!name) return;
+    const c = clients.find((x) => x.name === name || x.id === name);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- opened once, from the address
+    if (c) setRateFor({ id: c.id, name: c.name, from: q.get("from") });
+    window.history.replaceState(null, "", "/clients");
+  }, [showRates, clients]);
 
   const taskClient = useMemo(
     () => new Map(tasks.map((t) => [t.id, t.clientId])),
@@ -235,9 +254,7 @@ export default function ClientsPage() {
   if (isNarrow) return <MobileClientsList />;
 
   return (
-    <div className="mx-auto flex w-full max-w-[650px] flex-col gap-4">
-      {/* Clients | Rates — what each client is charged is finance's page (full finance only). */}
-      <PageViews views={CLIENT_VIEWS} className="self-start" />
+    <div className={`mx-auto flex w-full flex-col gap-4 ${showRates ? "max-w-[720px]" : "max-w-[650px]"}`}>
       <div className="flex items-center justify-between gap-3">
         <h1 className="page-title">Clients</h1>
         {isAdmin && (
@@ -295,6 +312,11 @@ export default function ClientsPage() {
               <ResizeHandle onMouseDown={startResize(k)} />
             </span>
           ))}
+          {showRates && (
+            <span className="shrink-0 text-right" style={{ width: RATE_W }} title="The hourly rate today — click one for its history">
+              Rate
+            </span>
+          )}
         </div>
         {rows.map(({ client, openTasks, week, month, total }) => (
           <Link
@@ -325,6 +347,7 @@ export default function ClientsPage() {
             {numCell(week, widths.week)}
             {numCell(month, widths.month)}
             {numCell(total, widths.total)}
+            {showRates && <RateCell rate={currentRate(ratesOf(rates.rows, client))} width={RATE_W} onOpen={() => setRateFor({ id: client.id, name: client.name })} />}
             {archive && (
               <button
                 onClick={(e) => {
@@ -346,6 +369,15 @@ export default function ClientsPage() {
       </div>
 
       {creating && <CreateClientModal onClose={() => setCreating(false)} />}
+      {rateFor && (
+        <ClientRatesDialog
+          client={rateFor}
+          rows={rates.rows}
+          initialFrom={rateFor.from}
+          onClose={() => setRateFor(null)}
+          onChanged={() => void rates.reload()}
+        />
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@
 
 import { parseISO, shiftDays, toISODate } from "@/lib/format";
 import { TARGET_MARGIN } from "@/lib/hours-goal";
-import type { BusinessMetrics } from "./business";
+import { completeMonths, type BusinessMetrics } from "./business";
 import type { AdviceRow } from "./merge";
 import { BENCH } from "./playbook";
 
@@ -63,8 +63,41 @@ export interface BoardWeek {
   resolved: number;
 }
 
+/** A period "The studio in numbers" can read (Nitsan, 2026-11-15: "more choices of time, like a specific month"). */
+export interface BoardPeriod {
+  id: string;
+  label: string;
+}
+
+/** How far back the page can reach: the studio's logged hours are loaded six whole months back (entries.ts). */
+const MONTHS_BACK = 6;
+
+const monthLabel = (key: string) => new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+/** The choices, newest month last in the list of single months. "3m" is the default. */
+export function boardPeriods(today: string): BoardPeriod[] {
+  const months = completeMonths(today, MONTHS_BACK);
+  return [
+    { id: "3m", label: "Last 3 months" },
+    { id: "1m", label: "Last month" },
+    { id: "6m", label: "Last 6 months" },
+    ...[...months].reverse().map((k) => ({ id: k, label: monthLabel(k) })),
+  ];
+}
+
+/** The complete months a period reads, oldest first; null for one the page can't offer. */
+export function boardMonthsFor(period: string, today: string): string[] | null {
+  if (period === "3m") return completeMonths(today, 3);
+  if (period === "1m") return completeMonths(today, 1);
+  if (period === "6m") return completeMonths(today, MONTHS_BACK);
+  return completeMonths(today, MONTHS_BACK).includes(period) ? [period] : null;
+}
+
 export interface AdviceBoard {
   figures: BoardFigures | null;
+  /** the period the figures read, and the ones that can be picked */
+  period: string;
+  periods: BoardPeriod[];
   /** snoozed (with the date it returns) or dismissed, newest first */
   hidden: AdviceRow[];
   /** resolved by a check in the last 30 days — the automatic "done" — newest first */
@@ -144,6 +177,6 @@ export function boardHistory(rows: AdviceRow[], today: string): Pick<AdviceBoard
   return { hidden, resolved, weeks };
 }
 
-export function boardOf(metrics: BusinessMetrics | null, rows: AdviceRow[], today: string): AdviceBoard {
-  return { figures: boardFigures(metrics), ...boardHistory(rows, today) };
+export function boardOf(metrics: BusinessMetrics | null, rows: AdviceRow[], today: string, period = "3m"): AdviceBoard {
+  return { figures: boardFigures(metrics), period, periods: boardPeriods(today), ...boardHistory(rows, today) };
 }

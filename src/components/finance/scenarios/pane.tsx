@@ -84,8 +84,14 @@ export function SplitLayout({ left, right, railSummary, pane }: { left: ReactNod
 
       {pane.folded ? (
         <aside className="hidden lg:sticky lg:top-4 lg:ms-4 lg:flex lg:w-14 lg:shrink-0 lg:flex-col lg:items-center lg:gap-3 lg:rounded-3xl lg:bg-surface lg:py-4 lg:shadow-card">
-          <button onClick={() => pane.setFolded(false)} title={t("Show the results")} aria-label={t("Show the results")} className="rounded-full p-2 text-brand hover:bg-brand-soft">
-            <PanelRightOpen size={20} className="rtl:-scale-x-100" />
+          <button
+            onClick={() => pane.setFolded(false)}
+            title={t("Show the results")}
+            aria-label={t("Show the results")}
+            aria-expanded={false}
+            className="flex size-10 items-center justify-center rounded-full bg-brand text-white shadow-card hover:bg-brand-dark"
+          >
+            <PanelRightOpen size={20} strokeWidth={1.9} className="rtl:-scale-x-100" />
           </button>
           <div className="text-[14px] font-medium text-brand [writing-mode:vertical-rl]">{railSummary}</div>
         </aside>
@@ -180,8 +186,13 @@ export function TabbedCard<T extends string>({ value, tabs, onChange, end, child
 export function FoldButton({ onFold }: { onFold: () => void }) {
   const { t } = useT();
   return (
-    <button onClick={onFold} title={t("Fold the results")} aria-label={t("Fold the results")} className="hidden rounded-full p-1.5 text-faint hover:bg-surface hover:text-brand lg:block">
-      <PanelRightClose size={18} className="rtl:-scale-x-100" />
+    <button
+      onClick={onFold}
+      aria-expanded
+      className="hidden shrink-0 items-center gap-2 rounded-full bg-brand px-3.5 py-1.5 text-[13px] font-medium text-white shadow-card hover:bg-brand-dark lg:inline-flex"
+    >
+      <PanelRightClose size={16} strokeWidth={1.9} className="rtl:-scale-x-100" />
+      {t("Hide results")}
     </button>
   );
 }

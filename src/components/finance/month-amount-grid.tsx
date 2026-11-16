@@ -1050,7 +1050,7 @@ export function MonthAmountGrid({
                     <EditableName
                       name={p.name}
                       onRename={(next) => renamePerson(p.name, next)}
-                      href={linkPeople && p.profileId ? `/finance/people/${p.profileId}` : undefined}
+                      href={linkPeople && p.profileId ? `/team/${p.profileId}?tab=pay` : undefined}
                       cellKey={p.profileId ? `p|${p.profileId}` : undefined}
                     />
                     {linkPeople && !p.profileId && (

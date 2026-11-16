@@ -10,7 +10,10 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { useData, useIsAdmin } from "@/lib/store";
-import { PageViews, personViews } from "@/components/page-views";
+import { FinancePerson, type FinanceTab } from "@/components/finance/person/finance-person";
+import { useTier } from "@/components/tier-context";
+import { atLeast } from "@/lib/access";
+import { Banknote, ChartLine, History as HistoryIcon, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { presetRange } from "@/lib/date-ranges";
 import { formatHoursShort, toISODate, MONTH_NAMES_SHORT } from "@/lib/format";
@@ -250,7 +253,16 @@ export default function MemberPage({
   const isAdmin = useIsAdmin();
   const profile = profiles.find((p) => p.id === profileId);
   const [resetStatus, setResetStatus] = useState<string | null>(null);
-  const [tab, setTab] = useState<"overview" | "hr">("overview");
+  // One page, one row of tabs (Nitsan, 2026-11-15): the studio's tabs, and for
+  // full finance the money ones between them. `?tab=` opens one (the old
+  // /finance/people/[id] links land on Pay).
+  const money = atLeast(useTier(), "finance");
+  const [tab, setTab] = useState<"overview" | "hr" | FinanceTab>(() => {
+    if (typeof window === "undefined") return "overview";
+    const q = new URLSearchParams(window.location.search).get("tab");
+    return q === "summary" || q === "performance" || q === "pay" || q === "history" || q === "hr" ? q : "overview";
+  });
+  const financeTab: FinanceTab | null = money && (tab === "summary" || tab === "performance" || tab === "pay" || tab === "history" || tab === "hr") ? tab : null;
   /**
    * Lazily mounted, then never unmounted — see the HR block below. Never
    * persisted and never deep-linked either: a URL or a sticky preference that
@@ -410,8 +422,6 @@ export default function MemberPage({
             {email ? <span className="normal-case"> · {email}</span> : null}
           </p>
         </div>
-        {/* Profile | Pay & HR — pay, payslips and HR are finance's page for this person (full finance only). */}
-        <PageViews views={personViews(profile.id)} />
         <select
           value={profile.role}
           onChange={(e) => updateProfile(profile.id, { role: e.target.value as Role })}
@@ -449,11 +459,22 @@ export default function MemberPage({
         value={tab}
         onChange={setTab}
         items={[
-          { value: "overview" as const, label: "Overview", icon: LayoutDashboard },
-          { value: "hr" as const, label: "HR details", icon: IdCard },
+          { value: "overview" as const, label: money ? "Work" : "Overview", icon: LayoutDashboard },
+          ...(money
+            ? [
+                { value: "summary" as const, label: "Summary", icon: Sparkles },
+                { value: "performance" as const, label: "Performance", icon: ChartLine },
+                { value: "pay" as const, label: "Pay", icon: Banknote },
+                { value: "history" as const, label: "History", icon: HistoryIcon },
+              ]
+            : []),
+          { value: "hr" as const, label: money ? "HR" : "HR details", icon: IdCard },
         ]}
         ariaLabel="Member sections"
       />
+
+      {/* The money tabs (full finance). HR shows the studio's details card first, then finance's HR. */}
+      {financeTab && financeTab !== "hr" && <FinancePerson id={profile.id} tab={financeTab} onTab={setTab} />}
 
       {/* Tiles fill the left half, the chart the right. content-start keeps the
           tile column its natural height instead of stretching four tall empty
@@ -584,6 +605,7 @@ export default function MemberPage({
         )}
       </div>
       )}
+      {financeTab === "hr" && <FinancePerson id={profile.id} tab="hr" onTab={setTab} />}
     </div>
   );
 }

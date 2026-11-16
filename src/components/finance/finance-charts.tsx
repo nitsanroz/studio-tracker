@@ -522,7 +522,8 @@ const COST_SEGMENTS = [
   { key: "other", label: "Other", color: "var(--faint)" },
 ] as const;
 
-const COST_DESK = { W: 960, H: 288, pad: { l: 46, r: 12, t: 26, b: 28 } };
+// Drawn for a half-width card since 2026-11-15 (it was a row of its own at 960).
+const COST_DESK = { W: 560, H: 250, pad: { l: 46, r: 12, t: 26, b: 28 } };
 const COST_PHONE = { W: 400, H: 250, pad: { l: 48, r: 8, t: 22, b: 26 } };
 
 export function CostStructureChart({ data }: { data: CostYear[] }) {
@@ -575,16 +576,16 @@ export function CostStructureChart({ data }: { data: CostYear[] }) {
               return (
                 <rect key={seg.key} x={cx(i) - barW / 2} y={y0} width={barW}
                   height={Math.max(0, h)} fill={seg.color}
-                  opacity={seg.key === "salaries" ? 1 : 0.75}>
-                  <title>{`${d.year} ${seg.label}: ${formatPct(v)} of ${d.estimate ? "projected " : ""}revenue`}</title>
-                </rect>
+                  opacity={seg.key === "salaries" ? 1 : 0.75} />
               );
             })}
             {/* salaries % — the margin driver — always labeled */}
             <text x={cx(i)} y={y(total) - 5} textAnchor="middle" fontSize={t.fs(10)}
-              fontWeight={600} fill={hover === i ? "var(--foreground)" : "var(--brand)"}>
-              {hover === i ? `Σ ${formatPct(total, 0)}` : formatPct(d.salaries, 0)}
+              fontWeight={600} fill="var(--brand)">
+              {formatPct(d.salaries, 0)}
             </text>
+            {/* a wide invisible hit area, so the whole column is hoverable */}
+            <rect x={cx(i) - band / 2} y={pad.t} width={band} height={plotH} fill="transparent" />
             <text x={cx(i)} y={H - pad.b + 14} textAnchor="middle" fontSize={t.fs(11)}
               fill="var(--muted)" fontWeight={500}>
               {t.year(d.year)}{d.partial && !t.mobile ? (d.estimate ? "·est." : "·partial") : ""}
@@ -594,6 +595,29 @@ export function CostStructureChart({ data }: { data: CostYear[] }) {
       })}
 
     </svg>
+    {/* What a column holds, in a card of the page's own — it was the browser's
+        tooltip per segment plus a "Σ" swapped into the label (Nitsan, 2026-11-15). */}
+    <div className="mt-1 min-h-[2.75rem] text-xs text-muted">
+      {hover != null ? (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span className="font-medium text-foreground">
+            {data[hover].year}
+            {data[hover].estimate ? " (projected)" : data[hover].partial ? " (so far)" : ""}
+          </span>
+          {COST_SEGMENTS.map((seg) => (
+            <span key={seg.key} className="inline-flex items-center gap-1">
+              <span className="size-2 rounded-sm" style={{ background: seg.color }} />
+              {seg.label} <span className="tabular-nums text-foreground">{formatPct(data[hover][seg.key], 0)}</span>
+            </span>
+          ))}
+          <span>
+            All costs <span className="tabular-nums font-medium text-foreground">{formatPct(totals[hover], 0)}</span> of revenue
+          </span>
+        </div>
+      ) : (
+        <span className="text-faint">Hover a column for its breakdown.</span>
+      )}
+    </div>
     <ChartLegend
       items={[
         ...COST_SEGMENTS.map((seg) => ({

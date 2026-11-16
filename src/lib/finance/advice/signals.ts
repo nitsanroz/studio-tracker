@@ -465,7 +465,7 @@ export function noRate(data: AdviceData): Finding[] {
         title: `${c.name} has hours in ${monthName(mm)} but no rate`,
         body: `${formatHours(hrs)} billable hours count as ₪0 income in the P&L until a rate covers ${MONTH_SHORT[mm - 1]} ${my}.`,
         reminder: false,
-        href: `/finance/rates?client=${encodeURIComponent(c.name)}&from=${k}-01`,
+        href: `/clients?rate=${encodeURIComponent(c.name)}&from=${k}-01`,
         action: "Add their rate",
         focus: "add-rate",
       });

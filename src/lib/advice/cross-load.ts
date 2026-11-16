@@ -92,10 +92,11 @@ export async function loadCrossFreelancers(sb: SupabaseClient, studio: StudioDat
  * Claude. Rows with no profile can't be matched to hours and are left out.
  * Any failure reads as "nobody" and is logged — the rule stays quiet.
  */
-export async function loadPeopleCost(sb: SupabaseClient, today: string): Promise<MonthCost[]> {
+export async function loadPeopleCost(sb: SupabaseClient, today: string, only?: string[]): Promise<MonthCost[]> {
   try {
     // The three complete months the business picture reads; client-margin uses the last of them.
-    const months = completeMonths(today, 3);
+    // `only`: other months, for the /advice page's period choice.
+    const months = only ?? completeMonths(today, 3);
     const years = [...new Set(months.map((k) => Number(k.slice(0, 4))))];
     const read = async (table: string, amount: string, kind: MonthCost["kind"]): Promise<MonthCost[]> => {
       const res = await sb.from(table).select(`profile_id, year, month, ${amount}`).in("year", years).not("profile_id", "is", null);

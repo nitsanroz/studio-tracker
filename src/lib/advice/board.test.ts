@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardFigures, boardHistory } from "./board";
+import { boardFigures, boardHistory, boardMonthsFor, boardPeriods } from "./board";
 import type { BusinessMetrics } from "./business";
 import type { AdviceRow } from "./merge";
 
@@ -111,5 +111,26 @@ describe("the page's figures", () => {
     const text = JSON.stringify(boardFigures(metrics));
     for (const secret of ["hourlyIls", "hireBreakEvenHours", "avgEmployeeCost", "incomeShortPerMonth", "revenue", "expenses", "180", "20000", "300000"]) expect(text, secret).not.toContain(secret);
     expect(JSON.parse(text).freelancers).toEqual([{ name: "Ab", hoursPerMonth: 90 }]);
+  });
+});
+
+describe("the page's period choice", () => {
+  it("offers three spans and each of the last six complete months, newest first", () => {
+    const p = boardPeriods("2026-11-15");
+    expect(p.slice(0, 3).map((x) => x.id)).toEqual(["3m", "1m", "6m"]);
+    expect(p.slice(3).map((x) => x.id)).toEqual(["2026-10", "2026-09", "2026-08", "2026-07", "2026-06", "2026-05"]);
+  });
+
+  it("reads the months a period names, oldest first", () => {
+    expect(boardMonthsFor("3m", "2026-11-15")).toEqual(["2026-08", "2026-09", "2026-10"]);
+    expect(boardMonthsFor("1m", "2026-11-15")).toEqual(["2026-10"]);
+    expect(boardMonthsFor("6m", "2026-11-15")).toHaveLength(6);
+    expect(boardMonthsFor("2026-07", "2026-11-15")).toEqual(["2026-07"]);
+  });
+
+  it("refuses a month it has no hours for, or one not over yet", () => {
+    expect(boardMonthsFor("2026-04", "2026-11-15")).toBeNull();
+    expect(boardMonthsFor("2026-11", "2026-11-15")).toBeNull();
+    expect(boardMonthsFor("nonsense", "2026-11-15")).toBeNull();
   });
 });

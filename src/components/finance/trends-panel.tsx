@@ -13,11 +13,13 @@
 // text it can see, and a native tooltip would show the figure anyway.
 
 import { useEffect, useMemo, useState } from "react";
+import { PanelFold } from "@/components/panel-fold";
+import { useFold } from "@/lib/use-fold";
 import { createClient } from "@/lib/finance/supabase-client";
 import { fetchAll } from "@/lib/finance/db";
 import { MONTH_SHORT } from "@/lib/finance/finance";
 import { formatILS, formatILSShort } from "@/lib/finance/format";
-import { trendsOf, type AmountRow, type Mover } from "@/lib/finance/trends";
+import { trendsOf, type AmountRow, type Mover, type Trends } from "@/lib/finance/trends";
 
 const YEARS_BACK = 4;
 const pct = (f: number) => Math.round(f * 100);
@@ -73,6 +75,7 @@ export function TrendsPanel({
     };
   }, [table, nameColumn, amountColumn, year]);
 
+  const [open, toggle] = useFold("finance.trends");
   const earlier = history?.year === year ? history.rows : null;
   const t = useMemo(() => trendsOf([...(earlier ?? []), ...current], year, through), [earlier, current, year, through]);
 
@@ -82,28 +85,22 @@ export function TrendsPanel({
 
   if (t.soFar === 0 && t.years.every((y) => y.amount === 0)) return null;
 
+  // Folded: a clear tab to open it again, where the panel was.
+  if (!open)
+    return (
+      <aside className="order-first shrink-0 2xl:order-last 2xl:sticky 2xl:top-20" aria-label="Trends">
+        <PanelFold open={false} onClick={toggle} label="trends" />
+      </aside>
+    );
+
   return (
     <aside className="order-first shrink-0 2xl:order-last 2xl:sticky 2xl:top-20 2xl:w-[340px]" aria-label="Trends">
+      <div className="mb-2 flex justify-end">
+        <PanelFold open onClick={toggle} label="trends" />
+      </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-1">
-        <PanelCard title={`${year}, month by month`} hint={t.lastYearSoFar != null ? `The thin line is ${year - 1}. Pale bars are forecasts.` : "Pale bars are forecasts."}>
-          <div className="flex h-24 items-end gap-1">
-            {t.months.map((m) => (
-              <div key={m.month} className="relative flex h-full min-w-0 flex-1 items-end">
-                <div
-                  className={`w-full rounded-t-sm ${m.month > t.through || m.predicted ? "bg-brand/25" : "bg-brand"}`}
-                  style={{ height: `${(m.amount / monthMax) * 100}%`, minHeight: m.amount ? 2 : 0 }}
-                />
-                {m.lastYear != null && m.lastYear > 0 && <div className="absolute inset-x-0 h-px bg-foreground/60" style={{ bottom: `${(m.lastYear / monthMax) * 100}%` }} />}
-              </div>
-            ))}
-          </div>
-          <div className="mt-1 flex gap-1 text-[10px] text-faint">
-            {t.months.map((m) => (
-              <span key={m.month} className="min-w-0 flex-1 text-center">
-                {MONTH_SHORT[m.month - 1][0]}
-              </span>
-            ))}
-          </div>
+        <PanelCard title={`${year}, month by month`} hint={t.lastYearSoFar != null ? `The grey line is ${year - 1}. Dashed is a forecast.` : "Dashed is a forecast."}>
+          <MonthLines months={t.months} through={t.through} max={monthMax} />
           <p className="mt-3 text-sm">
             <span className="text-muted">{span}: </span>
             <span className="font-medium tabular-nums">{formatILS(Math.round(t.soFar))}</span>
@@ -117,17 +114,7 @@ export function TrendsPanel({
 
         {t.years.length > 1 && (
           <PanelCard title="Year by year" hint={t.through < 12 ? `${year} is ${span} only.` : undefined}>
-            <ul className="flex flex-col gap-2">
-              {t.years.map((y) => (
-                <li key={y.year} className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 text-xs">
-                  <span className="tabular-nums text-muted">{y.year}</span>
-                  <span className="relative h-2.5 rounded-full bg-background">
-                    <span className={`absolute inset-y-0 left-0 rounded-full ${y.partial ? "bg-brand/45" : "bg-brand"}`} style={{ width: `${(y.amount / yearMax) * 100}%` }} />
-                  </span>
-                  <span className="tabular-nums">{formatILSShort(y.amount)}</span>
-                </li>
-              ))}
-            </ul>
+            <YearLine years={t.years} max={yearMax} />
           </PanelCard>
         )}
 
@@ -195,5 +182,60 @@ export function TrendsPanel({
         </PanelCard>
       </div>
     </aside>
+  );
+}
+
+const CW = 300;
+const CH = 96;
+const CP = { l: 4, r: 4, t: 8, b: 16 };
+
+/** This year as a line (dashed where it is a forecast), last year as a thin grey one. */
+function MonthLines({ months, through, max }: { months: Trends["months"]; through: number; max: number }) {
+  const x = (m: number) => CP.l + ((m - 1) / 11) * (CW - CP.l - CP.r);
+  const y = (v: number) => CP.t + (1 - v / max) * (CH - CP.t - CP.b);
+  const path = (pts: { m: number; v: number }[]) => pts.map((p, i) => `${i ? "L" : "M"}${x(p.m).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const real = months.filter((m) => m.amount > 0 && m.month <= through && !m.predicted);
+  const lastReal = real.at(-1)?.month ?? 0;
+  const ahead = months.filter((m) => m.amount > 0 && m.month >= lastReal && (m.month > through || m.predicted || m.month === lastReal));
+  const before = months.filter((m) => m.lastYear != null && m.lastYear > 0);
+  return (
+    <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full" role="img" aria-label="This year month by month, against last year">
+      {before.length > 1 && <path d={path(before.map((m) => ({ m: m.month, v: m.lastYear ?? 0 })))} fill="none" stroke="var(--faint)" strokeWidth={1.25} />}
+      {real.length > 1 && <path d={path(real.map((m) => ({ m: m.month, v: m.amount })))} fill="none" stroke="var(--brand)" strokeWidth={2.25} strokeLinejoin="round" />}
+      {ahead.length > 1 && <path d={path(ahead.map((m) => ({ m: m.month, v: m.amount })))} fill="none" stroke="var(--brand)" strokeWidth={2} strokeDasharray="4 3" opacity={0.6} />}
+      {real.map((m) => (
+        <circle key={m.month} cx={x(m.month)} cy={y(m.amount)} r={2.25} fill="var(--brand)" />
+      ))}
+      {months.map((m) => (
+        <text key={m.month} x={x(m.month)} y={CH - 3} textAnchor="middle" fontSize={9} fill="var(--faint)">
+          {MONTH_SHORT[m.month - 1][0]}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+/** The last years as one line; a year still running ends in a hollow point. */
+function YearLine({ years, max }: { years: Trends["years"]; max: number }) {
+  const n = years.length;
+  const x = (i: number) => CP.l + 18 + (n > 1 ? i / (n - 1) : 0.5) * (CW - CP.l - CP.r - 36);
+  const y = (v: number) => CP.t + 10 + (1 - v / max) * (CH - CP.t - CP.b - 10);
+  const done = years.filter((yr) => !yr.partial);
+  const d = done.map((yr) => `${years.indexOf(yr) ? "L" : "M"}${x(years.indexOf(yr)).toFixed(1)},${y(yr.amount).toFixed(1)}`).join(" ").replace(/^L/, "M");
+  return (
+    <svg viewBox={`0 0 ${CW} ${CH}`} className="w-full" role="img" aria-label="Year by year">
+      {done.length > 1 && <path d={d} fill="none" stroke="var(--brand)" strokeWidth={2.25} strokeLinejoin="round" />}
+      {years.map((yr, i) => (
+        <g key={yr.year}>
+          <circle cx={x(i)} cy={y(yr.amount)} r={3} fill={yr.partial ? "var(--surface)" : "var(--brand)"} stroke="var(--brand)" strokeWidth={1.5} />
+          <text x={x(i)} y={y(yr.amount) - 7} textAnchor="middle" fontSize={9} fill="var(--muted)" className="tabular-nums">
+            {formatILSShort(yr.amount)}
+          </text>
+          <text x={x(i)} y={CH - 3} textAnchor="middle" fontSize={9} fill="var(--faint)">
+            {yr.year}
+          </text>
+        </g>
+      ))}
+    </svg>
   );
 }

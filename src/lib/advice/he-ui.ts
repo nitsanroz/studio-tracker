@@ -225,6 +225,16 @@ const HE: Record<string, string> = {
   "How many findings a check opened each week, and how many it closed. More closed than opened: the list is getting shorter.":
     "כמה ממצאים הבדיקה פתחה בכל שבוע, וכמה סגרה. יותר סגורים מפתוחים: הרשימה מתקצרת.",
   "Week of {day}": "השבוע של {day}",
+  // the page's tabs and period (2026-11-15)
+  "The studio": "הסטודיו",
+  Sections: "חלקים",
+  Period: "תקופה",
+  "Last 3 months": "3 החודשים האחרונים",
+  "Last month": "החודש האחרון",
+  "Last 6 months": "6 החודשים האחרונים",
+  "The months picked here, read together. \"A year ago\" is the same months last year. Three months is the default, so one odd month doesn't decide.":
+    "החודשים שנבחרו כאן, יחד. ״לפני שנה״ הם אותם חודשים בשנה שעברה. ברירת המחדל היא שלושה חודשים, כדי שחודש חריג אחד לא יכריע.",
+  "These charts need the months picked to be in the books.": "הגרפים האלה צריכים שהחודשים שנבחרו יהיו סגורים בספרים.",
   // the business review's horizons
   "this month": "החודש",
   "this quarter": "הרבעון",

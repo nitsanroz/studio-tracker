@@ -356,8 +356,8 @@ export function NewClientsPrompt() {
           ))}
         </ul>
         <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-          <Link href="/finance/rates" onClick={done} className="text-muted hover:text-foreground hover:underline">
-            Open Rates
+          <Link href="/clients" onClick={done} className="text-muted hover:text-foreground hover:underline">
+            Rates on Clients
           </Link>
           <button onClick={done} className="rounded-lg border border-border-strong px-3 py-1.5 hover:bg-background">
             {clients.length ? "Later" : "Close"}

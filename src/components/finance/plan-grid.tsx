@@ -1,5 +1,6 @@
 "use client";
 
+import { PanelFold } from "@/components/panel-fold";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -12,8 +13,6 @@ import {
   ExternalLink,
   Clipboard,
   Download,
-  PanelRightClose,
-  PanelRightOpen,
   Undo2,
   X,
 } from "lucide-react";
@@ -1438,14 +1437,7 @@ export function PlanGrid() {
                 </option>
               ))}
             </select>
-            <button
-              onClick={toggleInsights}
-              title={showInsights ? "Hide insights" : "Show insights"}
-              className="flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-sm hover:bg-background"
-            >
-              {showInsights ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
-              Insights
-            </button>
+            <PanelFold open={showInsights} onClick={toggleInsights} label="insights" />
           </>
         }
       />
@@ -2100,13 +2092,7 @@ const PlanInsightsPane = memo(function PlanInsightsPane({
         <h2 className="text-xs font-medium uppercase tracking-wide text-faint">
           Insights · {year}
         </h2>
-        <button
-          onClick={onClose}
-          title="Hide insights"
-          className="rounded-md p-1 text-faint hover:bg-background hover:text-foreground"
-        >
-          <PanelRightClose size={14} />
-        </button>
+        <PanelFold open onClick={onClose} label="insights" />
       </div>
 
       <div className="flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:thin] md:block md:space-y-4 md:overflow-visible md:pb-0 [&>*]:w-[280px] [&>*]:shrink-0 [&>*]:snap-start md:[&>*]:w-auto">

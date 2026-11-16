@@ -11,13 +11,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Columns3, Copy, Plus, Save, Trash2 } from "lucide-react";
-import { ConfirmDialog, ErrorState, Loading, PageHeader } from "@/components/finance/ui";
-import { ADVICE_VIEWS, PageViews } from "@/components/page-views";
+import { ConfirmDialog, ErrorState, Loading } from "@/components/finance/ui";
+import { AdviceTop } from "@/components/advice-top";
 import { Segmented } from "@/components/finance/person/visuals";
 import { DecisionBoard } from "@/components/finance/scenarios/board";
 import { DemandCard, FactsCard, StripCard } from "@/components/finance/scenarios/futures";
 import { Hover } from "@/components/finance/scenarios/hover";
-import { LangSwitch, useT } from "@/components/finance/scenarios/lang";
+import { useT } from "@/components/finance/scenarios/lang";
 import { AllFigures, AllScenarios, Outcome, Timeline, Tips } from "@/components/finance/scenarios/results";
 import { FoldButton, SplitLayout, TabbedCard, usePane } from "@/components/finance/scenarios/pane";
 import { ScenarioChart, type ScenarioSeries } from "@/components/finance/scenarios/scenario-chart";
@@ -313,18 +313,22 @@ export default function ScenariosPage() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* &advice | Scenarios — the what-if page is a tab of the advisor. */}
-      <PageViews views={ADVICE_VIEWS} className="self-start" />
-      <PageHeader title={t("Scenarios")} actions={<LangSwitch />} />
-      <p className="-mt-5 max-w-[80ch] text-[15px] leading-6 text-muted">
-        {t("Tick what you'd change, set how much work you expect, and see what happens over the next 12 months. The past is a reference, not a forecast.")}
-        {store === "missing" ? (
-          <span className="block text-[var(--warning)]">{t("Not saving yet — run reference/0023 in Supabase.")}</span>
-        ) : saveState !== "idle" ? (
-          <span className={`ms-2 ${saveState === "error" ? "text-danger" : "text-faint"}`}>{saveState === "saving" ? t("Saving…") : saveState === "saved" ? t("Saved") : t("Couldn't save")}</span>
-        ) : null}
-      </p>
+    // The advisor's frame (Nitsan, 2026-11-15: Scenarios is a tab of &advice, so it
+    // looks like it): the same width, the same top bar — tab switch, language,
+    // the page's own status — in the same places.
+    <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
+      <AdviceTop
+        rtl={lang === "he"}
+        title={t("Scenarios")}
+        note={t("Tick what you'd change, set how much work you expect, and see what happens over the next 12 months. The past is a reference, not a forecast.")}
+        status={
+          store === "missing" ? (
+            <span className="text-[var(--warning)]">{t("Not saving yet — run reference/0023 in Supabase.")}</span>
+          ) : saveState !== "idle" ? (
+            <span className={saveState === "error" ? "text-danger" : ""}>{saveState === "saving" ? t("Saving…") : saveState === "saved" ? t("Saved") : t("Couldn't save")}</span>
+          ) : null
+        }
+      />
 
       <Advisor
         build={buildInput}

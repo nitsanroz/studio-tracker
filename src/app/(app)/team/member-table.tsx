@@ -7,6 +7,7 @@
 // Every figure comes from the page's own memos, passed in as `rows`, so the two
 // layouts cannot disagree about a number.
 
+import { MoneyCells, type PersonMoney } from "@/components/finance/team-money";
 import Link from "next/link";
 import { Avatar } from "@/components/ui";
 import { PercentRing } from "@/components/charts";
@@ -37,7 +38,7 @@ const DEFAULTS: Record<string, number> = {
   billable: 96,
 };
 
-export function MemberTable({ rows, periodLabel }: { rows: MemberRow[]; periodLabel: string }) {
+export function MemberTable({ rows, periodLabel, money }: { rows: MemberRow[]; periodLabel: string; money?: { year: number; byId: Map<string, PersonMoney> } | null }) {
   const { widths, startResize } = useColWidths("team-members", DEFAULTS);
   const cell = (key: string) => ({ width: widths[key] ?? DEFAULTS[key], flexShrink: 0 }) as const;
 
@@ -81,6 +82,19 @@ export function MemberTable({ rows, periodLabel }: { rows: MemberRow[]; periodLa
           <span className="relative" style={cell("billable")}>
             Billable
           </span>
+          {money && (
+            <>
+              <span className="shrink-0 text-right" style={{ width: 88 }} title={`Salary or freelance pay with the employer's share, finished months of ${money.year}`}>
+                Cost {money.year}
+              </span>
+              <span className="shrink-0 text-right" style={{ width: 64 }} title="Cost ÷ hours logged">
+                Cost/h
+              </span>
+              <span className="shrink-0 text-right" style={{ width: 56 }} title="What their billable hours brought in ÷ the part of their cost that went to client work">
+                Return
+              </span>
+            </>
+          )}
         </div>
 
         {rows.map(({ profile: p, minutes, billablePct, keysPct, splitTitle, openTasks, email, tenure }) => (
@@ -136,6 +150,7 @@ export function MemberTable({ rows, periodLabel }: { rows: MemberRow[]; periodLa
                 </>
               )}
             </span>
+            {money && <MoneyCells m={money.byId.get(p.id)} width={88} />}
           </Link>
         ))}
         {rows.length === 0 && (

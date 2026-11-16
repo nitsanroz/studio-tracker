@@ -32,7 +32,7 @@ export type Horizon = (typeof HORIZONS)[number];
 
 /** Where a recommendation's card leads. */
 const AREA_HREF: Record<Area, [string, string]> = {
-  Pricing: ["/finance/rates", "Open Rates"],
+  Pricing: ["/clients", "Open Clients"],
   Team: ["/team", "Open Team"],
   Clients: ["/clients", "Open Clients"],
   Costs: ["/finance/expenses", "Open Expenses"],

@@ -105,7 +105,11 @@ const PEEK_FRESH_MS = 20 * 60_000;
 export const checkedRecently = () => Date.now() - lastCheckMs < PEEK_FRESH_MS;
 
 /** Run every rule and write the result: the pane's view, plus every stored row for the wording run. */
-export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; rows: AdviceRow[]; metrics: BusinessMetrics | null }> {
+export async function runCheck(
+  sb: SupabaseClient,
+  /** the /advice page's chosen months, when not the default three */
+  opts: { boardMonths?: string[] } = {},
+): Promise<{ view: AdviceView; rows: AdviceRow[]; metrics: BusinessMetrics | null; boardMetrics: BusinessMetrics | null }> {
   const today = studioToday();
   const now = new Date().toISOString();
   const wordingOn = !!process.env.ANTHROPIC_API_KEY;
@@ -126,6 +130,10 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
   const [freelancers, peopleCost] = await Promise.all([loadCrossFreelancers(sb, studio), loadPeopleCost(sb, today)]);
 
   const metrics = businessMetrics(studio, money, freelancers, peopleCost);
+  // The page's own period: the same sums over other months, people's cost read for those months.
+  const boardMetrics = opts.boardMonths
+    ? businessMetrics(studio, money, freelancers, await loadPeopleCost(sb, today, opts.boardMonths), opts.boardMonths)
+    : metrics;
   const studioAll = findStudio(studio);
   const studioFound: Finding[] = studioAll.filter((f) => !SUPERSEDED.has(f.signal));
   const moneyFound: Finding[] = findMoney(money);
@@ -207,6 +215,7 @@ export async function runCheck(sb: SupabaseClient): Promise<{ view: AdviceView; 
   return {
     rows: fresh,
     metrics,
+    boardMetrics,
     view: {
       today,
       items: shown,

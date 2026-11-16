@@ -381,7 +381,7 @@ export function clientMargin(studio: StudioData, money_: MoneyData, freelancers:
         (s.billable < s.hours - 0.5 ? `${h(s.hours - s.billable)}h of it wasn't billable. ` : "") +
         (loses ? "Before rent and tools, this client lost money." : "That is what's left toward rent, tools and profit."),
       reminder: false,
-      href: "/finance/rates",
+      href: "/clients",
       action: "Open Rates",
     });
   }

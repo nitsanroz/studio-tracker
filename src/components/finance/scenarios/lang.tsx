@@ -1,33 +1,20 @@
 "use client";
 
-// The Scenarios page's language (English / Hebrew), remembered per browser
-// (localStorage "scenarios.lang"). Hebrew turns the page right-to-left; the
+// The Scenarios page's language (English / Hebrew). Hebrew turns the page right-to-left; the
 // charts and number bars stay left-to-right so the figures read as figures.
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { EN, tFor, type Lang, type T } from "@/lib/finance/scenarios/i18n";
+import { AdviceLangSwitch, useAdviceLang } from "@/components/advice-lang";
 
-const KEY = "scenarios.lang";
+// One language for the advisor's two tabs (2026-11-15): Scenarios reads and
+// sets &advice's choice (localStorage "advice.lang"), so switching on one tab
+// holds on the other. Its old key, "scenarios.lang", is no longer read.
 
 const Ctx = createContext<{ lang: Lang; t: T; setLang: (l: Lang) => void }>({ lang: "en", t: EN, setLang: () => {} });
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(KEY) === "he") setLangState("he");
-    } catch {
-      /* private window: English */
-    }
-  }, []);
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    try {
-      localStorage.setItem(KEY, l);
-    } catch {
-      /* not kept — fine */
-    }
-  };
+  const [lang, setLang] = useAdviceLang();
   const t = useMemo(() => tFor(lang), [lang]);
   return (
     <Ctx.Provider value={{ lang, t, setLang }}>
@@ -40,21 +27,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
 export const useT = () => useContext(Ctx);
 
-/** EN | עב */
+/** EN | עב — the advisor's own switch, so it looks and sits the same on both tabs. */
 export function LangSwitch() {
-  const { lang, setLang } = useT();
-  return (
-    <div className="inline-flex rounded-full bg-surface p-1 shadow-card" role="group" aria-label="Language / שפה">
-      {(["en", "he"] as const).map((l) => (
-        <button
-          key={l}
-          onClick={() => setLang(l)}
-          aria-pressed={lang === l}
-          className={`rounded-full px-3.5 py-1 text-[15px] font-medium ${lang === l ? "bg-brand text-white" : "text-muted hover:text-foreground"}`}
-        >
-          {l === "en" ? "EN" : "עב"}
-        </button>
-      ))}
-    </div>
-  );
+  return <AdviceLangSwitch />;
 }

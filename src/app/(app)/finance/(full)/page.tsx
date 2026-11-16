@@ -452,9 +452,9 @@ export default function OverviewPage() {
             </p>
           )}
         </Card>
-      </div>
 
-      <Card className="mt-4">
+      {/* In the grid like the rest (Nitsan, 2026-11-15): as a row of its own across the full width it was drawn far larger than any other chart. */}
+      <Card>
         <SectionTitle
           hint={isAll ? "share of revenue" : "share of revenue · by month"}
           info="Every major expense line as a share of that period's revenue, stacked. The dashed red line marks 100% of revenue — a stack that reaches or crosses it means the period ran at a loss."
@@ -464,7 +464,7 @@ export default function OverviewPage() {
         <CostStructureChart data={costData} />
       </Card>
 
-      <Card className="mt-4">
+      <Card>
         <SectionTitle
           hint="min hours to break even vs actual"
           info="Each month's minimum billable hours needed to cover costs (break-even), against the hours actually logged. A month logged below its own break-even line ran at a loss."
@@ -483,6 +483,7 @@ export default function OverviewPage() {
           </p>
         )}
       </Card>
+      </div>
     </div>
   );
 }

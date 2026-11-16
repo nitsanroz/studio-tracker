@@ -83,6 +83,7 @@ export const HE: Record<string, string> = {
   Scenario: "תרחיש",
   "Show the results": "הצג את התוצאות",
   "Fold the results": "קפל את התוצאות",
+  "Hide results": "הסתר תוצאות",
   "Drag to resize": "גרור לשינוי רוחב",
 
   // ── Advisor ───────────────────────────────────────────────────────────────

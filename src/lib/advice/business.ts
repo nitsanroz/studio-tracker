@@ -146,8 +146,19 @@ function sharesOf(b: Books): BusinessMetrics["shares"] {
 }
 
 /** The studio over the last three complete months. Null when those months aren't in the books yet. */
-export function businessMetrics(studio: StudioData, money_: MoneyData, freelancers: CrossFreelancer[], costs: MonthCost[]): BusinessMetrics | null {
-  const months = completeMonths(studio.today, 3);
+/**
+ * `months` = the complete months to read together, oldest first — the last three
+ * by default (the cards and the review). The /advice page may ask for one month
+ * or six (`boardMonths`); every per-month figure divides by how many there are.
+ */
+export function businessMetrics(
+  studio: StudioData,
+  money_: MoneyData,
+  freelancers: CrossFreelancer[],
+  costs: MonthCost[],
+  months: string[] = completeMonths(studio.today, 3),
+): BusinessMetrics | null {
+  if (!months.length) return null;
   const now = books(money_, months);
   if (!now) return null;
   const then = books(money_, months.map(yearBefore));
@@ -237,7 +248,7 @@ export function businessMetrics(studio: StudioData, money_: MoneyData, freelance
 
   return {
     months,
-    label: `${monthName(months[0])}–${monthName(months[2])}`,
+    label: months.length === 1 ? `${monthName(months[0], "long")} ${months[0].slice(0, 4)}` : `${monthName(months[0])}–${monthName(months[months.length - 1])}`,
     revenue: now.revenue,
     expenses: now.expenses,
     margin: (now.revenue - now.expenses) / now.revenue,
@@ -290,7 +301,7 @@ const MATTERS = 0.05;
  */
 export function strategy(m: BusinessMetrics | null): Finding[] {
   if (!m) return [];
-  const at = m.months[2];
+  const at = m.months[m.months.length - 1];
   const out: Finding[] = [];
   const card = (name: string, f: Omit<Finding, "key" | "signal" | "kind" | "clientId" | "reminder">): void => {
     out.push({ key: `strategy:${name}:${at}`, signal: name, kind: "idea", clientId: null, reminder: false, ...f });
@@ -345,7 +356,7 @@ export function strategy(m: BusinessMetrics | null): Finding[] {
         `Over ${m.label} a billable hour cost ${formatILS(Math.round(m.loadedHourCost))} with everything in — salaries, freelancers, rent, tools. ` +
         `${andList(under.map((c) => `${c.name} (${formatILS(c.rate!)})`))} ${under.length === 1 ? "is" : "are"} below that, on ${pct(under.reduce((t, c) => t + c.hoursShare, 0))}% of the hours: ` +
         `about ${money(lost)} a month the other clients make up. Raise the rate, or cap the hours.`,
-      href: "/finance/rates",
+      href: "/clients",
       action: "Open Rates",
     });
   }
@@ -364,7 +375,7 @@ export function strategy(m: BusinessMetrics | null): Finding[] {
         `${andList(old.map((c) => `${c.name} (${c.rateAgeMonths} months)`))}.` +
         (rise != null && rise >= 0.03 ? ` An hour costs the studio ${pct(rise)}% more than a year ago, so the same rate buys less margin each quarter.` : "") +
         " Studios that hold their margin raise rates on a schedule, usually yearly — new clients first, existing ones at renewal, with a month or two of notice.",
-      href: "/finance/rates",
+      href: "/clients",
       action: "Open Rates",
     });
   }

@@ -4,7 +4,7 @@ import { ownerOnly } from "@/lib/advice/owner";
 import { studioToday } from "@/lib/format";
 import { loadRows, mailState, checkedRecently, runCheck } from "@/lib/advice/run";
 import { visible } from "@/lib/advice/merge";
-import { boardOf } from "@/lib/advice/board";
+import { boardMonthsFor, boardOf } from "@/lib/advice/board";
 
 export const maxDuration = 60;
 
@@ -42,9 +42,13 @@ export async function GET(req: NextRequest) {
       const [stored, mail] = await Promise.all([loadRows(auth.sb), mailState(auth.sb)]);
       return NextResponse.json({ items: visible(stored, studioToday()).map(ref), mailDue: mail.due });
     }
-    const { view, rows, metrics } = await runCheck(auth.sb);
+    // The /advice page may pick the months its figures read (`&period=` — board.ts `boardPeriods`).
+    const asked = q.get("board") ? (q.get("period") ?? "3m") : "3m";
+    const boardMonths = asked === "3m" ? undefined : (boardMonthsFor(asked, studioToday()) ?? undefined);
+    const period = boardMonths ? asked : "3m";
+    const { view, rows, boardMetrics } = await runCheck(auth.sb, { boardMonths });
     // The /advice page: the same view plus the charts' figures and the store's history (board.ts).
-    if (q.get("board")) return NextResponse.json({ ...view, board: boardOf(metrics, rows, view.today) });
+    if (q.get("board")) return NextResponse.json({ ...view, board: boardOf(boardMetrics, rows, view.today, period) });
     return NextResponse.json(view);
   } catch (e) {
     // A table that isn't there yet: say so instead of a bare 500. `detail`
