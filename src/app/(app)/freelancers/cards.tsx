@@ -6,7 +6,7 @@ import { Check, Clock, Link as LinkIcon, Plus } from "lucide-react";
 import { StudioArrow } from "@/components/studio-arrow";
 import { Button } from "@/components/primitives";
 import { useData, useIsAdmin } from "@/lib/store";
-import { TermsForm, act, hrs, money, monthLabel, otherLine, type Freelancer } from "./shared";
+import { TermsForm, act, hrs, monthLabel, type Freelancer } from "./shared";
 import { PageSkeleton, SkeletonRows } from "@/components/skeleton";
 
 // Every freelancer at a glance (0054–0056): this month's bill and what waits
@@ -122,14 +122,13 @@ export function FreelancerCards({ inPage = false }: { inPage?: boolean }) {
             <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted">{monthLabel(data.period)}</p>
+                {/* The month's HOURS, not its cost (Nitsan, 2026-11-16) — the card is
+                    "who is working and how much"; what it costs is the Payments tab
+                    and their own page. */}
                 <p className="font-serif-accent text-[44px] leading-none tabular-nums text-brand">
-                  {money(f.month.total, f.terms.currency)}
-                  {otherLine(f.month.otherExtras)}
+                  {hrs(f.month.hours)}
                 </p>
-                <p className="mt-1.5 text-[13px] tabular-nums text-muted">
-                  {hrs(f.month.hours)} × {money(f.month.rate, f.terms.currency)}/h
-                  {f.month.extras > 0 && ` + ${money(f.month.extras, f.terms.currency)} extras`}
-                </p>
+                <p className="mt-1.5 text-[13px] text-muted">hours logged</p>
               </div>
               <div className="ml-auto flex flex-col items-end gap-2 text-[13px]">
                 {f.hasLogin ? (
