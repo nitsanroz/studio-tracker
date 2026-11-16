@@ -15,6 +15,8 @@
 // and a second line there told a story the band doesn't speak to.
 
 import { useMemo, useState } from "react";
+import { smoothPath } from "@/lib/smooth-line";
+import { GridLine, HoverDot, HoverGuide } from "../line-style";
 import { DAY_NAMES, MONTH_NAMES_SHORT, formatHoursShort, parseISO, shiftDays, toISODate } from "@/lib/format";
 import { evenSpread } from "@/lib/hours-goal";
 import { periodRange } from "@/lib/period-math";
@@ -133,11 +135,9 @@ export function PaceChart({
   const yMaxH = Math.ceil(((maxMin / 60) * 1.08) / step) * step;
   const x = (i: number) => PAD.l + (days.length === 1 ? plotW / 2 : (i / (days.length - 1)) * plotW);
   const y = (minutes: number) => PAD.t + plotH - (minutes / 60 / yMaxH) * plotH;
+  // The app's one line style (line-style.tsx): a fluid line, not straight joins.
   const path = (vals: number[], upTo = vals.length - 1) =>
-    vals
-      .slice(0, upTo + 1)
-      .map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`)
-      .join(" ");
+    smoothPath(vals.slice(0, upTo + 1).map((v, i) => ({ x: x(i), y: y(v) })));
 
   // Headline chip: billable against the goal's pace, or all hours against the
   // same point of the previous period.
@@ -240,7 +240,7 @@ export function PaceChart({
 
           {Array.from({ length: yMaxH / step + 1 }, (_, k) => k * step).map((t) => (
             <g key={t}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={y(t * 60)} y2={y(t * 60)} style={{ stroke: "var(--color-border)" }} strokeWidth={1} />
+              <GridLine x1={PAD.l} x2={W - PAD.r} y={y(t * 60)} />
               <text x={PAD.l - 10} y={y(t * 60) + 4} textAnchor="end" fontSize={12} style={{ fill: "var(--color-faint)" }}>
                 {t ? `${t.toLocaleString("en-US")}h` : "0"}
               </text>
@@ -286,12 +286,16 @@ export function PaceChart({
               <path d={`${path(main, lastIdx)} L${x(lastIdx)},${y(0)} L${x(0)},${y(0)} Z`} fill="url(#pace-fill)" />
               {showBill && <path d={path(cur.runBill, lastIdx)} fill="none" stroke={BILL_COLOR} strokeWidth={2.5} strokeLinejoin="round" />}
               <path d={path(main, lastIdx)} fill="none" stroke={ALL_COLOR} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
-              <circle cx={x(lastIdx)} cy={y(reached)} r={5} fill={ALL_COLOR} stroke="white" strokeWidth={2.5} />
             </>
           )}
 
-          {hover != null && (
-            <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + plotH} style={{ stroke: "var(--color-foreground)" }} strokeOpacity={0.25} />
+          {hover != null && <HoverGuide x={x(hover)} y1={PAD.t} y2={PAD.t + plotH} />}
+          {/* the one dot a line shows — where you hover (line-style.tsx) */}
+          {hover != null && hover <= lastIdx && (
+            <>
+              {showBill && <HoverDot x={x(hover)} y={y(cur.runBill[hover] ?? 0)} color={BILL_COLOR} r={4.5} />}
+              <HoverDot x={x(hover)} y={y(main[hover] ?? 0)} color={ALL_COLOR} r={5} />
+            </>
           )}
           {/* ONE invisible plate catches the pointer and works out the day —
               a rect per day was 365 nodes (and closures) re-rendered on every
