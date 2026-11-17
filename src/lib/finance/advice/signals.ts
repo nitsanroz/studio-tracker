@@ -1369,6 +1369,8 @@ export function monthNotClosed(data: AdviceData): Finding[] {
   const lm = monthsBack(y, m, 1)[1];
   const out: Finding[] = [];
   for (const table of ["freelance", "salaries", "income"] as const) {
+    // Salaries from the 10th belong to `salariesNotFinalByTenth`.
+    if (table === "salaries" && d >= 10) continue;
     // A ₪0 row is an empty cell, nothing to book.
     const open = data.lastMonthRows.filter((r) => r.table === table && r.state !== "final" && r.amount !== 0);
     if (open.length === 0) continue;
@@ -1460,28 +1462,34 @@ export function olderUnpaid(data: AdviceData): Finding[] {
   return out;
 }
 
-/** From the 12th: fewer payslips imported for last month than salary rows (npm run salary-docs). */
-export function payslipsMissing(data: AdviceData): Finding[] {
+/**
+ * From the 10th: last month's salary rows still not final (green). Severe, and
+ * it replaces the softer `monthNotClosed` card for salaries (that one stops on
+ * the 10th). Payslips aren't counted: salaries are entered by hand, and the
+ * payslip files play no part in this check.
+ */
+export function salariesNotFinalByTenth(data: AdviceData): Finding[] {
   const [y, m, d] = ymd(data.today);
-  if (d < 12) return [];
-  const [ly, lm] = monthsBack(y, m, 1);
-  const rows = data.lastMonthRows.filter((r) => r.table === "salaries").length;
-  const slips = data.payslips[monthKey(ly, lm)] ?? 0;
-  if (rows === 0 || slips >= rows) return [];
+  if (d < 10) return [];
+  const lm = monthsBack(y, m, 1)[1];
+  const open = data.lastMonthRows.filter((r) => r.table === "salaries" && r.state !== "final" && r.amount !== 0);
+  if (open.length === 0) return [];
+  const n = open.length;
+  const [ly] = monthsBack(y, m, 1);
   return [
     {
-      key: `payslips:${monthKey(ly, lm)}`,
-      signal: "payslips",
-      kind: "heads",
+      key: `salaries-late:${monthKey(ly, lm)}`,
+      signal: "salaries-late",
+      kind: "now",
       area: "Close",
       clientId: null,
-      severity: slips === 0 ? 2 : 1,
-      facts: { month: monthName(lm), payslips: slips, salaryRows: rows },
-      figure: `${slips} of ${rows}`,
-      title: `${monthName(lm)}'s payslips aren't all in`,
-      body: `${slips} imported for ${rows} salary rows. Run npm run salary-docs on the Mac once Michpal's files are in the Salaries folder.`,
+      severity: 2,
+      facts: { month: monthName(lm), rows: n },
+      figure: `${n} of ${data.lastMonthRows.filter((r) => r.table === "salaries").length}`,
+      title: `${monthName(lm)}'s salaries aren't final`,
+      body: `${plural(n, "salary row isn't", "salary rows aren't")} final yet. The books can't close without them: click each cell on Salaries and choose Final.`,
       reminder: true,
-      href: "/finance/salaries",
+      href: `/finance/salaries?year=${ly}`,
       action: "Open Salaries",
     },
   ];
@@ -1536,7 +1544,7 @@ export const SIGNALS = [
   monthNotClosed,
   monthUnpaid,
   olderUnpaid,
-  payslipsMissing,
+  salariesNotFinalByTenth,
   fxMissing,
 ];
 

@@ -13,7 +13,7 @@ import {
   olderUnpaid,
   noRate,
   paceBehind,
-  payslipsMissing,
+  salariesNotFinalByTenth,
   periodUnpaid,
   pulse,
   salariesShare,
@@ -351,10 +351,16 @@ describe("filing and close", () => {
     expect(olderUnpaid(base({}))).toEqual([]);
   });
 
-  it("counts payslips against salary rows from the 12th", () => {
-    const rows: AdviceData["lastMonthRows"] = Array.from({ length: 6 }, () => ({ table: "salaries", state: "final", amount: 1 }));
-    expect(payslipsMissing(base({ today: "2026-10-12", lastMonthRows: rows, payslips: { "2026-09": 5 } }))[0].figure).toBe("5 of 6");
-    expect(payslipsMissing(base({ today: "2026-10-12", lastMonthRows: rows, payslips: { "2026-09": 6 } }))).toEqual([]);
+  it("flags last month's salaries not final from the 10th, and only then", () => {
+    const rows: AdviceData["lastMonthRows"] = [
+      { table: "salaries", state: "final", amount: 1 },
+      { table: "salaries", state: "actual", amount: 1 },
+    ];
+    expect(salariesNotFinalByTenth(base({ today: "2026-10-09", lastMonthRows: rows }))).toEqual([]);
+    const [s] = salariesNotFinalByTenth(base({ today: "2026-10-10", lastMonthRows: rows }));
+    expect(s.severity).toBe(2);
+    expect(s.figure).toBe("1 of 2");
+    expect(salariesNotFinalByTenth(base({ today: "2026-10-10", lastMonthRows: rows.map((r) => ({ ...r, state: "final" })) }))).toEqual([]);
   });
 
   it("notices a month with no official rate", () => {
