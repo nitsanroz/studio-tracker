@@ -146,35 +146,25 @@ export function monthsBack(year: number, month: number, back: number): [number, 
 }
 
 /**
- * Estimate the current month's full-month figures. Work goes on at a daily pace
- * that blends this month's pace so far with last month's, leaning on this month
- * as more of its workdays pass; the workdays left are filled at that pace.
+ * The month in progress, as the Plan has it. Since 2026-11-10 the P&L's hours
+ * and income come from the PLAN, which holds the whole month (what's been
+ * approved or typed), not a "so far" figure — so extrapolating on top of it
+ * counted the rest of the month twice (Nitsan, 2026-11-18: chart said ₪101K
+ * profit for November, the Plan ₪17.8K). The month is read as it stands.
  */
 export function projectCurrentMonth(pnl: PnlMonthly[], year: number, today = new Date()): MonthProjection | null {
   if (year !== today.getFullYear()) return null;
   const month = today.getMonth() + 1;
-  const [prevYear, prevMonth] = monthsBack(year, month, 1);
   const cur = monthVals(pnl, year, month);
-  const prev = monthVals(pnl, prevYear, prevMonth);
   if (!cur.has(LINE.totalExpenses)) return null;
 
-  // Today counts as done: its hours are already logging in.
   const week = studioWeekdays(year, month, today.getDate() + 1);
   const workdays = cur.get(LINE.daysInMonth) || week.total;
   const workdaysDone = Math.min(workdays, (week.before * workdays) / week.total);
-  const prevWorkdays = workdaysOf(prev, prevYear, prevMonth);
-
-  const soFarHours = cur.get(LINE.totalHours) ?? 0;
-  const soFarIncome = hourlyIncomeOf(cur);
-  const projectIncome = cur.get(LINE.projectIncome) ?? 0;
-  const w = workdaysDone / workdays;
-  const left = workdays - workdaysDone;
-  const pace = (soFar: number, last: number) =>
-    (workdaysDone > 0 ? (soFar / workdaysDone) * w : 0) + (last / prevWorkdays) * (1 - w);
-  const hours = soFarHours + left * pace(soFarHours, prev.get(LINE.totalHours) ?? 0);
-  const hourlyIncome = soFarIncome + left * pace(soFarIncome, hourlyIncomeOf(prev));
-  const revenue = hourlyIncome + projectIncome;
+  const hourlyIncome = hourlyIncomeOf(cur);
+  const revenue = cur.get(LINE.totalRevenues) ?? hourlyIncome + (cur.get(LINE.projectIncome) ?? 0);
   const expenses = (cur.get(LINE.totalExpenses) ?? 0) * PLAN_COST_UPLIFT;
+  const hours = cur.get(LINE.totalHours) ?? 0;
   return {
     month,
     revenue,
@@ -183,8 +173,8 @@ export function projectCurrentMonth(pnl: PnlMonthly[], year: number, today = new
     expenses,
     profit: revenue - expenses,
     margin: revenue ? (revenue - expenses) / revenue : 0,
-    soFarRevenue: soFarIncome + projectIncome,
-    soFarHours,
+    soFarRevenue: revenue,
+    soFarHours: hours,
     workdaysDone,
     workdays,
     upcoming: false,
@@ -326,8 +316,7 @@ export function projectYear(pnl: PnlMonthly[], year: number, today = new Date())
  * month not started, the pace it's at. */
 export function projectionNote(p: MonthProjection): string {
   if (p.upcoming) return `Estimated at the last 3 months' pace · ${p.workdays} workdays`;
-  const done = Math.round(p.workdaysDone * 10) / 10;
-  return `${formatILSShort(p.soFarRevenue)} so far · ${done} of ${p.workdays} workdays`;
+  return `${formatILSShort(p.revenue)} as in the Plan · ${p.workdays} workdays`;
 }
 
 /** 12-month revenue + margin points for the trend chart. Unfinished months

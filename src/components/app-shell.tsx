@@ -628,8 +628,9 @@ function MobileDrawer({
           {/* Finance, last, as on the desktop rail (it was missing here until the
               merge's stage 5 — a phone had no way in). */}
           {finance.length > 1 && (
-            <p className="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "var(--sb-muted)" }}>
+            <p className="flex items-center gap-2 px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: "rgba(255,255,255,0.85)" }}>
               Finance
+              <span className="h-px flex-1" style={{ background: "var(--sb-border)" }} aria-hidden />
             </p>
           )}
           {finance.map((p) => (
@@ -1024,11 +1025,12 @@ function Shell({ children, tier }: { children: ReactNode; tier: Tier }) {
               <button
                 onClick={toggleFinance}
                 aria-expanded={financeOpen}
-                className="mt-2 flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-white/10"
-                style={{ color: "var(--sb-muted)" }}
+                className="mt-2 flex w-full items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors hover:bg-white/10"
+                style={{ color: "rgba(255,255,255,0.85)" }}
               >
                 <ChevronDown size={13} strokeWidth={2} className={`transition-transform duration-150 ${financeOpen ? "" : "-rotate-90"}`} />
                 Finance
+                <span className="ml-1 h-px flex-1" style={{ background: "var(--sb-border)" }} aria-hidden />
               </button>
             ))}
           {financePages

@@ -318,7 +318,7 @@ export default function OverviewPage() {
       <Card className="lg:col-span-2">
         <SectionTitle
           hint={isAll ? "bars = revenue · line = margin %" : "by month"}
-          info="Bars are gross revenue for each year (or month); the line is profit margin (profit ÷ revenue), read off the right-hand axis. A lighter, dashed bar marks a period that's still in progress, so it isn't a fair comparison to a complete one yet. In a single year, the month in progress is projected to its end: the solid part is what's come in so far, the outline is the estimate — the workdays left, at a pace that blends this month's so far with last month's; later months at the last three months' pace. In All time, this year's bar is likewise its estimated full year: the months still to come at the last three booked months' pace per workday. Unfinished months' costs are the Plan's."
+          info="Bars are gross revenue for each year (or month); the line is profit margin (profit ÷ revenue), read off the right-hand axis. A lighter, dashed bar marks a period that's still in progress, so it isn't a fair comparison to a complete one yet. In a single year, the month in progress is the Plan's own figures for it; later months at the last three months' pace. In All time, this year's bar is likewise its estimated full year: the months still to come at the last three booked months' pace per workday. Unfinished months' costs are the Plan's."
         >
           Revenue and margin · {spanLabel}
         </SectionTitle>

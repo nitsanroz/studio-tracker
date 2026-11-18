@@ -30,37 +30,17 @@ const pnl: PnlMonthly[] = [
 ];
 
 describe("projectCurrentMonth", () => {
-  it("leans on last month's pace early in the month", () => {
-    // Oct 3 2026: one Sun–Thu day done (Oct 1) of 21, scaled to the sheet's 18.
+  it("reads the month as the Plan has it, without adding the rest of the month", () => {
     const p = projectCurrentMonth(pnl, 2026, new Date(2026, 9, 3))!;
     expect(p.month).toBe(10);
     expect(p.workdays).toBe(18);
-    expect(p.workdaysDone).toBeCloseTo(18 / 21);
-    // Close to September's ₪12,000/workday over the 18 days, not 7,920.
-    expect(p.revenue).toBeGreaterThan(200_000);
-    expect(p.revenue).toBeLessThan(216_000);
-    expect(p.hours).toBeGreaterThan(580);
-    expect(p.profit).toBeCloseTo(p.revenue - 140_000 * PLAN_COST_UPLIFT);
-    expect(p.soFarRevenue).toBe(7_920);
-  });
-
-  it("leans on this month's own pace late in the month", () => {
-    // Oct 30: every Sun–Thu day done — the projection is the month itself.
-    const p = projectCurrentMonth(pnl, 2026, new Date(2026, 9, 30))!;
-    expect(p.workdaysDone).toBe(18);
     expect(p.revenue).toBeCloseTo(7_920);
+    expect(p.hours).toBe(24);
+    expect(p.profit).toBeCloseTo(7_920 - 140_000 * PLAN_COST_UPLIFT);
   });
 
   it("is only for the current year", () => {
     expect(projectCurrentMonth(pnl, 2025, new Date(2026, 9, 3))).toBeNull();
-  });
-
-  it("counts today as a workday done, so its hours aren't counted twice", () => {
-    // Thu Oct 1: the same as Oct 3, since Fri and Sat aren't workdays.
-    const thu = projectCurrentMonth(pnl, 2026, new Date(2026, 9, 1))!;
-    const sat = projectCurrentMonth(pnl, 2026, new Date(2026, 9, 3))!;
-    expect(thu.workdaysDone).toBeCloseTo(18 / 21);
-    expect(thu.revenue).toBeCloseTo(sat.revenue);
   });
 });
 
@@ -242,7 +222,7 @@ describe("buildMonthlyTrend", () => {
     const proj = projectMonths(pnl, 2026, new Date(2026, 9, 3));
     const oct = buildMonthlyTrend(pnl, 2026, proj)[9];
     expect(oct.revenue).toBe(proj.get(10)!.revenue);
-    expect(oct.margin).toBeGreaterThan(0.2);
+    expect(oct.revenue).toBeCloseTo(7_920);
     expect(oct.estimate?.soFar).toBe(7_920);
   });
 });
