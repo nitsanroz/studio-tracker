@@ -72,7 +72,7 @@ function GoalText({
   return (
     <div className="min-w-0 flex-1">
       <p className="flex items-center gap-1.5 text-xs text-muted">
-        {month} · billable hours to cover costs
+        {month} · billable hours to cover costs · as of now
         <InfoDot>{info}</InfoDot>
       </p>
       {min.neededPerDay === 0 ? (

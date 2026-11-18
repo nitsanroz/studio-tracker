@@ -108,6 +108,8 @@ export interface GoalInputs {
   /** Of the month's billable hours so far, those dated today — the pace leaves
    * them out until the day counts. The tracker passes them as an option instead. */
   hoursToday?: number;
+  /** This month's billable hours so far, live from the tracker — wins over the P&L's (Plan's) figure. */
+  hoursSoFar?: number;
 }
 
 /** An hourly freelancer's month, costed at what they've logged instead of the plan. */
@@ -296,7 +298,7 @@ export function hoursGoal(
   const costs = plannedCosts + freelance.reduce((t, f) => t + f.cost - f.planned, 0);
 
   const projectIncome = cur.get(LINE.projectIncome) ?? 0;
-  const soFar = cur.get(LINE.totalHours) ?? 0;
+  const soFar = inputs?.hoursSoFar ?? cur.get(LINE.totalHours) ?? 0;
   const level = (target: number): GoalLevel => {
     const perDay = effectiveWorkdays ? target / effectiveWorkdays : 0;
     const remaining = Math.max(0, target - soFar);

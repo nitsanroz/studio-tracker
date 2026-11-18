@@ -146,13 +146,14 @@ export async function getGoalInputs(year: number, month: number): Promise<GoalIn
   // the pace leaves them out until 17:30.
   const today = studioToday();
   const thisMonth = today.startsWith(monthBounds(year, month).first.slice(0, 7));
-  const [inputs, hoursToday] = await Promise.all([
+  const [inputs, entries] = await Promise.all([
     goalInputs(sb, year, month),
-    thisMonth
-      ? billableEntriesForMonth(sb, year, month).then((es) => es.filter((e) => e.date === today).reduce((t, e) => t + e.hours, 0))
-      : 0,
+    thisMonth ? billableEntriesForMonth(sb, year, month) : [],
   ]);
-  return { ...inputs, hoursToday };
+  const hoursToday = entries.filter((e) => e.date === today).reduce((t, e) => t + e.hours, 0);
+  // Live hours so far replace the Plan's figure for the month in progress.
+  const hoursSoFar = thisMonth ? entries.reduce((t, e) => t + e.hours, 0) : undefined;
+  return { ...inputs, hoursToday, hoursSoFar };
 }
 
 /**

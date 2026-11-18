@@ -106,9 +106,9 @@ export interface MonthProjection {
   upcoming: boolean;
 }
 
-/** The Plan's cost figures for months not finished yet run light: Nitsan
- * expects real costs 10–20% above them, so estimates take the middle. */
-export const PLAN_COST_UPLIFT = 1.15;
+/** Estimates use the Plan's costs as they are (Nitsan, 2026-11-18: the 1.15
+ * uplift on unfinished months was dropped). Kept as a constant so it can come back. */
+export const PLAN_COST_UPLIFT = 1;
 
 /** The current year's unfinished months by month number; empty for any other year. */
 export type Projections = Map<number, MonthProjection>;
