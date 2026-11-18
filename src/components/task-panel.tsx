@@ -775,7 +775,7 @@ export function TaskPanel() {
                     value={task.title}
                     onCommit={(v) => v && v !== task.title && updateTask(task.id, { title: v })}
                     className="hover:bg-white/15!"
-                    inputClassName="text-foreground"
+                    inputClassName="border-transparent! bg-[#1d32c8]! text-white! shadow-none!"
                   />
                 </h2>
               ) : (
