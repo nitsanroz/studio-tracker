@@ -1,7 +1,8 @@
 "use client";
 
 import { BarCaret, Caret } from "@/components/caret";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDataMaybe } from "@/lib/store";
 import Link from "next/link";
 import {
   Clock,
@@ -44,9 +45,9 @@ let goalRequest: Promise<Goal | null> | null = null;
 // cache `null` for the tab's life (banner + goal band gone until a reload), and a
 // morning tab kept `todayCounted: false` past 17:30.
 let goalDay = "";
-function loadGoal(): Promise<Goal | null> {
+function loadGoal(force = false): Promise<Goal | null> {
   const day = studioToday();
-  if (day !== goalDay) {
+  if (day !== goalDay || force) {
     goalDay = day;
     goalRequest = null;
   }
@@ -66,13 +67,43 @@ function loadGoal(): Promise<Goal | null> {
  * something else in its place has to be able to tell "not yet" from "no". */
 export function useHoursGoal(): Goal | null | undefined {
   const [goal, setGoal] = useState<Goal | null | undefined>(undefined);
-  useEffect(() => {
-    let alive = true;
-    loadGoal().then((g) => alive && setGoal(g));
-    return () => {
-      alive = false;
-    };
+  const aliveRef = useRef(true);
+  const lastRef = useRef(0);
+  // Re-reads the goal: the hours so far change whenever time is logged, and the
+  // cached answer used to live for the whole day. Never flips back to "loading".
+  const refresh = useCallback((force: boolean) => {
+    lastRef.current = Date.now();
+    loadGoal(force).then((g) => aliveRef.current && (g || force === false) && setGoal(g));
   }, []);
+  useEffect(() => {
+    aliveRef.current = true;
+    refresh(false);
+    // Coming back to the tab: at most once every 30s.
+    const onBack = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastRef.current > 30_000) refresh(true);
+    };
+    document.addEventListener("visibilitychange", onBack);
+    window.addEventListener("focus", onBack);
+    return () => {
+      aliveRef.current = false;
+      document.removeEventListener("visibilitychange", onBack);
+      window.removeEventListener("focus", onBack);
+    };
+  }, [refresh]);
+  // Hours logged, edited or deleted (here or by a colleague, via the store's
+  // refresh): a fingerprint of the entries, debounced so a burst is one fetch.
+  const entries = useDataMaybe()?.timeEntries;
+  const fingerprint = entries ? entries.reduce((t, e) => t + (e.minutes ?? 0), 0) * 1000 + entries.length : null;
+  const seen = useRef<number | null>(null);
+  useEffect(() => {
+    if (fingerprint == null) return;
+    if (seen.current != null && seen.current !== fingerprint) {
+      const id = setTimeout(() => refresh(true), 1500);
+      seen.current = fingerprint;
+      return () => clearTimeout(id);
+    }
+    seen.current = fingerprint;
+  }, [fingerprint, refresh]);
   return goal;
 }
 
