@@ -1004,7 +1004,7 @@ export function mailNotice(data: AdviceData): Finding[] {
     if (m.kind === "failed" && paidSince) continue;
     if (m.kind === "failed")
       card = { kind: "now", severity: 3, title: `${m.vendor}: billing needs attention`, body: `${said} Check ${m.vendor}'s billing page — a declined card or a hold stops the service.` };
-    else if (m.kind === "cancel" && live && !stops.has(m.vendor.toLowerCase()))
+    else if (m.kind === "cancel" && live && !stops.has(m.vendor.toLowerCase()) && mine.some((c) => c.category === "yearly" || c.rows.some((r) => !r.endDate)))   // a monthly tool that already has its end date is handled (ls.graphics, 2026-11-20)
       card = { kind: "heads", severity: 2, title: `${m.vendor} says the subscription ended`, body: `${said} Expenses still has it running — if it's really over, give it an end date so the plan stops counting it.` };
     else if (m.kind === "price")
       card = {
@@ -1095,6 +1095,8 @@ export const billingUrl = (vendor: string) => BILLING_URLS.find(([re]) => re.tes
  * the mail came (Nitsan, 2026-11-05: Everhour cancelled in August, Maxon in
  * October, both still renewing in December). Not when anything shows it was
  * taken up again: a period that started after the mail, or a later receipt.
+ * A monthly row that already has an end date is left alone, even one after
+ * the mail (cancelled on the 8th, paid through the 30th).
  * A vendor with several live subscriptions isn't guessed at.
  */
 function cancelledStill(data: AdviceData, all = tools(data)): Finding[] {
@@ -1114,7 +1116,7 @@ function cancelledStill(data: AdviceData, all = tools(data)): Finding[] {
     if (mail.some((r) => r.kind === "receipt" && sameVendor(r.vendor, m.vendor) && daysApart(m.date, r.date) > 3)) continue;
     // Renewed after the mail after all.
     if (c.rows.some((r) => r.date > m.date && r.date <= data.today)) continue;
-    const open = c.rows.filter((r) => r.date <= m.date && (c.category === "yearly" ? r === c.current : !r.endDate || r.endDate > m.date));
+    const open = c.rows.filter((r) => r.date <= m.date && (c.category === "yearly" ? r === c.current : !r.endDate));   // monthly: an end date already set (even after the mail: paid through the month) is the decision made — Nitsan, 2026-11-20: ls.graphics, ends 30 Nov
     if (!open.length || open.some((r) => r.state === "final")) continue;
     const later = c.rows.filter((r) => r.date > data.today && r.state !== "final");
     // Yearly: what's left is the renewal entered for later (or the countdown to one).

@@ -262,6 +262,16 @@ describe("billing mail", () => {
     expect(mailNotice(withMail([], [mail("Dropbox", "cancel", "2026-11-01")]))).toEqual([]);
   });
 
+  it("a monthly tool already ended after the cancellation mail (paid through the month) is not flagged", () => {
+    // ls.graphics: mail on 8 Nov, end date 30 Nov entered on purpose (2026-11-20).
+    const rows = [sub("ls.graphics", "2026-10-01", { category: "monthly", renewMonths: 1, endDate: "2026-11-30", netIls: 300 })];
+    const on = (r: Subscription[]) => ({ ...withMail(r, [mail("ls.graphics", "cancel", "2026-11-08")]), today: "2026-11-20" }) as AdviceData;
+    expect(mailNotice(on(rows))).toEqual([]);
+    // …but without an end date it still offers one.
+    const open = [sub("ls.graphics", "2026-10-01", { category: "monthly", renewMonths: 1, netIls: 300 })];
+    expect(mailNotice(on(open)).length).toBe(1);
+  });
+
   it("no fix when it was taken up again, is locked, or the vendor has several subscriptions", () => {
     const later = [sub("Plnty", "2026-09-01", { category: "monthly", renewMonths: 1 })];
     // A receipt after the cancellation: it's still being paid, so the plain card says so (recent mail only).
